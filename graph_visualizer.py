@@ -227,12 +227,13 @@ class GraphVisualizer:
         }
         return width_mapping.get(rel_type, 1)
     
-    def generate_html_visualization(self, output_path: str = None) -> str:
+    def generate_html_visualization(self, output_path: str = None, specification_path: str = None) -> str:
         """
         Generate HTML file with interactive 3D visualization.
         
         Args:
             output_path: Path where to save the HTML file
+            specification_path: Path to the tenant specification markdown file
             
         Returns:
             Path to the generated HTML file
@@ -248,7 +249,7 @@ class GraphVisualizer:
             output_path = f"azure_graph_visualization_{timestamp}.html"
         
         # Generate HTML content
-        html_content = self._generate_html_template(graph_data)
+        html_content = self._generate_html_template(graph_data, specification_path)
         
         # Write HTML file
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -257,7 +258,22 @@ class GraphVisualizer:
         logger.info(f"3D visualization saved to: {output_path}")
         return output_path
     
-    def _generate_html_template(self, graph_data: Dict) -> str:
+    def _generate_specification_link(self, specification_path: str) -> str:
+        """Generate HTML for the tenant specification link."""
+        if not specification_path or not os.path.exists(specification_path):
+            return ""
+        
+        spec_filename = os.path.basename(specification_path)
+        return f"""
+        <div class="filter-section">
+            <h4>Documentation</h4>
+            <a href="{spec_filename}" target="_blank" class="spec-link">
+                📄 View Tenant Specification
+            </a>
+        </div>
+        """
+    
+    def _generate_html_template(self, graph_data: Dict, specification_path: str = None) -> str:
         """Generate the complete HTML template with embedded JavaScript."""
         
         html_template = f"""
@@ -426,6 +442,22 @@ class GraphVisualizer:
         .reset-btn:hover {{
             background: #45b7d1;
         }}
+        
+        .spec-link {{
+            display: block;
+            color: #4ecdc4;
+            text-decoration: none;
+            padding: 8px 12px;
+            border: 1px solid #4ecdc4;
+            border-radius: 5px;
+            margin-top: 5px;
+            transition: all 0.3s ease;
+        }}
+        
+        .spec-link:hover {{
+            background: #4ecdc4;
+            color: #1a1a1a;
+        }}
     </style>
 </head>
 <body>
@@ -447,6 +479,8 @@ class GraphVisualizer:
         </div>
         
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
+        
+        {self._generate_specification_link(specification_path)}
     </div>
     
     <div class="stats">
