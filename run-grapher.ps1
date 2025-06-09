@@ -9,7 +9,10 @@ param(
     [string]$Neo4jUser = "neo4j", 
     [SecureString]$Neo4jPassword,
     [switch]$ContainerOnly,
-    [switch]$NoContainer
+    [switch]$NoContainer,
+    [switch]$Visualize,
+    [switch]$VisualizeOnly,
+    [string]$VisualizationPath
 )
 
 # Change to script directory
@@ -48,6 +51,18 @@ if ($ContainerOnly) {
 
 if ($NoContainer) {
     $ScriptArgs += "--no-container" 
+}
+
+if ($Visualize) {
+    $ScriptArgs += "--visualize"
+}
+
+if ($VisualizeOnly) {
+    $ScriptArgs += "--visualize-only"
+}
+
+if ($VisualizationPath) {
+    $ScriptArgs += "--visualization-path", $VisualizationPath
 }
 
 # Run the application

@@ -9,6 +9,9 @@ NEO4J_USER="neo4j"
 NEO4J_PASSWORD="azure-grapher-2024"
 CONTAINER_ONLY=false
 NO_CONTAINER=false
+VISUALIZE=false
+VISUALIZE_ONLY=false
+VISUALIZATION_PATH=""
 
 # Function to show usage
 show_usage() {
@@ -23,10 +26,15 @@ show_usage() {
     echo "  --neo4j-password <pwd>  Neo4j password (default: azure-grapher-2024)"
     echo "  --container-only        Start Neo4j container only, don't run grapher"
     echo "  --no-container          Skip container management, use existing Neo4j"
+    echo "  --visualize             Generate 3D graph visualization after building graph"
+    echo "  --visualize-only        Only generate visualization from existing graph data"
+    echo "  --visualization-path    Path where to save the visualization HTML file"
     echo "  --help                  Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 --tenant-id 12345678-1234-1234-1234-123456789012"
+    echo "  $0 --tenant-id 12345678-1234-1234-1234-123456789012 --visualize"
+    echo "  $0 --tenant-id 12345678-1234-1234-1234-123456789012 --visualize-only"
     echo "  $0 --tenant-id 12345678-1234-1234-1234-123456789012 --container-only"
     echo "  $0 --tenant-id 12345678-1234-1234-1234-123456789012 --no-container"
 }
@@ -57,6 +65,18 @@ while [[ $# -gt 0 ]]; do
         --no-container)
             NO_CONTAINER=true
             shift
+            ;;
+        --visualize)
+            VISUALIZE=true
+            shift
+            ;;
+        --visualize-only)
+            VISUALIZE_ONLY=true
+            shift
+            ;;
+        --visualization-path)
+            VISUALIZATION_PATH="$2"
+            shift 2
             ;;
         --help)
             show_usage
@@ -105,6 +125,18 @@ fi
 
 if [[ "$NO_CONTAINER" == true ]]; then
     SCRIPT_ARGS+=("--no-container")
+fi
+
+if [[ "$VISUALIZE" == true ]]; then
+    SCRIPT_ARGS+=("--visualize")
+fi
+
+if [[ "$VISUALIZE_ONLY" == true ]]; then
+    SCRIPT_ARGS+=("--visualize-only")
+fi
+
+if [[ -n "$VISUALIZATION_PATH" ]]; then
+    SCRIPT_ARGS+=("--visualization-path" "$VISUALIZATION_PATH")
 fi
 
 # Check if uv is available

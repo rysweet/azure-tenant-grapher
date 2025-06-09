@@ -20,6 +20,7 @@ from neo4j import GraphDatabase
 import colorlog
 
 from container_manager import Neo4jContainerManager
+from graph_visualizer import GraphVisualizer
 
 # Load environment variables
 load_dotenv()
@@ -199,7 +200,36 @@ class AzureTenantGrapher:
         """
         session.run(query, subscription_id=subscription_id, resource_id=resource_id)
     
-    async def build_graph(self):
+    def create_resource_group_relationships(self, session, resource: Dict):
+        """Create resource group nodes and relationships."""
+        if resource.get('resource_group'):
+            rg_name = resource['resource_group']
+            subscription_id = resource['subscription_id']
+            
+            # Create resource group node if it doesn't exist
+            rg_query = """
+            MERGE (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
+            SET rg.type = 'ResourceGroup'
+            """
+            session.run(rg_query, rg_name=rg_name, subscription_id=subscription_id)
+            
+            # Create relationship: Subscription CONTAINS ResourceGroup
+            sub_rg_query = """
+            MATCH (s:Subscription {id: $subscription_id})
+            MATCH (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
+            MERGE (s)-[:CONTAINS]->(rg)
+            """
+            session.run(sub_rg_query, subscription_id=subscription_id, rg_name=rg_name)
+            
+            # Create relationship: ResourceGroup CONTAINS Resource
+            rg_resource_query = """
+            MATCH (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
+            MATCH (r:Resource {id: $resource_id})
+            MERGE (rg)-[:CONTAINS]->(r)
+            """
+            session.run(rg_resource_query, rg_name=rg_name, subscription_id=subscription_id, resource_id=resource['id'])
+    
+    async def build_graph(self, generate_visualization: bool = False, visualization_path: str = None):
         """Build the complete Neo4j graph of Azure resources."""
         logger.info("Starting graph building process")
         
@@ -224,6 +254,9 @@ class AzureTenantGrapher:
                     for resource in resources:
                         self.create_resource_node(session, resource)
                         self.create_subscription_resource_relationship(session, subscription_id, resource['id'])
+                        
+                        # Create resource group relationships
+                        self.create_resource_group_relationships(session, resource)
                     
                     logger.info(f"Processed {len(resources)} resources for subscription {subscription['display_name']}")
                 
@@ -234,6 +267,34 @@ class AzureTenantGrapher:
             self.close_neo4j_connection()
         
         logger.info("Graph building completed successfully")
+        
+        # Generate visualization if requested
+        if generate_visualization:
+            logger.info("Generating 3D graph visualization...")
+            visualizer = GraphVisualizer(
+                neo4j_uri=self.neo4j_uri,
+                neo4j_user=self.neo4j_user,
+                neo4j_password=self.neo4j_password
+            )
+            
+            try:
+                html_path = visualizer.generate_html_visualization(visualization_path)
+                logger.info(f"3D visualization generated: {html_path}")
+                
+                # Ask user if they want to open the visualization
+                if click.confirm("Would you like to open the visualization in your browser?", default=True):
+                    visualizer.open_visualization(html_path)
+                    
+            except Exception as e:
+                logger.error(f"Error generating visualization: {e}")
+            finally:
+                visualizer.close()
+    
+    def visualize_graph(self):
+        """Visualize the graph using GraphVisualizer."""
+        logger.info("Visualizing the graph")
+        visualizer = GraphVisualizer(self.neo4j_uri, self.neo4j_user, self.neo4j_password)
+        visualizer.visualize()
 
 
 @click.command()
@@ -243,7 +304,10 @@ class AzureTenantGrapher:
 @click.option('--neo4j-password', default='azure-grapher-2024', help='Neo4j password')
 @click.option('--no-container', is_flag=True, help='Skip automatic container management')
 @click.option('--container-only', is_flag=True, help='Only start Neo4j container, do not run grapher')
-def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, no_container: bool, container_only: bool):
+@click.option('--visualize', is_flag=True, help='Generate 3D graph visualization after building the graph')
+@click.option('--visualization-path', help='Path where to save the visualization HTML file')
+@click.option('--visualize-only', is_flag=True, help='Only generate visualization from existing graph data')
+def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, no_container: bool, container_only: bool, visualize: bool, visualization_path: str, visualize_only: bool):
     """Azure Tenant Resource Grapher CLI."""
     logger.info(f"Starting Azure Tenant Resource Grapher for tenant: {tenant_id}")
     
@@ -260,6 +324,29 @@ def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, n
             logger.error("Failed to start Neo4j container")
         return
     
+    # Handle visualization-only mode
+    if visualize_only:
+        logger.info("Visualization-only mode: Generating 3D graph visualization from existing data")
+        visualizer = GraphVisualizer(
+            neo4j_uri=neo4j_uri,
+            neo4j_user=neo4j_user,
+            neo4j_password=neo4j_password
+        )
+        
+        try:
+            html_path = visualizer.generate_html_visualization(visualization_path)
+            logger.info(f"3D visualization generated: {html_path}")
+            
+            if click.confirm("Would you like to open the visualization in your browser?", default=True):
+                visualizer.open_visualization(html_path)
+                
+        except Exception as e:
+            logger.error(f"Error generating visualization: {e}")
+            raise
+        finally:
+            visualizer.close()
+        return
+    
     grapher = AzureTenantGrapher(
         tenant_id=tenant_id,
         neo4j_uri=neo4j_uri,
@@ -269,7 +356,10 @@ def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, n
     )
     
     try:
-        asyncio.run(grapher.build_graph())
+        asyncio.run(grapher.build_graph(
+            generate_visualization=visualize,
+            visualization_path=visualization_path
+        ))
         logger.info("Azure Tenant Resource Grapher completed successfully!")
     except Exception as e:
         logger.error(f"Error running grapher: {e}")
