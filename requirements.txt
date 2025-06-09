@@ -9,6 +9,7 @@ azure-mgmt-sql>=3.0.1
 azure-mgmt-web>=7.0.0
 azure-mgmt-monitor>=6.0.0
 azure-mgmt-authorization>=4.0.0
+openai>=1.12.0
 
 # Neo4j dependencies
 neo4j>=5.14.0
