@@ -8,6 +8,9 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 - **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships  
 - **Resource Details**: Capture detailed configuration information for each resource
 - **Relationship Mapping**: Identify and map dependencies between Azure resources
+- **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
+- **Filterable Graph Views**: Filter nodes and relationships by type, search functionality
+- **Node Details**: Click on nodes to view detailed resource information and metadata
 
 ## Prerequisites
 
@@ -98,6 +101,12 @@ Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 # Start container and run grapher
 ./run-grapher.sh --tenant-id "your-tenant-id-here"
 
+# Start container and run grapher with 3D visualization
+./run-grapher.sh --tenant-id "your-tenant-id-here" --visualize
+
+# Generate visualization only (from existing graph data)
+./run-grapher.sh --tenant-id "your-tenant-id-here" --visualize-only
+
 # Start container only
 ./run-grapher.sh --tenant-id "dummy" --container-only
 
@@ -113,6 +122,12 @@ Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 ```powershell
 # Start container and run grapher
 .\run-grapher.ps1 -TenantId "your-tenant-id-here"
+
+# Start container and run grapher with 3D visualization
+.\run-grapher.ps1 -TenantId "your-tenant-id-here" -Visualize
+
+# Generate visualization only (from existing graph data)
+.\run-grapher.ps1 -TenantId "your-tenant-id-here" -VisualizeOnly
 
 # Start container only
 .\run-grapher.ps1 -TenantId "dummy" -ContainerOnly
@@ -178,6 +193,70 @@ The `docker-compose.yml` file configures Neo4j with:
 - **Persistence**: Data persisted in Docker volumes
 
 You can customize the container by editing `docker-compose.yml`.
+
+## 3D Graph Visualization
+
+The Azure Tenant Grapher includes an interactive 3D visualization feature powered by [3d-force-graph](https://github.com/vasturiano/3d-force-graph). This creates a web-based, interactive view of your Azure resource graph.
+
+### Features
+
+- **Interactive 3D Graph**: Navigate and explore your Azure resources in 3D space
+- **Node Types**: Different colors and sizes for different Azure resource types
+- **Relationships**: Visual representation of resource dependencies and containment
+- **Filtering**: Filter by node types or relationship types using checkboxes
+- **Search**: Real-time search to find specific resources
+- **Node Details**: Click on any node to view detailed resource information
+- **Legend**: Visual legend showing node types and colors
+- **Auto-rotation**: Optional camera auto-rotation for presentation mode
+
+### Usage
+
+**Generate visualization after building the graph:**
+```bash
+uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize
+```
+
+**Generate visualization from existing graph data:**
+```bash
+uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize-only
+```
+
+**Specify custom output path:**
+```bash
+uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize --visualization-path my_graph.html
+```
+
+### Visualization Controls
+
+- **Node Types Filter**: Check/uncheck node types to show/hide them
+- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them  
+- **Search Box**: Type to filter nodes by name, type, or properties
+- **Reset Filters**: Button to clear all filters and show the complete graph
+- **Node Interaction**: Click nodes to view detailed information
+- **Camera Controls**: Mouse/trackpad to zoom, rotate, and pan the 3D view
+
+### Supported Node Types
+
+The visualization automatically detects and color-codes these Azure resource types:
+
+- **Subscription** (Red): Azure subscriptions
+- **ResourceGroup** (Blue): Resource groups
+- **Resource** (Teal): Generic Azure resources
+- **StorageAccount** (Yellow): Storage accounts
+- **VirtualMachine** (Purple): Virtual machines
+- **NetworkInterface** (Light Purple): Network interfaces
+- **VirtualNetwork** (Green): Virtual networks
+- **KeyVault** (Pink): Key vaults
+- **SqlServer** (Orange): SQL servers
+- **WebSite** (Dark Orange): App Service web sites
+
+### Relationship Types
+
+- **CONTAINS**: Subscription contains resource groups, resource groups contain resources
+- **BELONGS_TO**: Resources belong to resource groups
+- **CONNECTED_TO**: Network connections between resources
+- **DEPENDS_ON**: Resource dependencies
+- **MANAGES**: Management relationships
 
 ## Architecture
 
