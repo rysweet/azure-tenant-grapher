@@ -1,0 +1,52 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "pip",
+			"args": [
+				"install",
+				"-r",
+				"requirements.txt"
+			],
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Neo4j Container",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"azure_tenant_grapher.py",
+				"--tenant-id",
+				"dummy",
+				"--container-only"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Stop Neo4j Container",
+			"type": "shell",
+			"command": "docker-compose",
+			"args": [
+				"down"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		}
+	]
+}
