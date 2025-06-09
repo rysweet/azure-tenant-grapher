@@ -67,6 +67,48 @@
 				"panel": "new"
 			},
 			"problemMatcher": []
+		},
+		{
+			"label": "Generate 3D Visualization Only",
+			"type": "shell",
+			"command": "uv",
+			"args": [
+				"run",
+				"python",
+				"azure_tenant_grapher.py",
+				"--tenant-id",
+				"${input:tenantId}",
+				"--visualize-only"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Grapher with Visualization",
+			"type": "shell",
+			"command": "uv",
+			"args": [
+				"run",
+				"python",
+				"azure_tenant_grapher.py",
+				"--tenant-id",
+				"${input:tenantId}",
+				"--visualize"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"problemMatcher": []
 		}
 	],
 	"inputs": [
