@@ -392,7 +392,7 @@ class AzureTenantGrapher:
         # Generate tenant specification if LLM is available
         if self.llm_generator:
             await self.generate_tenant_specification()
-        
+
         # Generate visualization if requested
         if generate_visualization:
             logger.info("Generating 3D graph visualization...")
@@ -404,6 +404,7 @@ class AzureTenantGrapher:
             
             try:
                 html_path = visualizer.generate_html_visualization(visualization_path, self.tenant_specification_path)
+
                 logger.info(f"3D visualization generated: {html_path}")
                 
                 # Ask user if they want to open the visualization
@@ -469,6 +470,7 @@ def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, n
                 logger.info(f"Found existing tenant specification: {spec_path}")
             
             html_path = visualizer.generate_html_visualization(visualization_path, spec_path)
+
             logger.info(f"3D visualization generated: {html_path}")
             
             if click.confirm("Would you like to open the visualization in your browser?", default=True):
