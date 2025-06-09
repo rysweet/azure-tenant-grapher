@@ -228,12 +228,14 @@ class GraphVisualizer:
         return width_mapping.get(rel_type, 1)
     
     def generate_html_visualization(self, output_path: str = None, specification_path: str = None) -> str:
+
         """
         Generate HTML file with interactive 3D visualization.
         
         Args:
             output_path: Path where to save the HTML file
             specification_path: Path to the tenant specification markdown file
+
             
         Returns:
             Path to the generated HTML file
@@ -250,6 +252,7 @@ class GraphVisualizer:
         
         # Generate HTML content
         html_content = self._generate_html_template(graph_data, specification_path)
+
         
         # Write HTML file
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -274,6 +277,7 @@ class GraphVisualizer:
         """
     
     def _generate_html_template(self, graph_data: Dict, specification_path: str = None) -> str:
+
         """Generate the complete HTML template with embedded JavaScript."""
         
         html_template = f"""
@@ -458,6 +462,7 @@ class GraphVisualizer:
             background: #4ecdc4;
             color: #1a1a1a;
         }}
+
     </style>
 </head>
 <body>
@@ -481,6 +486,7 @@ class GraphVisualizer:
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
         
         {self._generate_specification_link(specification_path)}
+
     </div>
     
     <div class="stats">
