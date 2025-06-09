@@ -11,7 +11,8 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.8+ 
+- [uv](https://docs.astral.sh/uv/) (for dependency management and virtual environment)
 - Docker and Docker Compose (for Neo4j container)
 - Azure CLI (for authentication)
 - Azure tenant with appropriate permissions
@@ -20,15 +21,15 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 
 ### 1. Setup Environment
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies using uv
+uv sync
+
+# Create .env file with defaults (optional - the application has sensible defaults)
+cp .env.example .env
+# Edit .env with your Azure tenant ID if desired
 
 # Configure Azure credentials
 az login
-
-# Copy and edit environment file
-cp .env.example .env
-# Edit .env with your Azure tenant ID
 ```
 
 ### 2. Start Neo4j Container
@@ -36,13 +37,13 @@ The application can automatically manage a Neo4j Docker container for you.
 
 **Option A: Automatic container management (recommended)**
 ```bash
-python azure_tenant_grapher.py --tenant-id your-tenant-id-here
+uv run python azure_tenant_grapher.py --tenant-id your-tenant-id-here
 ```
 
 **Option B: Start container manually**
 ```bash
 # Start Neo4j container only
-python azure_tenant_grapher.py --tenant-id dummy --container-only
+uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
 
 # Or use Docker Compose directly
 docker-compose up -d neo4j
@@ -51,12 +52,12 @@ docker-compose up -d neo4j
 **Option C: Use existing Neo4j instance**
 ```bash
 # Skip container management if you have Neo4j running elsewhere
-python azure_tenant_grapher.py --tenant-id your-tenant-id-here --no-container
+uv run python azure_tenant_grapher.py --tenant-id your-tenant-id-here --no-container
 ```
 
 ### 3. Access Neo4j Browser
 Once Neo4j is running, you can access the browser interface at:
-- URL: http://localhost:7474
+- URL: http://localhost:7475
 - Username: `neo4j`
 - Password: `azure-grapher-2024` (or your custom password)
 
@@ -66,18 +67,18 @@ Once Neo4j is running, you can access the browser interface at:
 
 ```bash
 # Basic usage with automatic container management
-python azure_tenant_grapher.py --tenant-id <your-tenant-id>
+uv run python azure_tenant_grapher.py --tenant-id <your-tenant-id>
 
 # Start Neo4j container only (useful for setup)
-python azure_tenant_grapher.py --tenant-id dummy --container-only
+uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
 
 # Use existing Neo4j instance (skip container management)
-python azure_tenant_grapher.py --tenant-id <your-tenant-id> --no-container
+uv run python azure_tenant_grapher.py --tenant-id <your-tenant-id> --no-container
 
 # Custom Neo4j connection settings
-python azure_tenant_grapher.py \
+uv run python azure_tenant_grapher.py \
   --tenant-id <your-tenant-id> \
-  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-uri bolt://localhost:7688 \
   --neo4j-user neo4j \
   --neo4j-password your-password
 ```
@@ -85,11 +86,29 @@ python azure_tenant_grapher.py \
 ### VS Code Tasks
 
 Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
-- **Start Neo4j Container**: Starts the Neo4j Docker container
-- **Stop Neo4j Container**: Stops the Neo4j Docker container  
-- **Install Dependencies**: Installs Python packages
+- **Install Dependencies**: Installs Python packages using uv
+- **Start Neo4j Container**: Starts the Neo4j Docker container using uv
+- **Stop Neo4j Container**: Stops the Neo4j Docker container
+- **Run Azure Tenant Grapher**: Runs the full application with uv (prompts for tenant ID)
 
-### PowerShell Script (Windows)
+### Shell Scripts
+
+**Unix/macOS/Linux (Bash)**
+```bash
+# Start container and run grapher
+./run-grapher.sh --tenant-id "your-tenant-id-here"
+
+# Start container only
+./run-grapher.sh --tenant-id "dummy" --container-only
+
+# Use existing Neo4j instance
+./run-grapher.sh --tenant-id "your-tenant-id-here" --no-container
+
+# Show help
+./run-grapher.sh --help
+```
+
+**Windows (PowerShell)**
 
 ```powershell
 # Start container and run grapher
@@ -104,6 +123,36 @@ Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 
 ## Configuration
 
+### Dependency Management
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and virtual environment handling. Benefits include:
+
+- **Fast**: uv is written in Rust and significantly faster than pip
+- **Reliable**: Deterministic dependency resolution with lock files
+- **Simple**: Single tool for virtual environments and dependency management
+
+Key commands:
+```bash
+# Install dependencies (creates virtual environment automatically)
+uv sync
+
+# Run commands in the virtual environment
+uv run python azure_tenant_grapher.py --help
+
+# Add new dependencies
+uv add package-name
+
+# Add development dependencies
+uv add --dev package-name
+
+# Update dependencies
+uv sync --upgrade
+```
+
+The `pyproject.toml` file contains all project configuration and dependencies. The `requirements.txt` file is maintained for compatibility but `uv` will use `pyproject.toml` as the source of truth.
+
+### Environment Variables
+
 The application uses environment variables for configuration. Copy `.env.example` to `.env` and customize:
 
 ```bash
@@ -111,7 +160,7 @@ The application uses environment variables for configuration. Copy `.env.example
 AZURE_TENANT_ID=your-tenant-id-here
 
 # Neo4j Configuration (matches docker-compose.yml)
-NEO4J_URI=bolt://localhost:7687
+NEO4J_URI=bolt://localhost:7688
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=azure-grapher-2024
 
@@ -122,7 +171,7 @@ LOG_LEVEL=INFO
 ### Docker Compose Configuration
 
 The `docker-compose.yml` file configures Neo4j with:
-- **Ports**: 7474 (HTTP), 7687 (Bolt)
+- **Ports**: 7475 (HTTP), 7688 (Bolt)
 - **Authentication**: neo4j/azure-grapher-2024
 - **Memory**: 2GB heap, 1GB page cache
 - **Plugins**: APOC procedures enabled
@@ -157,7 +206,7 @@ The application consists of several key components:
 **Error: "Failed to connect to Neo4j"**
 - Check if the Neo4j container is running: `docker ps`
 - Verify the connection details in your `.env` file
-- Try accessing Neo4j Browser at http://localhost:7474
+- Try accessing Neo4j Browser at http://localhost:7475
 
 ### Azure Authentication Issues
 
@@ -172,10 +221,35 @@ The application consists of several key components:
 - Ensure your Azure account has Reader permissions on subscriptions
 - Some resources may require additional permissions to read configuration details
 
-## Contributing
+## Summary of Changes
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+This project has been updated to use `uv` for dependency management and to resolve port conflicts:
 
-## License
+### Key Updates:
 
-MIT License
+1. **uv Integration**: All Python commands now use `uv run` to ensure the correct virtual environment
+2. **Port Changes**: Neo4j now runs on ports 7475 (HTTP) and 7688 (Bolt) to avoid conflicts
+3. **No Password Prompts**: Default password is set to `azure-grapher-2024` and no longer prompts on startup
+4. **Updated Scripts**: All shell scripts, PowerShell scripts, and VS Code tasks use `uv run`
+5. **Environment Defaults**: Sensible defaults are provided so `.env` file is optional
+
+### Migration from pip to uv:
+
+If you previously used `pip`, simply run:
+```bash
+uv sync
+```
+
+All dependencies from `requirements.txt` are now managed in `pyproject.toml` with `uv`.
+
+### Testing the Setup:
+
+```bash
+# Test the help (should not prompt for password)
+uv run python azure_tenant_grapher.py --help
+
+# Start Neo4j container only
+uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
+
+# Access Neo4j Browser at http://localhost:7475 with neo4j/azure-grapher-2024
+```

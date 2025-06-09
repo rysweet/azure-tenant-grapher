@@ -1,0 +1,49 @@
+[project]
+name = "azure-tenant-grapher"
+version = "0.1.0"
+description = "A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships."
+authors = [{name = "Azure Tenant Grapher Team"}]
+readme = "README.md"
+requires-python = ">=3.8.1"
+dependencies = [
+    # Azure SDK dependencies
+    "azure-identity>=1.15.0",
+    "azure-mgmt-resource>=23.0.0",
+    "azure-mgmt-compute>=30.0.0",
+    "azure-mgmt-storage>=21.0.0",
+    "azure-mgmt-network>=25.0.0",
+    "azure-mgmt-keyvault>=10.0.0",
+    "azure-mgmt-sql>=3.0.1",
+    "azure-mgmt-web>=7.0.0",
+    "azure-mgmt-monitor>=6.0.0",
+    "azure-mgmt-authorization>=4.0.0",
+    # Neo4j dependencies
+    "neo4j>=5.14.0",
+    "py2neo>=2021.2.4",
+    # Container management
+    "docker>=7.0.0",
+    # Utility dependencies
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0",
+    "tqdm>=4.66.0",
+    "aiohttp>=3.9.0",
+    # Logging and configuration
+    "pyyaml>=6.0",
+    "colorlog>=6.8.0",
+]
+
+[project.scripts]
+azure-tenant-grapher = "azure_tenant_grapher:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]

@@ -4,11 +4,9 @@
 		{
 			"label": "Install Dependencies",
 			"type": "shell",
-			"command": "pip",
+			"command": "uv",
 			"args": [
-				"install",
-				"-r",
-				"requirements.txt"
+				"sync"
 			],
 			"group": "build",
 			"problemMatcher": []
@@ -16,8 +14,10 @@
 		{
 			"label": "Start Neo4j Container",
 			"type": "shell",
-			"command": "python",
+			"command": "uv",
 			"args": [
+				"run",
+				"python",
 				"azure_tenant_grapher.py",
 				"--tenant-id",
 				"dummy",
@@ -47,6 +47,34 @@
 				"panel": "new"
 			},
 			"problemMatcher": []
+		},
+		{
+			"label": "Run Azure Tenant Grapher",
+			"type": "shell",
+			"command": "uv",
+			"args": [
+				"run",
+				"python",
+				"azure_tenant_grapher.py",
+				"--tenant-id",
+				"${input:tenantId}"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "new"
+			},
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "tenantId",
+			"description": "Azure Tenant ID",
+			"default": "",
+			"type": "promptString"
 		}
 	]
 }

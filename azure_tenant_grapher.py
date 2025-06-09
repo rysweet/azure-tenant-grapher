@@ -54,9 +54,9 @@ class AzureTenantGrapher:
         self.auto_start_container = auto_start_container
         
         # Neo4j configuration
-        self.neo4j_uri = neo4j_uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        self.neo4j_uri = neo4j_uri or os.getenv('NEO4J_URI', 'bolt://localhost:7688')
         self.neo4j_user = neo4j_user or os.getenv('NEO4J_USER', 'neo4j')
-        self.neo4j_password = neo4j_password or os.getenv('NEO4J_PASSWORD', 'password')        
+        self.neo4j_password = neo4j_password or os.getenv('NEO4J_PASSWORD', 'azure-grapher-2024')        
         self.driver = None
         self.subscriptions = []
         self.container_manager = Neo4jContainerManager() if auto_start_container else None
@@ -238,9 +238,9 @@ class AzureTenantGrapher:
 
 @click.command()
 @click.option('--tenant-id', required=True, help='Azure tenant ID')
-@click.option('--neo4j-uri', default='bolt://localhost:7687', help='Neo4j URI')
+@click.option('--neo4j-uri', default='bolt://localhost:7688', help='Neo4j URI')
 @click.option('--neo4j-user', default='neo4j', help='Neo4j username')
-@click.option('--neo4j-password', prompt=True, hide_input=True, help='Neo4j password')
+@click.option('--neo4j-password', default='azure-grapher-2024', help='Neo4j password')
 @click.option('--no-container', is_flag=True, help='Skip automatic container management')
 @click.option('--container-only', is_flag=True, help='Only start Neo4j container, do not run grapher')
 def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, no_container: bool, container_only: bool):
@@ -253,7 +253,7 @@ def main(tenant_id: str, neo4j_uri: str, neo4j_user: str, neo4j_password: str, n
         container_manager = Neo4jContainerManager()
         if container_manager.setup_neo4j():
             logger.info("Neo4j container started successfully!")
-            logger.info(f"You can access Neo4j Browser at: http://localhost:7474")
+            logger.info(f"You can access Neo4j Browser at: http://localhost:7475")
             logger.info(f"Username: {neo4j_user}")
             logger.info(f"Password: {neo4j_password}")
         else:

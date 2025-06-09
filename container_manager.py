@@ -26,7 +26,7 @@ class Neo4jContainerManager:
         """
         self.compose_file = compose_file
         self.docker_client = None
-        self.neo4j_uri = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        self.neo4j_uri = os.getenv('NEO4J_URI', 'bolt://localhost:7688')
         self.neo4j_user = os.getenv('NEO4J_USER', 'neo4j')
         self.neo4j_password = os.getenv('NEO4J_PASSWORD', 'azure-grapher-2024')
         

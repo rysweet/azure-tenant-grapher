@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$TenantId,
     
-    [string]$Neo4jUri = "bolt://localhost:7687",
+    [string]$Neo4jUri = "bolt://localhost:7688",
     [string]$Neo4jUser = "neo4j", 
     [SecureString]$Neo4jPassword,
     [switch]$ContainerOnly,
@@ -33,6 +33,8 @@ if ($Neo4jPassword) {
 
 # Build arguments
 $ScriptArgs = @(
+    "run",
+    "python",
     "azure_tenant_grapher.py",
     "--tenant-id", $TenantId,
     "--neo4j-uri", $Neo4jUri,
@@ -50,4 +52,4 @@ if ($NoContainer) {
 
 # Run the application
 Write-Host "Starting Azure Tenant Resource Grapher..." -ForegroundColor Green
-& "C:/Users/rysweet/src/td/.venv/Scripts/python.exe" @ScriptArgs
+& "uv" @ScriptArgs
