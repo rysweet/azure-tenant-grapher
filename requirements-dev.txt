@@ -1,0 +1,31 @@
+# Development dependencies
+# Include all main requirements
+-r requirements.txt
+
+# Linting and formatting
+flake8>=7.0.0
+black>=24.0.0
+isort>=5.13.0
+pylint>=3.0.0
+
+# Type checking
+mypy>=1.8.0
+types-requests>=2.31.0
+types-setuptools>=69.0.0
+types-pyyaml>=6.0.0
+
+# Security scanning
+bandit>=1.7.0
+safety>=3.0.0
+
+# Additional testing tools
+pytest-xdist>=3.5.0  # For parallel test execution
+pytest-benchmark>=4.0.0  # For performance testing
+coverage>=7.4.0  # Additional coverage tools
+
+# Documentation
+sphinx>=7.0.0
+sphinx-rtd-theme>=2.0.0
+
+# Pre-commit hooks
+pre-commit>=3.6.0
