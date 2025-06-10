@@ -3,10 +3,8 @@
 -r requirements.txt
 
 # Linting and formatting
-flake8>=7.0.0
+ruff>=0.6.0
 black>=24.0.0
-isort>=5.13.0
-pylint>=3.0.0
 
 # Type checking
 mypy>=1.8.0

@@ -38,7 +38,7 @@ azure-tenant-grapher/
 ## Features
 
 - **Azure Resource Discovery**: Enumerate all resources across all subscriptions in an Azure tenant
-- **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships  
+- **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships
 - **Resource Details**: Capture detailed configuration information for each resource
 - **Relationship Mapping**: Identify and map dependencies between Azure resources
 - **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
@@ -49,7 +49,7 @@ azure-tenant-grapher/
 
 ## Prerequisites
 
-- Python 3.8+ 
+- Python 3.8+
 - [uv](https://docs.astral.sh/uv/) (for dependency management and virtual environment)
 - Docker and Docker Compose (for Neo4j container)
 - Azure CLI (for authentication)
@@ -344,7 +344,7 @@ uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize --v
 ### Visualization Controls
 
 - **Node Types Filter**: Check/uncheck node types to show/hide them
-- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them  
+- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them
 - **Search Box**: Type to filter nodes by name, type, or properties
 - **Reset Filters**: Button to clear all filters and show the complete graph
 - **Node Interaction**: Click nodes to view detailed information
