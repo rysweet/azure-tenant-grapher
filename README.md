@@ -2,6 +2,39 @@
 
 A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships.
 
+## Project Structure
+
+```
+azure-tenant-grapher/
+├── src/                           # Main application source code
+│   ├── __init__.py               # Package initialization with conditional imports
+│   ├── azure_tenant_grapher.py  # Main application class
+│   ├── config_manager.py        # Configuration management
+│   ├── resource_processor.py    # Azure resource processing
+│   ├── llm_descriptions.py      # AI-powered resource descriptions
+│   ├── container_manager.py     # Neo4j container management
+│   └── graph_visualizer.py      # Graph visualization and export
+├── tests/                        # Comprehensive test suite
+│   ├── conftest.py              # Test fixtures and configuration
+│   ├── test_config_manager.py   # Configuration tests
+│   ├── test_resource_processor.py # Resource processing tests
+│   ├── test_azure_tenant_grapher.py # Main application tests
+│   ├── test_container_manager.py # Container management tests
+│   ├── test_llm_descriptions.py # LLM integration tests
+│   └── test_graph_visualizer.py # Visualization tests
+├── scripts/                      # Utility scripts
+│   ├── cli.py                   # Enhanced CLI wrapper
+│   ├── demo_enhanced_features.py # Feature demonstration
+│   ├── check_progress.py       # Progress checking utility
+│   └── test_modular_structure.py # Structure validation
+├── main.py                       # CLI entry point
+├── run_tests.py                  # Test runner with coverage
+├── pyproject.toml               # Project configuration
+├── requirements.txt             # Dependencies
+├── docker-compose.yml           # Neo4j container setup
+└── README.md                    # This file
+```
+
 ## Features
 
 - **Azure Resource Discovery**: Enumerate all resources across all subscriptions in an Azure tenant
@@ -11,6 +44,8 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 - **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
 - **Filterable Graph Views**: Filter nodes and relationships by type, search functionality
 - **Node Details**: Click on nodes to view detailed resource information and metadata
+- **Modular Architecture**: Well-structured codebase with comprehensive test coverage
+- **AI Integration**: Optional AI-powered resource descriptions using Azure OpenAI
 
 ## Prerequisites
 
@@ -27,6 +62,9 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 # Install dependencies using uv
 uv sync
 
+# Or install with pip if uv is not available
+pip install -r requirements.txt
+
 # Create .env file with defaults (optional - the application has sensible defaults)
 cp .env.example .env
 # Edit .env with your Azure tenant ID if desired
@@ -35,18 +73,23 @@ cp .env.example .env
 az login
 ```
 
-### 2. Start Neo4j Container
+### 2. Start the Application
 The application can automatically manage a Neo4j Docker container for you.
 
-**Option A: Automatic container management (recommended)**
+**Option A: Using the main entry point (recommended)**
 ```bash
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id-here
+python main.py --tenant-id your-tenant-id-here
 ```
 
-**Option B: Start container manually**
+**Option B: Using the module directly**
+```bash
+python -m src.azure_tenant_grapher --tenant-id your-tenant-id-here
+```
+
+**Option C: Start container manually**
 ```bash
 # Start Neo4j container only
-uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
+python main.py --tenant-id dummy --container-only
 
 # Or use Docker Compose directly
 docker-compose up -d neo4j
@@ -134,6 +177,78 @@ Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 
 # Use existing Neo4j instance
 .\run-grapher.ps1 -TenantId "your-tenant-id-here" -NoContainer
+```
+
+## Development and Testing
+
+This project includes a comprehensive test suite and follows best practices for Python development.
+
+### Running Tests
+
+**Quick test run:**
+```bash
+# Run all tests
+python run_tests.py
+
+# Run tests with coverage report
+python run_tests.py -c
+
+# Run specific test module
+python -m pytest tests/test_config_manager.py -v
+
+# Install test dependencies if needed
+python run_tests.py --install-deps
+```
+
+**Advanced testing:**
+```bash
+# Run tests with verbose output and coverage
+python -m pytest tests/ -v --cov=src --cov-report=html
+
+# Run only unit tests (skip integration tests)
+python -m pytest tests/ -m "not integration"
+
+# Run tests in parallel (if pytest-xdist is installed)
+python -m pytest tests/ -n auto
+```
+
+### Test Structure
+
+The test suite includes:
+- **Unit Tests**: Individual module testing with mocks and fixtures
+- **Integration Tests**: End-to-end testing scenarios
+- **Configuration Tests**: Environment and configuration validation
+- **Mock-based Tests**: Safe testing without external dependencies
+
+### Code Quality
+
+```bash
+# Run linting (if configured)
+python -m flake8 src/ tests/
+
+# Format code (if black is installed)
+python -m black src/ tests/
+
+# Type checking (if mypy is installed)
+python -m mypy src/
+```
+
+### Development Scripts
+
+The `scripts/` directory contains helpful development utilities:
+
+```bash
+# Test the modular structure
+python scripts/test_modular_structure.py
+
+# Check progress of a running graph build
+python scripts/check_progress.py
+
+# Enhanced CLI with better error handling
+python scripts/cli.py --help
+
+# Demonstrate advanced features
+python scripts/demo_enhanced_features.py
 ```
 
 ## Configuration
