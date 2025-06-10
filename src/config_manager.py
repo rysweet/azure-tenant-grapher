@@ -275,7 +275,7 @@ def setup_logging(config: LoggingConfig) -> None:
         use_colorlog = False
 
     # Create handler
-    handler: Union[logging.FileHandler, logging.StreamHandler]
+    handler: Union[logging.FileHandler, logging.StreamHandler[Any]]
     if config.file_output:
         # File handler
         handler = logging.FileHandler(config.file_output)
@@ -288,7 +288,7 @@ def setup_logging(config: LoggingConfig) -> None:
             handler = colorlog.StreamHandler()
             formatter = colorlog.ColoredFormatter(config.format)
         else:
-            handler = logging.StreamHandler()
+            handler = logging.StreamHandler[Any]()
             formatter = logging.Formatter(config.format)
 
     handler.setFormatter(formatter)

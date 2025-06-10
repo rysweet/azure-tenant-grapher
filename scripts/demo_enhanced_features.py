@@ -15,15 +15,15 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 try:
-    from container_manager import Neo4jContainerManager
     from src.azure_tenant_grapher import AzureTenantGrapher
     from src.config_manager import create_config_from_env, setup_logging
+    from src.container_manager import Neo4jContainerManager
 except ImportError as e:
     print(f"❌ Import error: {e}")
     sys.exit(1)
 
 
-async def example_basic_run():
+async def example_basic_run() -> None:
     """Example 1: Basic run with limited resources for testing."""
     print("\n🧪 Example 1: Basic run with resource limit")
     print("=" * 60)
@@ -60,7 +60,7 @@ async def example_basic_run():
         print(f"❌ Error in basic run: {e}")
 
 
-async def example_advanced_configuration():
+async def example_advanced_configuration() -> None:
     """Example 2: Advanced configuration with custom settings."""
     print("\n🔧 Example 2: Advanced configuration")
     print("=" * 60)
@@ -86,7 +86,7 @@ async def example_advanced_configuration():
         print(f"❌ Error in advanced configuration: {e}")
 
 
-async def example_container_management():
+async def example_container_management() -> None:
     """Example 3: Container management operations."""
     print("\n🐳 Example 3: Container management")
     print("=" * 60)
@@ -116,7 +116,7 @@ async def example_container_management():
         print(f"❌ Error in container management: {e}")
 
 
-async def example_progress_tracking():
+async def example_progress_tracking() -> None:
     """Example 4: Progress tracking during processing."""
     print("\n📊 Example 4: Progress tracking demonstration")
     print("=" * 60)
@@ -150,7 +150,7 @@ async def example_progress_tracking():
         print(f"❌ Error in progress tracking: {e}")
 
 
-async def example_configuration_validation():
+async def example_configuration_validation() -> None:
     """Example 5: Configuration validation and error handling."""
     print("\n✅ Example 5: Configuration validation")
     print("=" * 60)
@@ -184,7 +184,7 @@ async def example_configuration_validation():
         print(f"❌ Error in configuration validation: {e}")
 
 
-def main():
+def main() -> None:
     """Main function to run all examples."""
     print("🔧 Azure Tenant Grapher - Enhanced Features Demo")
     print("=" * 80)
@@ -197,20 +197,9 @@ def main():
         example_configuration_validation,
         # example_basic_run,  # Commented out as it requires real Azure tenant
     ]
-
-    async def run_examples():
-        for i, example in enumerate(examples, 1):
-            try:
-                await example()
-                print(f"\n✅ Example {i} completed successfully")
-            except Exception as e:
-                print(f"\n❌ Example {i} failed: {e}")
-
-            if i < len(examples):
-                print("\n" + "-" * 60)
-
-    # Run examples
-    asyncio.run(run_examples())
+    # Run examples sequentially
+    for example in examples:
+        asyncio.run(example())
 
     print("\n" + "=" * 80)
     print("🎯 Demo completed! Key improvements demonstrated:")

@@ -53,7 +53,7 @@ class AzureLLMDescriptionGenerator:
     using Azure OpenAI services.
     """
 
-    def __init__(self, config: Optional[LLMConfig] = None):
+    def __init__(self, config: Optional[LLMConfig] = None) -> None:
         """
         Initialize the LLM description generator.
 
@@ -93,7 +93,7 @@ class AzureLLMDescriptionGenerator:
         Generate a natural language description for an Azure resource.
 
         Args:
-            resource_data: Dictionary containing resource information
+            resource_data: Dict[str, Any]ionary containing resource information
 
         Returns:
             Natural language description of the resource
@@ -193,7 +193,7 @@ Be specific about the resource type capabilities while remaining concise and act
             )
 
             content = response.choices[0].message.content
-            description = content.strip() if content else ""
+            description = str(content).strip() if content else ""
             logger.debug(
                 f"Generated description for {resource_type} '{resource_name}': {description}"
             )
@@ -280,7 +280,7 @@ Be specific about the architectural implications while keeping it concise and ac
             )
 
             content = response.choices[0].message.content
-            description = content.strip() if content else ""
+            description = str(content).strip() if content else ""
             logger.debug(
                 f"Generated relationship description: {relationship_type} between {source_type} and {target_type}"
             )
@@ -301,8 +301,8 @@ Be specific about the architectural implications while keeping it concise and ac
         Generate a comprehensive natural language specification for the entire Azure tenant.
 
         Args:
-            resources: List of all resources in the tenant
-            relationships: List of all relationships between resources
+            resources: List[Any] of all resources in the tenant
+            relationships: List[Any] of all relationships between resources
             output_path: Path where the specification markdown file will be saved
 
         Returns:
@@ -327,7 +327,7 @@ Be specific about the architectural implications while keeping it concise and ac
             # Create analysis summary
             analysis = {
                 "total_resources": len(resources),
-                "resource_types": dict(
+                "resource_types": Dict[str, Any](
                     sorted(resource_types.items(), key=lambda x: x[1], reverse=True)
                 ),
                 "locations": sorted(locations),
@@ -388,7 +388,9 @@ Focus on architectural insights rather than listing individual resources.
             return output_path
 
     def _create_fallback_specification(
-        self, resources: List[Dict[str, Any]], relationships: List[Dict[str, Any]]
+        self,
+        resources: List[Dict[str, Any]],
+        relationships: List[Dict[str, Any]],
     ) -> str:
         """Create a basic specification when LLM generation fails."""
         resource_types = {}
@@ -452,7 +454,7 @@ The tenant contains {len(relationships)} relationships between resources, indica
         Process a batch of resources to add LLM-generated descriptions.
 
         Args:
-            resources: List of resource dictionaries
+            resources: List[Any] of resource dictionaries
             batch_size: Number of resources to process concurrently
 
         Returns:

@@ -5,6 +5,8 @@ A comprehensive tool for walking Azure tenant resources and building
 a Neo4j graph database of those resources and their relationships.
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 __version__ = "1.0.0"
 __author__ = "Azure Tenant Grapher Team"
 
@@ -13,7 +15,7 @@ from .config_manager import AzureTenantGrapherConfig, create_config_from_env
 
 
 # Conditionally import other modules to avoid import errors in test environments
-def _safe_import() -> None:
+def _safe_import() -> bool:
     """Safely import modules that may have missing dependencies in test environments."""
     try:
         # Only import if Azure SDK is available

@@ -1,7 +1,9 @@
+# mypy: disable-error-code=misc
 """
 Tests for azure_tenant_grapher module.
 """
 
+from typing import Any, List
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -14,7 +16,7 @@ class TestAzureTenantGrapher:
     """Test cases for AzureTenantGrapher."""
 
     @pytest.fixture
-    def mock_config(self):
+    def mock_config(self) -> Mock:
         """Provide a mock configuration."""
         config = Mock(spec=AzureTenantGrapherConfig)
         config.tenant_id = "test-tenant-id"
@@ -30,7 +32,7 @@ class TestAzureTenantGrapher:
         neo4j_config = Mock()
         neo4j_config.uri = "bolt://localhost:7687"
         neo4j_config.user = "neo4j"
-        neo4j_config.password = "test-password"
+        neo4j_config.password = "test-password"  # nosec
         config.neo4j = neo4j_config
 
         # Set up nested azure_openai config
@@ -42,7 +44,7 @@ class TestAzureTenantGrapher:
         return config
 
     @pytest.fixture
-    def mock_config_no_llm(self):
+    def mock_config_no_llm(self) -> Mock:
         """Provide a mock configuration without LLM."""
         config = Mock(spec=AzureTenantGrapherConfig)
         config.tenant_id = "test-tenant-id"
@@ -58,7 +60,7 @@ class TestAzureTenantGrapher:
         neo4j_config = Mock()
         neo4j_config.uri = "bolt://localhost:7687"
         neo4j_config.user = "neo4j"
-        neo4j_config.password = "test-password"
+        neo4j_config.password = "test-password"  # nosec
         config.neo4j = neo4j_config
 
         # Set up nested azure_openai config
@@ -69,7 +71,7 @@ class TestAzureTenantGrapher:
         config.log_configuration_summary = Mock()
         return config
 
-    def test_initialization_with_llm(self, mock_config):
+    def test_initialization_with_llm(self, mock_config: Mock) -> None:
         """Test successful initialization with LLM enabled."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.Neo4jContainerManager"):
@@ -86,7 +88,7 @@ class TestAzureTenantGrapher:
                     assert grapher.container_manager is not None
                     assert mock_config.log_configuration_summary.called
 
-    def test_initialization_without_llm(self, mock_config_no_llm):
+    def test_initialization_without_llm(self, mock_config_no_llm: Mock) -> None:
         """Test initialization without LLM configuration."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             grapher = AzureTenantGrapher(mock_config_no_llm)
@@ -95,7 +97,7 @@ class TestAzureTenantGrapher:
             assert grapher.llm_generator is None
             assert grapher.container_manager is None
 
-    def test_initialization_llm_failure(self, mock_config):
+    def test_initialization_llm_failure(self, mock_config: Mock) -> None:
         """Test initialization handles LLM creation failure."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.Neo4jContainerManager"):
@@ -107,7 +109,7 @@ class TestAzureTenantGrapher:
 
                     assert grapher.llm_generator is None
 
-    def test_connect_to_neo4j_success(self, mock_config):
+    def test_connect_to_neo4j_success(self, mock_config: Mock) -> None:
         """Test successful Neo4j connection."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -136,7 +138,7 @@ class TestAzureTenantGrapher:
                         assert grapher.driver == mock_driver
                         assert mock_graph_db.driver.called
 
-    def test_connect_to_neo4j_container_start(self, mock_config):
+    def test_connect_to_neo4j_container_start(self, mock_config: Mock) -> None:
         """Test Neo4j connection with container startup."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -166,7 +168,7 @@ class TestAzureTenantGrapher:
                         assert mock_container.setup_neo4j.called
                         assert grapher.driver == mock_driver
 
-    def test_connect_to_neo4j_connection_failure(self, mock_config):
+    def test_connect_to_neo4j_connection_failure(self, mock_config: Mock) -> None:
         """Test Neo4j connection failure."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -188,7 +190,7 @@ class TestAzureTenantGrapher:
                         with pytest.raises(Exception, match="Connection failed"):
                             grapher.connect_to_neo4j()
 
-    def test_close_neo4j_connection(self, mock_config):
+    def test_close_neo4j_connection(self, mock_config: Mock) -> None:
         """Test Neo4j connection closure."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -203,7 +205,7 @@ class TestAzureTenantGrapher:
                 assert mock_driver.close.called
 
     @pytest.mark.asyncio
-    async def test_discover_subscriptions_success(self, mock_config):
+    async def test_discover_subscriptions_success(self, mock_config: Mock) -> None:
         """Test successful subscription discovery."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -229,7 +231,7 @@ class TestAzureTenantGrapher:
                     assert subscriptions[0]["display_name"] == "Test Subscription"
 
     @pytest.mark.asyncio
-    async def test_discover_subscriptions_exception(self, mock_config):
+    async def test_discover_subscriptions_exception(self, mock_config: Mock) -> None:
         """Test subscription discovery handles exceptions."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -246,7 +248,9 @@ class TestAzureTenantGrapher:
                         await grapher.discover_subscriptions()
 
     @pytest.mark.asyncio
-    async def test_discover_resources_in_subscription_success(self, mock_config):
+    async def test_discover_resources_in_subscription_success(
+        self, mock_config: Mock
+    ) -> None:
         """Test successful resource discovery in subscription."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -278,7 +282,9 @@ class TestAzureTenantGrapher:
                     assert resources[0]["resource_group"] == "test-rg"
 
     @pytest.mark.asyncio
-    async def test_discover_resources_in_subscription_exception(self, mock_config):
+    async def test_discover_resources_in_subscription_exception(
+        self, mock_config: Mock
+    ) -> None:
         """Test resource discovery handles exceptions."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -297,7 +303,7 @@ class TestAzureTenantGrapher:
                     # Should return empty list on exception
                     assert len(resources) == 0
 
-    def test_create_subscription_node(self, mock_config):
+    def test_create_subscription_node(self, mock_config: Mock) -> None:
         """Test subscription node creation."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -318,7 +324,9 @@ class TestAzureTenantGrapher:
                 assert "MERGE (s:Subscription {id: $id})" in call_args[0][0]
 
     @pytest.mark.asyncio
-    async def test_process_resources_with_enhanced_handling_empty(self, mock_config):
+    async def test_process_resources_with_enhanced_handling_empty(
+        self, mock_config: Mock
+    ) -> None:
         """Test enhanced resource processing with empty list."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -332,8 +340,8 @@ class TestAzureTenantGrapher:
 
     @pytest.mark.asyncio
     async def test_process_resources_with_enhanced_handling_success(
-        self, mock_config, sample_resources
-    ):
+        self, mock_config: Mock, sample_resources: List[Any]
+    ) -> None:
         """Test successful enhanced resource processing."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -377,7 +385,9 @@ class TestAzureTenantGrapher:
                             assert result["success_rate"] == 100.0
 
     @pytest.mark.asyncio
-    async def test_build_graph_success(self, mock_config, sample_resources):
+    async def test_build_graph_success(
+        self, mock_config: Mock, sample_resources: List[Any]
+    ) -> None:
         """Test successful complete graph building."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -432,7 +442,7 @@ class TestAzureTenantGrapher:
                                         assert result["successful_resources"] == 2
 
     @pytest.mark.asyncio
-    async def test_build_graph_no_subscriptions(self, mock_config):
+    async def test_build_graph_no_subscriptions(self, mock_config: Mock) -> None:
         """Test graph building with no subscriptions found."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -450,7 +460,7 @@ class TestAzureTenantGrapher:
                             assert result["subscriptions"] == 0
 
     @pytest.mark.asyncio
-    async def test_build_graph_exception(self, mock_config):
+    async def test_build_graph_exception(self, mock_config: Mock) -> None:
         """Test graph building handles exceptions."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch("src.azure_tenant_grapher.create_llm_generator"):
@@ -467,7 +477,9 @@ class TestAzureTenantGrapher:
                         assert "error" in result
 
     @pytest.mark.asyncio
-    async def test_generate_tenant_specification_no_llm(self, mock_config_no_llm):
+    async def test_generate_tenant_specification_no_llm(
+        self, mock_config_no_llm: Mock
+    ) -> None:
         """Test tenant specification generation when LLM is not available."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             grapher = AzureTenantGrapher(mock_config_no_llm)
@@ -476,7 +488,9 @@ class TestAzureTenantGrapher:
             await grapher.generate_tenant_specification()
 
     @pytest.mark.asyncio
-    async def test_generate_tenant_specification_success(self, mock_config):
+    async def test_generate_tenant_specification_success(
+        self, mock_config: Mock
+    ) -> None:
         """Test successful tenant specification generation."""
         with patch("src.azure_tenant_grapher.DefaultAzureCredential"):
             with patch(
@@ -487,7 +501,7 @@ class TestAzureTenantGrapher:
                         # Setup mock LLM generator
                         mock_llm = Mock()
                         mock_llm.generate_tenant_specification = AsyncMock(
-                            return_value="/tmp/spec.md"
+                            return_value="/tmp/  # nosecspec.md"
                         )
                         mock_llm_factory.return_value = mock_llm
 

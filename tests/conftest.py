@@ -16,17 +16,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 class MockNeo4jSession:
     """Mock Neo4j session for testing."""
 
-    def __init__(self):
-        self.queries_run = []
-        self.return_data = {}
+    def __init__(self) -> None:
+        self.queries_run: List[Dict[str, Any]] = []
+        self.return_data: Dict[str, Any] = {}
         # Create a proper Mock object for 'run' method
         self.run = Mock()
         self._setup_default_behavior()
 
-    def _setup_default_behavior(self):
+    def _setup_default_behavior(self) -> None:
         """Set up default behavior for the run method."""
 
-        def flexible_run(*args, **kwargs):
+        def flexible_run(*args: Any, **kwargs: Any) -> Any:
             # Handle both run(query, params) and run(query, param=value) forms
             if len(args) >= 1:
                 query = args[0]
@@ -87,7 +87,7 @@ class MockNeo4jSession:
             else:
                 # For other queries (MERGE, CREATE, etc.), return success
                 result.single.return_value = {}
-                result.single.return_value.keys = Mock(return_value=[])
+                # result.single.return_value.keys = Mock(return_value=[])
 
             return result
 
@@ -98,17 +98,17 @@ class MockNeo4jSession:
 class MockNeo4jDriver:
     """Mock Neo4j driver for testing."""
 
-    def __init__(self):
-        self.sessions = []
+    def __init__(self) -> None:
+        self.sessions: List[MockNeo4jSession] = []
         self.closed = False
 
-    def session(self):
+    def session(self) -> MockNeo4jSession:
         """Create a mock session."""
         session = MockNeo4jSession()
         self.sessions.append(session)
         return session
 
-    def close(self):
+    def close(self) -> None:
         """Close the driver."""
         self.closed = True
 
@@ -116,14 +116,14 @@ class MockNeo4jDriver:
 class MockAzureCredential:
     """Mock Azure credential for testing."""
 
-    def __init__(self):
-        self.token = "mock_token"
+    def __init__(self) -> None:
+        self.token = "mock_token"  # nosec
 
 
 class MockSubscriptionClient:
     """Mock Azure subscription client."""
 
-    def __init__(self, credential):
+    def __init__(self, credential: Any) -> None:
         self.credential = credential
         self.subscriptions = Mock()
 
@@ -140,7 +140,7 @@ class MockSubscriptionClient:
 class MockResourceManagementClient:
     """Mock Azure resource management client."""
 
-    def __init__(self, credential, subscription_id):
+    def __init__(self, credential: Any, subscription_id: str) -> None:
         self.credential = credential
         self.subscription_id = subscription_id
         self.resources = Mock()
@@ -161,8 +161,8 @@ class MockResourceManagementClient:
 class MockLLMGenerator:
     """Mock LLM description generator for testing."""
 
-    def __init__(self):
-        self.descriptions_generated = []
+    def __init__(self) -> None:
+        self.descriptions_generated: List[str] = []
 
     async def generate_resource_description(self, resource: Dict[str, Any]) -> str:
         """Generate a mock description."""
@@ -171,8 +171,8 @@ class MockLLMGenerator:
         return description
 
     async def process_resources_batch(
-        self, resources: List[Dict], batch_size: int = 3
-    ) -> List[Dict]:
+        self, resources: List[Dict[str, Any]], batch_size: int = 3
+    ) -> List[Dict[str, Any]]:
         """Process resources in batch."""
         enhanced_resources = []
         for resource in resources:
@@ -184,51 +184,54 @@ class MockLLMGenerator:
         return enhanced_resources
 
     async def generate_tenant_specification(
-        self, resources: List[Dict], relationships: List[Dict], output_path: str
+        self,
+        resources: List[Dict[str, Any]],
+        relationships: List[Dict[str, Any]],
+        output_path: str,
     ) -> str:
         """Generate a mock tenant specification."""
         return output_path
 
 
 # Test fixtures
-@pytest.fixture
-def mock_neo4j_driver():
+@pytest.fixture  # type: ignore[misc]
+def mock_neo4j_driver() -> MockNeo4jDriver:
     """Provide a mock Neo4j driver."""
     return MockNeo4jDriver()
 
 
-@pytest.fixture
-def mock_neo4j_session():
+@pytest.fixture  # type: ignore[misc]
+def mock_neo4j_session() -> MockNeo4jSession:
     """Provide a mock Neo4j session."""
     return MockNeo4jSession()
 
 
-@pytest.fixture
-def mock_azure_credential():
+@pytest.fixture  # type: ignore[misc]
+def mock_azure_credential() -> MockAzureCredential:
     """Provide a mock Azure credential."""
     return MockAzureCredential()
 
 
-@pytest.fixture
-def mock_subscription_client():
+@pytest.fixture  # type: ignore[misc]
+def mock_subscription_client() -> MockSubscriptionClient:
     """Provide a mock subscription client."""
     return MockSubscriptionClient(MockAzureCredential())
 
 
-@pytest.fixture
-def mock_resource_client():
+@pytest.fixture  # type: ignore[misc]
+def mock_resource_client() -> MockResourceManagementClient:
     """Provide a mock resource management client."""
     return MockResourceManagementClient(MockAzureCredential(), "mock-sub-id")
 
 
-@pytest.fixture
-def mock_llm_generator():
+@pytest.fixture  # type: ignore[misc]
+def mock_llm_generator() -> MockLLMGenerator:
     """Provide a mock LLM generator."""
     return MockLLMGenerator()
 
 
-@pytest.fixture
-def sample_resource():
+@pytest.fixture  # type: ignore[misc]
+def sample_resource() -> Dict[str, Any]:
     """Provide a sample resource for testing."""
     return {
         "id": "/subscriptions/mock-sub/resourceGroups/mock-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
@@ -243,8 +246,8 @@ def sample_resource():
     }
 
 
-@pytest.fixture
-def sample_subscription():
+@pytest.fixture  # type: ignore[misc]
+def sample_subscription() -> Dict[str, Any]:
     """Provide a sample subscription for testing."""
     return {
         "id": "mock-subscription-id",
@@ -254,8 +257,8 @@ def sample_subscription():
     }
 
 
-@pytest.fixture
-def sample_resources():
+@pytest.fixture  # type: ignore[misc]
+def sample_resources() -> List[Dict[str, Any]]:
     """Provide a list of sample resources for testing."""
     return [
         {

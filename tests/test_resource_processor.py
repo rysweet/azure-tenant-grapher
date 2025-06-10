@@ -1,7 +1,9 @@
+# mypy: disable-error-code=misc
 """
 Tests for resource_processor module.
 """
 
+from typing import Any, Dict, List
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +20,7 @@ from src.resource_processor import (
 class TestProcessingStats:
     """Test cases for ProcessingStats."""
 
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         """Test default values for ProcessingStats."""
         stats = ProcessingStats()
         assert stats.total_resources == 0
@@ -29,7 +31,7 @@ class TestProcessingStats:
         assert stats.llm_generated == 0
         assert stats.llm_skipped == 0
 
-    def test_success_rate_calculation(self):
+    def test_success_rate_calculation(self) -> None:
         """Test success rate calculation."""
         stats = ProcessingStats()
         stats.processed = 10
@@ -41,7 +43,7 @@ class TestProcessingStats:
         stats.successful = 0  # Reset successful to 0 as well
         assert stats.success_rate == 0.0
 
-    def test_progress_percentage_calculation(self):
+    def test_progress_percentage_calculation(self) -> None:
         """Test progress percentage calculation."""
         stats = ProcessingStats()
         stats.total_resources = 100
@@ -53,7 +55,7 @@ class TestProcessingStats:
         stats.processed = 0  # Reset processed to 0 as well
         assert stats.progress_percentage == 0.0
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         stats = ProcessingStats()
         stats.total_resources = 10
@@ -80,18 +82,18 @@ class TestProcessingStats:
 class TestResourceState:
     """Test cases for ResourceState."""
 
-    def test_resource_exists_true(self, mock_neo4j_session):
+    def test_resource_exists_true(self, mock_neo4j_session: Mock) -> None:
         """Test resource_exists returns True when resource exists."""
 
         # Override the default behavior for this specific test
-        def mock_run_with_count(*args, **kwargs):
+        def mock_run_with_count(*args: Any, **kwargs: Any) -> None:
             mock_record = Mock()
             mock_record.__getitem__ = Mock(return_value=1)  # count = 1
             mock_record.get = Mock(return_value=1)
             mock_record.keys = Mock(return_value=["count"])
             result = Mock()
             result.single.return_value = mock_record
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_with_count
 
@@ -101,7 +103,7 @@ class TestResourceState:
         assert result is True
         mock_neo4j_session.run.assert_called_once()
 
-    def test_resource_exists_false(self, mock_neo4j_session):
+    def test_resource_exists_false(self, mock_neo4j_session: Mock) -> None:
         """Test resource_exists returns False when resource doesn't exist."""
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
@@ -110,7 +112,7 @@ class TestResourceState:
 
         assert result is False
 
-    def test_resource_exists_exception(self, mock_neo4j_session):
+    def test_resource_exists_exception(self, mock_neo4j_session: Mock) -> None:
         """Test resource_exists handles exceptions gracefully."""
         mock_neo4j_session.run.side_effect = Exception("Database error")
 
@@ -119,18 +121,18 @@ class TestResourceState:
 
         assert result is False
 
-    def test_has_llm_description_true(self, mock_neo4j_session):
+    def test_has_llm_description_true(self, mock_neo4j_session: Mock) -> None:
         """Test has_llm_description returns True when description exists."""
 
         # Override the default behavior for this specific test
-        def mock_run_with_desc(*args, **kwargs):
+        def mock_run_with_desc(*args: Any, **kwargs: Any) -> None:
             mock_record = Mock()
             mock_record.__getitem__ = Mock(return_value="A detailed description")
             mock_record.get = Mock(return_value="A detailed description")
             mock_record.keys = Mock(return_value=["desc"])
             result = Mock()
             result.single.return_value = mock_record
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_with_desc
 
@@ -139,7 +141,7 @@ class TestResourceState:
 
         assert result is True
 
-    def test_has_llm_description_false_empty(self, mock_neo4j_session):
+    def test_has_llm_description_false_empty(self, mock_neo4j_session: Mock) -> None:
         """Test has_llm_description returns False for empty description."""
         mock_neo4j_session.run.return_value.single.return_value = {"desc": ""}
 
@@ -148,7 +150,7 @@ class TestResourceState:
 
         assert result is False
 
-    def test_has_llm_description_false_generic(self, mock_neo4j_session):
+    def test_has_llm_description_false_generic(self, mock_neo4j_session: Mock) -> None:
         """Test has_llm_description returns False for generic Azure description."""
         mock_neo4j_session.run.return_value.single.return_value = {
             "desc": "Azure Virtual Machine resource."
@@ -159,11 +161,11 @@ class TestResourceState:
 
         assert result is False
 
-    def test_get_processing_metadata(self, mock_neo4j_session):
+    def test_get_processing_metadata(self, mock_neo4j_session: Mock) -> None:
         """Test get_processing_metadata returns metadata."""
 
         # Override the default behavior for this specific test
-        def mock_run_with_metadata(*args, **kwargs):
+        def mock_run_with_metadata(*args: Any, **kwargs: Any) -> None:
             mock_record = Mock()
             # Set up a proper dict-like object that supports both __getitem__ and keys()
             metadata = {
@@ -178,7 +180,7 @@ class TestResourceState:
             mock_record.keys = Mock(return_value=list(metadata.keys()))
             result = Mock()
             result.single.return_value = mock_record
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_with_metadata
 
@@ -193,11 +195,13 @@ class TestResourceState:
 class TestDatabaseOperations:
     """Test cases for DatabaseOperations."""
 
-    def test_upsert_resource_success(self, mock_neo4j_session, sample_resource):
+    def test_upsert_resource_success(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test successful resource upsert."""
 
         # Override the default behavior for this specific test
-        def mock_run_success(query, parameters=None, **kwargs):
+        def mock_run_success(query: Any, parameters: Any = None, **kwargs: Any) -> None:
             # Track the query
             mock_neo4j_session.queries_run.append(
                 {"query": query, "params": parameters}
@@ -205,7 +209,7 @@ class TestDatabaseOperations:
             # For MERGE queries, just return a success mock
             result = Mock()
             result.single.return_value = {}
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_success
 
@@ -218,7 +222,9 @@ class TestDatabaseOperations:
         assert "MERGE (r:Resource {id: $id})" in query
         assert "processing_status" in query
 
-    def test_upsert_resource_exception(self, mock_neo4j_session, sample_resource):
+    def test_upsert_resource_exception(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test resource upsert handles exceptions."""
         mock_neo4j_session.run.side_effect = Exception("Database error")
 
@@ -227,14 +233,16 @@ class TestDatabaseOperations:
 
         assert result is False
 
-    def test_create_subscription_relationship_success(self, mock_neo4j_session):
+    def test_create_subscription_relationship_success(
+        self, mock_neo4j_session: Mock
+    ) -> None:
         """Test successful subscription relationship creation."""
 
         # Override the default behavior for this specific test
-        def mock_run_success(*args, **kwargs):
+        def mock_run_success(*args: Any, **kwargs: Any) -> None:
             result = Mock()
             result.single.return_value = {}
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_success
 
@@ -244,15 +252,15 @@ class TestDatabaseOperations:
         assert result is True
 
     def test_create_resource_group_relationships_success(
-        self, mock_neo4j_session, sample_resource
-    ):
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test successful resource group relationship creation."""
 
         # Override the default behavior for this specific test
-        def mock_run_success(*args, **kwargs):
+        def mock_run_success(*args: Any, **kwargs: Any) -> None:
             result = Mock()
             result.single.return_value = {}
-            return result
+            return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = mock_run_success
 
@@ -262,8 +270,8 @@ class TestDatabaseOperations:
         assert result is True
 
     def test_create_resource_group_relationships_no_rg(
-        self, mock_neo4j_session, sample_resource
-    ):
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test resource group relationships when no resource group."""
         resource_no_rg = sample_resource.copy()
         resource_no_rg["resource_group"] = None
@@ -278,7 +286,9 @@ class TestDatabaseOperations:
 class TestResourceProcessor:
     """Test cases for ResourceProcessor."""
 
-    def test_initialization(self, mock_neo4j_session, mock_llm_generator):
+    def test_initialization(
+        self, mock_neo4j_session: Mock, mock_llm_generator: Mock
+    ) -> None:
         """Test ResourceProcessor initialization."""
         processor = ResourceProcessor(
             session=mock_neo4j_session,
@@ -291,7 +301,9 @@ class TestResourceProcessor:
         assert processor.resource_limit == 100
         assert processor.stats.total_resources == 0
 
-    def test_should_process_resource_new(self, mock_neo4j_session, sample_resource):
+    def test_should_process_resource_new(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test should_process_resource for new resource."""
         # Mock resource doesn't exist
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
@@ -303,8 +315,11 @@ class TestResourceProcessor:
         assert reason == "new_resource"
 
     def test_should_process_resource_needs_llm(
-        self, mock_neo4j_session, sample_resource, mock_llm_generator
-    ):
+        self,
+        mock_neo4j_session: Mock,
+        sample_resource: Dict[str, Any],
+        mock_llm_generator: Mock,
+    ) -> None:
         """Test should_process_resource for resource needing LLM description."""
         # Mock resource exists but no LLM description
         mock_neo4j_session.run.side_effect = [
@@ -319,8 +334,8 @@ class TestResourceProcessor:
         assert reason == "needs_llm_description"
 
     def test_should_process_resource_already_processed(
-        self, mock_neo4j_session, sample_resource
-    ):
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test should_process_resource for already processed resource."""
         # Mock resource exists with LLM description
         mock_neo4j_session.run.side_effect = [
@@ -341,8 +356,11 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_single_resource_llm_success(
-        self, mock_neo4j_session, sample_resource, mock_llm_generator
-    ):
+        self,
+        mock_neo4j_session: Mock,
+        sample_resource: Dict[str, Any],
+        mock_llm_generator: Mock,
+    ) -> None:
         """Test successful LLM description generation for single resource."""
         processor = ResourceProcessor(mock_neo4j_session, mock_llm_generator)
         success, description = await processor._process_single_resource_llm(
@@ -355,8 +373,8 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_single_resource_llm_no_generator(
-        self, mock_neo4j_session, sample_resource
-    ):
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test LLM description generation when no generator available."""
         processor = ResourceProcessor(mock_neo4j_session)
         success, description = await processor._process_single_resource_llm(
@@ -368,8 +386,11 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_single_resource_success(
-        self, mock_neo4j_session, sample_resource, mock_llm_generator
-    ):
+        self,
+        mock_neo4j_session: Mock,
+        sample_resource: Dict[str, Any],
+        mock_llm_generator: Mock,
+    ) -> None:
         """Test successful processing of single resource."""
         # Mock resource doesn't exist (new resource)
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
@@ -384,8 +405,8 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_single_resource_skip(
-        self, mock_neo4j_session, sample_resource
-    ):
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
         """Test skipping already processed resource."""
         # Update the resource to have a proper LLM description that won't trigger reprocessing
         sample_resource["llm_description"] = (
@@ -395,7 +416,7 @@ class TestResourceProcessor:
         # Create a custom mock function that handles each query type correctly
         call_count = 0
 
-        def custom_mock_run(query, parameters=None, **kwargs):
+        def custom_mock_run(query: Any, parameters: Any = None, **kwargs: Any) -> None:
             nonlocal call_count
             call_count += 1
 
@@ -403,13 +424,13 @@ class TestResourceProcessor:
 
             if call_count == 1:  # First call - upsert_resource (processing status)
                 result.single.return_value = {}
-                return result
+                return result  # type: ignore[return-value]
             elif call_count == 2:  # Second call - resource_exists
                 mock_record = Mock()
                 mock_record.__getitem__ = Mock(return_value=1)  # count = 1 (exists)
                 mock_record.get = Mock(return_value=1)
                 result.single.return_value = mock_record
-                return result
+                return result  # type: ignore[return-value]
             elif call_count == 3:  # Third call - has_llm_description
                 mock_record = Mock()
                 mock_record.__getitem__ = Mock(
@@ -419,7 +440,7 @@ class TestResourceProcessor:
                     return_value="This is a detailed virtual machine description generated by LLM"
                 )
                 result.single.return_value = mock_record
-                return result
+                return result  # type: ignore[return-value]
             elif call_count == 4:  # Fourth call - get_processing_metadata
                 mock_record = Mock()
                 mock_record.__getitem__ = Mock(
@@ -437,11 +458,11 @@ class TestResourceProcessor:
                     }.get(key, default)
                 )
                 result.single.return_value = mock_record
-                return result
+                return result  # type: ignore[return-value]
             else:
                 # Any additional calls
                 result.single.return_value = {}
-                return result
+                return result  # type: ignore[return-value]
 
         mock_neo4j_session.run.side_effect = custom_mock_run
 
@@ -453,7 +474,9 @@ class TestResourceProcessor:
         assert processor.stats.skipped == 1
 
     @pytest.mark.asyncio
-    async def test_process_resources_batch_empty(self, mock_neo4j_session):
+    async def test_process_resources_batch_empty(
+        self, mock_neo4j_session: Mock
+    ) -> None:
         """Test processing empty resource list."""
         processor = ResourceProcessor(mock_neo4j_session)
         stats = await processor.process_resources_batch([])
@@ -463,8 +486,8 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_resources_batch_with_limit(
-        self, mock_neo4j_session, sample_resources
-    ):
+        self, mock_neo4j_session: Mock, sample_resources: List[Any]
+    ) -> None:
         """Test processing resources with limit."""
         # Mock all resources as new
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
@@ -477,8 +500,11 @@ class TestResourceProcessor:
 
     @pytest.mark.asyncio
     async def test_process_resources_batch_parallel(
-        self, mock_neo4j_session, sample_resources, mock_llm_generator
-    ):
+        self,
+        mock_neo4j_session: Mock,
+        sample_resources: List[Any],
+        mock_llm_generator: Mock,
+    ) -> None:
         """Test parallel processing of resources."""
         # Mock all resources as new
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
@@ -495,7 +521,9 @@ class TestResourceProcessor:
 class TestFactoryFunction:
     """Test cases for factory function."""
 
-    def test_create_resource_processor(self, mock_neo4j_session, mock_llm_generator):
+    def test_create_resource_processor(
+        self, mock_neo4j_session: Mock, mock_llm_generator: Mock
+    ) -> None:
         """Test resource processor factory function."""
         processor = create_resource_processor(
             session=mock_neo4j_session,
