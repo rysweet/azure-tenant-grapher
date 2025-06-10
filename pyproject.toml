@@ -52,6 +52,14 @@ dev-dependencies = [
     "black>=23.0.0",
     "flake8>=6.0.0",
     "mypy>=1.0.0",
+    "isort>=5.13.2",
+    "pylint>=3.2.7",
+    "types-requests>=2.32.0.20241016",
+    "types-setuptools>=75.8.0.20250110",
+    "types-pyyaml>=6.0.12.20241230",
+    "bandit>=1.7.10",
+    "safety>=3.5.0",
+    "pre-commit>=3.5.0",
 ]
 
 [tool.pytest.ini_options]
