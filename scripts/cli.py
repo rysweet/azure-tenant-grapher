@@ -17,10 +17,10 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 try:
     import click
 
-    from container_manager import Neo4jContainerManager
-    from graph_visualizer import GraphVisualizer
     from src.azure_tenant_grapher import AzureTenantGrapher
     from src.config_manager import create_config_from_env, setup_logging
+    from src.container_manager import Neo4jContainerManager
+    from src.graph_visualizer import GraphVisualizer
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure all required packages are installed:")
@@ -30,10 +30,12 @@ except ImportError as e:
 
 @click.group()
 @click.option(
-    "--log-level", default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR)"
+    "--log-level",
+    default="INFO",
+    help="Logging level (DEBUG, INFO, WARNING, ERROR)",
 )
 @click.pass_context
-def cli(ctx, log_level):
+def cli(ctx, log_level) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
@@ -59,7 +61,9 @@ def cli(ctx, log_level):
     help="Generate tenant specification after graph building",
 )
 @click.option(
-    "--visualize", is_flag=True, help="Generate graph visualization after building"
+    "--visualize",
+    is_flag=True,
+    help="Generate graph visualization after building",
 )
 @click.pass_context
 async def build(
@@ -112,7 +116,7 @@ async def build(
                     visualizer = GraphVisualizer(
                         config.neo4j.uri, config.neo4j.user, config.neo4j.password
                     )
-                    viz_path = await visualizer.create_interactive_visualization()
+                    viz_path = visualizer.generate_html_visualization()
                     click.echo(f"✅ Visualization saved to: {viz_path}")
                 except Exception as e:
                     click.echo(f"❌ Failed to generate visualization: {e}", err=True)
@@ -170,15 +174,15 @@ async def test(ctx, tenant_id, limit):
 
 
 @cli.command()
-def container():
+def container() -> None:
     """Manage Neo4j container."""
 
     @click.group()
-    def container_group():
+    def container_group() -> None:
         pass
 
     @container_group.command()
-    def start():
+    def start() -> None:
         """Start Neo4j container."""
         container_manager = Neo4jContainerManager()
         if container_manager.setup_neo4j():
@@ -188,17 +192,17 @@ def container():
             sys.exit(1)
 
     @container_group.command()
-    def stop():
+    def stop() -> None:
         """Stop Neo4j container."""
         container_manager = Neo4jContainerManager()
-        if container_manager.stop_neo4j():
+        if container_manager.stop_neo4j_container():
             click.echo("✅ Neo4j container stopped successfully")
         else:
             click.echo("❌ Failed to stop Neo4j container", err=True)
             sys.exit(1)
 
     @container_group.command()
-    def status():
+    def status() -> None:
         """Check Neo4j container status."""
         container_manager = Neo4jContainerManager()
         if container_manager.is_neo4j_container_running():
@@ -206,7 +210,7 @@ def container():
         else:
             click.echo("⏹️ Neo4j container is not running")
 
-    return container_group
+    pass
 
 
 @cli.command()
@@ -263,7 +267,7 @@ async def visualize(ctx, tenant_id):
         )
 
         click.echo("🎨 Generating graph visualization...")
-        viz_path = await visualizer.create_interactive_visualization()
+        viz_path = visualizer.generate_html_visualization()
         click.echo(f"✅ Visualization saved to: {viz_path}")
 
     except Exception as e:
@@ -272,7 +276,7 @@ async def visualize(ctx, tenant_id):
 
 
 @cli.command()
-def config():
+def config() -> None:
     """Show current configuration (without sensitive data)."""
 
     try:
@@ -284,7 +288,7 @@ def config():
 
         config_dict = config.to_dict()
 
-        def print_dict(d, indent=0):
+        def print_dict(d, indent=0) -> None:
             for key, value in d.items():
                 if isinstance(value, dict):
                     click.echo("  " * indent + f"{key}:")
@@ -308,14 +312,14 @@ async def progress(ctx, tenant_id):
 
     try:
         # Import and run the progress checker
-        from check_progress import main as check_progress_main
+        from scripts.check_progress import main as check_progress_main
 
         config = create_config_from_env(tenant_id)
         config.logging.level = ctx.obj["log_level"]
         setup_logging(config.logging)
 
         click.echo("📊 Checking processing progress...")
-        await check_progress_main()
+        check_progress_main()
 
     except ImportError:
         click.echo("❌ Progress checker not available", err=True)
@@ -323,7 +327,7 @@ async def progress(ctx, tenant_id):
         click.echo(f"❌ Failed to check progress: {e}", err=True)
 
 
-def main():
+def main() -> None:
     """Main entry point that handles asyncio properly."""
 
     # Check if we need to run async commands

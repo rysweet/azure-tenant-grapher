@@ -47,15 +47,15 @@ from src.graph_visualizer import GraphVisualizer
     "--log-level", default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR)"
 )
 async def main(
-    tenant_id,
-    resource_limit,
-    batch_size,
-    no_container,
-    container_only,
-    visualize,
-    generate_spec,
-    log_level,
-):
+    tenant_id: str,
+    resource_limit: int,
+    batch_size: int,
+    no_container: bool,
+    container_only: bool,
+    visualize: bool,
+    generate_spec: bool,
+    log_level: str,
+) -> None:
     """Azure Tenant Grapher - Build a Neo4j graph of Azure tenant resources."""
 
     # Create configuration
@@ -120,7 +120,7 @@ async def main(
                     visualizer = GraphVisualizer(
                         config.neo4j.uri, config.neo4j.user, config.neo4j.password
                     )
-                    viz_path = await visualizer.create_interactive_visualization()
+                    viz_path = visualizer.generate_html_visualization()
                     logger.info(f"✅ Visualization saved to: {viz_path}")
                 except Exception as e:
                     logger.error(f"❌ Failed to generate visualization: {e}")

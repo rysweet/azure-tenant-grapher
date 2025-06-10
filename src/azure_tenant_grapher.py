@@ -7,7 +7,7 @@ a Neo4j graph database of those resources and their relationships.
 
 import logging
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resource import ResourceManagementClient
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class AzureTenantGrapher:
     """Main class for Azure tenant resource discovery and graph building."""
 
-    def __init__(self, config: AzureTenantGrapherConfig):
+    def __init__(self, config: AzureTenantGrapherConfig) -> None:
         """
         Initialize the Azure Tenant Grapher.
 
@@ -41,7 +41,7 @@ class AzureTenantGrapher:
 
         # Neo4j connection
         self.driver: Optional[Driver] = None
-        self.subscriptions: List[Dict] = []
+        self.subscriptions: List[Dict[str, Any]] = []
 
         # Container management
         self.container_manager = (
@@ -63,7 +63,7 @@ class AzureTenantGrapher:
         # Log configuration summary
         self.config.log_configuration_summary()
 
-    def connect_to_neo4j(self):
+    def connect_to_neo4j(self) -> None:
         """Establish connection to Neo4j database, starting container if needed."""
         # Try to start Neo4j container if auto-start is enabled
         if self.container_manager and self.config.processing.auto_start_container:
@@ -95,13 +95,13 @@ class AzureTenantGrapher:
                     logger.error(f"Recent Neo4j container logs:\n{logs}")
             raise
 
-    def close_neo4j_connection(self):
+    def close_neo4j_connection(self) -> None:
         """Close Neo4j database connection."""
         if self.driver:
             self.driver.close()
             logger.info("🔌 Neo4j connection closed")
 
-    async def discover_subscriptions(self) -> List[Dict]:
+    async def discover_subscriptions(self) -> List[Dict[str, Any]]:
         """
         Discover all subscriptions in the tenant.
 
@@ -136,7 +136,7 @@ class AzureTenantGrapher:
 
     async def discover_resources_in_subscription(
         self, subscription_id: str
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Discover all resources in a specific subscription.
 
@@ -164,7 +164,7 @@ class AzureTenantGrapher:
                         else None
                     ),
                     "subscription_id": subscription_id,
-                    "tags": dict(resource.tags) if resource.tags else {},
+                    "tags": Dict[str, Any](resource.tags) if resource.tags else {},
                     "kind": getattr(resource, "kind", None),
                     "sku": getattr(resource, "sku", None),
                 }
@@ -180,7 +180,7 @@ class AzureTenantGrapher:
         )
         return resources
 
-    async def generate_tenant_specification(self):
+    async def generate_tenant_specification(self) -> None:
         """Generate a comprehensive tenant specification using LLM."""
         if not self.llm_generator:
             logger.warning(
@@ -192,7 +192,11 @@ class AzureTenantGrapher:
 
         try:
             # Connect to Neo4j to get graph data
-            self.connect_to_neo4j()
+            if not self.driver:
+                self.connect_to_neo4j()
+
+            if not self.driver:
+                raise RuntimeError("Failed to establish database connection")
 
             with self.driver.session() as session:
                 # Get all resources
@@ -221,7 +225,10 @@ class AzureTenantGrapher:
                 relationships = [dict(record) for record in relationships_result]
 
             # Generate the specification
-            spec_filename = f"azure_tenant_specification_{self.config.tenant_id[:8]}.md"
+            tenant_id_suffix = (
+                self.config.tenant_id[:8] if self.config.tenant_id else "unknown"
+            )
+            spec_filename = f"azure_tenant_specification_{tenant_id_suffix}.md"
             spec_path = os.path.join(os.getcwd(), spec_filename)
 
             generated_path = await self.llm_generator.generate_tenant_specification(
@@ -235,7 +242,9 @@ class AzureTenantGrapher:
         finally:
             self.close_neo4j_connection()
 
-    def create_subscription_node(self, session, subscription: Dict):
+    def create_subscription_node(
+        self, session: Any, subscription: Dict[str, Any]
+    ) -> None:
         """Create a subscription node in Neo4j."""
         query = """
         MERGE (s:Subscription {id: $id})
@@ -247,13 +256,13 @@ class AzureTenantGrapher:
         session.run(query, subscription)
 
     async def process_resources_with_enhanced_handling(
-        self, resources: List[Dict]
-    ) -> Dict:
+        self, resources: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Process resources using the new modular resource processor.
 
         Args:
-            resources: List of resources to process
+            resources: List[Any] of resources to process
 
         Returns:
             Dict: Processing statistics
@@ -273,7 +282,11 @@ class AzureTenantGrapher:
 
         try:
             # Connect to Neo4j
-            self.connect_to_neo4j()
+            if not self.driver:
+                self.connect_to_neo4j()
+
+            if not self.driver:
+                raise RuntimeError("Failed to establish database connection")
 
             with self.driver.session() as session:
                 # Create resource processor with our configuration
@@ -305,7 +318,7 @@ class AzureTenantGrapher:
         finally:
             self.close_neo4j_connection()
 
-    async def build_graph(self) -> Dict:
+    async def build_graph(self) -> Dict[str, Any]:
         """
         Main method to build the complete graph of Azure tenant resources.
 
@@ -316,7 +329,11 @@ class AzureTenantGrapher:
 
         try:
             # Connect to Neo4j
-            self.connect_to_neo4j()
+            if not self.driver:
+                self.connect_to_neo4j()
+
+            if not self.driver:
+                raise RuntimeError("Failed to establish database connection")
 
             # Discover subscriptions
             subscriptions = await self.discover_subscriptions()
@@ -394,7 +411,15 @@ class AzureTenantGrapher:
 
         except Exception as e:
             logger.error(f"❌ Error during graph building: {e}")
-            return {"success": False, "error": str(e)}
+            return {
+                "success": False,
+                "subscriptions": 0,
+                "total_resources": 0,
+                "successful_resources": 0,
+                "failed_resources": 0,
+                "success_rate": 0.0,
+                "error": str(e),
+            }
 
         finally:
             self.close_neo4j_connection()

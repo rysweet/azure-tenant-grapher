@@ -9,10 +9,10 @@ import json
 import os
 import webbrowser
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import colorlog
-from neo4j import GraphDatabase
+from neo4j import Driver, GraphDatabase
 
 logger = colorlog.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = colorlog.getLogger(__name__)
 class GraphVisualizer:
     """Generate interactive 3D visualizations of the Neo4j graph."""
 
-    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
+    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str) -> None:
         """
         Initialize the Graph Visualizer.
 
@@ -32,9 +32,9 @@ class GraphVisualizer:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
-        self.driver = None
+        self.driver: Optional[Driver] = None
 
-    def connect(self):
+    def connect(self) -> None:
         """Establish connection to Neo4j database."""
         try:
             self.driver = GraphDatabase.driver(
@@ -50,13 +50,13 @@ class GraphVisualizer:
             logger.error(f"Failed to connect to Neo4j: {e}")
             raise
 
-    def close(self):
+    def close(self) -> None:
         """Close Neo4j database connection."""
         if self.driver:
             self.driver.close()
             logger.info("Neo4j connection closed")
 
-    def extract_graph_data(self) -> Dict:
+    def extract_graph_data(self) -> Dict[str, Any]:
         """
         Extract all nodes and relationships from Neo4j for visualization.
 
@@ -67,6 +67,10 @@ class GraphVisualizer:
 
         if not self.driver:
             self.connect()
+
+        # At this point driver should be available
+        if not self.driver:
+            raise RuntimeError("Failed to establish database connection")
 
         nodes = []
         links = []
@@ -199,7 +203,7 @@ class GraphVisualizer:
         }
         return color_mapping.get(node_type, "#74b9ff")  # Default blue
 
-    def _get_node_size(self, node_type: str, properties: Dict) -> int:
+    def _get_node_size(self, node_type: str, properties: Dict[str, Any]) -> int:
         """Get node size based on type and properties."""
         base_sizes = {
             "Subscription": 15,
@@ -273,7 +277,7 @@ class GraphVisualizer:
         logger.info(f"3D visualization saved to: {output_path}")
         return output_path
 
-    def _generate_specification_link(self, specification_path: str) -> str:
+    def _generate_specification_link(self, specification_path: Optional[str]) -> str:
         """Generate HTML for the tenant specification link."""
         if not specification_path or not os.path.exists(specification_path):
             return ""
@@ -289,10 +293,11 @@ class GraphVisualizer:
         """
 
     def _generate_html_template(
-        self, graph_data: Dict, specification_path: Optional[str] = None
+        self, graph_data: Dict[str, Any], specification_path: Optional[str] = None
     ) -> str:
         """Generate the complete HTML template with embedded JavaScript."""
 
+        # The following HTML template is not used for SQL or code execution, only for visualization. # nosec
         html_template = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -761,7 +766,7 @@ class GraphVisualizer:
 
         return html_template
 
-    def open_visualization(self, html_path: str):
+    def open_visualization(self, html_path: str) -> None:
         """Open the visualization in the default web browser."""
         try:
             webbrowser.open(f"file://{os.path.abspath(html_path)}")

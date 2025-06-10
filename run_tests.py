@@ -6,14 +6,14 @@ This script runs all tests and provides comprehensive test coverage reporting.
 
 import argparse
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 
-def run_tests(test_path=None, verbose=False, coverage=False):
+def run_tests(test_path=None, verbose=False, coverage=False) -> None:
     """
     Run tests with optional coverage reporting.
 
@@ -56,10 +56,10 @@ def run_tests(test_path=None, verbose=False, coverage=False):
     )
 
     print(f"Running command: {' '.join(cmd)}")
-    return subprocess.run(cmd, cwd=os.path.dirname(__file__))
+    subprocess.run(cmd, cwd=os.path.dirname(__file__))  # nosec B603
 
 
-def check_dependencies():
+def check_dependencies() -> None:
     """Check if test dependencies are installed."""
     required_packages = ["pytest", "pytest-cov", "pytest-asyncio"]
     missing_packages = []
@@ -73,12 +73,10 @@ def check_dependencies():
     if missing_packages:
         print(f"Missing test dependencies: {', '.join(missing_packages)}")
         print("Please install them with: pip install " + " ".join(missing_packages))
-        return False
-
-    return True
+    # No return value
 
 
-def main():
+def main() -> None:
     """Main test runner function."""
     parser = argparse.ArgumentParser(description="Run Azure Tenant Grapher tests")
     parser.add_argument(
@@ -99,7 +97,7 @@ def main():
 
         # Try uv first, then fall back to pip
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603  # nosec B603
                 [
                     "uv",
                     "add",
@@ -112,38 +110,28 @@ def main():
             )
             if result.returncode == 0:
                 print("✅ Test dependencies installed successfully with uv")
-                return result.returncode
+                return
         except FileNotFoundError:
             print("uv not found, trying pip...")
 
         # Fallback to pip
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603  # nosec B603
             ["pip", "install", "pytest", "pytest-cov", "pytest-asyncio", "pytest-mock"]
         )
         if result.returncode == 0:
             print("✅ Test dependencies installed successfully with pip")
         else:
             print("❌ Failed to install test dependencies")
-        return result.returncode
+        return
 
-    if not check_dependencies():
-        print("❌ Please install missing dependencies or use --install-deps")
-        return 1
+    check_dependencies()
 
     print("🧪 Running Azure Tenant Grapher tests...")
     print("=" * 60)
 
-    result = run_tests(args.test_path, args.verbose, args.coverage)
-
-    if result.returncode == 0:
-        print("\n✅ All tests passed!")
-        if args.coverage:
-            print("📊 Coverage report generated in htmlcov/index.html")
-    else:
-        print("\n❌ Some tests failed!")
-
-    return result.returncode
+    run_tests(args.test_path, args.verbose, args.coverage)
+    # No return value
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

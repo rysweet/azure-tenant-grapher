@@ -37,7 +37,7 @@ class ProcessingStats:
         """Calculate overall progress as a percentage."""
         return (self.processed / max(self.total_resources, 1)) * 100
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert stats to dictionary."""
         return {
             "total_resources": self.total_resources,
@@ -55,7 +55,7 @@ class ProcessingStats:
 class ResourceState:
     """Manages the state of resource processing."""
 
-    def __init__(self, session: Any):
+    def __init__(self, session: Any) -> None:
         self.session = session
 
     def resource_exists(self, resource_id: str) -> bool:
@@ -93,7 +93,7 @@ class ResourceState:
             logger.error(f"Error checking LLM description for {resource_id}: {e}")
             return False
 
-    def get_processing_metadata(self, resource_id: str) -> Dict:
+    def get_processing_metadata(self, resource_id: str) -> Dict[str, Any]:
         """Get processing metadata for a resource."""
         try:
             result = self.session.run(
@@ -117,11 +117,11 @@ class ResourceState:
 class DatabaseOperations:
     """Handles all database operations for resources."""
 
-    def __init__(self, session: Any):
+    def __init__(self, session: Any) -> None:
         self.session = session
 
     def upsert_resource(
-        self, resource: Dict, processing_status: str = "completed"
+        self, resource: Dict[str, Any], processing_status: str = "completed"
     ) -> bool:
         """
         Create or update a resource node in Neo4j with enhanced metadata.
@@ -186,7 +186,7 @@ class DatabaseOperations:
             )
             return False
 
-    def create_resource_group_relationships(self, resource: Dict) -> bool:
+    def create_resource_group_relationships(self, resource: Dict[str, Any]) -> bool:
         """Create resource group nodes and relationships."""
         try:
             if not resource.get("resource_group"):
@@ -271,7 +271,7 @@ class ResourceProcessor:
             f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}"
         )
 
-    def _should_process_resource(self, resource: Dict) -> Tuple[bool, str]:
+    def _should_process_resource(self, resource: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Determine if a resource should be processed based on its current state.
 
@@ -301,7 +301,9 @@ class ResourceProcessor:
 
         return False, "already_processed"
 
-    async def _process_single_resource_llm(self, resource: Dict) -> Tuple[bool, str]:
+    async def _process_single_resource_llm(
+        self, resource: Dict[str, Any]
+    ) -> Tuple[bool, str]:
         """
         Generate LLM description for a single resource.
 
@@ -326,7 +328,7 @@ class ResourceProcessor:
             return False, f"Azure {resource.get('type', 'Resource')} resource."
 
     async def process_single_resource(
-        self, resource: Dict, resource_index: int
+        self, resource: Dict[str, Any], resource_index: int
     ) -> bool:
         """
         Process a single resource with comprehensive error handling and state management.
@@ -404,10 +406,11 @@ class ResourceProcessor:
             )
 
             # Mark resource as failed in database
+
             try:
                 self.db_ops.upsert_resource(resource, processing_status="failed")
-            except Exception:
-                pass  # Don't let this failure cascade
+            except Exception as db_exc:
+                logger.error(f"Failed to mark resource as failed in DB: {db_exc!s}")
 
             self.stats.failed += 1
             return False
@@ -416,13 +419,13 @@ class ResourceProcessor:
             self.stats.processed += 1
 
     async def process_resources_batch(
-        self, resources: List[Dict], batch_size: int = 5
+        self, resources: List[Dict[str, Any]], batch_size: int = 5
     ) -> ProcessingStats:
         """
         Process resources in parallel batches with comprehensive progress tracking.
 
         Args:
-            resources: List of resources to process
+            resources: List[Any] of resources to process
             batch_size: Number of resources to process in parallel
 
         Returns:

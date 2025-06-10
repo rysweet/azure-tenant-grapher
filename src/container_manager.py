@@ -4,7 +4,7 @@ Container orchestration module for managing Neo4j Docker container.
 
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404
 import time
 from typing import Optional
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class Neo4jContainerManager:
     """Manages Neo4j Docker container lifecycle."""
 
-    def __init__(self, compose_file: str = "docker-compose.yml"):
+    def __init__(self, compose_file: str = "docker-compose.yml") -> None:
         """
         Initialize the container manager.
 
@@ -53,7 +53,7 @@ class Neo4jContainerManager:
     def is_compose_available(self) -> bool:
         """Check if docker-compose is available."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 ["docker-compose", "--version"],
                 capture_output=True,
                 text=True,
@@ -64,7 +64,7 @@ class Neo4jContainerManager:
         except (subprocess.CalledProcessError, FileNotFoundError):
             try:
                 # Try docker compose (newer syntax)
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B603
                     ["docker", "compose", "version"],
                     capture_output=True,
                     text=True,
@@ -76,10 +76,10 @@ class Neo4jContainerManager:
                 logger.error("Docker Compose is not available")
                 return False
 
-    def get_compose_command(self) -> list:
+    def get_compose_command(self) -> list[str]:
         """Get the appropriate docker compose command."""
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 ["docker-compose", "--version"], capture_output=True, check=True
             )
             return ["docker-compose"]
@@ -119,7 +119,7 @@ class Neo4jContainerManager:
             logger.info("Starting Neo4j container...")
 
             # Start the container
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "up", "-d", "neo4j"],
                 capture_output=True,
                 text=True,
@@ -183,7 +183,7 @@ class Neo4jContainerManager:
             compose_cmd = self.get_compose_command()
             logger.info("Stopping Neo4j container...")
 
-            subprocess.run(
+            subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "stop", "neo4j"],
                 capture_output=True,
                 text=True,
@@ -204,7 +204,7 @@ class Neo4jContainerManager:
 
         try:
             compose_cmd = self.get_compose_command()
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603
                 [
                     *compose_cmd,
                     "-f",
