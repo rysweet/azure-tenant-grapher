@@ -1,3 +1,4 @@
+# mypy: disable-error-code=misc,no-untyped-def
 """
 Tests for graph_visualizer module.
 """
@@ -21,7 +22,7 @@ class TestGraphVisualizer:
         assert visualizer.neo4j_password == "password"  # nosec
         assert visualizer.driver is None
 
-    @pytest.fixture  # type: ignore[misc]
+    @pytest.fixture
     def mock_neo4j_config(self) -> Mock:
         """Mock Neo4j configuration."""
         config = Mock()

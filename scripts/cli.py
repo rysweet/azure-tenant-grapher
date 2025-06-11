@@ -7,6 +7,7 @@ configuration validation, and progress tracking.
 """
 
 import asyncio
+import functools
 import logging
 import os
 import sys
@@ -26,6 +27,16 @@ except ImportError as e:
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
+
+
+def async_command(f):
+    """Decorator to make Click commands async-compatible."""
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+
+    return wrapper
 
 
 @click.group()
@@ -66,6 +77,7 @@ def cli(ctx, log_level) -> None:
     help="Generate graph visualization after building",
 )
 @click.pass_context
+@async_command
 async def build(
     ctx, tenant_id, resource_limit, batch_size, no_container, generate_spec, visualize
 ):
@@ -157,6 +169,7 @@ async def build(
     help="Maximum number of resources to process (default: 50)",
 )
 @click.pass_context
+@async_command
 async def test(ctx, tenant_id, limit):
     """Run a test with limited resources to validate setup."""
 
@@ -216,6 +229,7 @@ def container() -> None:
 @cli.command()
 @click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
+@async_command
 async def spec(ctx, tenant_id):
     """Generate only the tenant specification (requires existing graph)."""
 
@@ -250,6 +264,7 @@ async def spec(ctx, tenant_id):
 @cli.command()
 @click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
+@async_command
 async def visualize(ctx, tenant_id):
     """Generate graph visualization from existing data."""
 
@@ -307,6 +322,7 @@ def config() -> None:
 @cli.command()
 @click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
+@async_command
 async def progress(ctx, tenant_id):
     """Check processing progress in the database."""
 
@@ -328,33 +344,8 @@ async def progress(ctx, tenant_id):
 
 
 def main() -> None:
-    """Main entry point that handles asyncio properly."""
-
-    # Check if we need to run async commands
-    async_commands = ["build", "test", "spec", "visualize", "progress"]
-
-    if len(sys.argv) > 1 and sys.argv[1] in async_commands:
-        # Extract the command and create a new CLI instance for async execution
-        import inspect
-
-        # Get the command function
-        cmd_name = sys.argv[1]
-        cmd_func = None
-
-        for name, func in cli.commands.items():
-            if name == cmd_name:
-                cmd_func = func
-                break
-
-        if cmd_func and inspect.iscoroutinefunction(cmd_func.callback):
-            # Run async command
-            asyncio.run(cli())
-        else:
-            # Run sync command
-            cli()
-    else:
-        # Run normal CLI
-        cli()
+    """Main entry point."""
+    cli()
 
 
 if __name__ == "__main__":
