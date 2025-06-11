@@ -107,7 +107,6 @@ class MockSubscriptionClient:
     def __init__(self, credential: Any) -> None:
         self.credential = credential
         self.subscriptions = Mock()
-
         mock_sub = Mock()
         mock_sub.subscription_id = "mock-sub-id"
         mock_sub.display_name = "Mock Subscription"
@@ -124,7 +123,6 @@ class MockResourceManagementClient:
         self.credential = credential
         self.subscription_id = subscription_id
         self.resources = Mock()
-
         mock_resource = Mock()
         mock_resource.id = f"/subscriptions/{subscription_id}/resourceGroups/mock-rg/providers/Microsoft.Compute/virtualMachines/mock-vm"
         mock_resource.name = "mock-vm"
