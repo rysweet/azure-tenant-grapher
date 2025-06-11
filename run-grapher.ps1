@@ -4,9 +4,9 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$TenantId,
-    
+
     [string]$Neo4jUri = "bolt://localhost:7688",
-    [string]$Neo4jUser = "neo4j", 
+    [string]$Neo4jUser = "neo4j",
     [SecureString]$Neo4jPassword,
     [switch]$ContainerOnly,
     [switch]$NoContainer,
@@ -50,7 +50,7 @@ if ($ContainerOnly) {
 }
 
 if ($NoContainer) {
-    $ScriptArgs += "--no-container" 
+    $ScriptArgs += "--no-container"
 }
 
 if ($Visualize) {
