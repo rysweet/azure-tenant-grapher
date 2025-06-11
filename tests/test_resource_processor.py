@@ -1,4 +1,4 @@
-# mypy: disable-error-code=misc
+# mypy: disable-error-code=misc,no-untyped-def
 """
 Tests for resource_processor module.
 """
@@ -14,7 +14,63 @@ from src.resource_processor import (
     ResourceProcessor,
     ResourceState,
     create_resource_processor,
+    serialize_value,
 )
+
+
+class DummyAzureObject:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"DummyAzureObject({self.name})"
+
+
+class TestSerializeValue:
+    def test_primitive_types(self):
+        assert serialize_value("foo") == "foo"
+        assert serialize_value(123) == 123
+        assert serialize_value(3.14) == 3.14
+        assert serialize_value(True) is True
+        assert serialize_value(None) is None
+
+    def test_list_of_primitives(self):
+        assert serialize_value([1, "a", False]) == [1, "a", False]
+
+    def test_dict(self):
+        d = {"a": 1, "b": "x"}
+        result = serialize_value(d)
+        assert isinstance(result, str)
+        assert '"a": 1' in result and '"b": "x"' in result
+
+    def test_empty_dict(self):
+        assert serialize_value({}) is None
+
+    def test_sdk_object_with_name(self):
+        obj = DummyAzureObject("sku-name")
+        assert serialize_value(obj) == "sku-name"
+
+    def test_object_without_name(self):
+        class NoName:
+            def __str__(self):
+                return "custom"
+
+        obj = NoName()
+        assert serialize_value(obj) == "custom"
+
+    def test_large_dict_truncation(self):
+        d = {str(i): i for i in range(100)}
+        s = serialize_value(d, max_json_length=100)
+        assert s.endswith("...(truncated)")
+
+    def test_list_of_mixed(self):
+        obj = DummyAzureObject("sku")
+        data = [1, {"x": 2}, obj, None]
+        out = serialize_value(data)
+        assert out[0] == 1
+        assert isinstance(out[1], str)
+        assert out[2] == "sku"
+        assert out[3] is None
 
 
 class TestProcessingStats:

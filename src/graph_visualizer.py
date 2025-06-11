@@ -14,6 +14,22 @@ from typing import Any, Dict, Optional
 import colorlog
 from neo4j import Driver, GraphDatabase
 
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle DateTime objects."""
+
+    def default(self, obj: Any) -> Any:  # type: ignore[override]
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        # Handle Neo4j DateTime objects
+        if hasattr(obj, "iso_format"):
+            return obj.iso_format()
+        # Handle other Neo4j temporal types
+        if hasattr(obj, "__str__") and str(type(obj)).startswith("<class 'neo4j.time"):
+            return str(obj)
+        return super().default(obj)
+
+
 logger = colorlog.getLogger(__name__)
 
 
@@ -96,26 +112,33 @@ class GraphVisualizer:
                     node.element_id if hasattr(node, "element_id") else str(node.id)
                 )
 
-                # Determine primary label for node type
-                primary_label = labels[0] if labels else "Unknown"
-                node_types.add(primary_label)
-
-                # Extract node properties
+                # Extract node properties first
                 properties = dict(node)
+
+                # Determine node type - use Azure resource type for Resources, otherwise use label
+                primary_label = labels[0] if labels else "Unknown"
+                if primary_label == "Resource" and properties.get("type"):
+                    # Use the Azure resource type (e.g., Microsoft.Compute/virtualMachines)
+                    node_type = properties["type"]
+                else:
+                    # Use the Neo4j label for non-resource nodes
+                    node_type = primary_label
+
+                node_types.add(node_type)
 
                 # Create node data structure
                 node_data = {
                     "id": node_id,
                     "name": properties.get(
                         "name",
-                        properties.get("display_name", f"{primary_label}_{node_id}"),
+                        properties.get("display_name", f"{node_type}_{node_id}"),
                     ),
-                    "type": primary_label,
+                    "type": node_type,
                     "labels": labels,
                     "properties": properties,
-                    "group": self._get_node_group(primary_label),
-                    "color": self._get_node_color(primary_label),
-                    "size": self._get_node_size(primary_label, properties),
+                    "group": self._get_node_group(node_type),
+                    "color": self._get_node_color(node_type),
+                    "size": self._get_node_size(node_type, properties),
                 }
 
                 nodes.append(node_data)
@@ -174,33 +197,119 @@ class GraphVisualizer:
     def _get_node_group(self, node_type: str) -> int:
         """Get node group for clustering visualization."""
         group_mapping = {
+            # High-level organizational nodes
             "Subscription": 1,
-            "Resource": 2,
-            "ResourceGroup": 3,
-            "StorageAccount": 4,
-            "VirtualMachine": 5,
-            "NetworkInterface": 6,
-            "VirtualNetwork": 7,
-            "KeyVault": 8,
-            "SqlServer": 9,
-            "WebSite": 10,
+            "ResourceGroup": 2,
+            # Compute services
+            "Microsoft.Compute/virtualMachines": 10,
+            "Microsoft.ContainerService/managedClusters": 11,
+            # Networking services
+            "Microsoft.Network/virtualNetworks": 20,
+            "Microsoft.Network/networkInterfaces": 21,
+            "Microsoft.Network/networkSecurityGroups": 22,
+            "Microsoft.Network/publicIPAddresses": 23,
+            "Microsoft.Network/loadBalancers": 24,
+            # Storage services
+            "Microsoft.Storage/storageAccounts": 30,
+            # Database services
+            "Microsoft.Sql/servers": 40,
+            "Microsoft.DBforPostgreSQL/servers": 41,
+            "Microsoft.DBforMySQL/servers": 42,
+            "Microsoft.DocumentDB/databaseAccounts": 43,
+            # Web services
+            "Microsoft.Web/sites": 50,
+            # Security services
+            "Microsoft.KeyVault/vaults": 60,
+            "Microsoft.Security/assessments": 61,
+            "Microsoft.Security/securityContacts": 62,
+            "Microsoft.Authorization/roleAssignments": 63,
+            "Microsoft.ManagedIdentity/userAssignedIdentities": 64,
+            # Monitoring services
+            "Microsoft.OperationalInsights/workspaces": 70,
+            "Microsoft.Insights/components": 71,
         }
+
+        # If exact match not found, group by service provider
+        if node_type not in group_mapping:
+            if node_type.startswith("Microsoft.Compute"):
+                return 10
+            elif node_type.startswith("Microsoft.Network"):
+                return 20
+            elif node_type.startswith("Microsoft.Storage"):
+                return 30
+            elif node_type.startswith("Microsoft.Sql") or node_type.startswith(
+                "Microsoft.DB"
+            ):
+                return 40
+            elif node_type.startswith("Microsoft.Web"):
+                return 50
+            elif (
+                node_type.startswith("Microsoft.KeyVault")
+                or node_type.startswith("Microsoft.Security")
+                or node_type.startswith("Microsoft.Authorization")
+            ):
+                return 60
+            elif node_type.startswith("Microsoft.Insights") or node_type.startswith(
+                "Microsoft.OperationalInsights"
+            ):
+                return 70
+            elif node_type.startswith("Microsoft.ContainerService"):
+                return 11
+
         return group_mapping.get(node_type, 99)
 
     def _get_node_color(self, node_type: str) -> str:
         """Get node color based on type."""
         color_mapping = {
+            # Non-resource node types
             "Subscription": "#ff6b6b",  # Red
-            "Resource": "#4ecdc4",  # Teal
             "ResourceGroup": "#45b7d1",  # Blue
-            "StorageAccount": "#f9ca24",  # Yellow
-            "VirtualMachine": "#6c5ce7",  # Purple
-            "NetworkInterface": "#a55eea",  # Light Purple
-            "VirtualNetwork": "#26de81",  # Green
-            "KeyVault": "#fd79a8",  # Pink
-            "SqlServer": "#fdcb6e",  # Orange
-            "WebSite": "#e17055",  # Dark Orange
+            # Azure resource types
+            "Microsoft.Compute/virtualMachines": "#6c5ce7",  # Purple
+            "Microsoft.Network/networkInterfaces": "#a55eea",  # Light Purple
+            "Microsoft.Network/virtualNetworks": "#26de81",  # Green
+            "Microsoft.Network/networkSecurityGroups": "#00d2d3",  # Cyan
+            "Microsoft.Network/publicIPAddresses": "#81ecec",  # Light Cyan
+            "Microsoft.Network/loadBalancers": "#00b894",  # Dark Green
+            "Microsoft.Storage/storageAccounts": "#f9ca24",  # Yellow
+            "Microsoft.KeyVault/vaults": "#fd79a8",  # Pink
+            "Microsoft.Sql/servers": "#fdcb6e",  # Orange
+            "Microsoft.Web/sites": "#e17055",  # Dark Orange
+            "Microsoft.ContainerService/managedClusters": "#0984e3",  # Blue
+            "Microsoft.DBforPostgreSQL/servers": "#a29bfe",  # Light Purple
+            "Microsoft.DBforMySQL/servers": "#74b9ff",  # Light Blue
+            "Microsoft.DocumentDB/databaseAccounts": "#e84393",  # Pink
+            "Microsoft.OperationalInsights/workspaces": "#636e72",  # Gray
+            "Microsoft.Insights/components": "#2d3436",  # Dark Gray
+            "Microsoft.Authorization/roleAssignments": "#fab1a0",  # Light Orange
+            "Microsoft.ManagedIdentity/userAssignedIdentities": "#00cec9",  # Teal
+            "Microsoft.Security/assessments": "#fd79a8",  # Pink
+            "Microsoft.Security/securityContacts": "#e84393",  # Pink
         }
+
+        # If exact match not found, try to match by service provider
+        if node_type not in color_mapping:
+            if node_type.startswith("Microsoft.Compute"):
+                return "#6c5ce7"  # Purple for compute
+            elif node_type.startswith("Microsoft.Network"):
+                return "#26de81"  # Green for networking
+            elif node_type.startswith("Microsoft.Storage"):
+                return "#f9ca24"  # Yellow for storage
+            elif node_type.startswith("Microsoft.Web"):
+                return "#e17055"  # Orange for web
+            elif node_type.startswith("Microsoft.Sql") or node_type.startswith(
+                "Microsoft.DB"
+            ):
+                return "#fdcb6e"  # Orange for databases
+            elif node_type.startswith("Microsoft.KeyVault"):
+                return "#fd79a8"  # Pink for security
+            elif node_type.startswith("Microsoft.ContainerService"):
+                return "#0984e3"  # Blue for containers
+            elif node_type.startswith("Microsoft.Security"):
+                return "#e84393"  # Pink for security
+            elif node_type.startswith("Microsoft.Authorization"):
+                return "#fab1a0"  # Light orange for identity
+
         return color_mapping.get(node_type, "#74b9ff")  # Default blue
 
     def _get_node_size(self, node_type: str, properties: Dict[str, Any]) -> int:
@@ -522,7 +631,7 @@ class GraphVisualizer:
 
     <script>
         // Graph data
-        const originalGraphData = {json.dumps(graph_data, indent=2)};
+        const originalGraphData = {json.dumps(graph_data, indent=2, cls=DateTimeEncoder)};
         let currentGraphData = JSON.parse(JSON.stringify(originalGraphData));
         let activeNodeFilters = new Set(originalGraphData.node_types);
         let activeRelationshipFilters = new Set(originalGraphData.relationship_types);
@@ -603,17 +712,46 @@ class GraphVisualizer:
 
         function getNodeColor(nodeType) {{
             const colorMapping = {{
+                // Non-resource node types
                 'Subscription': '#ff6b6b',
-                'Resource': '#4ecdc4',
                 'ResourceGroup': '#45b7d1',
-                'StorageAccount': '#f9ca24',
-                'VirtualMachine': '#6c5ce7',
-                'NetworkInterface': '#a55eea',
-                'VirtualNetwork': '#26de81',
-                'KeyVault': '#fd79a8',
-                'SqlServer': '#fdcb6e',
-                'WebSite': '#e17055'
+
+                // Azure resource types
+                'Microsoft.Compute/virtualMachines': '#6c5ce7',
+                'Microsoft.Network/networkInterfaces': '#a55eea',
+                'Microsoft.Network/virtualNetworks': '#26de81',
+                'Microsoft.Network/networkSecurityGroups': '#00d2d3',
+                'Microsoft.Network/publicIPAddresses': '#81ecec',
+                'Microsoft.Network/loadBalancers': '#00b894',
+                'Microsoft.Storage/storageAccounts': '#f9ca24',
+                'Microsoft.KeyVault/vaults': '#fd79a8',
+                'Microsoft.Sql/servers': '#fdcb6e',
+                'Microsoft.Web/sites': '#e17055',
+                'Microsoft.ContainerService/managedClusters': '#0984e3',
+                'Microsoft.DBforPostgreSQL/servers': '#a29bfe',
+                'Microsoft.DBforMySQL/servers': '#74b9ff',
+                'Microsoft.DocumentDB/databaseAccounts': '#e84393',
+                'Microsoft.OperationalInsights/workspaces': '#636e72',
+                'Microsoft.Insights/components': '#2d3436',
+                'Microsoft.Authorization/roleAssignments': '#fab1a0',
+                'Microsoft.ManagedIdentity/userAssignedIdentities': '#00cec9',
+                'Microsoft.Security/assessments': '#fd79a8',
+                'Microsoft.Security/securityContacts': '#e84393'
             }};
+
+            // If exact match not found, try to match by service provider
+            if (!(nodeType in colorMapping)) {{
+                if (nodeType.startsWith('Microsoft.Compute')) return '#6c5ce7';
+                if (nodeType.startsWith('Microsoft.Network')) return '#26de81';
+                if (nodeType.startsWith('Microsoft.Storage')) return '#f9ca24';
+                if (nodeType.startsWith('Microsoft.Web')) return '#e17055';
+                if (nodeType.startsWith('Microsoft.Sql') || nodeType.startsWith('Microsoft.DB')) return '#fdcb6e';
+                if (nodeType.startsWith('Microsoft.KeyVault')) return '#fd79a8';
+                if (nodeType.startsWith('Microsoft.ContainerService')) return '#0984e3';
+                if (nodeType.startsWith('Microsoft.Security')) return '#e84393';
+                if (nodeType.startsWith('Microsoft.Authorization')) return '#fab1a0';
+            }}
+
             return colorMapping[nodeType] || '#74b9ff';
         }}
 
@@ -707,6 +845,14 @@ class GraphVisualizer:
 
             let content = '';
 
+            // AI Summary/Description section - prominently displayed at the top
+            if (node.properties && node.properties.llm_description) {{
+                content += '<div style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
+                content += '<h4 style="color: #4ecdc4; margin: 0 0 10px 0; font-size: 16px;">🤖 AI Summary</h4>';
+                content += '<div style="color: #ffffff; font-style: italic; line-height: 1.4;">' + node.properties.llm_description + '</div>';
+                content += '</div>';
+            }}
+
             // Basic properties
             content += '<div class="property-row"><span class="property-key">ID:</span><span class="property-value">' + node.id + '</span></div>';
             content += '<div class="property-row"><span class="property-key">Type:</span><span class="property-value">' + node.type + '</span></div>';
@@ -719,6 +865,9 @@ class GraphVisualizer:
             if (node.properties && Object.keys(node.properties).length > 0) {{
                 content += '<h4 style="color: #4ecdc4; margin-top: 20px;">Properties:</h4>';
                 Object.entries(node.properties).forEach(([key, value]) => {{
+                    // Skip llm_description since we already displayed it prominently above
+                    if (key === 'llm_description') return;
+
                     if (value !== null && value !== undefined && value !== '') {{
                         let displayValue = value;
                         if (typeof value === 'object') {{

@@ -6,6 +6,7 @@ with improved error handling, progress tracking, and database operations.
 """
 
 import asyncio
+import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
@@ -13,6 +14,38 @@ from typing import Any, Dict, List, Optional, Tuple
 from .llm_descriptions import AzureLLMDescriptionGenerator
 
 logger = logging.getLogger(__name__)
+
+
+def serialize_value(value: Any, max_json_length: int = 500) -> Any:
+    """
+    Safely serialize a value for Neo4j property storage.
+    Allowed: str, int, float, bool, list of those.
+    - dicts/objects: JSON string (truncated if huge).
+    - Azure SDK objects: str() or .name if present.
+    - Empty dict: None.
+    """
+    # Primitives
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    # List: recursively serialize
+    if isinstance(value, list):
+        return [serialize_value(v, max_json_length) for v in value]
+    # Dict: JSON dump, handle empty
+    if isinstance(value, dict):
+        if not value:
+            return None
+        try:
+            s = json.dumps(value, default=str, ensure_ascii=False)
+            if len(s) > max_json_length:
+                s = s[:max_json_length] + "...(truncated)"
+            return s
+        except Exception:
+            return str(value)
+    # Azure SDK model: try .name, else str
+    if hasattr(value, "name") and isinstance(value.name, str):
+        return value.name
+    # Fallback: str
+    return str(value)
 
 
 @dataclass
@@ -156,6 +189,10 @@ class DatabaseOperations:
             resource_data = resource.copy()
             resource_data["llm_description"] = resource.get("llm_description", "")
             resource_data["processing_status"] = processing_status
+
+            # Serialize all values for Neo4j compatibility
+            for k, v in resource_data.items():
+                resource_data[k] = serialize_value(v)
 
             self.session.run(query, resource_data)
             return True

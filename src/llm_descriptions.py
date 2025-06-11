@@ -99,85 +99,51 @@ class AzureLLMDescriptionGenerator:
             Natural language description of the resource
         """
         try:
-            # Extract relevant information from resource data
+            # Extract ALL relevant information from resource data
             resource_type = resource_data.get("type", "Unknown")
             resource_name = resource_data.get("name", "Unknown")
             location = resource_data.get("location", "Unknown")
             properties = resource_data.get("properties", {})
             tags = resource_data.get("tags", {})
+            sku = resource_data.get("sku", {})
+            kind = resource_data.get("kind", None)
 
-            # Create a concise summary for the prompt
+            # Include ALL properties for more detailed analysis
             resource_summary = {
                 "name": resource_name,
                 "type": resource_type,
                 "location": location,
-                "key_properties": {
-                    k: v
-                    for k, v in properties.items()
-                    if k
-                    in [
-                        "sku",
-                        "size",
-                        "tier",
-                        "state",
-                        "status",
-                        "provisioningState",
-                        "publicNetworkAccess",
-                        "minimumTlsVersion",
-                        "allowBlobPublicAccess",
-                    ]
-                },
+                "sku": sku,
+                "kind": kind,
+                "properties": properties,  # Include ALL properties
                 "tags": tags,
             }
 
             prompt = f"""
-You are an expert Azure cloud architect with deep knowledge of Azure services and infrastructure patterns.
+You are an expert Azure Infrastructure-as-Code specialist with deep knowledge of ARM templates, Terraform, and Azure CLI.
 
-AZURE RESOURCE CONTEXT:
-{json.dumps(resource_summary, indent=2)}
+TASK: Create a detailed technical description for this Azure resource that could be used to recreate the resource from scratch. Include specific configuration details that are essential for deployment.
 
-AZURE REFERENCE KNOWLEDGE:
-Based on Azure Well-Architected Framework and Microsoft Learn documentation:
+AZURE RESOURCE FULL CONFIGURATION:
+{json.dumps(resource_summary, indent=2, default=str)}
 
-VIRTUAL MACHINES:
-- Azure VMs provide on-demand, scalable computing resources with full control over the computing environment
-- Key considerations: Security profiles, networking options, storage encryption, tagging strategies
-- Best practices: Disable public IP associations, enable disk encryption, use network security groups
-- Use cases: Development/test, cloud applications, extended datacenter connectivity
+INSTRUCTIONS:
+Generate a comprehensive description (3-5 sentences) that includes:
 
-STORAGE ACCOUNTS:
-- Azure Storage provides scalable cloud storage for data objects, file shares, and messaging
-- Key features: Blob storage, file storage, queue storage, table storage
-- Security: RBAC authorization, disable shared key access, store keys in Key Vault
-- Best practices: Use managed identities, enable encryption, configure access tiers
+1. **Resource Purpose**: What this resource does and its role in the architecture
+2. **Key Configuration**: Specific settings like SKU, size, networking, security configurations
+3. **Dependencies**: What other resources this depends on or connects to
+4. **Critical Settings**: Security, performance, or compliance settings that are configured
+5. **Deployment Details**: Location, resource group context, and any special deployment considerations
 
-NETWORKING:
-- Virtual Networks provide isolated network environments in Azure
-- Components: Subnets, network security groups, route tables, gateways
-- Security: Network segmentation, private endpoints, service endpoints
-- Best practices: Implement defense in depth, use hub-spoke topology
+FORMAT: Write as a technical specification that a cloud engineer could use to understand and potentially recreate this resource. Include specific values and configuration details where relevant.
 
-KEY VAULT:
-- Centralized secrets management service for keys, secrets, and certificates
-- Features: Hardware security modules, access policies, audit logging
-- Integration: Service principals, managed identities, application secrets
-- Best practices: Use separate vaults per environment, enable soft delete
+EXAMPLES OF GOOD DESCRIPTIONS:
+- "Production Azure VM (Standard_D4s_v3) running Windows Server 2022 in East US with premium SSD storage, network security group allowing RDP access, and managed disk encryption enabled."
+- "General-purpose storage account (Standard_LRS) with hot access tier, blob public access disabled, HTTPS required, and soft delete enabled for 7 days retention."
+- "Azure Key Vault with soft delete enabled, purge protection active, RBAC access policies, private endpoint connectivity, and audit logging to Log Analytics workspace."
 
-DATABASES:
-- Azure SQL, Cosmos DB, and other database services provide managed data platforms
-- Features: Automatic backups, high availability, scaling, security
-- Security: Transparent data encryption, firewall rules, private endpoints
-- Best practices: Use managed identities, enable audit logging, configure backup retention
-
-TASK:
-Create a professional, technical description (2-3 sentences) for this Azure resource that would be valuable for DevOps teams, cloud architects, and technical documentation. Focus on:
-
-1. Primary purpose and functionality
-2. Key configuration details that impact operations, security, or performance
-3. Business value or architectural significance
-4. Any notable security or compliance considerations
-
-Be specific about the resource type capabilities while remaining concise and actionable.
+Be specific about the actual configured values while explaining their architectural significance.
 """
 
             response = self.client.chat.completions.create(
@@ -189,7 +155,8 @@ Be specific about the resource type capabilities while remaining concise and act
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=50000,
+                # o3 supports large completions; use full 32 k cap
+                max_completion_tokens=32768,
             )
 
             content = response.choices[0].message.content
@@ -276,7 +243,7 @@ Be specific about the architectural implications while keeping it concise and ac
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=20000,
+                max_completion_tokens=32768,
             )
 
             content = response.choices[0].message.content
@@ -364,7 +331,7 @@ Focus on architectural insights rather than listing individual resources.
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_completion_tokens=100000,
+                max_completion_tokens=32768,
             )
 
             content = response.choices[0].message.content

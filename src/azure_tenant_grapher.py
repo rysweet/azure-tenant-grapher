@@ -164,7 +164,7 @@ class AzureTenantGrapher:
                         else None
                     ),
                     "subscription_id": subscription_id,
-                    "tags": Dict[str, Any](resource.tags) if resource.tags else {},
+                    "tags": dict(resource.tags) if resource.tags else {},
                     "kind": getattr(resource, "kind", None),
                     "sku": getattr(resource, "sku", None),
                 }
@@ -178,6 +178,7 @@ class AzureTenantGrapher:
         logger.info(
             f"✅ Found {len(resources)} resources in subscription {subscription_id}"
         )
+        logger.debug(f"Resource IDs: {[r['id'] for r in resources]}")
         return resources
 
     async def generate_tenant_specification(self) -> None:
