@@ -2,19 +2,157 @@
 
 A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships.
 
+## Quick Start
+
+### 1. Setup Environment
+```bash
+# Install dependencies using uv (recommended)
+uv sync
+
+# Create .env file with defaults (optional)
+cp .env.example .env
+# Edit .env with your Azure tenant ID if desired
+
+# Authenticate with Azure
+az login
+```
+
+### 2. Run the Application (Recommended)
+
+Use the enhanced CLI wrapper:
+```bash
+uv run python scripts/cli.py --tenant-id <your-tenant-id>
+```
+
+- This will automatically manage the Neo4j container and build the graph.
+- For all CLI options:
+```bash
+uv run python scripts/cli.py --help
+```
+
+### 3. Access Neo4j Browser
+- URL: http://localhost:7475
+- Username: `neo4j`
+- Password: `azure-grapher-2024` (or your custom password)
+
+## Usage Examples
+
+```bash
+# Basic usage with automatic container management
+uv run python scripts/cli.py --tenant-id <your-tenant-id>
+
+# Start Neo4j container only
+uv run python scripts/cli.py --tenant-id dummy --container-only
+
+# Use existing Neo4j instance (skip container management)
+uv run python scripts/cli.py --tenant-id <your-tenant-id> --no-container
+
+# Generate 3D visualization after building
+duv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize
+
+# Generate visualization only (from existing graph data)
+uv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize-only
+```
+
+## VS Code Tasks
+
+Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
+- **Install Dependencies**: Installs Python packages using uv
+- **Start Neo4j Container**: Starts the Neo4j Docker container using uv
+- **Stop Neo4j Container**: Stops the Neo4j Docker container
+- **Run Azure Tenant Grapher**: Runs the full application with uv (prompts for tenant ID)
+- **Generate 3D Visualization Only**: Generates visualization from existing graph data
+
+## Shell Scripts
+
+**Unix/macOS/Linux (Bash)**
+```bash
+./run-grapher.sh --tenant-id "your-tenant-id-here"
+```
+
+**Windows (PowerShell)**
+```powershell
+./run-grapher.ps1 -TenantId "your-tenant-id-here"
+```
+
+## Development and Testing
+
+- Run all tests:
+```bash
+uv run python run_tests.py
+```
+- Run tests with coverage:
+```bash
+uv run python run_tests.py -c
+```
+- Lint and type check:
+```bash
+uv run ruff check src/ tests/
+uv run mypy --strict src/
+```
+
+## Configuration
+
+- Copy `.env.example` to `.env` and edit as needed.
+- All environment variables have sensible defaults.
+
+## Troubleshooting
+
+- See the bottom of this README for Docker, Neo4j, and Azure troubleshooting tips.
+
+---
+
+# Azure Tenant Resource Grapher
+
+A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships.
+
+## Project Structure
+
+```
+azure-tenant-grapher/
+├── src/                           # Main application source code
+│   ├── __init__.py               # Package initialization with conditional imports
+│   ├── azure_tenant_grapher.py  # Main application class
+│   ├── config_manager.py        # Configuration management
+│   ├── resource_processor.py    # Azure resource processing
+│   ├── llm_descriptions.py      # AI-powered resource descriptions
+│   ├── container_manager.py     # Neo4j container management
+│   └── graph_visualizer.py      # Graph visualization and export
+├── tests/                        # Comprehensive test suite
+│   ├── conftest.py              # Test fixtures and configuration
+│   ├── test_config_manager.py   # Configuration tests
+│   ├── test_resource_processor.py # Resource processing tests
+│   ├── test_azure_tenant_grapher.py # Main application tests
+│   ├── test_container_manager.py # Container management tests
+│   ├── test_llm_descriptions.py # LLM integration tests
+│   └── test_graph_visualizer.py # Visualization tests
+├── scripts/                      # Utility scripts
+│   ├── cli.py                   # Enhanced CLI wrapper
+│   ├── demo_enhanced_features.py # Feature demonstration
+│   ├── check_progress.py       # Progress checking utility
+│   └── test_modular_structure.py # Structure validation
+├── run_tests.py                  # Test runner with coverage
+├── pyproject.toml               # Project configuration
+├── requirements.txt             # Dependencies
+├── docker-compose.yml           # Neo4j container setup
+└── README.md                    # This file
+```
+
 ## Features
 
 - **Azure Resource Discovery**: Enumerate all resources across all subscriptions in an Azure tenant
-- **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships  
+- **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships
 - **Resource Details**: Capture detailed configuration information for each resource
 - **Relationship Mapping**: Identify and map dependencies between Azure resources
 - **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
 - **Filterable Graph Views**: Filter nodes and relationships by type, search functionality
 - **Node Details**: Click on nodes to view detailed resource information and metadata
+- **Modular Architecture**: Well-structured codebase with comprehensive test coverage
+- **AI Integration**: Optional AI-powered resource descriptions using Azure OpenAI
 
 ## Prerequisites
 
-- Python 3.8+ 
+- Python 3.8+
 - [uv](https://docs.astral.sh/uv/) (for dependency management and virtual environment)
 - Docker and Docker Compose (for Neo4j container)
 - Azure CLI (for authentication)
@@ -27,6 +165,9 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 # Install dependencies using uv
 uv sync
 
+# Or install with pip if uv is not available
+pip install -r requirements.txt
+
 # Create .env file with defaults (optional - the application has sensible defaults)
 cp .env.example .env
 # Edit .env with your Azure tenant ID if desired
@@ -35,18 +176,23 @@ cp .env.example .env
 az login
 ```
 
-### 2. Start Neo4j Container
+### 2. Start the Application
 The application can automatically manage a Neo4j Docker container for you.
 
-**Option A: Automatic container management (recommended)**
+**Option A: Using the main entry point (recommended)**
 ```bash
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id-here
+python main.py --tenant-id your-tenant-id-here
 ```
 
-**Option B: Start container manually**
+**Option B: Using the module directly**
+```bash
+python -m src.azure_tenant_grapher --tenant-id your-tenant-id-here
+```
+
+**Option C: Start container manually**
 ```bash
 # Start Neo4j container only
-uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
+python main.py --tenant-id dummy --container-only
 
 # Or use Docker Compose directly
 docker-compose up -d neo4j
@@ -134,6 +280,78 @@ Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 
 # Use existing Neo4j instance
 .\run-grapher.ps1 -TenantId "your-tenant-id-here" -NoContainer
+```
+
+## Development and Testing
+
+This project includes a comprehensive test suite and follows best practices for Python development.
+
+### Running Tests
+
+**Quick test run:**
+```bash
+# Run all tests
+python run_tests.py
+
+# Run tests with coverage report
+python run_tests.py -c
+
+# Run specific test module
+python -m pytest tests/test_config_manager.py -v
+
+# Install test dependencies if needed
+python run_tests.py --install-deps
+```
+
+**Advanced testing:**
+```bash
+# Run tests with verbose output and coverage
+python -m pytest tests/ -v --cov=src --cov-report=html
+
+# Run only unit tests (skip integration tests)
+python -m pytest tests/ -m "not integration"
+
+# Run tests in parallel (if pytest-xdist is installed)
+python -m pytest tests/ -n auto
+```
+
+### Test Structure
+
+The test suite includes:
+- **Unit Tests**: Individual module testing with mocks and fixtures
+- **Integration Tests**: End-to-end testing scenarios
+- **Configuration Tests**: Environment and configuration validation
+- **Mock-based Tests**: Safe testing without external dependencies
+
+### Code Quality
+
+```bash
+# Run linting (if configured)
+python -m flake8 src/ tests/
+
+# Format code (if black is installed)
+python -m black src/ tests/
+
+# Type checking (if mypy is installed)
+python -m mypy src/
+```
+
+### Development Scripts
+
+The `scripts/` directory contains helpful development utilities:
+
+```bash
+# Test the modular structure
+python scripts/test_modular_structure.py
+
+# Check progress of a running graph build
+python scripts/check_progress.py
+
+# Enhanced CLI with better error handling
+python scripts/cli.py --help
+
+# Demonstrate advanced features
+python scripts/demo_enhanced_features.py
 ```
 
 ## Configuration
@@ -229,7 +447,7 @@ uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize --v
 ### Visualization Controls
 
 - **Node Types Filter**: Check/uncheck node types to show/hide them
-- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them  
+- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them
 - **Search Box**: Type to filter nodes by name, type, or properties
 - **Reset Filters**: Button to clear all filters and show the complete graph
 - **Node Interaction**: Click nodes to view detailed information
