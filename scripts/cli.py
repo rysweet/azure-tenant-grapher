@@ -19,7 +19,11 @@ try:
     import click
 
     from src.azure_tenant_grapher import AzureTenantGrapher
-    from src.config_manager import create_config_from_env, setup_logging
+    from src.config_manager import (
+        create_config_from_env,
+        create_neo4j_config_from_env,
+        setup_logging,
+    )
     from src.container_manager import Neo4jContainerManager
     from src.graph_visualizer import GraphVisualizer
 except ImportError as e:
@@ -262,15 +266,14 @@ async def spec(ctx, tenant_id):
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
 @async_command
-async def visualize(ctx, tenant_id):
-    """Generate graph visualization from existing data."""
+async def visualize(ctx):
+    """Generate graph visualization from existing Neo4j data (no tenant-id required)."""
 
     try:
-        # Create configuration
-        config = create_config_from_env(tenant_id)
+        # Create configuration (Neo4j-only)
+        config = create_neo4j_config_from_env()
         config.logging.level = ctx.obj["log_level"]
 
         # Setup logging
@@ -291,23 +294,22 @@ async def visualize(ctx, tenant_id):
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.option(
     "--limit", type=int, default=None, help="Resource limit (overrides config)"
 )
 @click.option("--output", type=str, default=None, help="Custom output path")
 @click.pass_context
-def generate_spec(ctx, tenant_id, limit, output):
-    """Generate anonymized tenant Markdown specification."""
+def generate_spec(ctx, limit, output):
+    """Generate anonymized tenant Markdown specification (no tenant-id required)."""
     try:
-        from src.config_manager import create_config_from_env, setup_logging
+        from src.config_manager import create_neo4j_config_from_env, setup_logging
         from src.tenant_spec_generator import (
             ResourceAnonymizer,
             TenantSpecificationGenerator,
         )
 
-        # Load config
-        config = create_config_from_env(tenant_id, limit)
+        # Load config (Neo4j-only)
+        config = create_neo4j_config_from_env()
         config.logging.level = ctx.obj["log_level"]
         setup_logging(config.logging)
 
@@ -318,6 +320,8 @@ def generate_spec(ctx, tenant_id, limit, output):
 
         # Spec config
         spec_config = config.specification
+        if limit is not None:
+            spec_config.resource_limit = limit
 
         # Anonymizer
         anonymizer = ResourceAnonymizer(seed=spec_config.anonymization_seed)
@@ -369,17 +373,16 @@ def config() -> None:
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
 @async_command
-async def progress(ctx, tenant_id):
-    """Check processing progress in the database."""
+async def progress(ctx):
+    """Check processing progress in the database (no tenant-id required)."""
 
     try:
         # Import and run the progress checker
         from scripts.check_progress import main as check_progress_main
 
-        config = create_config_from_env(tenant_id)
+        config = create_neo4j_config_from_env()
         config.logging.level = ctx.obj["log_level"]
         setup_logging(config.logging)
 

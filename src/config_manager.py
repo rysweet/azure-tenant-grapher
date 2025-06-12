@@ -377,3 +377,21 @@ def create_config_from_env(
     config = AzureTenantGrapherConfig.from_environment(tenant_id, resource_limit)
     config.validate_all()
     return config
+
+
+def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
+    """
+    Factory function to create configuration for Neo4j-only operations (no tenant-id required).
+    Returns:
+        AzureTenantGrapherConfig: Configuration instance with only Neo4j, logging, and specification.
+    """
+    config = AzureTenantGrapherConfig()
+    # Only validate Neo4j, logging, and specification sections
+    try:
+        config.neo4j.__post_init__()
+        config.logging.__post_init__()
+        # No __post_init__ for specification, but could add validation if needed
+    except Exception as e:
+        logger.error(f"❌ Neo4j-only configuration validation failed: {e}")
+        raise
+    return config
