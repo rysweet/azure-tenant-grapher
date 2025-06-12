@@ -111,19 +111,21 @@ class AzureTenantGrapher:
         logger.info(f"🔍 Discovering subscriptions in tenant {self.config.tenant_id}")
 
         subscription_client = SubscriptionClient(self.credential)
-        subscriptions = []
+        subscriptions: List[Dict[str, Any]] = []
 
         try:
             for subscription in subscription_client.subscriptions.list():
-                subscription_dict = {
-                    "id": subscription.subscription_id,
-                    "display_name": subscription.display_name,
-                    "state": subscription.state if subscription.state else None,
-                    "tenant_id": subscription.tenant_id,
+                # Explicitly cast subscription to Any to avoid type errors
+                sub: Any = subscription
+                subscription_dict: Dict[str, Any] = {
+                    "id": getattr(sub, "subscription_id", None),
+                    "display_name": getattr(sub, "display_name", None),
+                    "state": getattr(sub, "state", None),
+                    "tenant_id": getattr(sub, "tenant_id", None),
                 }
                 subscriptions.append(subscription_dict)
                 logger.info(
-                    f"📋 Found subscription: {subscription.display_name} ({subscription.subscription_id})"
+                    f"📋 Found subscription: {getattr(sub, 'display_name', 'unknown')} ({getattr(sub, 'subscription_id', 'unknown')})"
                 )
 
         except Exception as e:
@@ -149,24 +151,24 @@ class AzureTenantGrapher:
         logger.info(f"🔍 Discovering resources in subscription {subscription_id}")
 
         resource_client = ResourceManagementClient(self.credential, subscription_id)
-        resources = []
+        resources: List[Dict[str, Any]] = []
 
         try:
             for resource in resource_client.resources.list():
-                resource_dict = {
-                    "id": resource.id,
-                    "name": resource.name,
-                    "type": resource.type,
-                    "location": resource.location,
+                res: Any = resource
+                res_id: Optional[str] = getattr(res, "id", None)
+                resource_dict: Dict[str, Any] = {
+                    "id": res_id,
+                    "name": getattr(res, "name", None),
+                    "type": getattr(res, "type", None),
+                    "location": getattr(res, "location", None),
                     "resource_group": (
-                        resource.id.split("/")[4]
-                        if len(resource.id.split("/")) > 4
-                        else None
+                        res_id.split("/")[4] if res_id and len(res_id.split("/")) > 4 else None
                     ),
                     "subscription_id": subscription_id,
-                    "tags": dict(resource.tags) if resource.tags else {},
-                    "kind": getattr(resource, "kind", None),
-                    "sku": getattr(resource, "sku", None),
+                    "tags": dict(getattr(res, "tags", {}) or {}),
+                    "kind": getattr(res, "kind", None),
+                    "sku": getattr(res, "sku", None),
                 }
                 resources.append(resource_dict)
 
@@ -322,16 +324,16 @@ class AzureTenantGrapher:
     def process_resources_async_llm_with_adaptive_pool(
         self,
         resources: List[Dict[str, Any]],
-        session,
+        session: Any,
         max_workers: int = 10,
         min_workers: int = 1,
-    ):
+    ) -> tuple[dict[str, int], Any]:
         """
         Insert resources and schedule LLM summaries with adaptive ThreadPoolExecutor.
         Returns: (counters, counters_lock)
         """
         import threading
-        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import ThreadPoolExecutor, Future
 
         from .llm_descriptions import ThrottlingError
         from .resource_processor import process_resources_async_llm
@@ -352,7 +354,7 @@ class AzureTenantGrapher:
         )
         consecutive_success = 0
 
-        def adjust_pool(new_size):
+        def adjust_pool(new_size: int) -> None:
             nonlocal summary_executor
             if new_size != pool_state["size"]:
                 summary_executor.shutdown(wait=True)
@@ -362,7 +364,8 @@ class AzureTenantGrapher:
                 )
 
         # Initial scheduling
-        futures = process_resources_async_llm(
+        from typing import Any
+        futures: list[Future[Any]] = process_resources_async_llm(
             session,
             resources,
             self.llm_generator,
@@ -374,7 +377,8 @@ class AzureTenantGrapher:
 
         # Adaptive throttling loop
         while True:
-            done, not_done = [], []
+            done: list[Future[Any]] = []
+            not_done: list[Future[Any]] = []
             for f in futures:
                 if f.done():
                     done.append(f)
@@ -415,10 +419,31 @@ class AzureTenantGrapher:
         try:
             # Connect to Neo4j
             if not self.driver:
-                self.connect_to_neo4j()
+                try:
+                    self.connect_to_neo4j()
+                except Exception as e:
+                    logger.error(f"❌ Could not connect to Neo4j: {e}")
+                    return {
+                        "success": False,
+                        "subscriptions": 0,
+                        "total_resources": 0,
+                        "successful_resources": 0,
+                        "failed_resources": 0,
+                        "success_rate": 0.0,
+                        "error": f"Could not connect to Neo4j: {e}",
+                    }
 
             if not self.driver:
-                raise RuntimeError("Failed to establish database connection")
+                logger.error("❌ Neo4j driver is not initialized after connection attempt.")
+                return {
+                    "success": False,
+                    "subscriptions": 0,
+                    "total_resources": 0,
+                    "successful_resources": 0,
+                    "failed_resources": 0,
+                    "success_rate": 0.0,
+                    "error": "Neo4j driver is not initialized after connection attempt.",
+                }
 
             # Discover subscriptions
             subscriptions = await self.discover_subscriptions()
@@ -428,7 +453,7 @@ class AzureTenantGrapher:
                 return {"subscriptions": 0, "resources": 0, "success": False}
 
             # Process each subscription
-            all_resources = []
+            all_resources: List[Dict[str, Any]] = []
 
             with self.driver.session() as session:
                 # Create subscription nodes

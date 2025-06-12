@@ -316,10 +316,11 @@ def setup_logging(config: LoggingConfig) -> None:
 
     try:
         import colorlog
-
         use_colorlog = True
+        colorlog_available = colorlog
     except ImportError:
         use_colorlog = False
+        colorlog_available = None
 
     # Create handler
     handler: Union[logging.FileHandler, logging.StreamHandler[Any]]
@@ -331,9 +332,9 @@ def setup_logging(config: LoggingConfig) -> None:
         )
     else:
         # Console handler with colors (if available)
-        if use_colorlog:
-            handler = colorlog.StreamHandler()
-            formatter = colorlog.ColoredFormatter(config.format)
+        if use_colorlog and colorlog_available:
+            handler = colorlog_available.StreamHandler()
+            formatter = colorlog_available.ColoredFormatter(config.format)
         else:
             handler = logging.StreamHandler[Any]()
             formatter = logging.Formatter(config.format)

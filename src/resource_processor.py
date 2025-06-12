@@ -31,7 +31,7 @@ def serialize_value(value: Any, max_json_length: int = 500) -> Any:
         return value
     # List: recursively serialize
     if isinstance(value, list):
-        return [serialize_value(v, max_json_length) for v in value]
+        return [serialize_value(v, max_json_length) for v in value]  # type: ignore[misc]
     # Dict: JSON dump, handle empty
     if isinstance(value, dict):
         if not value:
@@ -42,7 +42,7 @@ def serialize_value(value: Any, max_json_length: int = 500) -> Any:
                 s = s[:max_json_length] + "...(truncated)"
             return s
         except Exception:
-            return str(value)
+            return str(value)  # type: ignore[misc]
     # Azure SDK model: try .name, else str
     if hasattr(value, "name") and isinstance(value.name, str):
         return value.name
@@ -498,17 +498,17 @@ class ResourceProcessor:
             )
 
             # Process batch in parallel with error isolation
-            batch_tasks = []
+            batch_tasks: List[Any] = []
             for idx, resource in enumerate(batch):
                 resource_index = batch_start + idx
                 task = self.process_single_resource(resource, resource_index)
                 batch_tasks.append(task)
 
             # Wait for all tasks in batch to complete
-            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)  # type: ignore[misc]
 
             # Handle any exceptions that occurred
-            for idx, result in enumerate(batch_results):
+            for idx, result in enumerate(batch_results):  # type: ignore[misc]
                 if isinstance(result, Exception):
                     resource = batch[idx]
                     logger.error(
@@ -559,15 +559,17 @@ class ResourceProcessor:
         logger.info("=" * 60)
 
 
+from concurrent.futures import Future
+
 def process_resources_async_llm(
-    session,
+    session: Any,
     resources: List[Dict[str, Any]],
     llm_generator: Optional[AzureLLMDescriptionGenerator],
     summary_executor: ThreadPoolExecutor,
     counters: Dict[str, int],
     counters_lock: threading.Lock,
     max_workers: int = 10,
-):
+) -> list[Future[Any]]:
     """
     Insert resources into the graph and schedule LLM summaries in a background thread pool.
     Args:
@@ -583,7 +585,7 @@ def process_resources_async_llm(
     """
     from .llm_descriptions import ThrottlingError
 
-    def insert_resource(resource):
+    def insert_resource(resource: Dict[str, Any]) -> None:
         # Insert resource into graph
         db_ops = DatabaseOperations(session)
         db_ops.upsert_resource(resource, processing_status="completed")
@@ -594,7 +596,7 @@ def process_resources_async_llm(
         with counters_lock:
             counters["inserted"] += 1
 
-    def summarize_resource(resource):
+    def summarize_resource(resource: Dict[str, Any]) -> None:
         try:
             with counters_lock:
                 counters["in_flight"] += 1
@@ -628,7 +630,7 @@ def process_resources_async_llm(
     with counters_lock:
         counters["total"] = len(resources)
         counters["remaining"] = len(resources)
-    futures = []
+    futures: List[Future[Any]] = []
     for resource in resources:
         insert_resource(resource)
         future = summary_executor.submit(summarize_resource, resource)

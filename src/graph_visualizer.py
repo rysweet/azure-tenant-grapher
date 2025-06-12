@@ -25,7 +25,7 @@ class DateTimeEncoder(json.JSONEncoder):
         if hasattr(obj, "iso_format"):
             return obj.iso_format()
         # Handle other Neo4j temporal types
-        if hasattr(obj, "__str__") and str(type(obj)).startswith("<class 'neo4j.time"):
+        if hasattr(obj, "__str__") and str(type(obj)).startswith("<class 'neo4j.time"):  # type: ignore[misc]
             return str(obj)
         return super().default(obj)
 
@@ -88,10 +88,10 @@ class GraphVisualizer:
         if not self.driver:
             raise RuntimeError("Failed to establish database connection")
 
-        nodes = []
-        links = []
-        node_types = set()
-        relationship_types = set()
+        nodes: list[Any] = []
+        links: list[Any] = []
+        node_types: set[Any] = set()
+        relationship_types: set[Any] = set()
 
         with self.driver.session() as session:
             # Extract all nodes with their properties

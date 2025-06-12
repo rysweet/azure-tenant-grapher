@@ -27,21 +27,27 @@ class ThrottlingError(Exception):
     pass
 
 
-def is_throttling_error(e):
-    if hasattr(e, "status_code") and e.status_code == 429:
+def is_throttling_error(e: Exception) -> bool:
+    if hasattr(e, "status_code") and getattr(e, "status_code", None) == 429:
         return True
     if "429" in str(e) or "throttle" in str(e).lower():
         return True
     return False
 
 
-def async_retry_with_throttling(max_retries=5, initial_delay=2, backoff=2):
+from typing import Callable, Awaitable, TypeVar, Any
+
+T = TypeVar("T")
+
+def async_retry_with_throttling(
+    max_retries: int = 5, initial_delay: int = 2, backoff: int = 2
+) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """
     Decorator for retrying async LLM calls, raising ThrottlingError on repeated throttling.
     """
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+        async def wrapper(*args: Any, **kwargs: Any) -> T:
             delay = initial_delay
             for attempt in range(max_retries):
                 try:
@@ -62,6 +68,7 @@ def async_retry_with_throttling(max_retries=5, initial_delay=2, backoff=2):
                                 "LLM API throttling detected after retries"
                             ) from e
                     raise
+            raise ThrottlingError("LLM API throttling detected after retries")
 
         return wrapper
 
@@ -72,21 +79,25 @@ def async_retry_with_throttling(max_retries=5, initial_delay=2, backoff=2):
 
 
 def retry_with_throttling(
-    func, max_retries=5, initial_delay=2, backoff=2, logger=logger
-):
+    func: Callable[..., T],
+    max_retries: int = 5,
+    initial_delay: int = 2,
+    backoff: int = 2,
+    logger: logging.Logger = logger,
+) -> Callable[..., T]:
     """
     Retry wrapper for LLM calls. Raises ThrottlingError on repeated throttling.
     """
     import time
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> T:
         delay = initial_delay
         for attempt in range(max_retries):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
                 # OpenAI HTTP 429 or explicit throttling
-                if hasattr(e, "status_code") and e.status_code == 429:
+                if hasattr(e, "status_code") and getattr(e, "status_code", None) == 429:
                     logger.warning(
                         f"OpenAI throttling detected (HTTP 429), attempt {attempt+1}/{max_retries}"
                     )
@@ -265,6 +276,8 @@ Be specific about the actual configured values while explaining their architectu
                 )
                 resource_type = resource_data.get("type", "Unknown")
                 return f"Azure {resource_type} resource providing cloud services and functionality."
+        # Fallback: return a generic description if all retries fail
+        return "Azure resource providing cloud services and functionality."
 
     async def generate_relationship_description(
         self,
@@ -283,10 +296,9 @@ Be specific about the actual configured values while explaining their architectu
         Returns:
             Natural language description of the relationship
         """
+        source_type = source_resource.get("type", "Resource")
+        target_type = target_resource.get("type", "Resource")
         try:
-            source_type = source_resource.get("type", "Resource")
-            target_type = target_resource.get("type", "Resource")
-
             prompt = f"""
 You are an expert Azure cloud architect with comprehensive knowledge of Azure service relationships and dependencies.
 
@@ -370,8 +382,8 @@ Be specific about the architectural implications while keeping it concise and ac
         """
         try:
             # Analyze the tenant structure
-            resource_types = {}
-            locations = set()
+            resource_types: dict[str, int] = {}
+            locations: set[str] = set()
 
             for resource in resources:
                 resource_type = resource.get("type", "Unknown")
@@ -382,15 +394,19 @@ Be specific about the architectural implications while keeping it concise and ac
                 resource_types[resource_type] += 1
 
                 if location != "Unknown":
-                    locations.add(location)
+                    locations.add(str(location))
 
             # Create analysis summary
-            analysis = {
+            analysis: dict[str, Any] = {
                 "total_resources": len(resources),
-                "resource_types": Dict[str, Any](
-                    sorted(resource_types.items(), key=lambda x: x[1], reverse=True)
+                "resource_types": dict(
+                    sorted(
+                        resource_types.items(),
+                        key=lambda x: int(x[1]),
+                        reverse=True,
+                    )
                 ),
-                "locations": sorted(locations),
+                "locations": sorted(list(locations)),
                 "total_relationships": len(relationships),
             }
 
@@ -453,8 +469,8 @@ Focus on architectural insights rather than listing individual resources.
         relationships: List[Dict[str, Any]],
     ) -> str:
         """Create a basic specification when LLM generation fails."""
-        resource_types = {}
-        locations = set()
+        resource_types: dict[str, int] = {}
+        locations: set[str] = set()
 
         for resource in resources:
             resource_type = resource.get("type", "Unknown")
@@ -465,7 +481,7 @@ Focus on architectural insights rather than listing individual resources.
             resource_types[resource_type] += 1
 
             if location != "Unknown":
-                locations.add(location)
+                locations.add(str(location))
 
         spec = f"""# Azure Tenant Infrastructure Specification
 
@@ -485,7 +501,7 @@ This document provides an overview of the Azure tenant infrastructure as discove
 """
 
         for resource_type, count in sorted(
-            resource_types.items(), key=lambda x: x[1], reverse=True
+            resource_types.items(), key=lambda x: int(x[1]), reverse=True
         ):
             spec += f"| {resource_type} | {count} |\n"
 
@@ -494,7 +510,7 @@ This document provides an overview of the Azure tenant infrastructure as discove
 The following Azure regions are utilized:
 """
 
-        for location in sorted(locations):
+        for location in sorted(list(locations)):
             spec += f"- {location}\n"
 
         spec += f"""
