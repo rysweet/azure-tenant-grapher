@@ -157,3 +157,5 @@ cython_debug/
 .vscode/launch.json
 
 az_graph_visualization*.html
+
+specs/
