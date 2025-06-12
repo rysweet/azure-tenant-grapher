@@ -5,6 +5,7 @@ Test script to validate the new modular structure of Azure Tenant Grapher
 
 import os
 import sys
+from typing import Any
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -65,7 +66,7 @@ def test_resource_processor() -> None:
     try:
         # Mock session object for testing
         class MockSession:
-            def run(self, query, **kwargs) -> None:
+            def run(self, query: str, **kwargs: Any) -> None:
                 pass
 
         class MockResult:

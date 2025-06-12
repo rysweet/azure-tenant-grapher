@@ -134,7 +134,7 @@ class ResourceAnonymizer:
         return text
 
     def _anonymize_dict(self, d: Dict[str, Any]) -> Dict[str, Any]:
-        result = {}
+        result: Dict[str, Any] = {}
         for k, v in d.items():
             if isinstance(v, str):
                 result[k] = self._remove_azure_identifiers(v)
@@ -207,11 +207,11 @@ class TenantSpecificationGenerator:
         RETURN r
         LIMIT {limit}
         """
-        resources = []
+        resources: List[Dict[str, Any]] = []
         import json
 
         with driver.session() as session:
-            for record in session.run(query):
+            for record in session.run(query):  # type: ignore[misc]
                 node = record["r"]
                 # Convert node to dict
                 d = dict(node)
@@ -247,7 +247,7 @@ class TenantSpecificationGenerator:
         WHERE a.id IS NOT NULL AND b.id IS NOT NULL
         RETURN a.id as source_id, type(rel) as type, b.id as target_id, b.name as target_name, b.type as target_type
         """
-        relationships = []
+        relationships: List[Dict[str, Any]] = []
         with driver.session() as session:
             for record in session.run(query):
                 relationships.append(
@@ -263,8 +263,8 @@ class TenantSpecificationGenerator:
         return relationships
 
     def _group_resources_by_category(
-        self, resources: List[Dict]
-    ) -> Dict[str, List[Dict]]:
+        self, resources: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
         # Group by major Azure service categories
         categories = {
             "Compute": ["Microsoft.Compute/virtualMachines"],
@@ -275,7 +275,7 @@ class TenantSpecificationGenerator:
             "KeyVault": ["Microsoft.KeyVault/vaults"],
             "Other": [],
         }
-        grouped = {k: [] for k in categories}
+        grouped: Dict[str, List[Dict[str, Any]]] = {k: [] for k in categories}
         for r in resources:
             found = False
             for cat, types in categories.items():
@@ -289,7 +289,7 @@ class TenantSpecificationGenerator:
 
     def _render_markdown(self, grouped_data: Dict[str, Any]) -> str:
         # Render Markdown per spec
-        lines = []
+        lines: List[str] = []
         lines.append("# Azure Tenant Infrastructure Specification\n")
         lines.append(
             f"_Generated at: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}_\n"

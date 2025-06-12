@@ -33,11 +33,13 @@ except ImportError as e:
     sys.exit(1)
 
 
-def async_command(f):
+from typing import Any, Callable, Coroutine, Optional
+
+def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
     """Decorator to make Click commands async-compatible."""
 
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
@@ -50,7 +52,7 @@ def async_command(f):
     help="Logging level (DEBUG, INFO, WARNING, ERROR)",
 )
 @click.pass_context
-def cli(ctx, log_level) -> None:
+def cli(ctx: click.Context, log_level: str) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
@@ -83,8 +85,14 @@ def cli(ctx, log_level) -> None:
 @click.pass_context
 @async_command
 async def build(
-    ctx, tenant_id, resource_limit, batch_size, no_container, generate_spec, visualize
-):
+    ctx: click.Context,
+    tenant_id: str,
+    resource_limit: Optional[int],
+    batch_size: int,
+    no_container: bool,
+    generate_spec: bool,
+    visualize: bool,
+) -> None:
     """Build the complete Azure tenant graph with enhanced processing."""
 
     try:
@@ -224,7 +232,7 @@ async def build(
 )
 @click.pass_context
 @async_command
-async def test(ctx, tenant_id, limit):
+async def test(ctx: click.Context, tenant_id: str, limit: int) -> None:
     """Run a test with limited resources to validate setup."""
 
     click.echo(f"🧪 Running test mode with up to {limit} resources...")
@@ -284,7 +292,7 @@ def container() -> None:
 @click.option("--tenant-id", required=True, help="Azure tenant ID")
 @click.pass_context
 @async_command
-async def spec(ctx, tenant_id):
+async def spec(ctx: click.Context, tenant_id: str) -> None:
     """Generate only the tenant specification (requires existing graph)."""
 
     try:
@@ -318,7 +326,7 @@ async def spec(ctx, tenant_id):
 @cli.command()
 @click.pass_context
 @async_command
-async def visualize(ctx):
+async def visualize(ctx: click.Context) -> None:
     """Generate graph visualization from existing Neo4j data (no tenant-id required)."""
 
     try:
@@ -349,7 +357,7 @@ async def visualize(ctx):
 )
 @click.option("--output", type=str, default=None, help="Custom output path")
 @click.pass_context
-def generate_spec(ctx, limit, output):
+def generate_spec(ctx: click.Context, limit: Optional[int], output: Optional[str]) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
     try:
         from src.config_manager import create_neo4j_config_from_env, setup_logging
@@ -406,7 +414,7 @@ def config() -> None:
 
         config_dict = config.to_dict()
 
-        def print_dict(d, indent=0) -> None:
+        def print_dict(d: Any, indent: int = 0) -> None:
             for key, value in d.items():
                 if isinstance(value, dict):
                     click.echo("  " * indent + f"{key}:")
@@ -425,7 +433,7 @@ def config() -> None:
 @cli.command()
 @click.pass_context
 @async_command
-async def progress(ctx):
+async def progress(ctx: click.Context) -> None:
     """Check processing progress in the database (no tenant-id required)."""
 
     try:

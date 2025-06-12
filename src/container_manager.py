@@ -40,7 +40,7 @@ class Neo4jContainerManager:
         """Check if Docker is available and running."""
         try:
             if self.docker_client:
-                self.docker_client.ping()
+                self.docker_client.ping()  # type: ignore[misc]
                 return True
         except Exception as e:
             logger.error(f"Docker is not available: {e}")
@@ -92,10 +92,10 @@ class Neo4jContainerManager:
             return False
 
         try:
-            containers = self.docker_client.containers.list(
+            containers = self.docker_client.containers.list(  # type: ignore[misc]
                 filters={"name": "azure-tenant-grapher-neo4j"}
             )
-            return len(containers) > 0 and containers[0].status == "running"
+            return len(containers) > 0 and containers[0].status == "running"  # type: ignore[misc]
         except Exception as e:
             logger.error(f"Error checking container status: {e}")
             return False
