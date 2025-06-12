@@ -44,8 +44,8 @@ class ResourceAnonymizer:
         anonymized = dict(resource)
         anonymized["id"] = placeholder
         anonymized["name"] = placeholder
-        anonymized["resource_group"] = "[ANONYMIZED]"
-        anonymized["subscription_id"] = "[ANONYMIZED]"
+        anonymized["resource_group"] = "anon-rg"
+        anonymized["subscription_id"] = "anon-sub"
         anonymized["llm_description"] = self._remove_azure_identifiers(ai_desc)
         # Remove Azure IDs from properties and tags
         anonymized["properties"] = self._anonymize_dict(
@@ -57,7 +57,18 @@ class ResourceAnonymizer:
 
     def anonymize_relationship(self, relationship: Dict[str, Any]) -> Dict[str, Any]:
         target_id = relationship.get("target_id", "")
-        target_placeholder = self.placeholder_cache.get(target_id, "[ANONYMIZED]")
+        # Always generate placeholder if not cached
+        if target_id in self.placeholder_cache:
+            target_placeholder = self.placeholder_cache[target_id]
+        else:
+            # Fallback: generate a placeholder using minimal info
+            target_placeholder = self._generate_placeholder(
+                relationship.get("target_type", ""),
+                relationship.get("target_name", ""),
+                target_id,
+                relationship.get("llm_description", ""),
+            )
+            self.placeholder_cache[target_id] = target_placeholder
         rel = dict(relationship)
         rel["target_id"] = target_placeholder
         rel["target_name"] = target_placeholder
@@ -73,41 +84,47 @@ class ResourceAnonymizer:
         original_id: str,
         ai_description: str,
     ) -> str:
-        hash_input = f"{original_name}:{original_id}:{self.seed or ''}"
-        hash_value = hashlib.sha256(hash_input.encode()).hexdigest()[:8]
+        # kind: lower-case short Azure type (vm, vnet, rg, storage, sql, app, res fallback)
         type_prefix = self._extract_type_prefix(resource_type)
-        semantic_suffix = self._extract_semantic_suffix(ai_description)
-        return f"{type_prefix}-{semantic_suffix}-{hash_value}"
+        # semantic: first noun-like token from AI summary or alphanumeric stem of original name; if none, 'generic'
+        semantic_suffix = self._extract_semantic_suffix(ai_description, original_name)
+        # hash8: first 8 chars of SHA256(original id or name)
+        hash_input = f"{original_id or original_name}:{self.seed or ''}"
+        hash_value = hashlib.sha256(hash_input.encode()).hexdigest()[:8]
+        placeholder = f"{type_prefix}-{semantic_suffix}-{hash_value}"
+        # Ensure regex match
+        if not re.match(r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", placeholder):
+            placeholder = f"res-generic-{hash_value}"
+        return placeholder
 
     def _extract_type_prefix(self, resource_type: str) -> str:
+        # Map to short, lower-case Azure type
         type_mapping = {
             "Microsoft.Compute/virtualMachines": "vm",
-            "Microsoft.Storage/storageAccounts": "storage",
             "Microsoft.Network/virtualNetworks": "vnet",
-            "Microsoft.Web/sites": "webapp",
-            "Microsoft.Sql/servers": "sqlserver",
-            "Microsoft.KeyVault/vaults": "keyvault",
+            "Microsoft.Resources/resourceGroups": "rg",
+            "Microsoft.Storage/storageAccounts": "storage",
+            "Microsoft.Sql/servers": "sql",
+            "Microsoft.Web/sites": "app",
         }
-        return type_mapping.get(resource_type, "resource")
+        for k, v in type_mapping.items():
+            if resource_type.lower().startswith(k.lower()):
+                return v
+        return "res"
 
-    def _extract_semantic_suffix(self, ai_description: str) -> str:
-        if not ai_description:
-            return "main"
-        semantic_patterns = {
-            r"production|prod": "prod",
-            r"development|dev|test": "dev",
-            r"staging|stage": "stage",
-            r"primary|main": "primary",
-            r"secondary|backup": "secondary",
-            r"web|frontend": "web",
-            r"database|db|sql": "db",
-            r"cache|redis": "cache",
-            r"logging|logs": "logs",
-        }
-        for pattern, suffix in semantic_patterns.items():
-            if re.search(pattern, ai_description, re.IGNORECASE):
-                return suffix
-        return "main"
+    def _extract_semantic_suffix(self, ai_description: str, original_name: str) -> str:
+        # Try to extract first noun-like token from AI summary
+        if ai_description:
+            # Simple noun-like extraction: first alphanumeric word >2 chars
+            tokens = re.findall(r"\b[a-zA-Z][a-zA-Z0-9]{2,}\b", ai_description)
+            if tokens:
+                return tokens[0].lower()
+        # Fallback: alphanumeric stem of original name
+        if original_name:
+            stem = re.sub(r"[^a-zA-Z0-9]", "", original_name)
+            if stem:
+                return stem[:12].lower()
+        return "generic"
 
     def _remove_azure_identifiers(self, text: str) -> str:
         if not text:
