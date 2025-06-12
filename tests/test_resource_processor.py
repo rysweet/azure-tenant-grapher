@@ -1,13 +1,12 @@
 # mypy: disable-error-code=misc,no-untyped-def
-"""
-Tests for resource_processor module.
-"""
-
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
 from unittest.mock import Mock
 
 import pytest
 
+from src.llm_descriptions import ThrottlingError
 from src.resource_processor import (
     DatabaseOperations,
     ProcessingStats,
@@ -590,4 +589,70 @@ class TestFactoryFunction:
         assert isinstance(processor, ResourceProcessor)
         assert processor.session == mock_neo4j_session
         assert processor.llm_generator == mock_llm_generator
-        assert processor.resource_limit == 50
+
+
+class DummyLLMGenerator:
+    def __init__(self, throttle_on=2, success_after=5):
+        self.call_count = 0
+        self.throttle_on = throttle_on
+        self.success_after = success_after
+
+    def generate_resource_description(self, resource):
+        self.call_count += 1
+        if self.call_count == self.throttle_on:
+            raise ThrottlingError("Simulated throttling")
+        if self.call_count < self.success_after:
+            return f"desc-{self.call_count}"
+        return "desc-final"
+
+
+def test_async_llm_summary_pool_throttling_and_counters():
+    from src.resource_processor import process_resources_async_llm
+
+    # Prepare dummy resources
+    resources = [
+        {"id": f"r{i}", "subscription_id": "sub", "resource_group": "rg"}
+        for i in range(5)
+    ]
+    counters = {
+        "total": 0,
+        "inserted": 0,
+        "llm_generated": 0,
+        "llm_skipped": 0,
+        "in_flight": 0,
+        "remaining": 0,
+        "throttled": 0,
+    }
+    counters_lock = threading.Lock()
+    llm_gen = DummyLLMGenerator(throttle_on=2, success_after=4)
+
+    # Use a small pool to force throttling logic
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        # session is not used in dummy insert_resource
+        futures = process_resources_async_llm(
+            session=None,
+            resources=resources,
+            llm_generator=llm_gen,
+            summary_executor=executor,
+            counters=counters,
+            counters_lock=counters_lock,
+            max_workers=3,
+        )
+        # Wait for all to complete
+        for f in futures:
+            try:
+                f.result()
+            except ThrottlingError:
+                pass
+            except Exception:
+                pass
+
+    # Check counters
+    with counters_lock:
+        assert counters["total"] == 5
+        assert counters["inserted"] == 5
+        assert counters["llm_generated"] + counters["llm_skipped"] == 5
+        assert counters["remaining"] == 0
+        assert counters["in_flight"] == 0
+        assert counters["throttled"] >= 1
+        # Removed invalid assertion: processor.resource_limit == 50

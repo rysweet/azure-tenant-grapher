@@ -319,6 +319,90 @@ class AzureTenantGrapher:
         finally:
             self.close_neo4j_connection()
 
+    def process_resources_async_llm_with_adaptive_pool(
+        self,
+        resources: List[Dict[str, Any]],
+        session,
+        max_workers: int = 10,
+        min_workers: int = 1,
+    ):
+        """
+        Insert resources and schedule LLM summaries with adaptive ThreadPoolExecutor.
+        Returns: (counters, counters_lock)
+        """
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+
+        from .llm_descriptions import ThrottlingError
+        from .resource_processor import process_resources_async_llm
+
+        counters = {
+            "total": 0,
+            "inserted": 0,
+            "llm_generated": 0,
+            "llm_skipped": 0,
+            "in_flight": 0,
+            "remaining": 0,
+            "throttled": 0,
+        }
+        counters_lock = threading.Lock()
+        pool_state = {"size": max_workers}
+        summary_executor = ThreadPoolExecutor(
+            max_workers=pool_state["size"], thread_name_prefix="llm-summary"
+        )
+        consecutive_success = 0
+
+        def adjust_pool(new_size):
+            nonlocal summary_executor
+            if new_size != pool_state["size"]:
+                summary_executor.shutdown(wait=True)
+                pool_state["size"] = new_size
+                summary_executor = ThreadPoolExecutor(
+                    max_workers=new_size, thread_name_prefix="llm-summary"
+                )
+
+        # Initial scheduling
+        futures = process_resources_async_llm(
+            session,
+            resources,
+            self.llm_generator,
+            summary_executor,
+            counters,
+            counters_lock,
+            max_workers=pool_state["size"],
+        )
+
+        # Adaptive throttling loop
+        while True:
+            done, not_done = [], []
+            for f in futures:
+                if f.done():
+                    done.append(f)
+                else:
+                    not_done.append(f)
+            for f in done:
+                try:
+                    f.result()
+                    consecutive_success += 1
+                except ThrottlingError:
+                    # Throttling detected, shrink pool
+                    if pool_state["size"] > 5:
+                        adjust_pool(5)
+                    elif pool_state["size"] > min_workers:
+                        adjust_pool(min_workers)
+                    consecutive_success = 0
+                except Exception:
+                    pass
+            # Ramp up if 3 consecutive successes at lower pool size
+            if pool_state["size"] < max_workers and consecutive_success >= 3:
+                adjust_pool(pool_state["size"] + 1)
+                consecutive_success = 0
+            if not not_done:
+                break
+            futures = not_done
+        summary_executor.shutdown(wait=True)
+        return counters, counters_lock
+
     async def build_graph(self) -> Dict[str, Any]:
         """
         Main method to build the complete graph of Azure tenant resources.
