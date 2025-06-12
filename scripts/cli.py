@@ -35,6 +35,7 @@ except ImportError as e:
 
 from typing import Any, Callable, Coroutine, Optional
 
+
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
     """Decorator to make Click commands async-compatible."""
 
@@ -357,7 +358,9 @@ async def visualize(ctx: click.Context) -> None:
 )
 @click.option("--output", type=str, default=None, help="Custom output path")
 @click.pass_context
-def generate_spec(ctx: click.Context, limit: Optional[int], output: Optional[str]) -> None:
+def generate_spec(
+    ctx: click.Context, limit: Optional[int], output: Optional[str]
+) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
     try:
         from src.config_manager import create_neo4j_config_from_env, setup_logging
