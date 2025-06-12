@@ -93,6 +93,13 @@ def test_spec_file_created_and_resource_limit(neo4j_test_graph):
         content = f.read()
     # Assert ≤limit resources in Markdown (count "### " headers)
     assert len(re.findall(r"^### ", content, re.MULTILINE)) <= 12
+    # Assert no [Anonymized] substring in Markdown (case-insensitive)
+    assert "[anonymized]" not in content.lower()
+    # Assert all anonymized names match regex
+    for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
+        assert re.match(
+            r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
+        ), f"Name does not match pattern: {match}"
     shutil.rmtree(tmpdir)
 
 
@@ -118,6 +125,13 @@ def test_names_anonymized_and_no_real_ids(neo4j_test_graph):
     assert not re.search(
         r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}", content
     )
+    # Assert no [Anonymized] substring in Markdown (case-insensitive)
+    assert "[anonymized]" not in content.lower()
+    # Assert all anonymized names match regex
+    for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
+        assert re.match(
+            r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
+        ), f"Name does not match pattern: {match}"
     shutil.rmtree(tmpdir)
 
 
