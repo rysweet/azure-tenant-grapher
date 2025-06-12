@@ -291,6 +291,55 @@ async def visualize(ctx, tenant_id):
 
 
 @cli.command()
+@click.option("--tenant-id", required=True, help="Azure tenant ID")
+@click.option(
+    "--limit", type=int, default=None, help="Resource limit (overrides config)"
+)
+@click.option("--output", type=str, default=None, help="Custom output path")
+@click.pass_context
+def generate_spec(ctx, tenant_id, limit, output):
+    """Generate anonymized tenant Markdown specification."""
+    try:
+        from src.config_manager import create_config_from_env, setup_logging
+        from src.tenant_spec_generator import (
+            ResourceAnonymizer,
+            TenantSpecificationGenerator,
+        )
+
+        # Load config
+        config = create_config_from_env(tenant_id, limit)
+        config.logging.level = ctx.obj["log_level"]
+        setup_logging(config.logging)
+
+        # Neo4j connection info
+        neo4j_uri = config.neo4j.uri
+        neo4j_user = config.neo4j.user
+        neo4j_password = config.neo4j.password
+
+        # Spec config
+        spec_config = config.specification
+
+        # Anonymizer
+        anonymizer = ResourceAnonymizer(seed=spec_config.anonymization_seed)
+
+        # Generator
+        generator = TenantSpecificationGenerator(
+            neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
+        )
+
+        # Generate spec
+        output_path = generator.generate_specification(output_path=output)
+        click.echo(f"✅ Tenant Markdown specification generated: {output_path}")
+
+    except Exception as e:
+        import traceback
+
+        click.echo(f"❌ Failed to generate tenant specification: {e}", err=True)
+        traceback.print_exc()
+        sys.exit(1)
+
+
+@cli.command()
 def config() -> None:
     """Show current configuration (without sensitive data)."""
 
