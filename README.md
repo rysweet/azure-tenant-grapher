@@ -54,6 +54,9 @@ duv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize
 uv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize-only
 ```
 
+# Generate anonymized Markdown specification of your tenant
+uv run python scripts/cli.py generate-spec --tenant-id <your-tenant-id> [--limit N]
+
 ## VS Code Tasks
 
 Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
@@ -149,6 +152,7 @@ azure-tenant-grapher/
 - **Node Details**: Click on nodes to view detailed resource information and metadata
 - **Modular Architecture**: Well-structured codebase with comprehensive test coverage
 - **AI Integration**: Optional AI-powered resource descriptions using Azure OpenAI
+- **Tenant Markdown Specification**: Generate anonymized, portable Markdown documentation of your Azure tenant.
 
 ## Prerequisites
 
