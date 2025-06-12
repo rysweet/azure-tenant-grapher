@@ -106,6 +106,56 @@ async def build(
         grapher = AzureTenantGrapher(config)
 
         logger.info("🚀 Starting Azure Tenant Graph building...")
+        # --- ASYNC LLM SUMMARIZATION WITH RICH LIVE PANEL ---
+        import time
+
+        from rich.live import Live
+        from rich.table import Table
+
+        # Discover resources
+        all_resources = []
+        subscriptions = await grapher.discover_subscriptions()
+        with grapher.driver.session() as session:
+            for subscription in subscriptions:
+                resources = await grapher.discover_resources_in_subscription(
+                    subscription["id"]
+                )
+                all_resources.extend(resources)
+
+            # Prepare and run async LLM summary pool
+            counters, counters_lock = (
+                grapher.process_resources_async_llm_with_adaptive_pool(
+                    all_resources, session, max_workers=10, min_workers=1
+                )
+            )
+
+            def make_table():
+                table = Table(title="LLM Summarization Progress", expand=True)
+                table.add_column("Metric", style="bold cyan")
+                table.add_column("Count", style="bold magenta")
+                with counters_lock:
+                    table.add_row("Total Resources", str(counters.get("total", 0)))
+                    table.add_row("Inserted in Graph", str(counters.get("inserted", 0)))
+                    table.add_row(
+                        "LLM Summaries Generated", str(counters.get("llm_generated", 0))
+                    )
+                    table.add_row(
+                        "Summaries In-Flight", str(counters.get("in_flight", 0))
+                    )
+                    table.add_row(
+                        "Summaries Remaining", str(counters.get("remaining", 0))
+                    )
+                    table.add_row("Throttled Events", str(counters.get("throttled", 0)))
+                return table
+
+            with Live(make_table(), refresh_per_second=1, transient=True) as live:
+                while True:
+                    live.update(make_table())
+                    with counters_lock:
+                        if counters["remaining"] <= 0 and counters["in_flight"] == 0:
+                            break
+                    time.sleep(1)
+        # --- END RICH LIVE PANEL ---
         result = await grapher.build_graph()
 
         if result.get("success", False):

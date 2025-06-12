@@ -8,6 +8,8 @@ with improved error handling, progress tracking, and database operations.
 import asyncio
 import json
 import logging
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -555,6 +557,84 @@ class ResourceProcessor:
             logger.info(f"🤖 LLM Descriptions Generated: {self.stats.llm_generated}")
             logger.info(f"⚠️  LLM Descriptions Skipped: {self.stats.llm_skipped}")
         logger.info("=" * 60)
+
+
+def process_resources_async_llm(
+    session,
+    resources: List[Dict[str, Any]],
+    llm_generator: Optional[AzureLLMDescriptionGenerator],
+    summary_executor: ThreadPoolExecutor,
+    counters: Dict[str, int],
+    counters_lock: threading.Lock,
+    max_workers: int = 10,
+):
+    """
+    Insert resources into the graph and schedule LLM summaries in a background thread pool.
+    Args:
+        session: Neo4j session
+        resources: List of resource dicts
+        llm_generator: LLM generator instance
+        summary_executor: ThreadPoolExecutor for summaries
+        counters: Shared counter dict
+        counters_lock: threading.Lock for counters
+        max_workers: Maximum concurrent LLM summaries
+    Returns:
+        None (updates counters in place)
+    """
+    from .llm_descriptions import ThrottlingError
+
+    def insert_resource(resource):
+        # Insert resource into graph
+        db_ops = DatabaseOperations(session)
+        db_ops.upsert_resource(resource, processing_status="completed")
+        db_ops.create_subscription_relationship(
+            resource["subscription_id"], resource["id"]
+        )
+        db_ops.create_resource_group_relationships(resource)
+        with counters_lock:
+            counters["inserted"] += 1
+
+    def summarize_resource(resource):
+        try:
+            with counters_lock:
+                counters["in_flight"] += 1
+            if llm_generator:
+                desc = llm_generator.generate_resource_description(resource)
+                # If async, run in event loop
+                if asyncio.iscoroutine(desc):
+                    desc = asyncio.run(desc)
+                resource["llm_description"] = desc
+                with counters_lock:
+                    counters["llm_generated"] += 1
+            else:
+                resource["llm_description"] = (
+                    f"Azure {resource.get('type', 'Resource')} resource."
+                )
+                with counters_lock:
+                    counters["llm_skipped"] += 1
+        except ThrottlingError:
+            with counters_lock:
+                counters["throttled"] += 1
+            raise
+        except Exception:
+            with counters_lock:
+                counters["llm_skipped"] += 1
+        finally:
+            with counters_lock:
+                counters["in_flight"] -= 1
+                counters["remaining"] -= 1
+
+    # Schedule
+    with counters_lock:
+        counters["total"] = len(resources)
+        counters["remaining"] = len(resources)
+    futures = []
+    for resource in resources:
+        insert_resource(resource)
+        future = summary_executor.submit(summarize_resource, resource)
+        futures.append(future)
+    # Optionally: return futures for monitoring
+    return futures
 
 
 def create_resource_processor(
