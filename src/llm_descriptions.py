@@ -21,6 +21,88 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+class ThrottlingError(Exception):
+    """Raised when LLM API throttling (HTTP 429) is detected."""
+
+    pass
+
+
+def is_throttling_error(e):
+    if hasattr(e, "status_code") and e.status_code == 429:
+        return True
+    if "429" in str(e) or "throttle" in str(e).lower():
+        return True
+    return False
+
+
+def async_retry_with_throttling(max_retries=5, initial_delay=2, backoff=2):
+    """
+    Decorator for retrying async LLM calls, raising ThrottlingError on repeated throttling.
+    """
+
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            delay = initial_delay
+            for attempt in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    if is_throttling_error(e):
+                        logger.warning(
+                            f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt+1}/{max_retries}"
+                        )
+                        if attempt < max_retries - 1:
+                            import asyncio
+
+                            await asyncio.sleep(delay)
+                            delay *= backoff
+                            continue
+                        else:
+                            raise ThrottlingError(
+                                "LLM API throttling detected after retries"
+                            ) from e
+                    raise
+
+        return wrapper
+
+    return decorator
+
+
+# (Removed duplicate ThrottlingError definition)
+
+
+def retry_with_throttling(
+    func, max_retries=5, initial_delay=2, backoff=2, logger=logger
+):
+    """
+    Retry wrapper for LLM calls. Raises ThrottlingError on repeated throttling.
+    """
+    import time
+
+    def wrapper(*args, **kwargs):
+        delay = initial_delay
+        for attempt in range(max_retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                # OpenAI HTTP 429 or explicit throttling
+                if hasattr(e, "status_code") and e.status_code == 429:
+                    logger.warning(
+                        f"OpenAI throttling detected (HTTP 429), attempt {attempt+1}/{max_retries}"
+                    )
+                elif "429" in str(e) or "throttle" in str(e).lower():
+                    logger.warning(
+                        f"Possible throttling detected: {e}, attempt {attempt+1}/{max_retries}"
+                    )
+                else:
+                    raise
+                time.sleep(delay)
+                delay *= backoff
+        raise ThrottlingError("LLM API throttling detected after retries")
+
+    return wrapper
+
+
 @dataclass
 class LLMConfig:
     """Configuration for Azure OpenAI LLM services."""
@@ -91,35 +173,35 @@ class AzureLLMDescriptionGenerator:
     async def generate_resource_description(self, resource_data: Dict[str, Any]) -> str:
         """
         Generate a natural language description for an Azure resource.
-
-        Args:
-            resource_data: Dict[str, Any]ionary containing resource information
-
-        Returns:
-            Natural language description of the resource
+        Raises ThrottlingError on repeated throttling.
         """
-        try:
-            # Extract ALL relevant information from resource data
-            resource_type = resource_data.get("type", "Unknown")
-            resource_name = resource_data.get("name", "Unknown")
-            location = resource_data.get("location", "Unknown")
-            properties = resource_data.get("properties", {})
-            tags = resource_data.get("tags", {})
-            sku = resource_data.get("sku", {})
-            kind = resource_data.get("kind", None)
+        max_retries = 5
+        initial_delay = 2
+        backoff = 2
+        delay = initial_delay
+        for attempt in range(max_retries):
+            try:
+                # Extract ALL relevant information from resource data
+                resource_type = resource_data.get("type", "Unknown")
+                resource_name = resource_data.get("name", "Unknown")
+                location = resource_data.get("location", "Unknown")
+                properties = resource_data.get("properties", {})
+                tags = resource_data.get("tags", {})
+                sku = resource_data.get("sku", {})
+                kind = resource_data.get("kind", None)
 
-            # Include ALL properties for more detailed analysis
-            resource_summary = {
-                "name": resource_name,
-                "type": resource_type,
-                "location": location,
-                "sku": sku,
-                "kind": kind,
-                "properties": properties,  # Include ALL properties
-                "tags": tags,
-            }
+                # Include ALL properties for more detailed analysis
+                resource_summary = {
+                    "name": resource_name,
+                    "type": resource_type,
+                    "location": location,
+                    "sku": sku,
+                    "kind": kind,
+                    "properties": properties,  # Include ALL properties
+                    "tags": tags,
+                }
 
-            prompt = f"""
+                prompt = f"""
 You are an expert Azure Infrastructure-as-Code specialist with deep knowledge of ARM templates, Terraform, and Azure CLI.
 
 TASK: Create a detailed technical description for this Azure resource that could be used to recreate the resource from scratch. Include specific configuration details that are essential for deployment.
@@ -146,32 +228,43 @@ EXAMPLES OF GOOD DESCRIPTIONS:
 Be specific about the actual configured values while explaining their architectural significance.
 """
 
-            response = self.client.chat.completions.create(
-                model=self.config.model_chat,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert Azure cloud architect who creates clear, concise descriptions of Azure resources for technical documentation.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                # o3 supports large completions; use full 32 k cap
-                max_completion_tokens=32768,
-            )
+                response = self.client.chat.completions.create(
+                    model=self.config.model_chat,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert Azure cloud architect who creates clear, concise descriptions of Azure resources for technical documentation.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_completion_tokens=32768,
+                )
 
-            content = response.choices[0].message.content
-            description = str(content).strip() if content else ""
-            logger.debug(
-                f"Generated description for {resource_type} '{resource_name}': {description}"
-            )
+                content = response.choices[0].message.content
+                description = str(content).strip() if content else ""
+                logger.debug(
+                    f"Generated description for {resource_type} '{resource_name}': {description}"
+                )
 
-            return description
-
-        except Exception as e:
-            logger.error(
-                f"Failed to generate description for resource {resource_data.get('name', 'Unknown')}: {e!s}"
-            )
-            return f"Azure {resource_type} resource providing cloud services and functionality."
+                return description
+            except Exception as e:
+                if is_throttling_error(e):
+                    logger.warning(
+                        f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt+1}/{max_retries}"
+                    )
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(delay)
+                        delay *= backoff
+                        continue
+                    else:
+                        raise ThrottlingError(
+                            "LLM API throttling detected after retries"
+                        ) from e
+                logger.error(
+                    f"Failed to generate description for resource {resource_data.get('name', 'Unknown')}: {e!s}"
+                )
+                resource_type = resource_data.get("type", "Unknown")
+                return f"Azure {resource_type} resource providing cloud services and functionality."
 
     async def generate_relationship_description(
         self,
