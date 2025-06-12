@@ -150,6 +150,32 @@ class LoggingConfig:
 
 
 @dataclass
+class SpecificationConfig:
+    """Configuration for specification generation."""
+
+    resource_limit: int = field(
+        default_factory=lambda: int(os.getenv("AZTG_SPEC_RESOURCE_LIMIT", "50"))
+    )
+    output_directory: str = field(
+        default_factory=lambda: os.getenv("AZTG_SPEC_OUTPUT_DIR", "./specs")
+    )
+    include_ai_summaries: bool = field(
+        default_factory=lambda: os.getenv("AZTG_SPEC_INCLUDE_AI", "true").lower()
+        == "true"
+    )
+    include_configuration_details: bool = field(
+        default_factory=lambda: os.getenv("AZTG_SPEC_INCLUDE_CONFIG", "true").lower()
+        == "true"
+    )
+    anonymization_seed: Optional[str] = field(
+        default_factory=lambda: os.getenv("AZTG_SPEC_ANONYMIZATION_SEED", None)
+    )
+    template_style: str = field(
+        default_factory=lambda: os.getenv("AZTG_SPEC_TEMPLATE_STYLE", "comprehensive")
+    )
+
+
+@dataclass
 class AzureTenantGrapherConfig:
     """Main configuration class that aggregates all configuration sections."""
 
@@ -157,6 +183,7 @@ class AzureTenantGrapherConfig:
     azure_openai: AzureOpenAIConfig = field(default_factory=AzureOpenAIConfig)
     processing: ProcessingConfig = field(default_factory=ProcessingConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    specification: SpecificationConfig = field(default_factory=SpecificationConfig)
     tenant_id: Optional[str] = None
 
     @classmethod
@@ -179,6 +206,7 @@ class AzureTenantGrapherConfig:
         # Override resource limit if provided
         if resource_limit is not None:
             config.processing.resource_limit = resource_limit
+            config.specification.resource_limit = resource_limit
 
         return config
 
@@ -193,6 +221,7 @@ class AzureTenantGrapherConfig:
             self.neo4j.__post_init__()
             self.processing.__post_init__()
             self.logging.__post_init__()
+            # No __post_init__ for specification, but could add validation if needed
 
             # Validate Azure OpenAI if enabled
             if self.azure_openai.is_configured():
@@ -222,6 +251,16 @@ class AzureTenantGrapherConfig:
         logger.info(
             f"   - Auto Start Container: {self.processing.auto_start_container}"
         )
+        logger.info("📄 Specification:")
+        logger.info(f"   - Spec Resource Limit: {self.specification.resource_limit}")
+        logger.info(f"   - Output Directory: {self.specification.output_directory}")
+        logger.info(
+            f"   - Include AI Summaries: {self.specification.include_ai_summaries}"
+        )
+        logger.info(
+            f"   - Include Config Details: {self.specification.include_configuration_details}"
+        )
+        logger.info(f"   - Template Style: {self.specification.template_style}")
         logger.info(f"📝 Logging Level: {self.logging.level}")
         if self.logging.file_output:
             logger.info(f"📄 Log File: {self.logging.file_output}")
@@ -254,6 +293,14 @@ class AzureTenantGrapherConfig:
             "logging": {
                 "level": self.logging.level,
                 "file_output": self.logging.file_output,
+            },
+            "specification": {
+                "resource_limit": self.specification.resource_limit,
+                "output_directory": self.specification.output_directory,
+                "include_ai_summaries": self.specification.include_ai_summaries,
+                "include_configuration_details": self.specification.include_configuration_details,
+                "anonymization_seed": self.specification.anonymization_seed,
+                "template_style": self.specification.template_style,
             },
         }
 
