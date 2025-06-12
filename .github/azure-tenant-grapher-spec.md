@@ -371,3 +371,42 @@ services:
 - **Compliance**: Audit logging and data governance features
 
 This specification provides complete guidance for regenerating the Azure Tenant Grapher project using LLMs, including all architectural decisions, implementation details, configuration requirements, and extensibility patterns established through the development process.
+
+---
+
+## Tenant Markdown Specification
+
+### Purpose
+
+The Tenant Markdown Specification feature enables users to generate anonymized, comprehensive Markdown documentation of their Azure tenant infrastructure. This documentation is portable, human-readable, and suitable for architecture reviews, compliance audits, knowledge transfer, and disaster recovery planning.
+
+### CLI Usage
+
+Generate a Markdown specification using the CLI:
+
+```bash
+uv run python scripts/cli.py generate-spec --tenant-id <tenant-id> [--limit N]
+```
+
+- `--tenant-id` (required): Azure tenant ID to document.
+- `--limit` (optional): Maximum number of resources to include (default: 50).
+
+Example:
+
+```bash
+uv run python scripts/cli.py generate-spec --tenant-id 00000000-0000-0000-0000-000000000000 --limit 100
+```
+
+### Specification File Location
+
+Generated specifications are saved in the `./specs/` directory with a timestamped filename:
+
+```
+./specs/{YYYYMMDD_HHMMSS}_tenant_spec.md
+```
+
+Example: `./specs/20250612_023221_tenant_spec.md`
+
+### Visualiser Link
+
+The interactive 3D graph visualizer (HTML output) includes a "View Markdown Spec" link, allowing users to quickly access the latest generated specification for the current tenant. This provides seamless navigation between the visual graph and the detailed Markdown documentation.

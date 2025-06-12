@@ -169,12 +169,17 @@ def remove_azure_identifiers(text: str) -> str:
 
 ## Command-Line & CLI Integration
 
+> **CLI Signature:**
+> `--tenant-id` is **required**.
+> `--limit` is **optional** (default: 50).
+> Canonical usage:
+
 ### New CLI Command
 ```bash
-# Generate specification with defaults
-uv run python scripts/cli.py generate-spec --tenant-id <tenant-id>
+# Generate specification (required: --tenant-id, optional: --limit)
+uv run python scripts/cli.py generate-spec --tenant-id <tenant-id> [--limit N]
 
-# Specify custom resource limit
+# Example with custom resource limit
 uv run python scripts/cli.py generate-spec --tenant-id <tenant-id> --limit 100
 
 # Generate with custom output path
