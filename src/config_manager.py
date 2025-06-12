@@ -316,6 +316,7 @@ def setup_logging(config: LoggingConfig) -> None:
 
     try:
         import colorlog
+
         use_colorlog = True
         colorlog_available = colorlog
     except ImportError:

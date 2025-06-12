@@ -163,7 +163,9 @@ class AzureTenantGrapher:
                     "type": getattr(res, "type", None),
                     "location": getattr(res, "location", None),
                     "resource_group": (
-                        res_id.split("/")[4] if res_id and len(res_id.split("/")) > 4 else None
+                        res_id.split("/")[4]
+                        if res_id and len(res_id.split("/")) > 4
+                        else None
                     ),
                     "subscription_id": subscription_id,
                     "tags": dict(getattr(res, "tags", {}) or {}),
@@ -333,7 +335,7 @@ class AzureTenantGrapher:
         Returns: (counters, counters_lock)
         """
         import threading
-        from concurrent.futures import ThreadPoolExecutor, Future
+        from concurrent.futures import Future, ThreadPoolExecutor
 
         from .llm_descriptions import ThrottlingError
         from .resource_processor import process_resources_async_llm
@@ -365,6 +367,7 @@ class AzureTenantGrapher:
 
         # Initial scheduling
         from typing import Any
+
         futures: list[Future[Any]] = process_resources_async_llm(
             session,
             resources,
@@ -434,7 +437,9 @@ class AzureTenantGrapher:
                     }
 
             if not self.driver:
-                logger.error("❌ Neo4j driver is not initialized after connection attempt.")
+                logger.error(
+                    "❌ Neo4j driver is not initialized after connection attempt."
+                )
                 return {
                     "success": False,
                     "subscriptions": 0,

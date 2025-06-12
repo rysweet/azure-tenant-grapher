@@ -35,9 +35,10 @@ def is_throttling_error(e: Exception) -> bool:
     return False
 
 
-from typing import Callable, Awaitable, TypeVar, Any
+from typing import Awaitable, Callable, TypeVar
 
 T = TypeVar("T")
+
 
 def async_retry_with_throttling(
     max_retries: int = 5, initial_delay: int = 2, backoff: int = 2
