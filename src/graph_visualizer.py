@@ -420,27 +420,56 @@ class GraphVisualizer:
         """Generate the complete HTML template with embedded JavaScript."""
 
         # The following HTML template is not used for SQL or code execution, only for visualization. # nosec
+        # --- CLUSTER LABELS: Each resource group is treated as a cluster. Labels are rendered at the centroid of each cluster and follow camera movement. ---
         html_template = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure Tenant Graph - 3D Visualization</title>
-    <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
-    <style>
-        body {{
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: #ffffff;
-            overflow: hidden;
-        }}
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Azure Tenant Graph - 3D Visualization</title>
+            <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
+            <style>
+                body {{
+                    margin: 0;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: #1a1a1a;
+                    color: #ffffff;
+                    overflow: hidden;
+                }}
 
-        #visualization {{
-            width: 100vw;
-            height: 100vh;
-        }}
+                #visualization {{
+                    width: 100vw;
+                    height: 100vh;
+                }}
+
+                #cluster-labels {{
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    pointer-events: none;
+                    z-index: 1100;
+                }}
+                .cluster-label {{
+                    position: absolute;
+                    min-width: 40px;
+                    max-width: 200px;
+                    padding: 2px 8px;
+                    font-size: 13px;
+                    color: #fff;
+                    background: rgba(30,30,30,0.7);
+                    border-radius: 6px;
+                    border: 1px solid rgba(255,255,255,0.15);
+                    text-align: center;
+                    white-space: nowrap;
+                    pointer-events: none;
+                    user-select: none;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+                    opacity: 0.85;
+                    transition: opacity 0.2s;
+                }}
 
         .controls {{
             position: absolute;
@@ -607,6 +636,7 @@ class GraphVisualizer:
 </head>
 <body>
     <div id="visualization"></div>
+    <div id="cluster-labels"></div>
 
     <div class="controls">
         <h3>Azure Graph Controls</h3>
@@ -624,6 +654,13 @@ class GraphVisualizer:
         </div>
 
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
+
+        <!-- auto-rotation is disabled by default for readability. Use the button below to enable. -->
+        <button id="toggleRotateBtn" style="margin-top:10px;width:100%;">Enable Auto-Rotate</button>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+            <button id="zoomInBtn" style="flex:1;">+ Zoom</button>
+            <button id="zoomOutBtn" style="flex:1;">- Zoom</button>
+        </div>
 
         {self._generate_specification_link(specification_path)}
 
@@ -649,6 +686,70 @@ class GraphVisualizer:
         let activeNodeFilters = new Set(originalGraphData.node_types);
         let activeRelationshipFilters = new Set(originalGraphData.relationship_types);
         let searchTerm = '';
+
+        /* --- CLUSTER LABELS LOGIC ---
+           Each resource group is treated as a cluster. If resource_group is null, fallback to subscription or type.
+           Labels are rendered at the centroid of each cluster and follow camera movement.
+        */
+        function getClusterKey(node) {{{{
+            if (node.properties && node.properties.resource_group) return node.properties.resource_group;
+            if (node.properties && node.properties.subscription) return node.properties.subscription;
+            return node.type || "Unknown";
+        }}}}
+        function getClusterLabel(node) {{{{
+            if (node.properties && node.properties.resource_group) return node.properties.resource_group;
+            if (node.properties && node.properties.subscription) return "Subscription: " + node.properties.subscription;
+            return node.type || "Unknown";
+        }}}}
+        function computeClusterCentroids(nodes) {{{{
+            /* Returns {{clusterKey: {{x, y, z, label, count}}}} */
+            const clusters = {{{{}}}};
+            nodes.forEach(node => {{{{
+                const key = getClusterKey(node);
+                if (!clusters[key]) {{{{
+                    clusters[key] = {{{{x: 0, y: 0, z: 0, count: 0, label: getClusterLabel(node)}}}};
+                }}}}
+                if (node.x !== undefined && node.y !== undefined && node.z !== undefined) {{{{
+                    clusters[key].x += node.x;
+                    clusters[key].y += node.y;
+                    clusters[key].z += node.z;
+                    clusters[key].count += 1;
+                }}}}
+            }}}});
+            for (const key in clusters) {{{{
+                if (clusters[key].count > 0) {{{{
+                    clusters[key].x /= clusters[key].count;
+                    clusters[key].y /= clusters[key].count;
+                    clusters[key].z /= clusters[key].count;
+                }}}}
+            }}}}
+            return clusters;
+        }}}}
+        function updateClusterLabels(camera, renderer, nodes) {{{{
+            const clusterLabelsDiv = document.getElementById('cluster-labels');
+            while (clusterLabelsDiv.firstChild) clusterLabelsDiv.removeChild(clusterLabelsDiv.firstChild);
+            const clusters = computeClusterCentroids(nodes);
+            if (!window.Graph || !window.Graph.camera) return;
+            const cam = window.Graph.camera();
+            const width = renderer.domElement.width;
+            const height = renderer.domElement.height;
+            for (const key in clusters) {{{{
+                const c = clusters[key];
+                if (c.count === 0) continue;
+                const vector = new window.THREE.Vector3(c.x, c.y, c.z);
+                vector.project(cam);
+                const x = (vector.x * 0.5 + 0.5) * width;
+                const y = (-vector.y * 0.5 + 0.5) * height;
+                if (vector.z < 1) {{{{
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'cluster-label';
+                    labelDiv.textContent = c.label;
+                    labelDiv.style.left = `${{{{x}}}}px`;
+                    labelDiv.style.top = `${{{{y}}}}px`;
+                    clusterLabelsDiv.appendChild(labelDiv);
+                }}}}
+            }}}}
+        }}}}
 
         // Initialize 3D force graph
         const Graph = ForceGraph3D()
@@ -909,15 +1010,79 @@ class GraphVisualizer:
         initializeFilters();
         updateVisualization();
 
-        // Auto-rotate camera
+        // --- CLUSTER LABELS: update on each tick ---
+        // Wait for Graph to be initialized
+        setTimeout(() => {{{{
+            if (!window.Graph) return;
+            window.Graph = Graph;
+            const renderer = Graph.renderer ? Graph.renderer() : Graph._renderer;
+            Graph.onEngineTick(() => {{{{
+                updateClusterLabels(Graph.camera(), renderer, currentGraphData.nodes);
+            }}}});
+            window.addEventListener('resize', () => {{{{
+                updateClusterLabels(Graph.camera(), renderer, currentGraphData.nodes);
+            }}}});
+        }}}}, 500);
+
+        // --- Auto-Rotate Camera Control ---
+        // By default, auto-rotation is disabled for readability.
+        // Use the "Enable Auto-Rotate" button in the controls to toggle rotation.
+
+        let autoRotate = false;
+        let rotateInterval = null;
         let angle = 0;
-        setInterval(() => {{
-            angle += 0.01;
-            Graph.cameraPosition({{
-                x: Math.cos(angle) * 800,
-                z: Math.sin(angle) * 800
-            }});
-        }}, 100);
+
+        function startAutoRotate() {{
+            if (rotateInterval) return;
+            rotateInterval = setInterval(() => {{
+                angle += 0.01;
+                Graph.cameraPosition({{
+                    x: Math.cos(angle) * 800,
+                    z: Math.sin(angle) * 800
+                }});
+            }}, 100);
+        }}
+
+        function stopAutoRotate() {{
+            if (rotateInterval) {{
+                clearInterval(rotateInterval);
+                rotateInterval = null;
+            }}
+        }}
+
+        function toggleAutoRotate() {{
+            autoRotate = !autoRotate;
+            const btn = document.getElementById('toggleRotateBtn');
+            if (autoRotate) {{
+                startAutoRotate();
+                btn.textContent = "Disable Auto-Rotate";
+                btn.classList.add("active");
+            }} else {{
+                stopAutoRotate();
+                btn.textContent = "Enable Auto-Rotate";
+                btn.classList.remove("active");
+            }}
+        }}
+
+        // Ensure rotation is off by default
+        stopAutoRotate();
+        document.getElementById('toggleRotateBtn').textContent = "Enable Auto-Rotate";
+        document.getElementById('toggleRotateBtn').classList.remove("active");
+
+        // --- Zoom controls ---
+        document.getElementById('zoomInBtn').addEventListener('click', () => {{
+            const cam = Graph.camera();
+            cam.position.z *= 0.8;
+            cam.updateProjectionMatrix();
+        }});
+        document.getElementById('zoomOutBtn').addEventListener('click', () => {{
+            const cam = Graph.camera();
+            cam.position.z *= 1.2;
+            cam.updateProjectionMatrix();
+        }});
+
+        // --- Rotation toggle ---
+        document.getElementById('toggleRotateBtn').addEventListener('click', toggleAutoRotate);
 
         console.log('Azure Tenant Graph 3D Visualization loaded successfully!');
         console.log('Graph data:', originalGraphData);
@@ -927,6 +1092,9 @@ class GraphVisualizer:
         """
 
         return html_template
+
+    # Cluster labeling: Each resource group is treated as a cluster. Labels are rendered at the centroid of each cluster and follow camera movement.
+    # If resource_group is null, fallback to subscription or resource type. See _generate_html_template for implementation.
 
     def open_visualization(self, html_path: str) -> None:
         """Open the visualization in the default web browser."""

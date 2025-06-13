@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -397,14 +397,14 @@ class ResourceProcessor:
                 self.stats.skipped += 1
                 return True
 
-            logger.info(
+            logger.debug(
                 f"📝 Processing resource {resource_index + 1}/{self.stats.total_resources}: {resource_name} ({resource_type}) - {reason}"
             )
 
             # Generate LLM description if needed
             llm_success = False
             if reason in ["new_resource", "needs_llm_description", "retry_failed"]:
-                logger.info(f"🤖 Generating LLM description for {resource_name}")
+                logger.debug(f"🤖 Generating LLM description for {resource_name}")
                 llm_success, description = await self._process_single_resource_llm(
                     resource
                 )
@@ -417,7 +417,7 @@ class ResourceProcessor:
                         if len(description) > 100
                         else description
                     )
-                    logger.info(f'✅ Generated description: "{desc_preview}"')
+                    logger.debug(f'✅ Generated description: "{desc_preview}"')
                 else:
                     self.stats.llm_skipped += 1
                     logger.warning(f"⚠️  Using fallback description for {resource_name}")
@@ -434,8 +434,10 @@ class ResourceProcessor:
                 resource["subscription_id"], resource_id
             )
             self.db_ops.create_resource_group_relationships(resource)
+            # --- Enriched relationships (non-containment) ---
+            self._create_enriched_relationships(resource)
 
-            logger.info(f"✅ Successfully processed {resource_name}")
+            logger.debug(f"✅ Successfully processed {resource_name}")
             self.stats.successful += 1
             return True
 
@@ -529,6 +531,79 @@ class ResourceProcessor:
         self._log_final_summary()
         return self.stats
 
+    def _create_relationship(self, src_id: str, rel_type: str, tgt_id: str) -> None:
+        """
+        Create a relationship of type rel_type from src_id to tgt_id using MERGE semantics.
+        """
+        query = (
+            "MATCH (src:Resource {id: $src_id}) "
+            "MATCH (tgt:Resource {id: $tgt_id}) "
+            f"MERGE (src)-[:{rel_type}]->(tgt)"
+        )
+        self.session.run(query, src_id=src_id, tgt_id=tgt_id)
+
+    def _create_enriched_relationships(self, resource: dict) -> None:
+        """
+        Emit non-containment relationships for the resource, if applicable.
+        """
+        rid = resource.get("id")
+        rtype = resource.get("type", "")
+        props = resource
+
+        # --- 1. Network relationships ---
+        # (VirtualMachine) -[:USES_SUBNET]-> (Subnet)
+        # (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
+        if rtype.endswith("virtualMachines") and "network_profile" in props:
+            nics = props["network_profile"].get("network_interfaces", [])
+            for nic in nics:
+                ip_cfgs = nic.get("ip_configurations", [])
+                for ipcfg in ip_cfgs:
+                    subnet = ipcfg.get("subnet")
+                    if subnet and isinstance(subnet, dict):
+                        subnet_id = subnet.get("id")
+                        if subnet_id:
+                            self._create_relationship(rid, "USES_SUBNET", subnet_id)
+        if rtype.endswith("subnets"):
+            # Subnet may have a networkSecurityGroup property
+            nsg = props.get("network_security_group")
+            if nsg and isinstance(nsg, dict):
+                nsg_id = nsg.get("id")
+                if nsg_id:
+                    self._create_relationship(rid, "SECURED_BY", nsg_id)
+
+        # --- 2. Identity relationships ---
+        # (Any resource with identity.principalId) -[:HAS_MANAGED_IDENTITY]-> (ManagedIdentity)
+        identity = props.get("identity")
+        if identity and isinstance(identity, dict):
+            principal_id = identity.get("principalId")
+            if principal_id:
+                # ManagedIdentity node must exist with id = principalId
+                self._create_relationship(rid, "HAS_MANAGED_IDENTITY", principal_id)
+        # (KeyVault) -[:POLICY_FOR]-> (ManagedIdentity) for each access-policy principalId
+        if rtype.endswith("vaults"):
+            access_policies = props.get("properties", {}).get("accessPolicies", [])
+            for policy in access_policies:
+                pid = policy.get("objectId")
+                if pid:
+                    self._create_relationship(rid, "POLICY_FOR", pid)
+
+        # --- 3. Monitoring relationships ---
+        # (Resource with diagnosticSettings) -[:LOGS_TO]-> (LogAnalyticsWorkspace)
+        diag_settings = props.get("diagnosticSettings")
+        if isinstance(diag_settings, list):
+            for ds in diag_settings:
+                ws = ds.get("workspaceId")
+                if ws:
+                    self._create_relationship(rid, "LOGS_TO", ws)
+
+        # --- 4. ARM dependency relationships ---
+        # (Resource with dependsOn) -[:DEPENDS_ON]-> (target Resource)
+        depends_on = props.get("dependsOn")
+        if isinstance(depends_on, list):
+            for dep_id in depends_on:
+                if isinstance(dep_id, str):
+                    self._create_relationship(rid, "DEPENDS_ON", dep_id)
+
     def _log_progress_summary(self, batch_number: int, total_batches: int) -> None:
         """Log progress summary for the current batch."""
         logger.info(
@@ -559,7 +634,7 @@ class ResourceProcessor:
         logger.info("=" * 60)
 
 
-from concurrent.futures import Future
+# --- Place these methods inside the ResourceProcessor class, after other methods ---
 
 
 def process_resources_async_llm(
