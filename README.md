@@ -446,6 +446,15 @@ uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize
 ```bash
 uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize-only
 ```
+#### Show hierarchical Resource→Subscription→Tenant edges
+
+To include explicit Resource→Subscription and Subscription→Tenant “CONTAINS” edges in the visualization, use:
+
+```bash
+uv run python scripts/cli.py visualize --link-hierarchy
+```
+
+This will add additional hierarchical edges to the graph, making the containment structure explicit in the 3D view.
 
 **Specify custom output path:**
 ```bash

@@ -162,3 +162,4 @@ azure_graph_visualization*.html
 azure_tenant_specification*.md
 
 specs/
+neo4j-data/

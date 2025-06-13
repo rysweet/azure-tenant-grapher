@@ -460,7 +460,10 @@ class ResourceProcessor:
             self.stats.processed += 1
 
     async def process_resources_batch(
-        self, resources: List[Dict[str, Any]], batch_size: int = 5
+        self,
+        resources: List[Dict[str, Any]],
+        max_llm_threads: int = 5,
+        progress_callback: Optional[Any] = None,
     ) -> ProcessingStats:
         """
         Process resources in parallel batches with comprehensive progress tracking.
@@ -486,46 +489,143 @@ class ResourceProcessor:
             return self.stats
 
         logger.info(
-            f"🔄 Starting parallel batch processing of {self.stats.total_resources} resources (batch size: {batch_size})"
+            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max threads: {max_llm_threads})"
         )
 
-        for batch_start in range(0, self.stats.total_resources, batch_size):
-            batch_end = min(batch_start + batch_size, self.stats.total_resources)
-            batch = resources[batch_start:batch_end]
-            batch_number = (batch_start // batch_size) + 1
-            total_batches = (self.stats.total_resources + batch_size - 1) // batch_size
+        import concurrent.futures
 
-            logger.info(
-                f"🔄 Processing batch {batch_number}/{total_batches} (resources {batch_start + 1}-{batch_end})"
-            )
+        # Eager thread pool: filter and schedule all LLM tasks at once
+        resources_for_llm = []
+        llm_in_flight = 0  # Track open LLM calls
 
-            # Process batch in parallel with error isolation
-            batch_tasks: List[Any] = []
-            for idx, resource in enumerate(batch):
-                resource_index = batch_start + idx
-                task = self.process_single_resource(resource, resource_index)
-                batch_tasks.append(task)
+        logger.info("🔍 Filtering resources that need LLM processing...")
 
-            # Wait for all tasks in batch to complete
-            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)  # type: ignore[misc]
+        for idx, resource in enumerate(resources):
+            should_process, reason = self._should_process_resource(resource)
+            if should_process and reason in [
+                "new_resource",
+                "needs_llm_description",
+                "retry_failed",
+            ]:
+                resources_for_llm.append((resource, idx))
+            else:
+                # Mark as skipped and update progress
+                self.stats.skipped += 1
+                self.stats.processed += 1
+                if progress_callback:
+                    progress_callback(
+                        processed=self.stats.processed, skipped=self.stats.skipped
+                    )
 
-            # Handle any exceptions that occurred
-            for idx, result in enumerate(batch_results):  # type: ignore[misc]
-                if isinstance(result, Exception):
-                    resource = batch[idx]
+        logger.info(
+            f"📊 Found {len(resources_for_llm)} resources needing LLM processing, {self.stats.skipped} skipped"
+        )
+
+        def llm_task(
+            resource: Dict[str, Any], resource_index: int
+        ) -> Tuple[Dict[str, Any], int, bool]:
+            """Process LLM description for a single resource."""
+            nonlocal llm_in_flight
+
+            loop = None
+            success = False
+
+            try:
+                # Increment in-flight count
+                llm_in_flight += 1
+                if progress_callback:
+                    progress_callback(llm_in_flight=llm_in_flight)
+
+                if self.llm_generator:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    llm_success, description = loop.run_until_complete(
+                        self._process_single_resource_llm(resource)
+                    )
+                    resource["llm_description"] = description
+                    success = llm_success
+                else:
+                    resource["llm_description"] = (
+                        f"Azure {resource.get('type', 'Resource')} resource."
+                    )
+                    success = False
+
+                return resource, resource_index, success
+
+            finally:
+                # Decrement in-flight count
+                llm_in_flight = max(0, llm_in_flight - 1)
+                if progress_callback:
+                    progress_callback(llm_in_flight=llm_in_flight)
+                if loop:
+                    asyncio.set_event_loop(None)
+                    loop.close()
+
+        # Submit all LLM tasks to thread pool
+        logger.info(
+            f"🚀 Starting eager thread pool processing with {max_llm_threads} workers..."
+        )
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_llm_threads
+        ) as executor:
+            # Submit all LLM tasks
+            future_to_resource = {
+                executor.submit(llm_task, resource, resource_index): (
+                    resource,
+                    resource_index,
+                )
+                for resource, resource_index in resources_for_llm
+            }
+
+            # Process completed tasks as they finish
+            for future in concurrent.futures.as_completed(future_to_resource):
+                try:
+                    resource, resource_index, llm_success = future.result()
+
+                    # Update LLM stats
+                    if llm_success:
+                        self.stats.llm_generated += 1
+                    else:
+                        self.stats.llm_skipped += 1
+
+                    # Process the resource (DB operations)
+                    try:
+                        await self.process_single_resource(resource, resource_index)
+                    except Exception as e:
+                        logger.error(
+                            f"❌ Failed to process resource {resource.get('name', 'Unknown')}: {e}"
+                        )
+                        self.stats.failed += 1
+                        self.stats.processed += 1
+
+                    # Update progress
+                    if progress_callback:
+                        progress_callback(
+                            processed=self.stats.processed,
+                            total=self.stats.total_resources,
+                            successful=self.stats.successful,
+                            failed=self.stats.failed,
+                            skipped=self.stats.skipped,
+                            llm_generated=self.stats.llm_generated,
+                            llm_skipped=self.stats.llm_skipped,
+                        )
+
+                    # Log progress every 10 resources
+                    if self.stats.processed % 10 == 0:
+                        logger.info(
+                            f"📊 Progress: {self.stats.processed}/{self.stats.total_resources} "
+                            f"({self.stats.progress_percentage:.1f}%) - "
+                            f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
+                        )
+
+                except Exception as e:
+                    resource, resource_index = future_to_resource[future]
                     logger.error(
-                        f"❌ Batch processing exception for {resource.get('name', 'Unknown')}: {result}"
+                        f"❌ LLM task failed for {resource.get('name', 'Unknown')}: {e}"
                     )
                     self.stats.failed += 1
                     self.stats.processed += 1
-
-            # Progress summary for this batch
-            self._log_progress_summary(batch_number, total_batches)
-
-            # Rate limiting between batches
-            if batch_end < self.stats.total_resources:
-                logger.debug("⏳ Waiting 1 second before next batch...")
-                await asyncio.sleep(1)
 
         # Final summary
         self._log_final_summary()

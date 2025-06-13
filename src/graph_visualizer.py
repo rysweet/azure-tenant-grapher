@@ -72,16 +72,76 @@ class GraphVisualizer:
             self.driver.close()
             logger.info("Neo4j connection closed")
 
-    def extract_graph_data(self) -> Dict[str, Any]:
+    def _add_hierarchical_edges(
+        self, nodes: list[dict[str, Any]], links: list[dict[str, Any]]
+    ) -> None:
+        """
+        Add Resource→Subscription and Subscription→Tenant edges if not already present.
+        """
+        # Build lookup maps
+        subscription_id_map = {}
+        tenant_id_map = {}
+        node_id_map = {}
+
+        for node in nodes:
+            node_id_map[node["id"]] = node
+            if "Subscription" in node.get("labels", []):
+                # Accept both 'id' and 'properties' for subscription id
+                subscription_id_map[node["properties"].get("id")] = node["id"]
+            if "Tenant" in node.get("labels", []):
+                tenant_id_map[node["properties"].get("id")] = node["id"]
+
+        # Build a set of (source, target, type) for existing links to avoid duplicates
+        existing_edges = {
+            (link["source"], link["target"], link["type"]) for link in links
+        }
+
+        # Resource → Subscription
+        for node in nodes:
+            if "Resource" in node.get("labels", []):
+                sub_id = node["properties"].get("subscriptionId")
+                if sub_id and sub_id in subscription_id_map:
+                    sub_node_id = subscription_id_map[sub_id]
+                    edge_key = (node["id"], sub_node_id, "CONTAINS")
+                    if edge_key not in existing_edges:
+                        links.append(
+                            {
+                                "source": node["id"],
+                                "target": sub_node_id,
+                                "type": "CONTAINS",
+                                "properties": {},
+                                "color": self._get_relationship_color("CONTAINS"),
+                                "width": self._get_relationship_width("CONTAINS"),
+                            }
+                        )
+                        existing_edges.add(edge_key)
+
+        # Subscription → Tenant
+        for node in nodes:
+            if "Subscription" in node.get("labels", []):
+                tenant_id = node["properties"].get("tenantId")
+                if tenant_id and tenant_id in tenant_id_map:
+                    tenant_node_id = tenant_id_map[tenant_id]
+                    edge_key = (node["id"], tenant_node_id, "CONTAINS")
+                    if edge_key not in existing_edges:
+                        links.append(
+                            {
+                                "source": node["id"],
+                                "target": tenant_node_id,
+                                "type": "CONTAINS",
+                                "properties": {},
+                                "color": self._get_relationship_color("CONTAINS"),
+                                "width": self._get_relationship_width("CONTAINS"),
+                            }
+                        )
+                        existing_edges.add(edge_key)
+
+    def extract_graph_data(self, link_to_hierarchy: bool = False) -> Dict[str, Any]:
         """
         Extract all nodes and relationships from Neo4j for visualization.
 
-        # Force logging to console at INFO level if not already set
-        import logging
-        if not logging.getLogger().hasHandlers():
-            logging.basicConfig(level=logging.INFO)
-        else:
-            logging.getLogger().setLevel(logging.INFO)
+        Args:
+            link_to_hierarchy: If True, add Resource→Subscription and Subscription→Tenant edges
 
         Returns:
             Dictionary containing nodes and links for the 3D graph
@@ -202,11 +262,20 @@ class GraphVisualizer:
 
             logger.info(f"Extracted {rel_count} relationships (raw count)")
 
+        # Add hierarchical edges if requested
+        if link_to_hierarchy:
+            self._add_hierarchical_edges(nodes, links)
+
+        # Update relationship_types if new CONTAINS edges were added
+        rel_types_set = set(relationship_types)
+        if link_to_hierarchy:
+            rel_types_set.add("CONTAINS")
+
         return {
             "nodes": nodes,
             "links": links,
             "node_types": sorted(node_types),
-            "relationship_types": sorted(relationship_types),
+            "relationship_types": sorted(rel_types_set),
         }
 
     def _get_node_group(self, node_type: str) -> int:
@@ -369,6 +438,7 @@ class GraphVisualizer:
         self,
         output_path: Optional[str] = None,
         specification_path: Optional[str] = None,
+        link_to_hierarchy: bool = False,
     ) -> str:
         """
         Generate HTML file with interactive 3D visualization.
@@ -376,7 +446,7 @@ class GraphVisualizer:
         Args:
             output_path: Path where to save the HTML file
             specification_path: Path to the tenant specification markdown file
-
+            link_to_hierarchy: If True, add Resource→Subscription and Subscription→Tenant edges
 
         Returns:
             Path to the generated HTML file
@@ -384,7 +454,7 @@ class GraphVisualizer:
         logger.info("Generating 3D visualization HTML...")
 
         # Extract graph data
-        graph_data = self.extract_graph_data()
+        graph_data = self.extract_graph_data(link_to_hierarchy=link_to_hierarchy)
 
         # Generate output path if not provided
         if not output_path:

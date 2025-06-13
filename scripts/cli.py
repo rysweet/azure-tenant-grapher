@@ -11,9 +11,17 @@ import functools
 import logging
 import os
 import sys
+from typing import Any, Callable, Coroutine, Optional
+
+from dotenv import load_dotenv
+
+from src.rich_dashboard import RichDashboard
 
 # Add the parent directory to the path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+# Always load .env if present
+load_dotenv()
 
 try:
     import click
@@ -33,7 +41,17 @@ except ImportError as e:
     sys.exit(1)
 
 
-from typing import Any, Callable, Coroutine, Optional
+class DashboardLogHandler(logging.Handler):
+    def __init__(self, dashboard):
+        super().__init__()
+        self.dashboard = dashboard
+
+    def emit(self, record):
+        msg = self.format(record)
+        if record.levelno >= logging.ERROR:
+            self.dashboard.add_error(msg)
+        elif record.levelno >= logging.INFO:
+            self.dashboard.log_info(msg)
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
@@ -60,17 +78,21 @@ def cli(ctx: click.Context, log_level: str) -> None:
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
 @click.option(
     "--resource-limit",
     type=int,
     help="Maximum number of resources to process (for testing)",
 )
 @click.option(
-    "--batch-size",
+    "--max-llm-threads",
     type=int,
     default=5,
-    help="Number of resources to process in parallel (default: 5)",
+    help="Maximum number of parallel LLM threads (default: 5)",
 )
 @click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
 @click.option(
@@ -89,7 +111,7 @@ async def build(
     ctx: click.Context,
     tenant_id: str,
     resource_limit: Optional[int],
-    batch_size: int,
+    max_llm_threads: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -97,9 +119,17 @@ async def build(
     """Build the complete Azure tenant graph with enhanced processing."""
 
     try:
+        # Use tenant_id from CLI or .env
+        effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
+        if not effective_tenant_id:
+            click.echo(
+                "❌ No tenant ID provided and AZURE_TENANT_ID not set in environment.",
+                err=True,
+            )
+            sys.exit(1)
         # Create and validate configuration
-        config = create_config_from_env(tenant_id, resource_limit)
-        config.processing.batch_size = batch_size
+        config = create_config_from_env(effective_tenant_id, resource_limit)
+        config.processing.batch_size = max_llm_threads  # For backward compatibility
         config.processing.auto_start_container = not no_container
         config.logging.level = ctx.obj["log_level"]
 
@@ -114,17 +144,75 @@ async def build(
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
 
+        # Setup RichDashboard
+        dashboard = RichDashboard(
+            config=config.to_dict(),
+            batch_size=max_llm_threads,
+            total_threads=max_llm_threads,
+        )
+
         # Ensure Neo4j connection is established before using grapher.driver
         try:
             grapher.connect_to_neo4j()
         except Exception as e:
+            dashboard.add_error(f"❌ Failed to connect to Neo4j: {e}")
             click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
             sys.exit(1)
 
         logger.info("🚀 Starting Azure Tenant Graph building...")
-        
-        # Build the graph using the efficient modern method
-        result = await grapher.build_graph()
+
+        # Run the dashboard live while building the graph
+        # Run the graph build and update the dashboard synchronously
+        # Define a progress callback for the dashboard
+        def progress_callback(**kwargs):
+            dashboard.update_progress(**kwargs)
+
+        # Patch logging to send INFO/ERROR to dashboard
+        log_handler = DashboardLogHandler(dashboard)
+        log_handler.setFormatter(
+            logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+        )
+        logging.getLogger().addHandler(log_handler)
+
+        # Run the graph build and update the dashboard live
+        with dashboard.live():
+            result = await grapher.build_graph(progress_callback=progress_callback)
+            # Final summary after build completes
+            dashboard.update_progress(
+                batch=1,
+                total_batches=1,
+                processed=result.get("total_resources", 0),
+                total=result.get("total_resources", 0),
+                successful=result.get("successful_resources", 0),
+                failed=result.get("failed_resources", 0),
+                skipped=result.get("skipped_resources", 0),
+                llm_generated=result.get("llm_descriptions_generated", 0),
+                llm_skipped=0,
+            )
+            if not result.get("success", True):
+                dashboard.add_error(result.get("error", "Unknown error"))
+            else:
+                dashboard.add_error("🎉 Graph building completed successfully!")
+                dashboard.add_error(
+                    f"📊 Subscriptions: {result.get('subscriptions', 0)}"
+                )
+                dashboard.add_error(
+                    f"📊 Total Resources: {result.get('total_resources', 0)}"
+                )
+                dashboard.add_error(
+                    f"✅ Successful: {result.get('successful_resources', 0)}"
+                )
+                dashboard.add_error(f"❌ Failed: {result.get('failed_resources', 0)}")
+                if "skipped_resources" in result:
+                    dashboard.add_error(f"⏭️ Skipped: {result['skipped_resources']}")
+                if "llm_descriptions_generated" in result:
+                    dashboard.add_error(
+                        f"🤖 LLM Descriptions: {result['llm_descriptions_generated']}"
+                    )
+                dashboard.add_error(
+                    f"   - Success Rate: {result.get('success_rate', 0):.1f}%"
+                )
+        return  # Prevent further code from referencing result outside the dashboard
 
         if result.get("success", False):
             click.echo("🎉 Graph building completed successfully!")
@@ -183,7 +271,11 @@ async def build(
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
 @click.option(
     "--limit",
     type=int,
@@ -195,11 +287,19 @@ async def build(
 async def test(ctx: click.Context, tenant_id: str, limit: int) -> None:
     """Run a test with limited resources to validate setup."""
 
+    effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
+    if not effective_tenant_id:
+        click.echo(
+            "❌ No tenant ID provided and AZURE_TENANT_ID not set in environment.",
+            err=True,
+        )
+        sys.exit(1)
+
     click.echo(f"🧪 Running test mode with up to {limit} resources...")
 
     ctx.invoke(
         build,
-        tenant_id=tenant_id,
+        tenant_id=effective_tenant_id,
         resource_limit=limit,
         batch_size=3,
         no_container=False,
@@ -249,15 +349,27 @@ def container() -> None:
 
 
 @cli.command()
-@click.option("--tenant-id", required=True, help="Azure tenant ID")
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
 @click.pass_context
 @async_command
 async def spec(ctx: click.Context, tenant_id: str) -> None:
     """Generate only the tenant specification (requires existing graph)."""
 
+    effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
+    if not effective_tenant_id:
+        click.echo(
+            "❌ No tenant ID provided and AZURE_TENANT_ID not set in environment.",
+            err=True,
+        )
+        sys.exit(1)
+
     try:
         # Create configuration
-        config = create_config_from_env(tenant_id)
+        config = create_config_from_env(effective_tenant_id)
         config.logging.level = ctx.obj["log_level"]
 
         # Setup logging
@@ -284,9 +396,21 @@ async def spec(ctx: click.Context, tenant_id: str) -> None:
 
 
 @cli.command()
+@click.option(
+    "--link-hierarchy/--no-link-hierarchy",
+    default=False,
+    help="Enable Resource→Subscription→Tenant hierarchical edges.",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
 @click.pass_context
 @async_command
-async def visualize(ctx: click.Context) -> None:
+async def visualize(
+    ctx: click.Context, link_hierarchy: bool, no_container: bool
+) -> None:
     """Generate graph visualization from existing Neo4j data (no tenant-id required)."""
 
     try:
@@ -303,8 +427,47 @@ async def visualize(ctx: click.Context) -> None:
         )
 
         click.echo("🎨 Generating graph visualization...")
-        viz_path = visualizer.generate_html_visualization()
-        click.echo(f"✅ Visualization saved to: {viz_path}")
+
+        try:
+            viz_path = visualizer.generate_html_visualization(
+                link_to_hierarchy=link_hierarchy
+            )
+            click.echo(f"✅ Visualization saved to: {viz_path}")
+        except Exception as e:
+            click.echo(f"⚠️  Failed to connect to Neo4j: {e}", err=True)
+            if not no_container:
+                click.echo("🔄 Attempting to start Neo4j container...")
+                container_manager = Neo4jContainerManager()
+                if container_manager.setup_neo4j():
+                    click.echo(
+                        "✅ Neo4j container started successfully, retrying visualization..."
+                    )
+                    import time
+
+                    for _i in range(10):
+                        try:
+                            viz_path = visualizer.generate_html_visualization(
+                                link_to_hierarchy=link_hierarchy
+                            )
+                            click.echo(f"✅ Visualization saved to: {viz_path}")
+                            break
+                        except Exception:
+                            time.sleep(3)
+                    else:
+                        click.echo(
+                            "❌ Failed to connect to Neo4j after starting container.",
+                            err=True,
+                        )
+                        sys.exit(1)
+                else:
+                    click.echo("❌ Failed to start Neo4j container", err=True)
+                    sys.exit(1)
+            else:
+                click.echo(
+                    "❌ Neo4j is not running and --no-container was specified.",
+                    err=True,
+                )
+                sys.exit(1)
 
     except Exception as e:
         click.echo(f"❌ Failed to generate visualization: {e}", err=True)

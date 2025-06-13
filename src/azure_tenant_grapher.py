@@ -325,7 +325,7 @@ class AzureTenantGrapher:
         session.run(query, subscription)
 
     async def process_resources_with_enhanced_handling(
-        self, resources: List[Dict[str, Any]]
+        self, resources: List[Dict[str, Any]], progress_callback: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
         Process resources using the new modular resource processor.
@@ -367,7 +367,9 @@ class AzureTenantGrapher:
 
                 # Process resources in parallel batches
                 stats = await processor.process_resources_batch(
-                    resources=resources, batch_size=self.config.processing.batch_size
+                    resources=resources,
+                    max_llm_threads=self.config.processing.batch_size,
+                    progress_callback=progress_callback,
                 )
 
                 # Convert ProcessingStats to dict for backward compatibility
@@ -472,7 +474,9 @@ class AzureTenantGrapher:
         summary_executor.shutdown(wait=True)
         return counters, counters_lock
 
-    async def build_graph(self) -> Dict[str, Any]:
+    async def build_graph(
+        self, progress_callback: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """
         Main method to build the complete graph of Azure tenant resources.
 
@@ -559,7 +563,8 @@ class AzureTenantGrapher:
                     f"🔄 Starting processing of {len(all_resources)} total resources"
                 )
                 processing_stats = await self.process_resources_with_enhanced_handling(
-                    all_resources
+                    all_resources,
+                    progress_callback=progress_callback,
                 )
 
                 # Final summary
