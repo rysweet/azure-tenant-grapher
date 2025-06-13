@@ -657,3 +657,98 @@ def test_async_llm_summary_pool_throttling_and_counters():
         assert counters["in_flight"] == 0
         assert counters["throttled"] >= 1
         # Removed invalid assertion: processor.resource_limit == 50
+
+
+# --- Upsert/duplicate node test for issue #20 ---
+
+
+class InMemoryNeo4jSession:
+    """A simple in-memory mock Neo4j session for upsert/duplicate tests."""
+
+    def __init__(self):
+        self.nodes = {}  # id -> properties dict
+        self.queries_run = []
+
+    def run(self, query, parameters=None, **kwargs):
+        self.queries_run.append({"query": query, "params": parameters})
+        # Upsert resource node
+        if "MERGE (r:Resource {id: $id})" in query:
+            rid = parameters["id"]
+            # Simulate upsert: update or insert
+            if rid in self.nodes:
+                self.nodes[rid].update(parameters)
+            else:
+                self.nodes[rid] = dict(parameters)
+            return Mock(single=lambda: {})
+        # Count nodes by id
+        if "MATCH (r:Resource {id: $id}) RETURN count(r) as count" in query:
+            rid = parameters["id"]
+            count = 1 if rid in self.nodes else 0
+            mock_record = Mock()
+            mock_record.__getitem__ = Mock(return_value=count)
+            mock_record.get = Mock(return_value=count)
+            mock_record.keys = Mock(return_value=["count"])
+            result = Mock()
+            result.single.return_value = mock_record
+            return result
+        # Return node properties
+        if "MATCH (r:Resource {id: $id}) RETURN r" in query:
+            rid = parameters["id"]
+            props = self.nodes.get(rid, None)
+            mock_record = Mock()
+            mock_record.__getitem__ = Mock(return_value=props)
+            mock_record.get = Mock(return_value=props)
+            mock_record.keys = Mock(return_value=["r"])
+            result = Mock()
+            result.single.return_value = mock_record
+            return result
+        # Default: empty result
+        result = Mock()
+        result.single.return_value = {}
+        return result
+
+
+def test_upsert_updates_existing_node():
+    """Test that upserting a resource updates the node, not duplicates."""
+    from src.resource_processor import DatabaseOperations
+
+    session = InMemoryNeo4jSession()
+    db_ops = DatabaseOperations(session)
+
+    resource_id = "test-upsert-id"
+    resource1 = {
+        "id": resource_id,
+        "name": "original-name",
+        "type": "Microsoft.Compute/virtualMachines",
+        "location": "eastus",
+        "resource_group": "mock-rg",
+        "subscription_id": "mock-sub",
+        "tags": {"Environment": "Test"},
+        "kind": None,
+        "sku": None,
+    }
+    resource2 = dict(resource1)
+    resource2["name"] = "updated-name"
+    resource2["tags"] = {"Environment": "Prod"}
+
+    # First upsert
+    assert db_ops.upsert_resource(resource1, "completed")
+    assert resource_id in session.nodes
+    assert session.nodes[resource_id]["name"] == "original-name"
+    # tags are serialized as JSON string by upsert_resource
+    import json
+
+    assert session.nodes[resource_id]["tags"] == json.dumps({"Environment": "Test"})
+
+    # Second upsert with updated data
+    assert db_ops.upsert_resource(resource2, "completed")
+    assert resource_id in session.nodes
+    # Node should be updated, not duplicated
+    assert session.nodes[resource_id]["name"] == "updated-name"
+    assert session.nodes[resource_id]["tags"] == json.dumps({"Environment": "Prod"})
+
+    # Simulate a count query to ensure only one node exists
+    count_query = "MATCH (r:Resource {id: $id}) RETURN count(r) as count"
+    result = session.run(count_query, {"id": resource_id})
+    count = result.single().__getitem__("count")
+    assert count == 1
