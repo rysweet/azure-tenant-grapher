@@ -355,6 +355,9 @@ def setup_logging(config: LoggingConfig) -> None:
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
 
+    httpx_logger = logging.getLogger("httpx")
+    httpx_logger.setLevel(logging.DEBUG)  # Reduce HTTP request noise
+
     logger.info(
         f"📝 Logging configured: level={config.level}, file={config.file_output or 'console'}"
     )
