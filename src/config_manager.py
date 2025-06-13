@@ -153,9 +153,7 @@ class LoggingConfig:
 class SpecificationConfig:
     """Configuration for specification generation."""
 
-    resource_limit: int = field(
-        default_factory=lambda: int(os.getenv("AZTG_SPEC_RESOURCE_LIMIT", "50"))
-    )
+    resource_limit: Optional[int] = field(default_factory=lambda: None)
     output_directory: str = field(
         default_factory=lambda: os.getenv("AZTG_SPEC_OUTPUT_DIR", "./specs")
     )
@@ -356,7 +354,7 @@ def setup_logging(config: LoggingConfig) -> None:
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
 
     httpx_logger = logging.getLogger("httpx")
-    httpx_logger.setLevel(logging.DEBUG)  # Reduce HTTP request noise
+    httpx_logger.setLevel(logging.WARNING)  # Only show HTTPX warnings/errors by default
 
     logger.info(
         f"📝 Logging configured: level={config.level}, file={config.file_output or 'console'}"
