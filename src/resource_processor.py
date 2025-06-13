@@ -542,7 +542,7 @@ class ResourceProcessor:
         )
         self.session.run(query, src_id=src_id, tgt_id=tgt_id)
 
-    def _create_enriched_relationships(self, resource: dict) -> None:
+    def _create_enriched_relationships(self, resource: Dict[str, Any]) -> None:
         """
         Emit non-containment relationships for the resource, if applicable.
         """
