@@ -561,31 +561,35 @@ class ResourceProcessor:
                     subnet = ipcfg.get("subnet")
                     if subnet and isinstance(subnet, dict):
                         subnet_id = subnet.get("id")
-                        if subnet_id:
-                            self._create_relationship(rid, "USES_SUBNET", subnet_id)
+                        if subnet_id and rid:
+                            self._create_relationship(
+                                str(rid), "USES_SUBNET", str(subnet_id)
+                            )
         if rtype.endswith("subnets"):
             # Subnet may have a networkSecurityGroup property
             nsg = props.get("network_security_group")
             if nsg and isinstance(nsg, dict):
                 nsg_id = nsg.get("id")
-                if nsg_id:
-                    self._create_relationship(rid, "SECURED_BY", nsg_id)
+                if nsg_id and rid:
+                    self._create_relationship(str(rid), "SECURED_BY", str(nsg_id))
 
         # --- 2. Identity relationships ---
         # (Any resource with identity.principalId) -[:HAS_MANAGED_IDENTITY]-> (ManagedIdentity)
         identity = props.get("identity")
         if identity and isinstance(identity, dict):
             principal_id = identity.get("principalId")
-            if principal_id:
+            if principal_id and rid:
                 # ManagedIdentity node must exist with id = principalId
-                self._create_relationship(rid, "HAS_MANAGED_IDENTITY", principal_id)
+                self._create_relationship(
+                    str(rid), "HAS_MANAGED_IDENTITY", str(principal_id)
+                )
         # (KeyVault) -[:POLICY_FOR]-> (ManagedIdentity) for each access-policy principalId
         if rtype.endswith("vaults"):
             access_policies = props.get("properties", {}).get("accessPolicies", [])
             for policy in access_policies:
                 pid = policy.get("objectId")
-                if pid:
-                    self._create_relationship(rid, "POLICY_FOR", pid)
+                if pid and rid:
+                    self._create_relationship(str(rid), "POLICY_FOR", str(pid))
 
         # --- 3. Monitoring relationships ---
         # (Resource with diagnosticSettings) -[:LOGS_TO]-> (LogAnalyticsWorkspace)
@@ -593,16 +597,16 @@ class ResourceProcessor:
         if isinstance(diag_settings, list):
             for ds in diag_settings:
                 ws = ds.get("workspaceId")
-                if ws:
-                    self._create_relationship(rid, "LOGS_TO", ws)
+                if ws and rid:
+                    self._create_relationship(str(rid), "LOGS_TO", str(ws))
 
         # --- 4. ARM dependency relationships ---
         # (Resource with dependsOn) -[:DEPENDS_ON]-> (target Resource)
         depends_on = props.get("dependsOn")
         if isinstance(depends_on, list):
             for dep_id in depends_on:
-                if isinstance(dep_id, str):
-                    self._create_relationship(rid, "DEPENDS_ON", dep_id)
+                if isinstance(dep_id, str) and rid:
+                    self._create_relationship(str(rid), "DEPENDS_ON", str(dep_id))
 
     def _log_progress_summary(self, batch_number: int, total_batches: int) -> None:
         """Log progress summary for the current batch."""

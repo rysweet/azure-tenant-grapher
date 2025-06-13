@@ -131,27 +131,39 @@ class AzureTenantGrapher:
 
         except Exception as e:
             logger.error(f"❌ Error discovering subscriptions: {e}")
-            
+
             # Check if this is an authentication error that we can handle with az login fallback
             error_str = str(e).lower()
-            if any(keyword in error_str for keyword in ["defaultazurecredential", "authentication", "token", "login"]):
+            if any(
+                keyword in error_str
+                for keyword in [
+                    "defaultazurecredential",
+                    "authentication",
+                    "token",
+                    "login",
+                ]
+            ):
                 logger.info("🔄 Attempting to authenticate with Azure CLI fallback...")
                 try:
                     # Run az login with the tenant ID
                     if not self.config.tenant_id:
-                        raise Exception("Tenant ID is required for Azure CLI fallback authentication")
-                    
+                        raise Exception(
+                            "Tenant ID is required for Azure CLI fallback authentication"
+                        )
+
                     cmd = ["az", "login", "--tenant", self.config.tenant_id]
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-                    
+                    result = subprocess.run(
+                        cmd, capture_output=True, text=True, timeout=120
+                    )
+
                     if result.returncode == 0:
                         logger.info("✅ Successfully authenticated with Azure CLI")
                         logger.info("🔄 Retrying subscription discovery...")
-                        
+
                         # Recreate credential and subscription client after login
                         self.credential = DefaultAzureCredential()
                         subscription_client = SubscriptionClient(self.credential)
-                        
+
                         # Retry the subscription discovery
                         for subscription in subscription_client.subscriptions.list():
                             sub: Any = subscription
@@ -168,13 +180,15 @@ class AzureTenantGrapher:
                     else:
                         logger.error(f"❌ Azure CLI login failed: {result.stderr}")
                         raise Exception(f"Azure CLI login failed: {result.stderr}")
-                        
+
                 except subprocess.TimeoutExpired:
                     logger.error("❌ Azure CLI login timed out after 120 seconds")
-                    raise Exception("Azure CLI login timed out")
+                    raise Exception("Azure CLI login timed out") from None
                 except FileNotFoundError:
-                    logger.error("❌ Azure CLI not found. Please install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli")
-                    raise Exception("Azure CLI not found")
+                    logger.error(
+                        "❌ Azure CLI not found. Please install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+                    )
+                    raise Exception("Azure CLI not found") from None
                 except Exception as fallback_error:
                     logger.error(f"❌ Azure CLI fallback failed: {fallback_error}")
                     raise
@@ -416,8 +430,6 @@ class AzureTenantGrapher:
                 )
 
         # Initial scheduling
-        from typing import Any
-
         futures: list[Future[Any]] = process_resources_async_llm(
             session,
             resources,

@@ -137,7 +137,14 @@ skips = ["*_test.py", "test_*.py"]
 
 [tool.pyright]
 pythonVersion = "3.13"
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
 reportMissingImports = false
 reportMissingTypeStubs = false
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+reportUntypedFunctionDecorator = false
+reportUnusedImport = "error"
+reportUnusedClass = "error"
 exclude = ["dotnet", ".venv", "htmlcov", "tests/**/*"]

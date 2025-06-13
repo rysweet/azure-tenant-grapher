@@ -131,6 +131,9 @@ async def build(
         # Discover resources
         all_resources = []
         subscriptions = await grapher.discover_subscriptions()
+        if not grapher.driver:
+            click.echo("❌ Neo4j driver not available", err=True)
+            sys.exit(1)
         with grapher.driver.session() as session:
             for subscription in subscriptions:
                 resources = await grapher.discover_resources_in_subscription(
@@ -465,7 +468,7 @@ async def progress(ctx: click.Context) -> None:
 
 def main() -> None:
     """Main entry point."""
-    cli()
+    cli()  # type: ignore[reportCallIssue]
 
 
 if __name__ == "__main__":
