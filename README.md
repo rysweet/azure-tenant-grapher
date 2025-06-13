@@ -146,7 +146,11 @@ azure-tenant-grapher/
 - **Azure Resource Discovery**: Enumerate all resources across all subscriptions in an Azure tenant
 - **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships
 - **Resource Details**: Capture detailed configuration information for each resource
-- **Relationship Mapping**: Identify and map dependencies between Azure resources
+- **Relationship Mapping**: Identify and map dependencies and enriched relationships between Azure resources, including:
+    - Network: VM uses subnet, subnet secured by NSG
+    - Identity: Managed identity and Key Vault policy relationships
+    - Monitoring: Diagnostic settings to Log Analytics
+    - ARM dependencies: Resource-level dependsOn edges
 - **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
 - **Filterable Graph Views**: Filter nodes and relationships by type, search functionality
 - **Node Details**: Click on nodes to view detailed resource information and metadata
@@ -477,7 +481,12 @@ The visualization automatically detects and color-codes these Azure resource typ
 - **CONTAINS**: Subscription contains resource groups, resource groups contain resources
 - **BELONGS_TO**: Resources belong to resource groups
 - **CONNECTED_TO**: Network connections between resources
-- **DEPENDS_ON**: Resource dependencies
+- **DEPENDS_ON**: Resource dependencies (from ARM dependsOn)
+- **USES_SUBNET**: Virtual machine uses subnet
+- **SECURED_BY**: Subnet secured by network security group
+- **HAS_MANAGED_IDENTITY**: Resource has managed identity
+- **POLICY_FOR**: Key Vault policy for managed identity
+- **LOGS_TO**: Resource logs to Log Analytics Workspace
 - **MANAGES**: Management relationships
 
 ## Architecture

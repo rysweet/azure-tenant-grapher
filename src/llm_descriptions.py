@@ -1,19 +1,15 @@
-"""
-LLM Description Generator for Azure Tenant Grapher
-
-This module provides LLM-powered natural language descriptions for Azure resources
-and relationships using Azure OpenAI services.
-"""
-
 import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+
+T = TypeVar("T")
 
 # Load environment variables
 load_dotenv()
@@ -35,11 +31,6 @@ def is_throttling_error(e: Exception) -> bool:
     return False
 
 
-from typing import Awaitable, Callable, TypeVar
-
-T = TypeVar("T")
-
-
 def async_retry_with_throttling(
     max_retries: int = 5, initial_delay: int = 2, backoff: int = 2
 ) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
@@ -59,8 +50,6 @@ def async_retry_with_throttling(
                             f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt+1}/{max_retries}"
                         )
                         if attempt < max_retries - 1:
-                            import asyncio
-
                             await asyncio.sleep(delay)
                             delay *= backoff
                             continue
@@ -89,7 +78,6 @@ def retry_with_throttling(
     """
     Retry wrapper for LLM calls. Raises ThrottlingError on repeated throttling.
     """
-    import time
 
     def wrapper(*args: Any, **kwargs: Any) -> T:
         delay = initial_delay
@@ -407,7 +395,7 @@ Be specific about the architectural implications while keeping it concise and ac
                         reverse=True,
                     )
                 ),
-                "locations": sorted(list(locations)),
+                "locations": sorted(locations),
                 "total_relationships": len(relationships),
             }
 
@@ -417,7 +405,7 @@ You are a senior Azure cloud architect creating a comprehensive tenant specifica
 Tenant Analysis:
 {json.dumps(analysis, indent=2)}
 
-Create a professional markdown specification document that includes:
+Create a professional markdown specification document that provides a detailed, declarative specification of the Azure tenant. The document should include:
 
 1. **Executive Summary** - High-level overview of the tenant architecture
 2. **Infrastructure Overview** - Key resource types and their distribution
@@ -425,11 +413,11 @@ Create a professional markdown specification document that includes:
 4. **Architecture Patterns** - Common patterns observed in the resource relationships
 5. **Security Posture** - Security-related observations
 6. **Scalability Considerations** - How the architecture supports growth
-7. **Recommendations** - Optimization opportunities and best practices
 
-Make it comprehensive but accessible to both technical and business stakeholders.
+Do NOT include a recommendations or next steps section. Do NOT provide optimization advice or best practices. Only describe the current state of the tenant: resource types, names, properties, and relationships.
+
 Use proper markdown formatting with headers, bullet points, and tables where appropriate.
-Focus on architectural insights rather than listing individual resources.
+Focus on architectural details and relationships, not on recommendations or future actions.
 """
 
             response = self.client.chat.completions.create(
@@ -511,7 +499,7 @@ This document provides an overview of the Azure tenant infrastructure as discove
 The following Azure regions are utilized:
 """
 
-        for location in sorted(list(locations)):
+        for location in sorted(locations):
             spec += f"- {location}\n"
 
         spec += f"""

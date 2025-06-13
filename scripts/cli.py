@@ -114,6 +114,13 @@ async def build(
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
 
+        # Ensure Neo4j connection is established before using grapher.driver
+        try:
+            grapher.connect_to_neo4j()
+        except Exception as e:
+            click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+            sys.exit(1)
+
         logger.info("🚀 Starting Azure Tenant Graph building...")
         # --- ASYNC LLM SUMMARIZATION WITH RICH LIVE PANEL ---
         import time
