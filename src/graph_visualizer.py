@@ -76,10 +76,21 @@ class GraphVisualizer:
         """
         Extract all nodes and relationships from Neo4j for visualization.
 
+        # Force logging to console at INFO level if not already set
+        import logging
+        if not logging.getLogger().hasHandlers():
+            logging.basicConfig(level=logging.INFO)
+        else:
+            logging.getLogger().setLevel(logging.INFO)
+
         Returns:
             Dictionary containing nodes and links for the 3D graph
         """
         logger.info("Extracting graph data from Neo4j...")
+        logger.info(f"Neo4j URI: {self.neo4j_uri}")
+        logger.info(f"Neo4j User: {self.neo4j_user}")
+        logger.info(f"Neo4j Driver: {self.driver}")
+        logger.info("Connecting to database: neo4j")
 
         if not self.driver:
             self.connect()
@@ -93,7 +104,7 @@ class GraphVisualizer:
         node_types: set[Any] = set()
         relationship_types: set[Any] = set()
 
-        with self.driver.session() as session:
+        with self.driver.session(database="neo4j") as session:
             # Extract all nodes with their properties
             node_query = """
             MATCH (n)
@@ -103,6 +114,7 @@ class GraphVisualizer:
             result = session.run(node_query)
             node_map = {}
 
+            node_count = 0
             for record in result:
                 node = record["n"]
                 labels = record["node_labels"]
@@ -143,8 +155,9 @@ class GraphVisualizer:
 
                 nodes.append(node_data)
                 node_map[node_id] = node_data
+                node_count += 1
 
-            logger.info(f"Extracted {len(nodes)} nodes")
+            logger.info(f"Extracted {node_count} nodes (raw count)")
 
             # Extract all relationships
             relationship_query = """
@@ -154,6 +167,7 @@ class GraphVisualizer:
 
             result = session.run(relationship_query)
 
+            rel_count = 0
             for record in result:
                 source_node = record["a"]
                 target_node = record["b"]
@@ -184,8 +198,9 @@ class GraphVisualizer:
                 }
 
                 links.append(link_data)
+                rel_count += 1
 
-            logger.info(f"Extracted {len(links)} relationships")
+            logger.info(f"Extracted {rel_count} relationships (raw count)")
 
         return {
             "nodes": nodes,
@@ -664,28 +679,29 @@ class GraphVisualizer:
 
         {self._generate_specification_link(specification_path)}
 
-    </div>
+        </div>
 
-    <div class="stats">
-        <div>Nodes: <span id="nodeCount">0</span></div>
-        <div>Links: <span id="linkCount">0</span></div>
-        <div>Visible Nodes: <span id="visibleNodeCount">0</span></div>
-        <div>Visible Links: <span id="visibleLinkCount">0</span></div>
-    </div>
+        <div class="stats">
+            <div>Nodes: <span id="nodeCount">0</span></div>
+            <div>Links: <span id="linkCount">0</span></div>
+            <div>Visible Nodes: <span id="visibleNodeCount">0</span></div>
+            <div>Visible Links: <span id="visibleLinkCount">0</span></div>
+            <button id="resetCameraBtn" style="margin-top:10px;width:100%;">Reset Camera</button>
+        </div>
 
-    <div class="node-info" id="nodeInfo">
-        <button class="close-btn" onclick="closeNodeInfo()">&times;</button>
-        <h3 id="nodeInfoTitle">Node Information</h3>
-        <div id="nodeInfoContent"></div>
-    </div>
+        <div class="node-info" id="nodeInfo">
+            <button class="close-btn" onclick="closeNodeInfo()">&times;</button>
+            <h3 id="nodeInfoTitle">Node Information</h3>
+            <div id="nodeInfoContent"></div>
+        </div>
 
-    <script>
-        // Graph data
-        const originalGraphData = {json.dumps(graph_data, indent=2, cls=DateTimeEncoder)};
-        let currentGraphData = JSON.parse(JSON.stringify(originalGraphData));
-        let activeNodeFilters = new Set(originalGraphData.node_types);
-        let activeRelationshipFilters = new Set(originalGraphData.relationship_types);
-        let searchTerm = '';
+        <script>
+            // Graph data
+            const originalGraphData = {json.dumps(graph_data, indent=2, cls=DateTimeEncoder)};
+            let currentGraphData = JSON.parse(JSON.stringify(originalGraphData));
+            let activeNodeFilters = new Set(originalGraphData.node_types);
+            let activeRelationshipFilters = new Set(originalGraphData.relationship_types);
+            let searchTerm = '';
 
         /* --- CLUSTER LABELS LOGIC ---
            Each resource group is treated as a cluster. If resource_group is null, fallback to subscription or type.
@@ -1091,6 +1107,8 @@ class GraphVisualizer:
 </html>
         """
 
+        # Fix Python f-string escaping for JS: replace all '{{' with '{' and all '}}' with '}'
+        html_template = html_template.replace("{{", "{").replace("}}", "}")
         return html_template
 
     # Cluster labeling: Each resource group is treated as a cluster. Labels are rendered at the centroid of each cluster and follow camera movement.
