@@ -69,10 +69,6 @@ def test_resource_processor() -> None:
             def run(self, query: str, **kwargs: Any) -> None:
                 pass
 
-        class MockResult:
-            def single(self) -> None:
-                pass
-
         session = MockSession()
 
         # Test processor creation
