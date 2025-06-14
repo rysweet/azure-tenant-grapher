@@ -34,7 +34,9 @@ dependencies = [
 ]
 
 [project.scripts]
-azure-tenant-grapher = "main:main"
+azure-tenant-grapher = "scripts.cli:main"
+azure-graph = "scripts.cli:main"
+atg = "scripts.cli:main"
 
 [build-system]
 requires = ["hatchling"]

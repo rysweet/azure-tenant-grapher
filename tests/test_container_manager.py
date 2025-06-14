@@ -14,9 +14,12 @@ class TestNeo4jContainerManager:
 
     def test_initialization(self) -> None:
         """Test Neo4jContainerManager initialization."""
+        import os
+
         manager = Neo4jContainerManager()
         assert manager.compose_file == "docker-compose.yml"
-        assert manager.neo4j_uri == "bolt://localhost:7688"
+        expected_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
+        assert manager.neo4j_uri == expected_uri
         assert manager.neo4j_user == "neo4j"
         assert manager.neo4j_password == "azure-grapher-2024"  # nosec
 

@@ -6,7 +6,7 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 
 ### 1. Setup Environment
 ```bash
-# Install dependencies using uv (recommended)
+# Install dependencies and set up CLI commands
 uv sync
 
 # Create .env file with defaults (optional)
@@ -17,17 +17,18 @@ cp .env.example .env
 az login
 ```
 
-### 2. Run the Application (Recommended)
+### 2. Run the Application
 
-Use the enhanced CLI wrapper:
+After installation, use the convenient CLI commands:
 ```bash
-uv run python scripts/cli.py --tenant-id <your-tenant-id>
-```
+# Basic usage with automatic container management
+azure-tenant-grapher build --tenant-id <your-tenant-id>
 
-- This will automatically manage the Neo4j container and build the graph.
-- For all CLI options:
-```bash
-uv run python scripts/cli.py --help
+# Show all available commands
+azure-tenant-grapher --help
+
+# Show build options
+azure-tenant-grapher build --help
 ```
 
 ### 3. Access Neo4j Browser
@@ -35,27 +36,65 @@ uv run python scripts/cli.py --help
 - Username: `neo4j`
 - Password: `azure-grapher-2024` (or your custom password)
 
+## CLI Dashboard and Logging
+
+By default, the CLI uses a live Rich dashboard with **scrollable logs**, file logging, and interactive controls:
+- **Press 'x'** to exit the dashboard at any time
+- **Press 'i', 'd', or 'w'** to set log level to INFO, DEBUG, or WARNING
+- **Logs append** to a scrollable view (no more overwriting!)
+- **File logging** to timestamped files in `/tmp/azure_tenant_grapher_YYYYMMDD_HHMMSS.log`
+- **Config panel** shows log file location
+
+To disable the dashboard and emit logs line by line, use the `--no-dashboard` flag:
+
+```bash
+azure-tenant-grapher build --tenant-id <your-tenant-id> --no-dashboard
+```
+
 ## Usage Examples
 
 ```bash
-# Basic usage with automatic container management
-uv run python scripts/cli.py --tenant-id <your-tenant-id>
+# Basic usage with interactive dashboard
+azure-tenant-grapher build --tenant-id <your-tenant-id>
 
-# Start Neo4j container only
-uv run python scripts/cli.py --tenant-id dummy --container-only
+# Test with limited resources
+azure-tenant-grapher test --limit 20
 
-# Use existing Neo4j instance (skip container management)
-uv run python scripts/cli.py --tenant-id <your-tenant-id> --no-container
+# Generate visualization from existing graph
+azure-tenant-grapher visualize
 
-# Generate 3D visualization after building
-duv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize
+# Generate anonymized Markdown specification
+azure-tenant-grapher generate-spec --output my-tenant-spec.md
 
-# Generate visualization only (from existing graph data)
-uv run python scripts/cli.py --tenant-id <your-tenant-id> --visualize-only
+# Check processing progress
+azure-tenant-grapher progress
+
+# Show configuration
+azure-tenant-grapher config
 ```
 
-# Generate anonymized Markdown specification of your tenant
-uv run python scripts/cli.py generate-spec --tenant-id <your-tenant-id> [--limit N]
+## Advanced Usage
+
+```bash
+# Build with custom settings
+azure-tenant-grapher build \
+  --tenant-id <your-tenant-id> \
+  --resource-limit 1000 \
+  --max-llm-threads 10 \
+  --generate-spec \
+  --visualize
+
+# Build without dashboard for logging/CI
+azure-tenant-grapher build \
+  --tenant-id <your-tenant-id> \
+  --no-dashboard \
+  --log-level DEBUG
+
+# Use existing Neo4j instance
+azure-tenant-grapher build \
+  --tenant-id <your-tenant-id> \
+  --no-container
+```
 
 ## VS Code Tasks
 
@@ -187,29 +226,29 @@ az login
 ### 2. Start the Application
 The application can automatically manage a Neo4j Docker container for you.
 
-**Option A: Using the main entry point (recommended)**
+**Recommended: Using the CLI command**
 ```bash
-python main.py --tenant-id your-tenant-id-here
+azure-tenant-grapher build --tenant-id your-tenant-id-here
 ```
 
-**Option B: Using the module directly**
+**Alternative: Using uv run (for development)**
 ```bash
-python -m src.azure_tenant_grapher --tenant-id your-tenant-id-here
+uv run python scripts/cli.py build --tenant-id your-tenant-id-here
 ```
 
-**Option C: Start container manually**
+**Start container only**
 ```bash
 # Start Neo4j container only
-python main.py --tenant-id dummy --container-only
+azure-tenant-grapher build --tenant-id dummy --no-container
 
 # Or use Docker Compose directly
 docker-compose up -d neo4j
 ```
 
-**Option C: Use existing Neo4j instance**
+**Use existing Neo4j instance**
 ```bash
 # Skip container management if you have Neo4j running elsewhere
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id-here --no-container
+azure-tenant-grapher build --tenant-id your-tenant-id-here --no-container
 ```
 
 ### 3. Access Neo4j Browser
@@ -224,20 +263,22 @@ Once Neo4j is running, you can access the browser interface at:
 
 ```bash
 # Basic usage with automatic container management
-uv run python azure_tenant_grapher.py --tenant-id <your-tenant-id>
+azure-tenant-grapher build --tenant-id <your-tenant-id>
 
 # Start Neo4j container only (useful for setup)
-uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
+azure-tenant-grapher build --tenant-id dummy --no-container
 
 # Use existing Neo4j instance (skip container management)
-uv run python azure_tenant_grapher.py --tenant-id <your-tenant-id> --no-container
+azure-tenant-grapher build --tenant-id <your-tenant-id> --no-container
 
-# Custom Neo4j connection settings
-uv run python azure_tenant_grapher.py \
-  --tenant-id <your-tenant-id> \
-  --neo4j-uri bolt://localhost:7688 \
-  --neo4j-user neo4j \
-  --neo4j-password your-password
+# Test with limited resources
+azure-tenant-grapher test --limit 50
+
+# Generate visualization only
+azure-tenant-grapher visualize
+
+# Check processing progress
+azure-tenant-grapher progress
 ```
 
 ### VS Code Tasks
@@ -439,26 +480,27 @@ The Azure Tenant Grapher includes an interactive 3D visualization feature powere
 
 **Generate visualization after building the graph:**
 ```bash
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize
+azure-tenant-grapher build --tenant-id your-tenant-id --visualize
 ```
 
 **Generate visualization from existing graph data:**
 ```bash
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize-only
+azure-tenant-grapher visualize
 ```
+
 #### Show hierarchical Resource→Subscription→Tenant edges
 
-To include explicit Resource→Subscription and Subscription→Tenant “CONTAINS” edges in the visualization, use:
+To include explicit Resource→Subscription and Subscription→Tenant "CONTAINS" edges in the visualization, use:
 
 ```bash
-uv run python scripts/cli.py visualize --link-hierarchy
+azure-tenant-grapher visualize --link-hierarchy
 ```
 
 This will add additional hierarchical edges to the graph, making the containment structure explicit in the 3D view.
 
-**Specify custom output path:**
+**Check current configuration:**
 ```bash
-uv run python azure_tenant_grapher.py --tenant-id your-tenant-id --visualize --visualization-path my_graph.html
+azure-tenant-grapher config
 ```
 
 ### Visualization Controls
@@ -564,11 +606,24 @@ All dependencies from `requirements.txt` are now managed in `pyproject.toml` wit
 ### Testing the Setup:
 
 ```bash
-# Test the help (should not prompt for password)
-uv run python azure_tenant_grapher.py --help
+# Test the help
+azure-tenant-grapher --help
+
+# Show build options
+azure-tenant-grapher build --help
 
 # Start Neo4j container only
-uv run python azure_tenant_grapher.py --tenant-id dummy --container-only
+azure-tenant-grapher build --tenant-id dummy --no-container
 
 # Access Neo4j Browser at http://localhost:7475 with neo4j/azure-grapher-2024
 ```
+
+## CLI Command Reference
+
+After installation with `uv sync`, these commands are available:
+
+- `azure-tenant-grapher` - Full command name (recommended)
+- `azure-graph` - Medium alias
+- `atg` - Short alias
+
+All aliases provide identical functionality. Use `azure-tenant-grapher --help` to see all available commands and options.
