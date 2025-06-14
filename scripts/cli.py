@@ -14,8 +14,28 @@ import sys
 from typing import Any, Callable, Coroutine, Optional
 
 from dotenv import load_dotenv
+from rich.logging import RichHandler
+from rich.style import Style
 
 from src.rich_dashboard import RichDashboard
+
+
+class GreenInfoRichHandler(RichHandler):
+    def get_level_style(self, level_name: str) -> Style:
+        """Override log level colors for better readability."""
+        if level_name == "INFO":
+            return Style(color="blue", bold=True)
+        if level_name == "DEBUG":
+            return Style(color="white", dim=True)
+        if level_name == "WARNING":
+            return Style(color="yellow", bold=True)
+        if level_name == "ERROR":
+            return Style(color="red", bold=True)
+        if level_name == "CRITICAL":
+            return Style(color="red", bold=True, reverse=True)
+        # Fallback for other levels
+        return Style(color="cyan")
+
 
 # Add the parent directory to the path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -48,10 +68,19 @@ class DashboardLogHandler(logging.Handler):
 
     def emit(self, record):
         msg = self.format(record)
+        # Always show all logs, color by level
         if record.levelno >= logging.ERROR:
             self.dashboard.add_error(msg)
+        elif record.levelno >= logging.WARNING:
+            with self.dashboard.lock:
+                self.dashboard.log_widget.add_line(msg, "red", "warning")
+                self.dashboard.layout["logs"].update(self.dashboard._render_log_panel())
         elif record.levelno >= logging.INFO:
             self.dashboard.log_info(msg)
+        else:
+            with self.dashboard.lock:
+                self.dashboard.log_widget.add_line(msg, "white", "debug")
+                self.dashboard.layout["logs"].update(self.dashboard._render_log_panel())
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
@@ -64,7 +93,59 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
     return wrapper
 
 
-@click.group()
+def show_comprehensive_help(ctx: click.Context) -> None:
+    """Show comprehensive help for all commands."""
+    click.echo("🚀 Azure Tenant Grapher - Enhanced CLI")
+    click.echo("=" * 60)
+    click.echo()
+
+    # Show main help
+    click.echo(ctx.get_help())
+    click.echo()
+
+    # Show command descriptions
+    commands_info = {
+        "build": "🏗️  Build Azure tenant graph with optional dashboard interface",
+        "test": "🧪 Run quick test with limited resources to validate setup",
+        "visualize": "🎨 Generate interactive HTML visualization from existing graph",
+        "spec": "📋 Generate tenant specification document from existing graph",
+        "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
+        "config": "⚙️  Show current configuration template",
+        "progress": "📊 Check processing progress in the database",
+        "container": "🐳 Manage Neo4j Docker container",
+    }
+
+    click.echo("📚 COMMAND DESCRIPTIONS:")
+    click.echo("=" * 60)
+
+    for cmd_name, description in commands_info.items():
+        click.echo(f"\n{description}")
+        click.echo(f"Usage: {ctx.info_name} {cmd_name} [OPTIONS]")
+        click.echo(f"Help:  {ctx.info_name} {cmd_name} --help")
+
+    click.echo()
+    click.echo("💡 QUICK START EXAMPLES:")
+    click.echo("=" * 60)
+    click.echo("  # Build graph with dashboard (default)")
+    click.echo("  python scripts/cli.py build")
+    click.echo()
+    click.echo("  # Build graph without dashboard (line-by-line logs)")
+    click.echo("  python scripts/cli.py build --no-dashboard --log-level DEBUG")
+    click.echo()
+    click.echo("  # Test with limited resources")
+    click.echo("  python scripts/cli.py test --limit 20")
+    click.echo()
+    click.echo("  # Generate visualization from existing data")
+    click.echo("  python scripts/cli.py visualize")
+    click.echo()
+    click.echo("  # Check processing progress")
+    click.echo("  python scripts/cli.py progress")
+    click.echo()
+    click.echo("📖 For detailed help on any command, use: {command} --help")
+    click.echo("🌐 Documentation: https://github.com/your-repo/azure-tenant-grapher")
+
+
+@click.group(invoke_without_command=True)
 @click.option(
     "--log-level",
     default="INFO",
@@ -75,6 +156,10 @@ def cli(ctx: click.Context, log_level: str) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
+
+    # If no command is provided, show comprehensive help
+    if ctx.invoked_subcommand is None:
+        show_comprehensive_help(ctx)
 
 
 @cli.command()
@@ -105,6 +190,11 @@ def cli(ctx: click.Context, log_level: str) -> None:
     is_flag=True,
     help="Generate graph visualization after building",
 )
+@click.option(
+    "--no-dashboard",
+    is_flag=True,
+    help="Disable the Rich dashboard and emit logs line by line",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -115,8 +205,17 @@ async def build(
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
+    no_dashboard: bool,
 ) -> None:
-    """Build the complete Azure tenant graph with enhanced processing."""
+    """
+    Build the complete Azure tenant graph with enhanced processing.
+
+    By default, shows a live Rich dashboard with progress, logs, and interactive controls:
+      - Press 'x' to exit the dashboard at any time.
+      - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
+
+    Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
+    """
 
     try:
         # Use tenant_id from CLI or .env
@@ -144,126 +243,179 @@ async def build(
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
 
-        # Setup RichDashboard
-        dashboard = RichDashboard(
-            config=config.to_dict(),
-            batch_size=max_llm_threads,
-            total_threads=max_llm_threads,
-        )
-
-        # Ensure Neo4j connection is established before using grapher.driver
-        try:
-            grapher.connect_to_neo4j()
-        except Exception as e:
-            dashboard.add_error(f"❌ Failed to connect to Neo4j: {e}")
-            click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
-            sys.exit(1)
-
-        logger.info("🚀 Starting Azure Tenant Graph building...")
-
-        # Run the dashboard live while building the graph
-        # Run the graph build and update the dashboard synchronously
-        # Define a progress callback for the dashboard
-        def progress_callback(**kwargs):
-            dashboard.update_progress(**kwargs)
-
-        # Patch logging to send INFO/ERROR to dashboard
-        log_handler = DashboardLogHandler(dashboard)
-        log_handler.setFormatter(
-            logging.Formatter("%(levelname)s:%(name)s:%(message)s")
-        )
-        logging.getLogger().addHandler(log_handler)
-
-        # Run the graph build and update the dashboard live
-        with dashboard.live():
-            result = await grapher.build_graph(progress_callback=progress_callback)
-            # Final summary after build completes
-            dashboard.update_progress(
-                batch=1,
-                total_batches=1,
-                processed=result.get("total_resources", 0),
-                total=result.get("total_resources", 0),
-                successful=result.get("successful_resources", 0),
-                failed=result.get("failed_resources", 0),
-                skipped=result.get("skipped_resources", 0),
-                llm_generated=result.get("llm_descriptions_generated", 0),
-                llm_skipped=0,
+        if no_dashboard:
+            # Standard logging, no dashboard
+            root_logger = logging.getLogger()
+            # Set log level from CLI or default to INFO
+            cli_log_level = ctx.obj.get("log_level", "INFO").upper()
+            level_map = {
+                "DEBUG": logging.DEBUG,
+                "INFO": logging.INFO,
+                "WARNING": logging.WARNING,
+                "ERROR": logging.ERROR,
+            }
+            root_logger.setLevel(level_map.get(cli_log_level, logging.INFO))
+            root_logger.handlers.clear()
+            handler = GreenInfoRichHandler(
+                rich_tracebacks=True, show_time=True, show_level=True, show_path=False
             )
-            if not result.get("success", True):
-                dashboard.add_error(result.get("error", "Unknown error"))
-            else:
-                dashboard.add_error("🎉 Graph building completed successfully!")
-                dashboard.add_error(
-                    f"📊 Subscriptions: {result.get('subscriptions', 0)}"
+            handler.setLevel(level_map.get(cli_log_level, logging.INFO))
+            root_logger.addHandler(handler)
+            for name in logging.root.manager.loggerDict:
+                logging.getLogger(name).setLevel(
+                    level_map.get(cli_log_level, logging.INFO)
                 )
-                dashboard.add_error(
-                    f"📊 Total Resources: {result.get('total_resources', 0)}"
-                )
-                dashboard.add_error(
-                    f"✅ Successful: {result.get('successful_resources', 0)}"
-                )
-                dashboard.add_error(f"❌ Failed: {result.get('failed_resources', 0)}")
-                if "skipped_resources" in result:
-                    dashboard.add_error(f"⏭️ Skipped: {result['skipped_resources']}")
-                if "llm_descriptions_generated" in result:
-                    dashboard.add_error(
-                        f"🤖 LLM Descriptions: {result['llm_descriptions_generated']}"
-                    )
-                dashboard.add_error(
-                    f"   - Success Rate: {result.get('success_rate', 0):.1f}%"
-                )
-        return  # Prevent further code from referencing result outside the dashboard
+            logging.info(
+                f"Running in no-dashboard mode: logs will be emitted line by line. Log level: {cli_log_level}"
+            )
+            try:
+                grapher.connect_to_neo4j()
+            except Exception as e:
+                click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+                sys.exit(1)
+            logger.info("🚀 Starting Azure Tenant Graph building...")
+            result = await grapher.build_graph()
+            click.echo("🎉 Graph building completed.")
+            click.echo(f"Result: {result}")
+            return
+        else:
+            # Setup RichDashboard
+            dashboard = RichDashboard(
+                config=config.to_dict(),
+                batch_size=max_llm_threads,
+                total_threads=max_llm_threads,
+            )
 
-        if result.get("success", False):
-            click.echo("🎉 Graph building completed successfully!")
-            click.echo("📊 Summary:")
-            click.echo(f"   - Subscriptions: {result.get('subscriptions', 0)}")
-            click.echo(f"   - Total Resources: {result.get('total_resources', 0)}")
-            click.echo(f"   - Successful: {result.get('successful_resources', 0)}")
-            click.echo(f"   - Failed: {result.get('failed_resources', 0)}")
+            # Setup file logging to the dashboard's log file
+            # Create file handler for logging to dashboard's timestamped file
+            file_handler = logging.FileHandler(dashboard.log_file_path)
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s - %(levelname)s:%(name)s:%(message)s")
+            )
+            file_handler.setLevel(logging.DEBUG)
 
-            if "skipped_resources" in result:
-                click.echo(f"   - Skipped: {result['skipped_resources']}")
-            if "llm_descriptions_generated" in result:
-                click.echo(
-                    f"   - LLM Descriptions: {result['llm_descriptions_generated']}"
-                )
+            # Ensure Neo4j connection is established before using grapher.driver
+            try:
+                grapher.connect_to_neo4j()
+            except Exception as e:
+                dashboard.add_error(f"❌ Failed to connect to Neo4j: {e}")
+                click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+                sys.exit(1)
 
-            click.echo(f"   - Success Rate: {result.get('success_rate', 0):.1f}%")
+            logger.info("🚀 Starting Azure Tenant Graph building...")
 
-            # Generate visualization if requested
-            if visualize:
+            # Define a progress callback for the dashboard
+            def progress_callback(**kwargs):
+                dashboard.update_progress(**kwargs)
+
+            # Patch logging to send INFO/ERROR to both dashboard and file
+            dashboard_handler = DashboardLogHandler(dashboard)
+            dashboard_handler.setFormatter(
+                logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+            )
+
+            root_logger = logging.getLogger()
+            root_logger.setLevel(logging.DEBUG)
+            root_logger.handlers.clear()
+
+            # Add both dashboard and file handlers
+            root_logger.addHandler(dashboard_handler)
+            root_logger.addHandler(file_handler)
+
+            # Set all known loggers to DEBUG
+            for name in logging.root.manager.loggerDict:
+                logging.getLogger(name).setLevel(logging.DEBUG)
+
+            # Emit test log messages to verify handlers
+            logging.debug("Test DEBUG log: dashboard and file handlers are active.")
+            logging.info("Test INFO log: dashboard and file handlers are active.")
+            logging.warning("Test WARNING log: dashboard and file handlers are active.")
+            logging.error("Test ERROR log: dashboard and file handlers are active.")
+
+            dashboard.log_info(
+                f"📄 Logs are being written to: {dashboard.log_file_path}"
+            )
+
+            # Start the graph build concurrently before entering dashboard.live()
+            build_task = asyncio.create_task(
+                grapher.build_graph(progress_callback=progress_callback)
+            )
+            dashboard.set_processing(True)
+            dashboard.log_info("Starting build...")  # Ensure user sees activity
+
+            # Enter the dashboard live context so UI is immediately responsive
+            try:
+                async with dashboard.live():
+                    dashboard.log_info("Press 'x' to exit the dashboard")
+                    # Poll for build completion or user exit
+                    while not build_task.done() and not dashboard.should_exit:
+                        await asyncio.sleep(0.1)
+                    if dashboard.should_exit and not build_task.done():
+                        dashboard.add_error(
+                            "Dashboard exited before build completed. Cancelling build..."
+                        )
+                        build_task.cancel()
+                        try:
+                            await build_task
+                        except Exception:
+                            pass
+            except Exception as e:
+                # If the dashboard was exited by user, suppress context manager errors
+                if (
+                    "'NoneType' object does not support the context manager protocol"
+                    in str(e)
+                ):
+                    return
+                raise
+
+            # After dashboard context exits, await the build if still running
+            if not build_task.done():
                 try:
-                    click.echo("🎨 Generating graph visualization...")
+                    result = await build_task
+                except Exception as build_e:
+                    dashboard.set_processing(False)
+                    dashboard.add_error(f"❌ Graph building failed: {build_e}")
+                    # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
+                    raise
+            else:
+                result = build_task.result()
+
+            dashboard.set_processing(False)
+            dashboard.log_info("🎉 Graph building completed successfully!")
+            dashboard.log_info(f"Result: {result}")
+            # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
+
+            # Handle post-processing options (generate_spec, visualize) after build
+            if generate_spec:
+                dashboard.log_info("📋 Generating tenant specification...")
+                try:
+                    await grapher.generate_tenant_specification()
+                    dashboard.log_info("✅ Tenant specification generated")
+                    # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
+                except Exception as spec_e:
+                    dashboard.add_error(
+                        f"❌ Tenant specification generation failed: {spec_e}"
+                    )
+                    # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
+
+            if visualize:
+                dashboard.log_info("🎨 Generating visualization...")
+                try:
+                    from src.graph_visualizer import GraphVisualizer
+
                     visualizer = GraphVisualizer(
-                        config.neo4j.uri, config.neo4j.user, config.neo4j.password
+                        config.neo4j.uri,
+                        config.neo4j.user,
+                        config.neo4j.password,
                     )
                     viz_path = visualizer.generate_html_visualization()
-                    click.echo(f"✅ Visualization saved to: {viz_path}")
-                except Exception as e:
-                    click.echo(f"❌ Failed to generate visualization: {e}", err=True)
+                    dashboard.log_info(f"✅ Visualization saved to: {viz_path}")
+                    # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
+                except Exception as viz_e:
+                    dashboard.add_error(f"⚠️ Visualization failed: {viz_e}")
+                    # dashboard.layout.refresh()  # Not needed; Live auto-refreshes
 
-            # Generate tenant specification if requested and LLM is available
-            if generate_spec and config.azure_openai.is_configured():
-                try:
-                    click.echo("📋 Generating tenant specification...")
-                    await grapher.generate_tenant_specification()
-                    click.echo("✅ Tenant specification generated successfully")
-                except Exception as e:
-                    click.echo(
-                        f"❌ Failed to generate tenant specification: {e}", err=True
-                    )
-            elif generate_spec:
-                click.echo(
-                    "⚠️ Tenant specification requires Azure OpenAI configuration",
-                    err=True,
-                )
-        else:
-            click.echo(
-                f"❌ Graph building failed: {result.get('error', 'Unknown error')}",
-                err=True,
-            )
-            sys.exit(1)
+            return  # Prevent further code from referencing result outside the dashboard
 
     except Exception as e:
         click.echo(f"❌ Unexpected error: {e}", err=True)

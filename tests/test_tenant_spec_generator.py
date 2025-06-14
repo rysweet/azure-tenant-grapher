@@ -18,60 +18,62 @@ def neo4j_test_graph():
     user = os.getenv("NEO4J_USER", "neo4j")
     password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
     driver = GraphDatabase.driver(uri, auth=(user, password))
-    with driver.session() as session:
-        # Clean and create ≤50 test nodes/resources
-        session.run("MATCH (n) DETACH DELETE n")
-        for i in range(10):
-            session.run(
-                """
-                CREATE (r:Resource {
-                    id: $id,
-                    name: $name,
-                    type: 'Microsoft.Compute/virtualMachines',
-                    location: 'eastus',
-                    resource_group: 'rg-test',
-                    subscription_id: 'sub-1234',
-                    properties: $properties,
-                    tags: $tags,
-                    llm_description: 'Test VM for development'
-                })
-                """,
-                id=f"vm-{i}",
-                name=f"test-vm-{i}",
-                properties=json.dumps({"os": "linux", "ip": f"10.0.0.{i}"}),
-                tags=json.dumps({"env": "test"}),
-            )
-        for i in range(5):
-            session.run(
-                """
-                CREATE (r:Resource {
-                    id: $id,
-                    name: $name,
-                    type: 'Microsoft.Storage/storageAccounts',
-                    location: 'westus2',
-                    resource_group: 'rg-test',
-                    subscription_id: 'sub-1234',
-                    properties: $properties,
-                    tags: $tags,
-                    llm_description: 'Storage for dev'
-                })
-                """,
-                id=f"storage-{i}",
-                name=f"test-storage-{i}",
-                properties=json.dumps({"tier": "Standard"}),
-                tags=json.dumps({"env": "test"}),
-            )
-        # Add relationships
-        session.run("""
-            MATCH (a:Resource {type: 'Microsoft.Compute/virtualMachines'}), (b:Resource {type: 'Microsoft.Storage/storageAccounts'})
-            WITH a, b LIMIT 5
-            CREATE (a)-[:DEPENDS_ON]->(b)
-        """)
-    yield uri, user, password
-    # Teardown: clean up
-    with driver.session() as session:
-        session.run("MATCH (n) DETACH DELETE n")
-    driver.close()
+    try:
+        with driver.session() as session:
+            # Clean and create ≤50 test nodes/resources
+            session.run("MATCH (n) DETACH DELETE n")
+            for i in range(10):
+                session.run(
+                    """
+                    CREATE (r:Resource {
+                        id: $id,
+                        name: $name,
+                        type: 'Microsoft.Compute/virtualMachines',
+                        location: 'eastus',
+                        resource_group: 'rg-test',
+                        subscription_id: 'sub-1234',
+                        properties: $properties,
+                        tags: $tags,
+                        llm_description: 'Test VM for development'
+                    })
+                    """,
+                    id=f"vm-{i}",
+                    name=f"test-vm-{i}",
+                    properties=json.dumps({"os": "linux", "ip": f"10.0.0.{i}"}),
+                    tags=json.dumps({"env": "test"}),
+                )
+            for i in range(5):
+                session.run(
+                    """
+                    CREATE (r:Resource {
+                        id: $id,
+                        name: $name,
+                        type: 'Microsoft.Storage/storageAccounts',
+                        location: 'westus2',
+                        resource_group: 'rg-test',
+                        subscription_id: 'sub-1234',
+                        properties: $properties,
+                        tags: $tags,
+                        llm_description: 'Storage for dev'
+                    })
+                    """,
+                    id=f"storage-{i}",
+                    name=f"test-storage-{i}",
+                    properties=json.dumps({"tier": "Standard"}),
+                    tags=json.dumps({"env": "test"}),
+                )
+            # Add relationships
+            session.run("""
+                MATCH (a:Resource {type: 'Microsoft.Compute/virtualMachines'}), (b:Resource {type: 'Microsoft.Storage/storageAccounts'})
+                WITH a, b LIMIT 5
+                CREATE (a)-[:DEPENDS_ON]->(b)
+            """)
+        yield uri, user, password
+        # Teardown: clean up
+        with driver.session() as session:
+            session.run("MATCH (n) DETACH DELETE n")
+    finally:
+        driver.close()
 
 
 def test_spec_file_created_and_resource_limit(neo4j_test_graph):
