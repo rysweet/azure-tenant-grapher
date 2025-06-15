@@ -159,6 +159,10 @@ class AzureLLMDescriptionGenerator:
             api_version=self.config.api_version,
         )
 
+        # Suppress HTTP request logging from OpenAI client
+        httpx_logger = logging.getLogger("httpx")
+        httpx_logger.setLevel(logging.WARNING)
+
         logger.info(
             f"Initialized Azure LLM Description Generator with endpoint: {self.base_url}"
         )
