@@ -462,6 +462,7 @@ class ResourceProcessor:
     async def process_resources_batch(
         self,
         resources: List[Dict[str, Any]],
+        batch_size: Optional[int] = None,
         max_llm_threads: int = 5,
         progress_callback: Optional[Any] = None,
     ) -> ProcessingStats:
@@ -482,6 +483,9 @@ class ResourceProcessor:
             )
             resources = resources[: self.resource_limit]
 
+        # Use batch_size if provided, otherwise default to max_llm_threads
+        effective_batch_size = batch_size if batch_size is not None else max_llm_threads
+
         self.stats.total_resources = len(resources)
 
         if not resources:
@@ -489,7 +493,7 @@ class ResourceProcessor:
             return self.stats
 
         logger.info(
-            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max threads: {max_llm_threads})"
+            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max threads: {effective_batch_size})"
         )
 
         import concurrent.futures
@@ -567,7 +571,7 @@ class ResourceProcessor:
         )
 
         with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_llm_threads
+            max_workers=effective_batch_size
         ) as executor:
             # Submit all LLM tasks
             future_to_resource = {
@@ -581,13 +585,11 @@ class ResourceProcessor:
             # Process completed tasks as they finish
             for future in concurrent.futures.as_completed(future_to_resource):
                 try:
-                    resource, resource_index, llm_success = future.result()
+                    resource, resource_index, _ = future.result()
 
                     # Update LLM stats
-                    if llm_success:
-                        self.stats.llm_generated += 1
-                    else:
-                        self.stats.llm_skipped += 1
+                    # Remove double-counting: llm_generated is incremented in llm_task only
+                    pass
 
                     # Process the resource (DB operations)
                     try:
