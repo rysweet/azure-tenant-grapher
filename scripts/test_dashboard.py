@@ -25,7 +25,7 @@ async def main():
     print(
         "Dashboard test started. Try pressing 'x', 'i', 'd', or 'w' while the dashboard is running."
     )
-    async with dashboard.live():
+    with dashboard.live():
         # Simulate ongoing updates
         for i in range(2, 6):
             await asyncio.sleep(1)
