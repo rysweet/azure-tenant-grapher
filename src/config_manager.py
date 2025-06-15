@@ -354,7 +354,9 @@ def setup_logging(config: LoggingConfig) -> None:
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
 
     httpx_logger = logging.getLogger("httpx")
-    httpx_logger.setLevel(logging.WARNING)  # Only show HTTPX warnings/errors by default
+    httpx_logger.setLevel(
+        logging.WARNING
+    )  # Suppress INFO level HTTP requests, only show warnings/errors
 
     logger.info(
         f"📝 Logging configured: level={config.level}, file={config.file_output or 'console'}"
