@@ -189,7 +189,12 @@ class TenantSpecificationGenerator:
         # Write to file
         if not output_path:
             output_path = self._get_default_output_path()
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Only create directory if it's not the current directory
+        output_dir = os.path.dirname(output_path)
+        if output_dir and output_dir != "." and output_dir != os.getcwd():
+            os.makedirs(output_dir, exist_ok=True)
+            
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(markdown)
         logger.info(f"Specification written to {output_path}")

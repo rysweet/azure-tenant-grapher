@@ -343,7 +343,7 @@ AZURE_OPENAI_MODEL_CHAT=gpt-4
 AZURE_OPENAI_MODEL_REASONING=gpt-4
 
 # Specification Generation
-AZTG_SPEC_OUTPUT_DIR=./specs
+AZTG_SPEC_OUTPUT_DIR=.
 AZTG_SPEC_INCLUDE_AI=true
 AZTG_SPEC_INCLUDE_CONFIG=true
 AZTG_SPEC_ANONYMIZATION_SEED=optional-seed
@@ -548,7 +548,7 @@ uv run python scripts/cli.py generate-spec [--limit N] [--output PATH]
 ```
 
 - `--limit` (optional): Maximum number of resources to include (default: from config).
-- `--output` (optional): Custom output path (default: auto-generated in ./specs/).
+- `--output` (optional): Custom output path (default: auto-generated in current directory).
 
 Example:
 
@@ -558,13 +558,19 @@ azure-tenant-grapher generate-spec --limit 100 --output my-tenant-spec.md
 
 ### Specification File Location
 
-Generated specifications are saved in the `./specs/` directory with a timestamped filename by default:
+Generated specifications are saved in the current directory with a timestamped filename by default:
 
 ```
-./specs/{YYYYMMDD_HHMMSS}_tenant_spec.md
+{YYYYMMDD_HHMMSS}_tenant_spec.md
 ```
 
-Example: `./specs/20250616_132221_tenant_spec.md`
+Example: `20250616_132221_tenant_spec.md`
+
+You can specify a custom output path using the `--output` flag:
+
+```bash
+azure-tenant-grapher generate-spec --output /path/to/my-spec.md
+```
 
 ### Anonymization Features
 
