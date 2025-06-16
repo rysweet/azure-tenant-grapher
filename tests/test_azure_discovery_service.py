@@ -355,13 +355,17 @@ class TestAzureDiscoveryService:
         assert resources[0]["type"] == "Microsoft.Compute/virtualMachines"
         assert resources[0]["location"] == "eastus"
         assert resources[0]["tags"] == {"Environment": "Test"}
-        # Only minimal fields present
+        assert resources[0]["subscription_id"] == "test-sub"
+        assert resources[0]["resource_group"] == "test-rg"
+        # Check all expected fields are present
         assert set(resources[0].keys()) == {
             "id",
             "name",
             "type",
             "location",
             "tags",
+            "subscription_id",
+            "resource_group",
         }
 
     @pytest.mark.asyncio
@@ -384,12 +388,18 @@ class TestAzureDiscoveryService:
         assert len(resources) == 1
         assert resources[0]["name"] == "minimal-resource"
         assert resources[0]["tags"] == {}
+        assert (
+            resources[0]["subscription_id"] == "test-sub-id"
+        )  # Falls back to parameter
+        assert resources[0]["resource_group"] is None  # Cannot parse from None ID
         assert set(resources[0].keys()) == {
             "id",
             "name",
             "type",
             "location",
             "tags",
+            "subscription_id",
+            "resource_group",
         }
 
     @pytest.mark.xfail(
@@ -548,6 +558,99 @@ class TestAzureDiscoveryService:
         assert result == original_data
         # Should return a copy (different list object but same content)
         assert result is not azure_service.get_cached_subscriptions()
+
+    def test_parse_resource_id_valid(
+        self, azure_service: AzureDiscoveryService
+    ) -> None:
+        """Test parsing valid Azure resource ID."""
+        resource_id = "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm"
+        result = azure_service._parse_resource_id(resource_id)
+
+        assert result["subscription_id"] == "12345678-1234-1234-1234-123456789012"
+        assert result["resource_group"] == "my-rg"
+
+    def test_parse_resource_id_empty_string(
+        self, azure_service: AzureDiscoveryService
+    ) -> None:
+        """Test parsing empty resource ID."""
+        result = azure_service._parse_resource_id("")
+        assert result == {}
+
+    def test_parse_resource_id_invalid_format(
+        self, azure_service: AzureDiscoveryService
+    ) -> None:
+        """Test parsing malformed resource ID."""
+        result = azure_service._parse_resource_id("invalid-resource-id")
+        assert result == {}
+
+    def test_parse_resource_id_missing_subscription(
+        self, azure_service: AzureDiscoveryService
+    ) -> None:
+        """Test parsing resource ID missing subscription."""
+        resource_id = (
+            "/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm"
+        )
+        result = azure_service._parse_resource_id(resource_id)
+
+        assert "subscription_id" not in result
+        assert result["resource_group"] == "my-rg"
+
+    def test_parse_resource_id_missing_resource_group(
+        self, azure_service: AzureDiscoveryService
+    ) -> None:
+        """Test parsing resource ID missing resource group."""
+        resource_id = "/subscriptions/12345678-1234-1234-1234-123456789012/providers/Microsoft.Authorization/roleAssignments/role1"
+        result = azure_service._parse_resource_id(resource_id)
+
+        assert result["subscription_id"] == "12345678-1234-1234-1234-123456789012"
+        assert "resource_group" not in result
+
+    @pytest.mark.asyncio
+    async def test_discover_resources_regression_test_validation(
+        self, azure_service: AzureDiscoveryService, mock_resource_client: Mock
+    ) -> None:
+        """Regression test: Ensure discovered resources pass ResourceProcessor validation."""
+        from unittest.mock import Mock as MockSession
+
+        from src.resource_processor import DatabaseOperations
+
+        # Setup mock resource with valid resource ID
+        mock_resource = Mock()
+        mock_resource.id = "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm"
+        mock_resource.name = "test-vm"
+        mock_resource.type = "Microsoft.Compute/virtualMachines"
+        mock_resource.location = "eastus"
+        mock_resource.tags = {"Environment": "Test"}
+        mock_resource_client.resources.list.return_value = [mock_resource]
+
+        resources = await azure_service.discover_resources_in_subscription("test-sub")
+
+        # Verify the resource dict contains all required fields for ResourceProcessor
+        assert len(resources) == 1
+        resource = resources[0]
+
+        required_fields = [
+            "id",
+            "name",
+            "type",
+            "location",
+            "resource_group",
+            "subscription_id",
+        ]
+        for field in required_fields:
+            assert field in resource, f"Missing required field: {field}"
+            assert resource[field] is not None, f"Required field {field} is None"
+
+        # Mock a session and verify upsert_resource would succeed
+        mock_session = MockSession()
+        mock_session.run = Mock()
+
+        db_ops = DatabaseOperations(mock_session)
+
+        # This should not raise a ResourceDataValidationError
+        success = db_ops.upsert_resource(resource)
+        assert success is True
+        mock_session.run.assert_called_once()
 
 
 class TestAzureDiscoveryServiceFactory:

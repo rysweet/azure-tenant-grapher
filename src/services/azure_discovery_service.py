@@ -163,7 +163,7 @@ class AzureDiscoveryService:
             subscription_id: Azure subscription ID
 
         Returns:
-            List of resource dictionaries with minimal fields
+            List of resource dictionaries with minimal fields including subscription_id and resource_group
 
         Raises:
             AzureDiscoveryError: If resource discovery fails
@@ -180,12 +180,20 @@ class AzureDiscoveryService:
                 for resource in pager:
                     res: Any = resource
                     res_id: Optional[str] = getattr(res, "id", None)
+
+                    # Parse resource ID to extract subscription_id and resource_group
+                    parsed_info = self._parse_resource_id(res_id) if res_id else {}
+
                     resource_dict: Dict[str, Any] = {
                         "id": res_id,
                         "name": getattr(res, "name", None),
                         "type": getattr(res, "type", None),
                         "location": getattr(res, "location", None),
                         "tags": dict(getattr(res, "tags", {}) or {}),
+                        "subscription_id": parsed_info.get(
+                            "subscription_id", subscription_id
+                        ),
+                        "resource_group": parsed_info.get("resource_group"),
                     }
                     resources.append(resource_dict)
                 logger.info(
@@ -304,6 +312,51 @@ class AzureDiscoveryService:
                 f"Azure CLI fallback authentication failed: {exc}",
                 tenant_id=self.config.tenant_id,
             ) from exc
+
+    def _parse_resource_id(self, resource_id: Optional[str]) -> Dict[str, str]:
+        """
+        Parse an Azure resource ID to extract subscription_id and resource_group.
+
+        Args:
+            resource_id: Azure resource ID in format:
+                /subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/{provider}/{type}/{name}
+
+        Returns:
+            Dict containing 'subscription_id' and 'resource_group' if found, empty dict otherwise
+        """
+        if not resource_id:
+            return {}
+
+        try:
+            # Split the resource ID into segments
+            segments = resource_id.strip("/").split("/")
+
+            result = {}
+
+            # Find subscription ID (should be after 'subscriptions')
+            try:
+                subscription_index = segments.index("subscriptions")
+                if subscription_index + 1 < len(segments):
+                    result["subscription_id"] = segments[subscription_index + 1]
+            except (ValueError, IndexError):
+                logger.debug(
+                    f"Could not parse subscription_id from resource ID: {resource_id}"
+                )
+
+            # Find resource group (should be after 'resourceGroups')
+            try:
+                rg_index = segments.index("resourceGroups")
+                if rg_index + 1 < len(segments):
+                    result["resource_group"] = segments[rg_index + 1]
+            except (ValueError, IndexError):
+                logger.debug(
+                    f"Could not parse resource_group from resource ID: {resource_id}"
+                )
+
+            return result
+        except Exception:
+            logger.exception(f"Error parsing resource ID: {resource_id}")
+            return {}
 
     def get_cached_subscriptions(self) -> List[Dict[str, Any]]:
         """
