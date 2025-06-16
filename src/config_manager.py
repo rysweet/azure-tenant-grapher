@@ -165,7 +165,7 @@ class SpecificationConfig:
 
     resource_limit: Optional[int] = field(default_factory=lambda: None)
     output_directory: str = field(
-        default_factory=lambda: os.getenv("AZTG_SPEC_OUTPUT_DIR", "./specs")
+        default_factory=lambda: os.getenv("AZTG_SPEC_OUTPUT_DIR", ".")
     )
     include_ai_summaries: bool = field(
         default_factory=lambda: os.getenv("AZTG_SPEC_INCLUDE_AI", "true").lower()
