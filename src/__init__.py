@@ -19,13 +19,6 @@ from __future__ import annotations
 
 import asyncio
 
-try:
-    _loop = asyncio.get_event_loop()
-    if _loop.is_closed():  # pragma: no cover
-        asyncio.set_event_loop(asyncio.new_event_loop())
-except RuntimeError:
-    # No current event-loop; create one so later `get_event_loop()` succeeds.
-    asyncio.set_event_loop(asyncio.new_event_loop())
 # ---------------------------------------------------------------------------
 # Ensure future calls to asyncio.get_event_loop() always return an *open* loop.
 # This guards against test utilities that reuse the default loop after it

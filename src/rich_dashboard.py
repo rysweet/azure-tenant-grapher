@@ -20,12 +20,11 @@ class DashboardExit(Exception):
 
 
 class RichDashboard:
-    def __init__(self, config: Dict[str, Any], batch_size: int, total_threads: int):
+    def __init__(self, config: Dict[str, Any], max_concurrency: int):
         self.console = Console()
         self.layout = Layout()
         self.config = config
-        self.batch_size = batch_size
-        self.total_threads = total_threads
+        self.max_concurrency = max_concurrency
 
         # Add log_file_path for CLI compatibility
         import tempfile
@@ -39,8 +38,6 @@ class RichDashboard:
         self.log_level = "info"
 
         self.progress_stats = {
-            "batch": 0,
-            "total_batches": 0,
             "processed": 0,
             "total": 0,
             "successful": 0,
@@ -74,8 +71,7 @@ class RichDashboard:
         table.add_column()
         for k, v in self.config.items():
             table.add_row(str(k), str(v))
-        table.add_row("Batch Size", str(self.batch_size))
-        table.add_row("Threads", str(self.total_threads))
+        table.add_row("Max Concurrency", str(self.max_concurrency))
         return Panel(
             table, title="Config / Parameters", border_style="green", height=15
         )
@@ -85,7 +81,6 @@ class RichDashboard:
         table = Table.grid(expand=True)
         table.add_column("Metric", style="magenta")
         table.add_column("Value", style="bold")
-        table.add_row("Batch", f"{stats['batch']}/{stats['total_batches']}")
         table.add_row("Processed", f"{stats['processed']}/{stats['total']}")
         table.add_row("Successful", str(stats["successful"]))
         table.add_row("Failed", str(stats["failed"]))
@@ -93,7 +88,7 @@ class RichDashboard:
         table.add_row("LLM Generated", str(stats["llm_generated"]))
         table.add_row("LLM Skipped", str(stats["llm_skipped"]))
         table.add_row("LLM In-Flight", str(stats.get("llm_in_flight", 0)))
-        table.add_row("Threads", str(self.total_threads))
+        table.add_row("Max Concurrency", str(self.max_concurrency))
         # Add spinner and label at the bottom if processing
         exit_label = Text("Press 'x' to exit", style="yellow")
         if self.processing:

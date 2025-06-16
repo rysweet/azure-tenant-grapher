@@ -147,75 +147,6 @@ class TestAzureDiscoveryService:
         assert subscriptions == []
         assert azure_service.subscriptions == []
 
-    @pytest.mark.xfail(
-        reason="AzureDiscoveryService does not call the factory on each retry/fallback; test cannot simulate fallback."
-    )
-    @pytest.mark.asyncio
-    async def test_discover_subscriptions_authentication_fallback_success(
-        self, mock_config: Mock, mock_credential: Mock
-    ) -> None:
-        """Test successful authentication fallback using AzureCliCredential."""
-        from azure.core.exceptions import AzureError
-
-        with patch(
-            "src.services.azure_discovery_service.AzureCliCredential"
-        ) as mock_cli_cred_class:
-            # First call: AzureError, second call: success
-            call_count = {"count": 0}
-
-            def list_side_effect(*args, **kwargs):
-                call_count["count"] += 1
-                if call_count["count"] == 1:
-                    raise AzureError("DefaultAzureCredential authentication failed")
-                else:
-                    sub = Mock(
-                        subscription_id="fallback-sub", display_name="Fallback Sub"
-                    )
-                    return iter([sub])
-
-            def subscription_client_factory(credential: Any) -> Mock:
-                client = Mock()
-                if call_count["count"] == 0:
-                    # First attempt: raise error
-                    client.subscriptions.list.side_effect = lambda *a, **k: (
-                        _ for _ in ()
-                    ).throw(AzureError("DefaultAzureCredential authentication failed"))
-                else:
-                    # Second attempt: return iterable
-                    client.subscriptions.list.return_value = iter(
-                        [
-                            Mock(
-                                subscription_id="fallback-sub",
-                                display_name="Fallback Sub",
-                            )
-                        ]
-                    )
-                return client
-
-            def resource_client_factory(credential: Any, sub_id: str) -> Mock:
-                return Mock()
-
-            azure_service = AzureDiscoveryService(
-                mock_config,
-                mock_credential,
-                subscription_client_factory=subscription_client_factory,
-                resource_client_factory=resource_client_factory,
-            )
-
-            # Patch AzureCliCredential fallback
-
-            mock_cli_cred = Mock()
-            mock_cli_cred.get_token.return_value = Mock(token="cli-token")
-            mock_cli_cred_class.return_value = mock_cli_cred
-
-            subscriptions = await azure_service.discover_subscriptions()
-            assert len(subscriptions) == 1
-            assert subscriptions[0]["id"] == "fallback-sub"
-            assert subscriptions[0]["display_name"] == "Fallback Sub"
-            mock_cli_cred.get_token.assert_called_once_with(
-                "https://management.azure.com/.default"
-            )
-
     @pytest.mark.asyncio
     async def test_discover_subscriptions_authentication_fallback_failure(
         self, mock_config: Mock, mock_credential: Mock
@@ -260,41 +191,6 @@ class TestAzureDiscoveryService:
                 AzureAuthenticationError, match="credential unavailable"
             ):
                 await azure_service.discover_subscriptions()
-
-    @pytest.mark.xfail(
-        reason="AzureDiscoveryService does not call the factory on each retry; test cannot simulate retry logic."
-    )
-    @pytest.mark.asyncio
-    async def test_discover_subscriptions_retry_logic(
-        self, mock_config: Mock, mock_credential: Mock
-    ) -> None:
-        """Test retry logic for transient AzureError in subscription discovery."""
-        from azure.core.exceptions import AzureError
-
-        # Fail twice, succeed on third attempt
-        call_count = {"count": 0}
-
-        def subscription_client_factory(credential: Any) -> Mock:
-            call_count["count"] += 1
-            client = Mock()
-            if call_count["count"] <= 2:
-                client.subscriptions.list.side_effect = AzureError(
-                    f"transient error {call_count['count']}"
-                )
-            else:
-                sub = Mock(subscription_id="retry-sub", display_name="Retry Sub")
-                client.subscriptions.list.return_value = [sub]
-            return client
-
-        def resource_client_factory(credential: Any, sub_id: str) -> Mock:
-            return Mock()
-
-        AzureDiscoveryService(
-            mock_config,
-            mock_credential,
-            subscription_client_factory=subscription_client_factory,
-            resource_client_factory=resource_client_factory,
-        )
 
     @pytest.mark.asyncio
     async def test_discover_subscriptions_retry_logic_run(
@@ -401,54 +297,6 @@ class TestAzureDiscoveryService:
             "subscription_id",
             "resource_group",
         }
-
-    @pytest.mark.xfail(
-        reason="AzureDiscoveryService does not call the factory on each retry; test cannot simulate retry logic."
-    )
-    @pytest.mark.asyncio
-    async def test_discover_resources_in_subscription_retry_logic(
-        self, mock_config: Mock, mock_credential: Mock
-    ) -> None:
-        """Test retry logic for transient AzureError in resource discovery."""
-        from azure.core.exceptions import AzureError
-
-        # Fail twice, succeed on third attempt
-        call_count = {"count": 0}
-
-        def subscription_client_factory(credential):
-            return Mock()
-
-        def resource_client_factory(credential, sub_id):
-            call_count["count"] += 1
-            client = Mock()
-            if call_count["count"] <= 2:
-                client.resources.list.side_effect = AzureError(
-                    f"transient error {call_count['count']}"
-                )
-            else:
-                mock_resource = Mock()
-                mock_resource.id = "res-id"
-                mock_resource.name = "res"
-                mock_resource.type = "type"
-                mock_resource.location = "loc"
-                mock_resource.tags = {}
-                client.resources.list.return_value = [mock_resource]
-            return client
-
-        AzureDiscoveryService(
-            mock_config,
-            mock_credential,
-            subscription_client_factory=subscription_client_factory,
-            resource_client_factory=resource_client_factory,
-        )
-
-        mock_resource = Mock()
-        mock_resource.id = "res-id"
-        mock_resource.name = "res"
-        mock_resource.type = "type"
-        mock_resource.location = "loc"
-        mock_resource.tags = {}
-        # Fail twice, succeed on third attempt
 
     @pytest.mark.asyncio
     async def test_discover_resources_in_subscription_retry_logic_run(

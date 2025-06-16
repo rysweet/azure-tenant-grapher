@@ -516,110 +516,7 @@ The tenant contains {len(relationships)} relationships between resources, indica
 
         return spec
 
-    async def process_resources_batch(
-        self, resources: List[Dict[str, Any]], batch_size: int = 5
-    ) -> List[Dict[str, Any]]:
-        """
-        Process a batch of resources to add LLM-generated descriptions.
-
-        Args:
-            resources: List[Any] of resource dictionaries
-            batch_size: Number of resources to process concurrently
-
-        Returns:
-            List of resources with added descriptions
-        """
-        total_resources = len(resources)
-        logger.info(
-            f"🔄 Starting LLM description generation for {total_resources} resources (batch size: {batch_size})"
-        )
-
-        processed_count = 0
-        successful_count = 0
-        failed_count = 0
-
-        async def process_resource(
-            resource: Dict[str, Any], resource_index: int
-        ) -> None:
-            nonlocal processed_count, successful_count, failed_count
-
-            resource_name = resource.get("name", "Unknown")
-            resource_type = resource.get("type", "Unknown")
-
-            try:
-                logger.info(
-                    f"📝 Generating description for resource {resource_index + 1}/{total_resources}: {resource_name} ({resource_type})"
-                )
-                description = await self.generate_resource_description(resource)
-                resource["llm_description"] = description
-
-                successful_count += 1
-                processed_count += 1
-
-                # Log success with description preview
-                desc_preview = (
-                    description[:100] + "..." if len(description) > 100 else description
-                )
-                logger.info(
-                    f'✅ Successfully described {resource_name}: "{desc_preview}"'
-                )
-
-            except Exception as e:
-                failed_count += 1
-                processed_count += 1
-
-                logger.exception(
-                    f"❌ Failed to generate description for {resource_name} ({resource_type}): {e!s}"
-                )
-                resource["llm_description"] = f"Azure {resource_type} resource."
-
-        # Process resources in batches to avoid overwhelming the API
-        processed_resources: List[Dict[str, Any]] = []
-
-        for batch_start in range(0, total_resources, batch_size):
-            batch_end = min(batch_start + batch_size, total_resources)
-            batch = resources[batch_start:batch_end]
-            batch_number = (batch_start // batch_size) + 1
-            total_batches = (total_resources + batch_size - 1) // batch_size
-
-            logger.info(
-                f"🔄 Processing batch {batch_number}/{total_batches} (resources {batch_start + 1}-{batch_end})"
-            )
-
-            # Process batch with resource indices for logging
-            batch_with_indices = [
-                (resource, batch_start + idx) for idx, resource in enumerate(batch)
-            ]
-            await asyncio.gather(
-                *[
-                    process_resource(resource, resource_index)
-                    for resource, resource_index in batch_with_indices
-                ]
-            )
-            processed_resources.extend(batch)
-
-            # Progress summary for this batch
-            logger.info(
-                f"📊 Batch {batch_number} complete: {len(batch)} resources processed. Overall progress: {processed_count}/{total_resources} ({(processed_count / total_resources) * 100:.1f}%)"
-            )
-
-            # Small delay between batches to respect rate limits
-            if batch_end < total_resources:
-                logger.info(
-                    "⏳ Waiting 2 seconds before next batch to respect API rate limits..."
-                )
-                await asyncio.sleep(2)
-
-        # Final summary
-        logger.info("🎉 LLM description generation completed!")
-        logger.info(
-            f"📈 Summary: {successful_count} successful, {failed_count} failed, {processed_count} total"
-        )
-        logger.info(
-            f"✨ Success rate: {(successful_count / total_resources) * 100:.1f}%"
-        )
-
-        return processed_resources
+    # Batch-based LLM resource processing is deprecated and removed.
 
 
 def create_llm_generator() -> Optional[AzureLLMDescriptionGenerator]:
@@ -640,4 +537,87 @@ def create_llm_generator() -> Optional[AzureLLMDescriptionGenerator]:
         return AzureLLMDescriptionGenerator(config)
     except Exception as e:
         logger.exception(f"Failed to create LLM generator: {e!s}")
+
+
+def should_generate_description(resource_dict: dict[str, Any], session: Any) -> bool:
+    """
+    Determine if LLM description generation is needed for a resource.
+
+    Args:
+        resource_dict: The resource dictionary (must include 'id' and change-indicator fields).
+        session: Neo4j session object.
+
+    Returns:
+        bool: True if LLM description should be generated, False if it can be skipped.
+    """
+    logger = logging.getLogger(__name__)
+    resource_id = resource_dict.get("id")
+    if not resource_id:
+        logger.warning("Resource missing 'id'; cannot check for LLM skip.")
+        return True
+
+    # Query Neo4j for node by id, get llm_description and change-indicator fields
+    try:
+        result = session.run(
+            """
+            MATCH (r:Resource {id: $id})
+            RETURN r.llm_description AS desc, r.etag AS etag, r.last_modified AS last_modified
+            """,
+            id=resource_id,
+        )
+        record = result.single()
+        if not record:
+            logger.debug(
+                f"No existing node for resource {resource_id}; will generate description."
+            )
+            return True
+
+        db_desc = record.get("desc")
+        db_etag = record.get("etag")
+        db_last_modified = record.get("last_modified")
+
+        input_etag = resource_dict.get("etag")
+        input_last_modified = resource_dict.get("last_modified")
+
+        # If no description, must generate
+        if not db_desc or db_desc.strip() == "" or db_desc.startswith("Azure "):
+            logger.debug(
+                f"Resource {resource_id} missing or generic description; will generate."
+            )
+            return True
+
+        # If etag is present in both and differs, must generate
+        if input_etag and db_etag and input_etag != db_etag:
+            logger.info(f"Generating LLM for {resource_id}: etag changed.")
+            return True
+
+        # If last_modified is present in both and differs, must generate
+        if (
+            input_last_modified
+            and db_last_modified
+            and input_last_modified != db_last_modified
+        ):
+            logger.info(f"Generating LLM for {resource_id}: last_modified changed.")
+            return True
+
+        # If at least one change-indicator is present and all match, skip
+        if (input_etag and db_etag and input_etag == db_etag) or (
+            input_last_modified
+            and db_last_modified
+            and input_last_modified == db_last_modified
+        ):
+            logger.info(
+                f"Skipping LLM for {resource_id}: change-indicator(s) unchanged and description present."
+            )
+            return False
+
+        # If no change-indicator is present, be conservative and generate
+        logger.info(f"Generating LLM for {resource_id}: no change-indicator present.")
+        return True
+
+    except Exception as e:
+        logger.warning(
+            f"Error checking LLM skip for {resource_id}: {e!s}; will generate."
+        )
+        return True
         return None

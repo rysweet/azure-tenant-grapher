@@ -348,24 +348,7 @@ class ResourceProcessingError(ProcessingError):
         super().__init__(message, **kwargs)
 
 
-class BatchProcessingError(ProcessingError):
-    """Raised when batch processing fails."""
-
-    def __init__(
-        self,
-        message: str,
-        batch_size: Optional[int] = None,
-        failed_count: Optional[int] = None,
-        **kwargs: Any,
-    ) -> None:
-        context = kwargs.get("context", {})
-        if batch_size:
-            context["batch_size"] = batch_size
-        if failed_count:
-            context["failed_count"] = failed_count
-        kwargs["context"] = context
-        kwargs.setdefault("error_code", "BATCH_PROCESSING_FAILED")
-        super().__init__(message, **kwargs)
+# BatchProcessingError removed (batch processing is deprecated)
 
 
 # Validation-related exceptions

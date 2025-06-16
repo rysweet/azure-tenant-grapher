@@ -1,7 +1,10 @@
 import asyncio
 import io
 import logging
+import os
 import queue
+import subprocess
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -37,7 +40,7 @@ def test_dashboard_keypress_handling(monkeypatch):
                     self.layout["logs"].update(self._render_error_panel())
 
     config = {"tenant_id": "test"}
-    dashboard = RichDashboard(config, batch_size=1, total_threads=1)
+    dashboard = RichDashboard(config, max_concurrency=1)
     # Run dashboard.live() context, injecting the fake_key_loop as key_handler
     with dashboard.live(key_handler=lambda: fake_key_loop(dashboard)):
         pass
@@ -59,7 +62,7 @@ def test_dashboard_log_level_affects_logging(monkeypatch):
         return key_q.get(timeout=1)
 
     config = {"tenant_id": "test"}
-    dashboard = RichDashboard(config, batch_size=1, total_threads=1)
+    dashboard = RichDashboard(config, max_concurrency=1)
 
     # Capture log output
     log_stream = io.StringIO()
@@ -222,3 +225,50 @@ def test_dashboard_invokes_processing(monkeypatch: Any) -> None:
     assert result.exit_code == 0 or event.is_set()
     # Optionally, print output for debugging
     # print(result.output)
+
+
+@pytest.mark.timeout(10)
+def test_dashboard_runs_for_at_least_2_seconds(tmp_path):
+    """
+    Integration: The dashboard should not exit immediately on startup.
+    This test launches the CLI dashboard in a subprocess, waits 2 seconds,
+    then terminates it. It asserts the process was alive for at least 2 seconds.
+    """
+    import time
+
+    # Use a dummy tenant id and --no-container to avoid side effects
+    cmd = [
+        sys.executable,
+        "scripts/cli.py",
+        "build",
+        "--tenant-id",
+        "dummy",
+        "--no-container",
+        "--resource-limit",
+        "1",
+    ]
+    # Use a temp env to avoid real Azure/Neo4j calls if possible
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env["AZURE_TENANT_ID"] = "dummy"
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        text=True,
+    )
+    start = time.time()
+    try:
+        # Wait 2 seconds, then terminate
+        time.sleep(2)
+        alive = proc.poll() is None
+        if alive:
+            proc.terminate()
+        out, err = proc.communicate(timeout=5)
+    finally:
+        proc.kill()
+    duration = time.time() - start
+    assert duration >= 2, f"Dashboard exited too early (ran {duration:.2f}s)"
+    assert alive, "Dashboard process was not alive after 2 seconds"
