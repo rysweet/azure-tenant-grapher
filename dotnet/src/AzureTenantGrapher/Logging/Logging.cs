@@ -14,10 +14,10 @@ namespace AzureTenantGrapher.Logging
                 {
                     builder.ClearProviders();
                     builder.SetMinimumLevel(Enum.Parse<LogLevel>(config.LogLevel, true));
-                    
+
                     // Always add console logging
                     builder.AddConsole();
-                    
+
                     // Add file logging if LogFile is specified
                     if (!string.IsNullOrEmpty(config.LogFile))
                     {

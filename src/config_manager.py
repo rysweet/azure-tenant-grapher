@@ -133,7 +133,7 @@ class LoggingConfig:
         )
     )
     file_output: Optional[str] = field(
-        default_factory=lambda: os.getenv("LOG_FILE", None) or _generate_default_log_file()
+        default_factory=lambda: os.getenv("LOG_FILE")
     )
 
     def __post_init__(self) -> None:
@@ -343,9 +343,11 @@ def setup_logging(config: LoggingConfig) -> None:
     else:
         console_handler = logging.StreamHandler[Any]()
         # Use a simpler format without color placeholders when colorlog is not available
-        simple_format = config.format.replace("%(log_color)s", "").replace("%(reset)s", "")
+        simple_format = config.format.replace("%(log_color)s", "").replace(
+            "%(reset)s", ""
+        )
         console_formatter = logging.Formatter(simple_format)
-    
+
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
 
@@ -361,9 +363,11 @@ def setup_logging(config: LoggingConfig) -> None:
     # Set specific loggers to appropriate levels
     azure_logger = logging.getLogger("azure")
     azure_logger.setLevel(logging.WARNING)  # Reduce Azure SDK noise
-    
+
     # Specifically suppress Azure HTTP logging policy verbose output
-    azure_http_logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+    azure_http_logger = logging.getLogger(
+        "azure.core.pipeline.policies.http_logging_policy"
+    )
     azure_http_logger.setLevel(logging.DEBUG)  # Only show at DEBUG level
 
     openai_logger = logging.getLogger("openai")
