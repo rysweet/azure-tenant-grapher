@@ -2,7 +2,7 @@
 
 ## Product Overview
 
-**Azure Tenant Grapher** is an application that exhaustively discovers Azure tenant resources and builds a graph database representation of those resources and their relationships. The application provides comprehensive resource mapping, interactive visualization, and optional AI-powered documentation generation.
+**Azure Tenant Grapher** is a Python application that exhaustively discovers Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The application provides comprehensive resource mapping, interactive 3D visualization, Rich CLI dashboard interface, anonymized tenant specifications, and optional AI-powered documentation generation.
 
 ## Core Functional Requirements
 
@@ -171,28 +171,43 @@
 
 ### 8. User Interface and Experience
 
-#### FR8.1 Command Line Interface
+#### FR8.1 Rich CLI Dashboard Interface
 - **Requirements**:
-  - Comprehensive CLI with all major functionality
+  - Interactive Rich dashboard with live progress monitoring
+  - Real-time log display in scrollable format
+  - Dynamic log level adjustment (INFO, DEBUG, WARNING via keypresses)
+  - Interactive exit capability ('x' to exit dashboard)
+  - File-based logging with timestamped filenames
+  - Configuration panel showing current settings
+  - Progress statistics with LLM thread monitoring
+
+#### FR8.2 Command Line Interface
+- **Requirements**:
+  - Comprehensive CLI with all major functionality (build, test, visualize, spec, generate-spec, progress, config)
+  - Enhanced CLI wrapper with better error handling
   - Clear help documentation and usage examples
-  - Progress indicators for long-running operations
+  - Multiple CLI aliases (azure-tenant-grapher, azure-graph, atg)
+  - Support for both dashboard and no-dashboard modes
   - Colored output for better readability
   - Support for different verbosity levels
 
-#### FR8.2 Operational Modes
+#### FR8.3 Operational Modes
 - **Required Modes**:
-  - **Full Processing**: Complete discovery, processing, and graph building
-  - **Discovery Only**: Resource discovery without graph operations
+  - **Full Processing**: Complete discovery, processing, and graph building with dashboard
+  - **No-Dashboard Mode**: Line-by-line logging for CI/CD and scripting
+  - **Test Mode**: Limited resource processing for development and testing
   - **Visualization Only**: Generate visualizations from existing data
+  - **Specification Generation**: Create anonymized tenant specifications
   - **Container Management**: Database container operations only
-  - **Test Mode**: Limited processing for development and testing
+  - **Progress Checking**: Monitor processing status from existing data
 
-#### FR8.3 Cross-Platform Support
+#### FR8.4 Cross-Platform Support
 - **Requirements**:
   - Support major operating systems (Windows, macOS, Linux)
   - Provide platform-specific installation and execution scripts
   - Consistent behavior across platforms
   - Platform-appropriate default configurations
+  - UV-based dependency management for fast, reliable installs
 
 ### 9. Data Export and Integration
 
@@ -200,15 +215,24 @@
 - **Requirements**:
   - Export graph data in standard formats (GEXF, GraphML)
   - Export resource inventories as structured data (JSON, CSV)
-  - Export visualization files for sharing and presentation
+  - Export interactive 3D visualizations as self-contained HTML files
+  - Generate anonymized Markdown specifications for portable documentation
   - Support custom export templates and formats
 
-#### FR9.2 Integration Capabilities
+#### FR9.2 Tenant Specification Generation
 - **Requirements**:
-  - REST API for external integrations (future consideration)
-  - Webhook support for processing notifications
-  - Integration with common graph analysis tools
-  - Support for data pipeline integration
+  - Generate anonymized, portable Markdown documentation of Azure tenant
+  - Configurable resource limits and anonymization settings
+  - Consistent placeholder generation with semantic suffixes
+  - Include AI summaries and configuration details as options
+  - Support for different template styles and output directories
+
+#### FR9.3 Integration Capabilities
+- **Requirements**:
+  - Integration with common graph analysis tools via GEXF export
+  - Support for data pipeline integration through CLI automation
+  - File-based configuration and environment variable support
+  - Docker container integration for deployment scenarios
 
 ### 10. Security and Compliance
 
@@ -285,16 +309,20 @@
 ## Future Considerations
 
 ### Potential Enhancements
+- **Multi-Language Implementation**: Current .NET implementation alongside Python for enterprise scenarios
 - **Multi-Cloud Support**: Extend to AWS, GCP resource discovery
 - **Real-Time Updates**: Continuous monitoring and graph updates
 - **Advanced Analytics**: Machine learning for resource optimization recommendations
 - **Collaboration Features**: Multi-user access and sharing capabilities
 - **Compliance Reporting**: Automated compliance and governance reporting
+- **API Integration**: REST API for programmatic access and automation
 
 ### Scalability Considerations
 - **Enterprise Features**: RBAC, audit logging, enterprise authentication
-- **Cloud Deployment**: Native cloud deployment options
-- **API Gateway**: RESTful API for programmatic access
+- **Cloud Deployment**: Native cloud deployment options and container orchestration
 - **Data Lake Integration**: Export to enterprise data platforms
+- **Distributed Processing**: Support for large-scale tenant processing
+- **Performance Optimization**: Enhanced parallel processing and caching strategies
 
-This product requirements document defines the core functionality and requirements for Azure Tenant Grapher without specifying implementation technology, allowing for development in any suitable programming language and technology stack.
+### Implementation Status
+This product requirements document reflects the current Python implementation of Azure Tenant Grapher with comprehensive CLI interface, Rich dashboard, modular architecture, and extensive testing coverage. A complementary .NET implementation is also available for enterprise integration scenarios.
