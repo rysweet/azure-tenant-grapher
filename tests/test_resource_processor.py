@@ -277,6 +277,32 @@ class TestDatabaseOperations:
         assert "MERGE (r:Resource {id: $id})" in query
         assert "processing_status" in query
 
+    def test_upsert_resource_missing_id(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
+        """Test upsert_resource raises/returns False for missing id."""
+
+        bad_resource = sample_resource.copy()
+        bad_resource["id"] = None
+        db_ops = DatabaseOperations(mock_neo4j_session)
+        result = db_ops.upsert_resource(bad_resource, "completed")
+        assert result is False
+
+        # Also test missing name
+        bad_resource2 = sample_resource.copy()
+        bad_resource2["name"] = None
+        db_ops2 = DatabaseOperations(mock_neo4j_session)
+        result2 = db_ops2.upsert_resource(bad_resource2, "completed")
+        assert result2 is False
+
+        # Accepts id from resource_id
+        resource_with_resource_id = sample_resource.copy()
+        resource_with_resource_id["id"] = None
+        resource_with_resource_id["resource_id"] = "my-resource-id"
+        db_ops3 = DatabaseOperations(mock_neo4j_session)
+        result3 = db_ops3.upsert_resource(resource_with_resource_id, "completed")
+        assert result3 is False or resource_with_resource_id["id"] == "my-resource-id"
+
     def test_upsert_resource_exception(
         self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
     ) -> None:

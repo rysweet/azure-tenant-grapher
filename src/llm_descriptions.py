@@ -264,7 +264,7 @@ Be specific about the actual configured values while explaining their architectu
                         raise ThrottlingError(
                             "LLM API throttling detected after retries"
                         ) from e
-                logger.error(
+                logger.exception(
                     f"Failed to generate description for resource {resource_data.get('name', 'Unknown')}: {e!s}"
                 )
                 resource_type = resource_data.get("type", "Unknown")
@@ -353,7 +353,7 @@ Be specific about the architectural implications while keeping it concise and ac
             return description
 
         except Exception as e:
-            logger.error(f"Failed to generate relationship description: {e!s}")
+            logger.exception(f"Failed to generate relationship description: {e!s}")
             return f"{relationship_type} relationship between {source_type} and {target_type}."
 
     async def generate_tenant_specification(
@@ -447,7 +447,7 @@ Focus on architectural details and relationships, not on recommendations or futu
             return output_path
 
         except Exception as e:
-            logger.error(f"Failed to generate tenant specification: {e!s}")
+            logger.exception(f"Failed to generate tenant specification: {e!s}")
             # Create a basic fallback specification
             fallback_spec = self._create_fallback_specification(
                 resources, relationships
@@ -568,7 +568,7 @@ The tenant contains {len(relationships)} relationships between resources, indica
                 failed_count += 1
                 processed_count += 1
 
-                logger.error(
+                logger.exception(
                     f"❌ Failed to generate description for {resource_name} ({resource_type}): {e!s}"
                 )
                 resource["llm_description"] = f"Azure {resource_type} resource."
@@ -639,5 +639,5 @@ def create_llm_generator() -> Optional[AzureLLMDescriptionGenerator]:
 
         return AzureLLMDescriptionGenerator(config)
     except Exception as e:
-        logger.error(f"Failed to create LLM generator: {e!s}")
+        logger.exception(f"Failed to create LLM generator: {e!s}")
         return None

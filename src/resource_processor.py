@@ -101,8 +101,8 @@ class ResourceState:
             )
             record = result.single()
             return bool(record["count"] > 0) if record else False
-        except Exception as e:
-            logger.error(f"Error checking resource existence for {resource_id}: {e}")
+        except Exception:
+            logger.exception(f"Error checking resource existence for {resource_id}")
             return False
 
     def has_llm_description(self, resource_id: str) -> bool:
@@ -124,8 +124,8 @@ class ResourceState:
                     and not desc.startswith("Azure ")
                 )
             return False
-        except Exception as e:
-            logger.error(f"Error checking LLM description for {resource_id}: {e}")
+        except Exception:
+            logger.exception(f"Error checking LLM description for {resource_id}")
             return False
 
     def get_processing_metadata(self, resource_id: str) -> Dict[str, Any]:
@@ -144,8 +144,8 @@ class ResourceState:
             if record:
                 return dict(record)
             return {}
-        except Exception as e:
-            logger.error(f"Error getting processing metadata for {resource_id}: {e}")
+        except Exception:
+            logger.exception(f"Error getting processing metadata for {resource_id}")
             return {}
 
 
@@ -168,7 +168,31 @@ class DatabaseOperations:
         Returns:
             bool: True if successful, False otherwise
         """
+        from .exceptions import ResourceDataValidationError
+
         try:
+            # Defensive validation of required fields
+            required_fields = [
+                "id",
+                "name",
+                "type",
+                "location",
+                "resource_group",
+                "subscription_id",
+            ]
+            # Accept id from resource_id if present
+            if not resource.get("id") and resource.get("resource_id"):
+                resource["id"] = resource["resource_id"]
+
+            missing_or_null = [
+                f for f in required_fields if resource.get(f) in (None, "")
+            ]
+            if missing_or_null:
+                logger.exception(
+                    f"Resource data missing/null for required fields: {missing_or_null} (resource: {resource})"
+                )
+                raise ResourceDataValidationError(missing_fields=missing_or_null)
+
             query = """
             MERGE (r:Resource {id: $id})
             SET r.name = $name,
@@ -199,9 +223,12 @@ class DatabaseOperations:
             self.session.run(query, resource_data)
             return True
 
-        except Exception as e:
-            logger.error(
-                f"Error upserting resource {resource.get('id', 'Unknown')}: {e}"
+        except ResourceDataValidationError:
+            # Already logged above
+            return False
+        except Exception:
+            logger.exception(
+                f"Error upserting resource {resource.get('id', 'Unknown')}"
             )
             return False
 
@@ -219,9 +246,9 @@ class DatabaseOperations:
                 query, subscription_id=subscription_id, resource_id=resource_id
             )
             return True
-        except Exception as e:
-            logger.error(
-                f"Error creating subscription relationship for {resource_id}: {e}"
+        except Exception:
+            logger.exception(
+                f"Error creating subscription relationship for {resource_id}"
             )
             return False
 
@@ -268,9 +295,9 @@ class DatabaseOperations:
 
             return True
 
-        except Exception as e:
-            logger.error(
-                f"Error creating resource group relationships for {resource.get('id', 'Unknown')}: {e}"
+        except Exception:
+            logger.exception(
+                f"Error creating resource group relationships for {resource.get('id', 'Unknown')}"
             )
             return False
 
@@ -360,9 +387,9 @@ class ResourceProcessor:
                 resource
             )
             return True, description
-        except Exception as e:
-            logger.error(
-                f"LLM generation failed for {resource.get('name', 'Unknown')}: {e!s}"
+        except Exception:
+            logger.exception(
+                f"LLM generation failed for {resource.get('name', 'Unknown')}"
             )
             return False, f"Azure {resource.get('type', 'Resource')} resource."
 
@@ -441,17 +468,17 @@ class ResourceProcessor:
             self.stats.successful += 1
             return True
 
-        except Exception as e:
-            logger.error(
-                f"❌ Failed to process resource {resource_name} ({resource_type}): {e!s}"
+        except Exception:
+            logger.exception(
+                f"❌ Failed to process resource {resource_name} ({resource_type})"
             )
 
             # Mark resource as failed in database
 
             try:
                 self.db_ops.upsert_resource(resource, processing_status="failed")
-            except Exception as db_exc:
-                logger.error(f"Failed to mark resource as failed in DB: {db_exc!s}")
+            except Exception:
+                logger.exception("Failed to mark resource as failed in DB")
 
             self.stats.failed += 1
             return False
@@ -594,9 +621,9 @@ class ResourceProcessor:
                     # Process the resource (DB operations)
                     try:
                         await self.process_single_resource(resource, resource_index)
-                    except Exception as e:
-                        logger.error(
-                            f"❌ Failed to process resource {resource.get('name', 'Unknown')}: {e}"
+                    except Exception:
+                        logger.exception(
+                            f"❌ Failed to process resource {resource.get('name', 'Unknown')}"
                         )
                         self.stats.failed += 1
                         self.stats.processed += 1
@@ -621,10 +648,10 @@ class ResourceProcessor:
                             f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
                         )
 
-                except Exception as e:
+                except Exception:
                     resource, resource_index = future_to_resource[future]
-                    logger.error(
-                        f"❌ LLM task failed for {resource.get('name', 'Unknown')}: {e}"
+                    logger.exception(
+                        f"❌ LLM task failed for {resource.get('name', 'Unknown')}"
                     )
                     self.stats.failed += 1
                     self.stats.processed += 1

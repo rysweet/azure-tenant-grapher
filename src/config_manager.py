@@ -228,7 +228,7 @@ class AzureTenantGrapherConfig:
             logger.info("✅ Configuration validation successful")
 
         except Exception as e:
-            logger.error(f"❌ Configuration validation failed: {e}")
+            logger.exception(f"❌ Configuration validation failed: {e}")
             raise
 
     def log_configuration_summary(self) -> None:
@@ -397,6 +397,6 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
         config.logging.__post_init__()
         # No __post_init__ for specification, but could add validation if needed
     except Exception as e:
-        logger.error(f"❌ Neo4j-only configuration validation failed: {e}")
+        logger.exception(f"❌ Neo4j-only configuration validation failed: {e}")
         raise
     return config
