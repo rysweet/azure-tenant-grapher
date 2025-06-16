@@ -43,9 +43,9 @@ class Neo4jContainerManager:
                 self.docker_client.ping()  # type: ignore[misc]
                 return True
         except Exception as e:
-            logger.error(f"Docker is not available: {e}")
-            logger.error("Please ensure Docker Desktop is installed and running.")
-            logger.error(
+            logger.exception(f"Docker is not available: {e}")
+            logger.exception("Please ensure Docker Desktop is installed and running.")
+            logger.exception(
                 "You can download Docker Desktop from: https://www.docker.com/products/docker-desktop"
             )
         return False
@@ -73,7 +73,7 @@ class Neo4jContainerManager:
                 logger.info(f"Docker Compose available: {result.stdout.strip()}")
                 return True
             except (subprocess.CalledProcessError, FileNotFoundError):
-                logger.error("Docker Compose is not available")
+                logger.exception("Docker Compose is not available")
                 return False
 
     def get_compose_command(self) -> list[str]:
@@ -97,17 +97,17 @@ class Neo4jContainerManager:
             )
             return len(containers) > 0 and containers[0].status == "running"  # type: ignore[misc]
         except Exception as e:
-            logger.error(f"Error checking container status: {e}")
+            logger.exception(f"Error checking container status: {e}")
             return False
 
     def start_neo4j_container(self) -> bool:
         """Start Neo4j container using docker-compose."""
         if not self.is_docker_available():
-            logger.error("Docker is not available")
+            logger.exception("Docker is not available")
             return False
 
         if not self.is_compose_available():
-            logger.error("Docker Compose is not available")
+            logger.exception("Docker Compose is not available")
             return False
 
         if self.is_neo4j_container_running():
@@ -132,8 +132,8 @@ class Neo4jContainerManager:
             return True
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to start Neo4j container: {e}")
-            logger.error(f"Error output: {e.stderr}")
+            logger.exception(f"Failed to start Neo4j container: {e}")
+            logger.exception(f"Error output: {e.stderr}")
             return False
 
     def wait_for_neo4j_ready(self, timeout: int = 120) -> bool:
@@ -170,13 +170,13 @@ class Neo4jContainerManager:
                 logger.debug(f"Connection attempt failed: {e}")
                 time.sleep(2)
 
-        logger.error(f"Neo4j did not become ready within {timeout} seconds")
+        logger.exception(f"Neo4j did not become ready within {timeout} seconds")
         return False
 
     def stop_neo4j_container(self) -> bool:
         """Stop Neo4j container."""
         if not self.is_compose_available():
-            logger.error("Docker Compose is not available")
+            logger.exception("Docker Compose is not available")
             return False
 
         try:
@@ -194,7 +194,7 @@ class Neo4jContainerManager:
             return True
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to stop Neo4j container: {e}")
+            logger.exception(f"Failed to stop Neo4j container: {e}")
             return False
 
     def get_container_logs(self, lines: int = 50) -> Optional[str]:
@@ -220,7 +220,7 @@ class Neo4jContainerManager:
             )
             return result.stdout
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to get container logs: {e}")
+            logger.exception(f"Failed to get container logs: {e}")
             return None
 
     def setup_neo4j(self) -> bool:
@@ -238,10 +238,10 @@ class Neo4jContainerManager:
 
         # Wait for it to be ready
         if not self.wait_for_neo4j_ready():
-            logger.error("Neo4j setup failed - container did not become ready")
+            logger.exception("Neo4j setup failed - container did not become ready")
             logs = self.get_container_logs()
             if logs:
-                logger.error(f"Container logs:\n{logs}")
+                logger.exception(f"Container logs:\n{logs}")
             return False
 
         logger.info("Neo4j setup completed successfully!")

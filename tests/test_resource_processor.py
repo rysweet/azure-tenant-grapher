@@ -274,8 +274,36 @@ class TestDatabaseOperations:
         assert result is True
         assert len(mock_neo4j_session.queries_run) == 1
         query = mock_neo4j_session.queries_run[0]["query"]
-        assert "MERGE (r:Resource {id: $id})" in query
-        assert "processing_status" in query
+        assert "MERGE (r:Resource {id: $props.id})" in query
+        assert (
+            "processing_status" in mock_neo4j_session.queries_run[0]["params"]["props"]
+        )
+
+    def test_upsert_resource_missing_id(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
+        """Test upsert_resource raises/returns False for missing id."""
+
+        bad_resource = sample_resource.copy()
+        bad_resource["id"] = None
+        db_ops = DatabaseOperations(mock_neo4j_session)
+        result = db_ops.upsert_resource(bad_resource, "completed")
+        assert result is False
+
+        # Also test missing name
+        bad_resource2 = sample_resource.copy()
+        bad_resource2["name"] = None
+        db_ops2 = DatabaseOperations(mock_neo4j_session)
+        result2 = db_ops2.upsert_resource(bad_resource2, "completed")
+        assert result2 is False
+
+        # Accepts id from resource_id
+        resource_with_resource_id = sample_resource.copy()
+        resource_with_resource_id["id"] = None
+        resource_with_resource_id["resource_id"] = "my-resource-id"
+        db_ops3 = DatabaseOperations(mock_neo4j_session)
+        result3 = db_ops3.upsert_resource(resource_with_resource_id, "completed")
+        assert result3 is False or resource_with_resource_id["id"] == "my-resource-id"
 
     def test_upsert_resource_exception(
         self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
@@ -287,6 +315,40 @@ class TestDatabaseOperations:
         result = db_ops.upsert_resource(sample_resource, "failed")
 
         assert result is False
+
+    def test_upsert_resource_missing_optional_fields(
+        self, mock_neo4j_session: Mock, sample_resource: Dict[str, Any]
+    ) -> None:
+        """
+        Test upsert_resource does not fail if optional fields like 'kind' and 'sku' are missing.
+        """
+        # Remove optional fields
+        resource = sample_resource.copy()
+        resource.pop("kind", None)
+        resource.pop("sku", None)
+        # Track queries
+        mock_neo4j_session.queries_run = []
+
+        # Patch run to accept the new $props param style
+        def mock_run(query, parameters=None, **kwargs):
+            mock_neo4j_session.queries_run.append(
+                {"query": query, "params": parameters}
+            )
+            result = Mock()
+            result.single.return_value = {}
+            return result
+
+        mock_neo4j_session.run.side_effect = mock_run
+
+        db_ops = DatabaseOperations(mock_neo4j_session)
+        result = db_ops.upsert_resource(resource, "completed")
+        assert result is True
+        assert len(mock_neo4j_session.queries_run) == 1
+        # Ensure the query uses $props
+        assert (
+            "MERGE (r:Resource {id: $props.id})"
+            in mock_neo4j_session.queries_run[0]["query"]
+        )
 
     def test_create_subscription_relationship_success(
         self, mock_neo4j_session: Mock
@@ -336,6 +398,40 @@ class TestDatabaseOperations:
 
         assert result is True
         assert len(mock_neo4j_session.queries_run) == 0
+
+
+def test_upsert_resource_parameter_mismatch_or_serialization_error():
+    """
+    Simulate a Cypher query/parameter mismatch or serialization error in upsert_resource.
+    The method should not raise, but log and return False.
+    """
+
+    from src.resource_processor import DatabaseOperations
+
+    # Mock session that raises on run (e.g., due to parameter mismatch)
+    class FailingSession:
+        def run(self, query, parameters=None, **kwargs):
+            raise Exception("Cypher parameter mismatch or serialization error")
+
+    session = FailingSession()
+    db_ops = DatabaseOperations(session)
+    # Minimal valid resource, but will trigger error in session.run
+    resource = {
+        "id": "fail-id",
+        "name": "fail-name",
+        "type": "fail-type",
+        "location": "fail-location",
+        "resource_group": "fail-rg",
+        "subscription_id": "fail-sub",
+        "tags": {
+            "bad": object()
+        },  # object() is not serializable, triggers serialize_value fallback
+        "kind": None,
+        "sku": None,
+    }
+    # Should not raise, but return False
+    result = db_ops.upsert_resource(resource, "completed")
+    assert result is False
 
 
 class TestResourceProcessor:
@@ -529,18 +625,16 @@ class TestResourceProcessor:
         assert processor.stats.skipped == 1
 
     @pytest.mark.asyncio
-    async def test_process_resources_batch_empty(
-        self, mock_neo4j_session: Mock
-    ) -> None:
+    async def test_process_resources_empty(self, mock_neo4j_session: Mock) -> None:
         """Test processing empty resource list."""
         processor = ResourceProcessor(mock_neo4j_session)
-        stats = await processor.process_resources_batch([])
+        stats = await processor.process_resources([])
 
         assert stats.total_resources == 0
         assert stats.processed == 0
 
     @pytest.mark.asyncio
-    async def test_process_resources_batch_with_limit(
+    async def test_process_resources_with_limit(
         self, mock_neo4j_session: Mock, sample_resources: List[Any]
     ) -> None:
         """Test processing resources with limit."""
@@ -548,13 +642,13 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         processor = ResourceProcessor(mock_neo4j_session, resource_limit=1)
-        stats = await processor.process_resources_batch(sample_resources, batch_size=1)
+        stats = await processor.process_resources(sample_resources, max_workers=1)
 
         assert stats.total_resources == 1  # Limited to 1
         assert stats.processed == 1
 
     @pytest.mark.asyncio
-    async def test_process_resources_batch_parallel(
+    async def test_process_resources_parallel(
         self,
         mock_neo4j_session: Mock,
         sample_resources: List[Any],
@@ -565,7 +659,7 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         processor = ResourceProcessor(mock_neo4j_session, mock_llm_generator)
-        stats = await processor.process_resources_batch(sample_resources, batch_size=2)
+        stats = await processor.process_resources(sample_resources, max_workers=2)
 
         assert stats.total_resources == 2
         assert stats.processed == 2
@@ -672,14 +766,15 @@ class InMemoryNeo4jSession:
     def run(self, query, parameters=None, **kwargs):
         self.queries_run.append({"query": query, "params": parameters})
         # Upsert resource node
-        if "MERGE (r:Resource {id: $id})" in query:
-            rid = parameters["id"]
-            # Simulate upsert: update or insert
-            if rid in self.nodes:
-                self.nodes[rid].update(parameters)
-            else:
-                self.nodes[rid] = dict(parameters)
-            return Mock(single=lambda: {})
+        if "MERGE (r:Resource {id: $props.id})" in query:
+            if parameters and "props" in parameters and "id" in parameters["props"]:
+                rid = parameters["props"]["id"]
+                # Simulate upsert: update or insert
+                if rid in self.nodes:
+                    self.nodes[rid].update(parameters["props"])
+                else:
+                    self.nodes[rid] = dict(parameters["props"])
+                return Mock(single=lambda: {})
         # Count nodes by id
         if "MATCH (r:Resource {id: $id}) RETURN count(r) as count" in query:
             rid = parameters["id"]

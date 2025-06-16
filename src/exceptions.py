@@ -75,6 +75,17 @@ class AzureError(AzureTenantGrapherError):
     pass
 
 
+class AzureDiscoveryError(AzureError):
+    """Raised when Azure discovery operations fail."""
+
+    def __init__(
+        self, message: str, context: Optional[dict[str, Any]] = None, **kwargs: Any
+    ) -> None:
+        kwargs["context"] = context or kwargs.get("context", {})
+        kwargs.setdefault("error_code", "AZURE_DISCOVERY_ERROR")
+        super().__init__(message, **kwargs)
+
+
 class AzureAuthenticationError(AzureError):
     """Raised when Azure authentication fails."""
 
@@ -300,6 +311,23 @@ class ProcessingError(AzureTenantGrapherError):
     pass
 
 
+class TenantSpecificationError(ProcessingError):
+    """Raised when tenant specification generation fails."""
+
+    def __init__(
+        self,
+        message: str,
+        output_path: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        context = kwargs.get("context", {})
+        if output_path:
+            context["output_path"] = output_path
+        kwargs["context"] = context
+        kwargs.setdefault("error_code", "TENANT_SPECIFICATION_FAILED")
+        super().__init__(message, **kwargs)
+
+
 class ResourceProcessingError(ProcessingError):
     """Raised when resource processing fails."""
 
@@ -320,24 +348,7 @@ class ResourceProcessingError(ProcessingError):
         super().__init__(message, **kwargs)
 
 
-class BatchProcessingError(ProcessingError):
-    """Raised when batch processing fails."""
-
-    def __init__(
-        self,
-        message: str,
-        batch_size: Optional[int] = None,
-        failed_count: Optional[int] = None,
-        **kwargs: Any,
-    ) -> None:
-        context = kwargs.get("context", {})
-        if batch_size:
-            context["batch_size"] = batch_size
-        if failed_count:
-            context["failed_count"] = failed_count
-        kwargs["context"] = context
-        kwargs.setdefault("error_code", "BATCH_PROCESSING_FAILED")
-        super().__init__(message, **kwargs)
+# BatchProcessingError removed (batch processing is deprecated)
 
 
 # Validation-related exceptions
@@ -364,6 +375,45 @@ class ResourceValidationError(ValidationError):
             context["validation_errors"] = validation_errors
         kwargs["context"] = context
         kwargs.setdefault("error_code", "RESOURCE_VALIDATION_FAILED")
+        super().__init__(message, **kwargs)
+
+
+class ResourceDataValidationError(ValidationError):
+    """
+    Raised when resource data is missing required fields or contains null values.
+    """
+
+    def __init__(
+        self,
+        missing_fields: list[str] | None = None,
+        message: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        # Normalize list to avoid None issues
+        missing_fields = missing_fields or []
+        if message is None:
+            message = "Resource data missing or contains null for required fields: " + (
+                ", ".join(missing_fields) if missing_fields else "unknown"
+            )
+
+        # Build structured context
+        context = kwargs.get("context", {})
+        if missing_fields:
+            context["missing_fields"] = missing_fields
+        kwargs["context"] = context
+
+        # Set sensible defaults
+        kwargs.setdefault("error_code", "RESOURCE_DATA_INVALID")
+
+        super().__init__(message, **kwargs)
+
+
+# HTML/Visualization-related exceptions
+class HtmlTemplateGenerationError(AzureTenantGrapherError):
+    """Raised when HTML template generation fails."""
+
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("error_code", "HTML_TEMPLATE_GENERATION_FAILED")
         super().__init__(message, **kwargs)
 
 

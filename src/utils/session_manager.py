@@ -75,6 +75,17 @@ class Neo4jSessionManager:
                 cause=e,
             ) from e
 
+    def ensure_connection(self) -> None:
+        """
+        Ensure an active connection to Neo4j if not already connected.
+
+        This is a convenience wrapper used by legacy adapter methods that
+        expect an idempotent connection helper. It will attempt to connect
+        only when the manager is not yet connected.
+        """
+        if not self.is_connected:
+            self.connect()
+
     def disconnect(self) -> None:
         """Close Neo4j database connection."""
         if self._driver:
@@ -134,7 +145,7 @@ class Neo4jSessionManager:
             session = self.get_session(**kwargs)
             yield session
         except Exception as e:
-            logger.error(f"Error in Neo4j session: {e}")
+            logger.exception(f"Error in Neo4j session: {e}")
             raise wrap_neo4j_exception(
                 e, context={"operation": "session_context"}
             ) from e
@@ -161,7 +172,7 @@ class Neo4jSessionManager:
                 record = result.single()
                 return record is not None and record["test"] == 1
         except Exception as e:
-            logger.error(f"Connection test failed: {e}")
+            logger.exception(f"Connection test failed: {e}")
             return False
 
     def execute_query(
