@@ -572,9 +572,40 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
             )
             return True
 
-        db_desc = record.get("desc")
-        db_etag = record.get("etag")
-        db_last_modified = record.get("last_modified")
+        # Convert record to dict to avoid Neo4j driver mutation/access errors
+        try:
+            # Defensive: extract fields individually and convert to safe types
+            db_desc = record.get("desc")
+            db_etag = record.get("etag")
+            db_last_modified = record.get("last_modified")
+
+            # Convert buffer-like objects to string if needed
+            def safe_to_str(val: Any) -> Optional[str]:
+                if val is None:
+                    return None
+                try:
+                    # If it's bytes or memoryview, decode to str
+                    if isinstance(val, (bytes, bytearray, memoryview)):
+                        return (
+                            val.tobytes().decode("utf-8", errors="replace")
+                            if isinstance(val, memoryview)
+                            else val.decode("utf-8", errors="replace")
+                        )
+                    return str(val)
+                except Exception as conv_exc:
+                    logger.warning(
+                        f"Could not convert value to string for resource {resource_id}: {type(val)}: {conv_exc}"
+                    )
+                    return None
+
+            db_desc = safe_to_str(db_desc)
+            db_etag = safe_to_str(db_etag)
+            db_last_modified = safe_to_str(db_last_modified)
+        except Exception as rec_exc:
+            logger.warning(
+                f"Failed to extract Neo4j record fields for {resource_id}: {rec_exc}; will generate."
+            )
+            return True
 
         input_etag = resource_dict.get("etag")
         input_last_modified = resource_dict.get("last_modified")
@@ -616,8 +647,9 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
         return True
 
     except Exception as e:
+        import traceback
+
         logger.warning(
-            f"Error checking LLM skip for {resource_id}: {e!s}; will generate."
+            f"Error checking LLM skip for {resource_id}: {type(e).__name__}: {e!s}\n{traceback.format_exc()}; will generate."
         )
         return True
-        return None

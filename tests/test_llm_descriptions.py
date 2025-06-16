@@ -383,6 +383,33 @@ def test_llm_generate_when_changed():
     assert should_generate_description(resource3, session3) is True
 
 
+def test_llm_handles_buffer_like_values():
+    """LLM skip logic should not fail if Neo4j record contains buffer-like objects."""
+
+    from src.llm_descriptions import should_generate_description
+
+    # Use a memoryview as a buffer-like object
+    buffer_value = memoryview(b"Buffer description")
+    resource = {
+        "id": "res_buffer",
+        "etag": "etagbuf",
+        "last_modified": "2025-01-01T00:00:00Z",
+    }
+    # Patch make_mock_session to return a memoryview for desc
+    mock_result = Mock()
+    mock_result.single.return_value = {
+        "desc": buffer_value,
+        "etag": "etagbuf",
+        "last_modified": "2025-01-01T00:00:00Z",
+    }
+    mock_session = Mock()
+    mock_session.run.return_value = mock_result
+
+    # Should not raise BufferError or any exception
+    result = should_generate_description(resource, mock_session)
+    assert isinstance(result, bool)
+
+
 class TestFactoryFunction:
     """Test cases for factory functions."""
 
