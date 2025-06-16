@@ -52,6 +52,7 @@ try:
     )
     from src.config_manager import create_config_from_env
     from src.container_manager import Neo4jContainerManager
+    from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure all required packages are installed:")
@@ -86,6 +87,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "visualize": "🎨 Generate interactive HTML visualization from existing graph",
         "spec": "📋 Generate tenant specification document from existing graph",
         "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
+        "generate-iac": "🏗️ Generate Infrastructure-as-Code templates from graph data",
         "config": "⚙️  Show current configuration template",
         "progress": "📊 Check processing progress in the database",
         "container": "🐳 Manage Neo4j Docker container",
@@ -301,6 +303,59 @@ def generate_spec(
 ) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
     generate_spec_command_handler(ctx, limit, output)
+
+
+@cli.command()
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    default="terraform",
+    type=click.Choice(["terraform", "arm", "bicep"], case_sensitive=False),
+    help="Target IaC format (default: terraform)",
+)
+@click.option(
+    "--output",
+    "output_path",
+    help="Output directory for generated templates",
+)
+@click.option(
+    "--rules-file",
+    help="Path to transformation rules configuration file",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate inputs without generating templates",
+)
+@click.option(
+    "--resource-filters",
+    help="Resource type filters (comma-separated)",
+)
+@click.pass_context
+@async_command
+async def generate_iac(
+    ctx: click.Context,
+    tenant_id: str,
+    format_type: str,
+    output_path: Optional[str],
+    rules_file: Optional[str],
+    dry_run: bool,
+    resource_filters: Optional[str],
+) -> None:
+    """Generate Infrastructure-as-Code templates from graph data."""
+    await generate_iac_command_handler(
+        tenant_id=tenant_id,
+        format_type=format_type,
+        output_path=output_path,
+        rules_file=rules_file,
+        dry_run=dry_run,
+        resource_filters=resource_filters,
+    )
 
 
 @cli.command()

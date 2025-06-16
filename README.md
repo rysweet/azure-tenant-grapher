@@ -13,7 +13,7 @@ uv sync
 uv pip install --editable .
 
 # Activate the uv virtual environment (if not already activated)
-source .venv/bin/activate  
+source .venv/bin/activate
 
 # Create .env file with defaults (optional)
 cp .env.example .env

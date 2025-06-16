@@ -324,5 +324,35 @@
 - **Distributed Processing**: Support for large-scale tenant processing
 - **Performance Optimization**: Enhanced parallel processing and caching strategies
 
+### 12. Infrastructure-as-Code Generation
+
+#### FR12.1 Graph-to-IaC Transformation
+- **Requirement**: Generate Infrastructure-as-Code templates from existing tenant graph data
+- **Supported Formats**:
+  - Terraform (.tf files with azurerm provider)
+  - Azure Resource Manager templates (.json files)
+  - Azure Bicep templates (.bicep files)
+- **Capabilities**:
+  - Convert Neo4j graph resources to IaC resource definitions
+  - Preserve resource dependencies and relationships
+  - Generate provider configurations and variable definitions
+  - Support resource filtering and transformation rules
+
+#### FR12.2 Template Generation Pipeline
+- **Requirements**:
+  - Graph traversal to extract relevant resources and relationships
+  - Configurable transformation rules for resource mapping
+  - Format-specific emitters for template generation
+  - Template validation and syntax checking
+  - Batch processing for large tenant graphs
+
+#### FR12.3 CLI Integration
+- **Requirements**:
+  - `generate-iac` command with format selection
+  - Support for dry-run validation mode
+  - Resource filtering and output path configuration
+  - Integration with existing tenant discovery workflow
+  - Progress tracking and error reporting
+
 ### Implementation Status
 This product requirements document reflects the current Python implementation of Azure Tenant Grapher with comprehensive CLI interface, Rich dashboard, modular architecture, and extensive testing coverage. A complementary .NET implementation is also available for enterprise integration scenarios.

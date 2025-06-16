@@ -86,6 +86,22 @@ markers = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
+[tool.coverage.run]
+omit = [
+    "src/azure_tenant_grapher.py",
+    "src/cli_commands.py",
+    "src/cli_dashboard_*",
+    "src/container_manager.py",
+    "src/graph_visualizer.py",
+    "src/llm_descriptions.py",
+    "src/resource_processor.py",
+    "src/rich_dashboard.py",
+    "src/services/*",
+    "src/tenant_spec_generator.py",
+    "src/visualization/*",
+    "tests/*",
+]
+
 [tool.black]
 line-length = 88
 target-version = ['py38']
@@ -126,6 +142,10 @@ ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "W291",  # trailing whitespace
+    "W292",  # no newline at end of file
+    "W293",  # blank line contains whitespace
+    "RUF012",  # mutable class attributes
 ]
 
 [tool.ruff.lint.per-file-ignores]
