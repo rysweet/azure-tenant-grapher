@@ -361,6 +361,10 @@ def setup_logging(config: LoggingConfig) -> None:
     # Set specific loggers to appropriate levels
     azure_logger = logging.getLogger("azure")
     azure_logger.setLevel(logging.WARNING)  # Reduce Azure SDK noise
+    
+    # Specifically suppress Azure HTTP logging policy verbose output
+    azure_http_logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+    azure_http_logger.setLevel(logging.DEBUG)  # Only show at DEBUG level
 
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
