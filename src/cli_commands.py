@@ -77,7 +77,7 @@ async def build_command_handler(
 
         # Create and validate configuration
         config = create_config_from_env(effective_tenant_id, resource_limit)
-        config.processing.batch_size = max_llm_threads  # For backward compatibility
+        config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container
         config.logging.level = ctx.obj["log_level"]
 
@@ -187,11 +187,11 @@ async def _run_dashboard_mode(
 ) -> None:
     """Run build in dashboard mode with Rich UI."""
 
+    logger.info("[DEBUG] Entered _run_dashboard_mode")
     # Setup RichDashboard
     dashboard = RichDashboard(
         config=config.to_dict(),
-        batch_size=max_llm_threads,
-        total_threads=max_llm_threads,
+        max_concurrency=max_llm_threads,
     )
 
     # Setup file logging to the dashboard's log file
@@ -288,21 +288,26 @@ async def _run_dashboard_mode(
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
+    logger.info("[DEBUG] About to enter dashboard context and polling loop")
     try:
         if test_keypress_file:
             # For file-based testing, use simplified dashboard runner that doesn't duplicate the exit checker
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
+                logger.info("[DEBUG] Entering poll_build_task (file keypress)")
                 await dashboard_manager.poll_build_task(build_task)
         elif test_keypress_queue:
+            logger.info("[DEBUG] Entering run_with_queue_keypress")
             await dashboard_manager.run_with_queue_keypress(build_task)
         else:
+            logger.info("[DEBUG] Entering run_normal")
             await dashboard_manager.run_normal(build_task)
     except Exception as e:
         # Check if this is our custom dashboard exit exception or Rich dashboard exit
         from src.cli_dashboard_manager import DashboardExitException
         from src.rich_dashboard import DashboardExit
 
+        logger.error(f"[DEBUG] Exception in dashboard context: {e}")
         if isinstance(
             e, (DashboardExitException, DashboardExit)
         ) or "User pressed 'x' to exit" in str(e):
@@ -324,8 +329,11 @@ async def _run_dashboard_mode(
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
             exit_checker_task.cancel()
 
+    logger.info("[DEBUG] Exited dashboard context and polling loop")
+
     # Check if user requested exit
     if dashboard_manager.check_exit_condition():
+        logger.info("[DEBUG] Dashboard manager exit condition triggered")
         sys.exit(0)
 
     # Handle build completion and post-processing

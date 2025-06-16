@@ -34,7 +34,7 @@ async def test_real_dashboard_exit():
     }
 
     # Create dashboard
-    dashboard = RichDashboard(config=mock_config, batch_size=5, total_threads=5)
+    dashboard = RichDashboard(config=mock_config, max_concurrency=5)
 
     # Create dashboard manager
     dashboard_manager = CLIDashboardManager(dashboard)

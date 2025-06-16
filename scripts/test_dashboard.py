@@ -6,7 +6,7 @@ from src.rich_dashboard import RichDashboard
 async def main():
     # Dummy config for testing
     config = {"tenant_id": "test-tenant", "log_file": "test.log"}
-    dashboard = RichDashboard(config, batch_size=3, total_threads=3)
+    dashboard = RichDashboard(config, max_concurrency=3)
 
     # Simulate log output and progress
     dashboard.log_info("Test INFO log")

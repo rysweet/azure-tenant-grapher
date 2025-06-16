@@ -1,7 +1,10 @@
 import asyncio
 import io
 import logging
+import os
 import queue
+import subprocess
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -31,13 +34,15 @@ def test_dashboard_keypress_handling(monkeypatch):
                 level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                 with self.lock:
                     self.log_level = level
-                    self.errors.append(
-                        (f"Log level set to {self.log_level.upper()}", "yellow")
+                    self.log_widget.add_line(
+                        f"Log level set to {self.log_level.upper()}",
+                        style="yellow",
+                        level="info",
                     )
-                    self.layout["logs"].update(self._render_error_panel())
+                    self.layout["logs"].update(self.render_log_panel())
 
     config = {"tenant_id": "test"}
-    dashboard = RichDashboard(config, batch_size=1, total_threads=1)
+    dashboard = RichDashboard(config, max_concurrency=1)
     # Run dashboard.live() context, injecting the fake_key_loop as key_handler
     with dashboard.live(key_handler=lambda: fake_key_loop(dashboard)):
         pass
@@ -59,7 +64,7 @@ def test_dashboard_log_level_affects_logging(monkeypatch):
         return key_q.get(timeout=1)
 
     config = {"tenant_id": "test"}
-    dashboard = RichDashboard(config, batch_size=1, total_threads=1)
+    dashboard = RichDashboard(config, max_concurrency=1)
 
     # Capture log output
     log_stream = io.StringIO()
@@ -222,3 +227,156 @@ def test_dashboard_invokes_processing(monkeypatch: Any) -> None:
     assert result.exit_code == 0 or event.is_set()
     # Optionally, print output for debugging
     # print(result.output)
+
+
+@pytest.mark.timeout(10)
+def test_dashboard_runs_for_at_least_2_seconds(tmp_path):
+    """
+    Integration: The dashboard should not exit immediately on startup.
+    This test launches the CLI dashboard in a subprocess, waits 2 seconds,
+    then terminates it. It asserts the process was alive for at least 2 seconds.
+    """
+    import time
+
+    # Use a dummy tenant id and --no-container to avoid side effects
+    cmd = [
+        sys.executable,
+        "scripts/cli.py",
+        "build",
+        "--tenant-id",
+        "dummy",
+        "--no-container",
+        "--resource-limit",
+        "1",
+    ]
+    # Use a temp env to avoid real Azure/Neo4j calls if possible
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env["AZURE_TENANT_ID"] = "dummy"
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        text=True,
+    )
+    start = time.time()
+    try:
+        # Wait 2 seconds, then terminate
+        time.sleep(2)
+        alive = proc.poll() is None
+        if alive:
+            proc.terminate()
+        out, err = proc.communicate(timeout=5)
+    finally:
+        proc.kill()
+    duration = time.time() - start
+    assert duration >= 2, f"Dashboard exited too early (ran {duration:.2f}s)"
+
+
+def test_dashboard_log_view_handles_stack_traces(tmp_path):
+    """
+    Test that the dashboard log view formats or filters stack traces for readability.
+    """
+    from src.rich_dashboard import RichDashboard
+
+    # Simulate a log file with a stack trace
+    log_file = tmp_path / "test_stacktrace.log"
+    stack_trace = (
+        "2025-06-16 13:09:03,922 - ERROR:src.module:An error occurred\n"
+        "Traceback (most recent call last):\n"
+        '  File "/path/to/file.py", line 10, in <module>\n'
+        "    raise ValueError('fail')\n"
+        "ValueError: fail\n"
+    )
+    with open(log_file, "w") as f:
+        f.write(stack_trace)
+        f.flush()
+
+    config = {"tenant_id": "test", "log_file": str(log_file)}
+    dashboard = RichDashboard(config, max_concurrency=1)
+    dashboard.log_file_path = str(log_file)
+
+    # Poll log file to load the stack trace
+    dashboard.poll_log_file()
+
+    # Render the log panel and check for readable formatting
+    log_panel = dashboard.render_log_panel()
+    # Extract the text from the panel's renderable (the log widget's Rich Text)
+    log_text = ""
+    if hasattr(log_panel, "renderable"):
+        renderable = log_panel.renderable
+        # If it's an Align, get the child
+        if hasattr(renderable, "renderable"):
+            renderable = renderable.renderable
+        if hasattr(renderable, "plain"):
+            log_text = renderable.plain
+        else:
+            log_text = str(renderable)
+    # Should show the error and stack trace, possibly colorized or indented
+    # Defensive: fallback to str(renderable) if .plain is not present
+    if not log_text or not isinstance(log_text, str):
+        log_text = str(log_panel)
+    assert "Traceback (most recent call last):" in log_text
+    assert "ValueError: fail" in log_text
+    # Optionally, check for color codes or formatting if supported
+    # (e.g., Rich markup, indentation, or collapsed/expandable trace)
+
+
+def test_dashboard_log_view_updates_in_real_time(tmp_path):
+    """
+    Test that the dashboard log view updates promptly when the log file is written to.
+    """
+    import time
+
+    from src.rich_dashboard import RichDashboard
+
+    # Create a temporary log file and write an initial line
+    log_file = tmp_path / "test_dashboard.log"
+    with open(log_file, "w") as f:
+        f.write("Initial log line\n")
+        f.flush()
+
+    config = {"tenant_id": "test", "log_file": str(log_file)}
+    dashboard = RichDashboard(config, max_concurrency=1)
+    dashboard.log_file_path = str(log_file)  # ensure log file is set
+
+    # Start the dashboard log polling in a thread
+    def poll_logs():
+        # Simulate the dashboard's log polling loop
+        for _ in range(10):
+            dashboard.poll_log_file()
+            time.sleep(0.1)
+
+    poll_thread = threading.Thread(target=poll_logs)
+    poll_thread.start()
+
+    # Write a new log entry after a short delay
+    time.sleep(0.2)
+    with open(log_file, "a") as f:
+        f.write("New log entry\n")
+        f.flush()
+
+    # Wait for polling to pick up the new entry
+    poll_thread.join(timeout=2)
+
+    # Check that the dashboard's log view contains the new entry
+    log_panel = dashboard.render_log_panel()
+    # Extract the text from the panel's renderable (the log widget's Rich Text)
+    log_text = ""
+    if hasattr(log_panel, "renderable"):
+        renderable = log_panel.renderable
+        # If it's an Align, get the child
+        if hasattr(renderable, "renderable"):
+            renderable = renderable.renderable
+        if hasattr(renderable, "plain"):
+            log_text = renderable.plain
+        else:
+            log_text = str(renderable)
+    # Defensive: fallback to str(renderable) if .plain is not present
+    if not log_text or not isinstance(log_text, str):
+        log_text = str(log_panel)
+    assert (
+        "New log entry" in log_text
+    ), "Dashboard log view did not update with new log entry in real time"

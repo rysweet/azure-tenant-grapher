@@ -92,8 +92,14 @@ class ProcessingConfig:
     """Configuration for resource processing behavior."""
 
     resource_limit: Optional[int] = field(default_factory=lambda: None)
-    batch_size: int = field(
-        default_factory=lambda: int(os.getenv("PROCESSING_BATCH_SIZE", "5"))
+    # Remove batch_size, add max_concurrency with migration shim
+    max_concurrency: int = field(
+        default_factory=lambda: (
+            int(os.getenv("MAX_CONCURRENCY", "5"))
+            if "MAX_CONCURRENCY" in os.environ
+            or "PROCESSING_BATCH_SIZE" not in os.environ
+            else int(os.getenv("PROCESSING_BATCH_SIZE", "5"))
+        )
     )
     max_retries: int = field(
         default_factory=lambda: int(os.getenv("PROCESSING_MAX_RETRIES", "3"))
@@ -111,9 +117,16 @@ class ProcessingConfig:
     )
 
     def __post_init__(self) -> None:
-        """Validate processing configuration."""
-        if self.batch_size < 1:
-            raise ValueError("Batch size must be at least 1")
+        """Validate processing configuration and handle migration shim for batch_size."""
+        # Migration shim: map legacy batch_size to max_concurrency with warning
+        legacy_batch_size = os.getenv("PROCESSING_BATCH_SIZE")
+        if legacy_batch_size and "MAX_CONCURRENCY" not in os.environ:
+            try:
+                self.max_concurrency = int(legacy_batch_size)
+            except Exception:
+                pass
+        if self.max_concurrency < 1:
+            raise ValueError("Max concurrency must be at least 1")
         if self.max_retries < 0:
             raise ValueError("Max retries must be non-negative")
         if self.retry_delay < 0:
@@ -238,7 +251,7 @@ class AzureTenantGrapherConfig:
             logger.info("✅ Configuration validation successful")
 
         except Exception as e:
-            logger.error(f"❌ Configuration validation failed: {e}")
+            logger.exception(f"❌ Configuration validation failed: {e}")
             raise
 
     def log_configuration_summary(self) -> None:
@@ -253,7 +266,7 @@ class AzureTenantGrapherConfig:
         logger.info(
             f"   - Resource Limit: {self.processing.resource_limit or 'Unlimited'}"
         )
-        logger.info(f"   - Batch Size: {self.processing.batch_size}")
+        logger.info(f"   - Max Concurrency: {self.processing.max_concurrency}")
         logger.info(f"   - Max Retries: {self.processing.max_retries}")
         logger.info(f"   - Parallel Processing: {self.processing.parallel_processing}")
         logger.info(
@@ -292,7 +305,7 @@ class AzureTenantGrapherConfig:
             },
             "processing": {
                 "resource_limit": self.processing.resource_limit,
-                "batch_size": self.processing.batch_size,
+                "max_concurrency": self.processing.max_concurrency,
                 "max_retries": self.processing.max_retries,
                 "retry_delay": self.processing.retry_delay,
                 "parallel_processing": self.processing.parallel_processing,
@@ -413,6 +426,6 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
         config.logging.__post_init__()
         # No __post_init__ for specification, but could add validation if needed
     except Exception as e:
-        logger.error(f"❌ Neo4j-only configuration validation failed: {e}")
+        logger.exception(f"❌ Neo4j-only configuration validation failed: {e}")
         raise
     return config

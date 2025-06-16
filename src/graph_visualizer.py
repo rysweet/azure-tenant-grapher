@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 import colorlog
 from neo4j import Driver, GraphDatabase
 
+from .exceptions import HtmlTemplateGenerationError, Neo4jConnectionError
 from .visualization.html_template_builder import HtmlTemplateBuilder
 
 
@@ -65,7 +66,7 @@ class GraphVisualizer:
 
             logger.info(f"Connected to Neo4j at {self.neo4j_uri}")
         except Exception as e:
-            logger.error(f"Failed to connect to Neo4j: {e}")
+            logger.exception(f"Failed to connect to Neo4j: {e}")
             raise
 
     def close(self) -> None:
@@ -159,7 +160,9 @@ class GraphVisualizer:
 
         # At this point driver should be available
         if not self.driver:
-            raise RuntimeError("Failed to establish database connection")
+            raise Neo4jConnectionError(
+                "Failed to establish database connection", uri=self.neo4j_uri
+            )
 
         nodes: list[Any] = []
         links: list[Any] = []
@@ -521,10 +524,12 @@ class GraphVisualizer:
             return html_content
 
         except Exception as e:
-            logger.error(f"Failed to generate HTML template using new builder: {e}")
+            logger.exception(f"Failed to generate HTML template using new builder: {e}")
             # If the new builder fails, we could fall back to a minimal template
             # For now, just re-raise the exception with more context
-            raise RuntimeError(f"HTML template generation failed: {e!s}") from e
+            raise HtmlTemplateGenerationError(
+                f"HTML template generation failed: {e!s}"
+            ) from e
 
     # Cluster labeling: Each resource group is treated as a cluster. Labels are rendered at the centroid of each cluster and follow camera movement.
     # If resource_group is null, fallback to subscription or resource type. See _generate_html_template for implementation.
@@ -535,4 +540,4 @@ class GraphVisualizer:
             webbrowser.open(f"file://{os.path.abspath(html_path)}")
             logger.info(f"Opened visualization in browser: {html_path}")
         except Exception as e:
-            logger.error(f"Failed to open visualization in browser: {e}")
+            logger.exception(f"Failed to open visualization in browser: {e}")

@@ -1,7 +1,9 @@
+import os
+import re
 import sys
 import threading
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from rich.align import Align
 from rich.console import Console, Group
@@ -12,6 +14,8 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
+from src.cli_dashboard_widgets import ScrollableLogWidget
+
 
 class DashboardExit(Exception):
     """Raised to force exit from the dashboard context."""
@@ -20,12 +24,11 @@ class DashboardExit(Exception):
 
 
 class RichDashboard:
-    def __init__(self, config: Dict[str, Any], batch_size: int, total_threads: int):
+    def __init__(self, config: Dict[str, Any], max_concurrency: int):
         self.console = Console()
         self.layout = Layout()
         self.config = config
-        self.batch_size = batch_size
-        self.total_threads = total_threads
+        self.max_concurrency = max_concurrency
 
         # Add log_file_path for CLI compatibility
         import tempfile
@@ -39,8 +42,6 @@ class RichDashboard:
         self.log_level = "info"
 
         self.progress_stats = {
-            "batch": 0,
-            "total_batches": 0,
             "processed": 0,
             "total": 0,
             "successful": 0,
@@ -50,9 +51,12 @@ class RichDashboard:
             "llm_skipped": 0,
             "llm_in_flight": 0,
         }
-        self.errors: List[tuple[str, str]] = []  # (message, style)
         self.lock = threading.Lock()
         self.processing = True  # Show spinner by default
+
+        # Log widget for real-time log display
+        self.log_widget = ScrollableLogWidget(max_lines=50)
+        self._log_file_last_pos = 0
 
         # Layout: top margin, then config/progress, then logs
         self.layout.split(
@@ -65,7 +69,7 @@ class RichDashboard:
         )
         self.layout["config"].update(self._render_config_panel())
         self.layout["progress"].update(self._render_progress_panel())
-        self.layout["logs"].update(self._render_error_panel())
+        self.layout["logs"].update(self.render_log_panel())
         self.layout["top_margin"].update(Text(""))
 
     def _render_config_panel(self):
@@ -74,8 +78,9 @@ class RichDashboard:
         table.add_column()
         for k, v in self.config.items():
             table.add_row(str(k), str(v))
-        table.add_row("Batch Size", str(self.batch_size))
-        table.add_row("Threads", str(self.total_threads))
+        table.add_row("Max Concurrency", str(self.max_concurrency))
+        # Add log file path as a single row, not split across lines
+        table.add_row("Log File", self.log_file_path)
         return Panel(
             table, title="Config / Parameters", border_style="green", height=15
         )
@@ -85,7 +90,6 @@ class RichDashboard:
         table = Table.grid(expand=True)
         table.add_column("Metric", style="magenta")
         table.add_column("Value", style="bold")
-        table.add_row("Batch", f"{stats['batch']}/{stats['total_batches']}")
         table.add_row("Processed", f"{stats['processed']}/{stats['total']}")
         table.add_row("Successful", str(stats["successful"]))
         table.add_row("Failed", str(stats["failed"]))
@@ -93,7 +97,7 @@ class RichDashboard:
         table.add_row("LLM Generated", str(stats["llm_generated"]))
         table.add_row("LLM Skipped", str(stats["llm_skipped"]))
         table.add_row("LLM In-Flight", str(stats.get("llm_in_flight", 0)))
-        table.add_row("Threads", str(self.total_threads))
+        table.add_row("Max Concurrency", str(self.max_concurrency))
         # Add spinner and label at the bottom if processing
         exit_label = Text("Press 'x' to exit", style="yellow")
         if self.processing:
@@ -104,34 +108,69 @@ class RichDashboard:
             group = Group(table, exit_label)
             return Panel(group, title="Progress", border_style="blue", height=15)
 
-    def _render_error_panel(self):
-        # Show only the last 40 lines, and join with newlines, with color
-        error_lines = self.errors[-40:] if self.errors else [("No errors.", "white")]
-        text = Text()
-        for msg, style in error_lines:
-            text.append(msg + "\n", style=style)
-        log_level_label = f"Log Level: {self.log_level.upper()}; Press 'i' for INFO, 'd' for DEBUG, 'w' for WARN"
-        return Panel(
-            Align.left(text),
-            title=log_level_label,
-            border_style="green",
-            padding=(0, 1),
-        )
+    # (Removed legacy _render_error_panel and all references to self.errors)
 
     def update_progress(self, **kwargs: Any):
         with self.lock:
             self.progress_stats.update(kwargs)
             self.layout["progress"].update(self._render_progress_panel())
 
+    # Remove the old error panel method entirely
+
+    def poll_log_file(self):
+        """Read new lines from the log file and add them to the log widget."""
+        if not os.path.exists(self.log_file_path):
+            return
+        with self.lock:
+            with open(self.log_file_path, encoding="utf-8", errors="replace") as f:
+                f.seek(self._log_file_last_pos)
+                new_lines = f.readlines()
+                self._log_file_last_pos = f.tell()
+            for line in new_lines:
+                line = line.rstrip("\n")
+                # Stack trace formatting: colorize "Traceback", indent frames, color errors
+                if "Traceback (most recent call last):" in line:
+                    self.log_widget.add_line(line, style="bold red", level="warning")
+                elif re.match(r'^\s+File ".*", line \d+, in ', line):
+                    self.log_widget.add_line(line, style="yellow", level="warning")
+                elif re.match(r"^\s+\w+", line):
+                    self.log_widget.add_line(line, style="yellow", level="warning")
+                elif re.match(r"^[A-Z][a-zA-Z]+Error: ", line):
+                    self.log_widget.add_line(line, style="bold red", level="warning")
+                else:
+                    # Color by log level if present
+                    if "ERROR" in line or "Exception" in line:
+                        self.log_widget.add_line(line, style="red", level="warning")
+                    elif "WARNING" in line:
+                        self.log_widget.add_line(line, style="yellow", level="warning")
+                    elif "INFO" in line:
+                        self.log_widget.add_line(line, style="green", level="info")
+                    elif "DEBUG" in line:
+                        self.log_widget.add_line(line, style="dim", level="debug")
+                    else:
+                        self.log_widget.add_line(line, style="white", level="info")
+            self.layout["logs"].update(self.render_log_panel())
+
+    def render_log_panel(self):
+        """Return a Rich panel with the log widget's content."""
+        log_level_label = f"Log Level: {self.log_level.upper()}; Press 'i' for INFO, 'd' for DEBUG, 'w' for WARN"
+        log_content = self.log_widget.__rich__()
+        return Panel(
+            Align.left(log_content),
+            title=log_level_label,
+            border_style="green",
+            padding=(0, 1),
+        )
+
     def add_error(self, error: str):
         with self.lock:
-            self.errors.append((error, "red"))
-            self.layout["logs"].update(self._render_error_panel())
+            self.log_widget.add_line(error, style="red", level="warning")
+            self.layout["logs"].update(self.render_log_panel())
 
     def log_info(self, info: str):
         with self.lock:
-            self.errors.append((info, "green"))
-            self.layout["logs"].update(self._render_error_panel())
+            self.log_widget.add_line(info, style="green", level="info")
+            self.layout["logs"].update(self.render_log_panel())
 
     def set_processing(self, processing: bool):
         with self.lock:
@@ -171,22 +210,20 @@ class RichDashboard:
                 )
                 stdin_reader_thread.start()
                 with self.lock:
-                    self.errors.append(
-                        (
-                            "STDIN fallback: using stdin reader thread for keypresses.",
-                            "yellow",
-                        )
+                    self.log_widget.add_line(
+                        "STDIN fallback: using stdin reader thread for keypresses.",
+                        style="yellow",
+                        level="info",
                     )
-                    self.layout["logs"].update(self._render_error_panel())
+                    self.layout["logs"].update(self.render_log_panel())
             else:
                 with self.lock:
-                    self.errors.append(
-                        (
-                            "Keypress thread started. Waiting for 'x', 'i', 'd', 'w'...",
-                            "yellow",
-                        )
+                    self.log_widget.add_line(
+                        "Keypress thread started. Waiting for 'x', 'i', 'd', 'w'...",
+                        style="yellow",
+                        level="info",
                     )
-                    self.layout["logs"].update(self._render_error_panel())
+                    self.layout["logs"].update(self.render_log_panel())
             while not stop_event.is_set():
                 try:
                     if local_queue is not None:
@@ -195,12 +232,16 @@ class RichDashboard:
                         key = readchar.readkey()
                 except Exception as e:
                     with self.lock:
-                        self.errors.append((f"Keypress error: {e}", "red"))
-                        self.layout["logs"].update(self._render_error_panel())
+                        self.log_widget.add_line(
+                            f"Keypress error: {e}", style="red", level="warning"
+                        )
+                        self.layout["logs"].update(self.render_log_panel())
                     continue
                 with self.lock:
-                    self.errors.append((f"Keypress received: {key!r}", "yellow"))
-                    self.layout["logs"].update(self._render_error_panel())
+                    self.log_widget.add_line(
+                        f"Keypress received: {key!r}", style="yellow", level="info"
+                    )
+                    self.layout["logs"].update(self.render_log_panel())
                 if key and key.lower() == "x":
                     sys.exit(0)
                 elif key and key.lower() in ("i", "d", "w"):
@@ -234,10 +275,12 @@ class RichDashboard:
                             logger = logging.getLogger(name)
                             logger.setLevel(new_level)
                             set_all_handler_levels(logger, new_level)
-                        self.errors.append(
-                            (f"Log level set to {self.log_level.upper()}", "yellow")
+                        self.log_widget.add_line(
+                            f"Log level set to {self.log_level.upper()}",
+                            style="yellow",
+                            level="info",
                         )
-                        self.layout["logs"].update(self._render_error_panel())
+                        self.layout["logs"].update(self.render_log_panel())
             if stdin_reader_thread is not None:
                 stop_event.set()
                 stdin_reader_thread.join(timeout=1)

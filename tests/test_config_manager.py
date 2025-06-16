@@ -193,7 +193,7 @@ class TestProcessingConfig:
         with patch.dict(os.environ, {}):
             config = ProcessingConfig()
             assert config.resource_limit is None
-            assert config.batch_size == 5
+            assert config.max_concurrency == 5
             assert config.max_retries == 3
             assert config.retry_delay == 1.0
             assert config.parallel_processing is True
@@ -212,16 +212,16 @@ class TestProcessingConfig:
             },
         ):
             config = ProcessingConfig()
-            assert config.batch_size == 10
+            assert config.max_concurrency == 10
             assert config.max_retries == 5
             assert config.retry_delay == 2.5
             assert config.parallel_processing is False
             assert config.auto_start_container is False
 
     def test_validation_invalid_batch_size(self) -> None:
-        """Test validation fails with invalid batch size."""
+        """Test validation fails with invalid max concurrency."""
         with patch.dict(os.environ, {"PROCESSING_BATCH_SIZE": "0"}):
-            with pytest.raises(ValueError, match="Batch size must be at least 1"):
+            with pytest.raises(ValueError, match="Max concurrency must be at least 1"):
                 ProcessingConfig()
 
     def test_validation_invalid_max_retries(self) -> None:
