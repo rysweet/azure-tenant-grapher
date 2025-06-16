@@ -6,8 +6,14 @@ A Python application that exhaustively walks Azure tenant resources and builds a
 
 ### 1. Setup Environment
 ```bash
-# Install dependencies and set up CLI commands
+# Install dependencies
 uv sync
+
+# Install CLI entry points (so 'azure-tenant-grapher' is available in your PATH)
+uv pip install --editable .
+
+# Activate the uv virtual environment (if not already activated)
+source .venv/bin/activate  
 
 # Create .env file with defaults (optional)
 cp .env.example .env
@@ -23,6 +29,9 @@ After installation, use the convenient CLI commands:
 ```bash
 # Basic usage with automatic container management
 azure-tenant-grapher build --tenant-id <your-tenant-id>
+
+# If the command is not found, try:
+uv run azure-tenant-grapher build --tenant-id <your-tenant-id>
 
 # Show all available commands
 azure-tenant-grapher --help
