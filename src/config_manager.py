@@ -7,8 +7,10 @@ environment variable handling, and configuration validation.
 
 import logging
 import os
+import tempfile
+import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 
@@ -131,7 +133,7 @@ class LoggingConfig:
         )
     )
     file_output: Optional[str] = field(
-        default_factory=lambda: os.getenv("LOG_FILE", None)
+        default_factory=lambda: os.getenv("LOG_FILE", None) or _generate_default_log_file()
     )
 
     def __post_init__(self) -> None:
@@ -147,6 +149,14 @@ class LoggingConfig:
         if level_attr is None:
             raise ValueError(f"Invalid log level: {self.level}")
         return int(level_attr)
+
+
+def _generate_default_log_file() -> str:
+    """Generate a unique log file path in the system temporary directory."""
+    temp_dir = tempfile.gettempdir()
+    unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID for brevity
+    log_filename = f"azure-tenant-grapher-{unique_id}.log"
+    return os.path.join(temp_dir, log_filename)
 
 
 @dataclass
@@ -321,34 +331,40 @@ def setup_logging(config: LoggingConfig) -> None:
         use_colorlog = False
         colorlog_available = None
 
-    # Create handler
-    handler: Union[logging.FileHandler, logging.StreamHandler[Any]]
-    if config.file_output:
-        # File handler
-        handler = logging.FileHandler(config.file_output)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s:%(name)s:%(message)s"
-        )
-    else:
-        # Console handler with colors (if available)
-        if use_colorlog and colorlog_available:
-            handler = colorlog_available.StreamHandler()
-            formatter = colorlog_available.ColoredFormatter(config.format)
-        else:
-            handler = logging.StreamHandler[Any]()
-            formatter = logging.Formatter(config.format)
-
-    handler.setFormatter(formatter)
-
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.handlers.clear()  # Remove any existing handlers
-    root_logger.addHandler(handler)
     root_logger.setLevel(config.get_log_level())
+
+    # Always add console handler
+    if use_colorlog and colorlog_available:
+        console_handler = colorlog_available.StreamHandler()
+        console_formatter = colorlog_available.ColoredFormatter(config.format)
+    else:
+        console_handler = logging.StreamHandler[Any]()
+        # Use a simpler format without color placeholders when colorlog is not available
+        simple_format = config.format.replace("%(log_color)s", "").replace("%(reset)s", "")
+        console_formatter = logging.Formatter(simple_format)
+    
+    console_handler.setFormatter(console_formatter)
+    root_logger.addHandler(console_handler)
+
+    # Add file handler if file output is configured
+    if config.file_output:
+        file_handler = logging.FileHandler(config.file_output)
+        file_formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s:%(name)s:%(message)s"
+        )
+        file_handler.setFormatter(file_formatter)
+        root_logger.addHandler(file_handler)
 
     # Set specific loggers to appropriate levels
     azure_logger = logging.getLogger("azure")
     azure_logger.setLevel(logging.WARNING)  # Reduce Azure SDK noise
+    
+    # Specifically suppress Azure HTTP logging policy verbose output
+    azure_http_logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+    azure_http_logger.setLevel(logging.DEBUG)  # Only show at DEBUG level
 
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
