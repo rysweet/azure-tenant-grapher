@@ -13,7 +13,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from .llm_descriptions import AzureLLMDescriptionGenerator
+from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_description
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class DatabaseOperations:
         Returns:
             bool: True if successful, False otherwise
         """
-        from .exceptions import ResourceDataValidationError
+        from .exceptions import ResourceDataValidationError, wrap_neo4j_exception
 
         try:
             # Defensive validation of required fields
@@ -194,22 +194,9 @@ class DatabaseOperations:
                 raise ResourceDataValidationError(missing_fields=missing_or_null)
 
             query = """
-            MERGE (r:Resource {id: $id})
-            SET r.name = $name,
-                r.type = $type,
-                r.location = $location,
-                r.resource_group = $resource_group,
-                r.subscription_id = $subscription_id,
-                r.tags = $tags,
-                r.kind = $kind,
-                r.sku = $sku,
-                r.updated_at = datetime(),
-                r.processing_status = $processing_status,
-                r.llm_description = CASE
-                    WHEN $llm_description IS NOT NULL AND $llm_description <> ''
-                    THEN $llm_description
-                    ELSE COALESCE(r.llm_description, '')
-                END
+            MERGE (r:Resource {id: $props.id})
+            SET r += $props,
+                r.updated_at = datetime()
             """
 
             resource_data = resource.copy()
@@ -217,18 +204,36 @@ class DatabaseOperations:
             resource_data["processing_status"] = processing_status
 
             # Serialize all values for Neo4j compatibility
-            for k, v in resource_data.items():
-                resource_data[k] = serialize_value(v)
+            try:
+                for k, v in resource_data.items():
+                    resource_data[k] = serialize_value(v)
+            except Exception as ser_exc:
+                logger.exception(
+                    f"Serialization error for resource {resource.get('id', 'Unknown')}: {ser_exc}"
+                )
+                return False
 
-            self.session.run(query, resource_data)
+            try:
+                self.session.run(query, {"props": resource_data})
+            except Exception as neo4j_exc:
+                logger.error(
+                    f"Neo4j upsert error for resource {resource.get('id', 'Unknown')}: {neo4j_exc}"
+                )
+                # Use custom exception wrapper for context
+                wrapped_exc = wrap_neo4j_exception(
+                    neo4j_exc, context={"resource_id": resource.get("id", "Unknown")}
+                )
+                logger.error(str(wrapped_exc))
+                return False
+
             return True
 
         except ResourceDataValidationError:
             # Already logged above
             return False
-        except Exception:
+        except Exception as exc:
             logger.exception(
-                f"Error upserting resource {resource.get('id', 'Unknown')}"
+                f"Error upserting resource {resource.get('id', 'Unknown')}: {exc}"
             )
             return False
 
@@ -371,7 +376,7 @@ class ResourceProcessor:
         self, resource: Dict[str, Any]
     ) -> Tuple[bool, str]:
         """
-        Generate LLM description for a single resource.
+        Generate LLM description for a single resource, with skip logic.
 
         Args:
             resource: Resource dictionary
@@ -381,6 +386,28 @@ class ResourceProcessor:
         """
         if not self.llm_generator:
             return False, f"Azure {resource.get('type', 'Resource')} resource."
+
+        # --- LLM skip logic ---
+
+        resource_id = resource.get("id")
+        if not should_generate_description(resource, self.session):
+            # Fetch existing description from DB
+            desc = None
+            if resource_id:
+                metadata = self.state.get_processing_metadata(resource_id)
+                desc = metadata.get("llm_description")
+            if desc:
+                logger.info(
+                    f"⏭️  Skipping LLM for {resource_id}: using cached description."
+                )
+                self.stats.llm_skipped += 1
+                return False, desc
+            else:
+                logger.info(
+                    f"⏭️  Skipping LLM for {resource_id}: no cached description, using fallback."
+                )
+                self.stats.llm_skipped += 1
+                return False, f"Azure {resource.get('type', 'Resource')} resource."
 
         try:
             description = await self.llm_generator.generate_resource_description(
@@ -429,7 +456,7 @@ class ResourceProcessor:
             )
 
             # Generate LLM description if needed
-            llm_success = False
+            # llm_success = False  # Removed unused variable
             if reason in ["new_resource", "needs_llm_description", "retry_failed"]:
                 logger.debug(f"🤖 Generating LLM description for {resource_name}")
                 llm_success, description = await self._process_single_resource_llm(
@@ -486,19 +513,21 @@ class ResourceProcessor:
         finally:
             self.stats.processed += 1
 
-    async def process_resources_batch(
+    async def process_resources(
         self,
         resources: List[Dict[str, Any]],
-        batch_size: Optional[int] = None,
-        max_llm_threads: int = 5,
+        max_workers: int = 5,
         progress_callback: Optional[Any] = None,
+        progress_every: int = 50,
     ) -> ProcessingStats:
         """
-        Process resources in parallel batches with comprehensive progress tracking.
+        Process all resources in parallel using a thread pool, with progress tracking.
 
         Args:
             resources: List[Any] of resources to process
-            batch_size: Number of resources to process in parallel
+            max_workers: Maximum number of concurrent threads
+            progress_callback: Optional callback for progress updates
+            progress_every: Emit progress every N resources (default 50)
 
         Returns:
             ProcessingStats: Final processing statistics
@@ -510,9 +539,6 @@ class ResourceProcessor:
             )
             resources = resources[: self.resource_limit]
 
-        # Use batch_size if provided, otherwise default to max_llm_threads
-        effective_batch_size = batch_size if batch_size is not None else max_llm_threads
-
         self.stats.total_resources = len(resources)
 
         if not resources:
@@ -520,143 +546,78 @@ class ResourceProcessor:
             return self.stats
 
         logger.info(
-            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max threads: {effective_batch_size})"
+            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max workers: {max_workers})"
         )
 
         import concurrent.futures
 
-        # Eager thread pool: filter and schedule all LLM tasks at once
-        resources_for_llm = []
-        llm_in_flight = 0  # Track open LLM calls
-
-        logger.info("🔍 Filtering resources that need LLM processing...")
-
-        for idx, resource in enumerate(resources):
-            should_process, reason = self._should_process_resource(resource)
-            if should_process and reason in [
-                "new_resource",
-                "needs_llm_description",
-                "retry_failed",
-            ]:
-                resources_for_llm.append((resource, idx))
-            else:
-                # Mark as skipped and update progress
-                self.stats.skipped += 1
-                self.stats.processed += 1
-                if progress_callback:
-                    progress_callback(
-                        processed=self.stats.processed, skipped=self.stats.skipped
-                    )
-
-        logger.info(
-            f"📊 Found {len(resources_for_llm)} resources needing LLM processing, {self.stats.skipped} skipped"
-        )
-
-        def llm_task(
-            resource: Dict[str, Any], resource_index: int
-        ) -> Tuple[Dict[str, Any], int, bool]:
-            """Process LLM description for a single resource."""
-            nonlocal llm_in_flight
-
+        def process_task(resource: Dict[str, Any], resource_index: int) -> bool:
+            """Process a single resource (LLM + DB)."""
             loop = None
-            success = False
-
             try:
-                # Increment in-flight count
-                llm_in_flight += 1
-                if progress_callback:
-                    progress_callback(llm_in_flight=llm_in_flight)
-
                 if self.llm_generator:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                    llm_success, description = loop.run_until_complete(
+                    _, description = loop.run_until_complete(
                         self._process_single_resource_llm(resource)
                     )
                     resource["llm_description"] = description
-                    success = llm_success
                 else:
                     resource["llm_description"] = (
                         f"Azure {resource.get('type', 'Resource')} resource."
                     )
-                    success = False
-
-                return resource, resource_index, success
-
+                # DB and relationship ops
+                return (
+                    loop.run_until_complete(
+                        self.process_single_resource(resource, resource_index)
+                    )
+                    if loop
+                    else asyncio.run(
+                        self.process_single_resource(resource, resource_index)
+                    )
+                )
             finally:
-                # Decrement in-flight count
-                llm_in_flight = max(0, llm_in_flight - 1)
-                if progress_callback:
-                    progress_callback(llm_in_flight=llm_in_flight)
                 if loop:
                     asyncio.set_event_loop(None)
                     loop.close()
 
-        # Submit all LLM tasks to thread pool
-        logger.info(
-            f"🚀 Starting eager thread pool processing with {max_llm_threads} workers..."
-        )
-
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=effective_batch_size
-        ) as executor:
-            # Submit all LLM tasks
-            future_to_resource = {
-                executor.submit(llm_task, resource, resource_index): (
-                    resource,
-                    resource_index,
-                )
-                for resource, resource_index in resources_for_llm
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(process_task, resource, idx): idx
+                for idx, resource in enumerate(resources)
             }
 
-            # Process completed tasks as they finish
-            for future in concurrent.futures.as_completed(future_to_resource):
+            for _i, future in enumerate(
+                concurrent.futures.as_completed(future_to_index), 1
+            ):
+                idx = future_to_index[future]
                 try:
-                    resource, resource_index, _ = future.result()
-
-                    # Update LLM stats
-                    # Remove double-counting: llm_generated is incremented in llm_task only
-                    pass
-
-                    # Process the resource (DB operations)
-                    try:
-                        await self.process_single_resource(resource, resource_index)
-                    except Exception:
-                        logger.exception(
-                            f"❌ Failed to process resource {resource.get('name', 'Unknown')}"
-                        )
-                        self.stats.failed += 1
-                        self.stats.processed += 1
-
-                    # Update progress
-                    if progress_callback:
-                        progress_callback(
-                            processed=self.stats.processed,
-                            total=self.stats.total_resources,
-                            successful=self.stats.successful,
-                            failed=self.stats.failed,
-                            skipped=self.stats.skipped,
-                            llm_generated=self.stats.llm_generated,
-                            llm_skipped=self.stats.llm_skipped,
-                        )
-
-                    # Log progress every 10 resources
-                    if self.stats.processed % 10 == 0:
-                        logger.info(
-                            f"📊 Progress: {self.stats.processed}/{self.stats.total_resources} "
-                            f"({self.stats.progress_percentage:.1f}%) - "
-                            f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
-                        )
-
+                    future.result()
                 except Exception:
-                    resource, resource_index = future_to_resource[future]
                     logger.exception(
-                        f"❌ LLM task failed for {resource.get('name', 'Unknown')}"
+                        f"❌ Processing failed for resource {resources[idx].get('name', 'Unknown')}"
                     )
                     self.stats.failed += 1
                     self.stats.processed += 1
 
-        # Final summary
+                # Progress callback and logging
+                if progress_callback:
+                    progress_callback(
+                        processed=self.stats.processed,
+                        total=self.stats.total_resources,
+                        successful=self.stats.successful,
+                        failed=self.stats.failed,
+                        skipped=self.stats.skipped,
+                        llm_generated=self.stats.llm_generated,
+                        llm_skipped=self.stats.llm_skipped,
+                    )
+                if self.stats.processed % progress_every == 0:
+                    logger.info(
+                        f"📊 Progress: {self.stats.processed}/{self.stats.total_resources} "
+                        f"({self.stats.progress_percentage:.1f}%) - "
+                        f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
+                    )
+
         self._log_final_summary()
         return self.stats
 
@@ -737,18 +698,7 @@ class ResourceProcessor:
                 if isinstance(dep_id, str) and rid:
                     self._create_relationship(str(rid), "DEPENDS_ON", str(dep_id))
 
-    def _log_progress_summary(self, batch_number: int, total_batches: int) -> None:
-        """Log progress summary for the current batch."""
-        logger.info(
-            f"📊 Batch {batch_number}/{total_batches} complete. Progress: {self.stats.processed}/{self.stats.total_resources} ({self.stats.progress_percentage:.1f}%)"
-        )
-        logger.info(
-            f"   ✅ Success: {self.stats.successful} | ❌ Failed: {self.stats.failed} | ⏭️  Skipped: {self.stats.skipped}"
-        )
-        if self.llm_generator:
-            logger.info(
-                f"   🤖 LLM Generated: {self.stats.llm_generated} | ⚠️  LLM Skipped: {self.stats.llm_skipped}"
-            )
+    # Removed _log_progress_summary (batch) as batching is deprecated
 
     def _log_final_summary(self) -> None:
         """Log final processing summary."""

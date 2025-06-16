@@ -251,51 +251,7 @@ class TestAzureLLMDescriptionGenerator:
 
             assert description == "VM depends on storage account for disk storage."
 
-    @pytest.mark.asyncio
-    async def test_process_resources_batch_success(self) -> None:
-        """Test successful batch processing of resources."""
-        config = LLMConfig(
-            endpoint="https://test.openai.azure.com/",
-            api_key="test-key",
-            api_version="2025-04-16",
-            model_chat="gpt-4",
-            model_reasoning="gpt-4",
-        )
-
-        # Mock the OpenAI client response
-        mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = "Mock description"
-
-        mock_client = Mock()
-        mock_client.chat.completions.create.return_value = mock_response
-
-        with patch("src.llm_descriptions.AzureOpenAI", return_value=mock_client):
-            generator = AzureLLMDescriptionGenerator(config)
-
-            resources = [
-                {
-                    "name": "test-vm1",
-                    "type": "Microsoft.Compute/virtualMachines",
-                    "location": "eastus",
-                },
-                {
-                    "name": "test-vm2",
-                    "type": "Microsoft.Compute/virtualMachines",
-                    "location": "westus",
-                },
-            ]
-
-            enhanced_resources = await generator.process_resources_batch(
-                resources, batch_size=2
-            )
-
-            assert len(enhanced_resources) == 2
-            assert all("llm_description" in resource for resource in enhanced_resources)
-            assert all(
-                resource["llm_description"] == "Mock description"
-                for resource in enhanced_resources
-            )
+    # Removed test_process_resources_batch_success (batch method is deprecated)
 
     @pytest.mark.asyncio
     async def test_generate_tenant_specification(self) -> None:
@@ -350,6 +306,81 @@ class TestAzureLLMDescriptionGenerator:
 
                 assert result_path == output_path
                 assert mock_open.called
+
+
+def make_mock_session(desc=None, etag=None, last_modified=None):
+    """Helper to create a mock Neo4j session returning a single record."""
+    mock_result = Mock()
+    mock_result.single.return_value = {
+        "desc": desc,
+        "etag": etag,
+        "last_modified": last_modified,
+    }
+    mock_session = Mock()
+    mock_session.run.return_value = mock_result
+    return mock_session
+
+
+def test_llm_skip_when_description_present():
+    """LLM should be skipped if description present and etag unchanged."""
+    from src.llm_descriptions import should_generate_description
+
+    resource = {
+        "id": "res1",
+        "etag": "abc123",
+        "last_modified": "2024-01-01T00:00:00Z",
+    }
+    session = make_mock_session(
+        desc="A real description.",
+        etag="abc123",
+        last_modified="2024-01-01T00:00:00Z",
+    )
+    # Should skip (return False)
+    assert should_generate_description(resource, session) is False
+
+
+def test_llm_generate_when_changed():
+    """LLM should be called if etag differs or description missing/generic."""
+    from src.llm_descriptions import should_generate_description
+
+    # Case 1: etag differs
+    resource = {
+        "id": "res2",
+        "etag": "new_etag",
+        "last_modified": "2024-01-01T00:00:00Z",
+    }
+    session = make_mock_session(
+        desc="A real description.",
+        etag="old_etag",
+        last_modified="2024-01-01T00:00:00Z",
+    )
+    assert should_generate_description(resource, session) is True
+
+    # Case 2: description missing
+    resource2 = {
+        "id": "res3",
+        "etag": "abc123",
+        "last_modified": "2024-01-01T00:00:00Z",
+    }
+    session2 = make_mock_session(
+        desc=None,
+        etag="abc123",
+        last_modified="2024-01-01T00:00:00Z",
+    )
+    assert should_generate_description(resource2, session2) is True
+
+    # Case 3: description is generic
+    resource3 = {
+        "id": "res4",
+        "etag": "abc123",
+        "last_modified": "2024-01-01T00:00:00Z",
+    }
+    session3 = make_mock_session(
+        desc="Azure Resource resource.",
+        etag="abc123",
+        last_modified="2024-01-01T00:00:00Z",
+    )
+    assert should_generate_description(resource3, session3) is True
 
 
 class TestFactoryFunction:

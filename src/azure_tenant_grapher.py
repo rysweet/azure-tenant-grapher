@@ -121,21 +121,7 @@ class AzureTenantGrapher:
 
     # Legacy direct Neo4j node creation removed; handled by services.
 
-    async def process_resources_with_enhanced_handling(
-        self, resources: List[Dict[str, Any]], progress_callback: Optional[Any] = None
-    ) -> Dict[str, Any]:
-        """
-        Deprecated: Use processing_service.process_resources_batch instead.
-        """
-        warnings.warn(
-            "AzureTenantGrapher.process_resources_with_enhanced_handling is deprecated. Use processing_service.process_resources_batch.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        stats = await self.processing_service.process_resources_batch(
-            resources, progress_callback
-        )
-        return stats.to_dict()
+    # Deprecated batch wrapper removed (batch processing is deprecated)
 
     # Legacy async LLM pool processing removed; handled by services.
 
@@ -177,8 +163,8 @@ class AzureTenantGrapher:
 
             # 3. Process resources
             with self.session_manager:
-                stats = await self.processing_service.process_resources_batch(
-                    all_resources, progress_callback
+                stats = await self.processing_service.process_resources(
+                    all_resources, progress_callback=progress_callback
                 )
 
             # 4. Return stats as dict (back-compat)

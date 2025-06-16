@@ -95,7 +95,7 @@ class TestAzureTenantGrapher:
                 "llm_generated": 2,
                 "success_rate": 100.0,
             }
-            grapher.processing_service.process_resources_batch = AsyncMock(
+            grapher.processing_service.process_resources = AsyncMock(
                 return_value=mock_stats
             )
             # Patch session_manager context to avoid real DB connection
@@ -186,18 +186,4 @@ class TestAzureTenantGrapher:
                 result = await grapher.discover_resources_in_subscription("sub1")
             assert result == [{"id": "res1"}]
 
-    @pytest.mark.asyncio
-    async def test_deprecated_process_resources_with_enhanced_handling(
-        self, mock_config: Mock
-    ):
-        """Test deprecated process_resources_with_enhanced_handling delegates to service."""
-        with patch("src.azure_tenant_grapher.create_llm_generator"):
-            grapher = AzureTenantGrapher(mock_config)
-            mock_stats = Mock()
-            mock_stats.to_dict.return_value = {"total_resources": 0}
-            grapher.processing_service.process_resources_batch = AsyncMock(
-                return_value=mock_stats
-            )
-            with pytest.warns(DeprecationWarning):
-                result = await grapher.process_resources_with_enhanced_handling([])
-            assert result == {"total_resources": 0}
+    # Removed test_deprecated_process_resources_with_enhanced_handling (batch wrapper is gone)
