@@ -52,11 +52,23 @@ try:
     )
     from src.config_manager import create_config_from_env
     from src.container_manager import Neo4jContainerManager
+    from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
+
+# --- CLI installer helper imports ---
+try:
+    from src.utils.cli_installer import install_tool, is_tool_installed
+except ImportError:
+
+    def is_tool_installed(name):
+        return False
+
+    def install_tool(tool):
+        print(f"Install helper unavailable. Please install {tool} manually.")
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
@@ -86,6 +98,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "visualize": "🎨 Generate interactive HTML visualization from existing graph",
         "spec": "📋 Generate tenant specification document from existing graph",
         "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
+        "generate-iac": "🏗️ Generate Infrastructure-as-Code templates from graph data",
         "config": "⚙️  Show current configuration template",
         "progress": "📊 Check processing progress in the database",
         "container": "🐳 Manage Neo4j Docker container",
@@ -304,6 +317,67 @@ def generate_spec(
 
 
 @cli.command()
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    default="terraform",
+    type=click.Choice(["terraform", "arm", "bicep"], case_sensitive=False),
+    help="Target IaC format (default: terraform)",
+)
+@click.option(
+    "--output",
+    "output_path",
+    help="Output directory for generated templates",
+)
+@click.option(
+    "--rules-file",
+    help="Path to transformation rules configuration file",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Validate inputs without generating templates",
+)
+@click.option(
+    "--resource-filters",
+    help="Resource type filters (comma-separated)",
+)
+@click.pass_context
+@async_command
+async def generate_iac(
+    ctx: click.Context,
+    tenant_id: str,
+    format_type: str,
+    output_path: Optional[str],
+    rules_file: Optional[str],
+    dry_run: bool,
+    resource_filters: Optional[str],
+) -> None:
+    """Generate Infrastructure-as-Code templates from graph data."""
+    from src.utils.cli_installer import ensure_tool
+
+    if format_type.lower() == "terraform":
+        ensure_tool("terraform", auto_prompt=True)
+    elif format_type.lower() == "arm":
+        ensure_tool("az", auto_prompt=True)
+    elif format_type.lower() == "bicep":
+        ensure_tool("bicep", auto_prompt=True)
+    await generate_iac_command_handler(
+        tenant_id=tenant_id,
+        format_type=format_type,
+        output_path=output_path,
+        rules_file=rules_file,
+        dry_run=dry_run,
+        resource_filters=resource_filters,
+    )
+
+
+@cli.command()
 def config() -> None:
     """Show current configuration (without sensitive data)."""
 
@@ -378,6 +452,25 @@ def container() -> None:
             click.echo("⏹️ Neo4j container is not running")
 
     pass
+
+
+@cli.command()
+def doctor() -> None:
+    """Check for all registered CLI tools and offer to install if missing."""
+    try:
+        from src.utils.cli_installer import TOOL_REGISTRY
+    except ImportError:
+        print("Could not import TOOL_REGISTRY. Please check your installation.")
+        return
+
+    for tool in TOOL_REGISTRY.values():
+        print(f"Checking for '{tool.name}' CLI...")
+        if is_tool_installed(tool.name):
+            print(f"✅ {tool.name} is installed.")
+        else:
+            print(f"❌ {tool.name} is NOT installed.")
+            install_tool(tool.name)
+    print("Doctor check complete.")
 
 
 def main() -> None:
