@@ -132,9 +132,7 @@ class LoggingConfig:
             "LOG_FORMAT", "%(log_color)s%(levelname)s:%(name)s:%(message)s"
         )
     )
-    file_output: Optional[str] = field(
-        default_factory=lambda: os.getenv("LOG_FILE")
-    )
+    file_output: Optional[str] = field(default_factory=lambda: os.getenv("LOG_FILE"))
 
     def __post_init__(self) -> None:
         """Validate logging configuration."""

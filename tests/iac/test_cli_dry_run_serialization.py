@@ -1,11 +1,14 @@
 import datetime
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 from click.testing import CliRunner
-from unittest.mock import MagicMock, patch, AsyncMock
 from scripts.cli import cli
+
 
 def _mock_graph():
     from src.iac.traverser import TenantGraph
+
     g = TenantGraph()
     g.resources = [
         {
@@ -16,6 +19,7 @@ def _mock_graph():
         }
     ]
     return g
+
 
 @patch("src.utils.cli_installer.is_tool_installed", return_value=True)
 @patch("src.iac.cli_handler.GraphTraverser")

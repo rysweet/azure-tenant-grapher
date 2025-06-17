@@ -16,7 +16,7 @@ _EMITTER_REGISTRY: Dict[str, Type[IaCEmitter]] = {}
 
 def register_emitter(format_name: str, emitter_class: Type[IaCEmitter]) -> None:
     """Register an emitter class for a specific format.
-    
+
     Args:
         format_name: Name of the IaC format (e.g., 'terraform', 'arm', 'bicep')
         emitter_class: Emitter class implementing IaCEmitter interface
@@ -26,7 +26,7 @@ def register_emitter(format_name: str, emitter_class: Type[IaCEmitter]) -> None:
 
 def get_emitter_registry() -> Dict[str, Type[IaCEmitter]]:
     """Get the current emitter registry.
-    
+
     Returns:
         Dictionary mapping format names to emitter classes
     """
@@ -35,13 +35,13 @@ def get_emitter_registry() -> Dict[str, Type[IaCEmitter]]:
 
 def get_emitter(format_name: str) -> Type[IaCEmitter]:
     """Get emitter class for specified format.
-    
+
     Args:
         format_name: Name of the IaC format
-        
+
     Returns:
         Emitter class for the specified format
-        
+
     Raises:
         KeyError: If format is not registered
     """
