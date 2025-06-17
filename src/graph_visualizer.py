@@ -440,7 +440,7 @@ class GraphVisualizer:
         self,
         output_path: Optional[str] = None,
         specification_path: Optional[str] = None,
-        link_to_hierarchy: bool = False,
+        link_to_hierarchy: bool = True,
     ) -> str:
         """
         Generate HTML file with interactive 3D visualization.

@@ -513,6 +513,13 @@ class JavaScriptBuilder:
 
         {cluster_init}
 
+        // Fit all nodes on initial load
+        setTimeout(() => {{
+            if (window.Graph && typeof window.Graph.zoomToFit === "function") {{
+                window.Graph.zoomToFit(400, 50);
+            }}
+        }}, 600);
+
         console.log('Azure Tenant Graph 3D Visualization loaded successfully!');
         console.log('Graph data:', originalGraphData);
         """
