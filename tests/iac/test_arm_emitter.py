@@ -5,6 +5,7 @@ from pathlib import Path
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.traverser import TenantGraph
 
+
 def test_arm_emitter_creates_valid_template():
     emitter = ArmEmitter()
     graph = TenantGraph()
@@ -19,7 +20,7 @@ def test_arm_emitter_creates_valid_template():
             "type": "Microsoft.Compute/virtualMachines",
             "name": "testvm",
             "location": "eastus2",
-        }
+        },
     ]
     with tempfile.TemporaryDirectory() as temp_dir:
         out_dir = Path(temp_dir)

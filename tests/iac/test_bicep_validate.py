@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 from pathlib import Path
+
 import pytest
 
 from src.iac.emitters.bicep_emitter import BicepEmitter
@@ -8,9 +9,10 @@ from src.iac.traverser import TenantGraph
 
 bicep = shutil.which("bicep")
 
+
 @pytest.mark.skipif(
     bicep is None,
-    reason="Bicep CLI not found. Install via 'brew install bicep', 'choco install bicep', or see https://docs.microsoft.com/azure/azure-resource-manager/bicep/install"
+    reason="Bicep CLI not found. Install via 'brew install bicep', 'choco install bicep', or see https://docs.microsoft.com/azure/azure-resource-manager/bicep/install",
 )
 def test_bicep_template_builds(tmp_path: Path) -> None:
     # Minimal Bicep graph
@@ -31,7 +33,6 @@ def test_bicep_template_builds(tmp_path: Path) -> None:
 
     # Run bicep build
     proc = subprocess.run(
-        [bicep, "build", str(bicep_path)],
-        capture_output=True, text=True
+        [bicep, "build", str(bicep_path)], capture_output=True, text=True
     )
     assert proc.returncode == 0, f"bicep build failed:\n{proc.stdout}\n{proc.stderr}"
