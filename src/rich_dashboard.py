@@ -85,7 +85,6 @@ class RichDashboard:
         table = Table.grid(expand=True)
         table.add_column("Metric", style="magenta")
         table.add_column("Value", style="bold")
-        table.add_row("Batch", f"{stats['batch']}/{stats['total_batches']}")
         table.add_row("Processed", f"{stats['processed']}/{stats['total']}")
         table.add_row("Successful", str(stats["successful"]))
         table.add_row("Failed", str(stats["failed"]))
