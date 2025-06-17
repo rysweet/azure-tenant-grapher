@@ -57,10 +57,10 @@ def get_emitter(format_name: str) -> Type[IaCEmitter]:
 
 
 # Import emitter implementations to auto-register them
-from . import (  # noqa: E402  # type: ignore
-    arm_emitter,
-    bicep_emitter,
-    terraform_emitter,
+from . import (  # noqa: E402  # type: ignore  # pyright: ignore[reportUnusedImport]
+    arm_emitter,  # pyright: ignore[reportUnusedImport]
+    bicep_emitter,  # pyright: ignore[reportUnusedImport]
+    terraform_emitter,  # pyright: ignore[reportUnusedImport]
 )
 
 __all__ = [
