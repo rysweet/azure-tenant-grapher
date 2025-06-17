@@ -35,11 +35,11 @@ class TerraformEmitter(IaCEmitter):
 
     def emit(self, graph: TenantGraph, out_dir: Path) -> List[Path]:
         """Generate Terraform template from tenant graph.
-        
+
         Args:
             graph: Input tenant graph data
             out_dir: Output directory path
-            
+
         Returns:
             List of written file paths
         """
@@ -52,18 +52,11 @@ class TerraformEmitter(IaCEmitter):
         terraform_config = {
             "terraform": {
                 "required_providers": {
-                    "azurerm": {
-                        "source": "hashicorp/azurerm",
-                        "version": ">=3.0"
-                    }
+                    "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"}
                 }
             },
-            "provider": {
-                "azurerm": {
-                    "features": {}
-                }
-            },
-            "resource": {}
+            "provider": {"azurerm": {"features": {}}},
+            "resource": {},
         }
 
         # Process resources
@@ -75,27 +68,29 @@ class TerraformEmitter(IaCEmitter):
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
 
-                terraform_config["resource"][resource_type][resource_name] = resource_config
+                terraform_config["resource"][resource_type][resource_name] = (
+                    resource_config
+                )
 
         # Write main.tf.json
         output_file = out_dir / "main.tf.json"
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(terraform_config, f, indent=2)
 
-        logger.info(f"Generated Terraform template with {len(graph.resources)} resources")
+        logger.info(
+            f"Generated Terraform template with {len(graph.resources)} resources"
+        )
         return [output_file]
 
     async def emit_template(
-        self,
-        tenant_graph: TenantGraph,
-        output_path: Optional[str] = None
+        self, tenant_graph: TenantGraph, output_path: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate Terraform template from tenant graph (legacy method).
-        
+
         Args:
             tenant_graph: Input tenant graph data
             output_path: Optional output file path
-            
+
         Returns:
             Dictionary containing generated Terraform template data
         """
@@ -109,15 +104,17 @@ class TerraformEmitter(IaCEmitter):
 
         return {
             "files_written": [str(f) for f in written_files],
-            "resource_count": len(tenant_graph.resources)
+            "resource_count": len(tenant_graph.resources),
         }
 
-    def _convert_resource(self, resource: Dict[str, Any]) -> Optional[tuple[str, str, Dict[str, Any]]]:
+    def _convert_resource(
+        self, resource: Dict[str, Any]
+    ) -> Optional[tuple[str, str, Dict[str, Any]]]:
         """Convert Azure resource to Terraform resource.
-        
+
         Args:
             resource: Azure resource data
-            
+
         Returns:
             Tuple of (terraform_type, resource_name, resource_config) or None
         """
@@ -125,7 +122,9 @@ class TerraformEmitter(IaCEmitter):
         resource_name = resource.get("name", "unknown")
 
         # Get Terraform resource type
-        terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type, "azurerm_generic_resource")
+        terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
+            azure_type, "azurerm_generic_resource"
+        )
 
         # Sanitize resource name for Terraform
         safe_name = self._sanitize_terraform_name(resource_name)
@@ -134,7 +133,7 @@ class TerraformEmitter(IaCEmitter):
         resource_config = {
             "name": resource_name,
             "location": resource.get("location", "East US"),
-            "resource_group_name": resource.get("resourceGroup", "default-rg")
+            "resource_group_name": resource.get("resourceGroup", "default-rg"),
         }
 
         # Add tags if present
@@ -143,10 +142,9 @@ class TerraformEmitter(IaCEmitter):
 
         # Add type-specific properties
         if azure_type == "Microsoft.Storage/storageAccounts":
-            resource_config.update({
-                "account_tier": "Standard",
-                "account_replication_type": "LRS"
-            })
+            resource_config.update(
+                {"account_tier": "Standard", "account_replication_type": "LRS"}
+            )
         elif azure_type == "Microsoft.Network/virtualNetworks":
             resource_config["address_space"] = ["10.0.0.0/16"]
 
@@ -154,16 +152,17 @@ class TerraformEmitter(IaCEmitter):
 
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
-        
+
         Args:
             name: Original resource name
-            
+
         Returns:
             Sanitized name safe for Terraform
         """
         # Replace invalid characters with underscores
         import re
-        sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+
+        sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
         # Ensure it starts with a letter or underscore
         if sanitized and sanitized[0].isdigit():
@@ -173,7 +172,7 @@ class TerraformEmitter(IaCEmitter):
 
     def get_supported_resource_types(self) -> List[str]:
         """Get list of Azure resource types supported by Terraform provider.
-        
+
         Returns:
             List of supported Azure resource type strings
         """
@@ -181,10 +180,10 @@ class TerraformEmitter(IaCEmitter):
 
     def validate_template(self, template_data: Dict[str, Any]) -> bool:
         """Validate generated Terraform template for correctness.
-        
+
         Args:
             template_data: Generated Terraform template data
-            
+
         Returns:
             True if template is valid, False otherwise
         """

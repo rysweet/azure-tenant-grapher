@@ -9,9 +9,9 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from neo4j import Driver  # type: ignore
 
 import click
+from neo4j import Driver  # type: ignore
 
 from ..config_manager import create_neo4j_config_from_env
 from ..utils.session_manager import create_session_manager
@@ -45,7 +45,7 @@ async def generate_iac_command_handler(
     resource_filters: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
-    
+
     Args:
         tenant_id: Azure tenant ID to process
         format_type: Target IaC format (terraform, arm, bicep)
@@ -53,7 +53,7 @@ async def generate_iac_command_handler(
         rules_file: Path to transformation rules configuration file
         dry_run: If True, only validate inputs without generating templates
         resource_filters: Optional resource type filters
-        
+
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
@@ -71,7 +71,7 @@ async def generate_iac_command_handler(
         filter_cypher = None
         if resource_filters:
             # Convert comma-separated filters to Cypher WHERE clause
-            filters = [f.strip() for f in resource_filters.split(',')]
+            filters = [f.strip() for f in resource_filters.split(",")]
             filter_conditions = [f"r.type = '{f}'" for f in filters]
             filter_cypher = f"""
             MATCH (r:Resource)
@@ -94,7 +94,7 @@ async def generate_iac_command_handler(
             output_data = {
                 "resources": sample_resources,
                 "total_count": len(graph.resources),
-                "format": format_type
+                "format": format_type,
             }
             click.echo(json.dumps(output_data, indent=2, default=str))
             return 0

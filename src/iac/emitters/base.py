@@ -13,14 +13,14 @@ from ..traverser import TenantGraph
 
 class IaCEmitter(ABC):
     """Abstract base class for Infrastructure-as-Code emitters.
-    
+
     All emitters must implement this interface to provide consistent
     template generation capabilities across different IaC formats.
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """Initialize emitter with optional configuration.
-        
+
         Args:
             config: Optional emitter-specific configuration
         """
@@ -29,11 +29,11 @@ class IaCEmitter(ABC):
     @abstractmethod
     def emit(self, graph: TenantGraph, out_dir: Path) -> List[Path]:
         """Generate IaC templates from tenant graph.
-        
+
         Args:
             graph: Input tenant graph data
             out_dir: Output directory path
-            
+
         Returns:
             List of written file paths
         """
@@ -41,16 +41,14 @@ class IaCEmitter(ABC):
 
     @abstractmethod
     async def emit_template(
-        self,
-        tenant_graph: TenantGraph,
-        output_path: Optional[str] = None
+        self, tenant_graph: TenantGraph, output_path: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate IaC template from tenant graph (legacy method).
-        
+
         Args:
             tenant_graph: Input tenant graph data
             output_path: Optional output file path
-            
+
         Returns:
             Dictionary containing generated template data and metadata
         """
@@ -59,7 +57,7 @@ class IaCEmitter(ABC):
     @abstractmethod
     def get_supported_resource_types(self) -> List[str]:
         """Get list of Azure resource types supported by this emitter.
-        
+
         Returns:
             List of supported Azure resource type strings
         """
@@ -68,10 +66,10 @@ class IaCEmitter(ABC):
     @abstractmethod
     def validate_template(self, template_data: Dict[str, Any]) -> bool:
         """Validate generated template for correctness.
-        
+
         Args:
             template_data: Generated template data to validate
-            
+
         Returns:
             True if template is valid, False otherwise
         """
@@ -79,7 +77,7 @@ class IaCEmitter(ABC):
 
     def get_format_name(self) -> str:
         """Get the name of the IaC format this emitter targets.
-        
+
         Returns:
             Format name string (e.g., 'terraform', 'arm', 'bicep')
         """

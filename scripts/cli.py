@@ -61,10 +61,12 @@ except ImportError as e:
 
 # --- CLI installer helper imports ---
 try:
-    from src.utils.cli_installer import is_tool_installed, install_tool
+    from src.utils.cli_installer import install_tool, is_tool_installed
 except ImportError:
+
     def is_tool_installed(name):
         return False
+
     def install_tool(tool):
         print(f"Install helper unavailable. Please install {tool} manually.")
 
@@ -357,10 +359,14 @@ async def generate_iac(
     resource_filters: Optional[str],
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
+    from src.utils.cli_installer import ensure_tool
+
     if format_type.lower() == "terraform":
-        from src.utils.cli_installer import ensure_tool
         ensure_tool("terraform", auto_prompt=True)
-    # For Azure CLI-dependent commands, use the same pattern as above.
+    elif format_type.lower() == "arm":
+        ensure_tool("az", auto_prompt=True)
+    elif format_type.lower() == "bicep":
+        ensure_tool("bicep", auto_prompt=True)
     await generate_iac_command_handler(
         tenant_id=tenant_id,
         format_type=format_type,
@@ -450,16 +456,22 @@ def container() -> None:
 
 @cli.command()
 def doctor() -> None:
-    """Check for required CLI tools (terraform, az) and offer to install if missing."""
-    required_tools = ["terraform", "az"]
-    for tool in required_tools:
-        print(f"Checking for '{tool}' CLI...")
-        if is_tool_installed(tool):
-            print(f"✅ {tool} is installed.")
+    """Check for all registered CLI tools and offer to install if missing."""
+    try:
+        from src.utils.cli_installer import TOOL_REGISTRY
+    except ImportError:
+        print("Could not import TOOL_REGISTRY. Please check your installation.")
+        return
+
+    for tool in TOOL_REGISTRY.values():
+        print(f"Checking for '{tool.name}' CLI...")
+        if is_tool_installed(tool.name):
+            print(f"✅ {tool.name} is installed.")
         else:
-            print(f"❌ {tool} is NOT installed.")
-            install_tool(tool)
+            print(f"❌ {tool.name} is NOT installed.")
+            install_tool(tool.name)
     print("Doctor check complete.")
+
 
 def main() -> None:
     """Main entry point."""

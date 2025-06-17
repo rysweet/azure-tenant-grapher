@@ -1,8 +1,8 @@
-import shutil
 import platform
+import shutil
 import subprocess
-from typing import Literal, Optional, Dict
 from dataclasses import dataclass, field
+from typing import Dict, Literal, Optional
 
 # Tool registry modularization for CLI dependencies.
 # Example:
@@ -12,21 +12,26 @@ from dataclasses import dataclass, field
 #     installers={"brew": "brew install bicep", "apt": "...", "winget": "...", "choco": "..."}
 # ))
 
+
 @dataclass
 class Tool:
     name: str
     test_cmd: str
     installers: Dict[str, str] = field(default_factory=dict)
 
+
 TOOL_REGISTRY: Dict[str, Tool] = {}
+
 
 def register_tool(tool: Tool) -> None:
     """Register a CLI tool in the global registry."""
     TOOL_REGISTRY[tool.name] = tool
 
+
 def is_tool_installed(name: str) -> bool:
     """Check if a CLI tool is installed and available in PATH."""
     return shutil.which(name) is not None
+
 
 def detect_installer() -> Optional[Literal["brew", "apt", "winget", "choco"]]:
     """Detect the system's package manager."""
@@ -44,6 +49,7 @@ def detect_installer() -> Optional[Literal["brew", "apt", "winget", "choco"]]:
             return "choco"
     return None
 
+
 def install_tool(tool: str) -> bool:
     """Prompt user to install the tool using the detected package manager.
     Returns True if install attempted, False if declined or not possible.
@@ -55,7 +61,9 @@ def install_tool(tool: str) -> bool:
     tool_obj = TOOL_REGISTRY[tool]
     installer = detect_installer()
     if installer is None:
-        print(f"No supported package manager detected. Please install '{tool}' manually.")
+        print(
+            f"No supported package manager detected. Please install '{tool}' manually."
+        )
         print("Run `atg doctor` for more details.")
         return False
     if installer not in tool_obj.installers:
@@ -79,6 +87,7 @@ def install_tool(tool: str) -> bool:
         print("Run `atg doctor` for more details.")
         return False
 
+
 def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
     """
     Ensure the given CLI tool is installed (by name, must be registered).
@@ -94,30 +103,50 @@ def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
         if not installed:
             print(f"Aborting: '{tool}' is required but was not installed.")
             import sys
+
             sys.exit(1)
     else:
         print(f"Required tool '{tool}' is not installed.")
         import sys
+
         sys.exit(1)
 
+
 # Pre-register core tools
-register_tool(Tool(
-    name="terraform",
-    test_cmd="terraform --version",
-    installers={
-        "brew": "brew install terraform",
-        "apt": "sudo apt-get update && sudo apt-get install -y terraform",
-        "winget": "winget install HashiCorp.Terraform",
-        "choco": "choco install terraform -y",
-    }
-))
-register_tool(Tool(
-    name="az",
-    test_cmd="az --version",
-    installers={
-        "brew": "brew install azure-cli",
-        "apt": "sudo apt-get update && sudo apt-get install -y azure-cli",
-        "winget": "winget install Microsoft.AzureCLI",
-        "choco": "choco install azure-cli -y",
-    }
-))
+register_tool(
+    Tool(
+        name="terraform",
+        test_cmd="terraform --version",
+        installers={
+            "brew": "brew install terraform",
+            "apt": "sudo apt-get update && sudo apt-get install -y terraform",
+            "winget": "winget install HashiCorp.Terraform",
+            "choco": "choco install terraform -y",
+        },
+    )
+)
+register_tool(
+    Tool(
+        name="az",
+        test_cmd="az --version",
+        installers={
+            "brew": "brew install azure-cli",
+            "apt": "sudo apt-get update && sudo apt-get install -y azure-cli",
+            "winget": "winget install Microsoft.AzureCLI",
+            "choco": "choco install azure-cli -y",
+        },
+    )
+)
+
+register_tool(
+    Tool(
+        name="bicep",
+        test_cmd="bicep --version",
+        installers={
+            "brew": "brew tap azure/bicep && brew install bicep",
+            "apt": "curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64 && chmod +x ./bicep && sudo mv ./bicep /usr/local/bin/bicep",
+            "winget": "winget install -e --id Microsoft.Bicep",
+            "choco": "choco install bicep",
+        },
+    )
+)

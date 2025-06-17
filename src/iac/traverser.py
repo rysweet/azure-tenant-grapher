@@ -24,9 +24,11 @@ class TenantGraph:
 class GraphTraverser:
     """Traverses Neo4j graph data to extract tenant infrastructure."""
 
-    def __init__(self, driver: Driver, transformation_rules: Optional[List[Any]] = None) -> None:
+    def __init__(
+        self, driver: Driver, transformation_rules: Optional[List[Any]] = None
+    ) -> None:
         """Initialize graph traverser with Neo4j driver.
-        
+
         Args:
             driver: Neo4j database driver instance
             transformation_rules: Optional transformation rules (for future use)
@@ -36,10 +38,10 @@ class GraphTraverser:
 
     async def traverse(self, filter_cypher: Optional[str] = None) -> TenantGraph:
         """Traverse and extract tenant graph data.
-        
+
         Args:
             filter_cypher: Optional Cypher filter string
-            
+
         Returns:
             TenantGraph instance with extracted data
         """
@@ -60,7 +62,7 @@ class GraphTraverser:
                         relationship_dict = {
                             "source": resource_node.get("id"),
                             "target": rel.get("target"),
-                            "type": rel.get("type")
+                            "type": rel.get("type"),
                         }
                         relationships.append(relationship_dict)
 
@@ -90,11 +92,15 @@ class GraphTraverser:
                     OPTIONAL MATCH (r)-[rel]->(t)
                     RETURN r, collect({type:type(rel), target:t.id}) AS rels
                     """
-                    logger.info("No :Resource nodes found, running fallback query for nodes with 'type' property")
+                    logger.info(
+                        "No :Resource nodes found, running fallback query for nodes with 'type' property"
+                    )
                     result = session.run(fallback_query)
                     result_list = list(result)
                 process_result(result_list, resources, relationships)
-                logger.info(f"Extracted {len(resources)} resources and {len(relationships)} relationships")
+                logger.info(
+                    f"Extracted {len(resources)} resources and {len(relationships)} relationships"
+                )
 
         except Exception as e:
             logger.error(f"Error during graph traversal: {e}")
