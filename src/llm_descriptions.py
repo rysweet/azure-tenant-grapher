@@ -47,7 +47,7 @@ def async_retry_with_throttling(
                 except Exception as e:
                     if is_throttling_error(e):
                         logger.warning(
-                            f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt+1}/{max_retries}"
+                            f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt + 1}/{max_retries}"
                         )
                         if attempt < max_retries - 1:
                             await asyncio.sleep(delay)
@@ -88,11 +88,11 @@ def retry_with_throttling(
                 # OpenAI HTTP 429 or explicit throttling
                 if hasattr(e, "status_code") and getattr(e, "status_code", None) == 429:
                     logger.warning(
-                        f"OpenAI throttling detected (HTTP 429), attempt {attempt+1}/{max_retries}"
+                        f"OpenAI throttling detected (HTTP 429), attempt {attempt + 1}/{max_retries}"
                     )
                 elif "429" in str(e) or "throttle" in str(e).lower():
                     logger.warning(
-                        f"Possible throttling detected: {e}, attempt {attempt+1}/{max_retries}"
+                        f"Possible throttling detected: {e}, attempt {attempt + 1}/{max_retries}"
                     )
                 else:
                     raise
@@ -254,7 +254,7 @@ Be specific about the actual configured values while explaining their architectu
             except Exception as e:
                 if is_throttling_error(e):
                     logger.warning(
-                        f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt+1}/{max_retries}"
+                        f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt + 1}/{max_retries}"
                     )
                     if attempt < max_retries - 1:
                         await asyncio.sleep(delay)
