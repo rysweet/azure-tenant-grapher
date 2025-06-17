@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Extensions.Configuration;
 
 namespace AzureTenantGrapher.Config
@@ -55,7 +56,7 @@ namespace AzureTenantGrapher.Config
 
             var logging = new LoggingConfig(
                 config["logLevel"] ?? "Information",
-                config["logFile"]);
+                config["logFile"] ?? GenerateDefaultLogFile());
 
             bool noContainer = bool.TryParse(config["noContainer"], out var nc) && nc;
             bool containerOnly = bool.TryParse(config["containerOnly"], out var co) && co;
@@ -75,6 +76,14 @@ namespace AzureTenantGrapher.Config
                 autoStop,
                 visPath
             );
+        }
+
+        private static string GenerateDefaultLogFile()
+        {
+            var tempDir = Path.GetTempPath();
+            var uniqueId = Guid.NewGuid().ToString()[..8]; // Use first 8 chars of GUID
+            var logFileName = $"azure-tenant-grapher-{uniqueId}.log";
+            return Path.Combine(tempDir, logFileName);
         }
     }
 }

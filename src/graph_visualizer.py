@@ -480,17 +480,14 @@ class GraphVisualizer:
         """Generate HTML for the tenant specification link - ENHANCED."""
         import glob
 
-        # If not provided or doesn't exist, look for latest in ./specs/
+        # If not provided or doesn't exist, look for latest in current directory
         if not specification_path or not os.path.exists(specification_path):
-            specs_dir = os.path.join(os.getcwd(), "specs")
-            if os.path.isdir(specs_dir):
-                spec_files = sorted(
-                    glob.glob(os.path.join(specs_dir, "*_tenant_spec.md")), reverse=True
-                )
-                if spec_files:
-                    specification_path = spec_files[0]
-                else:
-                    return ""
+            current_dir = os.getcwd()
+            spec_files = sorted(
+                glob.glob(os.path.join(current_dir, "*_tenant_spec.md")), reverse=True
+            )
+            if spec_files:
+                specification_path = spec_files[0]
             else:
                 return ""
 
