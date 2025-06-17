@@ -59,6 +59,15 @@ except ImportError as e:
     print("pip install -r requirements.txt")
     sys.exit(1)
 
+# --- CLI installer helper imports ---
+try:
+    from src.utils.cli_installer import is_tool_installed, install_tool
+except ImportError:
+    def is_tool_installed(name):
+        return False
+    def install_tool(tool):
+        print(f"Install helper unavailable. Please install {tool} manually.")
+
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
     """Decorator to make Click commands async-compatible."""
@@ -348,6 +357,10 @@ async def generate_iac(
     resource_filters: Optional[str],
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
+    if format_type.lower() == "terraform":
+        from src.utils.cli_installer import ensure_tool
+        ensure_tool("terraform", auto_prompt=True)
+    # For Azure CLI-dependent commands, use the same pattern as above.
     await generate_iac_command_handler(
         tenant_id=tenant_id,
         format_type=format_type,
@@ -434,6 +447,19 @@ def container() -> None:
 
     pass
 
+
+@cli.command()
+def doctor() -> None:
+    """Check for required CLI tools (terraform, az) and offer to install if missing."""
+    required_tools = ["terraform", "az"]
+    for tool in required_tools:
+        print(f"Checking for '{tool}' CLI...")
+        if is_tool_installed(tool):
+            print(f"✅ {tool} is installed.")
+        else:
+            print(f"❌ {tool} is NOT installed.")
+            install_tool(tool)
+    print("Doctor check complete.")
 
 def main() -> None:
     """Main entry point."""

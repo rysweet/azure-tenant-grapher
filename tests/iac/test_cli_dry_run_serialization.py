@@ -17,9 +17,10 @@ def _mock_graph():
     ]
     return g
 
+@patch("src.utils.cli_installer.is_tool_installed", return_value=True)
 @patch("src.iac.cli_handler.GraphTraverser")
 @patch("src.iac.cli_handler.get_neo4j_driver_from_config")
-def test_dry_run_serialization_fails(mock_get_driver, mock_traverser):
+def test_dry_run_serialization_fails(mock_get_driver, mock_traverser, mock_is_tool):
     # mock traverser to return graph with datetime
     mock_traverser.return_value.traverse = AsyncMock(return_value=_mock_graph())
     mock_get_driver.return_value = MagicMock()
