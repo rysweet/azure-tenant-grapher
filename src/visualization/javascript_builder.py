@@ -63,11 +63,11 @@ class JavaScriptBuilder:
         let activeRelationshipFilters = new Set(originalGraphData.relationship_types);
         let searchTerm = '';
 
-        {self._build_cluster_functions() if self.feature_flags.get('cluster_labels') else ''}
+        {self._build_cluster_functions() if self.feature_flags.get("cluster_labels") else ""}
         {self._build_graph_initialization()}
-        {self._build_filter_functions() if self.feature_flags.get('filters') else ''}
-        {self._build_search_functions() if self.feature_flags.get('search') else ''}
-        {self._build_node_info_functions() if self.feature_flags.get('node_info') else ''}
+        {self._build_filter_functions() if self.feature_flags.get("filters") else ""}
+        {self._build_search_functions() if self.feature_flags.get("search") else ""}
+        {self._build_node_info_functions() if self.feature_flags.get("node_info") else ""}
         {self._build_control_functions()}
         {self._build_auto_rotate_functions()}  // Always include auto-rotate code for test compatibility
         {self._build_initialization()}
