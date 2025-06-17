@@ -572,6 +572,13 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
             )
             return True
 
+        # Defensive: Ensure record is a mapping before accessing .get
+        if not hasattr(record, "get"):
+            logger.warning(
+                f"Neo4j record for resource {resource_id} is not a mapping (type={type(record)} value={record!r}); will generate."
+            )
+            return True
+
         # Convert record to dict to avoid Neo4j driver mutation/access errors
         try:
             # Defensive: extract fields individually and convert to safe types
