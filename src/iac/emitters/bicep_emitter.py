@@ -76,7 +76,7 @@ class BicepEmitter(IaCEmitter):
             bicep_lines.append(f'  name: \'{resource.get("name", "unnamed")}\'')
             bicep_lines.append(f'  location: \'{resource.get("location", "eastus")}\'')
             if az_type == "Microsoft.Storage/storageAccounts":
-                bicep_lines.append("  sku: {{ name: 'Standard_LRS' }}")
+                bicep_lines.append("  sku: { name: 'Standard_LRS' }")
                 bicep_lines.append("  kind: 'StorageV2'")
             if "tags" in resource:
                 tags = resource["tags"]
