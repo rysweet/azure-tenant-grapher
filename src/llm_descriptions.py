@@ -562,7 +562,7 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
             result = session.run(
                 """
                 MATCH (r:Resource {id: $id})
-                RETURN r.llm_description AS desc, r.etag AS etag, r.last_modified AS last_modified
+                RETURN r.llm_description AS desc, coalesce(r.etag, '') AS etag, coalesce(r.last_modified, '') AS last_modified
                 """,
                 id=resource_id,
             )
@@ -617,6 +617,11 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
                             else val.decode("utf-8", errors="replace")
                         )
                     return str(val)
+                except BufferError as be:
+                    logger.warning(
+                        f"BufferError converting value to string for resource {resource_id}: {type(val)}: {be}"
+                    )
+                    return None
                 except Exception as conv_exc:
                     logger.warning(
                         f"Could not convert value to string for resource {resource_id}: {type(val)}: {conv_exc}"
