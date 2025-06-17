@@ -217,17 +217,21 @@ class HtmlTemplateBuilder:
         """
         import glob
 
-        # If not provided or doesn't exist, look for latest in ./specs/
+        # If not provided or doesn't exist, look for latest in current directory or specs/ subdirectory
         if not specification_path or not os.path.exists(specification_path):
-            specs_dir = os.path.join(os.getcwd(), "specs")
-            if os.path.isdir(specs_dir):
+            current_dir = os.getcwd()
+            # Search in current directory
+            spec_files = sorted(
+                glob.glob(os.path.join(current_dir, "*_tenant_spec.md")), reverse=True
+            )
+            # If not found, search in specs/ subdirectory
+            if not spec_files:
+                specs_dir = os.path.join(current_dir, "specs")
                 spec_files = sorted(
                     glob.glob(os.path.join(specs_dir, "*_tenant_spec.md")), reverse=True
                 )
-                if spec_files:
-                    specification_path = spec_files[0]
-                else:
-                    return ""
+            if spec_files:
+                specification_path = spec_files[0]
             else:
                 return ""
 
