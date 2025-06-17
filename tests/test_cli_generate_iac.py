@@ -16,7 +16,8 @@ class TestGenerateIacCLI:
     """Test cases for generate-iac CLI command."""
     
     @patch('src.iac.cli_handler.get_neo4j_driver_from_config')
-    def test_generate_iac_dry_run_success(self, mock_get_driver) -> None:
+    @patch('src.utils.cli_installer.is_tool_installed', return_value=True)
+    def test_generate_iac_dry_run_success(self, mock_is_tool, mock_get_driver) -> None:
         """Test generate-iac command with --dry-run flag exits with code 0."""
         # Mock the Neo4j driver and session
         mock_driver = MagicMock()
@@ -39,7 +40,8 @@ class TestGenerateIacCLI:
         assert "resources" in result.output
     
     @patch('src.iac.cli_handler.get_neo4j_driver_from_config')
-    def test_generate_iac_with_format_option(self, mock_get_driver) -> None:
+    @patch('src.utils.cli_installer.is_tool_installed', return_value=True)
+    def test_generate_iac_with_format_option(self, mock_is_tool, mock_get_driver) -> None:
         """Test generate-iac command with different format options."""
         # Mock the Neo4j driver and session
         mock_driver = MagicMock()
@@ -72,7 +74,8 @@ class TestGenerateIacCLI:
                         pass  # Not all lines will be JSON
     
     @patch('src.iac.cli_handler.get_neo4j_driver_from_config')
-    def test_generate_iac_with_resource_filters(self, mock_get_driver) -> None:
+    @patch('src.utils.cli_installer.is_tool_installed', return_value=True)
+    def test_generate_iac_with_resource_filters(self, mock_is_tool, mock_get_driver) -> None:
         """Test generate-iac command with resource filters."""
         # Mock the Neo4j driver and session
         mock_driver = MagicMock()
@@ -141,7 +144,8 @@ class TestGenerateIacCLIIntegration:
         assert "generate-iac" in result.output
     
     @patch('src.iac.cli_handler.get_neo4j_driver_from_config')
-    def test_command_dry_run_shows_sample_output(self, mock_get_driver) -> None:
+    @patch('src.utils.cli_installer.is_tool_installed', return_value=True)
+    def test_command_dry_run_shows_sample_output(self, mock_is_tool, mock_get_driver) -> None:
         """Test that dry-run mode shows sample JSON output."""
         # Mock the Neo4j driver to return sample data
         mock_driver = MagicMock()
