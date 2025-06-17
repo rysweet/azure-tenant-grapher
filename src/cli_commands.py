@@ -64,10 +64,10 @@ async def build_command_handler(
     test_keypress_file: str,
 ) -> str | None:
     """Handle the build command logic."""
-    print("[DEBUG] build_command_handler called", flush=True)
+    # Removed debug print
 
     try:
-        print("[DEBUG] Inside try block of build_command_handler", flush=True)
+        # Removed debug print
         # Use tenant_id from CLI or .env
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
@@ -94,13 +94,13 @@ async def build_command_handler(
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
 
-        print(f"[DEBUG] no_dashboard = {no_dashboard}", flush=True)
+        # Removed debug print
         if no_dashboard:
-            print("[DEBUG] Entering no_dashboard mode", flush=True)
+            # Removed debug print
             await _run_no_dashboard_mode(ctx, grapher, logger)
             return
         else:
-            print("[DEBUG] Entering dashboard mode", flush=True)
+            # Removed debug print
             return await _run_dashboard_mode(
                 ctx,
                 grapher,
@@ -293,7 +293,7 @@ async def _run_dashboard_mode(
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
-    print("[DEBUG] About to enter dashboard context and polling loop", flush=True)
+    # Removed debug print
     try:
         if test_keypress_file:
             with dashboard.live():
@@ -301,24 +301,24 @@ async def _run_dashboard_mode(
                 logger.info("[DEBUG] Entering poll_build_task (file keypress)")
                 await dashboard_manager.poll_build_task(build_task)
         elif test_keypress_queue:
-            print("[DEBUG] Entering run_with_queue_keypress", flush=True)
+            # Removed debug print
             result = await dashboard_manager.run_with_queue_keypress(build_task)
-            print(f"[DEBUG] run_with_queue_keypress returned: {result!r}", flush=True)
+            # Removed debug print
             if result == "__DASHBOARD_EXIT__":
-                print("RETURNING EXIT SENTINEL", flush=True)
+                # Removed debug print
                 return "__DASHBOARD_EXIT__"
         else:
-            print("[DEBUG] Entering run_normal", flush=True)
+            # Removed debug print
             result = await dashboard_manager.run_normal(build_task)
-            print(f"[DEBUG] run_normal returned: {result!r}", flush=True)
+            # Removed debug print
             if result == "__DASHBOARD_EXIT__":
-                print("RETURNING EXIT SENTINEL", flush=True)
+                # Removed debug print
                 return "__DASHBOARD_EXIT__"
     finally:
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
             exit_checker_task.cancel()
 
-    print("[DEBUG] Exited dashboard context and polling loop", flush=True)
+    # Removed debug print
 
     # Minimal, direct exit logic: after dashboard context, check exit flag and exit if needed
     if dashboard_manager.check_exit_condition() or dashboard.should_exit:
@@ -329,7 +329,7 @@ async def _run_dashboard_mode(
             pass
         except Exception as e:
             logger.error(f"[DEBUG] Error during cleanup: {e}")
-        print("RETURNING EXIT SENTINEL", flush=True)
+        # Removed debug print
         return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing

@@ -84,25 +84,17 @@ class CLIDashboardManager:
         """Run dashboard with normal keyboard input using a thread for Rich.Live."""
         import threading
 
-        print("[DEBUG] run_normal method called", file=sys.stderr, flush=True)
+        # Removed debug print
 
         def dashboard_thread_fn():
-            print(
-                "[DEBUG] [thread] Entering dashboard.live() context",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
             with self.dashboard.live():
                 self.dashboard.log_info("Press 'x' to exit the dashboard")
                 while not self.dashboard.should_exit:
                     import time
 
                     time.sleep(0.1)
-            print(
-                "[DEBUG] [thread] Exited dashboard.live() context",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
 
         dashboard_thread = threading.Thread(
             target=dashboard_thread_fn, name="RichLiveThread", daemon=True
@@ -111,70 +103,39 @@ class CLIDashboardManager:
 
         try:
             while not self.dashboard.should_exit and not build_task.done():
-                print(
-                    f"[DEBUG] [main] Loop: should_exit={self.dashboard.should_exit}, build_done={build_task.done()}",
-                    file=sys.stderr,
-                    flush=True,
-                )
+                # Removed debug print
                 await asyncio.sleep(0.1)
-            print(
-                f"[DEBUG] [main] Exited main loop: should_exit={self.dashboard.should_exit}, build_done={build_task.done()}",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
             if self.dashboard.should_exit and not build_task.done():
-                print(
-                    "[DEBUG] [main] Cancelling build task due to user exit",
-                    file=sys.stderr,
-                    flush=True,
-                )
+                # Removed debug print
                 build_task.cancel()
                 try:
                     await build_task
                 except asyncio.CancelledError:
-                    print(
-                        "[DEBUG] [main] Build task cancelled successfully",
-                        file=sys.stderr,
-                        flush=True,
-                    )
+                    # Removed debug print
                     pass
         finally:
-            print(
-                "[DEBUG] [main] Joining dashboard thread...",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
             dashboard_thread.join(timeout=2)
-            print("[DEBUG] [main] Dashboard thread joined", file=sys.stderr, flush=True)
+            # Removed debug print
 
         if self.dashboard.should_exit:
-            print(
-                "[DEBUG] Immediate exit after dashboard context (run_normal)",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
 
             sys.exit(0)
-        print(
-            "[DEBUG] run_normal method returning None (normal completion)",
-            file=sys.stderr,
-            flush=True,
-        )
+        # Removed debug print
         return None
 
     async def poll_build_task(self, build_task: asyncio.Task[Any]) -> None:
         """Poll build task and handle early exit."""
-        print("[DEBUG] poll_build_task started", flush=True)
+        # Removed debug print
 
         while not build_task.done() and not self.dashboard.should_exit:
-            print(
-                f"[DEBUG] Polling: build_task.done={build_task.done()}, dashboard.should_exit={self.dashboard.should_exit}",
-                flush=True,
-            )
+            # Removed debug print
 
             # Check exit flag more frequently
             if self.dashboard.should_exit:
-                print("[DEBUG] Exit flag detected during polling!", flush=True)
+                # Removed debug print
                 break
 
             await asyncio.sleep(0.1)
@@ -194,21 +155,17 @@ class CLIDashboardManager:
                 # Any other unexpected exception
                 pass
 
-        print("[DEBUG] poll_build_task finished polling loop", flush=True)
+        # Removed debug print
 
         # If exit was requested, raise DashboardExitException to be handled by the CLI entrypoint
         if self.dashboard.should_exit:
-            print("[DEBUG] IMMEDIATE EXIT - User pressed 'x'", flush=True)
+            # Removed debug print
             import sys
 
-            print(
-                "[DEBUG] Immediate exit from poll_build_task",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Removed debug print
             sys.exit(0)
 
-        print("[DEBUG] poll_build_task completed normally", flush=True)
+        # Removed debug print
 
     def check_exit_condition(self) -> bool:
         """Check if user requested exit and handle accordingly."""
