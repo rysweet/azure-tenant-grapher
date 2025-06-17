@@ -166,3 +166,9 @@ neo4j-data/
 
 # IaC generated output
 /iac-out-*
+
+# Demo outputs and generated IaC files (do not check in)
+demo-bicep*/
+demo-rules.yaml
+**/deploy.sh
+iac-out-*/

@@ -347,6 +347,18 @@ def generate_spec(
     "--resource-filters",
     help="Resource type filters (comma-separated)",
 )
+@click.option(
+    "--subset-filter",
+    help="Subset filter string (e.g., 'types=Microsoft.Storage/*;nodeIds=abc123')",
+)
+@click.option(
+    "--dest-rg",
+    help="Target resource group name for Bicep module deployment",
+)
+@click.option(
+    "--location",
+    help="Target location/region for resource deployment",
+)
 @click.pass_context
 @async_command
 async def generate_iac(
@@ -357,6 +369,9 @@ async def generate_iac(
     rules_file: Optional[str],
     dry_run: bool,
     resource_filters: Optional[str],
+    subset_filter: Optional[str],
+    dest_rg: Optional[str],
+    location: Optional[str],
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
     from src.utils.cli_installer import ensure_tool
@@ -374,6 +389,9 @@ async def generate_iac(
         rules_file=rules_file,
         dry_run=dry_run,
         resource_filters=resource_filters,
+        subset_filter=subset_filter,
+        dest_rg=dest_rg,
+        location=location,
     )
 
 
