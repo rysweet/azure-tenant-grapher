@@ -163,3 +163,6 @@ azure_tenant_specification*.md
 
 specs/
 neo4j-data/
+
+# IaC generated output
+/iac-out-*
