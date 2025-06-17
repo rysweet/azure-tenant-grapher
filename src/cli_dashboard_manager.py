@@ -10,7 +10,7 @@ import logging
 import os
 import queue
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from src.rich_dashboard import RichDashboard
 
@@ -34,7 +34,7 @@ class CLIDashboardManager:
 
     async def run_with_file_keypress(
         self, build_task: asyncio.Task[Any], test_keypress_file: str
-    ) -> None:
+    ) -> str | None:
         """Run dashboard with file-based keypress simulation for testing."""
 
         async def check_exit_file():
@@ -56,56 +56,125 @@ class CLIDashboardManager:
         # Start the exit checker as a background task
         exit_checker = asyncio.create_task(check_exit_file())
 
-        try:
-            with self.dashboard.live():
-                self.dashboard.log_info("Press 'x' to exit the dashboard")
-                # Use the same polling logic as other methods for consistency
-                await self.poll_build_task(build_task)
-        finally:
-            # Clean up
-            if not exit_checker.done():
-                exit_checker.cancel()
+        with self.dashboard.live():
+            self.dashboard.log_info("Press 'x' to exit the dashboard")
+            # Use the same polling logic as other methods for consistency
+            await self.poll_build_task(build_task)
+        # Clean up
+        if not exit_checker.done():
+            exit_checker.cancel()
 
-    async def run_with_queue_keypress(self, build_task: asyncio.Task[Any]) -> None:
+    async def run_with_queue_keypress(
+        self, build_task: asyncio.Task[Any], key_q: Optional[queue.Queue[str]] = None
+    ) -> str | None:
         """Run dashboard with queue-based keypress simulation for testing."""
 
-        key_q = queue.Queue()
+        if key_q is None:
+            key_q = queue.Queue()
         self.dashboard._test_keypress_queue = key_q  # type: ignore[attr-defined]
 
         with self.dashboard.live(key_queue=key_q):
             self.dashboard.log_info("Press 'x' to exit the dashboard")
-            await self.poll_build_task(build_task)
+            try:
+                await self.poll_build_task(build_task)
+            except Exception:
+                pass
 
-    async def run_normal(self, build_task: asyncio.Task[Any]) -> None:
-        """Run dashboard with normal keyboard input."""
+    async def run_normal(self, build_task: asyncio.Task[Any]) -> str | None:
+        """Run dashboard with normal keyboard input using a thread for Rich.Live."""
+        import threading
 
-        try:
+        print("[DEBUG] run_normal method called", file=sys.stderr, flush=True)
+
+        def dashboard_thread_fn():
+            print(
+                "[DEBUG] [thread] Entering dashboard.live() context",
+                file=sys.stderr,
+                flush=True,
+            )
             with self.dashboard.live():
                 self.dashboard.log_info("Press 'x' to exit the dashboard")
-                await self.poll_build_task(build_task)
-        except Exception as e:
-            # Check if this is a dashboard exit from Rich dashboard
-            if (
-                "User pressed 'x' to exit" in str(e)
-                or e.__class__.__name__ == "DashboardExit"
-            ):
-                self.logger.debug("Dashboard exit detected from Rich dashboard")
-                raise DashboardExitException(
-                    "User requested exit via 'x' keypress"
-                ) from e
-            raise
+                while not self.dashboard.should_exit:
+                    import time
+
+                    time.sleep(0.1)
+            print(
+                "[DEBUG] [thread] Exited dashboard.live() context",
+                file=sys.stderr,
+                flush=True,
+            )
+
+        dashboard_thread = threading.Thread(
+            target=dashboard_thread_fn, name="RichLiveThread", daemon=True
+        )
+        dashboard_thread.start()
+
+        try:
+            while not self.dashboard.should_exit and not build_task.done():
+                print(
+                    f"[DEBUG] [main] Loop: should_exit={self.dashboard.should_exit}, build_done={build_task.done()}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                await asyncio.sleep(0.1)
+            print(
+                f"[DEBUG] [main] Exited main loop: should_exit={self.dashboard.should_exit}, build_done={build_task.done()}",
+                file=sys.stderr,
+                flush=True,
+            )
+            if self.dashboard.should_exit and not build_task.done():
+                print(
+                    "[DEBUG] [main] Cancelling build task due to user exit",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                build_task.cancel()
+                try:
+                    await build_task
+                except asyncio.CancelledError:
+                    print(
+                        "[DEBUG] [main] Build task cancelled successfully",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    pass
+        finally:
+            print(
+                "[DEBUG] [main] Joining dashboard thread...",
+                file=sys.stderr,
+                flush=True,
+            )
+            dashboard_thread.join(timeout=2)
+            print("[DEBUG] [main] Dashboard thread joined", file=sys.stderr, flush=True)
+
+        if self.dashboard.should_exit:
+            print(
+                "[DEBUG] Immediate exit after dashboard context (run_normal)",
+                file=sys.stderr,
+                flush=True,
+            )
+
+            sys.exit(0)
+        print(
+            "[DEBUG] run_normal method returning None (normal completion)",
+            file=sys.stderr,
+            flush=True,
+        )
+        return None
 
     async def poll_build_task(self, build_task: asyncio.Task[Any]) -> None:
         """Poll build task and handle early exit."""
+        print("[DEBUG] poll_build_task started", flush=True)
 
         while not build_task.done() and not self.dashboard.should_exit:
-            self.logger.debug(
-                f"Polling: build_task.done={build_task.done()}, dashboard.should_exit={self.dashboard.should_exit}"
+            print(
+                f"[DEBUG] Polling: build_task.done={build_task.done()}, dashboard.should_exit={self.dashboard.should_exit}",
+                flush=True,
             )
 
             # Check exit flag more frequently
             if self.dashboard.should_exit:
-                self.logger.debug("Exit flag detected during polling!")
+                print("[DEBUG] Exit flag detected during polling!", flush=True)
                 break
 
             await asyncio.sleep(0.1)
@@ -125,10 +194,21 @@ class CLIDashboardManager:
                 # Any other unexpected exception
                 pass
 
-        # If exit was requested, exit the process immediately (forceful, but reliable)
+        print("[DEBUG] poll_build_task finished polling loop", flush=True)
+
+        # If exit was requested, raise DashboardExitException to be handled by the CLI entrypoint
         if self.dashboard.should_exit:
-            self.logger.debug("IMMEDIATE EXIT - User pressed 'x'")
+            print("[DEBUG] IMMEDIATE EXIT - User pressed 'x'", flush=True)
+            import sys
+
+            print(
+                "[DEBUG] Immediate exit from poll_build_task",
+                file=sys.stderr,
+                flush=True,
+            )
             sys.exit(0)
+
+        print("[DEBUG] poll_build_task completed normally", flush=True)
 
     def check_exit_condition(self) -> bool:
         """Check if user requested exit and handle accordingly."""

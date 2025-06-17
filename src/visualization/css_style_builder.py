@@ -96,8 +96,8 @@ class CssStyleBuilder:
         body {{
             margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: {colors['background']};
-            color: {colors['text']};
+            background: {colors["background"]};
+            color: {colors["text"]};
             overflow: hidden;
         }}
 
@@ -119,14 +119,14 @@ class CssStyleBuilder:
             top: 20px;
             left: 20px;
             z-index: 1000;
-            background: {colors['surface']};
+            background: {colors["surface"]};
             padding: 20px;
             border-radius: 10px;
             backdrop-filter: blur(10px);
             max-width: 300px;
             max-height: 80vh;
             overflow-y: auto;
-            border: 1px solid {colors['border']};
+            border: 1px solid {colors["border"]};
         }}
 
         .stats {{
@@ -134,12 +134,12 @@ class CssStyleBuilder:
             bottom: 20px;
             left: 20px;
             z-index: 1000;
-            background: {colors['surface']};
+            background: {colors["surface"]};
             padding: 15px;
             border-radius: 10px;
             backdrop-filter: blur(10px);
             font-size: 14px;
-            border: 1px solid {colors['border']};
+            border: 1px solid {colors["border"]};
         }}
 
         .node-info {{
@@ -147,7 +147,7 @@ class CssStyleBuilder:
             top: 20px;
             right: 20px;
             z-index: 1000;
-            background: {colors['surface_light']};
+            background: {colors["surface_light"]};
             padding: 20px;
             border-radius: 10px;
             backdrop-filter: blur(10px);
@@ -155,7 +155,7 @@ class CssStyleBuilder:
             max-height: 80vh;
             overflow-y: auto;
             display: none;
-            border: 1px solid {colors['border']};
+            border: 1px solid {colors["border"]};
         }}
         """
 
@@ -164,8 +164,8 @@ class CssStyleBuilder:
         return f"""
         .controls h3 {{
             margin-top: 0;
-            color: {colors['primary']};
-            border-bottom: 2px solid {colors['primary']};
+            color: {colors["primary"]};
+            border-bottom: 2px solid {colors["primary"]};
             padding-bottom: 5px;
         }}
 
@@ -173,17 +173,17 @@ class CssStyleBuilder:
             width: 100%;
             padding: 8px;
             margin-bottom: 15px;
-            border: 1px solid {colors['primary']};
+            border: 1px solid {colors["primary"]};
             border-radius: 5px;
-            background: {colors['surface']};
-            color: {colors['text']};
+            background: {colors["surface"]};
+            color: {colors["text"]};
             box-sizing: border-box;
         }}
 
         .search-box:focus {{
             outline: none;
-            border-color: {colors['accent']};
-            box-shadow: 0 0 0 2px {colors['hover']};
+            border-color: {colors["accent"]};
+            box-shadow: 0 0 0 2px {colors["hover"]};
         }}
 
         .filter-section {{
@@ -192,7 +192,7 @@ class CssStyleBuilder:
 
         .filter-section h4 {{
             margin: 0 0 10px 0;
-            color: {colors['secondary']};
+            color: {colors["secondary"]};
             font-size: 14px;
             font-weight: 600;
         }}
@@ -208,12 +208,12 @@ class CssStyleBuilder:
         }}
 
         .filter-item:hover {{
-            background-color: {colors['hover']};
+            background-color: {colors["hover"]};
         }}
 
         .filter-checkbox {{
             margin-right: 8px;
-            accent-color: {colors['primary']};
+            accent-color: {colors["primary"]};
         }}
 
         .filter-color {{
@@ -221,13 +221,13 @@ class CssStyleBuilder:
             height: 12px;
             border-radius: 50%;
             margin-right: 8px;
-            border: 1px solid {colors['border']};
+            border: 1px solid {colors["border"]};
         }}
 
         .filter-label {{
             font-size: 14px;
             user-select: none;
-            color: {colors['text']};
+            color: {colors["text"]};
         }}
         """
 
@@ -236,8 +236,8 @@ class CssStyleBuilder:
         return f"""
         .node-info h3 {{
             margin-top: 0;
-            color: {colors['primary']};
-            border-bottom: 2px solid {colors['primary']};
+            color: {colors["primary"]};
+            border-bottom: 2px solid {colors["primary"]};
             padding-bottom: 5px;
         }}
 
@@ -249,13 +249,13 @@ class CssStyleBuilder:
 
         .property-key {{
             font-weight: bold;
-            color: {colors['accent']};
+            color: {colors["accent"]};
             margin-right: 10px;
             min-width: 100px;
         }}
 
         .property-value {{
-            color: {colors['text']};
+            color: {colors["text"]};
             word-break: break-all;
         }}
 
@@ -265,7 +265,7 @@ class CssStyleBuilder:
             right: 15px;
             background: none;
             border: none;
-            color: {colors['text']};
+            color: {colors["text"]};
             font-size: 20px;
             cursor: pointer;
             padding: 5px;
@@ -274,15 +274,15 @@ class CssStyleBuilder:
         }}
 
         .close-btn:hover {{
-            background-color: {colors['hover']};
+            background-color: {colors["hover"]};
         }}
 
         .spec-link {{
             display: block;
-            color: {colors['primary']};
+            color: {colors["primary"]};
             text-decoration: none;
             padding: 8px 12px;
-            border: 1px solid {colors['primary']};
+            border: 1px solid {colors["primary"]};
             border-radius: 5px;
             margin-top: 5px;
             transition: all 0.3s ease;
@@ -290,8 +290,8 @@ class CssStyleBuilder:
         }}
 
         .spec-link:hover {{
-            background: {colors['primary']};
-            color: {colors['background']};
+            background: {colors["primary"]};
+            color: {colors["background"]};
         }}
         """
 
@@ -314,10 +314,10 @@ class CssStyleBuilder:
             max-width: 200px;
             padding: 2px 8px;
             font-size: 13px;
-            color: {colors['text']};
-            background: {colors['surface']};
+            color: {colors["text"]};
+            background: {colors["surface"]};
             border-radius: 6px;
-            border: 1px solid {colors['border']};
+            border: 1px solid {colors["border"]};
             text-align: center;
             white-space: nowrap;
             pointer-events: none;
@@ -332,8 +332,8 @@ class CssStyleBuilder:
         """Build button and interactive element styles."""
         return f"""
         .reset-btn, .control-btn {{
-            background: {colors['primary']};
-            color: {colors['background']};
+            background: {colors["primary"]};
+            color: {colors["background"]};
             border: none;
             padding: 8px 15px;
             border-radius: 5px;
@@ -346,11 +346,11 @@ class CssStyleBuilder:
         }}
 
         .reset-btn:hover, .control-btn:hover {{
-            background: {colors['secondary']};
+            background: {colors["secondary"]};
         }}
 
         .control-btn.active {{
-            background: {colors['accent']};
+            background: {colors["accent"]};
         }}
 
         .button-group {{

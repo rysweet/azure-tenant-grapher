@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 from rich.logging import RichHandler
 from rich.style import Style
 
+from src.cli_dashboard_manager import DashboardExitException
+
 
 class GreenInfoRichHandler(RichHandler):
     def get_level_style(self, level_name: str) -> Style:
@@ -40,6 +42,8 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # Always load .env if present
 load_dotenv()
 
+# (Removed duplicate import of DashboardExitException)
+
 try:
     import click
 
@@ -59,12 +63,29 @@ except ImportError as e:
     sys.exit(1)
 
 
+# (Removed duplicate import of DashboardExitException)
+
+
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
     """Decorator to make Click commands async-compatible."""
 
     @functools.wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        return asyncio.run(f(*args, **kwargs))
+        try:
+            result = asyncio.run(f(*args, **kwargs))
+            # If the async command returns a sentinel indicating dashboard exit, exit here
+            if result == "__DASHBOARD_EXIT__":
+                import sys
+
+                print(
+                    "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
+                    file=sys.stderr,
+                )
+                sys.stderr.flush()
+                sys.exit(0)
+            return result
+        except DashboardExitException:
+            sys.exit(0)
 
     return wrapper
 
@@ -195,7 +216,7 @@ async def build(
     no_dashboard: bool,
     test_keypress_queue: bool,
     test_keypress_file: str,
-) -> None:
+) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
 
@@ -205,7 +226,8 @@ async def build(
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
-    await build_command_handler(
+    print("[DEBUG] CLI build command called", flush=True)
+    result = await build_command_handler(
         ctx,
         tenant_id,
         resource_limit,
@@ -217,6 +239,8 @@ async def build(
         test_keypress_queue,
         test_keypress_file,
     )
+    print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
+    return result
 
 
 @cli.command()
@@ -382,7 +406,15 @@ def container() -> None:
 
 def main() -> None:
     """Main entry point."""
-    cli()  # type: ignore[reportCallIssue]
+    result = cli()  # type: ignore[reportCallIssue]
+    # If the CLI returns a sentinel indicating dashboard exit, exit here
+    if result == "__DASHBOARD_EXIT__":
+        print(
+            "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
+            file=sys.stderr,
+        )
+        sys.stderr.flush()
+        sys.exit(0)
 
 
 if __name__ == "__main__":
