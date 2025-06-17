@@ -334,20 +334,8 @@ async def _run_dashboard_mode(
     )
 
 
-@click.command("visualize")
-@click.option(
-    "--link-hierarchy/--no-link-hierarchy",
-    default=True,
-    help="Include Subscription and Tenant hierarchy links in the visualization (default: enabled)."
-)
-@click.option(
-    "--no-container",
-    is_flag=True,
-    default=False,
-    help="Do not attempt to start a Neo4j container if connection fails."
-)
 async def visualize_command_handler(
-    ctx: click.Context, link_hierarchy: bool, no_container: bool
+    ctx: click.Context, link_hierarchy: bool = True, no_container: bool = False
 ) -> None:
     """Handle the visualize command logic."""
 
