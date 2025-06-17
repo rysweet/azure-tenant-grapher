@@ -558,13 +558,31 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
 
     # Query Neo4j for node by id, get llm_description and change-indicator fields
     try:
-        result = session.run(
-            """
-            MATCH (r:Resource {id: $id})
-            RETURN r.llm_description AS desc, r.etag AS etag, r.last_modified AS last_modified
-            """,
-            id=resource_id,
-        )
+        try:
+            result = session.run(
+                """
+                MATCH (r:Resource {id: $id})
+                RETURN r.llm_description AS desc, r.etag AS etag, r.last_modified AS last_modified
+                """,
+                id=resource_id,
+            )
+        except BufferError as be:
+            logger.warning(
+                f"BufferError during Neo4j query for {resource_id}: {be}; will generate."
+            )
+            return True
+        except Exception as e:
+            logger.warning(
+                f"Exception during Neo4j query for {resource_id}: {e}; will generate."
+            )
+            return True
+
+        if result is None:
+            logger.warning(
+                f"Neo4j session.run returned None for resource {resource_id}; will generate."
+            )
+            return True
+
         record = result.single()
         if not record:
             logger.debug(
