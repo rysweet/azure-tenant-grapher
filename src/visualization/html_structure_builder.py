@@ -62,10 +62,10 @@ class HtmlStructureBuilder:
         """Build HTML body section."""
         body_content = f"""<body>
     <div id="visualization"></div>
-    {self._build_cluster_labels_overlay() if self.layout_options.get('show_cluster_labels') else ''}
-    {self._build_controls_panel(spec_link_html) if self.layout_options.get('show_controls') else ''}
-    {self._build_stats_panel() if self.layout_options.get('show_stats') else ''}
-    {self._build_node_info_panel() if self.layout_options.get('show_node_info') else ''}
+    {self._build_cluster_labels_overlay() if self.layout_options.get("show_cluster_labels") else ""}
+    {self._build_controls_panel(spec_link_html) if self.layout_options.get("show_controls") else ""}
+    {self._build_stats_panel() if self.layout_options.get("show_stats") else ""}
+    {self._build_node_info_panel() if self.layout_options.get("show_node_info") else ""}
 
     <script>
 {js_content}

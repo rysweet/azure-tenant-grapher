@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Optional
 
 from ruamel.yaml import YAML
 
+from .subset import SubsetFilter, SubsetSelector
+from .traverser import TenantGraph
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,6 +97,39 @@ class TransformationEngine:
                 result = self._apply_rule_actions(result, rule.actions)
 
         return result
+
+    def generate_iac(
+        self,
+        graph: TenantGraph,
+        emitter: Any,
+        out_dir: str,
+        subset_filter: Optional[SubsetFilter] = None,
+    ) -> List[str]:
+        """Generate IaC templates from tenant graph.
+
+        Args:
+            graph: The full tenant graph
+            emitter: The IaCEmitter instance (e.g., BicepEmitter)
+            out_dir: Output directory for templates
+            subset_filter: Optional SubsetFilter for resource selection
+
+        Returns:
+            List of output file paths
+        """
+        filtered_graph = graph
+        if subset_filter is not None and SubsetSelector().has_filters(subset_filter):
+            selector = SubsetSelector()
+            filtered_graph = selector.apply(graph, subset_filter)
+            logger.info(f"Filtered graph: {len(filtered_graph.resources)} resources")
+
+        # Apply transformation rules to each resource
+        transformed_resources = []
+        for resource in filtered_graph.resources:
+            transformed = self.apply(resource)
+            transformed_resources.append(transformed)
+        filtered_graph.resources = transformed_resources
+
+        return emitter.emit(filtered_graph, out_dir)
 
     def _matches_rule(self, resource_type: str, rule_pattern: str) -> bool:
         """Check if resource type matches rule pattern.
