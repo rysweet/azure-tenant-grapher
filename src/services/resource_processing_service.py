@@ -49,8 +49,9 @@ class ResourceProcessingService:
             ProcessingStats: Final processing statistics
         """
         processor = self.processor_factory(
-            self.session_manager.get_session(),
+            self.session_manager,
             self.llm_generator,
+            getattr(self.config, "resource_limit", None),
         )
         if max_workers is None:
             max_workers = getattr(self.config, "max_concurrency", 5)
