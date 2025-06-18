@@ -64,17 +64,27 @@ def test_resource_processor() -> None:
     print("\n🧪 Testing resource processor...")
 
     try:
-        # Mock session object for testing
-        class MockSession:
-            def run(self, query: str, **kwargs: Any) -> None:
-                pass
+        # Mock session_manager object for testing
+        class MockSessionManager:
+            def session(self):
+                class MockSession:
+                    def run(self, query: str, **kwargs: Any) -> None:
+                        pass
 
-        session = MockSession()
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, exc_type, exc_val, exc_tb):
+                        pass
+
+                return MockSession()
+
+        session_manager = MockSessionManager()
 
         # Test processor creation
         from src.resource_processor import create_resource_processor
 
-        processor = create_resource_processor(session, None, 5)
+        processor = create_resource_processor(session_manager, None, 5)
         print("✅ Resource processor created successfully")
 
         # Test stats initialization

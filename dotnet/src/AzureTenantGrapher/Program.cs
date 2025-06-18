@@ -1,42 +1,166 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AzureTenantGrapher.Config;
-using AzureTenantGrapher.Container;
+using AzureTenantGrapher.Logging;
+using AzureTenantGrapher.Services;
+using AzureTenantGrapher.Core;
 using AzureTenantGrapher.Graph;
-using AzureTenantGrapher.Processing;
-using AzureTenantGrapher.Llm;
+using AzureTenantGrapher.Container;
+using Microsoft.Extensions.Logging;
 
 namespace AzureTenantGrapher
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static int Main(string[] args)
         {
-            var config = ConfigManager.CreateConfigFromArgs(args);
-            Logging.SetupLogging(config.Logging);
-
-            var containerManager = new Neo4jContainerManager();
-            if (!config.NoContainer)
+            var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (sender, eventArgs) =>
             {
-                containerManager.StartContainer();
-            }
+                Console.WriteLine("Cancellation requested. Exiting...");
+                cts.Cancel();
+                eventArgs.Cancel = true;
+            };
 
-            if (!config.ContainerOnly)
+            try
             {
-                var grapher = new AzureTenantGrapher(config);
-                await grapher.RunAsync();
+                // Parse config from args
+                var config = ConfigManager.CreateConfigFromArgs(args);
 
-                if (config.Visualize)
+                // Determine log level
+                LogLevel logLevel = LogLevel.Information; // Default, or parse from config if available
+
+                // Build logger factory
+                using var loggerFactory = Logging.Logging.CreateLoggerFactory(logLevel);
+                var logger = loggerFactory.CreateLogger<Program>();
+
+                logger.LogInformation("AzureTenantGrapher CLI started.");
+
+                // Handle --containerOnly
+                if (config.GetType().GetProperty("ContainerOnly")?.GetValue(config) as bool? == true)
                 {
-                    var visualizer = new GraphVisualizer(config.Neo4j.Uri, config.Neo4j.Username, config.Neo4j.Password);
-                    visualizer.GenerateHtmlVisualization(config.VisualizationPath);
+                    var containerLogger = loggerFactory.CreateLogger<Neo4jContainerManager>();
+                    var containerManager = new Neo4jContainerManager(containerLogger);
+                    containerManager.StartContainer();
+                    logger.LogInformation("Container-only mode complete.");
+                    Environment.ExitCode = 0;
+                    return 0;
                 }
-            }
 
-            if (!config.NoContainer && config.AutoStopContainer)
-            {
-                containerManager.StopContainer();
+                // Discovery
+                var discoveryLogger = loggerFactory.CreateLogger<AzureDiscoveryService>();
+                var discoveryOptions = ConfigManager.CreateAzureDiscoveryOptions(config);
+                var discoveryService = new AzureDiscoveryService(discoveryLogger, discoveryOptions);
+
+                var subscriptions = Task.Run(() => discoveryService.DiscoverSubscriptionsAsync(cts.Token)).Result;
+                logger.LogInformation("Discovered {Count} subscriptions.", subscriptions.Count);
+
+                var allResources = subscriptions
+                    .SelectMany(sub =>
+                        Task.Run(() => discoveryService.DiscoverResourcesAsync(sub.Id, cts.Token)).Result
+                    ).ToList();
+                logger.LogInformation("Discovered {Count} resources.", allResources.Count);
+
+                // Processing
+                var processingLogger = loggerFactory.CreateLogger<ResourceProcessingService>();
+                var processingOptions = ConfigManager.CreateResourceProcessingOptions(config);
+                var processingService = new ResourceProcessingService(processingLogger, processingOptions);
+
+                var processingStats = Task.Run(() => processingService.ProcessResourcesAsync(allResources, cts.Token)).Result;
+
+                // Spec
+                var specLogger = loggerFactory.CreateLogger<TenantSpecificationService>();
+                var specOptions = ConfigManager.CreateTenantSpecOptions(config);
+                var specService = new TenantSpecificationService(specOptions, specLogger);
+
+                var spec = Task.Run(() => specService.BuildTenantSpecAsync(
+                    subscriptions.Select(s => new Core.SubscriptionInfo { SubscriptionId = s.Id, DisplayName = s.DisplayName }),
+                    allResources.Select(r => new Core.ResourceInfo
+                    {
+                        ResourceId = r.Id,
+                        ResourceType = r.Type,
+                        Location = r.Location,
+                        Tags = r.Tags != null ? r.Tags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) : null
+                    })
+                )).Result;
+
+                spec.Stats = processingStats;
+                spec.GeneratedOnUtc = DateTime.UtcNow;
+
+                // Visualization
+                var visualizeProp = config.GetType().GetProperty("Visualize")?.GetValue(config) as bool?;
+                if (visualizeProp == true)
+                {
+                    var graphLogger = loggerFactory.CreateLogger<GraphVisualizer>();
+                    var graphOptions = ConfigManager.CreateGraphVisualizerOptions(config);
+                    var visualizer = new GraphVisualizer(
+                        graphOptions.Uri ?? "bolt://localhost:7687",
+                        graphOptions.Username ?? "neo4j",
+                        graphOptions.Password ?? "password",
+                        graphLogger
+                    );
+                    // Get visualization path from config, fallback to default
+                    var visPathProp = config.GetType().GetProperty("VisualizationPath") ?? config.GetType().GetProperty("visualizationPath");
+                    var outputPath = visPathProp?.GetValue(config) as string;
+                    if (string.IsNullOrWhiteSpace(outputPath))
+                        outputPath = Path.Combine(Directory.GetCurrentDirectory(), "visualization.html");
+                    Task.Run(() => visualizer.GenerateHtmlVisualizationAsync(outputPath, spec)).Wait();
+                    logger.LogInformation("Visualization generated at {Path}", outputPath);
+                }
+
+                // Print summary
+                PrintSummary(spec);
+
+                logger.LogInformation("Workflow completed successfully.");
+                Environment.ExitCode = 0;
+                return 0;
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("Operation cancelled.");
+                Environment.ExitCode = 2;
+                return 2;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Fatal error: {ex.Message}");
+                Environment.ExitCode = 1;
+                return 1;
+            }
+        }
+
+        static LogLevel ParseLogLevel(string? logLevel)
+        {
+            if (string.IsNullOrWhiteSpace(logLevel))
+                return LogLevel.Information;
+            return logLevel.ToLower() switch
+            {
+                "trace" => LogLevel.Trace,
+                "debug" => LogLevel.Debug,
+                "information" => LogLevel.Information,
+                "info" => LogLevel.Information,
+                "warning" => LogLevel.Warning,
+                "error" => LogLevel.Error,
+                "critical" => LogLevel.Critical,
+                _ => LogLevel.Information
+            };
+        }
+
+        static void PrintSummary(TenantSpecification spec)
+        {
+            Console.WriteLine("==== Azure Tenant Grapher Summary ====");
+            Console.WriteLine($"Tenant ID: {spec.TenantId}");
+            Console.WriteLine($"Subscriptions: {spec.Subscriptions.Count}");
+            Console.WriteLine($"Resources: {spec.Resources.Count}");
+            Console.WriteLine($"Processed: {spec.Stats.Processed}");
+            Console.WriteLine($"Successful: {spec.Stats.Successful}");
+            Console.WriteLine($"Failed: {spec.Stats.Failed}");
+            Console.WriteLine($"LLM-Generated: {spec.Stats.LlmGenerated}");
+            Console.WriteLine($"Generated On (UTC): {spec.GeneratedOnUtc:u}");
+            Console.WriteLine("======================================");
         }
     }
 }

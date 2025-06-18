@@ -28,7 +28,10 @@ def get_neo4j_driver_from_config() -> Driver:
     config = create_neo4j_config_from_env()
     manager = create_session_manager(config.neo4j)
     manager.connect()
-    return manager._driver  # Driver object (protected access intentional)
+    # pyright: ignore[reportPrivateUsage]
+    if manager._driver is None:  # pyright: ignore[reportPrivateUsage]
+        raise RuntimeError("Neo4j driver is not initialized")
+    return manager._driver  # pyright: ignore[reportPrivateUsage]  # Driver object (protected access intentional)
 
 
 def default_timestamped_dir() -> Path:

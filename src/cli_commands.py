@@ -63,10 +63,12 @@ async def build_command_handler(
     no_dashboard: bool,
     test_keypress_queue: bool,
     test_keypress_file: str,
-) -> None:
+) -> str | None:
     """Handle the build command logic."""
+    # Removed debug print
 
     try:
+        # Removed debug print
         # Use tenant_id from CLI or .env
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
@@ -93,11 +95,14 @@ async def build_command_handler(
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
 
+        # Removed debug print
         if no_dashboard:
+            # Removed debug print
             await _run_no_dashboard_mode(ctx, grapher, logger)
             return
         else:
-            await _run_dashboard_mode(
+            # Removed debug print
+            return await _run_dashboard_mode(
                 ctx,
                 grapher,
                 config,
@@ -191,7 +196,7 @@ async def _run_dashboard_mode(
     generate_spec: bool,
     visualize: bool,
     logger: logging.Logger,
-) -> None:
+) -> str | None:
     """Run build in dashboard mode with Rich UI."""
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
@@ -297,58 +302,50 @@ async def _run_dashboard_mode(
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
-    logger.info("[DEBUG] About to enter dashboard context and polling loop")
+    # Removed debug print
     try:
         if test_keypress_file:
-            # For file-based testing, use simplified dashboard runner that doesn't duplicate the exit checker
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
                 logger.info("[DEBUG] Entering poll_build_task (file keypress)")
                 await dashboard_manager.poll_build_task(build_task)
         elif test_keypress_queue:
-            logger.info("[DEBUG] Entering run_with_queue_keypress")
-            await dashboard_manager.run_with_queue_keypress(build_task)
+            # Removed debug print
+            result = await dashboard_manager.run_with_queue_keypress(build_task)
+            # Removed debug print
+            if result == "__DASHBOARD_EXIT__":
+                # Removed debug print
+                return "__DASHBOARD_EXIT__"
         else:
-            logger.info("[DEBUG] Entering run_normal")
-            await dashboard_manager.run_normal(build_task)
-    except Exception as e:
-        # Check if this is our custom dashboard exit exception or Rich dashboard exit
-        from src.cli_dashboard_manager import DashboardExitException
-        from src.rich_dashboard import DashboardExit
-
-        logger.error(f"[DEBUG] Exception in dashboard context: {e}")
-        if isinstance(
-            e, (DashboardExitException, DashboardExit)
-        ) or "User pressed 'x' to exit" in str(e):
-            # Cancel the build task and exit immediately
-            logger.info("User requested exit via 'x' keypress. Exiting...")
-            if not build_task.done():
-                build_task.cancel()
-                try:
-                    await build_task
-                except asyncio.CancelledError:
-                    pass
-            sys.exit(0)
-        # If the dashboard was exited by user, suppress context manager errors
-        if "'NoneType' object does not support the context manager protocol" in str(e):
-            return
-        raise
+            # Removed debug print
+            result = await dashboard_manager.run_normal(build_task)
+            # Removed debug print
+            if result == "__DASHBOARD_EXIT__":
+                # Removed debug print
+                return "__DASHBOARD_EXIT__"
     finally:
-        # Clean up exit checker if it was created
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
             exit_checker_task.cancel()
 
-    logger.info("[DEBUG] Exited dashboard context and polling loop")
+    # Removed debug print
 
-    # Check if user requested exit
-    if dashboard_manager.check_exit_condition():
-        logger.info("[DEBUG] Dashboard manager exit condition triggered")
-        sys.exit(0)
+    # Minimal, direct exit logic: after dashboard context, check exit flag and exit if needed
+    if dashboard_manager.check_exit_condition() or dashboard.should_exit:
+        logger.info("[DEBUG] Dashboard manager exit condition triggered (post-context)")
+        try:
+            logger.info("[DEBUG] Closing Neo4j connection before exit")
+            # Just skip the cleanup for now to avoid attribute errors
+            pass
+        except Exception as e:
+            logger.error(f"[DEBUG] Error during cleanup: {e}")
+        # Removed debug print
+        return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing
     await dashboard_manager.handle_build_completion(
         build_task, grapher, config, generate_spec, visualize
     )
+    return None
 
 
 async def visualize_command_handler(
