@@ -39,7 +39,7 @@ namespace AzureTenantGrapher.Tests
             var mockCredential = new Mock<TokenCredential>();
             var mockArmClient = new Mock<ArmClient>();
             var mockSubscriptionCollection = new Mock<SubscriptionCollection>();
-            
+
             // Create test subscription data
             var testSubscriptions = new List<SubscriptionInfo>
             {
@@ -59,7 +59,7 @@ namespace AzureTenantGrapher.Tests
             Assert.Equal(2, result.Count);
             Assert.Contains(result, s => s.Id == "sub-1" && s.DisplayName == "Test Subscription 1");
             Assert.Contains(result, s => s.Id == "sub-2" && s.DisplayName == "Test Subscription 2");
-            
+
             // Verify cached subscriptions
             Assert.Equal(2, service.CachedSubscriptions.Count);
         }
@@ -70,7 +70,7 @@ namespace AzureTenantGrapher.Tests
             // Arrange
             var testResources = new List<ResourceInfo>
             {
-                new("resource-1", "Test Resource 1", "Microsoft.Storage/storageAccounts", "East US", 
+                new("resource-1", "Test Resource 1", "Microsoft.Storage/storageAccounts", "East US",
                     new Dictionary<string, string> { { "env", "test" } }, "sub-1", "rg-1"),
                 new("resource-2", "Test Resource 2", "Microsoft.Compute/virtualMachines", "West US",
                     new Dictionary<string, string> { { "env", "prod" } }, "sub-1", "rg-2")

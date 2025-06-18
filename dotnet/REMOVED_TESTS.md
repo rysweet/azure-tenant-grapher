@@ -11,7 +11,7 @@ The following test files were temporarily removed during the legacy code cleanup
 
 ## TODO: Recreate tests when porting:
 1. **Config module** - Recreate ConfigManagerTests.cs
-2. **Graph module** - Recreate GraphVisualizerTests.cs  
+2. **Graph module** - Recreate GraphVisualizerTests.cs
 3. **LLM module** - Recreate LlmFactoryTests.cs
 4. **Container module** - Recreate Neo4jContainerManagerTests.cs
 5. **Processing module** - Recreate ProcessingStatsTests.cs
