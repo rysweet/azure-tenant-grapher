@@ -136,7 +136,7 @@ class Neo4jContainerManager:
             logger.exception(f"Error output: {e.stderr}")
             return False
 
-    def wait_for_neo4j_ready(self, timeout: int = 120) -> bool:
+    def wait_for_neo4j_ready(self, timeout: int = 30) -> bool:
         """
         Wait for Neo4j to be ready to accept connections.
 
@@ -147,7 +147,9 @@ class Neo4jContainerManager:
             True if Neo4j is ready, False if timeout
         """
         logger.info("Waiting for Neo4j to be ready...")
+        print("Waiting for Neo4j to be ready...", flush=True)
         start_time = time.time()
+        last_print = start_time
 
         while time.time() - start_time < timeout:
             try:
@@ -161,16 +163,23 @@ class Neo4jContainerManager:
                     if record and record["test"] == 1:
                         driver.close()
                         logger.info("Neo4j is ready!")
+                        print("Neo4j is ready!", flush=True)
                         return True
 
             except ServiceUnavailable:
                 logger.debug("Neo4j not ready yet, waiting...")
+                now = time.time()
+                if now - last_print > 5:
+                    print("Still waiting for Neo4j...", flush=True)
+                    last_print = now
                 time.sleep(2)
             except Exception as e:
                 logger.debug(f"Connection attempt failed: {e}")
+                print(f"Error while waiting for Neo4j: {e}", flush=True)
                 time.sleep(2)
 
-        logger.exception(f"Neo4j did not become ready within {timeout} seconds")
+        logger.error(f"Neo4j did not become ready within {timeout} seconds")
+        print(f"ERROR: Neo4j did not become ready within {timeout} seconds", flush=True)
         return False
 
     def stop_neo4j_container(self) -> bool:

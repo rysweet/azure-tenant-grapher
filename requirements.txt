@@ -40,7 +40,7 @@ ruamel.yaml>=0.18
 
 azure-mgmt-resource>=23.0.0
 
-# Optional: MCP/AutoGen agent (see README for usage)
 mcp-neo4j-cypher
 autogen-ext[mcp]>=0.6.1
 autogen_agentchat
+tiktoken
