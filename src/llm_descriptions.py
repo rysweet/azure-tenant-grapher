@@ -11,6 +11,12 @@ from openai import AzureOpenAI
 
 T = TypeVar("T")
 
+from src.utils.session_manager import retry_neo4j_operation
+
+@retry_neo4j_operation()
+def run_neo4j_query_with_retry(session, query, **params):
+    return session.run(query, **params)
+
 # Load environment variables
 load_dotenv()
 
@@ -559,10 +565,28 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
     # Query Neo4j for node by id, get llm_description and change-indicator fields
     try:
         try:
-            result = session.run(
+            # DEBUG: Print all property keys and types for this node before running the query
+            try:
+                key_result = run_neo4j_query_with_retry(
+                    session,
+                    "MATCH (r:Resource {id: $id}) RETURN keys(r) AS prop_keys",
+                    id=resource_id,
+                )
+                key_record = key_result.single()
+                if key_record and "prop_keys" in key_record:
+                    prop_keys = key_record["prop_keys"]
+                    logger.debug(
+                        f"Resource {resource_id} property keys: {prop_keys}"
+                    )
+            except Exception as prop_exc:
+                logger.warning(f"Could not inspect properties for {resource_id}: {prop_exc}")
+
+            result = run_neo4j_query_with_retry(
+                session,
                 """
                 MATCH (r:Resource {id: $id})
-                RETURN r.llm_description AS desc, coalesce(r.etag, '') AS etag, coalesce(r.last_modified, '') AS last_modified
+                RETURN
+                    r.llm_description AS desc
                 """,
                 id=resource_id,
             )
@@ -601,8 +625,6 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
         try:
             # Defensive: extract fields individually and convert to safe types
             db_desc = record.get("desc")
-            db_etag = record.get("etag")
-            db_last_modified = record.get("last_modified")
 
             # Convert buffer-like objects to string if needed
             def safe_to_str(val: Any) -> Optional[str]:
@@ -629,16 +651,11 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
                     return None
 
             db_desc = safe_to_str(db_desc)
-            db_etag = safe_to_str(db_etag)
-            db_last_modified = safe_to_str(db_last_modified)
         except Exception as rec_exc:
             logger.warning(
                 f"Failed to extract Neo4j record fields for {resource_id}: {rec_exc}; will generate."
             )
             return True
-
-        input_etag = resource_dict.get("etag")
-        input_last_modified = resource_dict.get("last_modified")
 
         # If no description, must generate
         if not db_desc or db_desc.strip() == "" or db_desc.startswith("Azure "):
@@ -647,34 +664,12 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
             )
             return True
 
-        # If etag is present in both and differs, must generate
-        if input_etag and db_etag and input_etag != db_etag:
-            logger.info(f"Generating LLM for {resource_id}: etag changed.")
-            return True
-
-        # If last_modified is present in both and differs, must generate
-        if (
-            input_last_modified
-            and db_last_modified
-            and input_last_modified != db_last_modified
-        ):
-            logger.info(f"Generating LLM for {resource_id}: last_modified changed.")
-            return True
-
-        # If at least one change-indicator is present and all match, skip
-        if (input_etag and db_etag and input_etag == db_etag) or (
-            input_last_modified
-            and db_last_modified
-            and input_last_modified == db_last_modified
-        ):
-            logger.info(
-                f"Skipping LLM for {resource_id}: change-indicator(s) unchanged and description present."
-            )
-            return False
-
-        # If no change-indicator is present, be conservative and generate
-        logger.info(f"Generating LLM for {resource_id}: no change-indicator present.")
-        return True
+        # Since we don't have etag/last_modified in the current schema,
+        # skip LLM generation if a good description already exists
+        logger.info(
+            f"Skipping LLM for {resource_id}: description already present."
+        )
+        return False
 
     except Exception as e:
         import traceback
