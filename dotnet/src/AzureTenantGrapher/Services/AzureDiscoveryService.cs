@@ -32,7 +32,7 @@ namespace AzureTenantGrapher.Services
 
     /// <summary>
     /// Service for discovering Azure subscriptions and resources.
-    /// 
+    ///
     /// This service encapsulates all Azure API interactions for resource discovery,
     /// providing proper error handling, authentication fallback, and clear interfaces
     /// for testing and dependency injection.
@@ -52,7 +52,7 @@ namespace AzureTenantGrapher.Services
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _options = options ?? AzureDiscoveryServiceOptions.CreateDefault();
-            
+
             // Initialize credential with fallback to AzureCliCredential
             _credential = credential ?? CreateCredentialWithFallback();
             _armClient = new ArmClient(_credential);
@@ -76,7 +76,7 @@ namespace AzureTenantGrapher.Services
             var subscriptions = await ExecuteWithRetryAsync(async () =>
             {
                 var subscriptionInfos = new List<SubscriptionInfo>();
-                
+
                 await foreach (var subscription in _armClient.GetSubscriptions().GetAllAsync(cancellationToken: cancellationToken))
                 {
                     var subscriptionData = subscription.Data;
@@ -84,9 +84,9 @@ namespace AzureTenantGrapher.Services
                         subscriptionData.SubscriptionId ?? string.Empty,
                         subscriptionData.DisplayName ?? string.Empty
                     );
-                    
+
                     subscriptionInfos.Add(subscriptionInfo);
-                    _logger.LogInformation("📋 Found subscription: {DisplayName} ({Id})", 
+                    _logger.LogInformation("📋 Found subscription: {DisplayName} ({Id})",
                         subscriptionInfo.DisplayName, subscriptionInfo.Id);
                 }
 
@@ -95,7 +95,7 @@ namespace AzureTenantGrapher.Services
 
             _cachedSubscriptions.Clear();
             _cachedSubscriptions.AddRange(subscriptions);
-            
+
             _logger.LogInformation("✅ Discovered {Count} subscriptions total", subscriptions.Count);
             return subscriptions;
         }
@@ -123,12 +123,12 @@ namespace AzureTenantGrapher.Services
                 }
 
                 var resourceInfos = new List<ResourceInfo>();
-                
+
                 await foreach (var resource in subscription.GetGenericResourcesAsync(cancellationToken: cancellationToken))
                 {
                     var resourceData = resource.Data;
                     var parsedInfo = ParseResourceId(resourceData.Id);
-                    
+
                     var resourceInfo = new ResourceInfo(
                         resourceData.Id?.ToString() ?? string.Empty,
                         resourceData.Name ?? string.Empty,
@@ -138,7 +138,7 @@ namespace AzureTenantGrapher.Services
                         parsedInfo.SubscriptionId ?? subscriptionId,
                         parsedInfo.ResourceGroup
                     );
-                    
+
                     resourceInfos.Add(resourceInfo);
                 }
 
@@ -185,12 +185,12 @@ namespace AzureTenantGrapher.Services
         }
 
         private async Task<T> ExecuteWithRetryAsync<T>(
-            Func<Task<T>> operation, 
-            string operationName, 
+            Func<Task<T>> operation,
+            string operationName,
             CancellationToken cancellationToken = default)
         {
             var delay = _options.InitialRetryDelayMs;
-            
+
             for (int attempt = 1; attempt <= _options.MaxRetries; attempt++)
             {
                 try
@@ -253,7 +253,7 @@ namespace AzureTenantGrapher.Services
                 // Azure resource IDs follow the pattern:
                 // /subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/{provider}/{type}/{name}
                 var segments = resourceIdString.Trim('/').Split('/');
-                
+
                 string? subscriptionId = null;
                 string? resourceGroup = null;
 
