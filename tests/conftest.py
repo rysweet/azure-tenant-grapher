@@ -2,6 +2,31 @@
 Test configuration and shared utilities for Azure Tenant Grapher tests.
 """
 
+import pytest
+from src.container_manager import Neo4jContainerManager
+
+@pytest.fixture(scope="session")
+def neo4j_container():
+    """
+    Session-scoped fixture to provide a running Neo4j container for integration tests.
+    Yields (bolt_uri, user, password).
+    Skips tests if Docker or Compose is unavailable or Neo4j cannot be started.
+    """
+    manager = Neo4jContainerManager()
+    if not manager.is_docker_available():
+        pytest.skip("Docker unavailable for Neo4j integration tests")
+    if not manager.is_compose_available():
+        pytest.skip("Docker Compose unavailable for Neo4j integration tests")
+    # Always attempt to set up Neo4j (will start or wait for readiness)
+    started = False
+    if not manager.setup_neo4j():
+        logs = manager.get_container_logs() or "(no logs available)"
+        pytest.skip(f"Could not start Neo4j container for integration tests.\nContainer logs:\n{logs}")
+    # If container was not running before, mark as started for teardown
+    started = not manager.is_neo4j_container_running()
+    yield manager.neo4j_uri, manager.neo4j_user, manager.neo4j_password
+    if started:
+        manager.stop_neo4j_container()
 import os
 import sys
 from typing import Any, Dict, List
