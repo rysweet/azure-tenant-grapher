@@ -110,6 +110,24 @@ namespace AzureTenantGrapher.Config
                 UseExponentialBackoff = true
             };
         }
+        /// <summary>
+        /// Creates default Resource Processing Service options from configuration.
+        /// </summary>
+        /// <param name="config">The main configuration object.</param>
+        /// <returns>ResourceProcessingServiceOptions with values from config and environment.</returns>
+        public static AzureTenantGrapher.Services.ResourceProcessingServiceOptions CreateResourceProcessingOptions(AzureTenantGrapherConfig config)
+        {
+            var options = new AzureTenantGrapher.Services.ResourceProcessingServiceOptions
+            {
+                BatchSize = config.Processing.BatchSize,
+                MaxRetries = config.Processing.MaxRetries,
+                // Allow override via env var, else default to 4
+                MaxDegreeOfParallelism = int.TryParse(Environment.GetEnvironmentVariable("RESOURCE_PROCESSING_MAX_DOP"), out var dop) ? dop : 4,
+                InitialRetryDelayMs = 500,
+                UseExponentialBackoff = true
+            };
+            return options;
+        }
     }
 }
 
