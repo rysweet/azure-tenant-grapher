@@ -1,55 +1,139 @@
-from unittest.mock import AsyncMock, patch
-
+import sys
+import subprocess
+import time
 import pytest
 
 pytestmark = pytest.mark.asyncio
 
+def has_autogen_ext_and_openai():
+    try:
+        import autogen_ext.tools.mcp
+        import autogen_ext.models.openai
+        import autogen_agentchat.agents
+        import autogen_agentchat.ui
+        import openai
+        return True
+    except ImportError:
+        return False
 
-import sys
-import types
+@pytest.mark.skipif(
+    not has_autogen_ext_and_openai(), reason="autogen_ext or openai not installed"
+)
+def test_agent_mode_cli_graph_and_non_graph(tmp_path):
+    """
+    Launch agent-mode in a subprocess, send graph and non-graph questions,
+    and assert correct responses.
+    """
+    import os
 
-async def test_agent_mode_refusal_logic():
-    # Ensure dummy autogen_ext and autogen_ext.mcp modules exist for patching
-    if "autogen_ext" not in sys.modules:
-        sys.modules["autogen_ext"] = types.ModuleType("autogen_ext")
-    if "autogen_ext.mcp" not in sys.modules:
-        sys.modules["autogen_ext.mcp"] = types.ModuleType("autogen_ext.mcp")
-    if "autogen" not in sys.modules:
-        sys.modules["autogen"] = types.ModuleType("autogen")
-    if "autogen.agentchat" not in sys.modules:
-        sys.modules["autogen.agentchat"] = types.ModuleType("autogen.agentchat")
+    # Start the agent-mode subprocess
+    proc = subprocess.Popen(
+        [sys.executable, "scripts/cli.py", "agent-mode"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+    )
 
-    # Add dummy attributes to allow patching
-    import types as _types
-    sys.modules["autogen_ext.mcp"].McpWorkbench = _types.SimpleNamespace()
-    sys.modules["autogen_ext.mcp"].StdioServerParams = _types.SimpleNamespace()
-    sys.modules["autogen.agentchat"].AssistantAgent = _types.SimpleNamespace()
+    try:
+        # Wait for agent to be ready
+        ready = False
+        for _ in range(30):
+            line = proc.stdout.readline()
+            if "MCP Agent is ready" in line:
+                ready = True
+                break
+        assert ready, "Agent did not start in time"
 
-    # Patch the actual import locations used in src.agent_mode
-    with patch("autogen_ext.mcp.McpWorkbench"), patch(
-        "autogen_ext.mcp.StdioServerParams"
-    ), patch("autogen.agentchat.AssistantAgent") as MockAgent:
-        # Setup agent with refusal logic
-        agent_instance = MockAgent.return_value
+        # Send a non-graph question
+        proc.stdin.write("What is the weather today?\n")
+        proc.stdin.flush()
+        time.sleep(2)
+        output = ""
+        for _ in range(10):
+            line = proc.stdout.readline()
+            output += line
+            if "Assistant:" in line:
+                break
+        assert (
+            "only answer questions about the Azure graph" in output
+            or "refuse" in output.lower()
+        ), f"Agent did not refuse non-graph question: {output}"
 
-        async def fake_a_generate_reply(messages, **kwargs):
-            last = messages[-1]["content"] if messages else ""
-            if "graph" not in last and "tenant" not in last:
-                return "Sorry, I can only answer questions about the Azure graph or tenant data."
-            return "Graph answer"
+        # Send a graph question
+        proc.stdin.write("How many nodes are in the graph?\n")
+        proc.stdin.flush()
+        time.sleep(2)
+        output2 = ""
+        for _ in range(10):
+            line = proc.stdout.readline()
+            output2 += line
+            if "Assistant:" in line:
+                break
+        assert (
+            "Sorry, I can only answer" not in output2
+        ), f"Agent refused a valid graph question: {output2}"
 
-        agent_instance.a_generate_reply = AsyncMock(side_effect=fake_a_generate_reply)
+        # Exit agent
+        proc.stdin.write("exit\n")
+        proc.stdin.flush()
+        time.sleep(1)
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            proc.kill()
 
-        # Simulate agent_mode chat loop logic
-        user_message = "What is the weather today?"
-        response = await agent_instance.a_generate_reply(
-            [{"role": "user", "content": user_message}]
+def is_autogen_agentchat_installed():
+    try:
+        import autogen_agentchat
+        return True
+    except ImportError:
+        return False
+
+@pytest.mark.skipif(
+    not is_autogen_agentchat_installed(),
+    reason="autogen_agentchat not installed at all; cannot test missing-dependency error",
+)
+def test_agent_mode_missing_autogen_agentchat(monkeypatch):
+    """
+    Launch agent-mode in a subprocess with autogen_agentchat missing,
+    assert that the error message is printed and exit code is nonzero.
+    """
+    import os
+    import tempfile
+    import shutil
+
+    # Create a temp empty directory to use as PYTHONPATH
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Remove autogen_agentchat from sys.modules in subprocess by using a clean PYTHONPATH
+        env = {**os.environ, "PYTHONPATH": temp_dir, "PYTHONUNBUFFERED": "1"}
+        proc = subprocess.Popen(
+            [sys.executable, "scripts/cli.py", "agent-mode"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            env=env,
         )
-        assert "only answer questions about the Azure graph" in response
-
-        # Should answer graph question
-        graph_message = "How many nodes are in the graph?"
-        response2 = await agent_instance.a_generate_reply(
-            [{"role": "user", "content": graph_message}]
-        )
-        assert response2 == "Graph answer"
+        out, err = proc.communicate(timeout=15)
+        # The error message should be in stderr or stdout
+        combined = (out or "") + (err or "")
+        # Accept any missing required dependency for agent-mode, not just autogen_agentchat
+        missing_dep_msgs = [
+            "No module named 'autogen_agentchat'",
+            "No module named 'tiktoken'",
+            "No module named 'autogen_ext'",
+            "No module named 'openai'",
+        ]
+        found_missing = any(msg in combined for msg in missing_dep_msgs)
+        assert (
+            "Failed to start agent mode" in combined and found_missing
+        ), f"Did not find expected missing dependency error. Output:\n{combined}"
+        assert proc.returncode != 0, f"Process exited with code {proc.returncode}, expected nonzero"
+    finally:
+        shutil.rmtree(temp_dir)
