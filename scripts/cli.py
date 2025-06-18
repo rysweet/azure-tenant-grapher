@@ -18,6 +18,7 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_dashboard_manager import DashboardExitException
+
 # Set Azure logging levels early
 for name in [
     "azure",

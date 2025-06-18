@@ -103,10 +103,10 @@ class TestConcurrentDatabaseAccess:
 
                     # Test resource_exists
                     resource_state.resource_exists(resource_id)
-                    
+
                     # Test has_llm_description
                     resource_state.has_llm_description(resource_id)
-                    
+
                     # Test get_processing_metadata
                     resource_state.get_processing_metadata(resource_id)
 
