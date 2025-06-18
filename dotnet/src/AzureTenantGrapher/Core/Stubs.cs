@@ -142,35 +142,24 @@ namespace AzureTenantGrapher.Config
             IncludeLocations = true
         };
     }
-}
-}
-
-namespace AzureTenantGrapher.Container
-{
-    public class Neo4jContainerManager
-    {
-        public void SetupNeo4j(int retries)
+        /// <summary>
+        /// Creates default Graph Visualizer options from configuration.
+        /// </summary>
+        /// <param name="config">The main configuration object.</param>
+        /// <returns>GraphVisualizerOptions with values from config.Neo4j.</returns>
+        public static AzureTenantGrapher.Graph.GraphVisualizerOptions CreateGraphVisualizerOptions(AzureTenantGrapherConfig config)
         {
-            throw new InvalidOperationException("Docker not installed.");
+            return new AzureTenantGrapher.Graph.GraphVisualizerOptions
+            {
+                Uri = config.Neo4j.Uri,
+                Username = config.Neo4j.Username,
+                Password = config.Neo4j.Password
+            };
         }
-
-        public void StartContainer() { }
-
-        public void StopContainer() { }
     }
 }
 
-namespace AzureTenantGrapher.Graph
-{
-    public class GraphVisualizer
-    {
-        public GraphVisualizer(string uri, string username, string password)
-        {
-        }
 
-        public void GenerateHtmlVisualization(string path) { }
-    }
-}
 
 namespace AzureTenantGrapher.Llm
 {
