@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Azure Tenant Grapher** is a Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The project features modular architecture, comprehensive testing, interactive Rich CLI dashboard, 3D visualization capabilities, anonymized tenant specifications, and optional AI-powered resource descriptions. A complementary .NET implementation is also available for enterprise scenarios.
+**Azure Tenant Grapher** is a Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The project features modular architecture, comprehensive testing, interactive Rich CLI dashboard, 3D visualization capabilities, Infrastructure-as-Code generation (Terraform, ARM, Bicep), anonymized tenant specifications, automated CLI tool management, and optional AI-powered resource descriptions. A complementary .NET implementation is also available for enterprise scenarios.
 
 ## Core Architecture
 
@@ -25,7 +25,20 @@ azure-tenant-grapher/
 │   ├── services/                # Service layer
 │   │   └── azure_discovery_service.py # Azure API abstraction
 │   ├── utils/                   # Utility modules
-│   │   └── session_manager.py  # Session management utilities
+│   │   ├── session_manager.py  # Session management utilities
+│   │   └── cli_installer.py    # CLI tool installation and validation
+│   ├── iac/                     # Infrastructure-as-Code generation
+│   │   ├── __init__.py          # IaC package initialization
+│   │   ├── cli_handler.py       # IaC CLI command coordination
+│   │   ├── engine.py            # Transformation engine with rules support
+│   │   ├── traverser.py         # Graph traversal and resource extraction
+│   │   ├── subset.py            # Resource subset filtering
+│   │   └── emitters/            # IaC format emitters
+│   │       ├── __init__.py      # Emitter registry
+│   │       ├── base.py          # Base emitter interface
+│   │       ├── terraform_emitter.py # Terraform .tf generation
+│   │       ├── arm_emitter.py   # ARM JSON template generation
+│   │       └── bicep_emitter.py # Bicep template generation
 │   ├── visualization/           # Visualization components
 │   │   ├── html_template_builder.py # Main template coordinator
 │   │   ├── css_style_builder.py     # CSS generation
@@ -35,7 +48,13 @@ azure-tenant-grapher/
 │       └── scrollable_log_widget.py # Scrollable log display
 ├── tests/                        # Comprehensive test suite
 │   ├── conftest.py              # Test fixtures and configuration
-│   ├── test_*.py                # Module-specific test files (150+ tests)
+│   ├── test_*.py                # Module-specific test files (200+ tests)
+│   └── iac/                     # Infrastructure-as-Code test suite
+│       ├── test_engine.py       # Transformation engine tests
+│       ├── test_traverser.py    # Graph traversal tests
+│       ├── test_*_emitter.py    # Format-specific emitter tests
+│       ├── test_*_validate.py   # Template validation tests
+│       └── test_cli_*.py        # CLI integration tests
 ├── scripts/                      # Utility scripts
 │   ├── cli.py                   # Enhanced CLI wrapper with async support
 │   ├── demo_enhanced_features.py # Feature demonstration
@@ -183,6 +202,35 @@ azure-tenant-grapher/
   - Theme support and customization
   - Template validation and error handling
 
+#### Infrastructure-as-Code Components (src/iac/)
+- **Purpose**: Graph-to-IaC transformation with modular emitter architecture
+- **Classes**:
+  - `GraphTraverser`: Neo4j graph traversal and resource extraction
+  - `TransformationEngine`: Resource transformation with YAML rules support
+  - `SubsetFilter`: Flexible filtering system for resource selection
+  - `TerraformEmitter`: Terraform .tf file generation with azurerm provider
+  - `ArmEmitter`: Azure Resource Manager JSON template generation
+  - `BicepEmitter`: Azure Bicep template generation with deployment scripts
+  - `CLIHandler`: Command-line interface coordination for IaC generation
+- **Features**:
+  - Modular emitter architecture for extensibility
+  - YAML-based transformation rules for name, region, and tag modifications
+  - Subset filtering with type, ID, and label-based selection
+  - Dependency preservation and relationship mapping
+  - Template validation and syntax checking
+  - Automated deployment script generation
+
+#### CLI Tool Management (src/utils/)
+- **Purpose**: Automated CLI tool installation and validation system
+- **Classes**:
+  - `CLIInstaller`: Cross-platform tool installation coordinator
+  - Tool registry with platform-specific installation commands
+- **Features**:
+  - Automatic tool detection and installation
+  - Platform-specific package manager integration
+  - Interactive installation prompts and validation
+  - Doctor command for comprehensive system checking
+
 ## Key Features
 
 ### 1. Azure Resource Discovery
@@ -247,13 +295,40 @@ azure-tenant-grapher/
   - Category-based resource organization
   - Portable documentation suitable for compliance and architecture reviews
 
-### 7. Modular Architecture
+### 7. Infrastructure-as-Code Generation
+- **Technology**: Graph-to-IaC transformation engine with modular emitters
+- **Supported Formats**:
+  - **Terraform**: .tf files with azurerm provider configuration
+  - **Azure Resource Manager (ARM)**: .json template files with parameters
+  - **Azure Bicep**: .bicep files with module structure and deployment scripts
+- **Features**:
+  - Complete tenant replication from graph data
+  - Subset filtering for partial infrastructure recreation
+  - YAML-based transformation rules for name, region, and tag modifications
+  - Resource group retargeting and consolidation
+  - Dependency preservation and relationship mapping
+  - Ready-to-deploy templates with automated deployment scripts
+  - Dry-run validation and template syntax checking
+  - CLI tool auto-installation and validation
+
+### 8. CLI Tool Management
+- **Technology**: Automated tool detection and installation system
+- **Features**:
+  - Cross-platform CLI tool installation (Azure CLI, Terraform, Bicep)
+  - Interactive installation prompts with platform-specific instructions
+  - Tool registry with installation commands for Windows, macOS, and Linux
+  - Version validation and compatibility checking
+  - Doctor command for comprehensive system validation
+  - Package manager integration (brew, choco, apt, yum)
+
+### 9. Modular Architecture
 - **Design Pattern**: Dependency injection with configuration-based initialization
-- **Testing**: 150+ test cases with comprehensive coverage
+- **Testing**: 150+ test cases with comprehensive coverage including IaC generation
 - **Error Handling**: Custom exception hierarchy with detailed context
 - **Async Support**: Full async/await implementation for Azure API calls
 - **Batch Processing**: Eager thread pool processing with adaptive throttling
 - **Service Layer**: Separated Azure API interactions for better testability
+- **Extensibility**: Plugin-based emitter system for additional IaC formats
 
 ## Command Line Interface
 
@@ -270,9 +345,11 @@ azure-tenant-grapher test        # Test mode with limited resources
 azure-tenant-grapher visualize   # Generate 3D visualization from existing data
 azure-tenant-grapher spec        # Generate AI-powered tenant specification
 azure-tenant-grapher generate-spec # Generate anonymized Markdown specification
+azure-tenant-grapher generate-iac  # Generate Infrastructure-as-Code templates
 azure-tenant-grapher progress    # Check processing progress
 azure-tenant-grapher config      # Show configuration template
 azure-tenant-grapher container   # Container management subcommands
+azure-tenant-grapher doctor      # Check and install required CLI tools
 ```
 
 ### CLI Arguments for Build Command
@@ -296,19 +373,52 @@ azure-tenant-grapher container   # Container management subcommands
 --test-keypress-file PATH     # File-based keypress simulation
 ```
 
+### CLI Arguments for Generate-IaC Command
+```bash
+# Format Selection
+--format TEXT                  # Target IaC format: terraform, arm, bicep (default: terraform)
+
+# Output Configuration
+--output PATH                  # Output directory for generated templates
+--dest-rg TEXT                # Target resource group name for deployment
+--location TEXT               # Target Azure region for resources
+
+# Filtering and Transformation
+--subset-filter TEXT          # Subset filter (e.g., "types=Microsoft.Storage/*")
+--resource-filters TEXT       # Comma-separated resource type filters
+--rules-file PATH             # YAML transformation rules file
+
+# Validation
+--dry-run                     # Validate inputs without generating templates
+```
+
 ### Usage Examples
 ```bash
 # Basic usage with auto-container management
-python main.py --tenant-id your-tenant-id-here
+azure-tenant-grapher build --tenant-id your-tenant-id-here
 
 # Generate with visualization
-python main.py --tenant-id your-tenant-id --visualize
+azure-tenant-grapher build --tenant-id your-tenant-id --visualize
 
 # Test mode with limited resources
-python main.py --tenant-id your-tenant-id --resource-limit 50
+azure-tenant-grapher test --limit 50
 
-# Container management only
-python main.py --tenant-id dummy --container-only
+# Generate Bicep IaC for storage resources
+azure-tenant-grapher generate-iac \
+  --format bicep \
+  --subset-filter "types=Microsoft.Storage/*" \
+  --dest-rg "replica-rg" \
+  --location "East US" \
+  --output ./my-deployment
+
+# Generate complete Terraform infrastructure
+azure-tenant-grapher generate-iac \
+  --format terraform \
+  --rules-file ./transformation-rules.yaml \
+  --output ./terraform-out
+
+# Validate IaC generation without creating files
+azure-tenant-grapher generate-iac --dry-run --format arm
 ```
 
 ## Configuration System
@@ -375,11 +485,13 @@ AZTG_SPEC_TEMPLATE_STYLE=comprehensive
 
 ### Testing Framework
 - **Framework**: Pytest with async support and comprehensive test suite
-- **Coverage**: 150+ tests with extensive coverage including CLI and dashboard integration
+- **Coverage**: 200+ tests with extensive coverage including CLI, dashboard, and IaC generation
 - **Mocking**: Comprehensive mocks for Azure SDK, Neo4j, and external dependencies
-- **Fixtures**: Reusable test fixtures in conftest.py
-- **Markers**: Unit, integration, slow, and timeout test markers
+- **Fixtures**: Reusable test fixtures in conftest.py for graph data and IaC testing
+- **Markers**: Unit, integration, slow, timeout, and IaC-specific test markers
 - **Async Testing**: Full async test support with pytest-asyncio
+- **IaC Testing**: Template validation, emitter testing, and CLI integration tests
+- **Tool Testing**: CLI installer validation and cross-platform compatibility tests
 
 ## Docker Configuration
 
@@ -488,10 +600,21 @@ services:
 - **Custom Templates**: HTML template customization for branding
 - **Additional Libraries**: Support for other graph visualization libraries
 
+### Infrastructure-as-Code Extensions
+- **Custom Emitters**: Base emitter interface for additional IaC formats
+- **Transformation Rules**: Extensible YAML-based rule system for custom transformations
+- **Template Validation**: Pluggable validation system for format-specific checks
+- **Deployment Integration**: Custom deployment script generation for different platforms
+
 ### AI Integration Extensions
 - **Custom Models**: Support for different AI models and providers
 - **Custom Prompts**: Configurable prompt templates
 - **Analysis Workflows**: Custom AI-powered analysis workflows
+
+### CLI Tool Extensions
+- **Tool Registry**: Extensible registry for additional CLI tools
+- **Installation Handlers**: Custom installation logic for new tools
+- **Platform Support**: Cross-platform installation strategy extensions
 
 ## Deployment Scenarios
 
@@ -525,7 +648,7 @@ The project includes both Python and .NET implementations:
 - **Features**: Core functionality with enterprise-focused configuration and logging
 - **Use Cases**: Enterprise integration, Windows environments, and corporate deployment
 
-This specification provides complete guidance for understanding and extending the Azure Tenant Grapher project, including all architectural decisions, implementation details, configuration requirements, and extensibility patterns established through the development process.
+This specification provides complete guidance for understanding and extending the Azure Tenant Grapher project, including all architectural decisions, implementation details, configuration requirements, Infrastructure-as-Code generation capabilities, CLI tool management, and extensibility patterns established through the development process.
 
 ---
 

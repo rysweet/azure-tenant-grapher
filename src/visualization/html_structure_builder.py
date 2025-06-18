@@ -84,6 +84,14 @@ class HtmlStructureBuilder:
     <div class="controls">
         <h3>Azure Graph Controls</h3>
 
+        <!-- Move zoom and auto-rotate controls above filters -->
+        <div class="button-group">
+            <button id="zoomInBtn" class="control-btn">+ Zoom</button>
+            <button id="zoomOutBtn" class="control-btn">- Zoom</button>
+        </div>
+        <!-- auto-rotation is disabled by default -->
+        <button id="toggleRotateBtn" class="control-btn">Enable Auto-Rotate</button>
+
         <input type="text" id="searchBox" class="search-box" placeholder="Search nodes..." />
 
         <div class="filter-section">
@@ -97,14 +105,6 @@ class HtmlStructureBuilder:
         </div>
 
         <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
-
-        <!-- auto-rotation is disabled by default -->
-        <button id="toggleRotateBtn" class="control-btn">Enable Auto-Rotate</button>
-
-        <div class="button-group">
-            <button id="zoomInBtn" class="control-btn">+ Zoom</button>
-            <button id="zoomOutBtn" class="control-btn">- Zoom</button>
-        </div>
 
         {spec_link_html}
     </div>"""

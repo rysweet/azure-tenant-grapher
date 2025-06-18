@@ -1,10 +1,3 @@
-"""
-Configuration Management for Azure Tenant Grapher
-
-This module provides centralized configuration management with validation,
-environment variable handling, and configuration validation.
-"""
-
 import logging
 import os
 
@@ -16,6 +9,29 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+"""
+Configuration Management for Azure Tenant Grapher
+
+This module provides centralized configuration management with validation,
+environment variable handling, and configuration validation.
+"""
+
+
+def _set_azure_http_log_level(log_level: str) -> None:
+    http_loggers = [
+        "azure.core.pipeline.policies.http_logging_policy",
+        "azure.core.pipeline.policies.HttpLoggingPolicy",
+        "msrest",
+        "azure",
+        "urllib3",
+        "http.client",
+    ]
+    for name in http_loggers:
+        logging.getLogger(name).setLevel(
+            logging.DEBUG if log_level == "DEBUG" else logging.WARNING
+        )
+
 
 logger = logging.getLogger(__name__)
 
@@ -322,11 +338,8 @@ class AzureTenantGrapherConfig:
 def setup_logging(config: LoggingConfig) -> None:
     """
     Setup logging configuration based on config.
-
-    Args:
-        config: Logging configuration
     """
-    import logging
+    _set_azure_http_log_level(config.level.upper())
 
     try:
         import colorlog

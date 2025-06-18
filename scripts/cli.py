@@ -8,6 +8,7 @@ configuration validation, and progress tracking.
 
 import asyncio
 import functools
+import logging
 import os
 import sys
 from typing import Any, Callable, Coroutine, Optional
@@ -17,6 +18,19 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_dashboard_manager import DashboardExitException
+# Set Azure logging levels early
+for name in [
+    "azure",
+    "azure.core",
+    "azure.core.pipeline",
+    "azure.core.pipeline.policies",
+    "azure.core.pipeline.policies.http_logging_policy",
+    "azure.core.pipeline.policies.HttpLoggingPolicy",
+    "msrest",
+    "urllib3",
+    "http.client",
+]:
+    logging.getLogger(name).setLevel(logging.WARNING)
 
 
 class GreenInfoRichHandler(RichHandler):
@@ -68,11 +82,12 @@ try:
     from src.utils.cli_installer import install_tool, is_tool_installed
 except ImportError:
 
-    def is_tool_installed(name):
+    def is_tool_installed(name: str) -> bool:
         return False
 
-    def install_tool(tool):
+    def install_tool(tool: str) -> bool:
         print(f"Install helper unavailable. Please install {tool} manually.")
+        return False
 
 
 # (Removed duplicate import of DashboardExitException)
@@ -371,6 +386,18 @@ def generate_spec(
     "--resource-filters",
     help="Resource type filters (comma-separated)",
 )
+@click.option(
+    "--subset-filter",
+    help="Subset filter string (e.g., 'types=Microsoft.Storage/*;nodeIds=abc123')",
+)
+@click.option(
+    "--dest-rg",
+    help="Target resource group name for Bicep module deployment",
+)
+@click.option(
+    "--location",
+    help="Target location/region for resource deployment",
+)
 @click.pass_context
 @async_command
 async def generate_iac(
@@ -381,6 +408,9 @@ async def generate_iac(
     rules_file: Optional[str],
     dry_run: bool,
     resource_filters: Optional[str],
+    subset_filter: Optional[str],
+    dest_rg: Optional[str],
+    location: Optional[str],
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
     from src.utils.cli_installer import ensure_tool
@@ -398,6 +428,9 @@ async def generate_iac(
         rules_file=rules_file,
         dry_run=dry_run,
         resource_filters=resource_filters,
+        subset_filter=subset_filter,
+        dest_rg=dest_rg,
+        location=location,
     )
 
 

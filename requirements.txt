@@ -37,3 +37,5 @@ pytest-mock>=3.11.0
 
 rich>=13.0.0
 ruamel.yaml>=0.18
+
+azure-mgmt-resource>=23.0.0
