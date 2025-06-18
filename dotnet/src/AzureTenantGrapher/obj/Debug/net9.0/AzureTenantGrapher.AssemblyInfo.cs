@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AzureTenantGrapher")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+276f9a2ee252e3e515aa98b6322314561c1d0701")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3314fc135a1b73715592ff4d736da4e3e42438bc")]
 [assembly: System.Reflection.AssemblyProductAttribute("AzureTenantGrapher")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AzureTenantGrapher")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
