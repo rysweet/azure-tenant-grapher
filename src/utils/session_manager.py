@@ -7,15 +7,80 @@ error handling and resource cleanup.
 """
 
 import logging
+import time
 from contextlib import contextmanager
-from typing import Any, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 from neo4j import Driver, GraphDatabase, Session
+from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
 
 from ..config_manager import Neo4jConfig
 from ..exceptions import Neo4jConnectionError, wrap_neo4j_exception
 
 logger = logging.getLogger(__name__)
+
+
+def retry_neo4j_operation(
+    max_retries: int = 3, initial_delay: float = 1.0, backoff: float = 2.0
+) -> Any:
+    """
+    Decorator to retry a Neo4j operation on connection errors.
+    Note: This decorator is for functions that take a session as first parameter.
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            delay = initial_delay
+            last_exception = None
+
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except (
+                    ServiceUnavailable,
+                    SessionExpired,
+                    OSError,
+                    TimeoutError,
+                    BufferError,
+                    Neo4jError,
+                ) as e:
+                    last_exception = e
+                    logger.warning(
+                        f"Neo4j connection error ({type(e).__name__}): {e}. "
+                        f"Retrying {attempt+1}/{max_retries} after {delay}s..."
+                    )
+                    time.sleep(delay)
+                    delay *= backoff
+                except Exception as e:
+                    # Catch any other Neo4j-related errors that might be protocol errors
+                    error_msg = str(e)
+                    if any(
+                        marker in error_msg
+                        for marker in [
+                            "Expected structure, found marker",
+                            "PackStream",
+                            "protocol",
+                        ]
+                    ):
+                        last_exception = e
+                        logger.warning(
+                            f"Neo4j protocol error ({type(e).__name__}): {e}. "
+                            f"Retrying {attempt+1}/{max_retries} after {delay}s..."
+                        )
+                        time.sleep(delay)
+                        delay *= backoff
+                    else:
+                        # Re-raise non-retryable exceptions immediately
+                        raise
+
+            # If we get here, all retries failed
+            raise ServiceUnavailable(
+                f"Max retries ({max_retries}) exceeded for Neo4j operation"
+            ) from last_exception
+
+        return wrapper
+
+    return decorator
 
 
 class Neo4jSessionManager:

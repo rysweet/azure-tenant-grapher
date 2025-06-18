@@ -55,36 +55,23 @@ def install_tool(tool: str) -> bool:
     Returns True if install attempted, False if declined or not possible.
     """
     if tool not in TOOL_REGISTRY:
-        print(f"Tool '{tool}' is not registered. Please register it before use.")
-        print("Run `atg doctor` for more details.")
         return False
     tool_obj = TOOL_REGISTRY[tool]
     installer = detect_installer()
     if installer is None:
-        print(
-            f"No supported package manager detected. Please install '{tool}' manually."
-        )
-        print("Run `atg doctor` for more details.")
         return False
     if installer not in tool_obj.installers:
-        print(f"No install command available for {tool} with {installer}.")
-        print("Run `atg doctor` for more details.")
         return False
     cmd = tool_obj.installers[installer]
-    print(f"Install command for {tool}:")
-    print(f"  {cmd}")
     proceed = input("Proceed? [y/N] ").strip().lower()
     if proceed == "y":
         try:
             subprocess.run(cmd, shell=True, check=True)
-            print(f"{tool} installation attempted. Please verify installation.")
-        except subprocess.CalledProcessError as e:
-            print(f"Installation failed: {e}")
-        print("Run `atg doctor` for more details.")
+            pass
+        except subprocess.CalledProcessError:
+            pass
         return True
     else:
-        print("Installation cancelled.")
-        print("Run `atg doctor` for more details.")
         return False
 
 
@@ -101,12 +88,10 @@ def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
     if auto_prompt:
         installed = install_tool(tool)
         if not installed:
-            print(f"Aborting: '{tool}' is required but was not installed.")
             import sys
 
             sys.exit(1)
     else:
-        print(f"Required tool '{tool}' is not installed.")
         import sys
 
         sys.exit(1)
