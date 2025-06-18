@@ -1,3 +1,6 @@
+import pytest
+pytest.importorskip("readchar", reason="readchar not installed")
+
 import asyncio
 import io
 import logging
@@ -10,7 +13,6 @@ import time
 from contextlib import contextmanager
 from typing import Any, Optional
 
-import pytest
 from click.testing import CliRunner
 from neo4j import GraphDatabase
 from scripts.cli import cli

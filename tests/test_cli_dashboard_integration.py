@@ -1,3 +1,6 @@
+import pytest, importlib
+pytest.importorskip("readchar", reason="readchar not installed")
+
 import subprocess
 import sys
 import time
