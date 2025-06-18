@@ -18,7 +18,7 @@ class BicepEmitter(IaCEmitter):
     def emit(
         self,
         graph: TenantGraph,
-        out_dir,
+        out_dir: Path,
         rg_name: Optional[str] = None,
         rg_location: Optional[str] = None,
     ) -> List[Path]:
@@ -129,7 +129,7 @@ class BicepEmitter(IaCEmitter):
         return "\n".join(lines)
 
     def _emit_resource_block(
-        self, resource: dict, in_module: bool = False
+        self, resource: dict[str, Any], in_module: bool = False
     ) -> List[str]:
         """Emit a single Bicep resource block."""
         az_type = resource.get("type", "")

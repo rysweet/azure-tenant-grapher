@@ -101,6 +101,9 @@ class ArmEmitter(IaCEmitter):
             if "tags" in resource:
                 arm_resource["tags"] = resource["tags"]
 
+            assert isinstance(
+                arm_template["resources"], list
+            ), "arm_template['resources'] must be a list"
             arm_template["resources"].append(arm_resource)
 
         # Write ARM template to file

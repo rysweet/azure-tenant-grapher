@@ -243,6 +243,13 @@ class RichDashboard:
                     )
                     self.layout["logs"].update(self.render_log_panel())
                 if key and key.lower() == "x":
+                    with self.lock:
+                        self._should_exit = True
+                    print(
+                        "[DEBUG] Immediate exit: user pressed 'x'",
+                        file=sys.stderr,
+                        flush=True,
+                    )
                     sys.exit(0)
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
