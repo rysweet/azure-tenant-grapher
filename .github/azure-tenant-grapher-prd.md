@@ -90,7 +90,7 @@
   - Export in standard graph formats (GEXF) for external tools
   - Maintain interactivity in exported HTML files
 
-### 4. AI-Powered Documentation (Optional Feature)
+### 4. AI-Powered Documentation 
 
 #### FR4.1 Resource Description Generation
 - **Requirement**: Generate intelligent descriptions for Azure resources using AI
