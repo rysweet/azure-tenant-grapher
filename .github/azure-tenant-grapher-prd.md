@@ -395,3 +395,9 @@
 
 ### Implementation Status
 This product requirements document reflects the current Python implementation of Azure Tenant Grapher with comprehensive CLI interface, Rich dashboard, modular architecture, Infrastructure-as-Code generation capabilities, and extensive testing coverage. A complementary .NET implementation is also available for enterprise integration scenarios.
+
+---
+
+## Change Notes
+
+- feat: MCP server & AutoGen agent CLI (`mcp-server`, `agent-mode`) and docs ([#41](https://github.com/your-repo/azure-tenant-grapher/issues/41))

@@ -351,6 +351,9 @@ azure-tenant-grapher config      # Show configuration template
 azure-tenant-grapher container   # Container management subcommands
 azure-tenant-grapher doctor      # Check and install required CLI tools
 ```
+# MCP/AutoGen commands
+azure-tenant-grapher mcp-server         # Start MCP server (requires Neo4j)
+azure-tenant-grapher agent-mode         # Start AutoGen MCP agent (requires mcp-neo4j-cypher, autogen-ext[mcp])
 
 ### CLI Arguments for Build Command
 ```bash
@@ -420,6 +423,16 @@ azure-tenant-grapher generate-iac \
 # Validate IaC generation without creating files
 azure-tenant-grapher generate-iac --dry-run --format arm
 ```
+
+# Start MCP server (Neo4j + MCP)
+azure-tenant-grapher mcp-server
+
+# Start AutoGen MCP agent (graph/tenant Q&A)
+azure-tenant-grapher agent-mode
+
+> **Optional dependencies:**
+> To use MCP/AutoGen agent features, install:
+> `pip install mcp-neo4j-cypher autogen-ext[mcp]`
 
 ## Configuration System
 
