@@ -13,10 +13,12 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_description
 from src.utils.session_manager import retry_neo4j_operation
 
+from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_description
+
 logger = logging.getLogger(__name__)
+
 
 @retry_neo4j_operation()
 def run_neo4j_query_with_retry(session: Any, query: str, **params: Any) -> Any:
@@ -104,7 +106,7 @@ class ResourceState:
             with self.session_manager.session() as session:
                 result = session.run(
                     "MATCH (r:Resource {id: $id}) RETURN count(r) as count",
-                    id=resource_id
+                    id=resource_id,
                 )
                 record = result.single()
                 return bool(record["count"] > 0) if record else False
@@ -259,7 +261,10 @@ class DatabaseOperations:
             """
             with self.session_manager.session() as session:
                 run_neo4j_query_with_retry(
-                    session, query, subscription_id=subscription_id, resource_id=resource_id
+                    session,
+                    query,
+                    subscription_id=subscription_id,
+                    resource_id=resource_id,
                 )
             return True
         except Exception:
@@ -295,7 +300,10 @@ class DatabaseOperations:
             """
             with self.session_manager.session() as session:
                 run_neo4j_query_with_retry(
-                    session, sub_rg_query, subscription_id=subscription_id, rg_name=rg_name
+                    session,
+                    sub_rg_query,
+                    subscription_id=subscription_id,
+                    rg_name=rg_name,
                 )
 
             # Create relationship: ResourceGroup CONTAINS Resource

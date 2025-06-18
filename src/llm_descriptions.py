@@ -9,13 +9,15 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
-T = TypeVar("T")
-
 from src.utils.session_manager import retry_neo4j_operation
 
+T = TypeVar("T")
+
+
 @retry_neo4j_operation()
-def run_neo4j_query_with_retry(session, query, **params):
+def run_neo4j_query_with_retry(session: Any, query: str, **params: Any) -> Any:
     return session.run(query, **params)
+
 
 # Load environment variables
 load_dotenv()
@@ -575,11 +577,11 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
                 key_record = key_result.single()
                 if key_record and "prop_keys" in key_record:
                     prop_keys = key_record["prop_keys"]
-                    logger.debug(
-                        f"Resource {resource_id} property keys: {prop_keys}"
-                    )
+                    logger.debug(f"Resource {resource_id} property keys: {prop_keys}")
             except Exception as prop_exc:
-                logger.warning(f"Could not inspect properties for {resource_id}: {prop_exc}")
+                logger.warning(
+                    f"Could not inspect properties for {resource_id}: {prop_exc}"
+                )
 
             result = run_neo4j_query_with_retry(
                 session,
@@ -666,9 +668,7 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
 
         # Since we don't have etag/last_modified in the current schema,
         # skip LLM generation if a good description already exists
-        logger.info(
-            f"Skipping LLM for {resource_id}: description already present."
-        )
+        logger.info(f"Skipping LLM for {resource_id}: description already present.")
         return False
 
     except Exception as e:

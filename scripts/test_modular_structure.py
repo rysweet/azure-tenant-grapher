@@ -70,10 +70,13 @@ def test_resource_processor() -> None:
                 class MockSession:
                     def run(self, query: str, **kwargs: Any) -> None:
                         pass
+
                     def __enter__(self):
                         return self
+
                     def __exit__(self, exc_type, exc_val, exc_tb):
                         pass
+
                 return MockSession()
 
         session_manager = MockSessionManager()
