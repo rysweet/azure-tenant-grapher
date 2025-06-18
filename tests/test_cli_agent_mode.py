@@ -124,16 +124,28 @@ def test_agent_mode_missing_autogen_agentchat(monkeypatch):
         # The error message should be in stderr or stdout
         combined = (out or "") + (err or "")
         # Accept any missing required dependency for agent-mode, not just autogen_agentchat
-        missing_dep_msgs = [
-            "No module named 'autogen_agentchat'",
-            "No module named 'tiktoken'",
-            "No module named 'autogen_ext'",
-            "No module named 'openai'",
+        critical_deps = [
+            "autogen_agentchat",
+            "tiktoken",
+            "autogen_ext",
+            "openai",
         ]
-        found_missing = any(msg in combined for msg in missing_dep_msgs)
+        found_missing = False
+        missing_dep_name = None
+        for dep in critical_deps:
+            if f"No module named '{dep}'" in combined:
+                found_missing = True
+                missing_dep_name = dep
+                break
         assert (
             "Failed to start agent mode" in combined and found_missing
-        ), f"Did not find expected missing dependency error. Output:\n{combined}"
+        ), (
+            f"Did not find expected missing dependency error. Output:\n{combined}"
+        )
+        # Also assert the missing module name is in the error message
+        assert missing_dep_name is not None and missing_dep_name in combined, (
+            f"Missing module name '{missing_dep_name}' not found in error message. Output:\n{combined}"
+        )
         assert proc.returncode != 0, f"Process exited with code {proc.returncode}, expected nonzero"
     finally:
         shutil.rmtree(temp_dir)
