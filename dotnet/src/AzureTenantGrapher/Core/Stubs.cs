@@ -128,7 +128,21 @@ namespace AzureTenantGrapher.Config
             };
             return options;
         }
+    /// <summary>
+    /// Creates default Tenant Specification Service options from configuration.
+    /// </summary>
+    /// <param name="config">The main configuration object.</param>
+    /// <returns>TenantSpecificationServiceOptions with values from config.</returns>
+    public static AzureTenantGrapher.Services.TenantSpecificationServiceOptions CreateTenantSpecOptions(AzureTenantGrapherConfig config)
+    {
+        // In future, map config fields to options as needed
+        return new AzureTenantGrapher.Services.TenantSpecificationServiceOptions
+        {
+            IncludeTags = true,
+            IncludeLocations = true
+        };
     }
+}
 }
 
 namespace AzureTenantGrapher.Container
