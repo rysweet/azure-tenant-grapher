@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships."
 authors = [{name = "Azure Tenant Grapher Team"}]
 readme = "README.md"
-requires-python = ">=3.8.1"
+requires-python = ">=3.12"
 dependencies = [
     # Azure SDK dependencies
     "azure-identity>=1.15.0",
@@ -35,7 +35,8 @@ dependencies = [
     # Logging and configuration
     "pyyaml>=6.0",
     "colorlog>=6.8.0",
-    "autogen-ext[mcp]",
+    "autogen-ext[mcp]>=0.6.1",
+    "autogen_agentchat",
 ]
 
 
@@ -61,7 +62,6 @@ dev-dependencies = [
     "ruff>=0.6.0",
     "pyright>=1.1.350",
     "bandit>=1.7.10",
-    "safety>=3.5.0",
     "pre-commit>=3.5.0",
     "pytest-timeout>=2.1.0",
 ]
