@@ -343,7 +343,7 @@ async def _run_dashboard_mode(
 
 
 async def visualize_command_handler(
-    ctx: click.Context, link_hierarchy: bool, no_container: bool
+    ctx: click.Context, link_hierarchy: bool = True, no_container: bool = False
 ) -> None:
     """Handle the visualize command logic."""
 
