@@ -295,11 +295,12 @@ class RichDashboard:
                 import time
 
                 def monitor_exit():
+                    import os
                     while not stop_event.is_set():
                         if self._should_exit:
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
-                            # (Revert: do NOT call os._exit or raise here)
+                            os._exit(0)  # Immediately exit the process for test/CI
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)

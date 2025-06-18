@@ -487,13 +487,16 @@ def container() -> None:
 
     pass
 
+
 @cli.command()
 @click.pass_context
 @async_command
 async def mcp_server(ctx):
     """Start MCP server (uvx mcp-neo4j-cypher) after ensuring Neo4j is running."""
     from src.cli_commands import mcp_server_command_handler
+
     await mcp_server_command_handler(ctx)
+
 
 @cli.command()
 @click.pass_context
@@ -501,7 +504,10 @@ async def mcp_server(ctx):
 async def agent_mode(ctx):
     """Start AutoGen MCP agent mode (Neo4j + MCP server + agent chat loop)."""
     from src.cli_commands import agent_mode_command_handler
+
     await agent_mode_command_handler(ctx)
+
+
 @cli.command()
 def doctor() -> None:
     """Check for all registered CLI tools and offer to install if missing."""
