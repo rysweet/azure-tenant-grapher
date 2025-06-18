@@ -1,160 +1,63 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
-using Neo4j.Driver;
-using Newtonsoft.Json;
-using System.Collections.Generic;
+using AzureTenantGrapher.Core;
+using Microsoft.Extensions.Logging;
 
 namespace AzureTenantGrapher.Graph
 {
     public class GraphVisualizer
     {
-        private readonly IDriver _driver;
+        private readonly string _uri;
+        private readonly string _username;
+        private readonly string _password;
+        private readonly ILogger<GraphVisualizer> _logger;
 
-        public GraphVisualizer(string uri, string user, string password)
+        public GraphVisualizer(string uri, string username, string password, ILogger<GraphVisualizer> logger)
         {
-            _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(user, password));
+            _uri = uri;
+            _username = username;
+            _password = password;
+            _logger = logger;
         }
 
-       /// <summary>
-       /// Generates an interactive 3D graph visualization as HTML.
-       /// Includes minimal UI controls for zoom-in/zoom-out (top-left) for discoverability.
-       /// Zoom buttons call Three.js OrbitControls dollyIn/dollyOut or move camera if unavailable.
-       /// </summary>
-       public string GenerateHtmlVisualization(string? outputPath)
-       {
-           var data = ExtractGraphDataAsync().GetAwaiter().GetResult();
-           var json = JsonConvert.SerializeObject(data);
-           // Add zoom controls and minimal CSS for top-left positioning.
-           // The zoom buttons call the ForceGraph3D camera's dollyIn/dollyOut (if OrbitControls) or adjust camera position.
-           // UI is intentionally minimal and non-intrusive.
-           var html = @"<html>
-<head>
- <meta charset=""utf-8"">
- <style>
-   .controls {
-     position: absolute;
-     top: 12px;
-     left: 12px;
-     z-index: 10;
-     display: flex;
-     flex-direction: column;
-     gap: 6px;
-     background: rgba(255,255,255,0.85);
-     border-radius: 6px;
-     padding: 6px 8px;
-     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-     font-family: sans-serif;
-     font-size: 15px;
-     user-select: none;
-   }
-   .controls button {
-     margin: 0;
-     padding: 2px 10px;
-     border: 1px solid #bbb;
-     background: #f8f8f8;
-     border-radius: 4px;
-     cursor: pointer;
-     font-size: 18px;
-     transition: background 0.15s;
-   }
-   .controls button:hover {
-     background: #e0e0e0;
-   }
-   #3d-graph {
-     width: 100vw;
-     height: 100vh;
-     min-height: 500px;
-     position: relative;
-   }
- </style>
-</head>
-<body>
- <div class=""controls"">
-   <!-- Zoom controls: see README for details -->
-   <button id=""zoomInBtn"" title=""Zoom In"">＋ Zoom</button>
-   <button id=""zoomOutBtn"" title=""Zoom Out"">− Zoom</button>
- </div>
- <div id=""3d-graph""></div>
- <script>const graphData = " + json + @";</script>
- <script src=""https://unpkg.com/3d-force-graph""></script>
- <script>
-   // Create the ForceGraph3D instance
-   const Graph = ForceGraph3D()(document.getElementById('3d-graph')).graphData(graphData);
-
-   // Wait for the graph to initialize and then wire up zoom controls
-   setTimeout(() => {
-     // Try to access the Three.js camera and controls
-     const threeRenderer = Graph.renderer();
-     const threeCamera = Graph.camera();
-     const controls = Graph.controls && Graph.controls();
-
-     // Zoom In handler
-     document.getElementById('zoomInBtn').onclick = function() {
-       if (controls && typeof controls.dollyIn === 'function') {
-         controls.dollyIn(1.2); // OrbitControls (Three.js)
-         controls.update();
-       } else if (threeCamera && threeCamera.position) {
-         // Move camera closer for fallback
-         threeCamera.position.multiplyScalar(0.8);
-       }
-     };
-     // Zoom Out handler
-     document.getElementById('zoomOutBtn').onclick = function() {
-       if (controls && typeof controls.dollyOut === 'function') {
-         controls.dollyOut(1.2);
-         controls.update();
-       } else if (threeCamera && threeCamera.position) {
-         threeCamera.position.multiplyScalar(1.2);
-       }
-     };
-   }, 500); // Delay to ensure graph is initialized
-
-   // (Other controls, e.g. rotation toggle, are preserved if present)
- </script>
-</body>
-</html>";
-            var path = outputPath ?? "visualization.html";
-            File.WriteAllText(path, html);
-            return path;
-        }
-
-        private async Task<object> ExtractGraphDataAsync()
+        public async Task GenerateHtmlVisualizationAsync(string outputPath, TenantSpecification spec)
         {
-            var nodes = new List<object>();
-            var links = new List<object>();
+            _logger.LogInformation("Generating HTML visualization at {OutputPath}", outputPath);
 
-            await using var session = _driver.AsyncSession();
-            var nodeResult = await session.RunAsync(
-                "MATCH (n) RETURN id(n) AS id, labels(n) AS labels, properties(n) AS props");
-            await nodeResult.ForEachAsync(record =>
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Tenant Graph Visualization</title></head><body>");
+            sb.AppendLine($"<h1>Tenant: {spec.TenantId}</h1>");
+            sb.AppendLine($"<p>Generated: {spec.GeneratedOnUtc:u}</p>");
+            sb.AppendLine($"<h2>Subscriptions ({spec.Subscriptions.Count})</h2>");
+            sb.AppendLine("<table border=\"1\"><tr><th>Subscription ID</th><th>Display Name</th></tr>");
+            foreach (var sub in spec.Subscriptions)
             {
-                nodes.Add(new
-                {
-                    id = record["id"].As<long>(),
-                    group = record["labels"].As<List<string>>()[0],
-                    properties = record["props"].As<IDictionary<string, object>>()
-                });
-            });
+                sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode(sub.SubscriptionId)}</td><td>{System.Net.WebUtility.HtmlEncode(sub.DisplayName)}</td></tr>");
+            }
+            sb.AppendLine("</table>");
 
-            var relResult = await session.RunAsync(
-                "MATCH (a)-[r]->(b) RETURN id(a) AS source, id(b) AS target, type(r) AS type");
-            await relResult.ForEachAsync(record =>
+            sb.AppendLine($"<h2>Resources ({spec.Resources.Count})</h2>");
+            sb.AppendLine("<table border=\"1\"><tr><th>Resource ID</th><th>Type</th><th>Location</th></tr>");
+            foreach (var res in spec.Resources)
             {
-                links.Add(new
-                {
-                    source = record["source"].As<long>(),
-                    target = record["target"].As<long>(),
-                    type = record["type"].As<string>()
-                });
-            });
+                sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode(res.ResourceId)}</td><td>{System.Net.WebUtility.HtmlEncode(res.ResourceType)}</td><td>{System.Net.WebUtility.HtmlEncode(res.Location ?? "")}</td></tr>");
+            }
+            sb.AppendLine("</table>");
+            sb.AppendLine("</body></html>");
 
-            return new { nodes, links };
-        }
-
-        public void Close()
-        {
-            _driver?.Dispose();
+            try
+            {
+                await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8);
+                _logger.LogInformation("HTML visualization written successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to write HTML visualization to {OutputPath}", outputPath);
+                throw;
+            }
         }
     }
 }
