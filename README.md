@@ -60,7 +60,6 @@ cd my-deployment
 azure-tenant-grapher mcp-server
 
 # Start the AutoGen MCP agent (Neo4j + MCP server + agent chat loop)
-# Requires: pip install mcp-neo4j-cypher autogen-ext
 azure-tenant-grapher agent-mode
 ```
 
