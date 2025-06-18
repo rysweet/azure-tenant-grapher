@@ -29,3 +29,13 @@
 /Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/obj/Debug/net9.0/AzureTenantGrapher.pdb
 /Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/obj/Debug/net9.0/AzureTenantGrapher.genruntimeconfig.cache
 /Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/obj/Debug/net9.0/ref/AzureTenantGrapher.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Configuration.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Configuration.Abstractions.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Configuration.Binder.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.DependencyInjection.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Logging.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Logging.Configuration.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Logging.Console.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Options.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/bin/Debug/net9.0/Microsoft.Extensions.Primitives.dll
