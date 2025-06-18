@@ -60,7 +60,7 @@ cd my-deployment
 azure-tenant-grapher mcp-server
 
 # Start the AutoGen MCP agent (Neo4j + MCP server + agent chat loop)
-# Requires: pip install mcp-neo4j-cypher autogen-ext[mcp]
+# Requires: pip install mcp-neo4j-cypher autogen-ext
 azure-tenant-grapher agent-mode
 ```
 
@@ -99,7 +99,7 @@ azure-tenant-grapher agent-mode
 - [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
 - Docker & Docker Compose (for Neo4j)
 - Azure CLI & Bicep CLI (for authentication and IaC deployment)
-- (Optional) [mcp-neo4j-cypher](https://github.com/neo4j-contrib/mcp-neo4j-cypher) and [autogen-ext[mcp]](https://github.com/microsoft/autogen) for MCP server/agent mode
+- (Optional) [mcp-neo4j-cypher](https://github.com/neo4j-contrib/mcp-neo4j-cypher) and [autogen-ext](https://github.com/microsoft/autogen) for MCP server/agent mode
 
 ### Install Steps
 
@@ -108,6 +108,7 @@ uv sync
 source .venv/bin/activate
 cp .env.example .env
 az login
+
 ```
 
 ---

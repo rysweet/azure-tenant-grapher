@@ -35,7 +35,9 @@ dependencies = [
     # Logging and configuration
     "pyyaml>=6.0",
     "colorlog>=6.8.0",
+    "autogen-ext[mcp]",
 ]
+
 
 [project.scripts]
 azure-tenant-grapher = "scripts.cli:main"

@@ -11,6 +11,20 @@ async def run_agent_mode():
     """
     Ensure Neo4j and MCP server are running, then start AutoGen MCP agent chat loop.
     """
+    import importlib
+    # Check for autogen-ext[mcp] dependency before any autogen imports
+    if importlib.util.find_spec("autogen_ext") is None:
+        try:
+            import click
+            raise click.ClickException(
+                "❌ autogen-ext is not installed. "
+                "Install via:  pip install \"autogen-ext\""
+            )
+        except ImportError:
+            raise SystemExit(
+                "❌ autogen-ext is not installed. "
+                "Install via:  pip install \"autogen-ext\""
+            )
     try:
         await ensure_neo4j_running()
     except Exception as e:
@@ -28,7 +42,7 @@ async def run_agent_mode():
         from autogen_ext.mcp import McpWorkbench, StdioServerParams
     except ImportError:
         print(
-            "❌ autogen-ext[mcp] is not installed. Please install it to use agent-mode.",
+            "❌ autogen-ext is not installed. Please install it to use agent-mode.",
             file=sys.stderr,
         )
         mcp_proc.terminate()
