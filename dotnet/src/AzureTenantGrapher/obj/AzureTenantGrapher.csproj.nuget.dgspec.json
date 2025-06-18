@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/ryan/src/msec/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj": {}
+    "/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj": {}
   },
   "projects": {
-    "/Users/ryan/src/msec/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj": {
+    "/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/ryan/src/msec/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj",
+        "projectUniqueName": "/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj",
         "projectName": "AzureTenantGrapher",
-        "projectPath": "/Users/ryan/src/msec/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj",
+        "projectPath": "/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/AzureTenantGrapher.csproj",
         "packagesPath": "/Users/ryan/.nuget/packages/",
-        "outputPath": "/Users/ryan/src/msec/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/obj/",
+        "outputPath": "/Users/ryan/src/msec/atgx/azure-tenant-grapher/dotnet/src/AzureTenantGrapher/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/ryan/.nuget/NuGet/NuGet.Config"
@@ -44,6 +44,24 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.13.1, )"
+            },
+            "Azure.ResourceManager": {
+              "target": "Package",
+              "version": "[1.13.1, )"
+            },
+            "Azure.ResourceManager.Resources": {
+              "target": "Package",
+              "version": "[1.9.0, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
