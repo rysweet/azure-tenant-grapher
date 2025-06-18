@@ -9,7 +9,7 @@ error handling and resource cleanup.
 import logging
 import time
 from contextlib import contextmanager
-from typing import Any, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 from neo4j import Driver, GraphDatabase, Session
 from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
@@ -20,14 +20,16 @@ from ..exceptions import Neo4jConnectionError, wrap_neo4j_exception
 logger = logging.getLogger(__name__)
 
 
-def retry_neo4j_operation(max_retries=3, initial_delay=1.0, backoff=2.0):
+def retry_neo4j_operation(
+    max_retries: int = 3, initial_delay: float = 1.0, backoff: float = 2.0
+) -> Any:
     """
     Decorator to retry a Neo4j operation on connection errors.
     Note: This decorator is for functions that take a session as first parameter.
     """
 
-    def decorator(func):
-        def wrapper(*args, **kwargs):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             delay = initial_delay
             last_exception = None
 
