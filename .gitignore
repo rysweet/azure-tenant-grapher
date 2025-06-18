@@ -172,3 +172,14 @@ demo-bicep*/
 demo-rules.yaml
 **/deploy.sh
 iac-out-*/
+
+# .NET build and Visual Studio artifacts
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
