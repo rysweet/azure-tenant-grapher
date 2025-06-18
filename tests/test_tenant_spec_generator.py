@@ -6,6 +6,10 @@ import tempfile
 
 import pytest
 from neo4j import GraphDatabase
+import socket
+import subprocess
+import time
+import uuid
 
 from src.config_manager import SpecificationConfig
 from src.tenant_spec_generator import ResourceAnonymizer, TenantSpecificationGenerator
@@ -13,10 +17,63 @@ from src.tenant_spec_generator import ResourceAnonymizer, TenantSpecificationGen
 
 @pytest.fixture(scope="module")
 def neo4j_test_graph():
-    # Setup: connect to test Neo4j (assumes .env points to test instance)
-    uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
-    user = os.getenv("NEO4J_USER", "neo4j")
-    password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+    """
+    Ensure a Neo4j instance is running on localhost:7688 for integration tests.
+    If not running, start a Docker container and clean up after.
+    """
+    import atexit
+
+    host = "localhost"
+    port = 7688
+    user = "neo4j"
+    password = "azure-grapher-2024"
+    uri = f"bolt://{host}:{port}"
+
+    def is_neo4j_up():
+        try:
+            with socket.create_connection((host, port), timeout=2):
+                return True
+        except Exception:
+            return False
+
+    container_name = None
+    started_container = False
+
+    if not is_neo4j_up():
+        # Start Neo4j Docker container
+        container_name = f"test-neo4j-{uuid.uuid4().hex[:8]}"
+        docker_cmd = [
+            "docker", "run", "-d",
+            "--name", container_name,
+            "-p", f"{port}:7687",
+            "-e", f"NEO4J_AUTH={user}/{password}",
+            "neo4j:5.19"
+        ]
+        subprocess.check_output(docker_cmd)
+        started_container = True
+
+        # Register cleanup in case of interruption
+        def cleanup():
+            subprocess.run(["docker", "rm", "-f", container_name], check=False)
+        atexit.register(cleanup)
+
+        # Wait for Neo4j Bolt handshake to succeed
+        bolt_ready = False
+        for _ in range(90):
+            try:
+                # Try to connect with the Neo4j driver (handshake)
+                test_driver = GraphDatabase.driver(uri, auth=(user, password))
+                with test_driver.session() as session:
+                    session.run("RETURN 1")
+                test_driver.close()
+                bolt_ready = True
+                break
+            except Exception:
+                time.sleep(1)
+        if not bolt_ready:
+            cleanup()
+            raise RuntimeError("Neo4j Docker container did not become Bolt-ready on port 7688")
+
     driver = GraphDatabase.driver(uri, auth=(user, password))
     try:
         with driver.session() as session:
@@ -74,6 +131,9 @@ def neo4j_test_graph():
             session.run("MATCH (n) DETACH DELETE n")
     finally:
         driver.close()
+        # Stop the container if we started it
+        if started_container and container_name:
+            subprocess.run(["docker", "rm", "-f", container_name], check=False)
 
 
 def test_spec_file_created_and_resource_limit(neo4j_test_graph):

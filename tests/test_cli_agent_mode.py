@@ -5,15 +5,26 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
-def _autogen_available():
-    try:
-        return True
-    except ImportError:
-        return False
+import sys
+import types
 
-
-@pytest.mark.skipif(not _autogen_available(), reason="autogen-ext[mcp] not installed")
 async def test_agent_mode_refusal_logic():
+    # Ensure dummy autogen_ext and autogen_ext.mcp modules exist for patching
+    if "autogen_ext" not in sys.modules:
+        sys.modules["autogen_ext"] = types.ModuleType("autogen_ext")
+    if "autogen_ext.mcp" not in sys.modules:
+        sys.modules["autogen_ext.mcp"] = types.ModuleType("autogen_ext.mcp")
+    if "autogen" not in sys.modules:
+        sys.modules["autogen"] = types.ModuleType("autogen")
+    if "autogen.agentchat" not in sys.modules:
+        sys.modules["autogen.agentchat"] = types.ModuleType("autogen.agentchat")
+
+    # Add dummy attributes to allow patching
+    import types as _types
+    sys.modules["autogen_ext.mcp"].McpWorkbench = _types.SimpleNamespace()
+    sys.modules["autogen_ext.mcp"].StdioServerParams = _types.SimpleNamespace()
+    sys.modules["autogen.agentchat"].AssistantAgent = _types.SimpleNamespace()
+
     # Patch the actual import locations used in src.agent_mode
     with patch("autogen_ext.mcp.McpWorkbench"), patch(
         "autogen_ext.mcp.StdioServerParams"

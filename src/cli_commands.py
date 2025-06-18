@@ -119,6 +119,12 @@ async def _run_no_dashboard_mode(
     ctx: click.Context, grapher: "AzureTenantGrapher", logger: logging.Logger
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
+    # Print log file path for test discoverability
+    import tempfile
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file_path = f"{tempfile.gettempdir()}/azure_tenant_grapher_{timestamp}.log"
+    print(f"LOG_FILE: {log_file_path}", flush=True)
 
     from rich.logging import RichHandler
     from rich.style import Style
@@ -194,6 +200,8 @@ async def _run_dashboard_mode(
         config=config.to_dict(),
         max_concurrency=max_llm_threads,
     )
+    # Print log file path for test discoverability
+    print(f"LOG_FILE: {dashboard.log_file_path}", flush=True)
 
     # Setup file logging to the dashboard's log file
     file_handler = logging.FileHandler(dashboard.log_file_path)
