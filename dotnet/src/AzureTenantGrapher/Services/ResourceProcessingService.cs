@@ -23,7 +23,7 @@ namespace AzureTenantGrapher.Services
         /// <param name="logger">Logger instance.</param>
         /// <param name="options">Processing options.</param>
         /// <param name="processor">
-        /// Optional processor delegate for a single resource. 
+        /// Optional processor delegate for a single resource.
         /// If not provided, a default placeholder processor is used.
         /// </param>
         public ResourceProcessingService(
