@@ -1,7 +1,7 @@
 import logging
 import os
-import tempfile
-import uuid
+
+# Removed unused imports tempfile and uuid to satisfy pyright
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
@@ -178,12 +178,7 @@ class LoggingConfig:
         return int(level_attr)
 
 
-def _generate_default_log_file() -> str:
-    """Generate a unique log file path in the system temporary directory."""
-    temp_dir = tempfile.gettempdir()
-    unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID for brevity
-    log_filename = f"azure-tenant-grapher-{unique_id}.log"
-    return os.path.join(temp_dir, log_filename)
+# Removed unused function _generate_default_log_file to satisfy pyright
 
 
 @dataclass

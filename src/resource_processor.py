@@ -13,9 +13,16 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from src.utils.session_manager import retry_neo4j_operation
+
 from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_description
 
 logger = logging.getLogger(__name__)
+
+
+@retry_neo4j_operation()
+def run_neo4j_query_with_retry(session: Any, query: str, **params: Any) -> Any:
+    return session.run(query, **params)
 
 
 def serialize_value(value: Any, max_json_length: int = 500) -> Any:
@@ -90,17 +97,19 @@ class ProcessingStats:
 class ResourceState:
     """Manages the state of resource processing."""
 
-    def __init__(self, session: Any) -> None:
-        self.session = session
+    def __init__(self, session_manager: Any) -> None:
+        self.session_manager = session_manager
 
     def resource_exists(self, resource_id: str) -> bool:
         """Check if a resource already exists in the database."""
         try:
-            result = self.session.run(
-                "MATCH (r:Resource {id: $id}) RETURN count(r) as count", id=resource_id
-            )
-            record = result.single()
-            return bool(record["count"] > 0) if record else False
+            with self.session_manager.session() as session:
+                result = session.run(
+                    "MATCH (r:Resource {id: $id}) RETURN count(r) as count",
+                    id=resource_id,
+                )
+                record = result.single()
+                return bool(record["count"] > 0) if record else False
         except Exception:
             logger.exception(f"Error checking resource existence for {resource_id}")
             return False
@@ -108,22 +117,23 @@ class ResourceState:
     def has_llm_description(self, resource_id: str) -> bool:
         """Check if a resource already has an LLM description."""
         try:
-            result = self.session.run(
-                """
-                MATCH (r:Resource {id: $id})
-                RETURN r.llm_description as desc
-            """,
-                id=resource_id,
-            )
-            record = result.single()
-            if record:
-                desc = record["desc"]
-                return (
-                    desc is not None
-                    and desc.strip() != ""
-                    and not desc.startswith("Azure ")
+            with self.session_manager.session() as session:
+                result = session.run(
+                    """
+                    MATCH (r:Resource {id: $id})
+                    RETURN r.llm_description as desc
+                """,
+                    id=resource_id,
                 )
-            return False
+                record = result.single()
+                if record:
+                    desc = record["desc"]
+                    return (
+                        desc is not None
+                        and desc.strip() != ""
+                        and not desc.startswith("Azure ")
+                    )
+                return False
         except Exception:
             logger.exception(f"Error checking LLM description for {resource_id}")
             return False
@@ -131,19 +141,20 @@ class ResourceState:
     def get_processing_metadata(self, resource_id: str) -> Dict[str, Any]:
         """Get processing metadata for a resource."""
         try:
-            result = self.session.run(
-                """
-                MATCH (r:Resource {id: $id})
-                RETURN r.updated_at as updated_at,
-                       r.llm_description as llm_description,
-                       r.processing_status as processing_status
-            """,
-                id=resource_id,
-            )
-            record = result.single()
-            if record:
-                return dict(record)
-            return {}
+            with self.session_manager.session() as session:
+                result = session.run(
+                    """
+                    MATCH (r:Resource {id: $id})
+                    RETURN r.updated_at as updated_at,
+                           r.llm_description as llm_description,
+                           r.processing_status as processing_status
+                """,
+                    id=resource_id,
+                )
+                record = result.single()
+                if record:
+                    return dict(record)
+                return {}
         except Exception:
             logger.exception(f"Error getting processing metadata for {resource_id}")
             return {}
@@ -152,8 +163,8 @@ class ResourceState:
 class DatabaseOperations:
     """Handles all database operations for resources."""
 
-    def __init__(self, session: Any) -> None:
-        self.session = session
+    def __init__(self, session_manager: Any) -> None:
+        self.session_manager = session_manager
 
     def upsert_resource(
         self, resource: Dict[str, Any], processing_status: str = "completed"
@@ -214,7 +225,8 @@ class DatabaseOperations:
                 return False
 
             try:
-                self.session.run(query, {"props": resource_data})
+                with self.session_manager.session() as session:
+                    session.run(query, props=resource_data)
             except Exception as neo4j_exc:
                 logger.error(
                     f"Neo4j upsert error for resource {resource.get('id', 'Unknown')}: {neo4j_exc}"
@@ -247,9 +259,13 @@ class DatabaseOperations:
             MATCH (r:Resource {id: $resource_id})
             MERGE (s)-[:CONTAINS]->(r)
             """
-            self.session.run(
-                query, subscription_id=subscription_id, resource_id=resource_id
-            )
+            with self.session_manager.session() as session:
+                run_neo4j_query_with_retry(
+                    session,
+                    query,
+                    subscription_id=subscription_id,
+                    resource_id=resource_id,
+                )
             return True
         except Exception:
             logger.exception(
@@ -276,7 +292,8 @@ class DatabaseOperations:
             SET rg.type = 'ResourceGroup',
                 rg.updated_at = datetime()
             """
-            self.session.run(rg_query, rg_name=rg_name, subscription_id=subscription_id)
+            with self.session_manager.session() as session:
+                session.run(rg_query, rg_name=rg_name, subscription_id=subscription_id)
 
             # Create relationship: Subscription CONTAINS ResourceGroup
             sub_rg_query = """
@@ -284,9 +301,13 @@ class DatabaseOperations:
             MATCH (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
             MERGE (s)-[:CONTAINS]->(rg)
             """
-            self.session.run(
-                sub_rg_query, subscription_id=subscription_id, rg_name=rg_name
-            )
+            with self.session_manager.session() as session:
+                run_neo4j_query_with_retry(
+                    session,
+                    sub_rg_query,
+                    subscription_id=subscription_id,
+                    rg_name=rg_name,
+                )
 
             # Create relationship: ResourceGroup CONTAINS Resource
             rg_resource_query = """
@@ -294,12 +315,14 @@ class DatabaseOperations:
             MATCH (r:Resource {id: $resource_id})
             MERGE (rg)-[:CONTAINS]->(r)
             """
-            self.session.run(
-                rg_resource_query,
-                rg_name=rg_name,
-                subscription_id=subscription_id,
-                resource_id=resource_id,
-            )
+            with self.session_manager.session() as session:
+                run_neo4j_query_with_retry(
+                    session,
+                    rg_resource_query,
+                    rg_name=rg_name,
+                    subscription_id=subscription_id,
+                    resource_id=resource_id,
+                )
 
             return True
 
@@ -318,7 +341,7 @@ class ResourceProcessor:
 
     def __init__(
         self,
-        session: Any,
+        session_manager: Any,
         llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
         resource_limit: Optional[int] = None,
     ):
@@ -326,17 +349,17 @@ class ResourceProcessor:
         Initialize the resource processor.
 
         Args:
-            session: Neo4j database session
+            session_manager: Neo4jSessionManager
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
         """
-        self.session = session
+        self.session_manager = session_manager
         self.llm_generator = llm_generator
         self.resource_limit = resource_limit
 
         # Initialize helper classes
-        self.state = ResourceState(session)
-        self.db_ops = DatabaseOperations(session)
+        self.state = ResourceState(session_manager)
+        self.db_ops = DatabaseOperations(session_manager)
 
         # Processing statistics
         self.stats = ProcessingStats()
@@ -393,24 +416,25 @@ class ResourceProcessor:
         # --- LLM skip logic ---
 
         resource_id = resource.get("id")
-        if not should_generate_description(resource, self.session):
-            # Fetch existing description from DB
-            desc = None
-            if resource_id:
-                metadata = self.state.get_processing_metadata(resource_id)
-                desc = metadata.get("llm_description")
-            if desc:
-                logger.info(
-                    f"⏭️  Skipping LLM for {resource_id}: using cached description."
-                )
-                self.stats.llm_skipped += 1
-                return False, desc
-            else:
-                logger.info(
-                    f"⏭️  Skipping LLM for {resource_id}: no cached description, using fallback."
-                )
-                self.stats.llm_skipped += 1
-                return False, f"Azure {resource.get('type', 'Resource')} resource."
+        with self.session_manager.session() as session:
+            if not should_generate_description(resource, session):
+                # Fetch existing description from DB
+                desc = None
+                if resource_id:
+                    metadata = self.state.get_processing_metadata(resource_id)
+                    desc = metadata.get("llm_description")
+                if desc:
+                    logger.info(
+                        f"⏭️  Skipping LLM for {resource_id}: using cached description."
+                    )
+                    self.stats.llm_skipped += 1
+                    return False, desc
+                else:
+                    logger.info(
+                        f"⏭️  Skipping LLM for {resource_id}: no cached description, using fallback."
+                    )
+                    self.stats.llm_skipped += 1
+                    return False, f"Azure {resource.get('type', 'Resource')} resource."
 
         try:
             description = await self.llm_generator.generate_resource_description(
@@ -635,7 +659,8 @@ class ResourceProcessor:
             "MATCH (tgt:Resource {id: $tgt_id}) "
             f"MERGE (src)-[:{rel_type}]->(tgt)"
         )
-        self.session.run(query, src_id=src_id, tgt_id=tgt_id)
+        with self.session_manager.session() as session:
+            session.run(query, src_id=src_id, tgt_id=tgt_id)
 
     def _create_enriched_relationships(self, resource: Dict[str, Any]) -> None:
         """
@@ -751,6 +776,8 @@ def process_resources_async_llm(
 
     def insert_resource(resource: Dict[str, Any]) -> None:
         # Insert resource into graph
+        # Note: This function uses the legacy session parameter for backwards compatibility
+        # In practice, this should be updated to use a session_manager
         db_ops = DatabaseOperations(session)
         db_ops.upsert_resource(resource, processing_status="completed")
         db_ops.create_subscription_relationship(
@@ -804,7 +831,7 @@ def process_resources_async_llm(
 
 
 def create_resource_processor(
-    session: Any,
+    session_manager: Any,
     llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
     resource_limit: Optional[int] = None,
 ) -> ResourceProcessor:
@@ -812,11 +839,11 @@ def create_resource_processor(
     Factory function to create a ResourceProcessor instance.
 
     Args:
-        session: Neo4j database session
+        session_manager: Neo4jSessionManager
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
 
     Returns:
         ResourceProcessor: Configured resource processor instance
     """
-    return ResourceProcessor(session, llm_generator, resource_limit)
+    return ResourceProcessor(session_manager, llm_generator, resource_limit)

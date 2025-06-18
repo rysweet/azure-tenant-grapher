@@ -6,7 +6,7 @@ for converting Neo4j tenant graphs into IaC representations.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, LiteralString, Optional, cast
 
 from neo4j import Driver
 
@@ -47,7 +47,11 @@ class GraphTraverser:
         """
         logger.info("Starting graph traversal")
 
-        def process_result(result, resources, relationships):
+        def process_result(
+            result: list[Any],
+            resources: list[dict[str, Any]],
+            relationships: list[dict[str, Any]],
+        ) -> None:
             for record in result:
                 resource_node = record["r"]
                 rels = record["rels"] if "rels" in record else []
@@ -81,7 +85,7 @@ class GraphTraverser:
 
         try:
             with self.driver.session() as session:
-                result = session.run(query)
+                result = session.run(cast("LiteralString", query))
                 # Check if result is empty (consume iterator)
                 result_list = list(result)
                 if not result_list and not filter_cypher:
@@ -95,7 +99,7 @@ class GraphTraverser:
                     logger.info(
                         "No :Resource nodes found, running fallback query for nodes with 'type' property"
                     )
-                    result = session.run(fallback_query)
+                    result = session.run(cast("LiteralString", fallback_query))
                     result_list = list(result)
                 process_result(result_list, resources, relationships)
                 logger.info(
