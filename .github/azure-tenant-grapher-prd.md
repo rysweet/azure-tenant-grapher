@@ -337,22 +337,61 @@
   - Preserve resource dependencies and relationships
   - Generate provider configurations and variable definitions
   - Support resource filtering and transformation rules
+  - Generate ready-to-deploy templates with deployment scripts
 
 #### FR12.2 Template Generation Pipeline
 - **Requirements**:
   - Graph traversal to extract relevant resources and relationships
-  - Configurable transformation rules for resource mapping
+  - Configurable transformation rules for resource mapping via YAML files
   - Format-specific emitters for template generation
   - Template validation and syntax checking
   - Batch processing for large tenant graphs
+  - Subset filtering for partial tenant replication
 
 #### FR12.3 CLI Integration
 - **Requirements**:
-  - `generate-iac` command with format selection
+  - `generate-iac` command with format selection (terraform, arm, bicep)
   - Support for dry-run validation mode
   - Resource filtering and output path configuration
+  - Subset filtering with flexible query syntax
   - Integration with existing tenant discovery workflow
   - Progress tracking and error reporting
+  - Automatic tool installation and validation
+
+#### FR12.4 Transformation Rules System
+- **Requirements**:
+  - YAML-based rules configuration for resource transformation
+  - Name transformation with patterns and replacements
+  - Region/location retargeting capabilities
+  - Tag modification and addition rules
+  - Resource group retargeting for deployment consolidation
+  - Conditional transformation based on resource properties
+
+#### FR12.5 Automated Deployment Support
+- **Requirements**:
+  - Generated templates include deployment scripts (deploy.sh, deploy.ps1)
+  - Azure CLI integration for authentication and deployment
+  - Parameter file generation for template customization
+  - Deployment validation and error handling
+  - Support for multiple target environments
+
+### 13. CLI Tool Management
+
+#### FR13.1 Automated Tool Installation
+- **Requirements**:
+  - Automatic detection of required CLI tools (Azure CLI, Terraform, Bicep)
+  - Interactive installation prompts with platform-specific instructions
+  - Tool registry with installation commands for multiple platforms
+  - Version validation and compatibility checking
+  - Doctor command for comprehensive tool validation
+
+#### FR13.2 Platform Support
+- **Requirements**:
+  - Cross-platform tool installation (Windows, macOS, Linux)
+  - Package manager integration (brew, choco, apt, yum)
+  - Direct download fallback options
+  - Environment variable configuration guidance
+  - PATH validation and setup assistance
 
 ### Implementation Status
-This product requirements document reflects the current Python implementation of Azure Tenant Grapher with comprehensive CLI interface, Rich dashboard, modular architecture, and extensive testing coverage. A complementary .NET implementation is also available for enterprise integration scenarios.
+This product requirements document reflects the current Python implementation of Azure Tenant Grapher with comprehensive CLI interface, Rich dashboard, modular architecture, Infrastructure-as-Code generation capabilities, and extensive testing coverage. A complementary .NET implementation is also available for enterprise integration scenarios.
