@@ -151,7 +151,9 @@ class TestResourceState:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_with_count
 
         state = ResourceState(mock_session_manager)
@@ -165,7 +167,9 @@ class TestResourceState:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         state = ResourceState(mock_session_manager)
         result = state.resource_exists("test-resource-id")
@@ -177,7 +181,9 @@ class TestResourceState:
         mock_neo4j_session.run.side_effect = Exception("Database error")
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         state = ResourceState(mock_session_manager)
         result = state.resource_exists("test-resource-id")
@@ -198,7 +204,9 @@ class TestResourceState:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_with_desc
 
         state = ResourceState(mock_session_manager)
@@ -211,7 +219,9 @@ class TestResourceState:
         mock_neo4j_session.run.return_value.single.return_value = {"desc": ""}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         state = ResourceState(mock_session_manager)
         result = state.has_llm_description("test-resource-id")
@@ -225,7 +235,9 @@ class TestResourceState:
         }
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         state = ResourceState(mock_session_manager)
         result = state.has_llm_description("test-resource-id")
@@ -254,7 +266,9 @@ class TestResourceState:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_with_metadata
 
         state = ResourceState(mock_session_manager)
@@ -285,7 +299,9 @@ class TestDatabaseOperations:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_success
 
         db_ops = DatabaseOperations(mock_session_manager)
@@ -307,7 +323,9 @@ class TestDatabaseOperations:
         bad_resource = sample_resource.copy()
         bad_resource["id"] = None
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         db_ops = DatabaseOperations(mock_session_manager)
         result = db_ops.upsert_resource(bad_resource, "completed")
         assert result is False
@@ -332,7 +350,9 @@ class TestDatabaseOperations:
     ) -> None:
         """Test resource upsert handles exceptions."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = Exception("Database error")
 
         db_ops = DatabaseOperations(mock_session_manager)
@@ -363,7 +383,9 @@ class TestDatabaseOperations:
             return result
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run
 
         db_ops = DatabaseOperations(mock_session_manager)
@@ -388,7 +410,9 @@ class TestDatabaseOperations:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_success
 
         db_ops = DatabaseOperations(mock_session_manager)
@@ -408,7 +432,9 @@ class TestDatabaseOperations:
             return result  # type: ignore[return-value]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         mock_neo4j_session.run.side_effect = mock_run_success
 
         db_ops = DatabaseOperations(mock_session_manager)
@@ -424,7 +450,9 @@ class TestDatabaseOperations:
         resource_no_rg["resource_group"] = None
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
         db_ops = DatabaseOperations(mock_session_manager)
         result = db_ops.create_resource_group_relationships(resource_no_rg)
 
@@ -475,8 +503,10 @@ class TestResourceProcessor:
     ) -> None:
         """Test ResourceProcessor initialization."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(
             session_manager=mock_session_manager,
             llm_generator=mock_llm_generator,
@@ -496,8 +526,10 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager)
         should_process, reason = processor._should_process_resource(sample_resource)
 
@@ -518,8 +550,10 @@ class TestResourceProcessor:
         ]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager, mock_llm_generator)
         should_process, reason = processor._should_process_resource(sample_resource)
 
@@ -542,8 +576,10 @@ class TestResourceProcessor:
         ]
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager)
         should_process, reason = processor._should_process_resource(sample_resource)
 
@@ -559,8 +595,10 @@ class TestResourceProcessor:
     ) -> None:
         """Test successful LLM description generation for single resource."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager, mock_llm_generator)
         success, description = await processor._process_single_resource_llm(
             sample_resource
@@ -576,8 +614,10 @@ class TestResourceProcessor:
     ) -> None:
         """Test LLM description generation when no generator available."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager)
         success, description = await processor._process_single_resource_llm(
             sample_resource
@@ -598,8 +638,10 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager, mock_llm_generator)
         result = await processor.process_single_resource(sample_resource, 0)
 
@@ -672,8 +714,10 @@ class TestResourceProcessor:
         mock_neo4j_session.run.side_effect = custom_mock_run
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager)
         result = await processor.process_single_resource(sample_resource, 0)
 
@@ -685,8 +729,10 @@ class TestResourceProcessor:
     async def test_process_resources_empty(self, mock_neo4j_session: Mock) -> None:
         """Test processing empty resource list."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager)
         stats = await processor.process_resources([])
 
@@ -702,8 +748,10 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager, resource_limit=1)
         stats = await processor.process_resources(sample_resources, max_workers=1)
 
@@ -722,8 +770,10 @@ class TestResourceProcessor:
         mock_neo4j_session.run.return_value.single.return_value = {"count": 0}
 
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = ResourceProcessor(mock_session_manager, mock_llm_generator)
         stats = await processor.process_resources(sample_resources, max_workers=2)
 
@@ -741,8 +791,10 @@ class TestFactoryFunction:
     ) -> None:
         """Test resource processor factory function."""
         mock_session_manager = Mock()
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
-        
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
+
         processor = create_resource_processor(
             session_manager=mock_session_manager,
             llm_generator=mock_llm_generator,
