@@ -8,6 +8,7 @@ configuration validation, and progress tracking.
 
 import asyncio
 import functools
+import logging
 import os
 import sys
 from typing import Any, Callable, Coroutine, Optional
@@ -15,6 +16,20 @@ from typing import Any, Callable, Coroutine, Optional
 from dotenv import load_dotenv
 from rich.logging import RichHandler
 from rich.style import Style
+
+# Set Azure logging levels early
+for name in [
+    "azure",
+    "azure.core",
+    "azure.core.pipeline",
+    "azure.core.pipeline.policies",
+    "azure.core.pipeline.policies.http_logging_policy",
+    "azure.core.pipeline.policies.HttpLoggingPolicy",
+    "msrest",
+    "urllib3",
+    "http.client",
+]:
+    logging.getLogger(name).setLevel(logging.WARNING)
 
 
 class GreenInfoRichHandler(RichHandler):
@@ -64,11 +79,12 @@ try:
     from src.utils.cli_installer import install_tool, is_tool_installed
 except ImportError:
 
-    def is_tool_installed(name):
+    def is_tool_installed(name: str) -> bool:
         return False
 
-    def install_tool(tool):
+    def install_tool(tool: str) -> bool:
         print(f"Install helper unavailable. Please install {tool} manually.")
+        return False
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
