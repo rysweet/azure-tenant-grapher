@@ -1,707 +1,180 @@
 # Azure Tenant Resource Grapher
 
-A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships.
+Azure Tenant Resource Grapher is an application that exhaustively discovers all resources in your Azure tenant, builds a rich Neo4j graph database of those resources and their relationships, and provides tools for visualization, analysis, replicating tenants, and Infrastructure-as-Code (IaC) generation using bicep, terraform, or ARM templates.
 
-## Quick Start
+---
 
-### 1. Setup Environment
+## 🚀 Quick Start
+
+### 1. Install & Set Up
+
 ```bash
 # Install dependencies
 uv sync
 
-# Install CLI entry points (so 'azure-tenant-grapher' is available in your PATH)
+# Install CLI entry points
 uv pip install --editable .
 
-# Activate the uv virtual environment (if not already activated)
+# Activate the virtual environment
 source .venv/bin/activate
 
-# Create .env file with defaults (optional)
+# Copy and edit .env for your Azure tenant ID, openai configuration
 cp .env.example .env
-# Edit .env with your Azure tenant ID if desired
 
 # Authenticate with Azure
+az login --tenant <your-tenant-id>
+```
+
+### 2. Build Your Graph of the Azure Tenant
+
+```bash
+# Build the graph with the interactive dashboard
+azure-tenant-grapher build --tenant-id <your-tenant-id>
+```
+
+### 3. Explore, Visualize, and Generate IaC
+
+```bash
+# Visualize your Azure graph in 3D
+azure-tenant-grapher visualize
+
+# Generate Bicep IaC for a subset of resources
+# exclude the `--subset-filter` option to generate for the entire tenant
+azure-tenant-grapher generate-iac \
+  --format bicep \
+  --subset-filter "types=Microsoft.Storage/*" \
+  --rules-file ./config/replica-rules.yaml \
+  --dest-rg "replica-rg" \
+  --location "East US" \
+  --output ./my-deployment
+
+# Deploy the generated Bicep
+cd my-deployment
+./deploy.sh
+```
+
+---
+
+## 📖 Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [IaC Subset & Rules System](#iac-subset--rules-system)
+- [Architecture](#architecture)
+- [Development & Testing](#development--testing)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Features
+
+- **Comprehensive Azure Discovery**: Enumerate all resources and relationships across all subscriptions in your tenant.
+- **Neo4j Graph Database**: Build a rich, queryable graph of your Azure environment.
+- **Interactive 3D Visualization**: Explore your environment visually with filtering, search, and node details.
+- **IaC Generation**: Generate Bicep, ARM, or Terraform templates for your entire tenant or filtered subsets.
+- **Transformation Rules**: Apply name, region, and tag transformations to resources via a YAML rules file.
+- **Automated Deployment**: Generated IaC includes a ready-to-run deployment script.
+- **AI Integration**: Optional AI-powered resource descriptions.
+- **Modular, Testable Codebase**: Well-structured, with comprehensive test coverage.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.8+
+- [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
+- Docker & Docker Compose (for Neo4j)
+- Azure CLI & Bicep CLI (for authentication and IaC deployment)
+
+### Install Steps
+
+```bash
+uv sync
+source .venv/bin/activate
+cp .env.example .env
 az login
 ```
 
-### 2. Run the Application
+---
 
-After installation, use the convenient CLI commands:
+## Usage
+
+### CLI Commands
+
 ```bash
-# Basic usage with automatic container management
+# Build the Azure graph
 azure-tenant-grapher build --tenant-id <your-tenant-id>
 
-# If the command is not found, try:
-uv run azure-tenant-grapher build --tenant-id <your-tenant-id>
-
-# Show all available commands
-azure-tenant-grapher --help
-
-# Show build options
-azure-tenant-grapher build --help
-```
-
-### 3. Access Neo4j Browser
-- URL: http://localhost:7475
-- Username: `neo4j`
-- Password: `azure-grapher-2024` (or your custom password)
-
-## CLI Dashboard and Logging
-
-By default, the CLI uses a live Rich dashboard with **scrollable logs**, file logging, and interactive controls:
-- **Press 'x'** to exit the dashboard at any time
-- **Press 'i', 'd', or 'w'** to set log level to INFO, DEBUG, or WARNING
-- **Logs append** to a scrollable view (no more overwriting!)
-- **File logging** to timestamped files in `/tmp/azure_tenant_grapher_YYYYMMDD_HHMMSS.log`
-- **Config panel** shows log file location
-
-To disable the dashboard and emit logs line by line, use the `--no-dashboard` flag:
-
-```bash
-azure-tenant-grapher build --tenant-id <your-tenant-id> --no-dashboard
-```
-
-## Usage Examples
-
-```bash
-# Basic usage with interactive dashboard
-azure-tenant-grapher build --tenant-id <your-tenant-id>
-
-# Test with limited resources
-azure-tenant-grapher test --limit 20
-
-# Generate visualization from existing graph
+# Visualize the graph
 azure-tenant-grapher visualize
 
-# Generate anonymized Markdown specification
-azure-tenant-grapher generate-spec --output my-tenant-spec.md
+# Generate IaC (Bicep, ARM, Terraform)
+azure-tenant-grapher generate-iac --help
 
-# Check processing progress
+# Check progress
 azure-tenant-grapher progress
 
 # Show configuration
 azure-tenant-grapher config
 ```
 
-## Advanced Usage
-
-```bash
-# Build with custom settings
-azure-tenant-grapher build \
-  --tenant-id <your-tenant-id> \
-  --resource-limit 1000 \
-  --max-llm-threads 10 \
-  --generate-spec \
-  --visualize
-
-# Build without dashboard for logging/CI
-azure-tenant-grapher build \
-  --tenant-id <your-tenant-id> \
-  --no-dashboard \
-  --log-level DEBUG
-
-# Use existing Neo4j instance
-azure-tenant-grapher build \
-  --tenant-id <your-tenant-id> \
-  --no-container
-```
-
-## VS Code Tasks
-
-Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
-- **Install Dependencies**: Installs Python packages using uv
-- **Start Neo4j Container**: Starts the Neo4j Docker container using uv
-- **Stop Neo4j Container**: Stops the Neo4j Docker container
-- **Run Azure Tenant Grapher**: Runs the full application with uv (prompts for tenant ID)
-- **Generate 3D Visualization Only**: Generates visualization from existing graph data
-
-## Shell Scripts
-
-**Unix/macOS/Linux (Bash)**
-```bash
-./run-grapher.sh --tenant-id "your-tenant-id-here"
-```
-
-**Windows (PowerShell)**
-```powershell
-./run-grapher.ps1 -TenantId "your-tenant-id-here"
-```
-
-## Development and Testing
-
-- Run all tests:
-```bash
-uv run python run_tests.py
-```
-- Run tests with coverage:
-```bash
-uv run python run_tests.py -c
-```
-- Lint and type check:
-```bash
-uv run ruff check src/ tests/
-uv run mypy --strict src/
-```
-
-## Configuration
-
-- Copy `.env.example` to `.env` and edit as needed.
-- All environment variables have sensible defaults.
-
-## Troubleshooting
-
-- See the bottom of this README for Docker, Neo4j, and Azure troubleshooting tips.
-
----
-
-# Azure Tenant Resource Grapher
-
-A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships.
-
-## Project Structure
-
-```
-azure-tenant-grapher/
-├── src/                           # Main application source code
-│   ├── __init__.py               # Package initialization with conditional imports
-│   ├── azure_tenant_grapher.py  # Main application class
-│   ├── config_manager.py        # Configuration management
-│   ├── resource_processor.py    # Azure resource processing
-│   ├── llm_descriptions.py      # AI-powered resource descriptions
-│   ├── container_manager.py     # Neo4j container management
-│   └── graph_visualizer.py      # Graph visualization and export
-├── tests/                        # Comprehensive test suite
-│   ├── conftest.py              # Test fixtures and configuration
-│   ├── test_config_manager.py   # Configuration tests
-│   ├── test_resource_processor.py # Resource processing tests
-│   ├── test_azure_tenant_grapher.py # Main application tests
-│   ├── test_container_manager.py # Container management tests
-│   ├── test_llm_descriptions.py # LLM integration tests
-│   └── test_graph_visualizer.py # Visualization tests
-├── scripts/                      # Utility scripts
-│   ├── cli.py                   # Enhanced CLI wrapper
-│   ├── demo_enhanced_features.py # Feature demonstration
-│   ├── check_progress.py       # Progress checking utility
-│   └── test_modular_structure.py # Structure validation
-├── run_tests.py                  # Test runner with coverage
-├── pyproject.toml               # Project configuration
-├── requirements.txt             # Dependencies
-├── docker-compose.yml           # Neo4j container setup
-└── README.md                    # This file
-```
-
-## Features
-
-- **Azure Resource Discovery**: Enumerate all resources across all subscriptions in an Azure tenant
-- **Neo4j Graph Database**: Build a comprehensive graph of Azure resources and their relationships
-- **Resource Details**: Capture detailed configuration information for each resource
-- **Relationship Mapping**: Identify and map dependencies and enriched relationships between Azure resources, including:
-    - Network: VM uses subnet, subnet secured by NSG
-    - Identity: Managed identity and Key Vault policy relationships
-    - Monitoring: Diagnostic settings to Log Analytics
-    - ARM dependencies: Resource-level dependsOn edges
-- **3D Interactive Visualization**: Generate interactive 3D visualizations of the resource graph using 3d-force-graph
-- **Filterable Graph Views**: Filter nodes and relationships by type, search functionality
-- **Node Details**: Click on nodes to view detailed resource information and metadata
-- **Modular Architecture**: Well-structured codebase with comprehensive test coverage
-- **AI Integration**: Optional AI-powered resource descriptions using Azure OpenAI
-- **Tenant Markdown Specification**: Generate anonymized, portable Markdown documentation of your Azure tenant.
-
-## Prerequisites
-
-- Python 3.8+
-- [uv](https://docs.astral.sh/uv/) (for dependency management and virtual environment)
-- Docker and Docker Compose (for Neo4j container)
-- Azure CLI (for authentication)
-- Azure tenant with appropriate permissions
-
-### Terraform CLI (optional but recommended)
-
-The IaC test-suite includes a `terraform validate` check for the templates
-generated by `generate-iac`.
-If the Terraform binary is **not** on your `PATH` the test will be skipped, but
-for full validation install Terraform:
-
-**macOS (Homebrew)**
-```bash
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-```
-
-**Linux / Windows**
-Download the appropriate package from
-https://developer.hashicorp.com/terraform/downloads and add the executable to
-your `PATH`.
-
-After installation you can run all tests, including the validation step:
-
-```bash
-uv run pytest
-```
-
-### Azure CLI and Bicep CLI
-
-Some features and tests require the [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) and [Bicep CLI](https://docs.microsoft.com/azure/azure-resource-manager/bicep/install).
-
-**Azure CLI Installation:**
-- **macOS (Homebrew):**
-  ```bash
-  brew install azure-cli
-  ```
-- **Linux:**
-  ```bash
-  curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-  ```
-- **Windows (winget):**
-  ```powershell
-  winget install Microsoft.AzureCLI
-  ```
-- **Windows (choco):**
-  ```powershell
-  choco install azure-cli -y
-  ```
-
-**Bicep CLI Installation:**
-- **macOS (Homebrew):**
-  ```bash
-  brew tap azure/bicep && brew install bicep
-  ```
-  If Homebrew fails, fallback to manual installation from the official docs.
-
-- **Linux:**
-  ```bash
-  curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64 && chmod +x ./bicep && sudo mv ./bicep /usr/local/bin/bicep
-  ```
-
-- **Windows (winget):**
-  ```powershell
-  winget install -e --id Microsoft.Bicep
-  ```
-
-- **Windows (choco):**
-  ```powershell
-  choco install bicep
-  ```
-
-See the [official Microsoft Learn documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/install) for more details and alternative installation methods.
-## Quick Start
-
-### 1. Setup Environment
-```bash
-# Install dependencies using uv
-uv sync
-
-# Or install with pip if uv is not available
-pip install -r requirements.txt
-
-# Create .env file with defaults (optional - the application has sensible defaults)
-cp .env.example .env
-# Edit .env with your Azure tenant ID if desired
-
-# Configure Azure credentials
-az login
-```
-
-### 2. Start the Application
-The application can automatically manage a Neo4j Docker container for you.
-
-**Recommended: Using the CLI command**
-```bash
-azure-tenant-grapher build --tenant-id your-tenant-id-here
-```
-
-**Alternative: Using uv run (for development)**
-```bash
-uv run python scripts/cli.py build --tenant-id your-tenant-id-here
-```
-
-**Start container only**
-```bash
-# Start Neo4j container only
-azure-tenant-grapher build --tenant-id dummy --no-container
-
-# Or use Docker Compose directly
-docker-compose up -d neo4j
-```
-
-**Use existing Neo4j instance**
-```bash
-# Skip container management if you have Neo4j running elsewhere
-azure-tenant-grapher build --tenant-id your-tenant-id-here --no-container
-```
-
-### 3. Access Neo4j Browser
-Once Neo4j is running, you can access the browser interface at:
-- URL: http://localhost:7475
-- Username: `neo4j`
-- Password: `azure-grapher-2024` (or your custom password)
-
-## Usage
-
-### Command Line Options
-
-```bash
-# Basic usage with automatic container management
-azure-tenant-grapher build --tenant-id <your-tenant-id>
-
-# Start Neo4j container only (useful for setup)
-azure-tenant-grapher build --tenant-id dummy --no-container
-
-# Use existing Neo4j instance (skip container management)
-azure-tenant-grapher build --tenant-id <your-tenant-id> --no-container
-
-# Test with limited resources
-azure-tenant-grapher test --limit 50
-
-# Generate visualization only
-azure-tenant-grapher visualize
-
-# Check processing progress
-azure-tenant-grapher progress
-```
-
 ### VS Code Tasks
 
-Use Ctrl+Shift+P and search for "Tasks: Run Task" to access:
 - **Install Dependencies**: Installs Python packages using uv
-- **Start Neo4j Container**: Starts the Neo4j Docker container using uv
-- **Stop Neo4j Container**: Stops the Neo4j Docker container
-- **Run Azure Tenant Grapher**: Runs the full application with uv (prompts for tenant ID)
+- **Start/Stop Neo4j Container**: Manages Neo4j Docker container
+- **Run Azure Tenant Grapher**: Full application with prompts
+- **Generate 3D Visualization**: From existing graph data
 
 ### Shell Scripts
 
-**Unix/macOS/Linux (Bash)**
-```bash
-# Start container and run grapher
-./run-grapher.sh --tenant-id "your-tenant-id-here"
+- `./run-grapher.sh` (Unix/macOS/Linux)
+- `./run-grapher.ps1` (Windows PowerShell)
 
-# Start container and run grapher with 3D visualization
-./run-grapher.sh --tenant-id "your-tenant-id-here" --visualize
+---
 
-# Generate visualization only (from existing graph data)
-./run-grapher.sh --tenant-id "your-tenant-id-here" --visualize-only
+## IaC Subset & Rules System
 
-# Start container only
-./run-grapher.sh --tenant-id "dummy" --container-only
+- **Subset Filtering**: Use `--subset-filter` to select resources by type, ID, or label.
+- **Transformation Rules**: Use a YAML rules file to rename, retarget, and tag resources.
+- **Automated Deployment**: Generated output includes a `deploy.sh` script for easy Azure deployment.
 
-# Use existing Neo4j instance
-./run-grapher.sh --tenant-id "your-tenant-id-here" --no-container
+> **See:**
+> - [docs/demo/subset_bicep_demo.md](docs/demo/subset_bicep_demo.md) — practical usage and examples
+> - [docs/design/iac_subset_bicep.md](docs/design/iac_subset_bicep.md) — full rules file documentation and advanced options
 
-# Show help
-./run-grapher.sh --help
-```
-
-**Windows (PowerShell)**
-
-```powershell
-# Start container and run grapher
-.\run-grapher.ps1 -TenantId "your-tenant-id-here"
-
-# Start container and run grapher with 3D visualization
-.\run-grapher.ps1 -TenantId "your-tenant-id-here" -Visualize
-
-# Generate visualization only (from existing graph data)
-.\run-grapher.ps1 -TenantId "your-tenant-id-here" -VisualizeOnly
-
-# Start container only
-.\run-grapher.ps1 -TenantId "dummy" -ContainerOnly
-
-# Use existing Neo4j instance
-.\run-grapher.ps1 -TenantId "your-tenant-id-here" -NoContainer
-```
-
-## Development and Testing
-
-This project includes a comprehensive test suite and follows best practices for Python development.
-
-### Running Tests
-
-**Quick test run:**
-```bash
-# Run all tests
-python run_tests.py
-
-# Run tests with coverage report
-python run_tests.py -c
-
-# Run specific test module
-python -m pytest tests/test_config_manager.py -v
-
-# Install test dependencies if needed
-python run_tests.py --install-deps
-```
-
-**Advanced testing:**
-```bash
-# Run tests with verbose output and coverage
-python -m pytest tests/ -v --cov=src --cov-report=html
-
-# Run only unit tests (skip integration tests)
-python -m pytest tests/ -m "not integration"
-
-# Run tests in parallel (if pytest-xdist is installed)
-python -m pytest tests/ -n auto
-```
-
-### Test Structure
-
-The test suite includes:
-- **Unit Tests**: Individual module testing with mocks and fixtures
-- **Integration Tests**: End-to-end testing scenarios
-- **Configuration Tests**: Environment and configuration validation
-- **Mock-based Tests**: Safe testing without external dependencies
-
-### Code Quality
-
-```bash
-# Run linting (if configured)
-python -m flake8 src/ tests/
-
-# Format code (if black is installed)
-python -m black src/ tests/
-
-# Type checking (if mypy is installed)
-python -m mypy src/
-```
-
-### Development Scripts
-
-The `scripts/` directory contains helpful development utilities:
-
-```bash
-# Test the modular structure
-python scripts/test_modular_structure.py
-
-# Check progress of a running graph build
-python scripts/check_progress.py
-
-# Enhanced CLI with better error handling
-python scripts/cli.py --help
-
-# Demonstrate advanced features
-python scripts/demo_enhanced_features.py
-```
-
-## Configuration
-
-### Dependency Management
-
-This project uses [uv](https://docs.astral.sh/uv/) for dependency management and virtual environment handling. Benefits include:
-
-- **Fast**: uv is written in Rust and significantly faster than pip
-- **Reliable**: Deterministic dependency resolution with lock files
-- **Simple**: Single tool for virtual environments and dependency management
-
-Key commands:
-```bash
-# Install dependencies (creates virtual environment automatically)
-uv sync
-
-# Run commands in the virtual environment
-uv run python azure_tenant_grapher.py --help
-
-# Add new dependencies
-uv add package-name
-
-# Add development dependencies
-uv add --dev package-name
-
-# Update dependencies
-uv sync --upgrade
-```
-
-The `pyproject.toml` file contains all project configuration and dependencies. The `requirements.txt` file is maintained for compatibility but `uv` will use `pyproject.toml` as the source of truth.
-
-### Environment Variables
-
-The application uses environment variables for configuration. Copy `.env.example` to `.env` and customize:
-
-```bash
-# Azure Configuration
-AZURE_TENANT_ID=your-tenant-id-here
-
-# Neo4j Configuration (matches docker-compose.yml)
-NEO4J_URI=bolt://localhost:7688
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=azure-grapher-2024
-
-# Logging Configuration
-LOG_LEVEL=INFO
-```
-
-### Docker Compose Configuration
-
-The `docker-compose.yml` file configures Neo4j with:
-- **Ports**: 7475 (HTTP), 7688 (Bolt)
-- **Authentication**: neo4j/azure-grapher-2024
-- **Memory**: 2GB heap, 1GB page cache
-- **Plugins**: APOC procedures enabled
-- **Persistence**: Data persisted in Docker volumes
-
-You can customize the container by editing `docker-compose.yml`.
-
-## 3D Graph Visualization
-
-The Azure Tenant Grapher includes an interactive 3D visualization feature powered by [3d-force-graph](https://github.com/vasturiano/3d-force-graph). This creates a web-based, interactive view of your Azure resource graph.
-
-### Features
-
-- **Interactive 3D Graph**: Navigate and explore your Azure resources in 3D space
-- **Node Types**: Different colors and sizes for different Azure resource types
-- **Relationships**: Visual representation of resource dependencies and containment
-- **Filtering**: Filter by node types or relationship types using checkboxes
-- **Search**: Real-time search to find specific resources
-- **Node Details**: Click on any node to view detailed resource information
-- **Legend**: Visual legend showing node types and colors
-- **Auto-rotation**: Optional camera auto-rotation for presentation mode
-
-### Usage
-
-**Generate visualization after building the graph:**
-```bash
-azure-tenant-grapher build --tenant-id your-tenant-id --visualize
-```
-
-**Generate visualization from existing graph data:**
-```bash
-azure-tenant-grapher visualize
-```
-
-#### Show hierarchical Resource→Subscription→Tenant edges
-
-To include explicit Resource→Subscription and Subscription→Tenant "CONTAINS" edges in the visualization, use:
-
-```bash
-azure-tenant-grapher visualize --link-hierarchy
-```
-
-This will add additional hierarchical edges to the graph, making the containment structure explicit in the 3D view.
-
-**Check current configuration:**
-```bash
-azure-tenant-grapher config
-```
-
-### Visualization Controls
-
-- **Node Types Filter**: Check/uncheck node types to show/hide them
-- **Relationship Types Filter**: Check/uncheck relationship types to show/hide them
-- **Search Box**: Type to filter nodes by name, type, or properties
-- **Reset Filters**: Button to clear all filters and show the complete graph
-- **Node Interaction**: Click nodes to view detailed information
-- **Camera Controls**: Mouse/trackpad to zoom, rotate, and pan the 3D view
-
-### Supported Node Types
-
-The visualization automatically detects and color-codes these Azure resource types:
-
-- **Subscription** (Red): Azure subscriptions
-- **ResourceGroup** (Blue): Resource groups
-- **Resource** (Teal): Generic Azure resources
-- **StorageAccount** (Yellow): Storage accounts
-- **VirtualMachine** (Purple): Virtual machines
-- **NetworkInterface** (Light Purple): Network interfaces
-- **VirtualNetwork** (Green): Virtual networks
-- **KeyVault** (Pink): Key vaults
-- **SqlServer** (Orange): SQL servers
-- **WebSite** (Dark Orange): App Service web sites
-
-### Relationship Types
-
-- **CONTAINS**: Subscription contains resource groups, resource groups contain resources
-- **BELONGS_TO**: Resources belong to resource groups
-- **CONNECTED_TO**: Network connections between resources
-- **DEPENDS_ON**: Resource dependencies (from ARM dependsOn)
-- **USES_SUBNET**: Virtual machine uses subnet
-- **SECURED_BY**: Subnet secured by network security group
-- **HAS_MANAGED_IDENTITY**: Resource has managed identity
-- **POLICY_FOR**: Key Vault policy for managed identity
-- **LOGS_TO**: Resource logs to Log Analytics Workspace
-- **MANAGES**: Management relationships
+---
 
 ## Architecture
 
-The application consists of several key components:
+- **Resource Walker**: Discovers all Azure resources and relationships.
+- **Graph Builder**: Creates nodes and edges in Neo4j.
+- **Visualization**: 3D interactive web-based graph.
+- **IaC Emitters**: Generate Bicep, ARM, or Terraform from the graph.
+- **Transformation Engine**: Applies rules for name, region, and tag changes.
 
-1. **Azure Resource Walker**: Discovers and enumerates resources
-2. **Graph Builder**: Creates nodes and relationships in Neo4j
-3. **Configuration Manager**: Handles settings and credentials
-4. **Resource Mappers**: Transform Azure resource data for graph storage
+---
+
+## Development & Testing
+
+- **Run all tests**: `python run_tests.py`
+- **Lint and type check**: `uv run ruff check src/ tests/` and `uv run mypy --strict src/`
+- **Test coverage**: `python -m pytest tests/ --cov=src --cov-report=html`
+
+---
 
 ## Troubleshooting
 
-### Docker Issues
+- **Docker Issues**: Ensure Docker Desktop is running.
+- **Neo4j Connection**: Check container status and credentials.
+- **Azure Authentication**: Run `az login` and check permissions.
+- **IaC Deployment**: Ensure Azure CLI and Bicep CLI are installed.
 
-**Error: "Docker is not available"**
-- Ensure Docker Desktop is installed and running
-- Download from: https://www.docker.com/products/docker-desktop
-- On Windows, make sure Docker Desktop is started and the Docker daemon is running
+---
 
-**Error: "docker-compose command not found"**
-- Docker Compose is included with Docker Desktop
-- Alternatively, use `docker compose` (newer syntax) instead of `docker-compose`
+## Further Reading
 
-### Neo4j Connection Issues
-
-**Error: "Failed to connect to Neo4j"**
-- Check if the Neo4j container is running: `docker ps`
-- Verify the connection details in your `.env` file
-- Try accessing Neo4j Browser at http://localhost:7475
-
-### Azure Authentication Issues
-
-**Error: "Azure authentication failed"**
-- Run `az login` to authenticate with Azure CLI
-- Ensure you have the correct permissions in the target tenant
-- Verify the tenant ID is correct
-
-### Permission Issues
-
-**Error: "Access denied" when discovering resources**
-- Ensure your Azure account has Reader permissions on subscriptions
-- Some resources may require additional permissions to read configuration details
-
-## Summary of Changes
-
-This project has been updated to use `uv` for dependency management and to resolve port conflicts:
-
-### Key Updates:
-
-1. **uv Integration**: All Python commands now use `uv run` to ensure the correct virtual environment
-2. **Port Changes**: Neo4j now runs on ports 7475 (HTTP) and 7688 (Bolt) to avoid conflicts
-3. **No Password Prompts**: Default password is set to `azure-grapher-2024` and no longer prompts on startup
-4. **Updated Scripts**: All shell scripts, PowerShell scripts, and VS Code tasks use `uv run`
-5. **Environment Defaults**: Sensible defaults are provided so `.env` file is optional
-
-### Migration from pip to uv:
-
-If you previously used `pip`, simply run:
-```bash
-uv sync
-```
-
-All dependencies from `requirements.txt` are now managed in `pyproject.toml` with `uv`.
-
-### Testing the Setup:
-
-```bash
-# Test the help
-azure-tenant-grapher --help
-
-# Show build options
-azure-tenant-grapher build --help
-
-# Start Neo4j container only
-azure-tenant-grapher build --tenant-id dummy --no-container
-
-# Access Neo4j Browser at http://localhost:7475 with neo4j/azure-grapher-2024
-```
-
-## CLI Command Reference
-
-After installation with `uv sync`, these commands are available:
-
-- `azure-tenant-grapher` - Full command name (recommended)
-- `azure-graph` - Medium alias
-- `atg` - Short alias
-
-All aliases provide identical functionality. Use `azure-tenant-grapher --help` to see all available commands and options.
+- [docs/demo/subset_bicep_demo.md](docs/demo/subset_bicep_demo.md): Subset Bicep generation demo and rules file usage
+- [docs/design/iac_subset_bicep.md](docs/design/iac_subset_bicep.md): Full design and documentation for the rules file system

@@ -17,6 +17,7 @@ from ..config_manager import create_neo4j_config_from_env
 from ..utils.session_manager import create_session_manager
 from .emitters import get_emitter
 from .engine import TransformationEngine
+from .subset import SubsetFilter
 from .traverser import GraphTraverser
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,9 @@ async def generate_iac_command_handler(
     rules_file: Optional[str] = None,
     dry_run: bool = False,
     resource_filters: Optional[str] = None,
+    subset_filter: Optional[str] = None,
+    dest_rg: Optional[str] = None,
+    location: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -78,7 +82,7 @@ async def generate_iac_command_handler(
             filter_conditions = [f"r.type = '{f}'" for f in filters]
             filter_cypher = f"""
             MATCH (r:Resource)
-            WHERE {' OR '.join(filter_conditions)}
+            WHERE {" OR ".join(filter_conditions)}
             OPTIONAL MATCH (r)-[rel]->(t:Resource)
             RETURN r, collect({{type:type(rel), target:t.id}}) AS rels
             """
@@ -89,6 +93,31 @@ async def generate_iac_command_handler(
 
         # Apply transformations
         engine = TransformationEngine(rules_file)
+
+        # Subset filtering
+        subset_filter_obj = None
+        if subset_filter:
+            subset_filter_obj = SubsetFilter.parse(subset_filter)
+            logger.info(f"Using subset filter: {subset_filter_obj}")
+
+        # Generate templates using new engine method if subset or RG is specified
+        if subset_filter_obj or dest_rg or location:
+            emitter_cls = get_emitter(format_type)
+            emitter = emitter_cls()
+            if output_path:
+                out_dir = Path(output_path)
+            else:
+                out_dir = default_timestamped_dir()
+            # Pass RG and location to emitter if supported (BicepEmitter will need to accept these)
+            paths = engine.generate_iac(
+                graph, emitter, str(out_dir), subset_filter=subset_filter_obj
+            )
+            click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
+            for path in paths:
+                click.echo(f"  📄 {path}")
+            return 0
+
+        # Default: apply rules to all resources
         graph.resources = [engine.apply(r) for r in graph.resources]
 
         # Handle dry run

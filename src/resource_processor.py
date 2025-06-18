@@ -282,6 +282,9 @@ class DatabaseOperations:
             rg_name = resource["resource_group"]
             subscription_id = resource["subscription_id"]
             resource_id = resource["id"]
+            logger.info(
+                f"DEBUG: Creating RG relationships for resource id={resource_id}, resource_group={rg_name}, subscription_id={subscription_id}"
+            )
 
             # Create resource group node if it doesn't exist
             rg_query = """
@@ -472,6 +475,8 @@ class ResourceProcessor:
                 logger.info(
                     f"⏭️  Resource {resource_index + 1}/{self.stats.total_resources}: {resource_name} - SKIPPED ({reason})"
                 )
+                # Always create relationships, even if resource is skipped
+                self.db_ops.create_resource_group_relationships(resource)
                 self.stats.skipped += 1
                 return True
 
