@@ -53,6 +53,17 @@ cd my-deployment
 ./deploy.sh
 ```
 
+### 4. MCP Server & Agent Mode
+
+```bash
+# Start the MCP server (requires Neo4j running)
+azure-tenant-grapher mcp-server
+
+# Start the AutoGen MCP agent (Neo4j + MCP server + agent chat loop)
+# Requires: pip install mcp-neo4j-cypher autogen-ext[mcp]
+azure-tenant-grapher agent-mode
+```
+
 ---
 
 ## 📖 Table of Contents
@@ -88,6 +99,7 @@ cd my-deployment
 - [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
 - Docker & Docker Compose (for Neo4j)
 - Azure CLI & Bicep CLI (for authentication and IaC deployment)
+- (Optional) [mcp-neo4j-cypher](https://github.com/neo4j-contrib/mcp-neo4j-cypher) and [autogen-ext[mcp]](https://github.com/microsoft/autogen) for MCP server/agent mode
 
 ### Install Steps
 
@@ -120,6 +132,12 @@ azure-tenant-grapher progress
 # Show configuration
 azure-tenant-grapher config
 ```
+
+# Start MCP server (Neo4j + MCP)
+azure-tenant-grapher mcp-server
+
+# Start AutoGen MCP agent (graph/tenant Q&A)
+azure-tenant-grapher agent-mode
 
 ### VS Code Tasks
 

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Optional
 
 import click
 
+# (removed duplicate import click)
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.cli_dashboard_manager import CLIDashboardManager
 from src.config_manager import (
@@ -511,3 +512,53 @@ async def progress_command_handler(ctx: click.Context) -> None:
         click.echo("❌ Progress checker not available", err=True)
     except Exception as e:
         click.echo(f"❌ Failed to check progress: {e}", err=True)
+
+
+# === MCP Server Command Handler ===
+
+
+async def mcp_server_command_handler(ctx):
+    """
+    Ensure Neo4j is running, then launch MCP server (uvx mcp-neo4j-cypher).
+    """
+    import logging
+
+    from src.mcp_server import run_mcp_server_foreground
+
+    try:
+        logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
+        exit_code = await run_mcp_server_foreground()
+        if exit_code == 0:
+            click.echo("✅ MCP server exited cleanly.")
+        else:
+            click.echo(f"❌ MCP server exited with code {exit_code}", err=True)
+    except Exception as e:
+        click.echo(f"❌ Failed to start MCP server: {e}", err=True)
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+
+# === Agent Mode Command Handler ===
+
+
+async def agent_mode_command_handler(ctx):
+    """
+    Start Neo4j, MCP server, and launch AutoGen MCP agent chat loop.
+    """
+    import logging
+
+    from src.agent_mode import run_agent_mode
+
+    try:
+        logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
+        await run_agent_mode()
+    except Exception as e:
+        import click
+
+        click.echo(f"❌ Failed to start agent mode: {e}", err=True)
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)

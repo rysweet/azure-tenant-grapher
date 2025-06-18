@@ -39,3 +39,7 @@ rich>=13.0.0
 ruamel.yaml>=0.18
 
 azure-mgmt-resource>=23.0.0
+
+# Optional: MCP/AutoGen agent (see README for usage)
+# mcp-neo4j-cypher  # Neo4j MCP server (pip install if using mcp-server/agent-mode)
+# autogen-ext[mcp]  # AutoGen MCP agent (pip install if using agent-mode)
