@@ -28,10 +28,21 @@ async def run_agent_mode():
     mcp_proc = await launch_mcp_server()
     await asyncio.sleep(2)  # Give MCP server a moment to start
 
-    from autogen_ext.tools.mcp import McpWorkbench, StdioServerParams
-    from autogen_agentchat.agents import AssistantAgent
-    from autogen_agentchat.ui import Console
-    from autogen_ext.models.openai import OpenAIChatCompletionClient
+    # Critical imports for agent mode
+    try:
+        from autogen_ext.tools.mcp import McpWorkbench, StdioServerParams
+        from autogen_agentchat.agents import AssistantAgent
+        from autogen_agentchat.ui import Console
+        from autogen_ext.models.openai import OpenAIChatCompletionClient
+        import tiktoken
+        import openai
+    except ModuleNotFoundError as error:
+        print(
+            f"❌ Failed to start agent mode: {error}\n"
+            "Please ensure all required dependencies are installed: autogen_ext, autogen_agentchat, openai, tiktoken",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Set up MCP workbench
     workbench = McpWorkbench(
