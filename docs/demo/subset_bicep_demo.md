@@ -34,7 +34,7 @@ rules:
           environment: "replica"
           source: "tenant-graph"
           deployment: "subset-bicep"
-  
+
   - resource_type: "Microsoft.Compute/virtualMachines"
     actions:
       rename:
@@ -46,7 +46,7 @@ rules:
           environment: "replica"
           source: "tenant-graph"
           deployment: "subset-bicep"
-  
+
   - resource_type: "Microsoft.Network/*"
     actions:
       rename:

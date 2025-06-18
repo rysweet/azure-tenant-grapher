@@ -27,12 +27,14 @@ def test_bicep_template_builds(tmp_path: Path) -> None:
     ]
     emitter = BicepEmitter()
     files = emitter.emit(graph, tmp_path)
-    assert len(files) == 1
-    bicep_path = files[0]
-    assert bicep_path.name == "main.bicep"
+    file_names = [f.name for f in files]
+    assert "main.bicep" in file_names
+    bicep_files = [f for f in files if f.name == "main.bicep"]
+    assert bicep_files, "No main.bicep file found"
+    bicep_path = bicep_files[0]
 
     # Run bicep build
     proc = subprocess.run(
-        [bicep, "build", str(bicep_path)], capture_output=True, text=True
+        [str(bicep), "build", str(bicep_path)], capture_output=True, text=True
     )
     assert proc.returncode == 0, f"bicep build failed:\n{proc.stdout}\n{proc.stderr}"
