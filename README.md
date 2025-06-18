@@ -141,8 +141,8 @@ azure-tenant-grapher config
 - **Transformation Rules**: Use a YAML rules file to rename, retarget, and tag resources.
 - **Automated Deployment**: Generated output includes a `deploy.sh` script for easy Azure deployment.
 
-> **See:**  
-> - [docs/demo/subset_bicep_demo.md](docs/demo/subset_bicep_demo.md) — practical usage and examples  
+> **See:**
+> - [docs/demo/subset_bicep_demo.md](docs/demo/subset_bicep_demo.md) — practical usage and examples
 > - [docs/design/iac_subset_bicep.md](docs/design/iac_subset_bicep.md) — full rules file documentation and advanced options
 
 ---

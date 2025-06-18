@@ -99,9 +99,9 @@ def test_spec_file_created_and_resource_limit(neo4j_test_graph):
     assert "[anonymized]" not in content.lower()
     # Assert all anonymized names match regex
     for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
-        assert re.match(r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match), (
-            f"Name does not match pattern: {match}"
-        )
+        assert re.match(
+            r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
+        ), f"Name does not match pattern: {match}"
     shutil.rmtree(tmpdir)
 
 
@@ -131,9 +131,9 @@ def test_names_anonymized_and_no_real_ids(neo4j_test_graph):
     assert "[anonymized]" not in content.lower()
     # Assert all anonymized names match regex
     for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
-        assert re.match(r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match), (
-            f"Name does not match pattern: {match}"
-        )
+        assert re.match(
+            r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
+        ), f"Name does not match pattern: {match}"
     shutil.rmtree(tmpdir)
 
 

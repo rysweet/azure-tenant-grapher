@@ -1,14 +1,14 @@
-# Design Specification: Sub-Graph Bicep Generation  
+# Design Specification: Sub-Graph Bicep Generation
 *(docs/design/iac_subset_bicep.md)*
 
 ---
 
-## 1 — Purpose  
+## 1 — Purpose
 Provide the capability to generate **Bicep** IaC for an **arbitrary subset** of the tenant graph and deploy those resources into a **new resource group** (RG) specified at generation time, all while preserving inter-resource dependencies. This feature is additive and must not affect current full-graph generation behaviour.
 
 ---
 
-## 2 — Current Subsystem Analysis  
+## 2 — Current Subsystem Analysis
 
 | Area | Key Types / Functions | Observations |
 |------|-----------------------|--------------|
@@ -19,9 +19,9 @@ Provide the capability to generate **Bicep** IaC for an **arbitrary subset** of 
 
 ---
 
-## 3 — Subset-Selection Mechanism  
+## 3 — Subset-Selection Mechanism
 
-### 3.1 CLI Surface  
+### 3.1 CLI Surface
 
 ```
 generate-iac \
@@ -40,7 +40,7 @@ Supported predicates (encoded in a `SubsetFilter` dataclass):
 | `label`   | `label=DMZ` | Matches a Neo4j node label. |
 | `cypher`  | `cypher=MATCH ...` | Expert escape hatch. |
 
-### 3.2 Processing Flow  
+### 3.2 Processing Flow
 
 ```mermaid
 flowchart LR
@@ -52,18 +52,18 @@ flowchart LR
     Engine --> BicepEmitter
 ```
 
-* **New helper:** `SubsetSelector` (`src/iac/subset.py`)  
-  1. Build initial inclusion set from `SubsetFilter`.  
-  2. Perform graph closure to include all parent scopes and any explicit `dependsOn` ancestors.  
+* **New helper:** `SubsetSelector` (`src/iac/subset.py`)
+  1. Build initial inclusion set from `SubsetFilter`.
+  2. Perform graph closure to include all parent scopes and any explicit `dependsOn` ancestors.
   3. Return the trimmed `TenantGraph`.
 
 *Rationale:* Keeps Traverser unchanged; supports non-Cypher predicates; Engine remains the orchestrator.
 
 ---
 
-## 4 — Bicep RG Homing Strategy  
+## 4 — Bicep RG Homing Strategy
 
-### 4.1 Chosen Template Structure (Module Pattern)  
+### 4.1 Chosen Template Structure (Module Pattern)
 
 ```
 main.bicep                  (targetScope = 'subscription')
@@ -81,20 +81,20 @@ modules/rg.bicep            (targetScope = 'resourceGroup')
    └─ ...
 ```
 
-* **Parameters**  
+* **Parameters**
   ```bicep
   param rgName string
   param rgLocation string = 'eastus'
   ```
 
-* Each emitted resource gains  
+* Each emitted resource gains
   ```bicep
   scope: resourceGroup()
   ```
 
 * `dependsOn` is recomputed inside the module.
 
-### 4.2 Emitter Refactor Points  
+### 4.2 Emitter Refactor Points
 
 | Function | Change |
 |----------|--------|
@@ -104,7 +104,7 @@ modules/rg.bicep            (targetScope = 'resourceGroup')
 
 ---
 
-## 5 — Engine & CLI Changes  
+## 5 — Engine & CLI Changes
 
 | Component | Change |
 |-----------|--------|
@@ -144,7 +144,7 @@ rules:
         add:
           environment: "replica"
           source: "tenant-graph"
-  
+
   - resource_type: "Microsoft.Compute/*"
     actions:
       rename:
@@ -165,7 +165,7 @@ This enables creating replica environments with predictable naming conventions w
 
 ---
 
-## 6 — Testing Plan  
+## 6 — Testing Plan
 
 | Layer | Test | Focus |
 |-------|------|-------|
@@ -176,15 +176,15 @@ This enables creating replica environments with predictable naming conventions w
 
 ---
 
-## 7 — Migration & Backwards Compatibility  
+## 7 — Migration & Backwards Compatibility
 
-* **Default behaviour unchanged** when no new flags are supplied.  
-* `TransformationEngine.generate_iac` maintains positional arguments; new ones are keyword-only.  
+* **Default behaviour unchanged** when no new flags are supplied.
+* `TransformationEngine.generate_iac` maintains positional arguments; new ones are keyword-only.
 * All existing tests remain green; new tests are additive.
 
 ---
 
-## 8 — Appendix: Sequence Diagram  
+## 8 — Appendix: Sequence Diagram
 
 ```mermaid
 sequenceDiagram

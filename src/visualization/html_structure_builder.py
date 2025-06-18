@@ -89,6 +89,7 @@ class HtmlStructureBuilder:
             <button id="zoomInBtn" class="control-btn">+ Zoom</button>
             <button id="zoomOutBtn" class="control-btn">- Zoom</button>
         </div>
+        <!-- auto-rotation is disabled by default -->
         <button id="toggleRotateBtn" class="control-btn">Enable Auto-Rotate</button>
 
         <input type="text" id="searchBox" class="search-box" placeholder="Search nodes..." />

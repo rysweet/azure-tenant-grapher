@@ -79,19 +79,37 @@ class GraphVisualizer:
     ) -> None:
         """
         Add Resource→Subscription and Subscription→Tenant edges if not already present.
+        Also logs node properties for debugging why links may not be created.
         """
         # Build lookup maps
         subscription_id_map = {}
         tenant_id_map = {}
         node_id_map = {}
 
+        logger.info(
+            "DEBUG: Listing all nodes with labels and properties for hierarchy linking:"
+        )
+        for node in nodes:
+            logger.info(
+                f"Node id={node['id']} labels={node.get('labels',[])} properties={node.get('properties',{})}"
+            )
+
         for node in nodes:
             node_id_map[node["id"]] = node
             if "Subscription" in node.get("labels", []):
                 # Accept both 'id' and 'properties' for subscription id
-                subscription_id_map[node["properties"].get("id")] = node["id"]
+                sub_id = node["properties"].get("id")
+                if sub_id:
+                    subscription_id_map[sub_id] = node["id"]
             if "Tenant" in node.get("labels", []):
-                tenant_id_map[node["properties"].get("id")] = node["id"]
+                tenant_id = node["properties"].get("id")
+                if tenant_id:
+                    tenant_id_map[tenant_id] = node["id"]
+
+        logger.info(
+            f"DEBUG: subscription_id_map keys: {list(subscription_id_map.keys())}"
+        )
+        logger.info(f"DEBUG: tenant_id_map keys: {list(tenant_id_map.keys())}")
 
         # Build a set of (source, target, type) for existing links to avoid duplicates
         existing_edges = {
@@ -101,11 +119,20 @@ class GraphVisualizer:
         # Resource → Subscription
         for node in nodes:
             if "Resource" in node.get("labels", []):
-                sub_id = node["properties"].get("subscriptionId")
+                # Support both camelCase and snake_case for subscription id
+                sub_id = node["properties"].get("subscriptionId") or node[
+                    "properties"
+                ].get("subscription_id")
+                logger.info(
+                    f"DEBUG: Resource node id={node['id']} subscriptionId={sub_id}"
+                )
                 if sub_id and sub_id in subscription_id_map:
                     sub_node_id = subscription_id_map[sub_id]
                     edge_key = (node["id"], sub_node_id, "CONTAINS")
                     if edge_key not in existing_edges:
+                        logger.info(
+                            f"DEBUG: Adding edge Resource {node['id']} → Subscription {sub_node_id}"
+                        )
                         links.append(
                             {
                                 "source": node["id"],
@@ -117,15 +144,25 @@ class GraphVisualizer:
                             }
                         )
                         existing_edges.add(edge_key)
+                else:
+                    logger.info(
+                        f"DEBUG: Resource node id={node['id']} could not find matching subscription for subscriptionId={sub_id}"
+                    )
 
         # Subscription → Tenant
         for node in nodes:
             if "Subscription" in node.get("labels", []):
                 tenant_id = node["properties"].get("tenantId")
+                logger.info(
+                    f"DEBUG: Subscription node id={node['id']} tenantId={tenant_id}"
+                )
                 if tenant_id and tenant_id in tenant_id_map:
                     tenant_node_id = tenant_id_map[tenant_id]
                     edge_key = (node["id"], tenant_node_id, "CONTAINS")
                     if edge_key not in existing_edges:
+                        logger.info(
+                            f"DEBUG: Adding edge Subscription {node['id']} → Tenant {tenant_node_id}"
+                        )
                         links.append(
                             {
                                 "source": node["id"],
@@ -137,6 +174,10 @@ class GraphVisualizer:
                             }
                         )
                         existing_edges.add(edge_key)
+                else:
+                    logger.info(
+                        f"DEBUG: Subscription node id={node['id']} could not find matching tenant for tenantId={tenant_id}"
+                    )
 
     def extract_graph_data(self, link_to_hierarchy: bool = False) -> Dict[str, Any]:
         """
