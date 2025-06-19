@@ -491,8 +491,11 @@ def container() -> None:
     click.echo("Container management is handled automatically by build commands.")
     click.echo("Use 'build --no-container' to disable automatic container management.")
 
+
 @cli.command()
-@click.argument("backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True))
+@click.argument(
+    "backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True)
+)
 def backup_db(backup_path: str) -> None:
     """Backup the Neo4j database and save it to BACKUP_PATH."""
     from src.container_manager import Neo4jContainerManager
@@ -503,6 +506,7 @@ def backup_db(backup_path: str) -> None:
     else:
         click.echo("❌ Neo4j backup failed", err=True)
         sys.exit(1)
+
 
 @cli.command()
 @click.pass_context

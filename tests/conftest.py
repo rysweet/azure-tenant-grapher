@@ -2,9 +2,20 @@
 Test configuration and shared utilities for Azure Tenant Grapher tests.
 """
 
+import asyncio
+import json
+import os
+import sys
+from typing import Any, Dict, List
+from unittest.mock import Mock
+
 import pytest
 
 from src.container_manager import Neo4jContainerManager
+from src.mcp_server import ensure_neo4j_running, launch_mcp_server
+
+# Add src directory to Python path for testing
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 @pytest.fixture(scope="session")
@@ -32,14 +43,10 @@ def neo4j_container():
     if started:
         manager.stop_neo4j_container()
 
-import asyncio
-import os
-import json
-from typing import Dict, Any
-from src.mcp_server import ensure_neo4j_running, launch_mcp_server
 
 class MCPServerTester:
     """Helper class for testing MCP server functionality."""
+
     def __init__(self, process: asyncio.subprocess.Process):
         self.process = process
 
@@ -65,6 +72,7 @@ class MCPServerTester:
             except asyncio.TimeoutError:
                 self.process.kill()
                 await self.process.wait()
+
 
 @pytest.fixture
 async def mcp_server_process(neo4j_container: Any):
@@ -100,14 +108,6 @@ async def mcp_server_process(neo4j_container: Any):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = original_value
-
-import sys
-from typing import Any, Dict, List
-from unittest.mock import Mock
-
-
-# Add src directory to Python path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 class MockNeo4jSession:
@@ -149,6 +149,7 @@ class MockNeo4jSession:
                 mock_record.keys = Mock(return_value=["llm_description"])
                 result.single.return_value = mock_record
             elif "updated_at" in query or "processing_status" in query:
+
                 def get_item(key: str) -> str:
                     return {
                         "updated_at": "2023-01-01T00:00:00Z",

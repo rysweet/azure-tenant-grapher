@@ -232,8 +232,11 @@ class TestConcurrentDatabaseAccess:
 
         # Mock LLM generator for testing
         from unittest.mock import AsyncMock
+
         mock_llm_generator = Mock()
-        mock_llm_generator.generate_resource_description = AsyncMock(return_value="Test LLM description")
+        mock_llm_generator.generate_resource_description = AsyncMock(
+            return_value="Test LLM description"
+        )
 
         processor = ResourceProcessor(
             session_manager=session_manager, llm_generator=mock_llm_generator

@@ -96,10 +96,12 @@ def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
         if not installed:
             print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
             import sys
+
             sys.exit(1)
     else:
         print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
         import sys
+
         sys.exit(1)
 
 

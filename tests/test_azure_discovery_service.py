@@ -475,7 +475,6 @@ class TestAzureDiscoveryService:
         # Verify the resource dict contains all required fields for ResourceProcessor
         assert len(resources) == 1
         resource = resources[0]
-        
 
         required_fields = [
             "id",
@@ -491,13 +490,14 @@ class TestAzureDiscoveryService:
 
         # Mock a session manager and verify upsert_resource would succeed
         from unittest.mock import MagicMock
+
         mock_session = MagicMock()
         mock_session.run = Mock()
-        
+
         # Ensure the mock session supports context manager protocol
         mock_session.__enter__ = Mock(return_value=mock_session)
         mock_session.__exit__ = Mock(return_value=None)
-        
+
         # Create a mock session manager that returns the mock session as a context manager
         mock_session_manager = MagicMock()
         mock_session_manager.session.return_value = mock_session

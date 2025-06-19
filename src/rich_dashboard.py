@@ -228,6 +228,7 @@ class RichDashboard:
                 try:
                     if local_queue is not None:
                         import queue
+
                         try:
                             key = local_queue.get(timeout=1)
                         except queue.Empty:
