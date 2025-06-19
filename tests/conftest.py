@@ -3,7 +3,9 @@ Test configuration and shared utilities for Azure Tenant Grapher tests.
 """
 
 import pytest
+
 from src.container_manager import Neo4jContainerManager
+
 
 @pytest.fixture(scope="session")
 def neo4j_container():
@@ -21,12 +23,16 @@ def neo4j_container():
     started = False
     if not manager.setup_neo4j():
         logs = manager.get_container_logs() or "(no logs available)"
-        pytest.skip(f"Could not start Neo4j container for integration tests.\nContainer logs:\n{logs}")
+        pytest.skip(
+            f"Could not start Neo4j container for integration tests.\nContainer logs:\n{logs}"
+        )
     # If container was not running before, mark as started for teardown
     started = not manager.is_neo4j_container_running()
     yield manager.neo4j_uri, manager.neo4j_user, manager.neo4j_password
     if started:
         manager.stop_neo4j_container()
+
+
 import os
 import sys
 from typing import Any, Dict, List

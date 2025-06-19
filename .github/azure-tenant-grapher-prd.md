@@ -4,7 +4,7 @@
 
 **Azure Tenant Grapher** is a Python application that exhaustively discovers Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The application provides comprehensive resource mapping, interactive 3D visualization, Rich CLI dashboard interface, anonymized tenant specifications, Infrastructure-as-Code generation, and optional AI-powered documentation generation.
 
-**New Feature: Agent Mode (MCP/AutoGen Integration)**  
+**New Feature: Agent Mode (MCP/AutoGen Integration)**
 Azure Tenant Grapher now includes an "agent mode" that enables users to ask natural language questions about their Azure graph/tenant data. This is powered by an AutoGen agent that chains tool calls (via the MCP server) to answer questions using the Neo4j graph database.
 
 ---

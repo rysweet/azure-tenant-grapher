@@ -303,6 +303,7 @@ class RichDashboard:
 
                 def monitor_exit():
                     import os
+
                     while not stop_event.is_set():
                         if self._should_exit:
                             live.stop()
