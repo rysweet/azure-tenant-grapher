@@ -49,6 +49,17 @@ namespace AzureTenantGrapher
                     Environment.ExitCode = 0;
                     return 0;
                 }
+                if (!string.IsNullOrWhiteSpace(config.GetType().GetProperty("BackupNeo4jPath")?.GetValue(config) as string))
+                {
+                    // Backup Neo4j database
+                    var backupLogger = loggerFactory.CreateLogger<Container.Neo4jContainerManager>();
+                    var containerManager = new Container.Neo4jContainerManager(backupLogger);
+                    var backupPath = config.GetType().GetProperty("BackupNeo4jPath")?.GetValue(config) as string;
+                    containerManager.BackupDatabase(backupPath!);
+                    logger.LogInformation("Backup completed at {Path}", backupPath);
+                    Environment.ExitCode = 0;
+                    return 0;
+                }
 
                 // Discovery
                 var discoveryLogger = loggerFactory.CreateLogger<AzureDiscoveryService>();
