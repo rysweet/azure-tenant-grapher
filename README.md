@@ -77,7 +77,98 @@ uv pip install -r requirements.txt
 # Start Neo4j (auto-managed by the app, or use docker-compose)
 docker-compose up -d
 
-# Build the graph
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Copy and edit .env for your Azure tenant ID, openai configuration
+cp .env.example .env
+
+# Authenticate with Azure
+az login --tenant <your-tenant-id>
+```
+
+### 2. Build Your Graph of the Azure Tenant
+
+```bash
+# Build the graph with the interactive dashboard
+azure-tenant-grapher build --tenant-id <your-tenant-id>
+```
+
+### 3. Explore, Visualize, and Generate IaC
+
+```bash
+# Visualize your Azure graph in 3D
+azure-tenant-grapher visualize
+
+# Generate Bicep IaC for a subset of resources
+# exclude the `--subset-filter` option to generate for the entire tenant
+azure-tenant-grapher generate-iac \
+  --format bicep \
+  --subset-filter "types=Microsoft.Storage/*" \
+  --rules-file ./config/replica-rules.yaml \
+  --dest-rg "replica-rg" \
+  --location "East US" \
+  --output ./my-deployment
+
+# Deploy the generated Bicep
+cd my-deployment
+./deploy.sh
+```
+
+---
+
+## 📖 Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [IaC Subset & Rules System](#iac-subset--rules-system)
+- [Architecture](#architecture)
+- [Development & Testing](#development--testing)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Features
+
+- **Comprehensive Azure Discovery**: Enumerate all resources and relationships across all subscriptions in your tenant.
+- **Neo4j Graph Database**: Build a rich, queryable graph of your Azure environment.
+- **Interactive 3D Visualization**: Explore your environment visually with filtering, search, and node details.
+- **IaC Generation**: Generate Bicep, ARM, or Terraform templates for your entire tenant or filtered subsets.
+- **Transformation Rules**: Apply name, region, and tag transformations to resources via a YAML rules file.
+- **Automated Deployment**: Generated IaC includes a ready-to-run deployment script.
+- **AI Integration**: Optional AI-powered resource descriptions.
+- **Modular, Testable Codebase**: Well-structured, with comprehensive test coverage.
+- **Database Backup**: Easily back up your Neo4j graph database to a local file for disaster recovery or migration.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.8+
+- [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
+- Docker & Docker Compose (for Neo4j)
+- Azure CLI & Bicep CLI (for authentication and IaC deployment)
+
+### Install Steps
+
+```bash
+uv sync
+source .venv/bin/activate
+cp .env.example .env
+az login
+```
+
+---
+
+## Usage
+
+### CLI Commands
+
+```bash
+# Build the Azure graph
 azure-tenant-grapher build --tenant-id <your-tenant-id>
 
 # Start agent mode
@@ -85,7 +176,29 @@ azure-tenant-grapher agent-mode
 
 # Ask a question non-interactively
 azure-tenant-grapher agent-mode --question "How many storage resources are in the tenant?"
+
+# Generate IaC (Bicep, ARM, Terraform)
+azure-tenant-grapher generate-iac --help
+
+# Check progress
+azure-tenant-grapher progress
+
+# Show configuration
+azure-tenant-grapher config
+
+# Backup the Neo4j database
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 ```
+
+### Neo4j Database Backup
+
+You can back up your Neo4j database to a local file using:
+
+```bash
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump
+```
+
+This will create a portable dump file of your Neo4j database, which can be restored using Neo4j tools.
 
 ---
 

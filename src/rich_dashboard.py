@@ -227,7 +227,12 @@ class RichDashboard:
             while not stop_event.is_set():
                 try:
                     if local_queue is not None:
-                        key = local_queue.get(timeout=1)
+                        import queue
+                        try:
+                            key = local_queue.get(timeout=1)
+                        except queue.Empty:
+                            # Normal timeout, continue to check stop_event
+                            continue
                     else:
                         key = readchar.readkey()
                 except Exception as e:
@@ -245,12 +250,12 @@ class RichDashboard:
                 if key and key.lower() == "x":
                     with self.lock:
                         self._should_exit = True
-                    print(
-                        "[DEBUG] Immediate exit: user pressed 'x'",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    sys.exit(0)
+                    # Ensure immediate process termination
+                    try:
+                        sys.exit(0)
+                    except SystemExit:
+                        # If sys.exit is caught, force immediate termination
+                        os._exit(0)
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:
@@ -308,7 +313,8 @@ class RichDashboard:
                         if self._should_exit:
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
-                            os._exit(0)  # Immediately exit the process for test/CI
+                            # Ensure immediate process termination
+                            os._exit(0)  # Restored: force immediate process termination
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)

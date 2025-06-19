@@ -50,5 +50,10 @@ namespace AzureTenantGrapher.Container
         {
             _logger.LogInformation("Pretending to stop Neo4j container (stub).");
         }
+
+        public void BackupDatabase(string backupPath)
+        {
+            _logger.LogInformation("Backing up Neo4j database to {Path}", backupPath);
+        }
     }
 }

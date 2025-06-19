@@ -195,13 +195,13 @@ class TestAzureDiscoveryService:
     @pytest.mark.asyncio
     async def test_discover_subscriptions_retry_logic_run(
         self, mock_config: Mock, mock_credential: Mock
-    ):
+    ) -> None:
         from azure.core.exceptions import AzureError
 
         # Fail twice, succeed on third attempt
         call_count = {"count": 0}
 
-        def subscription_client_factory(credential):
+        def subscription_client_factory(credential: Any) -> Mock:
             call_count["count"] += 1
             client = Mock()
             if call_count["count"] <= 2:
@@ -213,7 +213,7 @@ class TestAzureDiscoveryService:
                 client.subscriptions.list.return_value = [sub]
             return client
 
-        def resource_client_factory(credential, sub_id):
+        def resource_client_factory(credential: Any, sub_id: str) -> Mock:
             return Mock()
 
         azure_service = AzureDiscoveryService(
@@ -301,16 +301,16 @@ class TestAzureDiscoveryService:
     @pytest.mark.asyncio
     async def test_discover_resources_in_subscription_retry_logic_run(
         self, mock_config: Mock, mock_credential: Mock
-    ):
+    ) -> None:
         from azure.core.exceptions import AzureError
 
         # Fail twice, succeed on third attempt
         call_count = {"count": 0}
 
-        def subscription_client_factory(credential):
+        def subscription_client_factory(credential: Any) -> Mock:
             return Mock()
 
-        def resource_client_factory(credential, sub_id):
+        def resource_client_factory(credential: Any, sub_id: str) -> Mock:
             call_count["count"] += 1
             client = Mock()
             if call_count["count"] <= 2:
@@ -412,7 +412,7 @@ class TestAzureDiscoveryService:
     ) -> None:
         """Test parsing valid Azure resource ID."""
         resource_id = "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm"
-        result = azure_service._parse_resource_id(resource_id)
+        result = azure_service._parse_resource_id(resource_id)  # type: ignore[misc]
 
         assert result["subscription_id"] == "12345678-1234-1234-1234-123456789012"
         assert result["resource_group"] == "my-rg"
@@ -421,14 +421,14 @@ class TestAzureDiscoveryService:
         self, azure_service: AzureDiscoveryService
     ) -> None:
         """Test parsing empty resource ID."""
-        result = azure_service._parse_resource_id("")
+        result = azure_service._parse_resource_id("")  # type: ignore[misc]
         assert result == {}
 
     def test_parse_resource_id_invalid_format(
         self, azure_service: AzureDiscoveryService
     ) -> None:
         """Test parsing malformed resource ID."""
-        result = azure_service._parse_resource_id("invalid-resource-id")
+        result = azure_service._parse_resource_id("invalid-resource-id")  # type: ignore[misc]
         assert result == {}
 
     def test_parse_resource_id_missing_subscription(
@@ -438,7 +438,7 @@ class TestAzureDiscoveryService:
         resource_id = (
             "/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm"
         )
-        result = azure_service._parse_resource_id(resource_id)
+        result = azure_service._parse_resource_id(resource_id)  # type: ignore[misc]
 
         assert "subscription_id" not in result
         assert result["resource_group"] == "my-rg"
@@ -448,7 +448,7 @@ class TestAzureDiscoveryService:
     ) -> None:
         """Test parsing resource ID missing resource group."""
         resource_id = "/subscriptions/12345678-1234-1234-1234-123456789012/providers/Microsoft.Authorization/roleAssignments/role1"
-        result = azure_service._parse_resource_id(resource_id)
+        result = azure_service._parse_resource_id(resource_id)  # type: ignore[misc]
 
         assert result["subscription_id"] == "12345678-1234-1234-1234-123456789012"
         assert "resource_group" not in result
@@ -458,7 +458,6 @@ class TestAzureDiscoveryService:
         self, azure_service: AzureDiscoveryService, mock_resource_client: Mock
     ) -> None:
         """Regression test: Ensure discovered resources pass ResourceProcessor validation."""
-        from unittest.mock import Mock as MockSession
 
         from src.resource_processor import DatabaseOperations
 
@@ -476,6 +475,7 @@ class TestAzureDiscoveryService:
         # Verify the resource dict contains all required fields for ResourceProcessor
         assert len(resources) == 1
         resource = resources[0]
+        
 
         required_fields = [
             "id",
@@ -489,11 +489,20 @@ class TestAzureDiscoveryService:
             assert field in resource, f"Missing required field: {field}"
             assert resource[field] is not None, f"Required field {field} is None"
 
-        # Mock a session and verify upsert_resource would succeed
-        mock_session = MockSession()
+        # Mock a session manager and verify upsert_resource would succeed
+        from unittest.mock import MagicMock
+        mock_session = MagicMock()
         mock_session.run = Mock()
+        
+        # Ensure the mock session supports context manager protocol
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        
+        # Create a mock session manager that returns the mock session as a context manager
+        mock_session_manager = MagicMock()
+        mock_session_manager.session.return_value = mock_session
 
-        db_ops = DatabaseOperations(mock_session)
+        db_ops = DatabaseOperations(mock_session_manager)
 
         # This should not raise a ResourceDataValidationError
         success = db_ops.upsert_resource(resource)

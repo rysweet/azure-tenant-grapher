@@ -15,6 +15,7 @@ namespace AzureTenantGrapher.Config
         public Neo4jConfig Neo4j { get; set; } = new();
         public LoggingConfig Logging { get; set; } = new();
         public string VisualizationPath { get; set; } = string.Empty;
+        public string BackupNeo4jPath { get; set; } = string.Empty;
     }
 
     public class ProcessingConfig
@@ -91,6 +92,9 @@ namespace AzureTenantGrapher.Config
 
             if (dict.TryGetValue("NEO4J_PASSWORD", out var pwd))
                 config.Neo4j.Password = pwd;
+            
+            if (dict.TryGetValue("backupNeo4j", out var backupPath))
+                config.BackupNeo4jPath = backupPath;
 
             return config;
         }

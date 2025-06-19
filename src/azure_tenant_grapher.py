@@ -161,6 +161,22 @@ class AzureTenantGrapher:
                     )
                     continue
 
+            # 2.1. Pre-run in-memory de-duplication (Phase 1 efficiency improvement)
+            logger.info(f"🗂️  Processing {len(all_resources)} discovered resources")
+            id_map: Dict[str, Dict[str, Any]] = {}
+            for r in all_resources:
+                rid = r.get("id")
+                if rid:
+                    id_map[rid] = r  # keep last occurrence
+            
+            original_count = len(all_resources)
+            all_resources = list(id_map.values())
+            dedupe_count = original_count - len(all_resources)
+            if dedupe_count > 0:
+                logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs (removed {dedupe_count} duplicates)")
+            else:
+                logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+
             # 3. Process resources
             with self.session_manager:
                 stats = await self.processing_service.process_resources(
