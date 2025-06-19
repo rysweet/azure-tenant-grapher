@@ -249,6 +249,7 @@ class Neo4jContainerManager:
     def backup_neo4j_database(self, backup_path: str) -> bool:
         """
         Backup the Neo4j database using neo4j-admin dump inside the container.
+        This requires stopping the database temporarily.
 
         Args:
             backup_path: Local path to save the backup file.
@@ -279,11 +280,37 @@ class Neo4jContainerManager:
 
         # Run neo4j-admin dump inside the container
         try:
-            backup_file_in_container = "/data/neo4j-backup.dump"
+            # --to-path expects a directory, it will create neo4j.dump inside that directory
+            backup_dir_in_container = "/data/backup"
+            backup_file_in_container = "/data/backup/neo4j.dump"
+            
+            # Create backup directory in container
+            exit_code, output = container.exec_run(f"mkdir -p {backup_dir_in_container}")
+            if exit_code != 0:
+                logger.error(f"Failed to create backup directory: {output.decode()}")
+                return False
+            
+            logger.info("Stopping Neo4j database for backup...")
+            # Stop the Neo4j database (not the container)
+            exit_code, output = container.exec_run("neo4j stop", user="neo4j")
+            if exit_code != 0:
+                logger.warning(f"Failed to stop Neo4j service (this might be okay): {output.decode()}")
+            
+            # Give it a moment to stop
+            time.sleep(2)
+            
+            # Run the dump command
             exit_code, output = container.exec_run(
-                f"neo4j-admin database dump neo4j --to-path={backup_file_in_container} --overwrite-destination=true",
+                f"neo4j-admin database dump neo4j --to-path={backup_dir_in_container} --overwrite-destination=true",
                 user="neo4j"
             )
+            
+            # Restart Neo4j database
+            logger.info("Restarting Neo4j database...")
+            restart_exit_code, restart_output = container.exec_run("neo4j start", user="neo4j")
+            if restart_exit_code != 0:
+                logger.warning(f"Failed to restart Neo4j service: {restart_output.decode()}")
+            
             if exit_code != 0:
                 logger.error(f"neo4j-admin dump failed: {output.decode()}")
                 return False
