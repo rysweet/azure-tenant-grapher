@@ -1,4 +1,5 @@
-import pytest, importlib
+import pytest
+
 pytest.importorskip("readchar", reason="readchar not installed")
 
 import subprocess

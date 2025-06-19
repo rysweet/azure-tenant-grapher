@@ -417,11 +417,23 @@ async def generate_iac(
     from src.utils.cli_installer import ensure_tool
 
     if format_type.lower() == "terraform":
-        ensure_tool("terraform", auto_prompt=True)
+        try:
+            ensure_tool("terraform", auto_prompt=True)
+        except SystemExit:
+            click.echo("Aborting: 'terraform' is required but was not installed.")
+            sys.exit(1)
     elif format_type.lower() == "arm":
-        ensure_tool("az", auto_prompt=True)
+        try:
+            ensure_tool("az", auto_prompt=True)
+        except SystemExit:
+            click.echo("Aborting: 'az' is required but was not installed.")
+            sys.exit(1)
     elif format_type.lower() == "bicep":
-        ensure_tool("bicep", auto_prompt=True)
+        try:
+            ensure_tool("bicep", auto_prompt=True)
+        except SystemExit:
+            click.echo("Aborting: 'bicep' is required but was not installed.")
+            sys.exit(1)
     await generate_iac_command_handler(
         tenant_id=tenant_id,
         format_type=format_type,

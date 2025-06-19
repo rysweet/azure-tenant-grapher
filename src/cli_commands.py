@@ -127,6 +127,7 @@ async def _run_no_dashboard_mode(
     # Print log file path for test discoverability
     import tempfile
     from datetime import datetime
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file_path = f"{tempfile.gettempdir()}/azure_tenant_grapher_{timestamp}.log"
     print(f"LOG_FILE: {log_file_path}", flush=True)

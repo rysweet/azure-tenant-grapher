@@ -1,8 +1,10 @@
 import asyncio
 import os
-import pytest
 import tempfile
 from subprocess import PIPE, STDOUT
+
+import pytest
+
 
 @pytest.mark.asyncio
 async def test_agent_mode_storage_resource_count():
@@ -17,8 +19,14 @@ async def test_agent_mode_storage_resource_count():
 
     # Start agent mode as a subprocess
     proc = await asyncio.create_subprocess_exec(
-        "python", "-m", "scripts.cli", "agent-mode",
-        stdin=PIPE, stdout=PIPE, stderr=STDOUT, env=os.environ.copy()
+        "python",
+        "-m",
+        "scripts.cli",
+        "agent-mode",
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=STDOUT,
+        env=os.environ.copy(),
     )
 
     # Wait for the agent to be ready
@@ -57,6 +65,7 @@ async def test_agent_mode_storage_resource_count():
     assert "Assistant:" in output, "No assistant answer found"
     # Look for a number in the answer
     import re
+
     numbers = re.findall(r"\b\d+\b", output)
     assert numbers, f"No numeric answer found in output: {output}"
 
