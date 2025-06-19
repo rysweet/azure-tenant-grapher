@@ -548,7 +548,7 @@ async def mcp_server_command_handler(ctx):
 # === Agent Mode Command Handler ===
 
 
-async def agent_mode_command_handler(ctx):
+async def agent_mode_command_handler(ctx, question: Optional[str] = None):
     """
     Start Neo4j, MCP server, and launch AutoGen MCP agent chat loop.
     """
@@ -558,7 +558,7 @@ async def agent_mode_command_handler(ctx):
 
     try:
         logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
-        await run_agent_mode()
+        await run_agent_mode(question=question)
     except Exception as e:
         import click
 

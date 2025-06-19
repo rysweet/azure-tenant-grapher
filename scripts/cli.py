@@ -523,13 +523,17 @@ async def mcp_server(ctx):
 
 
 @cli.command()
+@click.option(
+    "--question",
+    help="Ask a single question and exit (non-interactive mode)",
+)
 @click.pass_context
 @async_command
-async def agent_mode(ctx):
+async def agent_mode(ctx, question: Optional[str]):
     """Start AutoGen MCP agent mode (Neo4j + MCP server + agent chat loop)."""
     from src.cli_commands import agent_mode_command_handler
 
-    await agent_mode_command_handler(ctx)
+    await agent_mode_command_handler(ctx, question)
 
 
 @cli.command()
