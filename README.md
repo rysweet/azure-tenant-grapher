@@ -77,6 +77,7 @@ cd my-deployment
 - **Automated Deployment**: Generated IaC includes a ready-to-run deployment script.
 - **AI Integration**: Optional AI-powered resource descriptions.
 - **Modular, Testable Codebase**: Well-structured, with comprehensive test coverage.
+- **Database Backup**: Easily back up your Neo4j graph database to a local file for disaster recovery or migration.
 
 ---
 
@@ -119,7 +120,20 @@ azure-tenant-grapher progress
 
 # Show configuration
 azure-tenant-grapher config
+
+# Backup the Neo4j database
+azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump
 ```
+
+### Neo4j Database Backup
+
+You can back up your Neo4j database to a local file using:
+
+```bash
+azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump
+```
+
+This will create a portable dump file of your Neo4j database, which can be restored using Neo4j tools.
 
 ### VS Code Tasks
 

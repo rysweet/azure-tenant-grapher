@@ -350,6 +350,7 @@ azure-tenant-grapher progress    # Check processing progress
 azure-tenant-grapher config      # Show configuration template
 azure-tenant-grapher container   # Container management subcommands
 azure-tenant-grapher doctor      # Check and install required CLI tools
+azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump   # Backup Neo4j database to a local file
 ```
 
 ### CLI Arguments for Build Command

@@ -511,6 +511,18 @@ def container() -> None:
 
     pass
 
+@cli.command()
+@click.argument("backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True))
+def backup_neo4j(backup_path: str) -> None:
+    """Backup the Neo4j database and save it to BACKUP_PATH."""
+    from src.container_manager import Neo4jContainerManager
+
+    container_manager = Neo4jContainerManager()
+    if container_manager.backup_neo4j_database(backup_path):
+        click.echo(f"✅ Neo4j backup completed and saved to {backup_path}")
+    else:
+        click.echo("❌ Neo4j backup failed", err=True)
+        sys.exit(1)
 
 @cli.command()
 def doctor() -> None:
