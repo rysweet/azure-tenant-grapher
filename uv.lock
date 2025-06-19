@@ -671,6 +671,20 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-mgmt-subscription"
+version = "3.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-common" },
+    { name = "azure-mgmt-core" },
+    { name = "msrest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/67/14b19a006e13d86f05ee59faf78c39dc443d4fd6967344e9c94f688949c1/azure-mgmt-subscription-3.1.1.zip", hash = "sha256:4e255b4ce9b924357bb8c5009b3c88a2014d3203b2495e2256fa027bf84e800e", size = 96018 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/12/e6de2021c4689f857386670ba0b6d3c4025d4209e45df7dd7cdabe9a4ac1/azure_mgmt_subscription-3.1.1-py3-none-any.whl", hash = "sha256:38d4574a8d47fa17e3587d756e296cb63b82ad8fb21cd8543bcee443a502bf48", size = 79409 },
+]
+
+[[package]]
 name = "azure-mgmt-web"
 version = "8.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -706,6 +720,7 @@ dependencies = [
     { name = "azure-mgmt-sql" },
     { name = "azure-mgmt-storage", version = "22.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "azure-mgmt-storage", version = "23.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "azure-mgmt-subscription" },
     { name = "azure-mgmt-web" },
     { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "click", version = "8.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -755,6 +770,7 @@ requires-dist = [
     { name = "azure-mgmt-resource", specifier = ">=23.0.0" },
     { name = "azure-mgmt-sql", specifier = ">=3.0.1" },
     { name = "azure-mgmt-storage", specifier = ">=21.0.0" },
+    { name = "azure-mgmt-subscription", specifier = ">=3.1.1" },
     { name = "azure-mgmt-web", specifier = ">=7.0.0" },
     { name = "click", specifier = ">=8.1.0" },
     { name = "colorlog", specifier = ">=6.8.0" },

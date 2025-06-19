@@ -364,6 +364,10 @@ class ResourceProcessor:
         # Processing statistics
         self.stats = ProcessingStats()
 
+        # Thread-safe seen guard (Phase 1 efficiency improvement)
+        self._seen_ids: set[str] = set()
+        self._seen_lock = threading.Lock()
+
         logger.info(
             f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}"
         )
@@ -463,6 +467,16 @@ class ResourceProcessor:
         resource_id = resource["id"]
         resource_name = resource.get("name", "Unknown")
         resource_type = resource.get("type", "Unknown")
+
+        # Thread-safe seen guard (Phase 1 efficiency improvement)
+        with self._seen_lock:
+            if resource_id in self._seen_ids:
+                logger.info(
+                    f"⏭️  Resource {resource_index + 1}/{self.stats.total_resources}: {resource_name} - SKIPPED (intra-run duplicate)"
+                )
+                self.stats.skipped += 1
+                return True
+            self._seen_ids.add(resource_id)
 
         try:
             # Mark resource as being processed
