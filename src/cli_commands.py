@@ -14,7 +14,7 @@ import click
 
 # (removed duplicate import click)
 from src.azure_tenant_grapher import AzureTenantGrapher
-from src.cli_dashboard_manager import CLIDashboardManager
+from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
     create_config_from_env,
     create_neo4j_config_from_env,
@@ -309,7 +309,11 @@ async def _run_dashboard_mode(
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
                 logger.info("[DEBUG] Entering poll_build_task (file keypress)")
-                await dashboard_manager.poll_build_task(build_task)
+                try:
+                    await dashboard_manager.poll_build_task(build_task)
+                except DashboardExitException:
+                    # Dashboard exit was requested, return exit sentinel
+                    return "__DASHBOARD_EXIT__"
         elif test_keypress_queue:
             # Removed debug print
             result = await dashboard_manager.run_with_queue_keypress(build_task)
@@ -324,6 +328,9 @@ async def _run_dashboard_mode(
             if result == "__DASHBOARD_EXIT__":
                 # Removed debug print
                 return "__DASHBOARD_EXIT__"
+    except DashboardExitException:
+        # Dashboard exit was requested
+        return "__DASHBOARD_EXIT__"
     finally:
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
             exit_checker_task.cancel()

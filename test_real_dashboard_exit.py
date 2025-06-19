@@ -70,11 +70,8 @@ async def test_real_dashboard_exit():
     keypress_task = asyncio.create_task(send_x_keypress())
 
     try:
-        # Set the test queue
-        dashboard._test_keypress_queue = key_q  # type: ignore[attr-defined]
-
-        # Run the dashboard
-        await dashboard_manager.run_with_queue_keypress(build_task)
+        # Run the dashboard with the correct queue parameter
+        await dashboard_manager.run_with_queue_keypress(build_task, key_q)
         print("❌ ERROR: Dashboard should have raised DashboardExitException!")
         return False
 

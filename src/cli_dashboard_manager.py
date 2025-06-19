@@ -75,10 +75,7 @@ class CLIDashboardManager:
 
         with self.dashboard.live(key_queue=key_q):
             self.dashboard.log_info("Press 'x' to exit the dashboard")
-            try:
-                await self.poll_build_task(build_task)
-            except Exception:
-                pass
+            await self.poll_build_task(build_task)
 
     async def run_normal(self, build_task: asyncio.Task[Any]) -> str | None:
         """Run dashboard with normal keyboard input using a thread for Rich.Live."""
@@ -160,10 +157,7 @@ class CLIDashboardManager:
         # If exit was requested, raise DashboardExitException to be handled by the CLI entrypoint
         if self.dashboard.should_exit:
             # Removed debug print
-            import sys
-
-            # Removed debug print
-            sys.exit(0)
+            raise DashboardExitException("Dashboard exit requested")
 
         # Removed debug print
 

@@ -55,24 +55,26 @@ def install_tool(tool: str) -> bool:
     Returns True if install attempted, False if declined or not possible.
     """
     if tool not in TOOL_REGISTRY:
-        print(f"{tool} is not registered")
+        print(f"Tool '{tool}' is not registered in the tool registry.")
         return False
     tool_obj = TOOL_REGISTRY[tool]
     installer = detect_installer()
     if installer is None:
-        print("No supported package manager detected")
+        print("No supported package manager detected on this system.")
         return False
     if installer not in tool_obj.installers:
+        print(f"Tool '{tool}' does not support installer '{installer}'.")
         return False
     cmd = tool_obj.installers[installer]
+    print(f"Installing {tool} using {installer}: {cmd}")
     proceed = input("Proceed? [y/N] ").strip().lower()
     if proceed == "y":
         print(cmd)
         try:
             subprocess.run(cmd, shell=True, check=True)
-            pass
+            print(f"Successfully installed {tool}.")
         except subprocess.CalledProcessError:
-            pass
+            print(f"Failed to install {tool}.")
         return True
     else:
         print("Installation cancelled.")
@@ -94,12 +96,10 @@ def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
         if not installed:
             print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
             import sys
-
             sys.exit(1)
     else:
         print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
         import sys
-
         sys.exit(1)
 
 
