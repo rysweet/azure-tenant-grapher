@@ -32,13 +32,79 @@ def neo4j_container():
     if started:
         manager.stop_neo4j_container()
 
-
+import asyncio
 import os
+import json
+from typing import Dict, Any
+from src.mcp_server import ensure_neo4j_running, launch_mcp_server
+
+class MCPServerTester:
+    """Helper class for testing MCP server functionality."""
+    def __init__(self, process: asyncio.subprocess.Process):
+        self.process = process
+
+    async def send_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
+        if not self.process.stdin:
+            raise RuntimeError("Process stdin not available")
+        request_json = json.dumps(request) + "\n"
+        self.process.stdin.write(request_json.encode())
+        await self.process.stdin.drain()
+        if not self.process.stdout:
+            raise RuntimeError("Process stdout not available")
+        response_line = await self.process.stdout.readline()
+        response_text = response_line.decode().strip()
+        if not response_text:
+            raise RuntimeError("No response received from MCP server")
+        return json.loads(response_text)
+
+    async def close(self):
+        if self.process and self.process.returncode is None:
+            self.process.terminate()
+            try:
+                await asyncio.wait_for(self.process.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
+                self.process.kill()
+                await self.process.wait()
+
+@pytest.fixture
+async def mcp_server_process(neo4j_container: Any):
+    """Start an MCP server process for testing using the same Neo4j setup as the CLI."""
+    neo4j_uri, neo4j_user, neo4j_password = neo4j_container
+    # Set Neo4j environment variables to match what the CLI uses
+    original_env = {}
+    env_vars = {
+        "NEO4J_URI": neo4j_uri,
+        "NEO4J_USER": neo4j_user,
+        "NEO4J_PASSWORD": neo4j_password,
+    }
+    for key, value in env_vars.items():
+        original_env[key] = os.environ.get(key)
+        os.environ[key] = value
+
+    process = None
+    try:
+        await ensure_neo4j_running()
+        process = await launch_mcp_server(attach_stdio=False)
+        await asyncio.sleep(2)
+        yield MCPServerTester(process)
+    finally:
+        if process is not None and process.returncode is None:
+            process.terminate()
+            try:
+                await asyncio.wait_for(process.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+        for key, original_value in original_env.items():
+            if original_value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = original_value
+
 import sys
 from typing import Any, Dict, List
 from unittest.mock import Mock
 
-import pytest
 
 # Add src directory to Python path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -83,20 +149,22 @@ class MockNeo4jSession:
                 mock_record.keys = Mock(return_value=["llm_description"])
                 result.single.return_value = mock_record
             elif "updated_at" in query or "processing_status" in query:
-                mock_record.__getitem__ = Mock(
-                    side_effect=lambda key: {
+                def get_item(key: str) -> str:
+                    return {
                         "updated_at": "2023-01-01T00:00:00Z",
                         "llm_description": "Test description",
                         "processing_status": "completed",
-                    }.get(key)
-                )
-                mock_record.get = Mock(
-                    side_effect=lambda key, default=None: {
+                    }.get(key, "")
+
+                def get_with_default(key: str, default: Any = None) -> Any:
+                    return {
                         "updated_at": "2023-01-01T00:00:00Z",
                         "llm_description": "Test description",
                         "processing_status": "completed",
                     }.get(key, default)
-                )
+
+                mock_record.__getitem__ = Mock(side_effect=get_item)
+                mock_record.get = Mock(side_effect=get_with_default)
                 mock_record.keys = Mock(
                     return_value=["updated_at", "llm_description", "processing_status"]
                 )
