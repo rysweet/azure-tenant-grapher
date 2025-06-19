@@ -1,21 +1,23 @@
 import asyncio
 import os
-import tempfile
+import pytest
 from subprocess import PIPE, STDOUT
 
-import pytest
-
-
 @pytest.mark.asyncio
-async def test_agent_mode_storage_resource_count():
+async def test_agent_mode_storage_resource_count(
+    neo4j_container, mcp_server_process
+):
     """
     Integration test: agent mode should answer 'How many storage resources are in the tenant?'
     by chaining get_neo4j_schema and read_neo4j_cypher tool calls.
+    This version uses the same robust dependency management as other integration tests.
     """
-    # Prepare a temp log file for MCP server output
-    log_file = os.path.join(tempfile.gettempdir(), "test_agent_mode_storage.log")
-    if os.path.exists(log_file):
-        os.remove(log_file)
+    # Use the environment variables from the fixtures
+    neo4j_uri, neo4j_user, neo4j_password = neo4j_container
+    env = os.environ.copy()
+    env["NEO4J_URI"] = neo4j_uri
+    env["NEO4J_USER"] = neo4j_user
+    env["NEO4J_PASSWORD"] = neo4j_password
 
     # Start agent mode as a subprocess
     proc = await asyncio.create_subprocess_exec(
@@ -26,7 +28,7 @@ async def test_agent_mode_storage_resource_count():
         stdin=PIPE,
         stdout=PIPE,
         stderr=STDOUT,
-        env=os.environ.copy(),
+        env=env,
     )
 
     # Wait for the agent to be ready
