@@ -250,7 +250,17 @@ class RichDashboard:
                         file=sys.stderr,
                         flush=True,
                     )
-                    sys.exit(0)
+                    print(
+                        "[DEBUG] About to call sys.exit(0) from keypress handler",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    # Ensure immediate process termination
+                    try:
+                        sys.exit(0)
+                    except SystemExit:
+                        # If sys.exit is caught, force immediate termination
+                        os._exit(0)
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:
@@ -304,9 +314,20 @@ class RichDashboard:
                 def monitor_exit():
                     while not stop_event.is_set():
                         if self._should_exit:
+                            print(
+                                "[DEBUG] Monitor detected _should_exit=True, stopping live and signaling threads",
+                                file=sys.stderr,
+                                flush=True,
+                            )
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
-                            # (Revert: do NOT call os._exit or raise here)
+                            # Ensure immediate process termination
+                            print(
+                                "[DEBUG] Monitor calling os._exit(0) to terminate process",
+                                file=sys.stderr,
+                                flush=True,
+                            )
+                            os._exit(0)  # Restored: force immediate process termination
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)
