@@ -10,6 +10,15 @@ from src.mcp_server import ensure_neo4j_running
 
 logger = logging.getLogger(__name__)
 
+def _suppress_info_logging():
+    """Suppress INFO logs from all loggers unless AGENT_MODE_VERBOSE=1 is set."""
+    import os
+    if os.environ.get("AGENT_MODE_VERBOSE", "0") != "1":
+        logging.basicConfig(level=logging.WARNING)
+        for name in logging.root.manager.loggerDict:
+            logging.getLogger(name).setLevel(logging.WARNING)
+_suppress_info_logging()
+
 SYSTEM_MESSAGE = (
     "You are a graph/tenant assistant. "
     "You must only answer questions about the Azure graph or tenant data. "
@@ -122,7 +131,8 @@ async def run_agent_mode(question: str | None = None):
     # Handle single question mode vs interactive mode
     if question:
         print(f"🤖 Processing question: {question}")
-        await _process_question(assistant, question)
+        # Use manual orchestration to guarantee correct tool chaining
+        await _process_question_manually(workbench, question)
     else:
         print("🤖 Type your graph/tenant question (type 'x', 'exit', or 'quit' to exit):", flush=True)
         await _interactive_chat_loop(assistant)
@@ -386,83 +396,64 @@ async def _process_question_manually(workbench: any, question: str):
         print("✅ Schema retrieved")
         
         # Step 2: Execute query for storage resources
-        print("🔄 Step 2: Querying for storage resources...")
-        storage_query = """
-        MATCH (r:Resource)
-        WHERE toLower(r.type) CONTAINS 'storage'
-        RETURN count(r) as storage_count
-        """
-        
+        # Step 2: Dynamically generate the Cypher query based on the question
+        print("🔄 Step 2: Generating and executing Cypher query...")
+        user_q = question.lower()
+        if "vm" in user_q or "virtual machine" in user_q:
+            cypher_query = """
+            MATCH (r:Resource)
+            WHERE toLower(r.type) CONTAINS 'virtualmachine'
+            RETURN count(r) as vm_count
+            """
+            result_key = "vm_count"
+            resource_label = "VMs"
+        elif "storage" in user_q:
+            cypher_query = """
+            MATCH (r:Resource)
+            WHERE toLower(r.type) CONTAINS 'storage'
+            RETURN count(r) as storage_count
+            """
+            result_key = "storage_count"
+            resource_label = "storage resources"
+        else:
+            # Fallback: count all resources
+            cypher_query = """
+            MATCH (r:Resource)
+            RETURN count(r) as resource_count
+            """
+            result_key = "resource_count"
+            resource_label = "resources"
+
         cypher_tool_name = read_cypher_tool.get("name") if isinstance(read_cypher_tool, dict) else getattr(read_cypher_tool, "name", None)
-        query_result = await workbench.call_tool(cypher_tool_name, {"query": storage_query})
+        query_result = await workbench.call_tool(cypher_tool_name, {"query": cypher_query})
         print("✅ Query executed")
         
         # Step 3: Extract and present the result
         print("🔄 Step 3: Processing results...")
         
         # Parse the query result
-        print(f"\nDEBUG: Raw query_result: {query_result}")
         # Try to extract the result from query_result.result
         result_list = getattr(query_result, "result", None)
         if result_list and len(result_list) > 0:
             # Each item is a TextResultContent with a .content field (JSON string)
             import json
             try:
-                print(f"DEBUG: query_result.result: {result_list}")
                 text_content = getattr(result_list[0], "content", None)
-                print(f"DEBUG: text_content: {text_content}")
-                result_data = json.loads(text_content)
-                print(f"DEBUG: Parsed result_data: {result_data}")
+                result_data = json.loads(text_content) if text_content else []
                 if result_data and len(result_data) > 0:
-                    storage_count = result_data[0].get('storage_count', 0)
-                    print(f"\n🎯 Final Answer: There are {storage_count} storage resources in the tenant.")
+                    count_value = result_data[0].get(result_key, 0)
+                    print(f"\n🎯 Final Answer: There are {count_value} {resource_label} in the tenant.")
                 else:
-                    print(f"\n🎯 Final Answer: There are 0 storage resources in the tenant.")
+                    print(f"\n🎯 Final Answer: There are 0 {resource_label} in the tenant.")
             except (json.JSONDecodeError, IndexError, AttributeError) as e:
                 print(f"\n❌ Error parsing results: {e}")
-                print(f"Raw result: {query_result}")
         else:
             print(f"\n❌ No results returned")
-            # Diagnostic: Print a sample of resource types in the database
-            print("\n🔎 Diagnostic: Sampling resource types in the database...")
-            try:
-                sample_query = """
-                MATCH (r:Resource)
-                RETURN r.type AS type, count(*) AS count
-                ORDER BY count DESC
-                LIMIT 20
-                """
-                sample_result = await workbench.call_tool("read_neo4j_cypher", {"query": sample_query})
-                sample_list = getattr(sample_result, "result", None)
-                if sample_list and len(sample_list) > 0:
-                    sample_text = getattr(sample_list[0], "content", None)
-                    print(f"Sample resource types: {sample_text}")
-                else:
-                    print("No Resource nodes found in the database.")
-            except Exception as e:
-                print(f"Error running diagnostic sample query: {e}")
             
     except Exception as e:
         print(f"\n❌ Error in manual processing: {e}")
 
-    # Always print a sample of resource types for debugging
-    print("\n🔎 Diagnostic: Sampling resource types in the database...")
-    try:
-        sample_query = """
-        MATCH (r:Resource)
-        RETURN r.type AS type, count(*) AS count
-        ORDER BY count DESC
-        LIMIT 20
-        """
-        sample_result = await workbench.call_tool("read_neo4j_cypher", {"query": sample_query})
-        sample_list = getattr(sample_result, "result", None)
-        if sample_list and len(sample_list) > 0:
-            sample_text = getattr(sample_list[0], "content", None)
-            print(f"Sample resource types: {sample_text}")
-        else:
-            print("No Resource nodes found in the database.")
-    except Exception as e:
-        print(f"Error running diagnostic sample query: {e}")
+    # (No extra debug output)
 
 
 async def _interactive_chat_loop_manual(workbench: any):
