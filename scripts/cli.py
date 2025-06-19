@@ -136,6 +136,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "config": "⚙️  Show current configuration template",
         "progress": "📊 Check processing progress in the database",
         "container": "🐳 Manage Neo4j Docker container",
+        "backup-db": "💾 Backup Neo4j database to a local file",
     }
 
     click.echo("📚 COMMAND DESCRIPTIONS:")
@@ -480,7 +481,7 @@ def container() -> None:
 
 @cli.command()
 @click.argument("backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True))
-def backup_neo4j(backup_path: str) -> None:
+def backup_db(backup_path: str) -> None:
     """Backup the Neo4j database and save it to BACKUP_PATH."""
     from src.container_manager import Neo4jContainerManager
 

@@ -122,7 +122,7 @@ azure-tenant-grapher progress
 azure-tenant-grapher config
 
 # Backup the Neo4j database
-azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 ```
 
 ### Neo4j Database Backup
@@ -130,7 +130,7 @@ azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump
 You can back up your Neo4j database to a local file using:
 
 ```bash
-azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 ```
 
 This will create a portable dump file of your Neo4j database, which can be restored using Neo4j tools.
