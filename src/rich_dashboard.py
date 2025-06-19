@@ -256,7 +256,7 @@ class RichDashboard:
                         sys.exit(0)
                     except SystemExit:
                         # If sys.exit is caught, force immediate termination
-                        sys.exit(0)
+                        os._exit(0)  # type: ignore[reportPrivateUsage]
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:
@@ -313,7 +313,7 @@ class RichDashboard:
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
                             # Ensure immediate process termination
-                            sys.exit(0)  # Use public sys.exit for process termination
+                            os._exit(0)  # type: ignore[reportPrivateUsage]
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)

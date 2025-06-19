@@ -1,7 +1,10 @@
 import asyncio
 import logging
+import os
 import sys
 from typing import List, Optional
+
+from neo4j import GraphDatabase, basic_auth
 
 from src.container_manager import Neo4jContainerManager
 
@@ -25,9 +28,6 @@ async def ensure_neo4j_running() -> None:
 
 
 # Additional connection verification utilities
-import os
-
-from neo4j import GraphDatabase, basic_auth
 
 
 def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -> bool:
