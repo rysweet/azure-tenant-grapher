@@ -263,7 +263,16 @@ class Neo4jContainerManager:
 
         # Find the container
         try:
-            container = self.docker_client.containers.list(filters={"name": "azure-tenant-grapher-neo4j"})[0]
+            if not self.docker_client:
+                logger.error("Docker client is not available")
+                return False
+            
+            containers = self.docker_client.containers.list(filters={"name": "azure-tenant-grapher-neo4j"})
+            if not containers:
+                logger.error("Neo4j container not found")
+                return False
+            
+            container = containers[0]
         except Exception as e:
             logger.error(f"Could not find Neo4j container: {e}")
             return False
@@ -280,7 +289,7 @@ class Neo4jContainerManager:
                 return False
 
             # Copy the backup file from the container to the host
-            bits, stat = container.get_archive(backup_file_in_container)
+            bits, _ = container.get_archive(backup_file_in_container)
             with open(backup_path, "wb") as f:
                 for chunk in bits:
                     f.write(chunk)
