@@ -14,14 +14,26 @@ SYSTEM_MESSAGE = (
     "You are a graph/tenant assistant. "
     "You must only answer questions about the Azure graph or tenant data. "
     "If asked anything unrelated, politely refuse. "
-    "When a user asks a question, you MUST follow this exact process: "
-    "1. First call 'get_neo4j_schema' to understand the graph structure "
-    "2. Then call 'read_neo4j_cypher' to query the database for the specific information requested "
-    "3. Finally, provide a clear, human-readable answer based on the query results "
-    "Example: If asked 'How many storage resources are in the tenant?', call get_neo4j_schema, then call read_neo4j_cypher with "
-    "'MATCH (r:Resource) WHERE toLower(r.type) CONTAINS \"storage\" RETURN count(r) as storage_count', "
-    "then respond with something like 'There are X storage resources in the tenant.' "
-    "You MUST complete all steps and provide a final answer - do not stop after just getting the schema."
+    "When a user asks a question, you MUST follow this exact process:\n"
+    "1. First, call the 'get_neo4j_schema' tool to understand the graph structure.\n"
+    "2. Next, based on the schema, call the 'read_neo4j_cypher' tool with an appropriate Cypher query to answer the user's question.\n"
+    "3. Finally, provide a clear, human-readable answer to the user, such as 'There are X resources in the tenant.'\n"
+    "If the question is about a count, your Cypher query should use 'count(r)' or similar. If the question is about listing, return a list. "
+    "If the schema or query result is empty, say so in plain language.\n"
+    "EXAMPLES:\n"
+    "- Q: How many storage resources are in the tenant?\n"
+    "  1. Call get_neo4j_schema\n"
+    "  2. Call read_neo4j_cypher with: MATCH (r:Resource) WHERE toLower(r.type) CONTAINS 'storage' RETURN count(r) as storage_count\n"
+    "  3. Respond: 'There are X storage resources in the tenant.'\n"
+    "- Q: How many resources are in the tenant?\n"
+    "  1. Call get_neo4j_schema\n"
+    "  2. Call read_neo4j_cypher with: MATCH (r:Resource) RETURN count(r) as resource_count\n"
+    "  3. Respond: 'There are X resources in the tenant.'\n"
+    "- Q: List all resource groups\n"
+    "  1. Call get_neo4j_schema\n"
+    "  2. Call read_neo4j_cypher with: MATCH (g:ResourceGroup) RETURN g.name\n"
+    "  3. Respond: 'Resource groups: ...'\n"
+    "You MUST always provide a final, human-readable answer. Do not stop after just getting the schema or tool output."
 )
 
 async def _spinner(prefix: str):
@@ -102,18 +114,136 @@ async def run_agent_mode(question: str | None = None):
         system_message=SYSTEM_MESSAGE,
         workbench=workbench,
         model_client=model_client,
+        reflect_on_tool_use=True,
     )
 
     print("MCP Agent is ready", flush=True)
     
+    # Handle single question mode vs interactive mode
+    if question:
+        print(f"🤖 Processing question: {question}")
+        await _process_question(assistant, question)
+    else:
+        print("🤖 Type your graph/tenant question (type 'x', 'exit', or 'quit' to exit):", flush=True)
+        await _interactive_chat_loop(assistant)
+
+# Place this at the top level of the file, not inside run_agent_mode
+async def _interactive_chat_loop(assistant: any):
+    """Run the interactive chat loop using the LLM-powered agent, with re-prompting for tool output."""
     try:
-        # Handle single question mode vs interactive mode
-        if question:
-            print(f"🤖 Processing question: {question}")
-            await _process_question_manually(workbench, question)
-        else:
-            print("🤖 Type your graph/tenant question (type 'x', 'exit', or 'quit' to exit):", flush=True)
-            await _interactive_chat_loop_manual(workbench)
+        while True:
+            try:
+                user_input = await asyncio.to_thread(input, "> ")
+            except (KeyboardInterrupt, EOFError):
+                print("\nGoodbye!")
+                break
+
+            user_input = user_input.strip()
+            if not user_input:
+                continue
+
+            if user_input.lower() in {"exit", "quit", "x"}:
+                print("Goodbye!")
+                break
+
+            spinner_task = asyncio.create_task(_spinner("🔄 Processing your question..."))
+            try:
+                response_received = False
+                text_responses = []
+                all_messages = []
+                start_time = asyncio.get_event_loop().time()
+                timeout_seconds = 60
+                current_task = user_input
+                max_rounds = 5
+                rounds = 0
+
+                while rounds < max_rounds:
+                    rounds += 1
+                    async for message in assistant.run_stream(task=current_task):
+                        # Check for timeout
+                        if asyncio.get_event_loop().time() - start_time > timeout_seconds:
+                            spinner_task.cancel()
+                            try:
+                                await spinner_task
+                            except asyncio.CancelledError:
+                                pass
+                            print("\n❌ Request timed out after 60 seconds")
+                            break
+
+                        # Cancel spinner on first response
+                        if not response_received:
+                            spinner_task.cancel()
+                            try:
+                                await spinner_task
+                            except asyncio.CancelledError:
+                                pass
+                            print("")  # Clear the spinner line
+                            response_received = True
+
+                        # Debug: Print all message details
+                        message_type = type(message).__name__
+                        print(f"DEBUG: Received {message_type}: {getattr(message, 'content', None)}")
+                        all_messages.append((message_type, getattr(message, 'content', None)))
+
+                        # Handle different message types
+                        if hasattr(message, 'content'):
+                            if isinstance(message.content, str) and message.content.strip():
+                                content = message.content.strip()
+                                # Skip if it's just echoing the user's question
+                                if content != user_input:
+                                    text_responses.append(content)
+                            elif isinstance(message.content, list):
+                                for item in message.content:
+                                    if hasattr(item, 'text') and item.text.strip():
+                                        content = item.text.strip()
+                                        # Skip if it's just echoing the user's question
+                                        if content != user_input:
+                                            text_responses.append(content)
+
+                        # If the agent provides a clear, human-readable answer, print and return
+                        if message_type == "TextMessage" and getattr(message, 'content', None):
+                            if isinstance(message.content, str):
+                                content = message.content.strip()
+                                if content and not (content == user_input or (content.startswith("[") and content.endswith("]"))):
+                                    print(f"\nAssistant: {content}")
+                                    break
+
+                        # If the agent outputs tool output, re-prompt with the tool output as context
+                        if message_type == "TaskResult":
+                            # Find the last tool output
+                            tool_outputs = [c for t, c in all_messages if t == "TextMessage" and c and c.strip().startswith("[") and c.strip().endswith("]")]
+                            if tool_outputs:
+                                current_task = f"{user_input}\n\nHere is the tool output you requested: {tool_outputs[-1]}\nPlease use this to answer the question in plain language."
+                                print(f"DEBUG: Re-prompting agent with tool output as context (round {rounds})")
+                                break
+                            else:
+                                print("DEBUG: Conversation completed with no final answer.")
+                                break
+
+                    else:
+                        # If the inner async for loop did not break, break the outer loop
+                        break
+
+                if not response_received:
+                    spinner_task.cancel()
+                    try:
+                        await spinner_task
+                    except asyncio.CancelledError:
+                        pass
+                    print("\n❌ No response received from agent.")
+                elif not text_responses:
+                    print("\n❌ Agent completed but provided no text response.")
+
+            except Exception as e:
+                spinner_task.cancel()
+                try:
+                    await spinner_task
+                except asyncio.CancelledError:
+                    pass
+                print(f"\n❌ Error processing request: {e}")
+
+    except Exception as e:
+        print(f"Chat loop error: {e}")
 
     except Exception as e:
         print(f"Unexpected error: {e}")
@@ -164,14 +294,20 @@ async def _process_question(assistant: any, question: str):
             # Handle different message types
             if hasattr(message, 'content'):
                 if isinstance(message.content, str) and message.content.strip():
-                    text_responses.append(message.content.strip())
-                    print(f"Assistant: {message.content.strip()}")
+                    content = message.content.strip()
+                    # Skip if it's just echoing the user's question
+                    if content != question:
+                        text_responses.append(content)
+                        print(f"Assistant: {content}")
                 elif isinstance(message.content, list):
                     # Handle list content
                     for item in message.content:
                         if hasattr(item, 'text') and item.text.strip():
-                            text_responses.append(item.text.strip())
-                            print(f"Assistant: {item.text.strip()}")
+                            content = item.text.strip()
+                            # Skip if it's just echoing the user's question
+                            if content != question:
+                                text_responses.append(content)
+                                print(f"Assistant: {content}")
             
             # Handle TaskResult - but wait longer to see if agent continues
             if message_type == "TaskResult":
