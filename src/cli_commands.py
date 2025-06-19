@@ -581,7 +581,11 @@ async def agent_mode_command_handler(
 # === Threat Modeling Agent Command Handler ===
 
 
-async def generate_threat_model_command_handler(ctx: Optional["click.Context"] = None):
+async def generate_threat_model_command_handler(
+    spec_path: str,
+    summaries_path: str,
+    ctx: Optional["click.Context"] = None,
+):
     """
     Handler for the generate-threat-model CLI command.
     Runs the ThreatModelAgent workflow and prints/logs each stage.
@@ -591,6 +595,8 @@ async def generate_threat_model_command_handler(ctx: Optional["click.Context"] =
     from src.threat_modeling_agent.agent import ThreatModelAgent
 
     click.echo("🚀 Starting Threat Modeling Agent workflow...")
-    agent = ThreatModelAgent()
-    await agent.run()
+    agent = ThreatModelAgent(spec_path=spec_path, summaries_path=summaries_path)
+    report_path = await agent.run()
     click.echo("✅ Threat Modeling Agent workflow complete.")
+    if report_path:
+        click.echo(f"📄 Threat modeling report saved to: {report_path}")
