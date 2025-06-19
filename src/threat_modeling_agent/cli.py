@@ -15,7 +15,7 @@ def threat_modeling_agent():
     pass
 
 
-@threat_modeling_agent.command("generate-threat-model")
+@threat_modeling_agent.command("generate-threat-model")  # type: ignore
 @click.option(
     "--spec-path",
     required=True,
@@ -28,6 +28,6 @@ def threat_modeling_agent():
     type=click.Path(exists=True, dir_okay=False, readable=True),
     help="Path to the LLM summaries file (JSON).",
 )
-def generate_threat_model_cmd(spec_path, summaries_path):
+def generate_threat_model_cmd(spec_path: str, summaries_path: str) -> None:
     """Run the Threat Modeling Agent workflow."""
-    asyncio.run(generate_threat_model_command_handler(None, spec_path, summaries_path))
+    asyncio.run(generate_threat_model_command_handler("", spec_path, summaries_path))  # type: ignore

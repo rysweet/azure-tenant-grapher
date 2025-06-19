@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
-class ASBControl(BaseModel):
+class ASBControl(BaseModel):  # type: ignore[reportUntypedBaseClass]
     """
     Represents an Azure Security Benchmark (ASB) control.
 
@@ -26,7 +26,7 @@ class ASBControl(BaseModel):
     """A detailed description of the ASB control."""
 
 
-class Threat(BaseModel):
+class Threat(BaseModel):  # type: ignore[reportUntypedBaseClass]
     """
     Represents a threat identified in the threat modeling process.
 
@@ -70,7 +70,7 @@ class Threat(BaseModel):
     """The raw threat data as a dictionary."""
 
 
-class DFDNode(BaseModel):
+class DFDNode(BaseModel):  # type: ignore[reportUntypedBaseClass]
     """
     Represents a node in a Data Flow Diagram (DFD).
 
@@ -90,7 +90,7 @@ class DFDNode(BaseModel):
     """The type of the node (e.g., process, data store, external entity)."""
 
 
-class DFDEdge(BaseModel):
+class DFDEdge(BaseModel):  # type: ignore[reportUntypedBaseClass]
     """
     Represents an edge (data flow) in a Data Flow Diagram (DFD).
 
@@ -110,7 +110,7 @@ class DFDEdge(BaseModel):
     """The label describing the data flow."""
 
 
-class ThreatModelReport(BaseModel):
+class ThreatModelReport(BaseModel):  # type: ignore[reportUntypedBaseClass]
     """
     Represents a complete threat model report.
 
