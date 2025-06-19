@@ -1,10 +1,13 @@
 import os
 import tempfile
-import pytest
+from typing import Any
+
+import pytest  # noqa: F401 - Used by test framework
 
 from src.container_manager import Neo4jContainerManager
 
-def test_backup_neo4j_database(monkeypatch):
+
+def test_backup_neo4j_database(monkeypatch: Any) -> None:
     # This test assumes a running Neo4j container named 'azure-tenant-grapher-neo4j'
     manager = Neo4jContainerManager()
     with tempfile.NamedTemporaryFile(suffix=".dump", delete=True) as tmpfile:

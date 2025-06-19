@@ -78,13 +78,13 @@ class TestTenantSpecificationGenerator:
         user = container_manager.neo4j_user
         password = container_manager.neo4j_password
         
-        print(f"✅ SAFE TEST: Using isolated database '{test_database_name}' in test container")
+        print(f"✅ SAFE TEST: Using isolated database {test_database_name!r} in test container")
         
         try:
             yield uri, user, password, test_database_name
         finally:
             # CLEANUP: Stop the isolated container
-            print(f"🧹 CLEANUP: Stopping isolated test container for '{test_database_name}'")
+            print(f"🧹 CLEANUP: Stopping isolated test container for {test_database_name!r}")
             container_manager.stop_neo4j_container()
 
     @pytest.fixture
@@ -106,7 +106,7 @@ class TestTenantSpecificationGenerator:
             # Use isolated database session
             with driver.session(database="neo4j") as session:  # Note: Using neo4j db but isolated container
                 # SAFE: Clear only in our isolated test container
-                print(f"🔄 SETUP: Creating test data in isolated container database")
+                print("🔄 SETUP: Creating test data in isolated container database")
                 session.run("MATCH (n:TestResource) DETACH DELETE n")  # Only delete test resources
                 
                 # Create test VMs
@@ -161,7 +161,7 @@ class TestTenantSpecificationGenerator:
                     CREATE (a)-[:DEPENDS_ON]->(b)
                 """)
                 
-                print(f"✅ SETUP: Test data created successfully in isolated container")
+                print("✅ SETUP: Test data created successfully in isolated container")
             
             yield uri, user, password, test_database_name
             
@@ -169,11 +169,11 @@ class TestTenantSpecificationGenerator:
             # CLEANUP: Remove only our test data
             try:
                 with driver.session(database="neo4j") as session:
-                    print(f"🧹 CLEANUP: Removing test data from isolated container")
+                    print("🧹 CLEANUP: Removing test data from isolated container")
                     session.run("MATCH (n:TestResource) DETACH DELETE n")  # Only delete test resources
-                    print(f"✅ CLEANUP: Test data removed successfully")
+                    print("✅ CLEANUP: Test data removed successfully")
             except Exception as e:
-                warnings.warn(f"Failed to clean up test data: {e}")
+                warnings.warn(f"Failed to clean up test data: {e}", stacklevel=2)
             finally:
                 driver.close()
 

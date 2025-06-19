@@ -5,7 +5,6 @@ This test is designed to detect the BufferError and protocol errors that were
 occurring when Neo4j sessions were shared across threads.
 """
 
-import asyncio
 import threading
 import time
 from typing import Any, List
@@ -53,7 +52,7 @@ class ThreadSafeSession:
             )
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         with self.manager.session_lock:
             self.manager.active_sessions.discard(self.session_id)
             self.manager.access_log.append(
@@ -354,7 +353,7 @@ def test_session_isolation_with_mock_neo4j_session_manager():
             return MockSessionContext(self)
 
     class MockSessionContext:
-        def __init__(self, manager):
+        def __init__(self, manager: Any) -> None:
             self.manager = manager
             self.session_id = None
 
@@ -365,15 +364,15 @@ def test_session_isolation_with_mock_neo4j_session_manager():
                 self.manager.active_sessions.add(self.session_id)
             return MockSession(self.session_id)
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
             with self.manager.lock:
                 self.manager.active_sessions.discard(self.session_id)
 
     class MockSession:
-        def __init__(self, session_id):
+        def __init__(self, session_id: int) -> None:
             self.session_id = session_id
 
-        def run(self, query, **params):
+        def run(self, query: str, **params: Any) -> Mock:
             # Simulate work and potential contention issues
             time.sleep(0.001)
             mock_result = Mock()

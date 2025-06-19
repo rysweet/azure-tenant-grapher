@@ -70,7 +70,6 @@ try:
         visualize_command_handler,
     )
     from src.config_manager import create_config_from_env
-    from src.container_manager import Neo4jContainerManager
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -103,8 +102,6 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
             result = asyncio.run(f(*args, **kwargs))
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
-                import sys
-
                 print(
                     "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
                     file=sys.stderr,
@@ -475,41 +472,11 @@ async def progress(ctx: click.Context) -> None:
 @cli.command()
 def container() -> None:
     """Manage Neo4j container."""
-
-    @click.group()
-    def container_group() -> None:
-        pass
-
-    @container_group.command()
-    def start() -> None:
-        """Start Neo4j container."""
-        container_manager = Neo4jContainerManager()
-        if container_manager.setup_neo4j():
-            click.echo("✅ Neo4j container started successfully")
-        else:
-            click.echo("❌ Failed to start Neo4j container", err=True)
-            sys.exit(1)
-
-    @container_group.command()
-    def stop() -> None:
-        """Stop Neo4j container."""
-        container_manager = Neo4jContainerManager()
-        if container_manager.stop_neo4j_container():
-            click.echo("✅ Neo4j container stopped successfully")
-        else:
-            click.echo("❌ Failed to stop Neo4j container", err=True)
-            sys.exit(1)
-
-    @container_group.command()
-    def status() -> None:
-        """Check Neo4j container status."""
-        container_manager = Neo4jContainerManager()
-        if container_manager.is_neo4j_container_running():
-            click.echo("✅ Neo4j container is running")
-        else:
-            click.echo("⏹️ Neo4j container is not running")
-
-    pass
+    # Note: Container management subcommands (start, stop, status) have been removed
+    # as they were unused. Container management is handled automatically by the
+    # build command when needed.
+    click.echo("Container management is handled automatically by build commands.")
+    click.echo("Use 'build --no-container' to disable automatic container management.")
 
 @cli.command()
 @click.argument("backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True))
