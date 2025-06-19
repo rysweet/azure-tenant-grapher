@@ -227,7 +227,12 @@ class RichDashboard:
             while not stop_event.is_set():
                 try:
                     if local_queue is not None:
-                        key = local_queue.get(timeout=1)
+                        import queue
+                        try:
+                            key = local_queue.get(timeout=1)
+                        except queue.Empty:
+                            # Normal timeout, continue to check stop_event
+                            continue
                     else:
                         key = readchar.readkey()
                 except Exception as e:
@@ -245,16 +250,6 @@ class RichDashboard:
                 if key and key.lower() == "x":
                     with self.lock:
                         self._should_exit = True
-                    print(
-                        "[DEBUG] Immediate exit: user pressed 'x'",
-                        file=sys.stderr,
-                        flush=True,
-                    )
-                    print(
-                        "[DEBUG] About to call sys.exit(0) from keypress handler",
-                        file=sys.stderr,
-                        flush=True,
-                    )
                     # Ensure immediate process termination
                     try:
                         sys.exit(0)
@@ -314,19 +309,9 @@ class RichDashboard:
                 def monitor_exit():
                     while not stop_event.is_set():
                         if self._should_exit:
-                            print(
-                                "[DEBUG] Monitor detected _should_exit=True, stopping live and signaling threads",
-                                file=sys.stderr,
-                                flush=True,
-                            )
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
                             # Ensure immediate process termination
-                            print(
-                                "[DEBUG] Monitor calling os._exit(0) to terminate process",
-                                file=sys.stderr,
-                                flush=True,
-                            )
                             os._exit(0)  # Restored: force immediate process termination
                         time.sleep(0.05)
 
