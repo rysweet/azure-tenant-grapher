@@ -250,7 +250,7 @@ class RichDashboard:
                         file=sys.stderr,
                         flush=True,
                     )
-                    sys.exit(0)
+                    return  # Return from the key loop instead of calling sys.exit
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:

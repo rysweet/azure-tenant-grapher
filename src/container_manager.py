@@ -246,3 +246,46 @@ class Neo4jContainerManager:
 
         logger.info("Neo4j setup completed successfully!")
         return True
+    def backup_neo4j_database(self, backup_path: str) -> bool:
+        """
+        Backup the Neo4j database using neo4j-admin dump inside the container.
+
+        Args:
+            backup_path: Local path to save the backup file.
+
+        Returns:
+            True if backup succeeded, False otherwise.
+        """
+        logger.info(f"Starting Neo4j backup to {backup_path}")
+        if not self.is_neo4j_container_running():
+            logger.error("Neo4j container is not running. Cannot perform backup.")
+            return False
+
+        # Find the container
+        try:
+            container = self.docker_client.containers.list(filters={"name": "azure-tenant-grapher-neo4j"})[0]
+        except Exception as e:
+            logger.error(f"Could not find Neo4j container: {e}")
+            return False
+
+        # Run neo4j-admin dump inside the container
+        try:
+            backup_file_in_container = "/data/neo4j-backup.dump"
+            exit_code, output = container.exec_run(
+                f"neo4j-admin database dump neo4j --to-path={backup_file_in_container} --overwrite-destination=true",
+                user="neo4j"
+            )
+            if exit_code != 0:
+                logger.error(f"neo4j-admin dump failed: {output.decode()}")
+                return False
+
+            # Copy the backup file from the container to the host
+            bits, stat = container.get_archive(backup_file_in_container)
+            with open(backup_path, "wb") as f:
+                for chunk in bits:
+                    f.write(chunk)
+            logger.info(f"Backup completed and saved to {backup_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Backup failed: {e}")
+            return False

@@ -199,6 +199,7 @@
   - **Visualization Only**: Generate visualizations from existing data
   - **Specification Generation**: Create anonymized tenant specifications
   - **Container Management**: Database container operations only
+  - **Database Backup**: Export the Neo4j database to a local file using the CLI for backup and restore scenarios
   - **Progress Checking**: Monitor processing status from existing data
 
 #### FR8.4 Cross-Platform Support
@@ -285,6 +286,7 @@
 - **Data Consistency**: Maintain graph consistency during processing
 - **Monitoring**: Health checks and status monitoring
 - **Backup**: Support for data backup and restoration
+  - The CLI provides a `backup-neo4j` command to export the Neo4j database to a local file for disaster recovery, migration, or compliance purposes.
 
 ### Usability Requirements
 - **Documentation**: Comprehensive user and developer documentation
