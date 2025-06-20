@@ -529,6 +529,26 @@ services:
 - **Resource**: Base resource type with common properties
 - **Specialized Resources**: VirtualMachine, StorageAccount, VirtualNetwork, etc.
 
+- **Tag**: Tag node with key/value
+  - **Region**: Region node with name/code
+  - **User/ServicePrincipal**: Identity nodes
+  - **ManagedIdentity**: Managed identity node
+  - **IdentityGroup**: AAD group node
+  - **RoleDefinition**: Role definition node
+- **TAGGED_WITH**: Resource is tagged with a Tag node (Resource→Tag)
+  - **LOCATED_IN**: Resource is located in a Region node (Resource→Region)
+  - **CREATED_BY**: Resource was created by a User or Service Principal (Resource→User/ServicePrincipal)
+  - **USES_IDENTITY**: Resource uses a ManagedIdentity (Resource→ManagedIdentity)
+  - **HAS_ROLE**: Identity has a RoleDefinition (Identity→RoleDefinition)
+  - **ASSIGNED_TO**: RoleAssignment assigned to Identity (RoleAssignment→Identity)
+  - **INHERITS_TAG**: ResourceGroup/Subscription inherits a Tag (ResourceGroup/Subscription→Tag)
+  - **STORES_SECRET**: KeyVault stores a KeyVaultSecret (KeyVault→KeyVaultSecret)
+  - **SENDS_DIAG_TO**: Resource sends diagnostics to DiagnosticSetting (Resource→DiagnosticSetting)
+  - **CONNECTED_TO_PE**: Resource connected to PrivateEndpoint (Resource↔PrivateEndpoint)
+  - **RoleAssignment**: Role assignment node
+  - **KeyVaultSecret**: KeyVault secret node
+  - **DiagnosticSetting**: Diagnostic setting node
+  - **PrivateEndpoint**: Private endpoint node
 ### Relationship Types
 - **CONTAINS**: Hierarchical containment (Subscription → ResourceGroup → Resource)
 - **BELONGS_TO**: Membership relationships

@@ -8,6 +8,7 @@ Azure Tenant Grapher is a Python application that discovers all Azure resources 
 
 - **Exhaustive Azure resource discovery** across all subscriptions
 - **Neo4j graph database** with rich schema and relationship modeling
+- **Extensible relationship engine**: Modular rules for new node/edge types (Tag, Region, CreatedBy, etc.)
 - **Interactive 3D visualization** (HTML export, filtering, search)
 - **Rich CLI dashboard** with live progress, logs, and configuration
 - **AI-powered documentation** and tenant specification generation
@@ -131,6 +132,7 @@ cd my-deployment
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Graph Enrichment & Refactor Plan](GRAPH_ENRICHMENT_PLAN.md)
 - [IaC Subset & Rules System](#iac-subset--rules-system)
 - [Architecture](#architecture)
 - [Development & Testing](#development--testing)

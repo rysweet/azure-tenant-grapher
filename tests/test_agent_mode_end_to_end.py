@@ -58,7 +58,7 @@ async def test_agent_mode_answers_question_completely():
 
         # Wait for completion with timeout
         try:
-            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=40)
         except asyncio.TimeoutError:
             process.kill()
             await process.wait()
@@ -167,7 +167,7 @@ async def test_agent_mode_provides_numeric_answer():
         )
 
         # Wait for completion
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=40)
         stdout_text = stdout.decode() if stdout else ""
 
         # Check that the agent provides a numeric answer

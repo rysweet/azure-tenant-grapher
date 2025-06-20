@@ -49,6 +49,16 @@
   - **CONNECTED_TO**: Network connectivity and communication relationships
   - **DEPENDS_ON**: Resource dependencies and requirements
   - **MANAGES**: Management and control relationships
+- **TAGGED_WITH**: Resource is tagged with a Tag node (Resource→Tag)
+  - **LOCATED_IN**: Resource is located in a Region node (Resource→Region)
+  - **CREATED_BY**: Resource was created by a User or Service Principal (Resource→User/ServicePrincipal)
+  - **USES_IDENTITY**: Resource uses a ManagedIdentity (Resource→ManagedIdentity)
+  - **HAS_ROLE**: Identity has a RoleDefinition (Identity→RoleDefinition)
+  - **ASSIGNED_TO**: RoleAssignment assigned to Identity (RoleAssignment→Identity)
+  - **INHERITS_TAG**: ResourceGroup/Subscription inherits a Tag (ResourceGroup/Subscription→Tag)
+  - **STORES_SECRET**: KeyVault stores a KeyVaultSecret (KeyVault→KeyVaultSecret)
+  - **SENDS_DIAG_TO**: Resource sends diagnostics to DiagnosticSetting (Resource→DiagnosticSetting)
+  - **CONNECTED_TO_PE**: Resource connected to PrivateEndpoint (Resource↔PrivateEndpoint)
 
 #### FR2.3 Data Operations
 - **Requirements**:
