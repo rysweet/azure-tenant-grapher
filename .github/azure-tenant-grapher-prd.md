@@ -2,7 +2,7 @@
 
 ## Product Overview
 
-**Azure Tenant Grapher** is a Python application that exhaustively discovers Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The application provides comprehensive resource mapping, interactive 3D visualization, Rich CLI dashboard interface, anonymized tenant specifications, and optional AI-powered documentation generation.
+**Azure Tenant Grapher** is a Python application that exhaustively discovers Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships. The application provides comprehensive resource mapping, interactive 3D visualization, Rich CLI dashboard interface, anonymized tenant specifications, infrastructure as code generation, and AI-powered documentation generation.
 
 ## Core Functional Requirements
 
@@ -49,6 +49,16 @@
   - **CONNECTED_TO**: Network connectivity and communication relationships
   - **DEPENDS_ON**: Resource dependencies and requirements
   - **MANAGES**: Management and control relationships
+- **TAGGED_WITH**: Resource is tagged with a Tag node (Resource→Tag)
+  - **LOCATED_IN**: Resource is located in a Region node (Resource→Region)
+  - **CREATED_BY**: Resource was created by a User or Service Principal (Resource→User/ServicePrincipal)
+  - **USES_IDENTITY**: Resource uses a ManagedIdentity (Resource→ManagedIdentity)
+  - **HAS_ROLE**: Identity has a RoleDefinition (Identity→RoleDefinition)
+  - **ASSIGNED_TO**: RoleAssignment assigned to Identity (RoleAssignment→Identity)
+  - **INHERITS_TAG**: ResourceGroup/Subscription inherits a Tag (ResourceGroup/Subscription→Tag)
+  - **STORES_SECRET**: KeyVault stores a KeyVaultSecret (KeyVault→KeyVaultSecret)
+  - **SENDS_DIAG_TO**: Resource sends diagnostics to DiagnosticSetting (Resource→DiagnosticSetting)
+  - **CONNECTED_TO_PE**: Resource connected to PrivateEndpoint (Resource↔PrivateEndpoint)
 
 #### FR2.3 Data Operations
 - **Requirements**:

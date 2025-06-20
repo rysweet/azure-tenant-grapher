@@ -332,6 +332,84 @@ class DatabaseOperations:
             )
             return False
 
+    def upsert_generic(
+        self, label: str, key_prop: str, key_value: str, properties: Dict[str, Any]
+    ) -> bool:
+        """
+        Create or update a generic node with the specified label and properties.
+
+        Args:
+            label: Node label (e.g., "Region", "Tag")
+            key_prop: Property name to use as unique key (e.g., "code", "name")
+            key_value: Value for the key property
+            properties: Additional properties to set on the node
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Serialize all property values
+            serialized_props = {}
+            for k, v in properties.items():
+                serialized_props[k] = serialize_value(v)
+
+            # Add the key property
+            serialized_props[key_prop] = serialize_value(key_value)
+
+            query = f"""
+            MERGE (n:{label} {{{key_prop}: $key_value}})
+            SET n += $props,
+                n.updated_at = datetime()
+            """
+
+            with self.session_manager.session() as session:
+                session.run(query, key_value=key_value, props=serialized_props)
+            return True
+
+        except Exception:
+            logger.exception(
+                f"Error upserting {label} node with {key_prop}={key_value}"
+            )
+            return False
+
+    def create_generic_rel(
+        self,
+        src_id: str,
+        rel_type: str,
+        tgt_key_value: str,
+        tgt_label: str,
+        tgt_key_prop: str,
+    ) -> bool:
+        """
+        Create a relationship from a Resource to a generic node identified by a key property.
+
+        Args:
+            src_id: Source resource ID
+            rel_type: Relationship type (e.g., "LOCATED_IN", "HAS_TAG")
+            tgt_key_value: Value of the target node's key property
+            tgt_label: Label of the target node (e.g., "Region", "Tag")
+            tgt_key_prop: Property name used to identify the target node (e.g., "code", "name")
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            query = f"""
+            MATCH (src:Resource {{id: $src_id}})
+            MATCH (tgt:{tgt_label} {{{tgt_key_prop}: $tgt_key_value}})
+            MERGE (src)-[:{rel_type}]->(tgt)
+            """
+
+            with self.session_manager.session() as session:
+                session.run(query, src_id=src_id, tgt_key_value=tgt_key_value)
+            return True
+
+        except Exception:
+            logger.exception(
+                f"Error creating {rel_type} relationship from {src_id} to {tgt_label}({tgt_key_prop}={tgt_key_value})"
+            )
+            return False
+
 
 class ResourceProcessor:
     """
@@ -679,54 +757,27 @@ class ResourceProcessor:
     def _create_enriched_relationships(self, resource: Dict[str, Any]) -> None:
         """
         Emit non-containment relationships for the resource, if applicable.
+        Uses modular relationship rules from src.relationship_rules.
         """
-        rid = resource.get("id")
-        rtype = resource.get("type", "")
-        props = resource
+        try:
+            from src.relationship_rules import ALL_RELATIONSHIP_RULES
+        except ImportError:
+            logger.error("Could not import relationship rules package.")
+            return
 
-        # --- 1. Network relationships ---
-        # (VirtualMachine) -[:USES_SUBNET]-> (Subnet)
-        # (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
-        if rtype.endswith("virtualMachines") and "network_profile" in props:
-            nics = props["network_profile"].get("network_interfaces", [])
-            for nic in nics:
-                ip_cfgs = nic.get("ip_configurations", [])
-                for ipcfg in ip_cfgs:
-                    subnet = ipcfg.get("subnet")
-                    if subnet and isinstance(subnet, dict):
-                        subnet_id = subnet.get("id")
-                        if subnet_id and rid:
-                            self._create_relationship(
-                                str(rid), "USES_SUBNET", str(subnet_id)
-                            )
-        if rtype.endswith("subnets"):
-            # Subnet may have a networkSecurityGroup property
-            nsg = props.get("network_security_group")
-            if nsg and isinstance(nsg, dict):
-                nsg_id = nsg.get("id")
-                if nsg_id and rid:
-                    self._create_relationship(str(rid), "SECURED_BY", str(nsg_id))
-
-        # --- 2. Identity relationships ---
-        # (Any resource with identity.principalId) -[:HAS_MANAGED_IDENTITY]-> (ManagedIdentity)
-        identity = props.get("identity")
-        if identity and isinstance(identity, dict):
-            principal_id = identity.get("principalId")
-            if principal_id and rid:
-                # ManagedIdentity node must exist with id = principalId
-                self._create_relationship(
-                    str(rid), "HAS_MANAGED_IDENTITY", str(principal_id)
+        for rule in ALL_RELATIONSHIP_RULES:
+            try:
+                if rule.applies(resource):
+                    rule.emit(resource, self.db_ops)
+            except Exception as e:
+                logger.exception(
+                    f"Relationship rule {rule.__class__.__name__} failed: {e}"
                 )
-        # (KeyVault) -[:POLICY_FOR]-> (ManagedIdentity) for each access-policy principalId
-        if rtype.endswith("vaults"):
-            access_policies = props.get("properties", {}).get("accessPolicies", [])
-            for policy in access_policies:
-                pid = policy.get("objectId")
-                if pid and rid:
-                    self._create_relationship(str(rid), "POLICY_FOR", str(pid))
 
-        # --- 3. Monitoring relationships ---
-        # (Resource with diagnosticSettings) -[:LOGS_TO]-> (LogAnalyticsWorkspace)
+        # --- Legacy relationships not yet migrated to rules ---
+        # Monitoring relationships
+        rid = resource.get("id")
+        props = resource
         diag_settings = props.get("diagnosticSettings")
         if isinstance(diag_settings, list):
             for ds in diag_settings:
@@ -734,8 +785,7 @@ class ResourceProcessor:
                 if ws and rid:
                     self._create_relationship(str(rid), "LOGS_TO", str(ws))
 
-        # --- 4. ARM dependency relationships ---
-        # (Resource with dependsOn) -[:DEPENDS_ON]-> (target Resource)
+        # ARM dependency relationships
         depends_on = props.get("dependsOn")
         if isinstance(depends_on, list):
             for dep_id in depends_on:

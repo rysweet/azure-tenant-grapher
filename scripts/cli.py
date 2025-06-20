@@ -230,6 +230,11 @@ def cli(ctx: click.Context, log_level: str) -> None:
     default="",
     help="Path to file containing simulated keypresses (for integration tests only)",
 )
+@click.option(
+    "--rebuild-edges",
+    is_flag=True,
+    help="Force re-evaluation of all relationships/edges for all resources in the graph database",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -243,6 +248,7 @@ async def build(
     no_dashboard: bool,
     test_keypress_queue: bool,
     test_keypress_file: str,
+    rebuild_edges: bool = False,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -265,6 +271,7 @@ async def build(
         no_dashboard,
         test_keypress_queue,
         test_keypress_file,
+        rebuild_edges,
     )
     print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result
