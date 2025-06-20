@@ -63,6 +63,7 @@ async def build_command_handler(
     no_dashboard: bool,
     test_keypress_queue: bool,
     test_keypress_file: str,
+    rebuild_edges: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     # Removed debug print
@@ -98,7 +99,7 @@ async def build_command_handler(
         # Removed debug print
         if no_dashboard:
             # Removed debug print
-            await _run_no_dashboard_mode(ctx, grapher, logger)
+            await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
             return
         else:
             # Removed debug print
@@ -112,6 +113,7 @@ async def build_command_handler(
                 generate_spec,
                 visualize,
                 logger,
+                rebuild_edges,
             )
 
     except Exception as e:
@@ -121,7 +123,10 @@ async def build_command_handler(
 
 
 async def _run_no_dashboard_mode(
-    ctx: click.Context, grapher: "AzureTenantGrapher", logger: logging.Logger
+    ctx: click.Context,
+    grapher: "AzureTenantGrapher",
+    logger: logging.Logger,
+    rebuild_edges: bool = False,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
     # Print log file path for test discoverability
@@ -182,7 +187,16 @@ async def _run_no_dashboard_mode(
         click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
         sys.exit(1)
     logger.info("🚀 Starting Azure Tenant Graph building...")
-    result = await grapher.build_graph()
+    if hasattr(grapher, "build_graph"):
+        if rebuild_edges:
+            click.echo(
+                "🔄 Forcing re-evaluation of all relationships/edges for all resources."
+            )
+            result = await grapher.build_graph(force_rebuild_edges=True)
+        else:
+            result = await grapher.build_graph()
+    else:
+        result = None
     click.echo("🎉 Graph building completed.")
     click.echo(f"Result: {result}")
 
@@ -197,6 +211,7 @@ async def _run_dashboard_mode(
     generate_spec: bool,
     visualize: bool,
     logger: logging.Logger,
+    rebuild_edges: bool = False,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
 
@@ -297,9 +312,16 @@ async def _run_dashboard_mode(
 
         build_task = asyncio.create_task(mock_build_task())
     else:
-        build_task = asyncio.create_task(
-            grapher.build_graph(progress_callback=progress_callback)
-        )
+        if rebuild_edges:
+            build_task = asyncio.create_task(
+                grapher.build_graph(
+                    progress_callback=progress_callback, force_rebuild_edges=True
+                )
+            )
+        else:
+            build_task = asyncio.create_task(
+                grapher.build_graph(progress_callback=progress_callback)
+            )
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
