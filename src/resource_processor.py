@@ -332,6 +332,84 @@ class DatabaseOperations:
             )
             return False
 
+    def upsert_generic(
+        self, label: str, key_prop: str, key_value: str, properties: Dict[str, Any]
+    ) -> bool:
+        """
+        Create or update a generic node with the specified label and properties.
+
+        Args:
+            label: Node label (e.g., "Region", "Tag")
+            key_prop: Property name to use as unique key (e.g., "code", "name")
+            key_value: Value for the key property
+            properties: Additional properties to set on the node
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Serialize all property values
+            serialized_props = {}
+            for k, v in properties.items():
+                serialized_props[k] = serialize_value(v)
+
+            # Add the key property
+            serialized_props[key_prop] = serialize_value(key_value)
+
+            query = f"""
+            MERGE (n:{label} {{{key_prop}: $key_value}})
+            SET n += $props,
+                n.updated_at = datetime()
+            """
+
+            with self.session_manager.session() as session:
+                session.run(query, key_value=key_value, props=serialized_props)
+            return True
+
+        except Exception:
+            logger.exception(
+                f"Error upserting {label} node with {key_prop}={key_value}"
+            )
+            return False
+
+    def create_generic_rel(
+        self,
+        src_id: str,
+        rel_type: str,
+        tgt_key_value: str,
+        tgt_label: str,
+        tgt_key_prop: str,
+    ) -> bool:
+        """
+        Create a relationship from a Resource to a generic node identified by a key property.
+
+        Args:
+            src_id: Source resource ID
+            rel_type: Relationship type (e.g., "LOCATED_IN", "HAS_TAG")
+            tgt_key_value: Value of the target node's key property
+            tgt_label: Label of the target node (e.g., "Region", "Tag")
+            tgt_key_prop: Property name used to identify the target node (e.g., "code", "name")
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            query = f"""
+            MATCH (src:Resource {{id: $src_id}})
+            MATCH (tgt:{tgt_label} {{{tgt_key_prop}: $tgt_key_value}})
+            MERGE (src)-[:{rel_type}]->(tgt)
+            """
+
+            with self.session_manager.session() as session:
+                session.run(query, src_id=src_id, tgt_key_value=tgt_key_value)
+            return True
+
+        except Exception:
+            logger.exception(
+                f"Error creating {rel_type} relationship from {src_id} to {tgt_label}({tgt_key_prop}={tgt_key_value})"
+            )
+            return False
+
 
 class ResourceProcessor:
     """
