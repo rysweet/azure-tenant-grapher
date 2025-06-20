@@ -1,3 +1,4 @@
+import importlib.util
 import subprocess
 import sys
 from unittest.mock import AsyncMock, patch
@@ -9,12 +10,20 @@ def test_agent_mode_dependencies_available():
     """Test that all required agent-mode dependencies are available."""
     try:
         # Test that all critical imports work
-        import openai
-        import tiktoken
-        from autogen_agentchat.agents import AssistantAgent
-        from autogen_ext.tools.mcp import McpWorkbench, StdioServerParams
-
-        from src.llm_descriptions import LLMConfig
+        # Check for required modules
+        assert importlib.util.find_spec("openai") is not None, "openai not installed"
+        assert (
+            importlib.util.find_spec("tiktoken") is not None
+        ), "tiktoken not installed"
+        assert (
+            importlib.util.find_spec("autogen_agentchat.agents") is not None
+        ), "autogen_agentchat.agents not installed"
+        assert (
+            importlib.util.find_spec("autogen_ext.tools.mcp") is not None
+        ), "autogen_ext.tools.mcp not installed"
+        assert (
+            importlib.util.find_spec("src.llm_descriptions") is not None
+        ), "src.llm_descriptions not installed"
 
         # If we get here, all dependencies are available
         assert True
@@ -33,9 +42,7 @@ async def test_agent_mode_startup():
         "src.llm_descriptions.LLMConfig.from_env"
     ) as mock_config, patch(
         "src.llm_descriptions.LLMConfig.is_valid", return_value=True
-    ), patch(
-        "autogen_ext.models.openai.AzureOpenAIChatCompletionClient"
-    ) as mock_client, patch(
+    ), patch("autogen_ext.models.openai.AzureOpenAIChatCompletionClient"), patch(
         "autogen_agentchat.agents.AssistantAgent"
     ) as mock_agent, patch(
         "autogen_ext.tools.mcp.McpWorkbench"

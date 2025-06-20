@@ -1,7 +1,3 @@
-import pytest
-
-pytest.importorskip("readchar", reason="readchar not installed")
-
 import asyncio
 import io
 import logging
@@ -12,8 +8,10 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Optional
 
+import pytest
 from click.testing import CliRunner
 from neo4j import GraphDatabase
 from scripts.cli import cli
@@ -21,13 +19,15 @@ from scripts.cli import cli
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.rich_dashboard import RichDashboard
 
+pytest.importorskip("readchar", reason="readchar not installed")
 
-def test_dashboard_keypress_handling(monkeypatch):
+
+def test_dashboard_keypress_handling(monkeypatch: Any):
     """Test that dashboard responds to 'x', 'i', 'd', 'w' keypresses."""
     # Simulate keypresses: 'i', 'd', 'w', 'x'
     key_sequence = iter(["i", "d", "w", "x"])
 
-    def fake_key_loop(self):
+    def fake_key_loop(self: Any):
         for key in key_sequence:
             if key and key.lower() == "x":
                 with self.lock:
@@ -56,15 +56,14 @@ def test_dashboard_keypress_handling(monkeypatch):
     assert dashboard.log_level == "warning"
 
 
-def test_dashboard_log_level_affects_logging(monkeypatch):
+def test_dashboard_log_level_affects_logging(monkeypatch: Any):
     """Test that changing log level via dashboard keypress affects actual log output and 'x' exits."""
     # Use a queue to simulate keypresses: 'd', 'w', 'x'
     key_q = queue.Queue()
     for k in ["d", "w", "x"]:
         key_q.put(k)
 
-    def key_source():
-        return key_q.get(timeout=1)
+    # key_source is not used and can be removed
 
     config = {"tenant_id": "test"}
     dashboard = RichDashboard(config, max_concurrency=1)
@@ -95,7 +94,7 @@ def test_dashboard_log_level_affects_logging(monkeypatch):
                 elif key == "w":
                     dashboard.log_level = "warning"
                 elif key == "x":
-                    dashboard._should_exit = True
+                    dashboard._should_exit = True  # type: ignore
                     break
 
         with dashboard.live(key_handler=key_handler):
@@ -233,7 +232,7 @@ def test_dashboard_invokes_processing(monkeypatch: Any) -> None:
 
 
 @pytest.mark.timeout(10)
-def test_dashboard_runs_for_at_least_2_seconds(tmp_path):
+def test_dashboard_runs_for_at_least_2_seconds(tmp_path: Path):
     """
     Integration: The dashboard should not exit immediately on startup.
     This test launches the CLI dashboard in a subprocess, waits 2 seconds,
@@ -271,14 +270,14 @@ def test_dashboard_runs_for_at_least_2_seconds(tmp_path):
         alive = proc.poll() is None
         if alive:
             proc.terminate()
-        out, err = proc.communicate(timeout=5)
+        _out, _err = proc.communicate(timeout=5)
     finally:
         proc.kill()
     duration = time.time() - start
     assert duration >= 2, f"Dashboard exited too early (ran {duration:.2f}s)"
 
 
-def test_dashboard_log_view_handles_stack_traces(tmp_path):
+def test_dashboard_log_view_handles_stack_traces(tmp_path: Path):
     """
     Test that the dashboard log view formats or filters stack traces for readability.
     """
@@ -327,7 +326,7 @@ def test_dashboard_log_view_handles_stack_traces(tmp_path):
     # (e.g., Rich markup, indentation, or collapsed/expandable trace)
 
 
-def test_dashboard_log_view_updates_in_real_time(tmp_path):
+def test_dashboard_log_view_updates_in_real_time(tmp_path: Path):
     """
     Test that the dashboard log view updates promptly when the log file is written to.
     """

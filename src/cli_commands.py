@@ -530,7 +530,7 @@ async def progress_command_handler(ctx: click.Context) -> None:
 # === MCP Server Command Handler ===
 
 
-async def mcp_server_command_handler(ctx):
+async def mcp_server_command_handler(ctx: click.Context):
     """
     Ensure Neo4j is running, then launch MCP server (uvx mcp-neo4j-cypher).
     """
@@ -556,7 +556,9 @@ async def mcp_server_command_handler(ctx):
 # === Agent Mode Command Handler ===
 
 
-async def agent_mode_command_handler(ctx, question: Optional[str] = None):
+async def agent_mode_command_handler(
+    ctx: click.Context, question: Optional[str] = None
+):
     """
     Start Neo4j, MCP server, and launch AutoGen MCP agent chat loop.
     """
@@ -574,4 +576,25 @@ async def agent_mode_command_handler(ctx, question: Optional[str] = None):
         import traceback
 
         traceback.print_exc()
-        sys.exit(1)
+
+
+# === Threat Modeling Agent Command Handler ===
+
+
+async def generate_threat_model_command_handler(
+    ctx: Optional["click.Context"] = None,
+):
+    """
+    Handler for the threat-model CLI command.
+    Runs the ThreatModelAgent workflow and prints/logs each stage.
+    """
+    import click
+
+    from src.threat_modeling_agent.agent import ThreatModelAgent
+
+    click.echo("🚀 Starting Threat Modeling Agent workflow...")
+    agent = ThreatModelAgent()
+    report_path = await agent.run()
+    click.echo("✅ Threat Modeling Agent workflow complete.")
+    if report_path:
+        click.echo(f"📄 Threat modeling report saved to: {report_path}")

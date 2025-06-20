@@ -491,8 +491,11 @@ def container() -> None:
     click.echo("Container management is handled automatically by build commands.")
     click.echo("Use 'build --no-container' to disable automatic container management.")
 
+
 @cli.command()
-@click.argument("backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True))
+@click.argument(
+    "backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True)
+)
 def backup_db(backup_path: str) -> None:
     """Backup the Neo4j database and save it to BACKUP_PATH."""
     from src.container_manager import Neo4jContainerManager
@@ -504,6 +507,7 @@ def backup_db(backup_path: str) -> None:
         click.echo("❌ Neo4j backup failed", err=True)
         sys.exit(1)
 
+
 @cli.command()
 @click.pass_context
 @async_command
@@ -512,6 +516,16 @@ async def mcp_server(ctx):
     from src.cli_commands import mcp_server_command_handler
 
     await mcp_server_command_handler(ctx)
+
+
+@cli.command()
+@click.pass_context
+@async_command
+async def threat_model(ctx) -> None:
+    """Run the Threat Modeling Agent workflow to generate a DFD, enumerate threats, and produce a Markdown report from the current Neo4j graph."""
+    from src.cli_commands import generate_threat_model_command_handler
+
+    await generate_threat_model_command_handler(ctx)
 
 
 @cli.command()
