@@ -1,13 +1,15 @@
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
 import pytest
 
 pytest.importorskip("readchar", reason="readchar not installed")
 
-import subprocess
-import sys
-import time
 
-
-def test_cli_dashboard_log_level_and_exit(tmp_path):
+def test_cli_dashboard_log_level_and_exit(tmp_path: Path):
     """Integration test: CLI dashboard log level and exit via keypresses."""
     # Prepare keypress file
     key_file = tmp_path / "keys.txt"
@@ -57,7 +59,7 @@ def test_cli_dashboard_log_level_and_exit(tmp_path):
         print("STDERR:", stderr)
 
 
-def test_dashboard_config_panel_displays_log_file(tmp_path, neo4j_container):
+def test_dashboard_config_panel_displays_log_file(tmp_path: Path, neo4j_container: Any):
     """Test that the dashboard config/parameters panel displays the log file name."""
     import re
 

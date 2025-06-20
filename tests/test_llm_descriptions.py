@@ -308,7 +308,9 @@ class TestAzureLLMDescriptionGenerator:
                 assert mock_open.called
 
 
-def make_mock_session(desc: str | None = None, etag: str | None = None, last_modified: str | None = None) -> Mock:
+def make_mock_session(
+    desc: str | None = None, etag: str | None = None, last_modified: str | None = None
+) -> Mock:
     """Helper to create a mock Neo4j session returning a single record."""
     mock_result = Mock()
     mock_result.single.return_value = {

@@ -15,6 +15,7 @@ Azure Tenant Grapher is a Python application that discovers all Azure resources 
 - **Automated CLI tool management** and cross-platform support
 - **Comprehensive test suite** (unit, integration, end-to-end)
 - **Agent Mode (MCP/AutoGen Integration)**: Ask natural language questions about your Azure graph/tenant data
+- **Threat Modeling Agent**: Automatically generate Data Flow Diagrams (DFD), enumerate threats, and produce Markdown threat model reports for your Azure tenant.
 
 ---
 
@@ -59,6 +60,14 @@ Sample resource types: [{"type": "Microsoft.Storage/storageAccounts", "count": 3
 ### End-to-End Testing
 
 - See `tests/test_agent_mode_end_to_end.py` for full end-to-end tests that ensure agent mode answers questions completely and correctly.
+
+---
+
+## Threat Modeling Agent
+
+The Threat Modeling Agent enables you to generate a Data Flow Diagram (DFD), enumerate threats, and produce a Markdown threat model report for your Azure tenant. It integrates with the AI-powered resource summaries and supports exporting artifacts for further analysis.
+
+- See the [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md) for a full walkthrough using the demo tenant, including command extracts and links to generated artifacts.
 
 ---
 
@@ -201,6 +210,7 @@ azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 This will create a portable dump file of your Neo4j database, which can be restored using Neo4j tools.
 
 ---
+- [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 
 ## Documentation
 

@@ -92,7 +92,7 @@ namespace AzureTenantGrapher.Config
 
             if (dict.TryGetValue("NEO4J_PASSWORD", out var pwd))
                 config.Neo4j.Password = pwd;
-            
+
             if (dict.TryGetValue("backupNeo4j", out var backupPath))
                 config.BackupNeo4jPath = backupPath;
 

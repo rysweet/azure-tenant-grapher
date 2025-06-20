@@ -228,6 +228,7 @@ class RichDashboard:
                 try:
                     if local_queue is not None:
                         import queue
+
                         try:
                             key = local_queue.get(timeout=1)
                         except queue.Empty:
@@ -255,7 +256,7 @@ class RichDashboard:
                         sys.exit(0)
                     except SystemExit:
                         # If sys.exit is caught, force immediate termination
-                        os._exit(0)
+                        os._exit(0)  # type: ignore[reportPrivateUsage]
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:
@@ -307,14 +308,12 @@ class RichDashboard:
                 import time
 
                 def monitor_exit():
-                    import os
-
                     while not stop_event.is_set():
                         if self._should_exit:
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
                             # Ensure immediate process termination
-                            os._exit(0)  # Restored: force immediate process termination
+                            os._exit(0)  # type: ignore[reportPrivateUsage]
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)
