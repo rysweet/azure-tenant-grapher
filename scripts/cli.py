@@ -519,6 +519,16 @@ async def mcp_server(ctx):
 
 
 @cli.command()
+@click.pass_context
+@async_command
+async def threat_model(ctx) -> None:
+    """Run the Threat Modeling Agent workflow to generate a DFD, enumerate threats, and produce a Markdown report from the current Neo4j graph."""
+    from src.cli_commands import generate_threat_model_command_handler
+
+    await generate_threat_model_command_handler(ctx)
+
+
+@cli.command()
 @click.option(
     "--question",
     help="Ask a single question and exit (non-interactive mode)",
