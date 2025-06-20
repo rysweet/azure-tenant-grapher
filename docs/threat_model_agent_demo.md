@@ -1,90 +1,53 @@
 # Threat Modeling Agent Demo
 
-This demo illustrates the end-to-end workflow of the Threat Modeling Agent using the provided demo tenant.
-
-## Demo Tenant Configuration
-
-The following environment variables are used (from `.env`):
-
-```
-AZURE_TENANT_ID=3cd87a41-1f61-4aef-a212-cefdecd9a2d1
-NEO4J_URI=bolt://localhost:8768
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=azure-grapher-2024
-AZURE_OPENAI_ENDPOINT=https://ai-adapt-oai-eastus2.openai.azure.com/
-AZURE_OPENAI_KEY=***
-AZURE_OPENAI_API_VERSION=2025-01-01-preview
-AZURE_OPENAI_MODEL_CHAT=o3
-AZURE_OPENAI_MODEL_REASONING=o3
-```
+This demo illustrates the end-to-end workflow of the Threat Modeling Agent using the current Neo4j graph.
 
 ## Step 1: Build the Azure Graph
 
 ```bash
-azure-tenant-grapher build --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+azure-tenant-grapher build --tenant-id XXXX-XXXX-XXXX-XXXX --no-dashboard
 ```
 
 **Sample Output:**
 ```
-[INFO] Discovering Azure resources for tenant 3cd87a41-1f61-4aef-a212-cefdecd9a2d1...
-[INFO] Found 42 subscriptions, 300 resources.
-[INFO] Writing graph to Neo4j at bolt://localhost:8768...
-[INFO] Graph build complete.
+🎉 Graph building completed.
+Result: {'total_resources': 10, 'processed': 10, 'successful': 1, 'failed': 0, 'skipped': 9, 'llm_generated': 1, 'llm_skipped': 9, 'success_rate': 10.0, 'progress_percentage': 100.0, 'subscriptions': 1, 'success': True}
 ```
 
-## Step 2: Generate Threat Model
+## Step 2: Run the Threat Modeling Agent
 
 ```bash
-azure-tenant-grapher threat-model --spec-path ./demo-tenant-spec.json --summaries-path ./demo-llm-summaries.json
+azure-tenant-grapher threat-model
 ```
 
-**Sample Output:**
+**Actual Output:**
 ```
-[INFO] Building DFD (Data Flow Diagram)...
-[INFO] DFD artifact (Mermaid diagram) generated: docs/artifacts/demo_dfd.mmd
-[INFO] Running Microsoft Threat Modeling Tool (TMT)...
-[INFO] TMT runner output: 12 threats identified.
-[INFO] Mapping threats to ASB controls...
-[INFO] Markdown report generated: docs/artifacts/demo_threat_model_report.md
+🚀 Starting Threat Modeling Agent workflow...
+Waiting for Neo4j to be ready...
+Neo4j is ready!
+=== Threat Modeling Agent: Starting workflow ===
+[Stage] Building DFD (Data Flow Diagram)...
+✅ DFD artifact (Mermaid diagram):
+flowchart TD
+    /subscriptions/XXXX-XXXX-XXXX-XXXX/resourceGroups/XXXX/providers/Microsoft.Network/networkInterfaces/aaXXXX["/subscriptions/XXXX-XXXX-XXXX-XXXX/resourceGroups/XXXX/providers/Microsoft.Network/networkInterfaces/aaXXXX"]
+    ... (many more nodes and edges, all IDs obfuscated) ...
+[Stage] Invoking Microsoft Threat Modeling Tool (TMT)...
+TMT runner returned no threats.
+⚠️  TMT runner returned no threats.
+=== Threat Modeling Agent: Workflow complete ===
+✅ Threat Modeling Agent workflow complete.
 ```
-
-- [Mermaid DFD Diagram](artifacts/demo_dfd.mmd)
-- [Threat Model Markdown Report](artifacts/demo_threat_model_report.md)
 
 ## Step 3: View the Mermaid DFD
 
-Open the generated Mermaid file in a Mermaid live editor or compatible tool:
-
-```
-flowchart TD
-    user1((User))
-    app1["App Service"]
-    db1[(("SQL DB"))]
-    user1 -->|HTTPS| app1
-    app1 -->|TCP 1433| db1
-```
-
-## Step 4: Review the Threat Model Report
-
-The generated Markdown report includes:
-
-- DFD diagram (embedded)
-- Table of identified threats
-- Mapped ASB controls for each threat
+Open the generated Mermaid diagram in a Mermaid live editor or compatible tool.
 
 **Extract:**
 ```
-| Threat ID | Title           | Severity | STRIDE | ASB Controls         |
-|-----------|----------------|----------|--------|----------------------|
-| TMT-001   | Data Exposure  | High     | I      | ASB-DS-4, ASB-DS-5   |
-| TMT-002   | Privilege Esc. | Medium   | E      | ASB-IM-2, ASB-IM-3   |
-...
+flowchart TD
+    /subscriptions/XXXX-XXXX-XXXX-XXXX/resourceGroups/XXXX/providers/Microsoft.Network/networkInterfaces/aaXXXX["/subscriptions/XXXX-XXXX-XXXX-XXXX/resourceGroups/XXXX/providers/Microsoft.Network/networkInterfaces/aaXXXX"]
+    ... (many more nodes and edges, all IDs obfuscated) ...
 ```
-
-## Step 5: Links to Artifacts
-
-- [DFD Mermaid Diagram (demo_dfd.mmd)](artifacts/demo_dfd.mmd)
-- [Threat Model Report (demo_threat_model_report.md)](artifacts/demo_threat_model_report.md)
 
 ---
 
@@ -92,12 +55,10 @@ The generated Markdown report includes:
 
 ```bash
 # 1. Build the Azure graph
-azure-tenant-grapher build --tenant-id 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
+azure-tenant-grapher build --tenant-id XXXX-XXXX-XXXX-XXXX --no-dashboard
 
-# 2. Generate the threat model
-azure-tenant-grapher threat-model --spec-path ./demo-tenant-spec.json --summaries-path ./demo-llm-summaries.json
-
-# 3. View the DFD and report in docs/artifacts/
+# 2. Run the threat modeling agent
+azure-tenant-grapher threat-model
 ```
 
 ---
