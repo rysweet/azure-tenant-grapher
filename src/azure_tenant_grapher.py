@@ -126,7 +126,7 @@ class AzureTenantGrapher:
     # Legacy async LLM pool processing removed; handled by services.
 
     async def build_graph(
-        self, progress_callback: Optional[Any] = None
+        self, progress_callback: Optional[Any] = None, force_rebuild_edges: bool = False
     ) -> Dict[str, Any]:
         """
         Orchestrate Azure tenant graph building using composed services.
@@ -181,9 +181,104 @@ class AzureTenantGrapher:
 
             # 3. Process resources
             with self.session_manager:
-                stats = await self.processing_service.process_resources(
-                    all_resources, progress_callback=progress_callback
-                )
+                if force_rebuild_edges:
+                    logger.info(
+                        "🔄 Forcing re-evaluation of all relationships/edges for existing resources in database."
+                    )
+
+                    # Fetch existing resources from database (preserving LLM descriptions)
+                    logger.info("📂 Fetching existing resources from database...")
+                    existing_resources = []
+
+                    with self.session_manager.session() as session:
+                        result = session.run("""
+                            MATCH (r:Resource)
+                            RETURN r {
+                                .id, .name, .type, .location, .resource_group,
+                                .subscription_id, .llm_description, .*
+                            } as resource
+                            ORDER BY r.name
+                        """)
+
+                        for record in result:
+                            resource_data = dict(record["resource"])
+                            existing_resources.append(resource_data)
+
+                    if not existing_resources:
+                        logger.warning(
+                            "⚠️ No existing resources found in database for edge rebuild"
+                        )
+                        return {"subscriptions": 0, "resources": 0, "success": False}
+
+                    logger.info(
+                        f"📂 Found {len(existing_resources)} existing resources in database"
+                    )
+
+                    # Create a processor instance for database operations
+                    processor = self.processing_service.processor_factory(
+                        self.session_manager,
+                        self.processing_service.llm_generator,
+                        getattr(self.config.processing, "resource_limit", None),
+                    )
+
+                    # Clear existing non-containment relationships first
+                    logger.info("🧹 Clearing existing non-containment relationships...")
+                    with self.session_manager.session() as session:
+                        # Keep CONTAINS relationships but remove others that will be rebuilt
+                        session.run("""
+                            MATCH (r:Resource)-[rel]->(target)
+                            WHERE type(rel) <> 'CONTAINS'
+                            DELETE rel
+                        """)
+
+                    # Re-run relationship rules for all existing resources
+                    for i, resource in enumerate(existing_resources):
+                        if progress_callback:
+                            progress_callback(
+                                processed=i + 1,
+                                total=len(existing_resources),
+                                successful=i + 1,
+                                failed=0,
+                                skipped=0,
+                                llm_generated=0,
+                                llm_skipped=0,
+                            )
+
+                        logger.debug(
+                            f"🔄 Rebuilding edges for resource {i+1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
+                        )
+
+                        # Re-emit relationships (but not containment - that's preserved)
+                        from src.relationship_rules import ALL_RELATIONSHIP_RULES
+
+                        for rule in ALL_RELATIONSHIP_RULES:
+                            try:
+                                if rule.applies(resource):
+                                    rule.emit(resource, processor.db_ops)
+                            except Exception as e:
+                                logger.exception(
+                                    f"Relationship rule {rule.__class__.__name__} failed during rebuild: {e}"
+                                )
+
+                    logger.info(
+                        f"✅ Completed rebuilding edges for {len(existing_resources)} existing resources."
+                    )
+
+                    # Create a simple stats object for rebuild mode - don't run full processing
+                    from src.resource_processor import ProcessingStats
+
+                    stats = ProcessingStats()
+                    stats.total_resources = len(existing_resources)
+                    stats.processed = len(existing_resources)
+                    stats.successful = len(existing_resources)
+                    stats.failed = 0
+                    stats.skipped = 0
+                    stats.llm_generated = 0
+                    stats.llm_skipped = 0
+                else:
+                    stats = await self.processing_service.process_resources(
+                        all_resources, progress_callback=progress_callback
+                    )
 
             # 4. Return stats as dict (back-compat)
             result = stats.to_dict()
