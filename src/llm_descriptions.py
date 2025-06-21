@@ -399,8 +399,11 @@ Be specific about the architectural implications while keeping it concise and ac
                     locations.add(str(location))
 
             # Sort resource types by count
+            def _resource_type_count_key(x: tuple[str, Any]) -> int:
+                return int(x[1])
+
             sorted_resource_types = sorted(
-                resource_types.items(), key=lambda x: int(x[1]), reverse=True
+                resource_types.items(), key=_resource_type_count_key, reverse=True
             )
 
             prompt = f"""
@@ -501,8 +504,11 @@ Focus on architectural significance and business purpose rather than just resour
                     resource_groups.add(str(resource_group))
 
             # Sort resource types by count
+            def _resource_type_count_key(x: tuple[str, Any]) -> int:
+                return int(x[1])
+
             sorted_resource_types = sorted(
-                resource_types.items(), key=lambda x: int(x[1]), reverse=True
+                resource_types.items(), key=_resource_type_count_key, reverse=True
             )
 
             prompt = f"""
