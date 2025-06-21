@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
@@ -12,6 +12,10 @@ from openai import AzureOpenAI
 from src.utils.session_manager import retry_neo4j_operation
 
 T = TypeVar("T")
+
+
+def _sort_by_count(item: Tuple[str, int]) -> int:
+    return item[1]
 
 
 @retry_neo4j_operation()
@@ -399,11 +403,11 @@ Be specific about the architectural implications while keeping it concise and ac
                     locations.add(str(location))
 
             # Sort resource types by count
-            def _resource_type_count_key(x: tuple[str, Any]) -> int:
-                return int(x[1])
-
+            _items: List[Tuple[str, int]] = list(resource_types.items())
             sorted_resource_types = sorted(
-                resource_types.items(), key=_resource_type_count_key, reverse=True
+                _items,
+                key=_sort_by_count,
+                reverse=True,
             )
 
             prompt = f"""
@@ -504,11 +508,11 @@ Focus on architectural significance and business purpose rather than just resour
                     resource_groups.add(str(resource_group))
 
             # Sort resource types by count
-            def _resource_type_count_key(x: tuple[str, Any]) -> int:
-                return int(x[1])
-
+            _items: List[Tuple[str, int]] = list(resource_types.items())
             sorted_resource_types = sorted(
-                resource_types.items(), key=_resource_type_count_key, reverse=True
+                _items,
+                key=_sort_by_count,
+                reverse=True,
             )
 
             prompt = f"""
