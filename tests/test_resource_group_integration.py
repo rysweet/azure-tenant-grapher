@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 import pytest
 from neo4j import GraphDatabase
@@ -22,7 +21,7 @@ def neo4j_test_driver():
 
 
 @pytest.fixture
-def session_manager(neo4j_test_driver: "GraphDatabase.driver") -> Any:
+def session_manager(neo4j_test_driver):
     class DummySessionManager:
         def session(self):
             return neo4j_test_driver.session()
@@ -30,7 +29,7 @@ def session_manager(neo4j_test_driver: "GraphDatabase.driver") -> Any:
     return DummySessionManager()
 
 
-def test_resource_group_creation_no_cypher_error(session_manager: Any):
+def test_resource_group_creation_no_cypher_error(session_manager):
     db_ops = DatabaseOperations(session_manager)
     resource = {
         "id": "test-rg-id",
