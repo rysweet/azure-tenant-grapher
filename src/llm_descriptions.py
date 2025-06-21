@@ -364,15 +364,20 @@ Be specific about the architectural implications while keeping it concise and ac
             logger.exception(f"Failed to generate relationship description: {e!s}")
             return f"{relationship_type} relationship between {source_type} and {target_type}."
 
-    async def generate_resource_group_description(self, resource_group_name: str, subscription_id: str, resources: List[Dict[str, Any]]) -> str:
+    async def generate_resource_group_description(
+        self,
+        resource_group_name: str,
+        subscription_id: str,
+        resources: List[Dict[str, Any]],
+    ) -> str:
         """
         Generate a natural language description for a Resource Group based on its contained resources.
-        
+
         Args:
             resource_group_name: Name of the resource group
             subscription_id: Subscription ID
             resources: List of resources contained in this resource group
-            
+
         Returns:
             Natural language description of the resource group
         """
@@ -381,21 +386,23 @@ Be specific about the architectural implications while keeping it concise and ac
             resource_types = {}
             locations = set()
             total_resources = len(resources)
-            
+
             for resource in resources:
                 resource_type = resource.get("type", "Unknown")
                 location = resource.get("location", "Unknown")
-                
+
                 if resource_type not in resource_types:
                     resource_types[resource_type] = 0
                 resource_types[resource_type] += 1
-                
+
                 if location != "Unknown":
                     locations.add(str(location))
-            
+
             # Sort resource types by count
-            sorted_resource_types = sorted(resource_types.items(), key=lambda x: x[1], reverse=True)
-            
+            sorted_resource_types = sorted(
+                resource_types.items(), key=lambda x: int(x[1]), reverse=True
+            )
+
             prompt = f"""
 You are an expert Azure cloud architect analyzing a Resource Group and its contents.
 
@@ -446,23 +453,29 @@ Focus on architectural significance and business purpose rather than just resour
 
             content = response.choices[0].message.content
             description = str(content).strip() if content else ""
-            logger.debug(f"Generated Resource Group description for '{resource_group_name}': {description}")
+            logger.debug(
+                f"Generated Resource Group description for '{resource_group_name}': {description}"
+            )
 
             return description
 
         except Exception as e:
-            logger.exception(f"Failed to generate Resource Group description for '{resource_group_name}': {e!s}")
+            logger.exception(
+                f"Failed to generate Resource Group description for '{resource_group_name}': {e!s}"
+            )
             return f"Azure Resource Group '{resource_group_name}' containing {len(resources)} resources providing organized resource management and deployment boundaries."
 
-    async def generate_tag_description(self, tag_key: str, tag_value: str, tagged_resources: List[Dict[str, Any]]) -> str:
+    async def generate_tag_description(
+        self, tag_key: str, tag_value: str, tagged_resources: List[Dict[str, Any]]
+    ) -> str:
         """
         Generate a natural language description for a Tag based on the resources it's applied to.
-        
+
         Args:
             tag_key: The tag key
             tag_value: The tag value
             tagged_resources: List of resources that have this tag
-            
+
         Returns:
             Natural language description of the tag's purpose and usage
         """
@@ -472,24 +485,26 @@ Focus on architectural significance and business purpose rather than just resour
             locations = set()
             resource_groups = set()
             total_resources = len(tagged_resources)
-            
+
             for resource in tagged_resources:
                 resource_type = resource.get("type", "Unknown")
                 location = resource.get("location", "Unknown")
                 resource_group = resource.get("resource_group", "Unknown")
-                
+
                 if resource_type not in resource_types:
                     resource_types[resource_type] = 0
                 resource_types[resource_type] += 1
-                
+
                 if location != "Unknown":
                     locations.add(str(location))
                 if resource_group != "Unknown":
                     resource_groups.add(str(resource_group))
-            
+
             # Sort resource types by count
-            sorted_resource_types = sorted(resource_types.items(), key=lambda x: x[1], reverse=True)
-            
+            sorted_resource_types = sorted(
+                resource_types.items(), key=lambda x: int(x[1]), reverse=True
+            )
+
             prompt = f"""
 You are an expert Azure cloud architect analyzing a Tag and its usage across Azure resources.
 
@@ -550,12 +565,16 @@ Focus on the strategic purpose of this tagging rather than just describing what 
 
             content = response.choices[0].message.content
             description = str(content).strip() if content else ""
-            logger.debug(f"Generated Tag description for '{tag_key}:{tag_value}': {description}")
+            logger.debug(
+                f"Generated Tag description for '{tag_key}:{tag_value}': {description}"
+            )
 
             return description
 
         except Exception as e:
-            logger.exception(f"Failed to generate Tag description for '{tag_key}:{tag_value}': {e!s}")
+            logger.exception(
+                f"Failed to generate Tag description for '{tag_key}:{tag_value}': {e!s}"
+            )
             return f"Azure tag '{tag_key}:{tag_value}' applied to {len(tagged_resources)} resources for organizational and management purposes."
 
     async def generate_tenant_specification(
