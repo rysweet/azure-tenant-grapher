@@ -289,9 +289,10 @@ class DatabaseOperations:
             # Create resource group node if it doesn't exist
             rg_query = """
             MERGE (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
-            SET rg.type = 'ResourceGroup',
-                rg.updated_at = datetime()
-            ON CREATE SET rg.llm_description = ''
+            ON CREATE SET rg.type = 'ResourceGroup',
+                          rg.updated_at = datetime(),
+                          rg.llm_description = ''
+            ON MATCH SET rg.updated_at = datetime()
             """
             with self.session_manager.session() as session:
                 session.run(rg_query, rg_name=rg_name, subscription_id=subscription_id)
