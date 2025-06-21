@@ -11,7 +11,11 @@ from src.resource_processor import DatabaseOperations
 def neo4j_test_driver():
     uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
     user = os.environ.get("NEO4J_USER", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+    password = os.environ.get("NEO4J_PASSWORD")
+    if not password:
+        raise RuntimeError(
+            "NEO4J_PASSWORD environment variable must be set for integration tests (do not hardcode secrets)."
+        )
     driver = GraphDatabase.driver(uri, auth=(user, password))
     yield driver
     driver.close()
