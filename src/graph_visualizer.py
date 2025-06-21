@@ -245,12 +245,13 @@ class GraphVisualizer:
                 node_types.add(node_type)
 
                 # Create node data structure
+                node_name = properties.get(
+                    "name",
+                    properties.get("display_name", f"{node_type}_{node_id}"),
+                )
                 node_data = {
                     "id": node_id,
-                    "name": properties.get(
-                        "name",
-                        properties.get("display_name", f"{node_type}_{node_id}"),
-                    ),
+                    "name": node_name,
                     "type": node_type,
                     "labels": labels,
                     "properties": properties,
@@ -258,6 +259,10 @@ class GraphVisualizer:
                     "color": self._get_node_color(node_type),
                     "size": self._get_node_size(node_type, properties),
                 }
+                
+                # Add label for ResourceGroup nodes to show their names in the visualization
+                if node_type == "ResourceGroup":
+                    node_data["label"] = node_name
 
                 nodes.append(node_data)
                 node_map[node_id] = node_data

@@ -110,11 +110,23 @@
   - Highlight important configuration details
   - Provide context about resource relationships
 
-#### FR4.2 Tenant Architecture Documentation
+#### FR4.2 ResourceGroup and Tag Description Generation
+- **Requirement**: Generate intelligent summaries for ResourceGroups and Tags using AI
+- **ResourceGroup Summaries**:
+  - Analyze contained resources to infer architectural purpose
+  - Describe scale, scope, and deployment patterns
+  - Identify common Azure solution patterns (web apps, data analytics, networking hubs)
+  - Generate descriptions like "Production web application Resource Group containing a 3-tier architecture..."
+- **Tag Summaries**:
+  - Analyze tagged resources to infer organizational purpose
+  - Identify tagging strategies (environment, cost center, compliance, etc.)
+  - Generate descriptions like "Environment classification tag identifying production workloads..."
+
+#### FR4.3 Tenant Architecture Documentation
 - **Requirement**: Generate comprehensive tenant specification documents
 - **Content**:
   - High-level architecture overview
-  - Resource inventory and categorization
+  - Resource inventory and categorization including ResourceGroup and Tag summaries
   - Relationship mapping and dependencies
   - Best practices recommendations
   - Security and compliance observations
@@ -193,13 +205,14 @@
 
 #### FR8.2 Command Line Interface
 - **Requirements**:
-  - Comprehensive CLI with all major functionality (build, test, visualize, spec, generate-spec, progress, config)
+  - Comprehensive CLI with all major functionality (build, test, visualize, spec, generate-spec, progress, config, agent-mode, threat-model)
   - Enhanced CLI wrapper with better error handling
   - Clear help documentation and usage examples
   - Multiple CLI aliases (azure-tenant-grapher, azure-graph, atg)
   - Support for both dashboard and no-dashboard modes
   - Colored output for better readability
   - Support for different verbosity levels
+  - Relationship rebuilding with `--rebuild-edges` flag for forcing re-evaluation of all graph relationships
 
 #### FR8.3 Operational Modes
 - **Required Modes**:
