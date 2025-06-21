@@ -109,6 +109,11 @@ class CssStyleBuilder:
         * {{
             box-sizing: border-box;
         }}
+
+        /* Always show Region node labels */
+        .node.region text {{
+            display: block !important;
+        }}
         """
 
     def _build_layout_styles(self, colors: Dict[str, str]) -> str:

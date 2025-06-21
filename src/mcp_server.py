@@ -112,3 +112,47 @@ async def run_mcp_server_foreground() -> int:
         process.terminate()
         await process.wait()
         return 0
+
+
+async def start_healthcheck_server(port: int = 8080):
+    from aiohttp import web
+
+    async def handle(request: web.Request):
+        return web.Response(text="OK")
+
+    app = web.Application()
+    app.router.add_get("/", handle)
+    app.router.add_get("/health", handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info(f"Healthcheck server running on port {port}")
+    # Keep running forever
+    while True:
+        await asyncio.sleep(3600)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Start the MCP server (Neo4j Cypher).")
+    parser.add_argument(
+        "--foreground",
+        action="store_true",
+        help="Run MCP server in foreground (default)",
+    )
+    args = parser.parse_args()
+
+    async def main():
+        # Start both the MCP server and the healthcheck server concurrently
+        await asyncio.gather(
+            run_mcp_server_foreground(),
+            start_healthcheck_server(8080),
+        )
+
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"Failed to start MCP server: {e}")
+        sys.exit(1)
