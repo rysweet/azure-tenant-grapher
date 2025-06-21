@@ -145,9 +145,12 @@ azure-tenant-grapher/
 - **Class**: `AzureLLMDescriptionGenerator`
 - **Features**:
   - Intelligent resource description generation
+  - ResourceGroup and Tag summary generation based on contained/tagged resources
   - Tenant specification document creation
   - Configurable AI models and prompts
   - Rate limiting and error handling
+  - Architectural pattern recognition for ResourceGroups
+  - Organizational purpose inference for Tags
 
 #### Tenant Specification Generator (src/tenant_spec_generator.py)
 - **Purpose**: Generate anonymized, portable Markdown specifications
@@ -342,15 +345,18 @@ azure-tenant-grapher/
 # Main commands
 azure-tenant-grapher build       # Build graph with Rich dashboard
 azure-tenant-grapher test        # Test mode with limited resources
-azure-tenant-grapher visualize   # Generate 3D visualization from existing data
+azure-tenant-grapher visualize   # Generate 3D visualization from existing data (with ResourceGroup labels)
 azure-tenant-grapher spec        # Generate AI-powered tenant specification
 azure-tenant-grapher generate-spec # Generate anonymized Markdown specification
 azure-tenant-grapher generate-iac  # Generate Infrastructure-as-Code templates
+azure-tenant-grapher agent-mode  # Start AutoGen MCP agent mode for natural language queries
+azure-tenant-grapher threat-model # Run Threat Modeling Agent workflow
+azure-tenant-grapher mcp-server  # Start MCP server for agent integration
 azure-tenant-grapher progress    # Check processing progress
 azure-tenant-grapher config      # Show configuration template
 azure-tenant-grapher container   # Container management subcommands
 azure-tenant-grapher doctor      # Check and install required CLI tools
-azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump   # Backup Neo4j database to a local file
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump   # Backup Neo4j database to a local file
 ```
 
 ### CLI Arguments for Build Command
@@ -364,6 +370,7 @@ azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump   # Backup Neo4j databa
 --no-container                # Skip container auto-start
 --generate-spec               # Generate tenant specification after build
 --visualize                   # Generate visualization after build
+--rebuild-edges               # Force re-evaluation of all relationships/edges
 
 # Interface Options
 --no-dashboard                # Disable Rich dashboard, use line-by-line logs
@@ -398,11 +405,23 @@ azure-tenant-grapher backup-neo4j ./my-neo4j-backup.dump   # Backup Neo4j databa
 # Basic usage with auto-container management
 azure-tenant-grapher build --tenant-id your-tenant-id-here
 
-# Generate with visualization
+# Generate with visualization and ResourceGroup labels
 azure-tenant-grapher build --tenant-id your-tenant-id --visualize
+
+# Build with relationship rebuilding
+azure-tenant-grapher build --tenant-id your-tenant-id --rebuild-edges
 
 # Test mode with limited resources
 azure-tenant-grapher test --limit 50
+
+# Start agent mode for natural language queries
+azure-tenant-grapher agent-mode
+
+# Ask a specific question
+azure-tenant-grapher agent-mode --question "How many storage accounts are in the tenant?"
+
+# Generate threat model report
+azure-tenant-grapher threat-model --spec-path ./my-spec.md --summaries-path ./summaries.json
 
 # Generate Bicep IaC for storage resources
 azure-tenant-grapher generate-iac \

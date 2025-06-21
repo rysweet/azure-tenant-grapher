@@ -10,14 +10,16 @@ Azure Tenant Grapher is a Python application that discovers all Azure resources 
 - **Exhaustive Azure resource discovery** across all subscriptions
 - **Neo4j graph database** with rich schema and relationship modeling
 - **Extensible relationship engine**: Modular rules for new node/edge types (Tag, Region, CreatedBy, etc.)
-- **Interactive 3D visualization** (HTML export, filtering, search)
+- **Interactive 3D visualization** (HTML export, filtering, search) with ResourceGroup labels
 - **Rich CLI dashboard** with live progress, logs, and configuration
 - **AI-powered documentation** and tenant specification generation
+- **LLM-enhanced graph descriptions**: ResourceGroups and Tags get AI-generated summaries describing their purpose and architecture patterns
 - **Infrastructure-as-Code generation** (Terraform, ARM, Bicep)
 - **Automated CLI tool management** and cross-platform support
 - **Comprehensive test suite** (unit, integration, end-to-end)
 - **Agent Mode (MCP/AutoGen Integration)**: Ask natural language questions about your Azure graph/tenant data
-- **Threat Modeling Agent**: Automatically generate Data Flow Diagrams (DFD), enumerate threats, and produce Markdown threat model reports for your Azure tenant.
+- **Threat Modeling Agent**: Automatically generate Data Flow Diagrams (DFD), enumerate threats, and produce Markdown threat model reports for your Azure tenant
+- **Relationship rebuilding**: Force re-evaluation of all graph relationships with `--rebuild-edges` flag
 
 ---
 
@@ -71,6 +73,13 @@ The Threat Modeling Agent enables you to generate a Data Flow Diagram (DFD), enu
 
 - See the [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md) for a full walkthrough using the demo tenant, including command extracts and links to generated artifacts.
 
+### Usage
+
+```bash
+# Generate threat model from existing graph data
+azure-tenant-grapher threat-model --spec-path ./my-tenant-spec.md --summaries-path ./summaries.json
+```
+
 ---
 
 ## CLI Reference
@@ -103,12 +112,15 @@ az login --tenant <your-tenant-id>
 ```bash
 # Build the graph with the interactive dashboard
 azure-tenant-grapher build --tenant-id <your-tenant-id>
+
+# Build with relationship rebuilding (re-evaluates all edges)
+azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
 ```
 
 ### 3. Explore, Visualize, and Generate IaC
 
 ```bash
-# Visualize your Azure graph in 3D
+# Visualize your Azure graph in 3D (includes ResourceGroup labels)
 azure-tenant-grapher visualize
 
 # Generate Bicep IaC for a subset of resources
@@ -145,11 +157,11 @@ cd my-deployment
 
 - **Comprehensive Azure Discovery**: Enumerate all resources and relationships across all subscriptions in your tenant.
 - **Neo4j Graph Database**: Build a rich, queryable graph of your Azure environment.
-- **Interactive 3D Visualization**: Explore your environment visually with filtering, search, and node details.
+- **Interactive 3D Visualization**: Explore your environment visually with filtering, search, node details, and ResourceGroup labels.
 - **IaC Generation**: Generate Bicep, ARM, or Terraform templates for your entire tenant or filtered subsets.
 - **Transformation Rules**: Apply name, region, and tag transformations to resources via a YAML rules file.
 - **Automated Deployment**: Generated IaC includes a ready-to-run deployment script.
-- **AI Integration**: Optional AI-powered resource descriptions.
+- **AI Integration**: Optional AI-powered resource descriptions for individual resources, ResourceGroups, and Tags.
 - **Modular, Testable Codebase**: Well-structured, with comprehensive test coverage.
 - **Database Backup**: Easily back up your Neo4j graph database to a local file for disaster recovery or migration.
 
@@ -183,11 +195,17 @@ az login
 # Build the Azure graph
 azure-tenant-grapher build --tenant-id <your-tenant-id>
 
+# Build with relationship rebuilding
+azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
+
 # Start agent mode
 azure-tenant-grapher agent-mode
 
 # Ask a question non-interactively
 azure-tenant-grapher agent-mode --question "How many storage resources are in the tenant?"
+
+# Generate threat model
+azure-tenant-grapher threat-model --spec-path ./my-spec.md --summaries-path ./summaries.json
 
 # Generate IaC (Bicep, ARM, Terraform)
 azure-tenant-grapher generate-iac --help

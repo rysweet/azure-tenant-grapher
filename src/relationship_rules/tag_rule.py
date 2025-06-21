@@ -20,8 +20,17 @@ class TagRule(RelationshipRule):
 
         for k, v in tags.items():
             tag_id = f"{k}:{v}"
-            # Upsert Tag node
-            db_ops.upsert_generic("Tag", "id", tag_id, {"key": k, "value": v})
+            # Upsert Tag node with llm_description field
+            db_ops.upsert_generic(
+                "Tag",
+                "id",
+                tag_id,
+                {
+                    "key": k,
+                    "value": v,
+                    "llm_description": "",  # Initialize empty, will be filled later
+                },
+            )
             # Resource → Tag
             if rid:
                 db_ops.create_generic_rel(str(rid), "TAGGED_WITH", tag_id, "Tag", "id")

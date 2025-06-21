@@ -4,7 +4,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
@@ -12,6 +12,10 @@ from openai import AzureOpenAI
 from src.utils.session_manager import retry_neo4j_operation
 
 T = TypeVar("T")
+
+
+def _sort_by_count(item: Tuple[str, int]) -> int:
+    return item[1]
 
 
 @retry_neo4j_operation()
@@ -363,6 +367,225 @@ Be specific about the architectural implications while keeping it concise and ac
         except Exception as e:
             logger.exception(f"Failed to generate relationship description: {e!s}")
             return f"{relationship_type} relationship between {source_type} and {target_type}."
+
+    async def generate_resource_group_description(
+        self,
+        resource_group_name: str,
+        subscription_id: str,
+        resources: List[Dict[str, Any]],
+    ) -> str:
+        """
+        Generate a natural language description for a Resource Group based on its contained resources.
+
+        Args:
+            resource_group_name: Name of the resource group
+            subscription_id: Subscription ID
+            resources: List of resources contained in this resource group
+
+        Returns:
+            Natural language description of the resource group
+        """
+        try:
+            # Analyze the resources in the resource group
+            resource_types = {}
+            locations = set()
+            total_resources = len(resources)
+
+            for resource in resources:
+                resource_type = resource.get("type", "Unknown")
+                location = resource.get("location", "Unknown")
+
+                if resource_type not in resource_types:
+                    resource_types[resource_type] = 0
+                resource_types[resource_type] += 1
+
+                if location != "Unknown":
+                    locations.add(str(location))
+
+            # Sort resource types by count
+            _items: List[Tuple[str, int]] = list(resource_types.items())
+            sorted_resource_types = sorted(
+                _items,
+                key=_sort_by_count,
+                reverse=True,
+            )
+
+            prompt = f"""
+You are an expert Azure cloud architect analyzing a Resource Group and its contents.
+
+RESOURCE GROUP ANALYSIS:
+Name: {resource_group_name}
+Subscription: {subscription_id}
+Total Resources: {total_resources}
+
+RESOURCE TYPE DISTRIBUTION:
+{json.dumps(dict(sorted_resource_types), indent=2)}
+
+GEOGRAPHIC LOCATIONS:
+{sorted(locations)}
+
+TASK:
+Analyze this Resource Group and provide a comprehensive description (2-3 sentences) that explains:
+
+1. **Purpose and Role**: What this Resource Group appears to be used for based on the resource types and naming patterns
+2. **Architecture Pattern**: What kind of workload or solution this represents (e.g., web application, data analytics, networking hub, etc.)
+3. **Scale and Scope**: The size and complexity of the deployment
+4. **Key Components**: The most important resource types and their likely relationships
+
+GUIDELINES:
+- Focus on the business or technical purpose rather than just listing resource counts
+- Identify common Azure solution patterns where applicable
+- Consider resource naming conventions and types to infer the intended use case
+- Be specific about the scale and architectural approach
+
+EXAMPLE OUTPUTS:
+- "Production web application Resource Group containing a 3-tier architecture with load balancers, web servers, and database components across 2 Azure regions for high availability."
+- "Development environment Resource Group for data analytics workloads, featuring Azure Data Factory pipelines, Storage Accounts for data lakes, and compute resources for processing."
+- "Networking hub Resource Group implementing a hub-and-spoke topology with Virtual Network Gateways, Network Security Groups, and routing infrastructure."
+
+Focus on architectural significance and business purpose rather than just resource inventory.
+"""
+
+            response = self.client.chat.completions.create(
+                model=self.config.model_chat,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Azure cloud architect who analyzes Resource Groups to understand their architectural purpose and business function.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_completion_tokens=32768,
+            )
+
+            content = response.choices[0].message.content
+            description = str(content).strip() if content else ""
+            logger.debug(
+                f"Generated Resource Group description for '{resource_group_name}': {description}"
+            )
+
+            return description
+
+        except Exception as e:
+            logger.exception(
+                f"Failed to generate Resource Group description for '{resource_group_name}': {e!s}"
+            )
+            return f"Azure Resource Group '{resource_group_name}' containing {len(resources)} resources providing organized resource management and deployment boundaries."
+
+    async def generate_tag_description(
+        self, tag_key: str, tag_value: str, tagged_resources: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Generate a natural language description for a Tag based on the resources it's applied to.
+
+        Args:
+            tag_key: The tag key
+            tag_value: The tag value
+            tagged_resources: List of resources that have this tag
+
+        Returns:
+            Natural language description of the tag's purpose and usage
+        """
+        try:
+            # Analyze the tagged resources
+            resource_types = {}
+            locations = set()
+            resource_groups = set()
+            total_resources = len(tagged_resources)
+
+            for resource in tagged_resources:
+                resource_type = resource.get("type", "Unknown")
+                location = resource.get("location", "Unknown")
+                resource_group = resource.get("resource_group", "Unknown")
+
+                if resource_type not in resource_types:
+                    resource_types[resource_type] = 0
+                resource_types[resource_type] += 1
+
+                if location != "Unknown":
+                    locations.add(str(location))
+                if resource_group != "Unknown":
+                    resource_groups.add(str(resource_group))
+
+            # Sort resource types by count
+            _items: List[Tuple[str, int]] = list(resource_types.items())
+            sorted_resource_types = sorted(
+                _items,
+                key=_sort_by_count,
+                reverse=True,
+            )
+
+            prompt = f"""
+You are an expert Azure cloud architect analyzing a Tag and its usage across Azure resources.
+
+TAG ANALYSIS:
+Key: {tag_key}
+Value: {tag_value}
+Applied to {total_resources} resources
+
+TAGGED RESOURCE TYPES:
+{json.dumps(dict(sorted_resource_types), indent=2)}
+
+RESOURCE GROUPS AFFECTED:
+{sorted(resource_groups)[:10]}  # Limit to first 10 for readability
+
+GEOGRAPHIC DISTRIBUTION:
+{sorted(locations)}
+
+TASK:
+Analyze this Tag and provide a concise description (1-2 sentences) that explains:
+
+1. **Tagging Purpose**: What this tag appears to be used for based on common Azure tagging patterns
+2. **Scope and Usage**: How broadly it's applied and what types of resources it categorizes
+3. **Business or Technical Context**: What business function, environment, or technical requirement this tag represents
+
+COMMON AZURE TAG PATTERNS TO CONSIDER:
+- Environment tags (dev, test, prod, staging)
+- Cost center/billing tags (department, project, cost-center)
+- Ownership tags (team, owner, contact)
+- Lifecycle tags (temporary, permanent, backup)
+- Compliance tags (compliance-scope, data-classification)
+- Application tags (app-name, version, component)
+
+GUIDELINES:
+- Focus on the organizational or technical purpose
+- Identify the tagging strategy being used
+- Consider the resource types and scope to infer the intended use case
+- Be specific about what business or technical function this serves
+
+EXAMPLE OUTPUTS:
+- "Environment classification tag identifying production workloads across web applications and databases for operational and compliance management."
+- "Cost allocation tag for tracking expenses related to the marketing department's digital campaigns and supporting infrastructure."
+- "Application component tag organizing resources belonging to the customer portal system for better resource management and troubleshooting."
+
+Focus on the strategic purpose of this tagging rather than just describing what resources have it.
+"""
+
+            response = self.client.chat.completions.create(
+                model=self.config.model_chat,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Azure cloud architect who analyzes tagging strategies to understand their organizational and technical purpose.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_completion_tokens=32768,
+            )
+
+            content = response.choices[0].message.content
+            description = str(content).strip() if content else ""
+            logger.debug(
+                f"Generated Tag description for '{tag_key}:{tag_value}': {description}"
+            )
+
+            return description
+
+        except Exception as e:
+            logger.exception(
+                f"Failed to generate Tag description for '{tag_key}:{tag_value}': {e!s}"
+            )
+            return f"Azure tag '{tag_key}:{tag_value}' applied to {len(tagged_resources)} resources for organizational and management purposes."
 
     async def generate_tenant_specification(
         self,
