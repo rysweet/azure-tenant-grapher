@@ -225,6 +225,8 @@ class DatabaseOperations:
                 return False
 
             try:
+                print("DEBUG: Running upsert_resource query:", query)
+                print("DEBUG: With props:", resource_data)
                 with self.session_manager.session() as session:
                     session.run(query, props=resource_data)
             except Exception as neo4j_exc:
