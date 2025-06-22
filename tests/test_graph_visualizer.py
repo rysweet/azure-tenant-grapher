@@ -411,10 +411,10 @@ def test_html_region_labels_always_visible():
             visualizer.generate_html_visualization(output_path=output_path)
             with open(output_path, encoding="utf-8") as f:
                 html = f.read()
-            # Check for the CSS rule that ensures Region labels are always visible
-            assert ".node.region text {" in html
-            assert "display: block !important;" in html
-            # Check for the Region node label in the HTML
+            # Check for the nodeThreeObject logic for Region nodes (always-visible label)
+            assert ".nodeThreeObject" in html
+            # Check for the Region node label in the JS (should be present for the Region node)
+            assert '"type": "Region"' in html
             assert "East US" in html
 
 
