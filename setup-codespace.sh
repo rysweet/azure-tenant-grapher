@@ -29,18 +29,37 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo "Creating Codespace for $REPO on branch $BRANCH..."
 
-# Create Codespace and capture name
-CODESPACE=$(gh codespace create -R "$REPO" -b "$BRANCH" --json name -q .name)
+# Create Codespace (no --json for compatibility)
+echo "Requesting Codespace creation..."
+gh codespace create -R "$REPO" -b "$BRANCH"
+
+# Find the most recently created Codespace for this repo/branch
+echo "Locating the new Codespace..."
+CODESPACE=""
+for i in {1..12}; do
+  # Get the most recent codespace for this repo in Available or Provisioning state
+  CODESPACE=$(gh codespace list --json name,repository,state,createdAt --limit 10 | \
+    jq -r --arg repo "$REPO" --arg branch "$BRANCH" '
+      map(select(.repository == $repo and (.state == "Available" or .state == "Provisioning")))
+      | sort_by(.createdAt) | reverse | .[0].name // empty
+    ')
+  if [ -n "$CODESPACE" ]; then
+    echo "Found Codespace: $CODESPACE"
+    break
+  fi
+  echo "Waiting for Codespace to appear in list..."
+  sleep 5
+done
+
 if [ -z "$CODESPACE" ]; then
-  echo "Failed to create Codespace."
+  echo "Failed to locate the new Codespace."
   exit 1
 fi
-echo "Created Codespace: $CODESPACE"
 
 # Wait for Codespace to be 'Available'
 echo "Waiting for Codespace to be provisioned..."
 while true; do
-  STATE=$(gh codespace list --json name,state -q ".[] | select(.name==\"$CODESPACE\") | .state")
+  STATE=$(gh codespace list --json name,state | jq -r ".[] | select(.name==\"$CODESPACE\") | .state")
   echo "Current state: $STATE"
   if [ "$STATE" = "Available" ]; then
     break
