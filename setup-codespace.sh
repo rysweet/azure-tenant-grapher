@@ -97,7 +97,4 @@ else
 fi
 
 # Run install/setup instructions inside Codespace
-echo "Running setup instructions in Codespace..."
-gh codespace ssh -c "$CODESPACE" -- 'uv sync || pip install -r requirements.txt || true && cd dotnet && dotnet restore || true'
-
-echo "Setup complete."
+echo "Setup complete. Please run any required install/setup commands inside your Codespace terminal after it opens."
