@@ -1,66 +1,79 @@
 #!/usr/bin/env bash
-set -e
+set -euxo pipefail
 
-# Create and activate Python venv
+echo "========== [post-create.sh] START: $(date) =========="
+
+trap 'echo "ERROR: post-create.sh failed at line $LINENO. Exiting."; exit 1' ERR
+
+echo "[INFO] Creating and activating Python venv..."
 python3.13 -m venv .venv
 source .venv/bin/activate
 
-# Upgrade pip and install core tools
+echo "[INFO] Upgrading pip and installing core Python tools..."
 pip install --upgrade pip
 pip install uv pre-commit python-dotenv pytest
 
-# Sync dependencies (fallback to pip if uv fails)
-uv sync || pip install -r requirements.txt -r requirements-dev.txt || true
+echo "[INFO] Syncing Python dependencies (using uv, fallback to pip)..."
+if ! uv sync; then
+  echo "[WARN] uv sync failed, falling back to pip install requirements.txt and requirements-dev.txt"
+  pip install -r requirements.txt -r requirements-dev.txt || true
+fi
 
-# Install pre-commit hooks
-pre-commit install
+echo "[INFO] Installing pre-commit hooks..."
+pre-commit install || echo "[WARN] pre-commit install failed, continuing..."
 
 # Restore .NET dependencies (if dotnet folder exists)
 if [ -d "dotnet" ]; then
-  cd dotnet && dotnet restore || true
-  cd ..
+  echo "[INFO] Restoring .NET dependencies..."
+  (cd dotnet && dotnet restore) || echo "[WARN] dotnet restore failed, continuing..."
 fi
 
-# Upgrade Bicep CLI via Azure CLI
-az bicep upgrade
+echo "[INFO] Upgrading Bicep CLI via Azure CLI..."
+az bicep upgrade || echo "[WARN] az bicep upgrade failed, continuing..."
 
 # Install GitHub CLI (gh) if not present
 if ! command -v gh &> /dev/null; then
-  echo "Installing GitHub CLI (gh)..."
-  type -p curl >/dev/null || sudo apt-get update && sudo apt-get install -y curl
+  echo "[INFO] Installing GitHub CLI (gh)..."
+  if ! type -p curl >/dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y curl
+  fi
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
   sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
   sudo apt-get update
   sudo apt-get install -y gh
+  echo "[INFO] GitHub CLI (gh) installed."
 else
-  echo "GitHub CLI (gh) already installed."
+  echo "[INFO] GitHub CLI (gh) already installed."
 fi
 
 # Authenticate GitHub CLI if not already authenticated
 if ! gh auth status &> /dev/null; then
-  echo "GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
+  echo "[WARN] GitHub CLI is not authenticated. Please run 'gh auth login' to authenticate."
 else
-  echo "GitHub CLI is already authenticated."
+  echo "[INFO] GitHub CLI is already authenticated."
 fi
 
-# Install common CLI tools for dev convenience
+echo "[INFO] Installing common CLI tools (jq, tree, unzip, less)..."
 sudo apt-get update
 sudo apt-get install -y jq tree unzip less
 
 # Check for required environment variables (example: AZURE_TENANT_ID)
-if [ -z "$AZURE_TENANT_ID" ]; then
-  echo "Warning: AZURE_TENANT_ID environment variable is not set. Some Azure operations may fail."
+if [ -z "${AZURE_TENANT_ID:-}" ]; then
+  echo "[WARN] AZURE_TENANT_ID environment variable is not set. Some Azure operations may fail."
 fi
 
 # Check for .env file and remind user if missing
 if [ ! -f .env ]; then
-  echo "Warning: .env file not found in the project root. Please create and configure your .env file for local development."
+  echo "[WARN] .env file not found in the project root. Please create and configure your .env file for local development."
 fi
 
-# Print useful environment info
-python --version
-if command -v dotnet &> /dev/null; then dotnet --version; else echo "dotnet not installed"; fi
-if command -v node &> /dev/null; then node --version; else echo "node not installed"; fi
-if command -v az &> /dev/null; then az version | jq -r .azure-cli; else echo "Azure CLI not installed"; fi
-if command -v gh &> /dev/null; then gh --version | head -n1; else echo "GitHub CLI not installed"; fi
+echo "[INFO] Printing useful environment info..."
+python --version || echo "[WARN] python not found"
+if command -v dotnet &> /dev/null; then dotnet --version; else echo "[WARN] dotnet not installed"; fi
+if command -v node &> /dev/null; then node --version; else echo "[WARN] node not installed"; fi
+if command -v az &> /dev/null; then az version | jq -r .azure-cli; else echo "[WARN] Azure CLI not installed"; fi
+if command -v gh &> /dev/null; then gh --version | head -n1; else echo "[WARN] GitHub CLI not installed"; fi
+
+echo "========== [post-create.sh] END: $(date) =========="
