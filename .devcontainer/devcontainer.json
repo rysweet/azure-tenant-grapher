@@ -1,9 +1,9 @@
 {
   "name": "Azure Tenant Grapher Dev Container",
   "hostRequirements": {
-    "cpus": 8,
-    "memory": "8gb",
-    "storage": "32gb"
+    "cpus": 16,
+    "memory": "32gb",
+    "storage": "128gb"
   },
   "image": "mcr.microsoft.com/devcontainers/dotnet:8.0-bookworm",
   "features": {

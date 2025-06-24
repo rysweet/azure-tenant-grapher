@@ -5,11 +5,11 @@ This project is configured for GitHub Codespaces with a minimum machine specific
 ## Minimum Machine Specification
 
 Codespaces for this repository require at least:
-- **8 CPUs**
-- **8 GB RAM**
-- **32 GB storage**
+- **16 CPUs**
+- **32 GB RAM**
+- **128 GB storage**
 
-This ensures smooth operation for Python, .NET, and Docker-based workflows.
+This ensures smooth operation for Python, .NET, and Docker-based workflows, and supports large-scale integration tests or data processing.
 
 ## Features
 
