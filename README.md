@@ -134,12 +134,23 @@ MCP Agent is ready
 
 </details>
 
-### Threat Modeling
+### Generate Tenant Specification
 
-Generate a Data Flow Diagram, enumerate threats, and produce a Markdown report for your tenant.
+Generate an anonymized tenant specification (YAML/JSON) for documentation, sharing, or further processing.
 
 ```bash
-azure-tenant-grapher threat-model --spec-path ./my-tenant-spec.md --summaries-path ./summaries.json
+azure-tenant-grapher generate-spec \
+  --tenant-id <your-tenant-id> \
+  --output ./my-tenant-spec.yaml
+```
+
+### MCP Server
+
+Run the MCP server to enable agent mode and natural language queries.
+
+```bash
+# Start the MCP server
+uv run azure-tenant-grapher mcp-server  
 ```
 
 ### Generate & Deploy IaC
@@ -157,6 +168,16 @@ azure-tenant-grapher generate-iac \
 # Deploy the generated templates
 cd my-deployment
 ./deploy.sh
+```
+
+### Threat Modeling agent example - example of using the MCP server in an agent. 
+
+See [./src/threat_model_agent/](./src/threat_model_agent/)
+
+Generate a Data Flow Diagram, enumerate threats, and produce a Markdown report for your tenant.
+
+```bash
+azure-tenant-grapher threat-model --spec-path ./my-tenant-spec.md --summaries-path ./summaries.json
 ```
 
 ### Database Backup
