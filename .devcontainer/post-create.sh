@@ -75,5 +75,39 @@ if command -v dotnet &> /dev/null; then dotnet --version; else echo "[WARN] dotn
 if command -v node &> /dev/null; then node --version; else echo "[WARN] node not installed"; fi
 if command -v az &> /dev/null; then az version | jq -r .azure-cli; else echo "[WARN] Azure CLI not installed"; fi
 if command -v gh &> /dev/null; then gh --version | head -n1; else echo "[WARN] GitHub CLI not installed"; fi
+echo "[INFO] Verifying Docker-in-Docker availability..."
+echo "[INFO] Symlinking Azure CLI-managed Bicep binary to /usr/local/bin/bicep (if needed)..."
+BICEP_PATH="$(az bicep version --query path -o tsv 2>/dev/null || true)"
+if [ -n "$BICEP_PATH" ] && [ ! -f /usr/local/bin/bicep ]; then
+  sudo ln -s "$BICEP_PATH" /usr/local/bin/bicep
+  echo "[INFO] Symlinked $BICEP_PATH to /usr/local/bin/bicep"
+fi
+
+echo "[INFO] Ensuring user is in the docker group..."
+if ! groups | grep -q docker; then
+  sudo usermod -aG docker $USER
+  echo "[INFO] Added $USER to docker group. You may need to restart the container or shell for this to take effect."
+fi
+echo "[INFO] Verifying Docker-in-Docker availability..."
+if ! docker info >/dev/null 2>&1; then
+  echo "[ERROR] Docker is not running or not available in the container."
+  exit 1
+else
+  echo "[INFO] Docker-in-Docker is available."
+fi
+
+echo "[INFO] Verifying Bicep CLI installation..."
+if ! az bicep version >/dev/null 2>&1; then
+  echo "[ERROR] Bicep CLI is not installed or not available via Azure CLI."
+  exit 1
+else
+  az bicep version
+fi
+if ! docker info >/dev/null 2>&1; then
+  echo "[ERROR] Docker is not running or not available in the container."
+  exit 1
+else
+  echo "[INFO] Docker-in-Docker is available."
+fi
 
 echo "========== [post-create.sh] END: $(date) =========="
