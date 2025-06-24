@@ -5,28 +5,34 @@
     "memory": "32gb",
     "storage": "128gb"
   },
-  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:9.0-bookworm",
   "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13"
+    },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest"
     },
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.11"
-    },
-    "ghcr.io/devcontainers/features/sshd:1": {
-      "version": "latest"
-    }
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {},
+    "ghcr.io/devcontainers/features/bicep:2": {}
   },
-  "postCreateCommand": "pip install -r requirements.txt -r requirements-dev.txt || true && cd dotnet && dotnet restore || true",
+  "postCreateCommand": "python3.13 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install uv pre-commit python-dotenv pytest && uv sync || pip install -r requirements.txt -r requirements-dev.txt || true && pre-commit install && cd dotnet && dotnet restore || true",
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python3"
+        "python.defaultInterpreterPath": "/workspaces/azure-tenant-grapher/.venv/bin/python"
       },
       "extensions": [
         "ms-python.python",
         "ms-dotnettools.csharp",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "ms-azuretools.vscode-bicep",
+        "hashicorp.terraform",
+        "redhat.vscode-yaml",
+        "esbenp.prettier-vscode",
+        "ms-toolsai.jupyter",
+        "roocode.roo"
       ]
     }
   },
