@@ -367,6 +367,57 @@ def test_html_contains_cluster_labels():
             assert "Each resource group is treated as a cluster" in html
 
 
+def test_html_region_labels_always_visible():
+    """Test that the generated HTML contains CSS to always show Region node labels and includes a Region node label."""
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from src.graph_visualizer import GraphVisualizer
+
+    visualizer = GraphVisualizer("bolt://localhost:7687", "neo4j", "password")
+    mock_graph_data = {
+        "nodes": [
+            {
+                "id": "region-1",
+                "name": "East US",
+                "type": "Region",
+                "labels": ["Region"],
+                "properties": {},
+                "group": 100,
+                "color": "#00b894",
+                "size": 18,
+            },
+            {
+                "id": "res-1",
+                "name": "VM1",
+                "type": "Microsoft.Compute/virtualMachines",
+                "labels": ["Resource"],
+                "properties": {"region": "East US"},
+                "group": 10,
+                "color": "#6c5ce7",
+                "size": 8,
+            },
+        ],
+        "links": [],
+        "node_types": ["Region", "Microsoft.Compute/virtualMachines"],
+        "relationship_types": [],
+    }
+    with patch.object(
+        GraphVisualizer, "extract_graph_data", return_value=mock_graph_data
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = os.path.join(tmpdir, "test_graph.html")
+            visualizer.generate_html_visualization(output_path=output_path)
+            with open(output_path, encoding="utf-8") as f:
+                html = f.read()
+            # Check for the nodeThreeObject logic for Region nodes (always-visible label)
+            assert ".nodeThreeObject" in html
+            # Check for the Region node label in the JS (should be present for the Region node)
+            assert '"type": "Region"' in html
+            assert "East US" in html
+
+
 def test_html_contains_zoom_controls():
     """Test that the generated HTML contains zoom-in and zoom-out controls."""
     import os

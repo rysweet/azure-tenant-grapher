@@ -260,10 +260,15 @@ class GraphVisualizer:
                     "size": self._get_node_size(node_type, properties),
                 }
 
-                # Add label for ResourceGroup nodes to show their names in the visualization
-                if node_type == "ResourceGroup":
+                # Add label for ResourceGroup and Region nodes to show their names in the visualization
+                if node_type in ("ResourceGroup", "Region"):
                     node_data["label"] = node_name
 
+                # DEBUG: Log whether this node will have a persistent label
+                has_label = "label" in node_data
+                logger.info(
+                    f"Node id={node_id} type={node_type} name={node_name} persistent_label={has_label}"
+                )
                 nodes.append(node_data)
                 node_map[node_id] = node_data
                 node_count += 1
