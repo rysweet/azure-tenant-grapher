@@ -15,9 +15,9 @@
     },
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/terraform:1": {},
-    "ghcr.io/devcontainers/features/bicep:2": {}
+    "ghcr.io/devcontainers/features/powershell:1": {}
   },
-  "postCreateCommand": "python3.13 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install uv pre-commit python-dotenv pytest && uv sync || pip install -r requirements.txt -r requirements-dev.txt || true && pre-commit install && cd dotnet && dotnet restore || true",
+  "postCreateCommand": "python3.13 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install uv pre-commit python-dotenv pytest && uv sync || pip install -r requirements.txt -r requirements-dev.txt || true && pre-commit install && cd dotnet && dotnet restore || true && az bicep upgrade",
   "customizations": {
     "vscode": {
       "settings": {
