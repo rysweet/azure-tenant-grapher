@@ -7,6 +7,8 @@ by performing multi-step tool workflows automatically.
 
 import asyncio
 import os
+import subprocess
+import time
 
 import pytest
 from dotenv import load_dotenv
@@ -20,6 +22,11 @@ async def test_agent_mode_answers_question_completely():
     """
     # Load environment
     load_dotenv()
+    # Ensure Neo4j is running
+    from src.container_manager import Neo4jContainerManager
+
+    container_manager = Neo4jContainerManager()
+    container_manager.setup_neo4j()
 
     # Set up environment for the agent process
     env = os.environ.copy()
@@ -34,6 +41,31 @@ async def test_agent_mode_answers_question_completely():
             "NEO4J_PASSWORD": neo4j_password,
         }
     )
+
+    # Start MCP server in background
+    mcp_proc = subprocess.Popen(
+        ["uv", "run", "python", "-m", "src.mcp_server"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    # Wait for MCP server to be ready (simple sleep, or poll if needed)
+    # Wait for MCP server to be ready (poll port 8080 up to 10s)
+    import socket
+
+    mcp_ready = False
+    for _ in range(20):
+        try:
+            with socket.create_connection(("localhost", 8080), timeout=0.5):
+                mcp_ready = True
+                break
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.5)
+    if not mcp_ready:
+        mcp_proc.terminate()
+        mcp_proc.wait(timeout=5)
+        pytest.fail("MCP server did not become ready within 10 seconds")
+    time.sleep(5)
 
     # Question that requires multi-step workflow
     question = "How many storage resources are in the tenant?"
@@ -121,6 +153,13 @@ async def test_agent_mode_answers_question_completely():
 
     except Exception as e:
         pytest.fail(f"Agent mode test failed with exception: {e}")
+    finally:
+        # Ensure MCP server is terminated
+        try:
+            mcp_proc.terminate()
+            mcp_proc.wait(timeout=5)
+        except Exception:
+            pass
 
 
 @pytest.mark.asyncio

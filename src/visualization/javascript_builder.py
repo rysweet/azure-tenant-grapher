@@ -155,6 +155,35 @@ class JavaScriptBuilder:
             .nodeLabel('name')
             .nodeColor(node => node.color)
             .nodeVal(node => node.size)
+            .nodeThreeObject(node => {
+                if (node.type === "Region") {
+                    // Create a sprite for always-visible region label
+                    const sprite = new window.THREE.Sprite(
+                        new window.THREE.SpriteMaterial({
+                            map: (function() {
+                                const canvas = document.createElement('canvas');
+                                const size = 256;
+                                canvas.width = size;
+                                canvas.height = size;
+                                const ctx = canvas.getContext('2d');
+                                ctx.font = 'bold 48px Arial';
+                                ctx.fillStyle = '#fff';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.shadowColor = '#000';
+                                ctx.shadowBlur = 8;
+                                ctx.fillText(node.name, size / 2, size / 2);
+                                const texture = new window.THREE.CanvasTexture(canvas);
+                                return texture;
+                            })(),
+                            depthTest: false
+                        })
+                    );
+                    sprite.scale.set(40, 20, 1);
+                    return sprite;
+                }
+                return null;
+            })
             .linkSource('source')
             .linkTarget('target')
             .linkColor(link => link.color)
