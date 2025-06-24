@@ -165,26 +165,17 @@ cd my-deployment
 azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 ```
 
-## Advanced Topics
-
-### Graph Enrichment & Refactor Plan
-
-See [`GRAPH_ENRICHMENT_PLAN.md`](GRAPH_ENRICHMENT_PLAN.md) for upcoming relationship enhancements and refactors.
-
 ### IaC Subset & Rules System
 
 Details in [`docs/design/iac_subset_bicep.md`](docs/design/iac_subset_bicep.md).
 
-### Architecture
-
-High-level overview in [`docs/ARCHITECTURE_IMPROVEMENTS.md`](docs/ARCHITECTURE_IMPROVEMENTS.md).
 
 ## Development & Testing
 
 Run the full test suite (unit, integration, end-to-end):
 
 ```bash
-pytest -n auto
+uf run pytest -n auto
 ```
 
 See `tests/` for individual scenarios and fixtures.
