@@ -15,7 +15,8 @@
     },
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/terraform:1": {},
-    "ghcr.io/devcontainers/features/powershell:1": {}
+    "ghcr.io/devcontainers/features/powershell:1": {},
+    "ghcr.io/devcontainers/features/ssh-agent:1": {}
   },
   "postCreateCommand": ".devcontainer/post-create.sh",
   "customizations": {
@@ -38,7 +39,8 @@
   },
   "forwardPorts": [7474, 7687],
   "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${env:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
   ],
   "remoteUser": "vscode"
 }
