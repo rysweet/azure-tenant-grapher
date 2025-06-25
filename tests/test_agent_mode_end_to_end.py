@@ -7,38 +7,73 @@ by performing multi-step tool workflows automatically.
 
 import asyncio
 import os
+import shutil
+import socket
 import subprocess
+import tempfile
 import time
 
 import pytest
 from dotenv import load_dotenv
 
 
-@pytest.mark.asyncio
-async def test_agent_mode_answers_question_completely():
-    """
-    Test that agent mode provides a complete answer to a question, not just partial tool calls.
-    This test should FAIL if the agent stops after the first tool call.
-    """
-    # Load environment
+@pytest.fixture
+def agent_mode_env():
+    """Fixture to set up Neo4j container and MCP server for agent mode tests."""
     load_dotenv()
-    # Ensure Neo4j is running
+    # Use a temp dir for Neo4j data/logs/plugins to avoid permission issues
+    temp_dir = tempfile.mkdtemp(prefix="neo4j-test-")
+    neo4j_data = os.path.join(temp_dir, "data")
+    neo4j_logs = os.path.join(temp_dir, "logs")
+    neo4j_plugins = os.path.join(temp_dir, "plugins")
+    os.makedirs(neo4j_data, exist_ok=True)
+    os.makedirs(neo4j_logs, exist_ok=True)
+    os.makedirs(neo4j_plugins, exist_ok=True)
+
+    # Patch environment for Neo4j container
+    os.environ["NEO4J_DATA"] = neo4j_data
+    os.environ["NEO4J_LOGS"] = neo4j_logs
+    os.environ["NEO4J_PLUGINS"] = neo4j_plugins
+
     from src.container_manager import Neo4jContainerManager
 
     container_manager = Neo4jContainerManager()
     container_manager.setup_neo4j()
 
-    # Set up environment for the agent process
-    env = os.environ.copy()
-    neo4j_uri = env.get("NEO4J_URI", "bolt://localhost:8768")
-    neo4j_user = env.get("NEO4J_USER", "neo4j")
-    neo4j_password = env.get("NEO4J_PASSWORD", "azure-grapher-2024")
+    # Wait up to 60 seconds for Neo4j to be ready
+    import neo4j
 
+    # Use the correct mapped Bolt port (7688)
+    uri = "bolt://localhost:7688"
+    user = os.environ.get("NEO4J_USER", "neo4j")
+    password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+    ready = False
+    for _ in range(60):
+        try:
+            driver = neo4j.GraphDatabase.driver(uri, auth=(user, password))
+            with driver.session() as session:
+                session.run("RETURN 1")
+            ready = True
+            break
+        except Exception:
+            time.sleep(1)
+    if not ready:
+        # Print container logs for debugging
+        print("ERROR: Neo4j did not become ready within 60 seconds")
+        try:
+            logs = container_manager.get_container_logs()
+            print("Neo4j container logs:\n", logs)
+        except Exception:
+            print("Could not fetch Neo4j container logs.")
+        shutil.rmtree(temp_dir)
+        pytest.fail("Neo4j did not become ready within 60 seconds")
+
+    env = os.environ.copy()
     env.update(
         {
-            "NEO4J_URI": neo4j_uri,
-            "NEO4J_USER": neo4j_user,
-            "NEO4J_PASSWORD": neo4j_password,
+            "NEO4J_URI": uri,
+            "NEO4J_USER": user,
+            "NEO4J_PASSWORD": password,
         }
     )
 
@@ -49,10 +84,7 @@ async def test_agent_mode_answers_question_completely():
         stderr=subprocess.PIPE,
         env=env,
     )
-    # Wait for MCP server to be ready (simple sleep, or poll if needed)
     # Wait for MCP server to be ready (poll port 8080 up to 10s)
-    import socket
-
     mcp_ready = False
     for _ in range(20):
         try:
@@ -64,9 +96,27 @@ async def test_agent_mode_answers_question_completely():
     if not mcp_ready:
         mcp_proc.terminate()
         mcp_proc.wait(timeout=5)
+        shutil.rmtree(temp_dir)
         pytest.fail("MCP server did not become ready within 10 seconds")
-    time.sleep(5)
+    time.sleep(2)  # Give a little extra time for full readiness
 
+    yield env
+
+    # Teardown
+    try:
+        mcp_proc.terminate()
+        mcp_proc.wait(timeout=5)
+    except Exception:
+        pass
+    shutil.rmtree(temp_dir)
+
+
+@pytest.mark.asyncio
+async def test_agent_mode_answers_question_completely(agent_mode_env):
+    """
+    Test that agent mode provides a complete answer to a question, not just partial tool calls.
+    This test should FAIL if the agent stops after the first tool call.
+    """
     # Question that requires multi-step workflow
     question = "How many storage resources are in the tenant?"
 
@@ -85,7 +135,7 @@ async def test_agent_mode_answers_question_completely():
             question,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env=env,
+            env=agent_mode_env,
         )
 
         # Wait for completion with timeout
@@ -153,38 +203,14 @@ async def test_agent_mode_answers_question_completely():
 
     except Exception as e:
         pytest.fail(f"Agent mode test failed with exception: {e}")
-    finally:
-        # Ensure MCP server is terminated
-        try:
-            mcp_proc.terminate()
-            mcp_proc.wait(timeout=5)
-        except Exception:
-            pass
 
 
 @pytest.mark.asyncio
-async def test_agent_mode_provides_numeric_answer():
+async def test_agent_mode_provides_numeric_answer(agent_mode_env):
     """
     Test that agent mode provides a specific numeric answer to the storage question.
     This is a more stringent test to ensure complete functionality.
     """
-    # Load environment
-    load_dotenv()
-
-    # Set up environment for the agent process
-    env = os.environ.copy()
-    neo4j_uri = env.get("NEO4J_URI", "bolt://localhost:8768")
-    neo4j_user = env.get("NEO4J_USER", "neo4j")
-    neo4j_password = env.get("NEO4J_PASSWORD", "azure-grapher-2024")
-
-    env.update(
-        {
-            "NEO4J_URI": neo4j_uri,
-            "NEO4J_USER": neo4j_user,
-            "NEO4J_PASSWORD": neo4j_password,
-        }
-    )
-
     question = "How many storage resources are in the tenant?"
 
     try:
@@ -202,7 +228,7 @@ async def test_agent_mode_provides_numeric_answer():
             question,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env=env,
+            env=agent_mode_env,
         )
 
         # Wait for completion
