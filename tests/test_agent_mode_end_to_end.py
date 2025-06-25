@@ -46,12 +46,8 @@ def agent_mode_env():
     # Use the correct mapped Bolt port (7688)
     uri = "bolt://localhost:7688"
     user = os.environ.get("NEO4J_USER", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD")
-    if not password:
-        shutil.rmtree(temp_dir)
-        pytest.skip(
-            "NEO4J_PASSWORD environment variable must be set for agent mode end-to-end tests."
-        )
+    password = os.environ.get("NEO4J_PASSWORD", "should-block-this-secret-123")
+    # Intentionally reintroduce a new hardcoded password to test detect-secrets pre-commit hook
     ready = False
     for _ in range(60):
         try:
@@ -162,28 +158,28 @@ async def test_agent_mode_answers_question_completely(agent_mode_env):
             print(stderr_text)
 
         # Check that the process completed successfully
-        assert (
-            process.returncode == 0
-        ), f"Agent mode failed with return code {process.returncode}"
+        assert process.returncode == 0, (
+            f"Agent mode failed with return code {process.returncode}"
+        )
 
         # The key test: Check that the agent provided a COMPLETE ANSWER, not just tool calls
         # The agent should go through the workflow steps and provide a final answer
 
         # Check that it went through the workflow steps
-        assert (
-            "Step 1: Getting database schema..." in stdout_text
-        ), "Agent should start with schema retrieval"
-        assert (
-            "Step 2: Generating and executing Cypher query..." in stdout_text
-        ), "Agent should execute query"
-        assert (
-            "Step 3: Processing results..." in stdout_text
-        ), "Agent should process results"
+        assert "Step 1: Getting database schema..." in stdout_text, (
+            "Agent should start with schema retrieval"
+        )
+        assert "Step 2: Generating and executing Cypher query..." in stdout_text, (
+            "Agent should execute query"
+        )
+        assert "Step 3: Processing results..." in stdout_text, (
+            "Agent should process results"
+        )
 
         # Check for storage-related content in the output
-        assert (
-            "storage" in stdout_text.lower()
-        ), "Agent should query for storage resources"
+        assert "storage" in stdout_text.lower(), (
+            "Agent should query for storage resources"
+        )
 
         # CRITICAL: Check that we got a FINAL ANSWER with the target phrase
         assert "🎯 Final Answer:" in stdout_text, "Agent should provide a final answer"
@@ -254,9 +250,9 @@ async def test_agent_mode_provides_numeric_answer(agent_mode_env):
 
         # The count should be a valid number (probably 0 since we haven't loaded real data)
         storage_count = int(matches[0])
-        assert (
-            storage_count >= 0
-        ), f"Storage count should be non-negative, got {storage_count}"
+        assert storage_count >= 0, (
+            f"Storage count should be non-negative, got {storage_count}"
+        )
 
         print(f"✅ Agent correctly reported {storage_count} storage resources")
 
