@@ -166,6 +166,49 @@ class DatabaseOperations:
     def __init__(self, session_manager: Any) -> None:
         self.session_manager = session_manager
 
+    def upsert_subscription(
+        self, subscription_id: str, subscription_name: str = ""
+    ) -> bool:
+        """
+        Create or update a Subscription node.
+        """
+        try:
+            query = """
+            MERGE (s:Subscription {id: $id})
+            SET s.name = $name,
+                s.updated_at = datetime()
+            """
+            with self.session_manager.session() as session:
+                session.run(query, id=subscription_id, name=subscription_name)
+            return True
+        except Exception:
+            logger.exception(f"Error upserting Subscription node {subscription_id}")
+            return False
+
+    def upsert_resource_group(
+        self, rg_id: str, rg_name: str, subscription_id: str
+    ) -> bool:
+        """
+        Create or update a ResourceGroup node with unique id, name, and subscription_id.
+        """
+        try:
+            query = """
+            MERGE (rg:ResourceGroup {id: $id})
+            SET rg.name = $name,
+                rg.subscription_id = $subscription_id,
+                rg.type = 'ResourceGroup',
+                rg.updated_at = datetime(),
+                rg.llm_description = coalesce(rg.llm_description, '')
+            """
+            with self.session_manager.session() as session:
+                session.run(
+                    query, id=rg_id, name=rg_name, subscription_id=subscription_id
+                )
+            return True
+        except Exception:
+            logger.exception(f"Error upserting ResourceGroup node {rg_id}")
+            return False
+
     def upsert_resource(
         self, resource: Dict[str, Any], processing_status: str = "completed"
     ) -> bool:
@@ -203,6 +246,9 @@ class DatabaseOperations:
                     f"Resource data missing/null for required fields: {missing_or_null} (resource: {resource})"
                 )
                 raise ResourceDataValidationError(missing_fields=missing_or_null)
+
+            # Upsert Subscription node before relationships
+            self.upsert_subscription(resource["subscription_id"])
 
             query = """
             MERGE (r:Resource {id: $props.id})
@@ -256,6 +302,8 @@ class DatabaseOperations:
     ) -> bool:
         """Create relationship between subscription and resource."""
         try:
+            # Ensure Subscription node exists
+            self.upsert_subscription(subscription_id)
             query = """
             MATCH (s:Subscription {id: $subscription_id})
             MATCH (r:Resource {id: $resource_id})
@@ -284,25 +332,22 @@ class DatabaseOperations:
             rg_name = resource["resource_group"]
             subscription_id = resource["subscription_id"]
             resource_id = resource["id"]
+            # Build full Azure ID for ResourceGroup
+            rg_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
+
             logger.info(
                 f"DEBUG: Creating RG relationships for resource id={resource_id}, resource_group={rg_name}, subscription_id={subscription_id}"
             )
 
-            # Create resource group node if it doesn't exist
-            rg_query = """
-            MERGE (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
-            ON CREATE SET rg.type = 'ResourceGroup',
-                          rg.updated_at = datetime(),
-                          rg.llm_description = ''
-            ON MATCH SET rg.updated_at = datetime()
-            """
-            with self.session_manager.session() as session:
-                session.run(rg_query, rg_name=rg_name, subscription_id=subscription_id)
+            # Upsert Subscription node
+            self.upsert_subscription(subscription_id)
+            # Upsert ResourceGroup node with unique id
+            self.upsert_resource_group(rg_id, rg_name, subscription_id)
 
             # Create relationship: Subscription CONTAINS ResourceGroup
             sub_rg_query = """
             MATCH (s:Subscription {id: $subscription_id})
-            MATCH (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
+            MATCH (rg:ResourceGroup {id: $rg_id})
             MERGE (s)-[:CONTAINS]->(rg)
             """
             with self.session_manager.session() as session:
@@ -310,12 +355,12 @@ class DatabaseOperations:
                     session,
                     sub_rg_query,
                     subscription_id=subscription_id,
-                    rg_name=rg_name,
+                    rg_id=rg_id,
                 )
 
             # Create relationship: ResourceGroup CONTAINS Resource
             rg_resource_query = """
-            MATCH (rg:ResourceGroup {name: $rg_name, subscription_id: $subscription_id})
+            MATCH (rg:ResourceGroup {id: $rg_id})
             MATCH (r:Resource {id: $resource_id})
             MERGE (rg)-[:CONTAINS]->(r)
             """
@@ -323,8 +368,7 @@ class DatabaseOperations:
                 run_neo4j_query_with_retry(
                     session,
                     rg_resource_query,
-                    rg_name=rg_name,
-                    subscription_id=subscription_id,
+                    rg_id=rg_id,
                     resource_id=resource_id,
                 )
 

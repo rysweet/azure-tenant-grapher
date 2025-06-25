@@ -231,6 +231,27 @@ azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 This will create a portable dump file of your Neo4j database, which can be restored using Neo4j tools.
 
 ---
+## Graph Schema Versioning & Migrations
+
+The Azure Tenant Grapher uses a versioned Neo4j schema with an automated migration system. Each schema change is tracked by a singleton `GraphVersion` node. Migrations are stored as numbered Cypher scripts in [`migrations/`](migrations/) and are applied in order by the migration runner.
+
+- **Migration runner:** [`scripts/run_migrations.py`](scripts/run_migrations.py) applies all pending migrations to the connected Neo4j database.
+- **How to run migrations locally:**
+  ```bash
+  export NEO4J_URI=bolt://localhost:7687
+  export NEO4J_USER=neo4j
+  export NEO4J_PASSWORD=your_password
+  python scripts/run_migrations.py
+  ```
+- **How migrations are run in CI:** The CI workflow spins up a Neo4j container, runs all migrations, and verifies they apply cleanly.
+
+### Subscription Node & CONTAINS Relationship
+
+The graph schema includes a `Subscription` node for each Azure subscription. All resources and resource groups are linked to their parent subscription via a `CONTAINS` relationship. This enables efficient queries and visualization of tenant structure.
+
+- See [`migrations/0003_backfill_subscriptions.cypher`](migrations/0003_backfill_subscriptions.cypher) for details on how Subscription nodes and CONTAINS edges are created.
+
+---
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 
 ## Documentation
