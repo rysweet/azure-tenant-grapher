@@ -9,6 +9,19 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5
+        env:
+          NEO4J_AUTH: neo4j/test
+        ports:
+          - 7687:7687
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p test 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,12 +34,6 @@ jobs:
       - name: Install Azure CLI
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-      - name: Start Neo4j
-        uses: neo4j-contrib/github-action-neo4j@v1
-        with:
-          neo4j-version: 'latest'
-          password: test
 
       - name: Install Python dependencies
         run: |
