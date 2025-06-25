@@ -46,7 +46,12 @@ def agent_mode_env():
     # Use the correct mapped Bolt port (7688)
     uri = "bolt://localhost:7688"
     user = os.environ.get("NEO4J_USER", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+    password = os.environ.get("NEO4J_PASSWORD")
+    if not password:
+        shutil.rmtree(temp_dir)
+        pytest.skip(
+            "NEO4J_PASSWORD environment variable must be set for agent mode end-to-end tests."
+        )
     ready = False
     for _ in range(60):
         try:
