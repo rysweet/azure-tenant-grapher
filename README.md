@@ -58,24 +58,21 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 
 ```bash
 # 1. Install dependencies
-uv pip install -r requirements.txt
+uv sync
 
-# 2. Start Neo4j (auto-managed by the app, or via docker-compose)
-docker-compose up -d
-
-# 3. Activate the virtual environment
+# 2. Activate the virtual environment
 source .venv/bin/activate
 
-# 4. Copy and edit environment variables
+# 3. Copy and edit environment variables
 cp .env.example .env
 
-# 5. Authenticate with Azure
+# 4. Authenticate with Azure
 az login --tenant <your-tenant-id>
 
-# 6. Build the graph with the interactive dashboard
+# 5. Build the graph with the interactive dashboard
 azure-tenant-grapher build --tenant-id <your-tenant-id>
 
-# 7. Visualize your Azure graph in 3D
+# 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
 ```
 
