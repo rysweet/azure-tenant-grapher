@@ -295,6 +295,37 @@ _This document expands the previously-agreed roadmap into discrete, numbered rec
 *The earlier suggestion to “enforce boundaries with **mypy**” has been **dropped** because the project does not use mypy. Type safety can be revisited later if desired.*
 
 ---
+## Appendix: Migration Infrastructure & Versioning
+
+### Migration Infrastructure
+
+- All schema changes are managed via versioned Cypher migration scripts in [`migrations/`](../migrations/).
+- The migration runner ([`src/migration_runner.py`](../src/migration_runner.py), invoked by [`scripts/run_migrations.py`](../scripts/run_migrations.py)) applies all pending migrations to the Neo4j database.
+- Migrations are tracked by a singleton `GraphVersion` node with `major`, `minor`, and `appliedAt` properties.
+
+### Schema Constraints
+
+- Uniqueness constraints are enforced for all core node types (Resource, ResourceGroup, Tag, Region, User, ServicePrincipal, ManagedIdentity, LogAnalyticsWorkspace, Subscription).
+- See [`migrations/0002_add_core_constraints.cypher`](../migrations/0002_add_core_constraints.cypher) for details.
+
+### Migration Files & Purposes
+
+- [`0001_create_graph_version.cypher`](../migrations/0001_create_graph_version.cypher): Creates the `GraphVersion` node and uniqueness constraint.
+- [`0002_add_core_constraints.cypher`](../migrations/0002_add_core_constraints.cypher): Adds uniqueness constraints and indexes for all core node types.
+- [`0003_backfill_subscriptions.cypher`](../migrations/0003_backfill_subscriptions.cypher): Adds `Subscription` nodes, `CONTAINS` relationships, and backfills `subscription_id` fields.
+
+### Adding New Migrations
+
+1. Create a new Cypher script in `migrations/` with the next available sequence number (e.g., `0004_new_feature.cypher`).
+2. Write idempotent Cypher statements for the schema/data change.
+3. The migration will be auto-applied by the runner if its sequence is higher than the current `GraphVersion`.
+4. Document the migration's purpose in this section.
+
+### CI Integration
+
+- The CI workflow spins up a Neo4j container, runs all migrations using the migration runner, and verifies that all migrations apply cleanly on a blank database.
+
+---
 
 ## Dependency Graph
 

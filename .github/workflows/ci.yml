@@ -22,5 +22,26 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
+      - name: Start Neo4j
+        uses: neo4j-contrib/github-action-neo4j@v1
+        with:
+          neo4j-version: 'latest'
+          password: test
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run migrations
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: test
+        run: |
+          . .venv/bin/activate
+          python scripts/run_migrations.py
+
       - name: Run tests
-        run: echo "No test command specified. Replace this with your test runner."
+        run: pytest -q

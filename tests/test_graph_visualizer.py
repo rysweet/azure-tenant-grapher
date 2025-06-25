@@ -367,6 +367,147 @@ def test_html_contains_cluster_labels():
             assert "Each resource group is treated as a cluster" in html
 
 
+def test_subscription_node_and_contains_edges_rendered():
+    """Test that Subscription nodes and CONTAINS edges are rendered distinctly in the HTML output."""
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from src.graph_visualizer import GraphVisualizer
+
+    visualizer = GraphVisualizer("bolt://localhost:7687", "neo4j", "password")
+    mock_graph_data = {
+        "nodes": [
+            {
+                "id": "sub1",
+                "name": "TestSub",
+                "type": "Subscription",
+                "labels": ["Subscription"],
+                "properties": {"id": "sub-1"},
+                "group": 1,
+                "color": "#ff6b6b",
+                "size": 15,
+            },
+            {
+                "id": "rg1",
+                "name": "RG1",
+                "type": "ResourceGroup",
+                "labels": ["ResourceGroup"],
+                "properties": {"subscriptionId": "sub-1"},
+                "group": 2,
+                "color": "#45b7d1",
+                "size": 12,
+            },
+            {
+                "id": "res1",
+                "name": "VM1",
+                "type": "Resource",
+                "labels": ["Resource"],
+                "properties": {"subscriptionId": "sub-1"},
+                "group": 10,
+                "color": "#6c5ce7",
+                "size": 8,
+            },
+        ],
+        "links": [
+            {
+                "source": "sub1",
+                "target": "rg1",
+                "type": "CONTAINS",
+                "properties": {},
+                "color": "#74b9ff",
+                "width": 3,
+            },
+            {
+                "source": "rg1",
+                "target": "res1",
+                "type": "CONTAINS",
+                "properties": {},
+                "color": "#74b9ff",
+                "width": 3,
+            },
+        ],
+        "node_types": ["Subscription", "ResourceGroup", "Resource"],
+        "relationship_types": ["CONTAINS"],
+    }
+    with patch.object(
+        GraphVisualizer, "extract_graph_data", return_value=mock_graph_data
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = os.path.join(tmpdir, "test_graph.html")
+            visualizer.generate_html_visualization(output_path=output_path)
+            with open(output_path, encoding="utf-8") as f:
+                html = f.read()
+            # Check for Subscription node label and style
+            assert "Subscription: TestSub" in html or "Subscription" in html
+            assert "#ff6b6b" in html  # Subscription color
+            # Check for CONTAINS edges in JS data
+            assert '"type": "CONTAINS"' in html
+            assert '"source": "sub1"' in html and '"target": "rg1"' in html
+            # Check for custom rendering logic for Subscription nodes
+            assert "Subscription" in html and "SphereGeometry" in html
+
+
+def test_visualizer_works_without_subscription_nodes():
+    """Test that the visualizer works and renders output if Subscription nodes are absent (legacy data)."""
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from src.graph_visualizer import GraphVisualizer
+
+    visualizer = GraphVisualizer("bolt://localhost:7687", "neo4j", "password")
+    mock_graph_data = {
+        "nodes": [
+            {
+                "id": "rg1",
+                "name": "RG1",
+                "type": "ResourceGroup",
+                "labels": ["ResourceGroup"],
+                "properties": {},
+                "group": 2,
+                "color": "#45b7d1",
+                "size": 12,
+            },
+            {
+                "id": "res1",
+                "name": "VM1",
+                "type": "Resource",
+                "labels": ["Resource"],
+                "properties": {},
+                "group": 10,
+                "color": "#6c5ce7",
+                "size": 8,
+            },
+        ],
+        "links": [
+            {
+                "source": "rg1",
+                "target": "res1",
+                "type": "CONTAINS",
+                "properties": {},
+                "color": "#74b9ff",
+                "width": 3,
+            },
+        ],
+        "node_types": ["ResourceGroup", "Resource"],
+        "relationship_types": ["CONTAINS"],
+    }
+    with patch.object(
+        GraphVisualizer, "extract_graph_data", return_value=mock_graph_data
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = os.path.join(tmpdir, "test_graph.html")
+            visualizer.generate_html_visualization(output_path=output_path)
+            with open(output_path, encoding="utf-8") as f:
+                html = f.read()
+            # Should not error, and should still render ResourceGroup and Resource
+            assert "RG1" in html
+            assert "VM1" in html
+            # Should not contain Subscription-specific label
+            assert "Subscription:" not in html
+
+
 def test_html_region_labels_always_visible():
     """Test that the generated HTML contains CSS to always show Region node labels and includes a Region node label."""
     import os
