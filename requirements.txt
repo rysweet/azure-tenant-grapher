@@ -46,7 +46,6 @@ autogen-ext[mcp]>=0.6.1
 autogen_agentchat
 tiktoken
 readchar>=4.0.3
-uvx>=0.0.10
 
 # Threat Modeling Agent dependencies
 networkx>=3.0
