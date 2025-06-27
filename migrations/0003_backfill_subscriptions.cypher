@@ -2,7 +2,7 @@
 
 // 1. Create Subscription nodes from ResourceGroup or Resource ids
 MATCH (n)
-WHERE EXISTS(n.id) AND n.id STARTS WITH '/subscriptions/'
+WHERE n.id IS NOT NULL AND n.id STARTS WITH '/subscriptions/'
 WITH DISTINCT split(n.id,'/')[2] AS subId, n
 WITH subId, collect(DISTINCT n) AS nodes
 MERGE (s:Subscription {id: subId})
