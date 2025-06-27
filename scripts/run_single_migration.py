@@ -9,15 +9,9 @@ def run_data_migration(uri, user, password, cypher, seq):
         with driver.session() as session:
             stmts = [s.strip() for s in cypher.split(";") if s.strip()]
 
-            def run_data(tx: ManagedTransaction, stmts=stmts, seq=seq):
+            def run_data(tx: ManagedTransaction, stmts=stmts):
                 for stmt in stmts:
                     tx.run(stmt)
-                tx.run(
-                    "MERGE (v:GraphVersion {major:$major, minor:$minor}) "
-                    "SET v.appliedAt = datetime()",
-                    major=seq,
-                    minor=0,
-                )
 
             session.execute_write(run_data)
     finally:
