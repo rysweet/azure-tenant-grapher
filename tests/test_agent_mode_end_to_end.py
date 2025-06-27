@@ -1,3 +1,6 @@
+# NOTE: For CI and local runs, you must set the NEO4J_PASSWORD environment variable (or GitHub Actions secret) to a strong value.
+# The test and the Neo4j container must use the same password, or authentication will fail.
+# In CI, set this in Settings > Secrets and variables > Actions > New repository secret.
 """
 End-to-end tests for agent mode functionality.
 
