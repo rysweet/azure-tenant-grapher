@@ -48,6 +48,6 @@ def test_terraform_validate_passes(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    assert (
-        proc.returncode == 0
-    ), f"terraform validate failed:\n{proc.stdout}\n{proc.stderr}"
+    assert proc.returncode == 0, (
+        f"terraform validate failed:\n{proc.stdout}\n{proc.stderr}"
+    )

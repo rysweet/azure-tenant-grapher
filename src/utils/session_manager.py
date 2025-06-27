@@ -47,7 +47,7 @@ def retry_neo4j_operation(
                     last_exception = e
                     logger.warning(
                         f"Neo4j connection error ({type(e).__name__}): {e}. "
-                        f"Retrying {attempt+1}/{max_retries} after {delay}s..."
+                        f"Retrying {attempt + 1}/{max_retries} after {delay}s..."
                     )
                     time.sleep(delay)
                     delay *= backoff
@@ -65,7 +65,7 @@ def retry_neo4j_operation(
                         last_exception = e
                         logger.warning(
                             f"Neo4j protocol error ({type(e).__name__}): {e}. "
-                            f"Retrying {attempt+1}/{max_retries} after {delay}s..."
+                            f"Retrying {attempt + 1}/{max_retries} after {delay}s..."
                         )
                         time.sleep(delay)
                         delay *= backoff

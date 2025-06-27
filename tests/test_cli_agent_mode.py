@@ -24,9 +24,9 @@ def test_agent_mode_requires_resources():
 
         if proc.returncode == 0:
             # If successful, it should show readiness and exit cleanly
-            assert (
-                "MCP Agent is ready" in stdout
-            ), f"Agent started but didn't show ready message: {stdout}"
+            assert "MCP Agent is ready" in stdout, (
+                f"Agent started but didn't show ready message: {stdout}"
+            )
             assert "Goodbye!" in stdout, f"Agent didn't exit cleanly: {stdout}"
 
         elif proc.returncode == 1:
@@ -50,9 +50,9 @@ def test_agent_mode_requires_resources():
 
             # If Neo4j failed, it should be because Docker isn't running or container issues
             if neo4j_failed:
-                assert (
-                    "Docker" in combined_output or "container" in combined_output
-                ), "Neo4j failure should mention Docker or container issues"
+                assert "Docker" in combined_output or "container" in combined_output, (
+                    "Neo4j failure should mention Docker or container issues"
+                )
 
         else:
             pytest.fail(

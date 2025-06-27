@@ -260,7 +260,7 @@ class AzureTenantGrapher:
                             )
 
                         logger.debug(
-                            f"🔄 Rebuilding edges for resource {i+1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
+                            f"🔄 Rebuilding edges for resource {i + 1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
                         )
 
                         # Re-emit relationships (but not containment - that's preserved)

@@ -18,9 +18,9 @@ def test_build_rebuild_edges_flag():
         text=True,
         timeout=60,
     )
-    assert (
-        result.returncode == 0
-    ), f"CLI exited with code {result.returncode}. Output: {result.stdout} {result.stderr}"
+    assert result.returncode == 0, (
+        f"CLI exited with code {result.returncode}. Output: {result.stdout} {result.stderr}"
+    )
     assert (
         "re-evaluation of all relationships/edges" in result.stdout
         or "re-evaluation of all relationships/edges" in result.stderr
