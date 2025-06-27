@@ -18,6 +18,6 @@ SET rg.subscription_id = split(rg.id,'/')[2],
 
 // 3. Ensure Resource nodes have subscription_id & resource_group
 MATCH (r:Resource)
-WHERE NOT EXISTS(r.subscription_id)
+WHERE r.subscription_id IS NULL
 SET r.subscription_id = split(r.id,'/')[2],
     r.resource_group  = split(r.id,'/')[4];
