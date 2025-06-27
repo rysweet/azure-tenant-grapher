@@ -21,13 +21,13 @@ jobs:
           NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
         ports:
           - 7687:7687
+        # The health check cannot access GitHub Actions secrets, so we must hardcode the password for CI only.
+        # This value must match NEO4J_AUTH above and the NEO4J_PASSWORD secret.
         options: >-
-          --health-cmd "cypher-shell -u neo4j -p ci-neo4j-pass 'RETURN 1'"
-          # The health check cannot access GitHub Actions secrets, so we must hardcode the password for CI only.
-          # This value must match NEO4J_AUTH above and the NEO4J_PASSWORD secret.
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
+           --health-cmd "cypher-shell -u neo4j -p ci-neo4j-pass 'RETURN 1'"
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 10
 
     steps:
       - name: Checkout repository
