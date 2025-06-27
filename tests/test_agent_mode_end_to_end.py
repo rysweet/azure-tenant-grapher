@@ -30,7 +30,6 @@ def agent_mode_env():
     Ensures NEO4J_PASSWORD is always set to a random value for test isolation.
     This avoids any hardcoded or default secrets and prevents GitGuardian triggers.
     """
-    import secrets
 
     load_dotenv()
     # Use a temp dir for Neo4j data/logs/plugins to avoid permission issues
@@ -42,9 +41,11 @@ def agent_mode_env():
     os.makedirs(neo4j_logs, exist_ok=True)
     os.makedirs(neo4j_plugins, exist_ok=True)
 
-    # Always set a random password for test isolation
+    # Require NEO4J_PASSWORD to be set in the environment for test and CI consistency.
     if not os.environ.get("NEO4J_PASSWORD"):
-        os.environ["NEO4J_PASSWORD"] = secrets.token_urlsafe(16)
+        raise RuntimeError(
+            "NEO4J_PASSWORD must be set in the environment for agent mode E2E tests. Set this in your shell or CI secrets."
+        )
 
     # Patch environment for Neo4j container
     os.environ["NEO4J_DATA"] = neo4j_data
