@@ -10,18 +10,17 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+      NEO4J_PASSWORD: ci-neo4j-pass # pragma: allowlist secret
     services:
       neo4j:
         image: neo4j:5
         env:
-          NEO4J_AUTH: neo4j/${{ secrets.NEO4J_PASSWORD }}
-          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_AUTH: neo4j/ci-neo4j-pass
           NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
         ports:
           - 7687:7687
         options: >-
-          --health-cmd "cypher-shell -u neo4j -p $NEO4J_PASSWORD 'RETURN 1'"
+          --health-cmd "cypher-shell -u neo4j -p ci-neo4j-pass 'RETURN 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
