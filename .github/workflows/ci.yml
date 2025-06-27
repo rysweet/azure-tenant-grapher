@@ -9,8 +9,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    # NOTE: You must set the NEO4J_PASSWORD secret in your GitHub repository or organization for CI to work.
+    # Go to Settings > Secrets and variables > Actions > New repository secret, and add NEO4J_PASSWORD with a strong value.
     env:
-      # NEO4J_PASSWORD is now loaded from GitHub Actions secrets to avoid hardcoded secrets.
       NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
     services:
       neo4j:
@@ -21,7 +22,9 @@ jobs:
         ports:
           - 7687:7687
         options: >-
-          --health-cmd "cypher-shell -u neo4j -p $NEO4J_PASSWORD 'RETURN 1'"
+          # The health check cannot access GitHub Actions secrets, so we must hardcode the password for CI only.
+          # This value must match NEO4J_AUTH above and the NEO4J_PASSWORD secret.
+          --health-cmd "cypher-shell -u neo4j -p ci-neo4j-pass 'RETURN 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
