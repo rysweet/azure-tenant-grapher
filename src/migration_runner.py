@@ -17,9 +17,9 @@ def run_pending_migrations():
         )
         return
 
+    # Get current version in a fresh driver/session
     driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
     try:
-        # Get current version
         with driver.session() as session:
             result = session.run(
                 "MATCH (v:GraphVersion) RETURN v.major AS major, v.minor AS minor ORDER BY v.major DESC, v.minor DESC LIMIT 1"
@@ -29,46 +29,54 @@ def run_pending_migrations():
                 current_major = row["major"]
             else:
                 current_major = 0
+    finally:
+        driver.close()
 
-        # Find migration files
-        files = sorted(
-            glob.glob(os.path.join(MIGRATIONS_DIR, "[0-9][0-9][0-9][0-9]_*.cypher"))
-        )
-        for f in files:
-            m = re.match(r".*/(\d{4})_.*\.cypher$", f)
-            if not m:
-                continue
-            seq = int(m.group(1))
-            if seq > current_major:
-                with open(f, encoding="utf-8") as cypher_file:
-                    cypher = cypher_file.read()
+    # Find migration files
+    files = sorted(
+        glob.glob(os.path.join(MIGRATIONS_DIR, "[0-9][0-9][0-9][0-9]_*.cypher"))
+    )
+    for f in files:
+        m = re.match(r".*/(\d{4})_.*\.cypher$", f)
+        if not m:
+            continue
+        seq = int(m.group(1))
+        if seq > current_major:
+            with open(f, encoding="utf-8") as cypher_file:
+                cypher = cypher_file.read()
 
-                def is_schema_stmt(stmt: str) -> bool:
-                    schema_keywords = [
-                        "CREATE CONSTRAINT",
-                        "DROP CONSTRAINT",
-                        "CREATE INDEX",
-                        "DROP INDEX",
-                    ]
-                    return any(
-                        stmt.strip().upper().startswith(kw) for kw in schema_keywords
-                    )
+            def is_schema_stmt(stmt: str) -> bool:
+                schema_keywords = [
+                    "CREATE CONSTRAINT",
+                    "DROP CONSTRAINT",
+                    "CREATE INDEX",
+                    "DROP INDEX",
+                ]
+                return any(
+                    stmt.strip().upper().startswith(kw) for kw in schema_keywords
+                )
 
-                stmts = [s.strip() for s in cypher.split(";") if s.strip()]
-                schema_stmts = [s for s in stmts if is_schema_stmt(s)]
-                data_stmts = [s for s in stmts if not is_schema_stmt(s)]
+            stmts = [s.strip() for s in cypher.split(";") if s.strip()]
+            schema_stmts = [s for s in stmts if is_schema_stmt(s)]
+            data_stmts = [s for s in stmts if not is_schema_stmt(s)]
 
-                # Run each schema statement in its own transaction and session
-                for stmt in schema_stmts:
+            # Run each schema statement in its own driver/session/transaction
+            for stmt in schema_stmts:
+                driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
+                try:
                     with driver.session() as session:
 
                         def run_schema(tx: ManagedTransaction, stmt: str = stmt):
                             tx.run(stmt)
 
                         session.execute_write(run_schema)
+                finally:
+                    driver.close()
 
-                # Run all data statements in a new session/transaction
-                if data_stmts:
+            # Run all data statements in a new driver/session/transaction
+            if data_stmts:
+                driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
+                try:
                     with driver.session() as session:
 
                         def run_data(
@@ -86,8 +94,12 @@ def run_pending_migrations():
                             )
 
                         session.execute_write(run_data)
-                else:
-                    # If only schema changes, still record the migration in a new session
+                finally:
+                    driver.close()
+            else:
+                # If only schema changes, still record the migration in a new driver/session
+                driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
+                try:
                     with driver.session() as session:
 
                         def record_version(
@@ -102,7 +114,7 @@ def run_pending_migrations():
                             )
 
                         session.execute_write(record_version)
+                finally:
+                    driver.close()
 
-                print(f"Applied migration {f}")
-    finally:
-        driver.close()
+            print(f"Applied migration {f}")
