@@ -76,29 +76,31 @@ def run_pending_migrations():
                 # Ensure schema change is fully committed before proceeding
                 time.sleep(1)
 
-            # Run all data statements in a new driver/session/transaction
+            # Run all data statements in a new process for full isolation
             if data_stmts:
-                driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
-                try:
-                    with driver.session() as session:
+                import subprocess
 
-                        def run_data(
-                            tx: ManagedTransaction,
-                            data_stmts: list[str] = data_stmts,
-                            seq: int = seq,
-                        ):
-                            for stmt in data_stmts:
-                                tx.run(stmt)
-                            tx.run(
-                                "MERGE (v:GraphVersion {major:$major, minor:$minor}) "
-                                "SET v.appliedAt = datetime()",
-                                major=seq,
-                                minor=0,
-                            )
-
-                        session.execute_write(run_data)
-                finally:
-                    driver.close()
+                data_cypher = ";\n".join(data_stmts)
+                script_path = os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "scripts",
+                    "run_single_migration.py",
+                )
+                result = subprocess.run(
+                    [
+                        "python3",
+                        script_path,
+                        uri,
+                        user,
+                        password,
+                        str(seq),
+                    ],
+                    input=data_cypher.encode("utf-8"),
+                    capture_output=True,
+                )
+                if result.returncode != 0:
+                    print("Data migration failed:", result.stderr.decode())
+                    raise RuntimeError("Data migration failed")
             else:
                 # If only schema changes, still record the migration in a new driver/session
                 driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
