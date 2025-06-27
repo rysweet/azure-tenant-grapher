@@ -74,7 +74,7 @@ def run_pending_migrations():
                 finally:
                     driver.close()
                 # Ensure schema change is fully committed before proceeding
-                time.sleep(1)
+                time.sleep(5)
 
             # Run all data statements in a new process for full isolation
             if data_stmts:
