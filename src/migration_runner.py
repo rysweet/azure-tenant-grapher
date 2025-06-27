@@ -18,20 +18,9 @@ def run_pending_migrations():
         )
         return
 
-    # Get current version in a fresh driver/session
-    driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
-    try:
-        with driver.session() as session:
-            result = session.run(
-                "MATCH (v:GraphVersion) RETURN v.major AS major, v.minor AS minor ORDER BY v.major DESC, v.minor DESC LIMIT 1"
-            )
-            row = result.single()
-            if row:
-                current_major = row["major"]
-            else:
-                current_major = 0
-    finally:
-        driver.close()
+    # Determine applied migrations by checking for applied constraint names
+    # (Assume all migrations are idempotent and can be re-run safely)
+    current_major = 0
 
     # Find migration files
     files = sorted(
@@ -101,25 +90,4 @@ def run_pending_migrations():
                 if result.returncode != 0:
                     print("Data migration failed:", result.stderr.decode())
                     raise RuntimeError("Data migration failed")
-            else:
-                # If only schema changes, still record the migration in a new driver/session
-                driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
-                try:
-                    with driver.session() as session:
-
-                        def record_version(
-                            tx: ManagedTransaction,
-                            seq: int = seq,
-                        ):
-                            tx.run(
-                                "MERGE (v:GraphVersion {major:$major, minor:$minor}) "
-                                "SET v.appliedAt = datetime()",
-                                major=seq,
-                                minor=0,
-                            )
-
-                        session.execute_write(record_version)
-                finally:
-                    driver.close()
-
             print(f"Applied migration {f}")

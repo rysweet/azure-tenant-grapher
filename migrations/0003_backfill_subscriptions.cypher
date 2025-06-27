@@ -21,8 +21,3 @@ MATCH (r:Resource)
 WHERE NOT EXISTS(r.subscription_id)
 SET r.subscription_id = split(r.id,'/')[2],
     r.resource_group  = split(r.id,'/')[4];
-
-// 4. Update GraphVersion
-MERGE (v:GraphVersion {major:3, minor:0})
-  ON CREATE
-    SET v.appliedAt = datetime();
