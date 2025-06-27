@@ -18,7 +18,7 @@ jobs:
         ports:
           - 7687:7687
         options: >-
-          --health-cmd "cypher-shell -u neo4j -p test 'RETURN 1'"
+          --health-cmd "cypher-shell -u neo4j -p testpassword 'RETURN 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
