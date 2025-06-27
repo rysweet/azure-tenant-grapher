@@ -38,11 +38,12 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Install Python dependencies
+      - name: Install uv and Python dependencies
         run: |
           python3 -m venv .venv
           . .venv/bin/activate
-          pip install -r requirements.txt
+          pip install uv
+          uv pip install -r requirements.txt
 
       - name: Run migrations
         env:
