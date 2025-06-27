@@ -62,7 +62,8 @@ def agent_mode_env():
     # Use the correct mapped Bolt port (7688)
     uri = "bolt://localhost:7688"
     user = os.environ.get("NEO4J_USER", "neo4j")
-    password = os.environ.get("NEO4J_PASSWORD")
+    # Always set above for test isolation; never a fallback or hardcoded secret.
+    password = os.environ["NEO4J_PASSWORD"]
     if not password:
         shutil.rmtree(temp_dir)
         pytest.skip(
