@@ -1,7 +1,9 @@
 import importlib
+import socket
 from unittest import mock
 
 import pytest
+from neo4j import GraphDatabase, basic_auth
 
 
 @pytest.fixture(autouse=True)
@@ -36,15 +38,14 @@ def test_applies_pending_migrations(monkeypatch):
         mock_db.driver.return_value = mock_driver
         mock_session = mock.Mock()
         mock_driver.session.return_value.__enter__.return_value = mock_session
-        # Simulate no GraphVersion nodes
-        mock_session.run.return_value.single.return_value = None
+        mock_driver.session.return_value.__exit__.return_value = None
         # Patch glob to return a fake migration file
         with mock.patch("src.migration_runner.glob.glob") as mock_glob, mock.patch(
             "src.migration_runner.open",
             mock.mock_open(read_data="CREATE TEST;"),
             create=True,
         ):
-            mock_glob.return_value = ["migrations/0001_create_graph_version.cypher"]
+            mock_glob.return_value = ["migrations/0001_create_schema.cypher"]
             import src.migration_runner as migration_runner_reload
 
             importlib.reload(migration_runner_reload)
@@ -62,8 +63,7 @@ def test_detects_and_applies_0002(monkeypatch):
         mock_db.driver.return_value = mock_driver
         mock_session = mock.Mock()
         mock_driver.session.return_value.__enter__.return_value = mock_session
-        # Simulate GraphVersion at major=1
-        mock_session.run.return_value.single.return_value = {"major": 1, "minor": 0}
+        mock_driver.session.return_value.__exit__.return_value = None
         # Patch glob to return both 0001 and 0002
         with mock.patch("src.migration_runner.glob.glob") as mock_glob, mock.patch(
             "src.migration_runner.open",
@@ -71,7 +71,7 @@ def test_detects_and_applies_0002(monkeypatch):
             create=True,
         ):
             mock_glob.return_value = [
-                "migrations/0001_create_graph_version.cypher",
+                "migrations/0001_create_schema.cypher",
                 "migrations/0002_add_core_constraints.cypher",
             ]
             import src.migration_runner as migration_runner_reload
@@ -79,29 +79,6 @@ def test_detects_and_applies_0002(monkeypatch):
             importlib.reload(migration_runner_reload)
             migration_runner_reload.run_pending_migrations()
             # Should call session.write_transaction or execute_write for 0002
-            assert mock_session.write_transaction.called or getattr(
-                mock_session, "execute_write", None
-            )
-            # Ensure migration 0002 was considered (seq > 1)
-            calls = (
-                mock_session.write_transaction.call_args_list
-                if hasattr(mock_session, "write_transaction")
-                else []
-            )
-            found_0002 = any(
-                call
-                for call in calls
-                if call
-                and call[0]
-                and hasattr(call[0][0], "__closure__")
-                and any(
-                    "major=2" in str(cell.cell_contents)
-                    for cell in call[0][0].__closure__ or []
-                )
-            )
-            # If using execute_write, skip this check (since it's deprecated in code)
-            if calls:
-                assert found_0002
             assert mock_session.write_transaction.called or getattr(
                 mock_session, "execute_write", None
             )
@@ -117,14 +94,13 @@ def test_applies_0003_backfill_subscription(monkeypatch):
         mock_db.driver.return_value = mock_driver
         mock_session = mock.Mock()
         mock_driver.session.return_value.__enter__.return_value = mock_session
-        # Simulate GraphVersion at major=2
-        mock_session.run.return_value.single.return_value = {"major": 2, "minor": 0}
+        mock_driver.session.return_value.__exit__.return_value = None
         # Patch glob to return all three migrations
         with mock.patch("src.migration_runner.glob.glob") as mock_glob, mock.patch(
             "src.migration_runner.open", create=True
         ) as mock_open:
             mock_glob.return_value = [
-                "migrations/0001_create_graph_version.cypher",
+                "migrations/0001_create_schema.cypher",
                 "migrations/0002_add_core_constraints.cypher",
                 "migrations/0003_backfill_subscriptions.cypher",
             ]
@@ -153,10 +129,6 @@ WHERE NOT EXISTS(r.subscription_id)
 SET r.subscription_id = split(r.id,'/')[2],
     r.resource_group  = split(r.id,'/')[4];
 
-// 4. Update GraphVersion
-MERGE (v:GraphVersion {major:3, minor:0})
-  ON CREATE
-    SET v.appliedAt = datetime();
 """
 
             def open_side_effect(path, *args, **kwargs):
@@ -174,10 +146,29 @@ MERGE (v:GraphVersion {major:3, minor:0})
 
             # Check that write_transaction was called for 0003
             assert mock_session.write_transaction.called
-            # Check that the cypher for 0003 was run
-            calls = mock_session.write_transaction.call_args_list
-            found_0003 = any(
-                "MERGE (v:GraphVersion {major:3, minor:0})" in str(call)
-                for call in calls
+
+
+def is_neo4j_up(host, port):
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            return True
+    except Exception:
+        return False
+
+
+@pytest.mark.integration
+def test_schema_and_write_in_same_transaction_fails(neo4j_container):
+    uri, user, password = neo4j_container
+    driver = GraphDatabase.driver(uri, auth=basic_auth(user, password))
+    with driver.session() as session:
+
+        def schema_and_write(tx):
+            tx.run(
+                "CREATE CONSTRAINT test_constraint IF NOT EXISTS FOR (n:TestLabel) REQUIRE n.id IS UNIQUE"
             )
-            assert found_0003
+            tx.run("CREATE (n:TestLabel {id: 1})")
+
+        with pytest.raises(Exception) as excinfo:
+            session.execute_write(schema_and_write)
+        assert "ForbiddenDueToTransactionType" in str(excinfo.value)
+    driver.close()
