@@ -51,9 +51,9 @@ jobs:
           PYTHONPATH: .
         run: |
           . .venv/bin/activate
-          python scripts/run_migrations.py
+          .venv/bin/python scripts/run_migrations.py
 
       - name: Run tests
         env:
           PYTHONPATH: .
-        run: pytest -q
+        run: .venv/bin/python -m pytest -q
