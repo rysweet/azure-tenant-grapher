@@ -76,6 +76,7 @@ async def test_real_process_exit_simulation():
 
     # Track active threads before and after
     initial_threads = threading.active_count()
+    print(f"[TEST] Initial thread count: {initial_threads}")
 
     mock_config = {
         "tenant_id": "test-tenant",
@@ -92,6 +93,7 @@ async def test_real_process_exit_simulation():
         try:
             await asyncio.sleep(60)
         except asyncio.CancelledError:
+            print("[TEST] Build task cancelled")
             raise
 
     build_task = asyncio.create_task(mock_build_task())
@@ -99,13 +101,19 @@ async def test_real_process_exit_simulation():
 
     async def send_exit_key():
         await asyncio.sleep(0.5)
+        print("[TEST] Sending 'x' key to dashboard")
         key_q.put("x")
 
     keypress_task = asyncio.create_task(send_exit_key())
 
     # This should raise DashboardExitException
-    with pytest.raises(DashboardExitException):
-        await dashboard_manager.run_with_queue_keypress(build_task, key_q=key_q)
+    try:
+        with pytest.raises(DashboardExitException):
+            await dashboard_manager.run_with_queue_keypress(build_task, key_q=key_q)
+        print("[TEST] DashboardExitException was raised as expected")
+    except Exception as e:
+        print(f"[TEST] Exception during dashboard run: {e}")
+        raise
 
     # Clean up
     if not keypress_task.done():
@@ -118,6 +126,7 @@ async def test_real_process_exit_simulation():
 
     # Check that thread count returns close to initial
     final_threads = threading.active_count()
+    print(f"[TEST] Final thread count: {final_threads}")
     # Allow some tolerance for test framework threads
     assert (
         final_threads <= initial_threads + 2

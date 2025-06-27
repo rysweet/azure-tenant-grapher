@@ -484,6 +484,7 @@ class TestAzureDiscoveryService:
             "resource_group",
             "subscription_id",
         ]
+        print("DEBUG: Discovered resource dict:", resource)
         for field in required_fields:
             assert field in resource, f"Missing required field: {field}"
             assert resource[field] is not None, f"Required field {field} is None"
@@ -500,7 +501,10 @@ class TestAzureDiscoveryService:
 
         # Create a mock session manager that returns the mock session as a context manager
         mock_session_manager = MagicMock()
-        mock_session_manager.session.return_value = mock_session
+        mock_context_manager = MagicMock()
+        mock_context_manager.__enter__.return_value = mock_session
+        mock_context_manager.__exit__.return_value = None
+        mock_session_manager.session.return_value = mock_context_manager
 
         db_ops = DatabaseOperations(mock_session_manager)
 

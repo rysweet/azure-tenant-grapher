@@ -251,12 +251,13 @@ class RichDashboard:
                 if key and key.lower() == "x":
                     with self.lock:
                         self._should_exit = True
-                    # Ensure immediate process termination
-                    try:
-                        sys.exit(0)
-                    except SystemExit:
-                        # If sys.exit is caught, force immediate termination
-                        os._exit(0)  # type: ignore[reportPrivateUsage]
+                    # In test mode (key_queue provided), do NOT exit the process
+                    if key_queue is None:
+                        try:
+                            sys.exit(0)
+                        except SystemExit:
+                            # If sys.exit is caught, force immediate termination
+                            os._exit(0)  # type: ignore[reportPrivateUsage]
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:
@@ -312,8 +313,10 @@ class RichDashboard:
                         if self._should_exit:
                             live.stop()
                             stop_event.set()  # Signal all threads to stop
-                            # Ensure immediate process termination
-                            os._exit(0)  # type: ignore[reportPrivateUsage]
+                            # Only exit the process if not in test mode (i.e., no key_queue)
+                            if key_queue is None:
+                                # Ensure immediate process termination
+                                os._exit(0)  # type: ignore[reportPrivateUsage]
                         time.sleep(0.05)
 
                 monitor_thread = threading.Thread(target=monitor_exit, daemon=True)

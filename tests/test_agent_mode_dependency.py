@@ -76,6 +76,7 @@ def test_agent_mode_cli_integration():
         capture_output=True,
         text=True,
         cwd=".",
+        stdin=subprocess.DEVNULL,
     )
 
     # This would fail if CLI integration is broken

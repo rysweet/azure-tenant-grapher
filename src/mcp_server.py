@@ -15,11 +15,10 @@ async def ensure_neo4j_running() -> None:
     """Ensure Neo4j container is running, start if needed."""
     container_manager = Neo4jContainerManager()
     if not container_manager.is_neo4j_container_running():
-        logger.info("Starting Neo4j container...")
-        if not container_manager.setup_neo4j():
-            logger.error("Failed to start Neo4j container.")
-            raise RuntimeError("Failed to start Neo4j container.")
-        logger.info("Neo4j container started.")
+        logger.error(
+            "Neo4j container is not running and auto-start is not supported in this environment."
+        )
+        raise RuntimeError("Neo4j container is not running.")
     else:
         logger.info("Neo4j container already running.")
 

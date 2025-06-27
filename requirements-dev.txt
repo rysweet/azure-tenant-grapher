@@ -18,6 +18,11 @@ pytest-xdist>=3.5.0  # For parallel test execution
 pytest-benchmark>=4.0.0  # For performance testing
 coverage>=7.4.0  # Additional coverage tools
 
+# Playwright E2E test dependencies
+pytest-playwright
+playwright
+# After installing requirements, run: playwright install --with-deps
+
 # Documentation
 sphinx>=7.0.0
 sphinx-rtd-theme>=2.0.0

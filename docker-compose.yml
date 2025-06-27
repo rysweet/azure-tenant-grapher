@@ -5,7 +5,7 @@ services:
     container_name: azure-tenant-grapher-neo4j
     restart: unless-stopped
     ports:
-      - "8768:7687"
+      - "7688:7687"
       - "8747:7474"
     environment:
       NEO4J_AUTH: neo4j/azure-grapher-2024
