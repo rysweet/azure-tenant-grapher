@@ -410,16 +410,14 @@ async def _process_question_manually(workbench: any, question: str):
             ):
                 if result_data and len(result_data) > 0:
                     print(
-                        "\n🎯 Final Answer: The following resources are most likely to be valuable to an attacker (based on Azure security best practices):"
+                        "\nAssistant: The following resources are most likely to be valuable to an attacker (based on Azure security best practices):"
                     )
                     for item in result_data:
                         print(
                             f"- {item.get('type', 'UnknownType')}: {item.get('name', 'UnknownName')} (Resource Group: {item.get('resource_group', 'N/A')})"
                         )
                 else:
-                    print(
-                        "\n🎯 Final Answer: No high-value resources found in the tenant."
-                    )
+                    print("\nAssistant: No high-value resources found in the tenant.")
             elif result_key:
                 if result_data and len(result_data) > 0:
                     count_value = result_data[0].get(result_key, 0)
@@ -431,9 +429,9 @@ async def _process_question_manually(workbench: any, question: str):
                         f"\n🎯 Final Answer: There are 0 {resource_label} in the tenant."
                     )
             else:
-                print("\n🎯 Final Answer: No results found.")
+                print("\nAssistant: No results found.")
         else:
-            print("\n❌ No results returned")
+            print("\nAssistant: No results returned")
 
     except Exception as e:
         print(f"\n❌ Error in manual processing: {e}")

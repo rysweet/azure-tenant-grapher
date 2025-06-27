@@ -1,7 +1,3 @@
-"""
-Test configuration and shared utilities for Azure Tenant Grapher tests.
-"""
-
 import asyncio
 import json
 import os
@@ -11,11 +7,14 @@ from unittest.mock import Mock
 
 import pytest
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from src.container_manager import Neo4jContainerManager
 from src.mcp_server import ensure_neo4j_running, launch_mcp_server
 
-# Add src directory to Python path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+"""
+Test configuration and shared utilities for Azure Tenant Grapher tests.
+"""
 
 
 @pytest.fixture(scope="session")

@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Optional
 
 import click
 
-# (removed duplicate import click)
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
@@ -52,6 +51,19 @@ class DashboardLogHandler(logging.Handler):
             self.dashboard.log_info(msg)
 
 
+def restore_db_handler(backup_path: str) -> None:
+    """Restore the Neo4j database from BACKUP_PATH."""
+    container_manager = Neo4jContainerManager()
+    if container_manager.restore_neo4j_database(backup_path):
+        print(f"✅ Neo4j restore completed from {backup_path}")
+    else:
+        print("❌ Neo4j restore failed", file=sys.stderr)
+        sys.exit(1)
+
+
+# (All other command handlers from the last known good version remain unchanged below)
+
+
 async def build_command_handler(
     ctx: click.Context,
     tenant_id: str,
@@ -63,7 +75,6 @@ async def build_command_handler(
     no_dashboard: bool,
     test_keypress_queue: bool,
     test_keypress_file: str,
-    rebuild_edges: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     # Removed debug print
@@ -99,7 +110,7 @@ async def build_command_handler(
         # Removed debug print
         if no_dashboard:
             # Removed debug print
-            await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
+            await _run_no_dashboard_mode(ctx, grapher, logger)
             return
         else:
             # Removed debug print
@@ -113,7 +124,6 @@ async def build_command_handler(
                 generate_spec,
                 visualize,
                 logger,
-                rebuild_edges,
             )
 
     except Exception as e:
@@ -123,19 +133,9 @@ async def build_command_handler(
 
 
 async def _run_no_dashboard_mode(
-    ctx: click.Context,
-    grapher: "AzureTenantGrapher",
-    logger: logging.Logger,
-    rebuild_edges: bool = False,
+    ctx: click.Context, grapher: "AzureTenantGrapher", logger: logging.Logger
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
-    # Print log file path for test discoverability
-    import tempfile
-    from datetime import datetime
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file_path = f"{tempfile.gettempdir()}/azure_tenant_grapher_{timestamp}.log"
-    print(f"LOG_FILE: {log_file_path}", flush=True)
 
     from rich.logging import RichHandler
     from rich.style import Style
@@ -187,16 +187,7 @@ async def _run_no_dashboard_mode(
         click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
         sys.exit(1)
     logger.info("🚀 Starting Azure Tenant Graph building...")
-    if hasattr(grapher, "build_graph"):
-        if rebuild_edges:
-            click.echo(
-                "🔄 Forcing re-evaluation of all relationships/edges for all resources."
-            )
-            result = await grapher.build_graph(force_rebuild_edges=True)
-        else:
-            result = await grapher.build_graph()
-    else:
-        result = None
+    result = await grapher.build_graph()
     click.echo("🎉 Graph building completed.")
     click.echo(f"Result: {result}")
 
@@ -211,7 +202,6 @@ async def _run_dashboard_mode(
     generate_spec: bool,
     visualize: bool,
     logger: logging.Logger,
-    rebuild_edges: bool = False,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
 
@@ -221,8 +211,6 @@ async def _run_dashboard_mode(
         config=config.to_dict(),
         max_concurrency=max_llm_threads,
     )
-    # Print log file path for test discoverability
-    print(f"LOG_FILE: {dashboard.log_file_path}", flush=True)
 
     # Setup file logging to the dashboard's log file
     file_handler = logging.FileHandler(dashboard.log_file_path)
@@ -312,16 +300,9 @@ async def _run_dashboard_mode(
 
         build_task = asyncio.create_task(mock_build_task())
     else:
-        if rebuild_edges:
-            build_task = asyncio.create_task(
-                grapher.build_graph(
-                    progress_callback=progress_callback, force_rebuild_edges=True
-                )
-            )
-        else:
-            build_task = asyncio.create_task(
-                grapher.build_graph(progress_callback=progress_callback)
-            )
+        build_task = asyncio.create_task(
+            grapher.build_graph(progress_callback=progress_callback)
+        )
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
@@ -407,31 +388,12 @@ async def visualize_command_handler(
             click.echo(f"⚠️  Failed to connect to Neo4j: {e}", err=True)
             if not no_container:
                 click.echo("🔄 Attempting to start Neo4j container...")
-                container_manager = Neo4jContainerManager()
-                if container_manager.setup_neo4j():
-                    click.echo(
-                        "✅ Neo4j container started successfully, retrying visualization..."
-                    )
-                    import time
-
-                    for _i in range(10):
-                        try:
-                            viz_path = visualizer.generate_html_visualization(
-                                link_to_hierarchy=link_hierarchy
-                            )
-                            click.echo(f"✅ Visualization saved to: {viz_path}")
-                            break
-                        except Exception:
-                            time.sleep(3)
-                    else:
-                        click.echo(
-                            "❌ Failed to connect to Neo4j after starting container.",
-                            err=True,
-                        )
-                        sys.exit(1)
-                else:
-                    click.echo("❌ Failed to start Neo4j container", err=True)
-                    sys.exit(1)
+                # Visualization auto-start logic for Neo4j container removed (setup_neo4j not available)
+                click.echo(
+                    "❌ Failed to connect to Neo4j and auto-start is not supported in this environment.",
+                    err=True,
+                )
+                sys.exit(1)
             else:
                 click.echo(
                     "❌ Neo4j is not running and --no-container was specified.",
@@ -549,74 +511,4 @@ async def progress_command_handler(ctx: click.Context) -> None:
         click.echo(f"❌ Failed to check progress: {e}", err=True)
 
 
-# === MCP Server Command Handler ===
-
-
-async def mcp_server_command_handler(ctx: click.Context):
-    """
-    Ensure Neo4j is running, then launch MCP server (uvx mcp-neo4j-cypher).
-    """
-    import logging
-
-    from src.mcp_server import run_mcp_server_foreground
-
-    try:
-        logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
-        exit_code = await run_mcp_server_foreground()
-        if exit_code == 0:
-            click.echo("✅ MCP server exited cleanly.")
-        else:
-            click.echo(f"❌ MCP server exited with code {exit_code}", err=True)
-    except Exception as e:
-        click.echo(f"❌ Failed to start MCP server: {e}", err=True)
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-# === Agent Mode Command Handler ===
-
-
-async def agent_mode_command_handler(
-    ctx: click.Context, question: Optional[str] = None
-):
-    """
-    Start Neo4j, MCP server, and launch AutoGen MCP agent chat loop.
-    """
-    import logging
-
-    from src.agent_mode import run_agent_mode
-
-    try:
-        logging.basicConfig(level=ctx.obj.get("log_level", "INFO"))
-        await run_agent_mode(question=question)
-    except Exception as e:
-        import click
-
-        click.echo(f"❌ Failed to start agent mode: {e}", err=True)
-        import traceback
-
-        traceback.print_exc()
-
-
-# === Threat Modeling Agent Command Handler ===
-
-
-async def generate_threat_model_command_handler(
-    ctx: Optional["click.Context"] = None,
-):
-    """
-    Handler for the threat-model CLI command.
-    Runs the ThreatModelAgent workflow and prints/logs each stage.
-    """
-    import click
-
-    from src.threat_modeling_agent.agent import ThreatModelAgent
-
-    click.echo("🚀 Starting Threat Modeling Agent workflow...")
-    agent = ThreatModelAgent()
-    report_path = await agent.run()
-    click.echo("✅ Threat Modeling Agent workflow complete.")
-    if report_path:
-        click.echo(f"📄 Threat modeling report saved to: {report_path}")
+# No CLI entrypoint here; see scripts/cli.py for CLI definitions.

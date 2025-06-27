@@ -1,0 +1,211 @@
+<!-- SPA entrypoint -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Azure Tenant Graph - 3D Visualization</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 3d-force-graph via unpkg CDN -->
+    <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
+    <style>
+        /* Core styles from CssStyleBuilder (default theme) */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        #progress-bar {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 6px;
+            background: #222; z-index: 2000; display: none;
+        }
+        #progress-bar-inner {
+            height: 100%; width: 0; background: #4ecdc4; transition: width 0.2s;
+        }
+        #visualization {
+            width: 100vw;
+            height: 100vh;
+        }
+        * { box-sizing: border-box; }
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .node-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .controls h3 {
+            margin-top: 0;
+            color: #4ecdc4;
+            border-bottom: 2px solid #4ecdc4;
+            padding-bottom: 5px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #4ecdc4;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            box-sizing: border-box;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #fd79a8;
+            box-shadow: 0 0 0 2px rgba(78,205,196,0.2);
+        }
+        .filter-section { margin-bottom: 20px; }
+        .filter-section h4 {
+            margin: 0 0 10px 0;
+            color: #45b7d1;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .filter-item:hover { background-color: rgba(78,205,196,0.2); }
+        .filter-checkbox { margin-right: 8px; accent-color: #4ecdc4; }
+        .filter-color {
+            width: 12px; height: 12px; border-radius: 50%;
+            margin-right: 8px; border: 1px solid rgba(255,255,255,0.15);
+        }
+        .filter-label { font-size: 14px; user-select: none; color: #fff; }
+        .reset-btn, .control-btn {
+            background: #4ecdc4;
+            color: #1a1a1a;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            font-family: inherit;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .reset-btn:hover, .control-btn:hover { background: #45b7d1; }
+        .control-btn.active { background: #fd79a8; }
+        .button-group { display: flex; gap: 8px; margin-top: 10px; }
+        .button-group .control-btn { flex: 1; margin-top: 0; }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            background: none; border: none; color: #fff;
+            font-size: 20px; cursor: pointer; padding: 5px; border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .close-btn:hover { background-color: rgba(78,205,196,0.2); }
+        .spec-link {
+            display: block; color: #4ecdc4; text-decoration: none;
+            padding: 8px 12px; border: 1px solid #4ecdc4; border-radius: 5px;
+            margin-top: 5px; transition: all 0.3s ease; text-align: center;
+        }
+        .spec-link:hover { background: #4ecdc4; color: #1a1a1a; }
+        #cluster-labels {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 1100;
+        }
+        .cluster-label {
+            position: absolute; min-width: 40px; max-width: 200px; padding: 2px 8px;
+            font-size: 13px; color: #fff; background: rgba(0,0,0,0.8);
+            border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
+            text-align: center; white-space: nowrap; pointer-events: none;
+            user-select: none; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            opacity: 0.85; transition: opacity 0.2s;
+        }
+        @media (max-width: 768px) {
+            .controls { max-width: calc(100vw - 40px); max-height: 60vh; }
+            .node-info { max-width: calc(100vw - 40px); max-height: 60vh; }
+            .stats { font-size: 12px; padding: 10px; }
+        }
+        @media (max-width: 480px) {
+            .controls { left: 10px; top: 10px; padding: 15px; }
+            .stats { left: 10px; bottom: 10px; }
+            .node-info { right: 10px; top: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="progress-bar">
+        <div id="progress-bar-inner"></div>
+    </div>
+    <div id="visualization"></div>
+    <div id="cluster-labels"></div>
+    <div class="controls">
+        <h3>Azure Graph Controls</h3>
+        <div class="button-group">
+            <button id="zoomInBtn" class="control-btn">+ Zoom</button>
+            <button id="zoomOutBtn" class="control-btn">- Zoom</button>
+        </div>
+        <button id="toggleRotateBtn" class="control-btn">Enable Auto-Rotate</button>
+        <input type="text" id="searchBox" class="search-box" placeholder="Search nodes..." />
+        <div class="filter-section">
+            <h4>Node Types</h4>
+            <div id="nodeFilters"></div>
+        </div>
+        <div class="filter-section">
+            <h4>Relationship Types</h4>
+            <div id="relationshipFilters"></div>
+        </div>
+        <button class="reset-btn" onclick="resetFilters()">Reset All Filters</button>
+        <!-- Spec link will be injected by JS if available -->
+        <a id="specLink" class="spec-link" href="#" style="display:none;" target="_blank">📄 View Tenant Specification</a>
+    </div>
+    <div class="stats">
+        <div>Nodes: <span id="nodeCount">0</span></div>
+        <div>Links: <span id="linkCount">0</span></div>
+        <div>Visible Nodes: <span id="visibleNodeCount">0</span></div>
+        <div>Visible Links: <span id="visibleLinkCount">0</span></div>
+        <button id="resetCameraBtn" class="control-btn">Reset Camera</button>
+    </div>
+    <div class="node-info" id="nodeInfo">
+        <button class="close-btn" onclick="closeNodeInfo()">&times;</button>
+        <h3 id="nodeInfoTitle">Node Information</h3>
+        <div id="nodeInfoContent"></div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

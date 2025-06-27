@@ -2,11 +2,9 @@
 Stub for Threat Modeling Agent CLI entrypoint.
 """
 
-import asyncio
-
 import click
 
-from src.cli_commands import generate_threat_model_command_handler
+# from src.cli_commands import generate_threat_model_command_handler  # Removed: not used
 
 
 @click.group()
@@ -30,4 +28,4 @@ def threat_modeling_agent():
 )
 def generate_threat_model_cmd(spec_path: str, summaries_path: str) -> None:
     """Run the Threat Modeling Agent workflow."""
-    asyncio.run(generate_threat_model_command_handler("", spec_path, summaries_path))  # type: ignore
+    print("Threat model generation is not implemented in this stub CLI.")

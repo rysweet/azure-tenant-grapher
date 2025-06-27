@@ -36,11 +36,14 @@ async def test_agent_mode_storage_resource_count(neo4j_container, mcp_server_pro
     while True:
         line = await proc.stdout.readline()
         if not line:
+            print("No more lines from agent process while waiting for readiness.")
             break
         decoded = line.decode()
+        print("Agent startup output:", decoded.strip())
         if "MCP Agent is ready" in decoded:
             ready = True
             break
+    print("Agent ready status:", ready)
     assert ready, "Agent did not start properly"
 
     # Send the test question
@@ -52,8 +55,10 @@ async def test_agent_mode_storage_resource_count(neo4j_container, mcp_server_pro
     for _ in range(60):
         line = await proc.stdout.readline()
         if not line:
+            print("No more lines from agent process while waiting for answer.")
             break
         decoded = line.decode()
+        print("Agent response output:", decoded.strip())
         output += decoded
         if "Assistant:" in decoded:
             break
@@ -64,11 +69,13 @@ async def test_agent_mode_storage_resource_count(neo4j_container, mcp_server_pro
     await proc.wait()
 
     # Check that the output contains a numeric answer (not just the schema)
+    print("Full agent output before assertion:", output)
     assert "Assistant:" in output, "No assistant answer found"
     # Look for a number in the answer
     import re
 
     numbers = re.findall(r"\b\d+\b", output)
+    print("Numbers found in output:", numbers)
     assert numbers, f"No numeric answer found in output: {output}"
 
     print("Test output:", output)

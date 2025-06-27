@@ -257,11 +257,25 @@ class TestConcurrentDatabaseAccess:
             )
 
         # Process resources with multiple workers
-        stats = await processor.process_resources(resources, max_workers=5)
+        try:
+            stats = await processor.process_resources(resources, max_workers=5)
+        except Exception as e:
+            print(f"Exception during process_resources: {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise
 
         # Verify processing completed successfully
-        assert stats.total_resources == 20
-        assert stats.processed == 20
+        print(
+            f"Stats: total={getattr(stats, 'total_resources', None)}, processed={getattr(stats, 'processed', None)}"
+        )
+        assert (
+            stats.total_resources == 20
+        ), f"Expected 20 total_resources, got {getattr(stats, 'total_resources', None)}"
+        assert (
+            stats.processed == 20
+        ), f"Expected 20 processed, got {getattr(stats, 'processed', None)}"
         # Note: In our mock setup, all resources will be "successful" since we're not simulating failures
 
         # Verify session isolation
@@ -275,8 +289,12 @@ class TestConcurrentDatabaseAccess:
                     thread_sessions[thread_id] = set()
                 thread_sessions[thread_id].add(session_id)
 
+        print(f"Thread sessions used: {thread_sessions}")
+        print(f"Number of threads used: {len(thread_sessions)}")
         # Should have used multiple threads and sessions
-        assert len(thread_sessions) > 1, "ResourceProcessor should use multiple threads"
+        assert (
+            len(thread_sessions) > 1
+        ), f"ResourceProcessor should use multiple threads, got {len(thread_sessions)}"
 
         print(
             f"✅ Concurrent ResourceProcessor test passed: {len(thread_sessions)} threads used"
@@ -365,11 +383,17 @@ def test_session_isolation_with_mock_neo4j_session_manager():
                 self.manager.sessions_created += 1
                 self.session_id = self.manager.sessions_created
                 self.manager.active_sessions.add(self.session_id)
+            print(
+                f"[DEBUG] Session {self.session_id} created. Active: {self.manager.active_sessions}"
+            )
             return MockSession(self.session_id)
 
         def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
             with self.manager.lock:
                 self.manager.active_sessions.discard(self.session_id)
+            print(
+                f"[DEBUG] Session {self.session_id} closed. Remaining: {self.manager.active_sessions}"
+            )
 
     class MockSession:
         def __init__(self, session_id: int) -> None:
@@ -385,32 +409,48 @@ def test_session_isolation_with_mock_neo4j_session_manager():
             }
             return mock_result
 
-    # Test that our refactored classes work with this realistic mock
-    session_manager = MockNeo4jSessionManager()
+    try:
+        # Test that our refactored classes work with this realistic mock
+        session_manager = MockNeo4jSessionManager()
 
-    # Test ResourceState
-    resource_state = ResourceState(session_manager)
-    assert resource_state.resource_exists("test-resource")
+        # Test ResourceState
+        print("[DEBUG] Testing ResourceState.resource_exists")
+        resource_state = ResourceState(session_manager)
+        result1 = resource_state.resource_exists("test-resource")
+        print(f"[DEBUG] resource_exists returned: {result1}")
+        assert result1
 
-    # Test DatabaseOperations
-    db_ops = DatabaseOperations(session_manager)
-    test_resource = {
-        "id": "test-id",
-        "name": "Test Resource",
-        "type": "Microsoft.Test/resource",
-        "location": "eastus",
-        "resource_group": "test-rg",
-        "subscription_id": "test-sub",
-    }
-    assert db_ops.upsert_resource(test_resource)
+        # Test DatabaseOperations
+        print("[DEBUG] Testing DatabaseOperations.upsert_resource")
+        db_ops = DatabaseOperations(session_manager)
+        test_resource = {
+            "id": "test-id",
+            "name": "Test Resource",
+            "type": "Microsoft.Test/resource",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "subscription_id": "test-sub",
+        }
+        result2 = db_ops.upsert_resource(test_resource)
+        print(f"[DEBUG] upsert_resource returned: {result2}")
+        assert result2
 
-    # Verify all sessions were properly closed
-    assert len(session_manager.active_sessions) == 0, "Sessions leaked"
-    assert session_manager.sessions_created > 0, "No sessions were created"
+        # Verify all sessions were properly closed
+        print(f"[DEBUG] Active sessions after tests: {session_manager.active_sessions}")
+        assert len(session_manager.active_sessions) == 0, "Sessions leaked"
+        assert session_manager.sessions_created > 0, "No sessions were created"
 
-    print(
-        f"✅ Session isolation test passed: {session_manager.sessions_created} sessions created and cleaned up"
-    )
+        print(
+            f"✅ Session isolation test passed: {session_manager.sessions_created} sessions created and cleaned up"
+        )
+    except Exception as e:
+        print(
+            f"[ERROR] Exception in test_session_isolation_with_mock_neo4j_session_manager: {e}"
+        )
+        import traceback
+
+        traceback.print_exc()
+        raise
 
 
 if __name__ == "__main__":

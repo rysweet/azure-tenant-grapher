@@ -4,11 +4,13 @@ from typing import Any, Dict
 
 import pytest
 
-from src.threat_modeling_agent.asb_mapper import map_controls
 from src.threat_modeling_agent.dfd_builder import DFDBuilderStrategy
 from src.threat_modeling_agent.report_builder import build_markdown
-from src.threat_modeling_agent.threat_enumerator import enumerate_threats
-from src.threat_modeling_agent.tmt_runner import run_tmt
+from src.threat_modeling_agent.tmt_runner import (
+    enumerate_threats,
+    map_controls,
+    run_tmt,
+)
 
 
 @pytest.fixture
