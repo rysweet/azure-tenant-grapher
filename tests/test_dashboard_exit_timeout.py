@@ -62,9 +62,9 @@ async def test_dashboard_exits_within_timeout():
             build_task.cancel()
 
     assert exit_raised, "DashboardExitException should have been raised"
-    assert (
-        elapsed < 5.0
-    ), f"Dashboard exit took too long: {elapsed:.2f}s (should be < 5s)"
+    assert elapsed < 5.0, (
+        f"Dashboard exit took too long: {elapsed:.2f}s (should be < 5s)"
+    )
 
 
 @pytest.mark.asyncio
@@ -119,6 +119,6 @@ async def test_real_process_exit_simulation():
     # Check that thread count returns close to initial
     final_threads = threading.active_count()
     # Allow some tolerance for test framework threads
-    assert (
-        final_threads <= initial_threads + 2
-    ), f"Thread leak detected: {initial_threads} -> {final_threads}"
+    assert final_threads <= initial_threads + 2, (
+        f"Thread leak detected: {initial_threads} -> {final_threads}"
+    )

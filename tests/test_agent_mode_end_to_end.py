@@ -262,3 +262,17 @@ async def test_agent_mode_provides_numeric_answer(agent_mode_env):
 
     except Exception as e:
         pytest.fail(f"Numeric answer test failed: {e}")
+
+
+def test_neo4j_password_env_var_minimum_length():
+    """
+    Fails if the NEO4J_PASSWORD environment variable is not set or is less than 8 characters.
+    This ensures test credentials meet minimum security requirements.
+    """
+    password = os.environ.get("NEO4J_PASSWORD")
+    if not password:
+        pytest.fail("NEO4J_PASSWORD environment variable must be set for tests.")
+    if len(password) < 8:
+        pytest.fail(
+            "NEO4J_PASSWORD environment variable must be at least 8 characters long for tests."
+        )

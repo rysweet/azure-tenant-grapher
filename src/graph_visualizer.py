@@ -92,7 +92,7 @@ class GraphVisualizer:
         )
         for node in nodes:
             logger.info(
-                f"Node id={node['id']} labels={node.get('labels',[])} properties={node.get('properties',{})}"
+                f"Node id={node['id']} labels={node.get('labels', [])} properties={node.get('properties', {})}"
             )
 
         for node in nodes:

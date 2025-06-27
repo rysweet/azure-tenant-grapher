@@ -101,9 +101,9 @@ def test_dashboard_config_panel_displays_log_file(tmp_path: Path, neo4j_containe
     if not log_file_pattern.search(cleaned_stdout):
         date_part = re.search(r"azure_tenant_grapher_\d{8}", cleaned_stdout)
         log_part = re.search(r"\d+\.log", cleaned_stdout)
-        assert (
-            date_part and log_part
-        ), f"Log file name not found in dashboard config panel output: {cleaned_stdout}"
+        assert date_part and log_part, (
+            f"Log file name not found in dashboard config panel output: {cleaned_stdout}"
+        )
     if proc.returncode != 0:
         print("STDOUT:", stdout)
         print("STDERR:", stderr)

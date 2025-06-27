@@ -161,9 +161,9 @@ async def test_mcp_server_startup(mcp_server_process: MCPServerTester):
     # Check that expected tools are available
     expected_tools = ["get_neo4j_schema", "read_neo4j_cypher", "write_neo4j_cypher"]
     for expected_tool in expected_tools:
-        assert (
-            expected_tool in tool_names
-        ), f"Tool {expected_tool} not found in {tool_names}"
+        assert expected_tool in tool_names, (
+            f"Tool {expected_tool} not found in {tool_names}"
+        )
 
 
 @pytest.mark.asyncio
