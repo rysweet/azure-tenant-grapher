@@ -1,6 +1,7 @@
 import glob
 import os
 import re
+import time
 
 from neo4j import GraphDatabase, ManagedTransaction, basic_auth
 
@@ -72,6 +73,8 @@ def run_pending_migrations():
                         session.execute_write(run_schema)
                 finally:
                     driver.close()
+                # Ensure schema change is fully committed before proceeding
+                time.sleep(1)
 
             # Run all data statements in a new driver/session/transaction
             if data_stmts:
