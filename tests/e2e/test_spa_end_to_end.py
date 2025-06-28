@@ -5,11 +5,7 @@ import time
 import requests
 from src.container_manager import Neo4jContainerManager
 
-@pytest.fixture(scope="session", autouse=True)
-def ensure_neo4j():
-    manager = Neo4jContainerManager()
-    if not manager.setup_neo4j():
-        pytest.skip("Neo4j could not be started for test.")
+from tests.e2e.conftest import ensure_neo4j
 
 @pytest.fixture(scope="session")
 def start_spa_server():

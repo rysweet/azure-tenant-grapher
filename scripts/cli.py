@@ -583,3 +583,13 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+import uvicorn
+
+@cli.command()
+@click.option("--port", type=int, default=8000, help="Port to run the SPA server on")
+def app(port):
+    """Start the SPA visualization server and open the browser (SPA mode)."""
+    from src.visualization.server import app as spa_app
+    print(f"Starting SPA server on http://localhost:{port} ...")
+    uvicorn.run(spa_app, host="0.0.0.0", port=port, reload=True)
