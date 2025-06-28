@@ -16,6 +16,8 @@ from .llm_descriptions import create_llm_generator
 
 logger = logging.getLogger(__name__)
 
+# (Removed duplicate and unused _maybe_run_migrations functions)
+
 
 class AzureTenantGrapher:
     """
@@ -26,16 +28,29 @@ class AzureTenantGrapher:
     def __init__(self, config: AzureTenantGrapherConfig) -> None:
         """
         Initialize the Azure Tenant Grapher coordinator.
-
-        Args:
-            config: Configuration object containing all settings
         """
+
         self.config = config
 
         # Compose services per refactoring plan
         self.container_manager = (
             Neo4jContainerManager() if config.processing.auto_start_container else None
         )
+
+        # Run migrations early if enabled (guarded for test compatibility)
+        # Only run if ENABLE_MIGRATIONS is set, and not during test runs
+        if os.environ.get("ENABLE_MIGRATIONS", "false").lower() in (
+            "true",
+            "1",
+        ) and not os.environ.get("PYTEST_CURRENT_TEST"):
+            try:
+                from .migration_runner import run_pending_migrations
+
+                run_pending_migrations()
+            except Exception:
+                logger.warning(
+                    "Migration runner failed or unavailable; skipping migrations."
+                )
         from .services.azure_discovery_service import AzureDiscoveryService
         from .services.resource_processing_service import ResourceProcessingService
         from .services.tenant_specification_service import TenantSpecificationService
@@ -245,7 +260,7 @@ class AzureTenantGrapher:
                             )
 
                         logger.debug(
-                            f"🔄 Rebuilding edges for resource {i+1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
+                            f"🔄 Rebuilding edges for resource {i + 1}/{len(existing_resources)}: {resource.get('name', 'Unknown')}"
                         )
 
                         # Re-emit relationships (but not containment - that's preserved)

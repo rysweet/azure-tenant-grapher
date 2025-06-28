@@ -507,7 +507,13 @@ class TestAzureDiscoveryService:
         # This should not raise a ResourceDataValidationError
         success = db_ops.upsert_resource(resource)
         assert success is True
-        mock_session.run.assert_called_once()
+        # Should be called twice: once for Subscription, once for Resource
+        assert mock_session.run.call_count == 2
+        calls = mock_session.run.call_args_list
+        # First call: Subscription upsert
+        assert "MERGE (s:Subscription" in calls[0][0][0]
+        # Second call: Resource upsert
+        assert "MERGE (r:Resource" in calls[1][0][0]
 
 
 class TestAzureDiscoveryServiceFactory:

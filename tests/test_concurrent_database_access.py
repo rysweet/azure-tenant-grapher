@@ -153,9 +153,9 @@ class TestConcurrentDatabaseAccess:
         for _thread_id, sessions in thread_sessions.items():
             # Check no session overlap between threads
             for session_id in sessions:
-                assert (
-                    session_id not in all_sessions_used
-                ), f"Session {session_id} was shared between threads"
+                assert session_id not in all_sessions_used, (
+                    f"Session {session_id} was shared between threads"
+                )
                 all_sessions_used.add(session_id)
 
         print(
@@ -219,9 +219,9 @@ class TestConcurrentDatabaseAccess:
         assert all(results), f"Some database workers failed: {results}"
 
         # Verify sessions were properly isolated
-        assert (
-            len(session_manager.active_sessions) == 0
-        ), "Some sessions were not properly closed"
+        assert len(session_manager.active_sessions) == 0, (
+            "Some sessions were not properly closed"
+        )
 
         print(f"✅ Concurrent database operations test passed: {num_workers} threads")
 
@@ -328,9 +328,9 @@ class TestConcurrentDatabaseAccess:
         assert all(r > 0 for r in results), f"Some stress workers failed: {results}"
 
         # Verify no sessions leaked
-        assert (
-            len(session_manager.active_sessions) == 0
-        ), "Sessions were not properly cleaned up"
+        assert len(session_manager.active_sessions) == 0, (
+            "Sessions were not properly cleaned up"
+        )
 
         total_operations = sum(results)
         duration = end_time - start_time
@@ -338,7 +338,7 @@ class TestConcurrentDatabaseAccess:
         print(
             f"✅ Stress test passed: {num_workers} workers, {total_operations} operations in {duration:.2f}s"
         )
-        print(f"   Rate: {total_operations/duration:.1f} operations/second")
+        print(f"   Rate: {total_operations / duration:.1f} operations/second")
 
 
 def test_session_isolation_with_mock_neo4j_session_manager():

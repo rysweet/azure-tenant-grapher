@@ -67,8 +67,8 @@ def test_real_dashboard_exit_subprocess():
                 f"CLI did not exit within 5 seconds after 'x' keypress.\nSTDOUT:\n{outs}\nSTDERR:\n{errs}"
             )
         # Check exit code
-        assert (
-            proc.returncode == 0
-        ), f"CLI exited with nonzero code: {proc.returncode}\nSTDOUT:\n{outs}\nSTDERR:\n{errs}"
+        assert proc.returncode == 0, (
+            f"CLI exited with nonzero code: {proc.returncode}\nSTDOUT:\n{outs}\nSTDERR:\n{errs}"
+        )
     finally:
         os.unlink(keyfile_path)

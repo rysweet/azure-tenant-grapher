@@ -12,18 +12,18 @@ def test_agent_mode_dependencies_available():
         # Test that all critical imports work
         # Check for required modules
         assert importlib.util.find_spec("openai") is not None, "openai not installed"
-        assert (
-            importlib.util.find_spec("tiktoken") is not None
-        ), "tiktoken not installed"
-        assert (
-            importlib.util.find_spec("autogen_agentchat.agents") is not None
-        ), "autogen_agentchat.agents not installed"
-        assert (
-            importlib.util.find_spec("autogen_ext.tools.mcp") is not None
-        ), "autogen_ext.tools.mcp not installed"
-        assert (
-            importlib.util.find_spec("src.llm_descriptions") is not None
-        ), "src.llm_descriptions not installed"
+        assert importlib.util.find_spec("tiktoken") is not None, (
+            "tiktoken not installed"
+        )
+        assert importlib.util.find_spec("autogen_agentchat.agents") is not None, (
+            "autogen_agentchat.agents not installed"
+        )
+        assert importlib.util.find_spec("autogen_ext.tools.mcp") is not None, (
+            "autogen_ext.tools.mcp not installed"
+        )
+        assert importlib.util.find_spec("src.llm_descriptions") is not None, (
+            "src.llm_descriptions not installed"
+        )
 
         # If we get here, all dependencies are available
         assert True

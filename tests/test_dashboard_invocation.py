@@ -379,6 +379,6 @@ def test_dashboard_log_view_updates_in_real_time(tmp_path: Path):
     # Defensive: fallback to str(renderable) if .plain is not present
     if not log_text or not isinstance(log_text, str):
         log_text = str(log_panel)
-    assert (
-        "New log entry" in log_text
-    ), "Dashboard log view did not update with new log entry in real time"
+    assert "New log entry" in log_text, (
+        "Dashboard log view did not update with new log entry in real time"
+    )
