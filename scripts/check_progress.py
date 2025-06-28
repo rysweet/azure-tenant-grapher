@@ -18,7 +18,7 @@ def check_database_progress() -> None:
     # Connect to Neo4j
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-    neo4j_password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+    neo4j_password = os.getenv("NEO4J_PASSWORD", "example-password")
 
     try:
         driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
