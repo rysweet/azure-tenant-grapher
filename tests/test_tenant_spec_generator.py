@@ -236,9 +236,9 @@ class TestTenantSpecificationGenerator:
             assert "[anonymized]" not in content.lower()
             # Assert all anonymized names match regex
             for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
-                assert re.match(
-                    r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
-                ), f"Name does not match pattern: {match}"
+                assert re.match(r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match), (
+                    f"Name does not match pattern: {match}"
+                )
 
     def test_names_anonymized_and_no_real_ids(
         self, setup_test_data: Tuple[str, str, str, str]
@@ -275,9 +275,9 @@ class TestTenantSpecificationGenerator:
             assert "[anonymized]" not in content.lower()
             # Assert all anonymized names match regex
             for match in re.findall(r"^### ([a-z0-9\-]+) \(", content, re.MULTILINE):
-                assert re.match(
-                    r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match
-                ), f"Name does not match pattern: {match}"
+                assert re.match(r"^[a-z]+-[a-z]+-[0-9a-f]{8}$", match), (
+                    f"Name does not match pattern: {match}"
+                )
 
     def test_relationships_preserved(
         self, setup_test_data: Tuple[str, str, str, str]

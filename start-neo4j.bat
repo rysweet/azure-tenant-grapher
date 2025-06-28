@@ -8,7 +8,7 @@ echo.
 echo Neo4j container started successfully!
 echo You can access Neo4j Browser at: http://localhost:7474
 echo Username: neo4j
-echo Password: azure-grapher-2024
+echo Password: example-password
 echo.
 echo The container will continue running in the background.
 echo To stop it, run: docker-compose down

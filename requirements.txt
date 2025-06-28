@@ -45,6 +45,7 @@ mcp-neo4j-cypher
 autogen-ext[mcp]>=0.6.1
 autogen_agentchat
 tiktoken
+readchar>=4.0.3
 
 # Threat Modeling Agent dependencies
 networkx>=3.0

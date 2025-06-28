@@ -451,7 +451,7 @@ AZURE_TENANT_ID=your-tenant-id-here
 # Neo4j Configuration
 NEO4J_URI=bolt://localhost:7688
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=azure-grapher-2024
+NEO4J_PASSWORD=example-password
 
 # Processing Configuration
 PROCESSING_BATCH_SIZE=5
@@ -524,7 +524,7 @@ services:
       - "7475:7474"  # HTTP Browser
       - "7688:7687"  # Bolt Protocol
     environment:
-      - NEO4J_AUTH=neo4j/azure-grapher-2024
+      - NEO4J_AUTH=neo4j/example-password
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_dbms_memory_heap_max__size=2G
       - NEO4J_dbms_memory_pagecache_size=1G

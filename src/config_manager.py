@@ -45,7 +45,7 @@ class Neo4jConfig:
     )
     user: str = field(default_factory=lambda: os.getenv("NEO4J_USER", "neo4j"))
     password: str = field(
-        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "example-password")
     )
 
     def __post_init__(self) -> None:

@@ -147,7 +147,7 @@ Run the MCP server to enable agent mode and natural language queries.
 
 ```bash
 # Start the MCP server
-uv run azure-tenant-grapher mcp-server  
+uv run azure-tenant-grapher mcp-server
 ```
 
 ### Generate & Deploy IaC
@@ -167,7 +167,7 @@ cd my-deployment
 ./deploy.sh
 ```
 
-### Threat Modeling agent example - example of using the MCP server in an agent. 
+### Threat Modeling agent example - example of using the MCP server in an agent.
 
 See [./src/threat_model_agent/](./src/threat_model_agent/)
 
@@ -195,8 +195,6 @@ Run the full test suite (unit, integration, end-to-end):
 ```bash
 uf run pytest -n auto
 ```
-
-See `tests/` for individual scenarios and fixtures.
 
 ## Documentation
 

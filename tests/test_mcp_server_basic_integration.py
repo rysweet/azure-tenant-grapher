@@ -115,7 +115,11 @@ async def mcp_server_process():
     # Ensure we're using the correct Neo4j connection settings
     neo4j_uri = os.environ.get("NEO4J_URI", "bolt://localhost:8768")
     neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-    neo4j_password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+    neo4j_password = os.environ.get("NEO4J_PASSWORD")
+    if not neo4j_password:
+        pytest.skip(
+            "NEO4J_PASSWORD environment variable must be set for MCP server integration tests."
+        )
 
     # Set environment variables for the MCP server process
     env = os.environ.copy()
@@ -177,9 +181,9 @@ async def test_mcp_server_startup_and_tools(mcp_server_process: MCPServerTester)
     # Check that expected tools are available
     expected_tools = ["get_neo4j_schema", "read_neo4j_cypher", "write_neo4j_cypher"]
     for expected_tool in expected_tools:
-        assert (
-            expected_tool in tool_names
-        ), f"Tool {expected_tool} not found in {tool_names}"
+        assert expected_tool in tool_names, (
+            f"Tool {expected_tool} not found in {tool_names}"
+        )
 
 
 @pytest.mark.asyncio

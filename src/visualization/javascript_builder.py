@@ -152,7 +152,12 @@ class JavaScriptBuilder:
             (document.getElementById('visualization'))
             .backgroundColor('#1a1a1a')
             .nodeId('id')
-            .nodeLabel('name')
+            .nodeLabel(node => {
+                if (node.type === "Subscription") {
+                    return "Subscription: " + node.name;
+                }
+                return node.name;
+            })
             .nodeColor(node => node.color)
             .nodeVal(node => node.size)
             .nodeThreeObject(node => {
@@ -181,6 +186,36 @@ class JavaScriptBuilder:
                     );
                     sprite.scale.set(40, 20, 1);
                     return sprite;
+                }
+                if (node.type === "Subscription") {
+                    // Render Subscription nodes as a colored sphere with a floating label
+                    const group = new window.THREE.Group();
+                    const geometry = new window.THREE.SphereGeometry(12, 32, 32);
+                    const material = new window.THREE.MeshBasicMaterial({ color: node.color || '#ff6b6b' });
+                    const sphere = new window.THREE.Mesh(geometry, material);
+                    group.add(sphere);
+
+                    // Add a floating label above the sphere
+                    const canvas = document.createElement('canvas');
+                    const size = 256;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = 'bold 36px Arial';
+                    ctx.fillStyle = '#ff6b6b';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 8;
+                    ctx.fillText("Subscription", size / 2, size / 2);
+                    const texture = new window.THREE.CanvasTexture(canvas);
+                    const spriteMaterial = new window.THREE.SpriteMaterial({ map: texture, depthTest: false });
+                    const sprite = new window.THREE.Sprite(spriteMaterial);
+                    sprite.position.set(0, 20, 0);
+                    sprite.scale.set(40, 20, 1);
+                    group.add(sprite);
+
+                    return group;
                 }
                 return null;
             })

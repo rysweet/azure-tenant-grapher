@@ -61,7 +61,7 @@ async def verify_neo4j_connection(max_attempts: int = 5, delay: float = 2.0) -> 
             return
         else:
             logger.info(
-                f"Waiting for Neo4j database to become available at {neo4j_uri} (attempt {attempt+1}/{max_attempts})..."
+                f"Waiting for Neo4j database to become available at {neo4j_uri} (attempt {attempt + 1}/{max_attempts})..."
             )
             if attempt < max_attempts - 1:  # Don't sleep on the last attempt
                 await asyncio.sleep(delay)
