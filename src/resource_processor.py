@@ -8,6 +8,7 @@ with improved error handling, progress tracking, and database operations.
 import asyncio
 import json
 import logging
+import re
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
@@ -459,6 +460,28 @@ class DatabaseOperations:
             return False
 
 
+def extract_identity_fields(resource: Dict[str, Any]) -> None:
+    """
+    Extracts 'identity' and 'principalId' from a resource dict if present.
+    - Adds resource['identity'] if an 'identity' block is present.
+    - Adds resource['principal_id'] if 'principalId' is present and looks like a GUID.
+    """
+    # Extract 'identity' block if present
+    identity = resource.get("identity")
+    if identity is not None:
+        resource["identity"] = identity
+
+    # Extract 'principalId' if present and looks like a GUID
+    principal_id = resource.get("principalId") or resource.get("principal_id")
+    if principal_id and isinstance(principal_id, str):
+        # Minimal GUID validation: 8-4-4-4-12 hex digits
+        if re.match(
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            principal_id,
+        ):
+            resource["principal_id"] = principal_id
+
+
 class ResourceProcessor:
     """
     Enhanced resource processor with improved error handling, progress tracking,
@@ -590,6 +613,9 @@ class ResourceProcessor:
         Returns:
             bool: True if successful, False if failed
         """
+        # --- Extract identity and principalId fields if present ---
+        extract_identity_fields(resource)
+
         resource_id = resource["id"]
         resource_name = resource.get("name", "Unknown")
         resource_type = resource.get("type", "Unknown")
@@ -722,6 +748,8 @@ class ResourceProcessor:
 
         def process_task(resource: Dict[str, Any], resource_index: int) -> bool:
             """Process a single resource (LLM + DB)."""
+            # --- Extract identity and principalId fields if present ---
+            extract_identity_fields(resource)
             loop = None
             try:
                 if self.llm_generator:
