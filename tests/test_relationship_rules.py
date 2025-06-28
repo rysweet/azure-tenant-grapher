@@ -50,6 +50,134 @@ def test_identity_rule_managed_identity():
     assert ("rel", "res1", "USES_IDENTITY", "pid1", "ManagedIdentity", "id") in db.calls
 
 
+def test_identity_rule_role_assignment_user():
+    rule = IdentityRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "ra1",
+        "type": "Microsoft.Authorization/roleAssignments",
+        "properties": {
+            "principalId": "user1",
+            "principalType": "User",
+            "roleDefinitionId": "roledef1",
+        },
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    # RoleAssignment node
+    assert ("upsert", "RoleAssignment", "id", "ra1", {"id": "ra1"}) in db.calls
+    # User node
+    assert (
+        "upsert",
+        "User",
+        "id",
+        "user1",
+        {"id": "user1", "principalType": "User"},
+    ) in db.calls
+    # RoleDefinition node
+    assert ("upsert", "RoleDefinition", "id", "roledef1", {"id": "roledef1"}) in [
+        c if c[0] == "upsert" and c[1] == "RoleDefinition" else None for c in db.calls
+    ]
+    # ASSIGNED_TO edge
+    assert ("rel", "ra1", "ASSIGNED_TO", "user1", "User", "id") in db.calls
+    # HAS_ROLE edge
+    assert ("rel", "user1", "HAS_ROLE", "roledef1", "RoleDefinition", "id") in db.calls
+
+
+def test_identity_rule_role_assignment_service_principal():
+    rule = IdentityRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "ra2",
+        "type": "Microsoft.Authorization/roleAssignments",
+        "properties": {
+            "principalId": "sp1",
+            "principalType": "ServicePrincipal",
+            "roleDefinitionId": "roledef2",
+        },
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    assert (
+        "upsert",
+        "ServicePrincipal",
+        "id",
+        "sp1",
+        {"id": "sp1", "principalType": "ServicePrincipal"},
+    ) in db.calls
+    assert ("rel", "ra2", "ASSIGNED_TO", "sp1", "ServicePrincipal", "id") in db.calls
+    assert ("rel", "sp1", "HAS_ROLE", "roledef2", "RoleDefinition", "id") in db.calls
+
+
+def test_identity_rule_role_assignment_managed_identity():
+    rule = IdentityRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "ra3",
+        "type": "Microsoft.Authorization/roleAssignments",
+        "properties": {
+            "principalId": "mi1",
+            "principalType": "ManagedIdentity",
+            "roleDefinitionId": "roledef3",
+        },
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    assert (
+        "upsert",
+        "ManagedIdentity",
+        "id",
+        "mi1",
+        {"id": "mi1", "principalType": "ManagedIdentity"},
+    ) in db.calls
+    assert ("rel", "ra3", "ASSIGNED_TO", "mi1", "ManagedIdentity", "id") in db.calls
+    assert ("rel", "mi1", "HAS_ROLE", "roledef3", "RoleDefinition", "id") in db.calls
+
+
+def test_identity_rule_role_assignment_group():
+    rule = IdentityRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "ra4",
+        "type": "Microsoft.Authorization/roleAssignments",
+        "properties": {
+            "principalId": "group1",
+            "principalType": "Group",
+            "roleDefinitionId": "roledef4",
+        },
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    assert (
+        "upsert",
+        "IdentityGroup",
+        "id",
+        "group1",
+        {"id": "group1", "principalType": "Group"},
+    ) in db.calls
+    assert ("rel", "ra4", "ASSIGNED_TO", "group1", "IdentityGroup", "id") in db.calls
+    assert ("rel", "group1", "HAS_ROLE", "roledef4", "RoleDefinition", "id") in db.calls
+
+
+def test_identity_rule_role_definition():
+    rule = IdentityRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "roledef5",
+        "type": "Microsoft.Authorization/roleDefinitions",
+        "properties": {"roleName": "Reader", "description": "Can view resources"},
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    assert (
+        "upsert",
+        "RoleDefinition",
+        "id",
+        "roledef5",
+        {"id": "roledef5", "roleName": "Reader", "description": "Can view resources"},
+    ) in db.calls
+
+
 def test_tag_rule():
     rule = TagRule()
     db = DummyDbOps()
@@ -106,3 +234,9 @@ def test_depends_on_rule():
     assert rule.applies(resource)
     rule.emit(resource, db)
     assert ("rel", "res6", "DEPENDS_ON", "res7", "Resource", "id") in db.calls
+
+
+# To run tests locally:
+#   uv run pytest -q
+# To run pre-commit checks:
+#   pre-commit run --all-files
