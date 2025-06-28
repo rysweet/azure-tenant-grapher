@@ -160,8 +160,6 @@ cython_debug/
 az_graph_visualization*.html
 azure_graph_visualization*.html
 azure_tenant_specification*.md
-
-specs/
 neo4j-data/
 
 # IaC generated output
@@ -170,7 +168,6 @@ neo4j-data/
 # Demo outputs and generated IaC files (do not check in)
 demo-bicep*/
 demo-rules.yaml
-**/deploy.sh
 iac-out-*/
 
 # .NET build and Visual Studio artifacts
