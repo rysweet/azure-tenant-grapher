@@ -227,7 +227,8 @@ class GraphVisualizer:
 
                 # Use node's internal id as unique identifier
                 node_id = (
-                    node.element_id if hasattr(node, "element_id") else str(node.id)
+                    dict(node).get("id")
+                    or (node.element_id if hasattr(node, "element_id") else str(node.id))
                 )
 
                 # Extract node properties first
