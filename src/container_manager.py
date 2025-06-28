@@ -29,7 +29,7 @@ class Neo4jContainerManager:
         self.docker_client = None
         self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-        self.neo4j_password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+        self.neo4j_password = os.getenv("NEO4J_PASSWORD", "example-password")
 
         try:
             self.docker_client = docker.from_env()
