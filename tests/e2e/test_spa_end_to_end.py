@@ -3,13 +3,54 @@ import subprocess
 import sys
 import time
 import requests
-from src.container_manager import Neo4jContainerManager
-
-from tests.e2e.conftest import ensure_neo4j
+from testcontainers.neo4j import Neo4jContainer
 
 @pytest.fixture(scope="session")
-def start_spa_server():
+def neo4j_container():
+    container = Neo4jContainer("neo4j:5.18")
+    container.start()
+    bolt_url = container.get_connection_url()
+    user = "neo4j"
+    password = "azure-grapher-2024"
+    import os
+    os.environ["NEO4J_URI"] = bolt_url
+    os.environ["NEO4J_USER"] = user
+    os.environ["NEO4J_PASSWORD"] = password
+    print(f"[TEST] Neo4j testcontainer running at {bolt_url} (user: {user}, password: {password})")
+    # Wait for Neo4j to be ready
+    for _ in range(30):
+        try:
+            import socket
+            s = socket.create_connection(("127.0.0.1", int(bolt_url.split(":")[-1])), timeout=1)
+            s.close()
+            break
+        except Exception:
+            time.sleep(1)
+    yield container, bolt_url, user, password
+    container.stop()
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_neo4j(neo4j_container):
+    _, bolt_url, user, password = neo4j_container
+    from neo4j import GraphDatabase
+    driver = GraphDatabase.driver(bolt_url, auth=(user, password))
+    with driver.session(database="neo4j") as session:
+        session.run("""
+            CREATE (a:Resource {id: 'a', name: 'A', type: 'TestType'})
+            CREATE (b:Resource {id: 'b', name: 'B', type: 'TestType'})
+            CREATE (a)-[:CONNECTED_TO]->(b)
+        """)
+    driver.close()
+
+@pytest.fixture(scope="session")
+def start_spa_server(neo4j_container):
+    _, bolt_url, user, password = neo4j_container
     port = 8123
+    import os
+    env = os.environ.copy()
+    env["NEO4J_URI"] = bolt_url
+    env["NEO4J_USER"] = user
+    env["NEO4J_PASSWORD"] = password
     proc = subprocess.Popen(
         [
             sys.executable, "-m", "uvicorn",
@@ -22,10 +63,11 @@ def start_spa_server():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        env=env,
     )
     # Wait for /api/graph to be ready
     url = f"http://127.0.0.1:{port}/api/graph"
-    for _ in range(60):
+    for _ in range(180):  # Wait up to 36 seconds
         if proc.poll() is not None:
             out, _ = proc.communicate(timeout=2)
             print(f"Uvicorn process exited early:\n{out}")
