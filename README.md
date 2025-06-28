@@ -211,3 +211,5 @@ Issues and pull requests are welcome! Please open an issue to discuss major chan
 ## License
 
 MIT License. See [`LICENSE`](LICENSE) for details.
+
+<!-- Roo Code configuration branch initialized: see issue #84 -->
