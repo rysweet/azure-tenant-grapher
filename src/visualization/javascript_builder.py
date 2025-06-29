@@ -217,6 +217,34 @@ class JavaScriptBuilder:
 
                     return group;
                 }
+                if (node.type === "PrivateEndpoint") {
+                    // Render PrivateEndpoint as a diamond
+                    const group = new window.THREE.Group();
+                    const geometry = new window.THREE.OctahedronGeometry(7, 0);
+                    const material = new window.THREE.MeshBasicMaterial({ color: node.color || '#b388ff' });
+                    const diamond = new window.THREE.Mesh(geometry, material);
+                    group.add(diamond);
+                    return group;
+                }
+                if (node.type === "DNSZone") {
+                    // Render DNSZone as a hexagon (prism)
+                    const group = new window.THREE.Group();
+                    const shape = new window.THREE.Shape();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        const x = Math.cos(angle) * 8;
+                        const y = Math.sin(angle) * 8;
+                        if (i === 0) shape.moveTo(x, y);
+                        else shape.lineTo(x, y);
+                    }
+                    shape.closePath();
+                    const extrudeSettings = { depth: 4, bevelEnabled: false };
+                    const geometry = new window.THREE.ExtrudeGeometry(shape, extrudeSettings);
+                    const material = new window.THREE.MeshBasicMaterial({ color: node.color || '#00bfae' });
+                    const hex = new window.THREE.Mesh(geometry, material);
+                    group.add(hex);
+                    return group;
+                }
                 return null;
             })
             .linkSource('source')
@@ -225,6 +253,33 @@ class JavaScriptBuilder:
             .linkWidth(link => link.width)
             .linkDirectionalParticles(2)
             .linkDirectionalParticleSpeed(0.01)
+            .linkCurveRotation(link => {
+                // Dashed for CONNECTED_TO_PE, solid for RESOLVES_TO and others
+                if (link.type === "CONNECTED_TO_PE") return Math.PI / 16;
+                if (link.type === "RESOLVES_TO") return 0;
+                return 0;
+            })
+            .linkMaterial(link => {
+                // Dashed for CONNECTED_TO_PE, solid for RESOLVES_TO and others
+                if (link.type === "CONNECTED_TO_PE") {
+                    return new window.THREE.LineDashedMaterial({
+                        color: link.color || '#b388ff',
+                        dashSize: 6,
+                        gapSize: 4,
+                        linewidth: link.width || 2
+                    });
+                }
+                if (link.type === "RESOLVES_TO") {
+                    return new window.THREE.LineBasicMaterial({
+                        color: link.color || '#00bfae',
+                        linewidth: link.width || 2
+                    });
+                }
+                return new window.THREE.LineBasicMaterial({
+                    color: link.color || '#ddd',
+                    linewidth: link.width || 1
+                });
+            })
             .onNodeClick((node, event) => {
                 showNodeInfo(node);
             })
@@ -431,6 +486,8 @@ class JavaScriptBuilder:
                 // Non-resource node types
                 'Subscription': '#ff6b6b',
                 'ResourceGroup': '#45b7d1',
+                'PrivateEndpoint': '#b388ff', // Violet
+                'DNSZone': '#00bfae',        // Teal-green
 
                 // Azure resource types
                 'Microsoft.Compute/virtualMachines': '#6c5ce7',
@@ -476,6 +533,8 @@ class JavaScriptBuilder:
                 'CONTAINS': '#74b9ff',
                 'BELONGS_TO': '#a29bfe',
                 'CONNECTED_TO': '#fd79a8',
+                'CONNECTED_TO_PE': '#b388ff', // Violet
+                'RESOLVES_TO': '#00bfae',    // Teal-green
                 'DEPENDS_ON': '#fdcb6e',
                 'MANAGES': '#e17055'
             };

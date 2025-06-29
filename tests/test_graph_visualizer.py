@@ -602,3 +602,105 @@ def test_html_contains_zoom_controls():
             assert "zoomInBtn" in html and "zoomOutBtn" in html
             # Check for controls panel
             assert '<div class="controls">' in html
+
+
+def test_network_topology_enrichment_visualizer_types():
+    """
+    Test that the visualizer supports PrivateEndpoint, DNSZone, CONNECTED_TO_PE, and RESOLVES_TO
+    with correct styles and legend/filter entries.
+    """
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from src.graph_visualizer import GraphVisualizer
+
+    # Build a mock graph with all new types
+    mock_graph_data = {
+        "nodes": [
+            {
+                "id": "res1",
+                "name": "Resource1",
+                "type": "Resource",
+                "labels": ["Resource"],
+                "properties": {},
+                "group": 1,
+                "color": "#fff",
+                "size": 8,
+            },
+            {
+                "id": "pe1",
+                "name": "PE1",
+                "type": "PrivateEndpoint",
+                "labels": ["PrivateEndpoint"],
+                "properties": {},
+                "group": 21,
+                "color": "#b388ff",
+                "size": 10,
+            },
+            {
+                "id": "dns1",
+                "name": "DNS1",
+                "type": "DNSZone",
+                "labels": ["DNSZone"],
+                "properties": {},
+                "group": 22,
+                "color": "#00bfae",
+                "size": 10,
+            },
+        ],
+        "links": [
+            {
+                "source": "res1",
+                "target": "pe1",
+                "type": "CONNECTED_TO_PE",
+                "properties": {},
+                "color": "#b388ff",
+                "width": 2,
+            },
+            {
+                "source": "dns1",
+                "target": "res1",
+                "type": "RESOLVES_TO",
+                "properties": {},
+                "color": "#00bfae",
+                "width": 2,
+            },
+        ],
+        "node_types": ["Resource", "PrivateEndpoint", "DNSZone"],
+        "relationship_types": ["CONNECTED_TO_PE", "RESOLVES_TO"],
+    }
+
+    with patch.object(
+        GraphVisualizer, "extract_graph_data", return_value=mock_graph_data
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = os.path.join(tmpdir, "test_network_topology_enrichment.html")
+            visualizer = GraphVisualizer("bolt://localhost:7687", "neo4j", "password")
+            visualizer.generate_html_visualization(output_path=output_path)
+            with open(output_path, encoding="utf-8") as f:
+                html = f.read()
+
+            # Node style dict: check for color/shape code in JS for new types
+            assert "#b388ff" in html  # PrivateEndpoint color
+            assert "#00bfae" in html  # DNSZone color
+            assert "PrivateEndpoint" in html
+            assert "DNSZone" in html
+
+            # Edge style dict: check for color code and type in JS for new edge types
+            assert "CONNECTED_TO_PE" in html
+            assert "RESOLVES_TO" in html
+            assert "#b388ff" in html  # CONNECTED_TO_PE edge color
+            assert "#00bfae" in html  # RESOLVES_TO edge color
+
+            # Legend/filter: check for new types in filter UI
+            assert "Node Types" in html
+            assert "Relationship Types" in html
+            assert "PrivateEndpoint" in html
+            assert "DNSZone" in html
+            assert "CONNECTED_TO_PE" in html
+            assert "RESOLVES_TO" in html
+
+            # Check for dashed/solid style logic in JS for CONNECTED_TO_PE/RESOLVES_TO
+            assert "LineDashedMaterial" in html
+            assert "LineBasicMaterial" in html
