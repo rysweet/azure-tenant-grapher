@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTenantGrapher.Processing;
+using AzureTenantGrapher.Core;
 using Microsoft.Extensions.Logging;
 
 namespace AzureTenantGrapher.Services
@@ -109,17 +110,17 @@ namespace AzureTenantGrapher.Services
                 attempt++;
                 try
                 {
-                    _logger.LogDebug("Processing resource {Id} (Attempt {Attempt}/{MaxRetries})", resource.Id, attempt, _options.MaxRetries);
+                    _logger.LogDebug("Processing resource {ResourceId} (Attempt {Attempt}/{MaxRetries})", resource.ResourceId, attempt, _options.MaxRetries);
                     bool result = await _processor(resource);
                     // Simulate LLM-generated flag for demo: randomly true 1/5 of the time
                     bool llmGenerated = (new Random().Next(5) == 0);
-                    _logger.LogDebug("Resource {Id} processed: Success={Success}, LlmGenerated={LlmGenerated}", resource.Id, result, llmGenerated);
+                    _logger.LogDebug("Resource {ResourceId} processed: Success={Success}, LlmGenerated={LlmGenerated}", resource.ResourceId, result, llmGenerated);
                     return (result, llmGenerated);
                 }
                 catch (Exception ex)
                 {
                     lastException = ex;
-                    _logger.LogWarning("Processing resource {Id} failed on attempt {Attempt}: {Error}", resource.Id, attempt, ex.Message);
+                    _logger.LogWarning("Processing resource {ResourceId} failed on attempt {Attempt}: {Error}", resource.ResourceId, attempt, ex.Message);
                     if (attempt < _options.MaxRetries)
                     {
                         await Task.Delay(delay, cancellationToken);
@@ -128,7 +129,7 @@ namespace AzureTenantGrapher.Services
                     }
                 }
             }
-            _logger.LogError("Resource {Id} failed after {MaxRetries} attempts. Last error: {Error}", resource.Id, _options.MaxRetries, lastException?.Message);
+            _logger.LogError("Resource {ResourceId} failed after {MaxRetries} attempts. Last error: {Error}", resource.ResourceId, _options.MaxRetries, lastException?.Message);
             return (false, false);
         }
 

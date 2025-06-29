@@ -1,3 +1,4 @@
+using AzureTenantGrapher.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,14 +16,14 @@ namespace AzureTenantGrapher.Tests
         private static List<ResourceInfo> CreateTestResources(int count)
         {
             return Enumerable.Range(1, count)
-                .Select(i => new ResourceInfo(
-                    $"resource-{i}",
-                    $"Test Resource {i}",
-                    "Microsoft.Storage/storageAccounts",
-                    "East US",
-                    new Dictionary<string, string> { { "env", "test" } },
-                    "sub-1",
-                    "rg-1"))
+                .Select(i => new ResourceInfo
+                {
+                    ResourceId = $"resource-{i}",
+                    ResourceType = "Microsoft.Storage/storageAccounts",
+                    Location = "East US",
+                    Tags = new Dictionary<string, string> { { "env", "test" } },
+                    ResourceGroup = "rg-1"
+                })
                 .ToList();
         }
 
@@ -41,7 +42,7 @@ namespace AzureTenantGrapher.Tests
 
             // Processor: succeed for even, fail for odd
             var processor = new Func<ResourceInfo, Task<bool>>(r =>
-                Task.FromResult(int.Parse(r.Id.Split('-')[1]) % 2 == 0)
+                Task.FromResult(int.Parse(r.ResourceId.Split('-')[1]) % 2 == 0)
             );
 
             var service = new ResourceProcessingService(logger.Object, options, processor);
@@ -74,12 +75,12 @@ namespace AzureTenantGrapher.Tests
             var callCounts = new Dictionary<string, int>();
             Task<bool> Processor(ResourceInfo r)
             {
-                if (!callCounts.ContainsKey(r.Id))
-                    callCounts[r.Id] = 0;
-                callCounts[r.Id]++;
-                if (r.Id == "resource-1" && callCounts[r.Id] < 3)
+                if (!callCounts.ContainsKey(r.ResourceId))
+                    callCounts[r.ResourceId] = 0;
+                callCounts[r.ResourceId]++;
+                if (r.ResourceId == "resource-1" && callCounts[r.ResourceId] < 3)
                     throw new Exception("Simulated failure");
-                if (r.Id == "resource-1")
+                if (r.ResourceId == "resource-1")
                     return Task.FromResult(true);
                 return Task.FromResult(false);
             }

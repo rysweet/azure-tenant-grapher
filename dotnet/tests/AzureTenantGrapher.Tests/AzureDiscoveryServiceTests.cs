@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using AzureTenantGrapher.Services;
+using AzureTenantGrapher.Core;
 
 namespace AzureTenantGrapher.Tests
 {
@@ -43,8 +44,8 @@ namespace AzureTenantGrapher.Tests
             // Create test subscription data
             var testSubscriptions = new List<SubscriptionInfo>
             {
-                new("sub-1", "Test Subscription 1"),
-                new("sub-2", "Test Subscription 2")
+                new SubscriptionInfo { SubscriptionId = "sub-1", DisplayName = "Test Subscription 1" },
+                new SubscriptionInfo { SubscriptionId = "sub-2", DisplayName = "Test Subscription 2" }
             };
 
             // Since we can't easily mock the Azure SDK's complex async enumerable behavior,
@@ -57,8 +58,8 @@ namespace AzureTenantGrapher.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
-            Assert.Contains(result, s => s.Id == "sub-1" && s.DisplayName == "Test Subscription 1");
-            Assert.Contains(result, s => s.Id == "sub-2" && s.DisplayName == "Test Subscription 2");
+            Assert.Contains(result, s => s.SubscriptionId == "sub-1" && s.DisplayName == "Test Subscription 1");
+            Assert.Contains(result, s => s.SubscriptionId == "sub-2" && s.DisplayName == "Test Subscription 2");
 
             // Verify cached subscriptions
             Assert.Equal(2, service.CachedSubscriptions.Count);
@@ -70,10 +71,22 @@ namespace AzureTenantGrapher.Tests
             // Arrange
             var testResources = new List<ResourceInfo>
             {
-                new("resource-1", "Test Resource 1", "Microsoft.Storage/storageAccounts", "East US",
-                    new Dictionary<string, string> { { "env", "test" } }, "sub-1", "rg-1"),
-                new("resource-2", "Test Resource 2", "Microsoft.Compute/virtualMachines", "West US",
-                    new Dictionary<string, string> { { "env", "prod" } }, "sub-1", "rg-2")
+                new ResourceInfo
+                {
+                    ResourceId = "resource-1",
+                    ResourceType = "Microsoft.Storage/storageAccounts",
+                    Location = "East US",
+                    Tags = new Dictionary<string, string> { { "env", "test" } },
+                    ResourceGroup = "rg-1"
+                },
+                new ResourceInfo
+                {
+                    ResourceId = "resource-2",
+                    ResourceType = "Microsoft.Compute/virtualMachines",
+                    Location = "West US",
+                    Tags = new Dictionary<string, string> { { "env", "prod" } },
+                    ResourceGroup = "rg-2"
+                }
             };
 
             var service = new TestableAzureDiscoveryService(_mockLogger.Object, _options, new List<SubscriptionInfo>(), testResources);
@@ -84,9 +97,9 @@ namespace AzureTenantGrapher.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
-            Assert.Contains(result, r => r.Id == "resource-1" && r.Name == "Test Resource 1");
-            Assert.Contains(result, r => r.Id == "resource-2" && r.Name == "Test Resource 2");
-            Assert.All(result, r => Assert.Equal("sub-1", r.SubscriptionId));
+            Assert.Contains(result, r => r.ResourceId == "resource-1" && r.ResourceType == "Microsoft.Storage/storageAccounts");
+            Assert.Contains(result, r => r.ResourceId == "resource-2" && r.ResourceType == "Microsoft.Compute/virtualMachines");
+            // No SubscriptionId in DTO, so skip that assertion or set it if needed
         }
 
         [Fact]
@@ -113,7 +126,7 @@ namespace AzureTenantGrapher.Tests
         public void ClearCache_RemovesCachedSubscriptions()
         {
             // Arrange
-            var testSubscriptions = new List<SubscriptionInfo> { new("sub-1", "Test Subscription") };
+            var testSubscriptions = new List<SubscriptionInfo> { new SubscriptionInfo { SubscriptionId = "sub-1", DisplayName = "Test Subscription" } };
             var service = new TestableAzureDiscoveryService(_mockLogger.Object, _options, testSubscriptions);
 
             // Act - First populate cache
@@ -142,6 +155,41 @@ namespace AzureTenantGrapher.Tests
 
             // Assert - Should not throw and should work with default options
             Assert.NotNull(service);
+        }
+        [Fact]
+        public void KeyVaultSecrets_AreAttached_AndNoSecretValuesStored()
+        {
+            // Arrange
+            var keyVaultResource = new Core.ResourceInfo
+            {
+                ResourceId = "/subscriptions/sub-1/resourceGroups/rg-1/providers/Microsoft.KeyVault/vaults/testvault",
+                ResourceType = "Microsoft.KeyVault/vaults",
+                Location = "eastus",
+                Tags = new Dictionary<string, string> { { "env", "test" } },
+                KeyVaultSecrets = new List<Core.KeyVaultSecretInfo>
+                {
+                    new Core.KeyVaultSecretInfo { Name = "secret1", ContentType = "text/plain" },
+                    new Core.KeyVaultSecretInfo { Name = "secret2", ContentType = null }
+                }
+            };
+
+            var service = new TestableAzureDiscoveryService(_mockLogger.Object, _options, new List<SubscriptionInfo>(), new List<Core.ResourceInfo> { keyVaultResource });
+
+            // Act
+            var result = service.DiscoverResourcesAsync("sub-1").Result;
+
+            // Assert
+            var kv = result.FirstOrDefault(r => r.ResourceType == "Microsoft.KeyVault/vaults");
+            Assert.NotNull(kv);
+            Assert.NotNull(kv.KeyVaultSecrets);
+            Assert.Equal(2, kv.KeyVaultSecrets.Count);
+            Assert.All(kv.KeyVaultSecrets, s =>
+            {
+                Assert.False(string.IsNullOrWhiteSpace(s.Name));
+                // Ensure no secret value property exists
+                var type = s.GetType();
+                Assert.Null(type.GetProperty("Value"));
+            });
         }
 
         /// <summary>
