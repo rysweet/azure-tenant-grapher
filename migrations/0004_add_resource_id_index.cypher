@@ -6,4 +6,3 @@ CREATE INDEX resource_id_index IF NOT EXISTS
   FOR (r:Resource)
   ON (r.id);
 
-// No-op if uniqueness constraint from 0002 is present.
