@@ -22,13 +22,13 @@ namespace AzureTenantGrapher.Tests
             // Stub discovery service
             var discoveryLogger = loggerFactory.CreateLogger<AzureDiscoveryService>();
             var discoveryService = new AzureDiscoveryService(discoveryLogger, null, null);
-            var subscriptions = new List<AzureTenantGrapher.Services.SubscriptionInfo>
+            var subscriptions = new List<Core.SubscriptionInfo>
             {
-                new AzureTenantGrapher.Services.SubscriptionInfo("sub1", "Test Sub")
+                new Core.SubscriptionInfo { SubscriptionId = "sub1", DisplayName = "Test Sub" }
             };
-            var resources = new List<AzureTenantGrapher.Services.ResourceInfo>
+            var resources = new List<Core.ResourceInfo>
             {
-                new AzureTenantGrapher.Services.ResourceInfo("res1", "Resource1", "TypeA", "eastus", new Dictionary<string, string>(), "sub1", "rg1")
+                new Core.ResourceInfo { ResourceId = "res1", ResourceType = "TypeA", Location = "eastus", Tags = new Dictionary<string, string>(), ResourceGroup = "rg1" }
             };
 
             // Stub processing service with delegate
