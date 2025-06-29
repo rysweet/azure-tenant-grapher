@@ -14,5 +14,3 @@ REQUIRE (s.name) IS UNIQUE;
 CREATE INDEX keyvaultsecret_contentType IF NOT EXISTS
 FOR (s:KeyVaultSecret)
 ON (s.contentType);
-
-// STORES_SECRET: (KeyVault)-[:STORES_SECRET]->(KeyVaultSecret)
