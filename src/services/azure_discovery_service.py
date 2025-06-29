@@ -270,6 +270,45 @@ class AzureDiscoveryService:
                     ) from exc
         return []
 
+    async def discover_resources_across_subscriptions(
+        self, subscription_ids: List[str], concurrency: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover resources for many subscriptions concurrently while ensuring that
+        no more than *concurrency* discovery operations are in-flight at once.
+
+        Args:
+            subscription_ids: List of Azure subscription IDs.
+            concurrency: Maximum number of concurrent discovery tasks (``>=1``).
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            Flattened list containing all discovered resources from every
+            subscription.
+        """
+        # Guard against invalid values
+        if concurrency <= 0:
+            concurrency = 1
+
+        semaphore = asyncio.Semaphore(concurrency)
+
+        async def _bounded_discover(sub_id: str) -> List[Dict[str, Any]]:
+            # Ensure no more than `concurrency` coroutines execute concurrently.
+            async with semaphore:
+                return await self.discover_resources_in_subscription(sub_id)
+
+        # Kick off the tasks concurrently and wait for them to finish.
+        results_nested: List[List[Dict[str, Any]]] = await asyncio.gather(
+            *[_bounded_discover(sid) for sid in subscription_ids]
+        )
+
+        # Flatten [[...], [...]] → [...]
+        flattened: List[Dict[str, Any]] = [
+            item for sublist in results_nested for item in sublist
+        ]
+        return flattened
+
     async def _handle_auth_fallback(
         self,
         discovery_func: Optional[Callable[..., Awaitable[List[Dict[str, Any]]]]] = None,
