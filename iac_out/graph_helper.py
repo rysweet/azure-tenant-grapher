@@ -23,7 +23,7 @@ except ImportError:
         GraphClient = None
 
 
-def load_data(file_path):
+def load_data(file_path: str):
     with open(file_path) as f:
         if file_path.endswith((".yaml", ".yml")):
             if yaml:
@@ -49,19 +49,22 @@ def get_graph_client():
             file=sys.stderr,
         )
         sys.exit(1)
+    # Cast to str for type checkers (all are guaranteed non-None above)
     cred = ClientSecretCredential(
-        tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
+        tenant_id=str(tenant_id),
+        client_id=str(client_id),
+        client_secret=str(client_secret),
     )
     client = GraphClient(credential=cred)
     return client
 
 
-def confirm_action(action, count):
+def confirm_action(action: str, count: int):
     resp = input(f"Are you sure you want to {action} {count} objects? [y/N]: ")
     return resp.strip().lower() in ("y", "yes")
 
 
-def create_aad_objects(data_file_path):
+def create_aad_objects(data_file_path: str):
     data = load_data(data_file_path)
     users = data.get("users", [])
     groups = data.get("groups", [])
@@ -120,7 +123,7 @@ def create_aad_objects(data_file_path):
             )
 
 
-def delete_aad_objects(data_file_path):
+def delete_aad_objects(data_file_path: str):
     data = load_data(data_file_path)
     users = data.get("users", [])
     groups = data.get("groups", [])
