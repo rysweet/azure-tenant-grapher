@@ -12,9 +12,11 @@ from .azure_discovery_service import (
     AzureDiscoveryService,
     create_azure_discovery_service,
 )
+from .change_feed_ingestion_service import ChangeFeedIngestionService
 
 __all__ = [
     "AzureDiscoveryService",
+    "ChangeFeedIngestionService",
     "create_azure_discovery_service",
 ]
 
