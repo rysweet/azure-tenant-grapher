@@ -81,6 +81,7 @@ class TestAzureDiscoveryService:
         """Provide a mock ChangeFeedIngestionService instance."""
         mock_service = Mock()
         from unittest.mock import AsyncMock
+
         mock_service.ingest_changes_for_subscription = AsyncMock(
             return_value=["delta1", "delta2"]
         )
