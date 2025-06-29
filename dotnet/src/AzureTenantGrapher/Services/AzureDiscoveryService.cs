@@ -9,26 +9,16 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Resources;
 using Microsoft.Extensions.Logging;
+using Azure.Security.KeyVault.Secrets;
+using AzureTenantGrapher.Core;
 
 namespace AzureTenantGrapher.Services
 {
     /// <summary>
     /// Information about an Azure subscription.
     /// </summary>
-    public record SubscriptionInfo(string Id, string DisplayName);
-
-    /// <summary>
-    /// Information about an Azure resource.
-    /// </summary>
-    public record ResourceInfo(
-        string Id,
-        string Name,
-        string Type,
-        string Location,
-        IDictionary<string, string> Tags,
-        string SubscriptionId,
-        string? ResourceGroup
-    );
+    // Removed: SubscriptionInfo and ResourceInfo records.
+    // Use AzureTenantGrapher.Core.SubscriptionInfo and AzureTenantGrapher.Core.ResourceInfo instead.
 
     /// <summary>
     /// Service for discovering Azure subscriptions and resources.
@@ -80,14 +70,14 @@ namespace AzureTenantGrapher.Services
                 await foreach (var subscription in _armClient.GetSubscriptions().GetAllAsync(cancellationToken: cancellationToken))
                 {
                     var subscriptionData = subscription.Data;
-                    var subscriptionInfo = new SubscriptionInfo(
-                        subscriptionData.SubscriptionId ?? string.Empty,
-                        subscriptionData.DisplayName ?? string.Empty
-                    );
+                    var subscriptionInfo = new Core.SubscriptionInfo
+                    {
+                        SubscriptionId = subscriptionData.SubscriptionId ?? string.Empty,
+                        DisplayName = subscriptionData.DisplayName ?? string.Empty
+                    };
 
                     subscriptionInfos.Add(subscriptionInfo);
-                    _logger.LogInformation("📋 Found subscription: {DisplayName} ({Id})",
-                        subscriptionInfo.DisplayName, subscriptionInfo.Id);
+                    _logger.LogInformation($"📋 Found subscription: {subscriptionInfo.DisplayName} ({subscriptionInfo.SubscriptionId})");
                 }
 
                 return subscriptionInfos;
@@ -129,18 +119,69 @@ namespace AzureTenantGrapher.Services
                     var resourceData = resource.Data;
                     var parsedInfo = ParseResourceId(resourceData.Id);
 
-                    var resourceInfo = new ResourceInfo(
-                        resourceData.Id?.ToString() ?? string.Empty,
-                        resourceData.Name ?? string.Empty,
-                        resourceData.ResourceType.ToString(),
-                        resourceData.Location.ToString(),
-                        resourceData.Tags?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<string, string>(),
-                        parsedInfo.SubscriptionId ?? subscriptionId,
-                        parsedInfo.ResourceGroup
-                    );
+                    var resourceInfo = new Core.ResourceInfo
+                    {
+                        ResourceId = resourceData.Id?.ToString() ?? string.Empty,
+                        ResourceType = resourceData.ResourceType.ToString(),
+                        Location = resourceData.Location.ToString(),
+                        Tags = resourceData.Tags?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<string, string>(),
+                        ResourceGroup = parsedInfo.ResourceGroup,
+                        KeyVaultSecrets = null // Will be populated later if KeyVault
+                    };
 
                     resourceInfos.Add(resourceInfo);
                 }
+
+                // After collecting all resources, enumerate KeyVault secrets (async, rate-limited)
+                var keyVaults = resourceInfos
+                    .Where(r =>
+                        (r.GetType().GetProperty("ResourceType")?.GetValue(r) as string ??
+                         r.GetType().GetProperty("Type")?.GetValue(r) as string ??
+                         string.Empty
+                        ).Equals("Microsoft.KeyVault/vaults", StringComparison.OrdinalIgnoreCase)
+                    )
+                    .ToList();
+
+                var semaphore = new SemaphoreSlim(5); // Limit concurrency to 5
+                var secretTasks = new List<Task>();
+
+                foreach (var kv in keyVaults)
+                {
+                    secretTasks.Add(Task.Run(async () =>
+                    {
+                        await semaphore.WaitAsync(cancellationToken);
+                        try
+                        {
+                            var vaultUri = GetVaultUriFromResourceId(kv.ResourceId, kv.ResourceType, kv.ResourceGroup, kv.Location);
+                            if (string.IsNullOrEmpty(vaultUri))
+                                return;
+
+                            var secretClient = new SecretClient(new Uri(vaultUri), _credential);
+
+                            var secrets = new List<KeyVaultSecretInfo>();
+                            await foreach (var secretProperties in secretClient.GetPropertiesOfSecretsAsync(cancellationToken))
+                            {
+                                secrets.Add(new KeyVaultSecretInfo
+                                {
+                                    Name = secretProperties.Name,
+                                    ContentType = secretProperties.ContentType
+                                });
+                            }
+
+                            kv.KeyVaultSecrets = secrets;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning($"Failed to enumerate secrets for KeyVault {kv.ResourceId}: {ex.Message}");
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }, cancellationToken));
+                }
+
+                await Task.WhenAll(secretTasks);
 
                 return resourceInfos;
             }, $"resource discovery for subscription {subscriptionId}", cancellationToken);
@@ -151,10 +192,32 @@ namespace AzureTenantGrapher.Services
             if (_logger.IsEnabled(LogLevel.Debug))
             {
                 _logger.LogDebug("Resource IDs: {ResourceIds}",
-                    string.Join(", ", resources.Select(r => r.Id)));
+                    string.Join(", ", resources.Select(r => r.ResourceId)));
             }
 
             return resources;
+        }
+
+        // Helper to construct the vault URI from resource info
+        private static string? GetVaultUriFromResourceId(string resourceId, string resourceType, string? resourceGroup, string? location)
+        {
+            // Azure KeyVault resourceId: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.KeyVault/vaults/{vaultName}
+            // Vault URI: https://{vaultName}.vault.azure.net/
+            try
+            {
+                var segments = resourceId.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var vaultNameIndex = Array.IndexOf(segments, "vaults") + 1;
+                if (vaultNameIndex > 0 && vaultNameIndex < segments.Length)
+                {
+                    var vaultName = segments[vaultNameIndex];
+                    return $"https://{vaultName}.vault.azure.net/";
+                }
+            }
+            catch
+            {
+                // Ignore errors, return null
+            }
+            return null;
         }
 
         /// <summary>
