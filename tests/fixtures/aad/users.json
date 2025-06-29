@@ -1,0 +1,16 @@
+{
+  "value": [
+    {
+      "id": "user-1",
+      "displayName": "Alice Example",
+      "userPrincipalName": "alice@example.com",
+      "mail": "alice@example.com"
+    },
+    {
+      "id": "user-2",
+      "displayName": "Bob Example",
+      "userPrincipalName": "bob@example.com",
+      "mail": "bob@example.com"
+    }
+  ]
+}

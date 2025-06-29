@@ -48,8 +48,19 @@ class IdentityRule(RelationshipRule):
 
         # RBAC: RoleAssignment node/edges
         if rtype.endswith("roleAssignments"):
-            # Upsert RoleAssignment node
-            db_ops.upsert_generic(ROLE_ASSIGNMENT, "id", rid, {"id": rid})
+            # Upsert RoleAssignment node with all relevant metadata
+            db_ops.upsert_generic(
+                ROLE_ASSIGNMENT,
+                "id",
+                rid,
+                {
+                    "id": rid,
+                    "principalId": props.get("principalId"),
+                    "principalType": props.get("principalType"),
+                    "roleDefinitionId": props.get("roleDefinitionId"),
+                    "scope": props.get("scope"),
+                },
+            )
 
             # Get principalId, principalType, roleDefinitionId
             principal_id = props.get("principalId")
@@ -89,11 +100,68 @@ class IdentityRule(RelationshipRule):
                 },
             )
 
-        # Identity: resource with identity.principalId
+        # Identity: resource with identity block (system/user-assigned)
         identity = resource.get("identity")
         if identity and isinstance(identity, dict):
+            # System-assigned identity
+            if identity.get("type") == "SystemAssigned":
+                principal_id = identity.get("principalId") or resource.get(
+                    "principalId"
+                )
+                if principal_id and rid:
+                    # Upsert ManagedIdentity node (system-assigned)
+                    db_ops.upsert_generic(
+                        MANAGED_IDENTITY,
+                        "id",
+                        principal_id,
+                        {
+                            "id": principal_id,
+                            "identityType": "SystemAssigned",
+                            "resourceId": rid,
+                        },
+                    )
+                    # USES_IDENTITY edge
+                    db_ops.create_generic_rel(
+                        str(rid),
+                        USES_IDENTITY,
+                        str(principal_id),
+                        MANAGED_IDENTITY,
+                        "id",
+                    )
+            # User-assigned identity
+            if (
+                identity.get("type") == "UserAssigned"
+                and "userAssignedIdentities" in identity
+            ):
+                user_identities = identity.get("userAssignedIdentities", {})
+                for uai_id in user_identities:
+                    # Upsert ManagedIdentity node (user-assigned)
+                    db_ops.upsert_generic(
+                        MANAGED_IDENTITY,
+                        "id",
+                        uai_id,
+                        {
+                            "id": uai_id,
+                            "identityType": "UserAssigned",
+                        },
+                    )
+                    # USES_IDENTITY edge
+                    db_ops.create_generic_rel(
+                        str(rid), USES_IDENTITY, str(uai_id), MANAGED_IDENTITY, "id"
+                    )
+            # If principalId present (legacy or fallback)
             principal_id = identity.get("principalId")
-            if principal_id and rid:
+            if principal_id and rid and identity.get("type") != "SystemAssigned":
+                db_ops.upsert_generic(
+                    MANAGED_IDENTITY,
+                    "id",
+                    principal_id,
+                    {
+                        "id": principal_id,
+                        "identityType": identity.get("type", "Unknown"),
+                        "resourceId": rid,
+                    },
+                )
                 db_ops.create_generic_rel(
                     str(rid), USES_IDENTITY, str(principal_id), MANAGED_IDENTITY, "id"
                 )

@@ -1,0 +1,14 @@
+{
+  "value": [
+    {
+      "id": "user-1",
+      "displayName": "Alice Example",
+      "@odata.type": "#microsoft.graph.user"
+    },
+    {
+      "id": "user-2",
+      "displayName": "Bob Example",
+      "@odata.type": "#microsoft.graph.user"
+    }
+  ]
+}
