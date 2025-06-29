@@ -15,12 +15,14 @@ from typing import Any, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resourcegraph import ResourceGraphClient
+
 try:
     from azure.mgmt.monitor.v2015_04_01 import MonitorClient
 except ImportError:
     MonitorClient = None
 
 logger = logging.getLogger(__name__)
+
 
 class ChangeFeedIngestionService:
     """
@@ -33,7 +35,12 @@ class ChangeFeedIngestionService:
     - Designed for extension to support Event Grid in the future.
     """
 
-    def __init__(self, config: Any, neo4j_session_manager: Any, resource_processing_service: Any = None):
+    def __init__(
+        self,
+        config: Any,
+        neo4j_session_manager: Any,
+        resource_processing_service: Any = None,
+    ):
         """
         Initialize the ChangeFeedIngestionService.
 
@@ -46,7 +53,9 @@ class ChangeFeedIngestionService:
         self.neo4j_session_manager = neo4j_session_manager
         self.resource_processing_service = resource_processing_service
 
-    async def ingest_changes_for_subscription(self, subscription_id: str, since_timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def ingest_changes_for_subscription(
+        self, subscription_id: str, since_timestamp: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Ingest resource changes for a given subscription since the provided timestamp.
 
@@ -59,14 +68,19 @@ class ChangeFeedIngestionService:
         """
         import datetime
 
-        logger.info(f"Starting delta ingestion for subscription {subscription_id} since {since_timestamp}")
+        logger.info(
+            f"Starting delta ingestion for subscription {subscription_id} since {since_timestamp}"
+        )
 
         # 1. Determine since_timestamp
         if since_timestamp is None:
             since_timestamp = self.get_last_synced_timestamp(subscription_id)
         if since_timestamp is None:
             # Default to 7 days ago if never synced
-            since_timestamp = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)).isoformat()
+            since_timestamp = (
+                datetime.datetime.now(datetime.timezone.utc)
+                - datetime.timedelta(days=7)
+            ).isoformat()
 
         # 2. Query Azure Resource Graph for resourcechanges
         credential = DefaultAzureCredential()
@@ -81,7 +95,7 @@ class ChangeFeedIngestionService:
             response = resourcegraph_client.resources(
                 query=query,
                 subscriptions=[subscription_id],
-                result_format="objectArray"
+                result_format="objectArray",
             )
             changes = response.data if hasattr(response, "data") else []
         except Exception as e:
@@ -102,7 +116,9 @@ class ChangeFeedIngestionService:
             except Exception as e:
                 logger.error(f"Failed to query Activity Logs: {e}")
         else:
-            logger.warning("MonitorClient is not available; skipping activity log deletion detection.")
+            logger.warning(
+                "MonitorClient is not available; skipping activity log deletion detection."
+            )
 
         # 4. Upsert changed resources
         upsert_resources = []
@@ -118,14 +134,20 @@ class ChangeFeedIngestionService:
         # Use ResourceProcessingService to upsert
         if self.resource_processing_service and upsert_resources:
             import asyncio
+
             asyncio.get_event_loop()
             try:
-                asyncio.run(self.resource_processing_service.process_resources(upsert_resources))
+                asyncio.run(
+                    self.resource_processing_service.process_resources(upsert_resources)
+                )
             except RuntimeError:
                 # Already in event loop (e.g., in test), use create_task
                 import nest_asyncio
+
                 nest_asyncio.apply()
-                asyncio.get_event_loop().create_task(self.resource_processing_service.process_resources(upsert_resources))
+                asyncio.get_event_loop().create_task(
+                    self.resource_processing_service.process_resources(upsert_resources)
+                )
 
         # 5. Mark deleted resources as state="deleted"
         with self.neo4j_session_manager.session() as session:
@@ -139,7 +161,9 @@ class ChangeFeedIngestionService:
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         self.set_last_synced_timestamp(subscription_id, now_iso)
 
-        logger.info(f"Delta ingestion complete for subscription {subscription_id}. Upserted: {len(upsert_resources)}, Deleted: {len(deleted_ids)}")
+        logger.info(
+            f"Delta ingestion complete for subscription {subscription_id}. Upserted: {len(upsert_resources)}, Deleted: {len(deleted_ids)}"
+        )
         return upsert_resources
 
     def get_last_synced_timestamp(self, subscription_id: str) -> Optional[str]:

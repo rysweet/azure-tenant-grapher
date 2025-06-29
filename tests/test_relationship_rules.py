@@ -7,6 +7,7 @@ from src.relationship_rules import (
     RegionRule,
     TagRule,
 )
+from src.relationship_rules.diagnostic_rule import DiagnosticRule
 
 
 class DummyDbOps:
@@ -240,3 +241,60 @@ def test_depends_on_rule():
 #   uv run pytest -q
 # To run pre-commit checks:
 #   pre-commit run --all-files
+
+
+def test_diagnostic_rule():
+    rule = DiagnosticRule()
+    db = DummyDbOps()
+    resource = {
+        "id": "res_diag",
+        "type": "Microsoft.Compute/virtualMachines",
+        "diagnosticSettings": [
+            {
+                "id": "diag1",
+                "name": "diagsetting1",
+                "properties": {"workspaceId": "ws_diag"},
+            }
+        ],
+    }
+    assert rule.applies(resource)
+    rule.emit(resource, db)
+    # Should upsert DiagnosticSetting node
+    assert (
+        "upsert",
+        "DiagnosticSetting",
+        "id",
+        "diag1",
+        {
+            "id": "diag1",
+            "name": "diagsetting1",
+            "type": "Microsoft.Insights/diagnosticSettings",
+            "properties": {"workspaceId": "ws_diag"},
+        },
+    ) in db.calls
+    # Should create SENDS_DIAG_TO relationship
+    assert (
+        "rel",
+        "res_diag",
+        "SENDS_DIAG_TO",
+        "diag1",
+        "DiagnosticSetting",
+        "id",
+    ) in db.calls
+    # Should upsert LogAnalyticsWorkspace node
+    assert (
+        "upsert",
+        "LogAnalyticsWorkspace",
+        "id",
+        "ws_diag",
+        {"id": "ws_diag"},
+    ) in db.calls
+    # Should create LOGS_TO relationship
+    assert (
+        "rel",
+        "diag1",
+        "LOGS_TO",
+        "ws_diag",
+        "LogAnalyticsWorkspace",
+        "id",
+    ) in db.calls
