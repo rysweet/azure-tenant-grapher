@@ -48,7 +48,12 @@ class BicepEmitter(IaCEmitter):
                 regular_resources.append(resource)
 
         # Compose Bicep lines
-        def emit_all_blocks(resources, emit_fn):
+        from typing import Callable
+
+        def emit_all_blocks(
+            resources: list[dict[str, Any]],
+            emit_fn: Callable[[dict[str, Any]], list[str]],
+        ) -> list[str]:
             lines = []
             for r in resources:
                 lines.extend(emit_fn(r))
@@ -147,7 +152,7 @@ class BicepEmitter(IaCEmitter):
 
         return paths
 
-    def _emit_bicep_user_assigned_identity(self, mi: dict) -> List[str]:
+    def _emit_bicep_user_assigned_identity(self, mi: dict[str, Any]) -> List[str]:
         name = mi.get("name", "identity")
         location = mi.get("location", "eastus")
         return [
@@ -158,7 +163,7 @@ class BicepEmitter(IaCEmitter):
             "}\n",
         ]
 
-    def _emit_bicep_role_assignment(self, ra: dict) -> List[str]:
+    def _emit_bicep_role_assignment(self, ra: dict[str, Any]) -> List[str]:
         name = ra.get("name", ra.get("id", "roleAssignment"))
         props = ra.get("properties", ra)
         return [
@@ -173,7 +178,7 @@ class BicepEmitter(IaCEmitter):
             "}\n",
         ]
 
-    def _emit_bicep_custom_role_definition(self, rd: dict) -> List[str]:
+    def _emit_bicep_custom_role_definition(self, rd: dict[str, Any]) -> List[str]:
         name = rd.get("name", rd.get("id", "roleDefinition"))
         props = rd.get("properties", rd)
         permissions = props.get("permissions", [])
@@ -205,38 +210,7 @@ class BicepEmitter(IaCEmitter):
         ]
 
     # Patch _emit_resource_block to add identity blocks
-    def _emit_resource_block(
-        self, resource: dict[str, Any], in_module: bool = False
-    ) -> List[str]:
-        az_type = resource.get("type", "")
-        name = resource.get("name", "unnamed")
-        location = resource.get("location", "eastus")
-        lines = [
-            f"resource {name}_res '{az_type}@2023-01-01' = {{",
-            f"  name: '{name}'",
-            "  location: rgLocation" if in_module else f"  location: '{location}'",
-        ]
-        if "tags" in resource and isinstance(resource["tags"], dict):
-            tags = resource["tags"]
-            tag_str = ", ".join(f"{k}: '{v}'" for k, v in tags.items())
-            lines.append(f"  tags: {{ {tag_str} }}")
-        # Add identity block if present
-        identity = resource.get("identity")
-        if identity and isinstance(identity, dict):
-            lines.append("  identity: {")
-            if identity.get("type"):
-                lines.append(f"    type: '{identity['type']}'")
-            if identity.get("userAssignedIdentities"):
-                lines.append("    userAssignedIdentities: {")
-                for k in identity["userAssignedIdentities"]:
-                    lines.append(f"      '{k}': {{}}")
-                lines.append("    }")
-            lines.append("  }")
-        if resource.get("systemAssignedIdentity", False):
-            lines.append("  identity: { type: 'SystemAssigned' }")
-        lines.append("  properties: {}")
-        lines.append("}\n")
-        return lines
+    # Removed duplicate _emit_resource_block to resolve redeclaration error
 
     async def emit_template(
         self, tenant_graph: TenantGraph, output_path: Optional[str] = None

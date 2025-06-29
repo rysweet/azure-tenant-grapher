@@ -340,6 +340,8 @@ class GraphVisualizer:
             # High-level organizational nodes
             "Subscription": 1,
             "ResourceGroup": 2,
+            "PrivateEndpoint": 21,  # Networking, but distinct
+            "DNSZone": 22,  # Networking, but distinct
             # Compute services
             "Microsoft.Compute/virtualMachines": 10,
             "Microsoft.ContainerService/managedClusters": 11,
@@ -404,6 +406,8 @@ class GraphVisualizer:
             # Non-resource node types
             "Subscription": "#ff6b6b",  # Red
             "ResourceGroup": "#45b7d1",  # Blue
+            "PrivateEndpoint": "#b388ff",  # Violet (unused)
+            "DNSZone": "#00bfae",  # Teal-green (unused)
             # Azure resource types
             "Microsoft.Compute/virtualMachines": "#6c5ce7",  # Purple
             "Microsoft.Network/networkInterfaces": "#a55eea",  # Light Purple
@@ -458,6 +462,8 @@ class GraphVisualizer:
             "Subscription": 15,
             "Resource": 8,
             "ResourceGroup": 12,
+            "PrivateEndpoint": 10,
+            "DNSZone": 10,
             "StorageAccount": 10,
             "VirtualMachine": 12,
             "NetworkInterface": 6,
@@ -474,6 +480,8 @@ class GraphVisualizer:
             "CONTAINS": "#74b9ff",
             "BELONGS_TO": "#a29bfe",
             "CONNECTED_TO": "#fd79a8",
+            "CONNECTED_TO_PE": "#b388ff",  # Violet, matches PrivateEndpoint
+            "RESOLVES_TO": "#00bfae",  # Teal-green, matches DNSZone
             "DEPENDS_ON": "#fdcb6e",
             "MANAGES": "#e17055",
         }
@@ -485,6 +493,8 @@ class GraphVisualizer:
             "CONTAINS": 3,
             "BELONGS_TO": 2,
             "CONNECTED_TO": 2,
+            "CONNECTED_TO_PE": 2,
+            "RESOLVES_TO": 2,
             "DEPENDS_ON": 1,
             "MANAGES": 2,
         }

@@ -103,8 +103,13 @@ def test_arm_emitter_identities_and_rbac():
     with tempfile.TemporaryDirectory() as temp_dir:
         out_dir = Path(temp_dir)
         files = emitter.emit(graph, out_dir)
-        assert len(files) == 1
-        with open(files[0]) as f:
+        assert len(files) == 2
+        filenames = {f.name for f in files}
+        assert {"azuredeploy.json", "aad_objects.json"} == filenames
+
+        # Load the ARM template for further assertions
+        arm_template_path = next(f for f in files if f.name == "azuredeploy.json")
+        with open(arm_template_path) as f:
             template = json.load(f)
         types = {r["type"] for r in template["resources"]}
         # Managed identity present

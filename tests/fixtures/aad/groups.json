@@ -1,0 +1,16 @@
+{
+  "value": [
+    {
+      "id": "group-1",
+      "displayName": "Engineering",
+      "mail": "engineering@example.com",
+      "description": "Engineering team"
+    },
+    {
+      "id": "group-2",
+      "displayName": "HR",
+      "mail": "hr@example.com",
+      "description": "HR team"
+    }
+  ]
+}

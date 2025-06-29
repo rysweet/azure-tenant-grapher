@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "myuami",
+      "location": "westus2"
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-03-01",
+      "name": "vmwithsysid",
+      "location": "eastus",
+      "identity": {
+        "type": "SystemAssigned",
+        "principalId": "11111111-2222-3333-4444-555555555555"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-01-01",
+      "name": "webappwithuami",
+      "location": "eastus2",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "/subscriptions/xxx/resourceGroups/yyy/providers/Microsoft.ManagedIdentity/userAssignedIdentities/myuami": {}
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "myra",
+      "properties": {
+        "roleDefinitionId": "/subscriptions/xxx/providers/Microsoft.Authorization/roleDefinitions/abc",
+        "principalId": "11111111-2222-3333-4444-555555555555",
+        "principalType": "ServicePrincipal",
+        "scope": "/subscriptions/xxx/resourceGroups/yyy"
+      }
+    }
+  ]
+}
