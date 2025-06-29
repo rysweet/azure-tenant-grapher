@@ -15,7 +15,9 @@ from src.services.azure_discovery_service import AzureDiscoveryService
 
 
 @pytest.mark.asyncio
-async def test_discover_resources_across_subscriptions_respects_concurrency_limit() -> None:
+async def test_discover_resources_across_subscriptions_respects_concurrency_limit() -> (
+    None
+):
     """Ensure concurrency limit is not exceeded during resource discovery."""
     mock_config = Mock()
     mock_config.tenant_id = "tenant"
