@@ -493,6 +493,7 @@ class ResourceProcessor:
         session_manager: Any,
         llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
         resource_limit: Optional[int] = None,
+        max_retries: int = 3,
     ):
         """
         Initialize the resource processor.
@@ -501,10 +502,12 @@ class ResourceProcessor:
             session_manager: Neo4jSessionManager
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
+            max_retries: Maximum number of retries for failed resources
         """
         self.session_manager = session_manager
         self.llm_generator = llm_generator
         self.resource_limit = resource_limit
+        self.max_retries = max_retries
 
         # Initialize helper classes
         self.state = ResourceState(session_manager)
@@ -518,7 +521,7 @@ class ResourceProcessor:
         self._seen_lock = threading.Lock()
 
         logger.info(
-            f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}"
+            f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}, max_retries: {max_retries}"
         )
 
     def _should_process_resource(self, resource: Dict[str, Any]) -> Tuple[bool, str]:
@@ -716,17 +719,11 @@ class ResourceProcessor:
         progress_every: int = 50,
     ) -> ProcessingStats:
         """
-        Process all resources in parallel using a thread pool, with progress tracking.
-
-        Args:
-            resources: List[Any] of resources to process
-            max_workers: Maximum number of concurrent threads
-            progress_callback: Optional callback for progress updates
-            progress_every: Emit progress every N resources (default 50)
-
-        Returns:
-            ProcessingStats: Final processing statistics
+        Process all resources with retry queue, poison list, and exponential back-off.
         """
+        import time
+        from collections import deque
+
         # Apply resource limit if specified
         if self.resource_limit and len(resources) > self.resource_limit:
             logger.info(
@@ -735,85 +732,142 @@ class ResourceProcessor:
             resources = resources[: self.resource_limit]
 
         self.stats.total_resources = len(resources)
-
         if not resources:
             logger.info("INFO: No resources to process")
             return self.stats
 
-        logger.info(
-            f"🔄 Starting eager thread pool processing of {self.stats.total_resources} resources (max workers: {max_workers})"
-        )
+        # Retry queue: each item is (resource, attempt_count, next_eligible_time)
+        retry_queue = deque()
+        poison_list = []
+        main_queue = deque(
+            (r, 1, 0.0) for r in resources
+        )  # (resource, attempt, next_time)
 
-        import concurrent.futures
+        in_progress = set()
+        resource_attempts = {}  # resource_id -> attempt count
 
-        def process_task(resource: Dict[str, Any], resource_index: int) -> bool:
-            """Process a single resource (LLM + DB)."""
-            # --- Extract identity and principalId fields if present ---
-            extract_identity_fields(resource)
-            loop = None
+        base_delay = 1.0  # seconds
+        resource_index_counter = 0
+
+        async def worker(
+            resource: dict[str, Any], resource_index: int, attempt: int
+        ) -> bool:
             try:
-                if self.llm_generator:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    _, description = loop.run_until_complete(
-                        self._process_single_resource_llm(resource)
-                    )
-                    resource["llm_description"] = description
-                else:
-                    resource["llm_description"] = (
-                        f"Azure {resource.get('type', 'Resource')} resource."
-                    )
-                # DB and relationship ops
-                return (
-                    loop.run_until_complete(
-                        self.process_single_resource(resource, resource_index)
-                    )
-                    if loop
-                    else asyncio.run(
-                        self.process_single_resource(resource, resource_index)
+                result = await self.process_single_resource(resource, resource_index)
+                return result
+            except Exception as e:
+                logger.exception(
+                    f"Exception in worker for resource {resource.get('id', 'Unknown')}: {e}"
+                )
+                return False
+
+        while main_queue or retry_queue or in_progress:
+            tasks = []
+            now = time.time()
+            # Fill from main queue
+            while len(in_progress) < max_workers and main_queue:
+                resource, attempt, _ = main_queue.popleft()
+                rid = resource["id"]
+                in_progress.add(rid)
+                resource_attempts[rid] = attempt
+                resource["__attempt"] = attempt
+                resource["__id"] = rid
+                tasks.append(
+                    asyncio.create_task(
+                        worker(resource, resource_index_counter, attempt)
                     )
                 )
-            finally:
-                if loop:
-                    asyncio.set_event_loop(None)
-                    loop.close()
+                resource_index_counter += 1
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_index = {
-                executor.submit(process_task, resource, idx): idx
-                for idx, resource in enumerate(resources)
-            }
+            # Fill from retry queue if eligible
+            for _ in range(len(retry_queue)):
+                resource, attempt, next_time = retry_queue.popleft()
+                rid = resource["id"]
+                if now >= next_time and len(in_progress) < max_workers:
+                    in_progress.add(rid)
+                    resource_attempts[rid] = attempt
+                    resource["__attempt"] = attempt
+                    resource["__id"] = rid
+                    tasks.append(
+                        asyncio.create_task(
+                            worker(resource, resource_index_counter, attempt)
+                        )
+                    )
+                    resource_index_counter += 1
+                else:
+                    retry_queue.append((resource, attempt, next_time))
 
-            for _i, future in enumerate(
-                concurrent.futures.as_completed(future_to_index), 1
-            ):
-                idx = future_to_index[future]
-                try:
-                    future.result()
-                except Exception:
-                    logger.exception(
-                        f"❌ Processing failed for resource {resources[idx].get('name', 'Unknown')}"
-                    )
-                    self.stats.failed += 1
-                    self.stats.processed += 1
+            if not tasks:
+                # Wait for the soonest retry or for in-progress tasks to finish
+                if retry_queue:
+                    soonest = min(next_time for _, _, next_time in retry_queue)
+                    sleep_time = max(0.0, soonest - time.time())
+                    await asyncio.sleep(sleep_time)
+                else:
+                    await asyncio.sleep(0.1)
+                continue
 
-                # Progress callback and logging
-                if progress_callback:
-                    progress_callback(
-                        processed=self.stats.processed,
-                        total=self.stats.total_resources,
-                        successful=self.stats.successful,
-                        failed=self.stats.failed,
-                        skipped=self.stats.skipped,
-                        llm_generated=self.stats.llm_generated,
-                        llm_skipped=self.stats.llm_skipped,
-                    )
-                if self.stats.processed % progress_every == 0:
-                    logger.info(
-                        f"📊 Progress: {self.stats.processed}/{self.stats.total_resources} "
-                        f"({self.stats.progress_percentage:.1f}%) - "
-                        f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
-                    )
+            # Wait for any task to complete
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for t in done:
+                # Find the resource id and attempt from the task context
+                # (We set __id and __attempt on the resource before launching)
+                # This is a bit hacky, but works for this context
+                # Find the resource object for this task
+                resource = None
+                attempt = None
+                for task in tasks:
+                    if task == t:
+                        # Try to get resource from task's closure
+                        # (We set __id and __attempt on the resource before launching)
+                        coro = task.get_coro()
+                        if hasattr(coro, "cr_frame") and coro.cr_frame is not None:
+                            frame = coro.cr_frame
+                            if "resource" in frame.f_locals:
+                                resource = frame.f_locals["resource"]
+                                attempt = frame.f_locals.get("attempt", 1)
+                        break
+                # Fallback: try to get from t.result() if above fails
+                if resource is None:
+                    continue  # Should not happen
+
+                rid = resource.get("id")
+                in_progress.discard(rid)
+                result = t.result()
+                if result:
+                    # Success: do nothing, stats already updated in process_single_resource
+                    pass
+                else:
+                    # Failure: check attempt count
+                    attempt = resource_attempts.get(rid, 1)
+                    if attempt < self.max_retries:
+                        delay = base_delay * (2 ** (attempt - 1))
+                        retry_queue.append((resource, attempt + 1, time.time() + delay))
+                        resource_attempts[rid] = attempt + 1
+                        logger.warning(
+                            f"🔁 Retry in {delay}s (attempt {attempt + 1}/{self.max_retries})."
+                        )
+                    else:
+                        poison_list.append(resource)
+                        logger.error(f"☠️  Poisoned after {attempt} attempts: {rid}")
+                        self.stats.failed += 1  # Only increment failed for poison
+            # Progress callback and logging
+            if progress_callback:
+                progress_callback(
+                    processed=self.stats.processed,
+                    total=self.stats.total_resources,
+                    successful=self.stats.successful,
+                    failed=self.stats.failed,
+                    skipped=self.stats.skipped,
+                    llm_generated=self.stats.llm_generated,
+                    llm_skipped=self.stats.llm_skipped,
+                )
+            if self.stats.processed % progress_every == 0:
+                logger.info(
+                    f"📊 Progress: {self.stats.processed}/{self.stats.total_resources} "
+                    f"({self.stats.progress_percentage:.1f}%) - "
+                    f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
+                )
 
         # Generate ResourceGroup and Tag summaries after all resources are processed
         if self.llm_generator:
@@ -826,6 +880,14 @@ class ResourceProcessor:
                 )
             except Exception as e:
                 logger.exception(f"Failed to generate ResourceGroup/Tag summaries: {e}")
+
+        # Log poison list
+        if poison_list:
+            logger.warning(
+                f"Poison list (resources failed after {self.max_retries} attempts):"
+            )
+            for r in poison_list:
+                logger.warning(f"  - {r.get('id', 'Unknown')}")
 
         self._log_final_summary()
         return self.stats
@@ -1177,6 +1239,7 @@ def create_resource_processor(
     session_manager: Any,
     llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
     resource_limit: Optional[int] = None,
+    max_retries: int = 3,
 ) -> ResourceProcessor:
     """
     Factory function to create a ResourceProcessor instance.
@@ -1185,8 +1248,11 @@ def create_resource_processor(
         session_manager: Neo4jSessionManager
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
+        max_retries: Maximum number of retries for failed resources
 
     Returns:
         ResourceProcessor: Configured resource processor instance
     """
-    return ResourceProcessor(session_manager, llm_generator, resource_limit)
+    return ResourceProcessor(
+        session_manager, llm_generator, resource_limit, max_retries
+    )

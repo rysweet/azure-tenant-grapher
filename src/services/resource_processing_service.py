@@ -52,6 +52,7 @@ class ResourceProcessingService:
             self.session_manager,
             self.llm_generator,
             getattr(self.config, "resource_limit", None),
+            getattr(self.config, "max_retries", 3),
         )
         if max_workers is None:
             max_workers = getattr(self.config, "max_concurrency", 5)

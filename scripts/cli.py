@@ -203,6 +203,12 @@ def cli(ctx: click.Context, log_level: str) -> None:
     default=5,
     help="Maximum number of parallel LLM threads (default: 5)",
 )
+@click.option(
+    "--max-retries",
+    type=int,
+    default=3,
+    help="Maximum number of retries for failed resources (default: 3)",
+)
 @click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
 @click.option(
     "--generate-spec",
@@ -242,6 +248,7 @@ async def build(
     tenant_id: str,
     resource_limit: Optional[int],
     max_llm_threads: int,
+    max_retries: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -265,6 +272,7 @@ async def build(
         tenant_id,
         resource_limit,
         max_llm_threads,
+        max_retries,
         no_container,
         generate_spec,
         visualize,
