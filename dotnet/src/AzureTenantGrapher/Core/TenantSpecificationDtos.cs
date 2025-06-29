@@ -25,5 +25,15 @@ namespace AzureTenantGrapher.Core
         public string ResourceType { get; set; } = string.Empty;
         public string? Location { get; set; }
         public Dictionary<string, string>? Tags { get; set; }
+
+        public string? ResourceGroup { get; set; }
+        // For KeyVaults: list of discovered secrets (name, contentType only)
+        public List<KeyVaultSecretInfo>? KeyVaultSecrets { get; set; }
+    }
+
+    public class KeyVaultSecretInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? ContentType { get; set; }
     }
 }

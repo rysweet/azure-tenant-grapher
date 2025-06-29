@@ -71,7 +71,7 @@ namespace AzureTenantGrapher
 
                 var allResources = subscriptions
                     .SelectMany(sub =>
-                        Task.Run(() => discoveryService.DiscoverResourcesAsync(sub.Id, cts.Token)).Result
+                        Task.Run(() => discoveryService.DiscoverResourcesAsync(sub.SubscriptionId, cts.Token)).Result
                     ).ToList();
                 logger.LogInformation("Discovered {Count} resources.", allResources.Count);
 
@@ -88,11 +88,11 @@ namespace AzureTenantGrapher
                 var specService = new TenantSpecificationService(specOptions, specLogger);
 
                 var spec = Task.Run(() => specService.BuildTenantSpecAsync(
-                    subscriptions.Select(s => new Core.SubscriptionInfo { SubscriptionId = s.Id, DisplayName = s.DisplayName }),
+                    subscriptions.Select(s => new Core.SubscriptionInfo { SubscriptionId = s.SubscriptionId, DisplayName = s.DisplayName }),
                     allResources.Select(r => new Core.ResourceInfo
                     {
-                        ResourceId = r.Id,
-                        ResourceType = r.Type,
+                        ResourceId = r.ResourceId,
+                        ResourceType = r.ResourceType,
                         Location = r.Location,
                         Tags = r.Tags != null ? r.Tags.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) : null
                     })
