@@ -4,6 +4,7 @@ This module provides Azure Bicep template generation from
 tenant graph data, supporting resource group homing and module pattern.
 """
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -23,20 +24,35 @@ class BicepEmitter(IaCEmitter):
         rg_location: Optional[str] = None,
     ) -> List[Path]:
         """
-        Generate Bicep templates from tenant graph, using module pattern if RG is specified.
-
-        Args:
-            graph: Input tenant graph data
-            out_dir: Output directory path
-            rg_name: Name of the resource group to home resources in (optional)
-            rg_location: Location for the resource group (optional)
-
-        Returns:
-            List of written file paths
+        Generate Bicep templates from tenant graph, including managed identities and RBAC.
         """
-        out_dir = Path(out_dir)  # Convert string to Path if needed
+        out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         paths = []
+
+        # Collect special resources
+        managed_identities = []
+        role_assignments = []
+        role_definitions = []
+        regular_resources = []
+
+        for resource in graph.resources:
+            rtype = resource.get("type", "")
+            if rtype == "Microsoft.ManagedIdentity/userAssignedIdentities":
+                managed_identities.append(resource)
+            elif rtype.endswith("roleAssignments"):
+                role_assignments.append(resource)
+            elif rtype.endswith("roleDefinitions"):
+                role_definitions.append(resource)
+            else:
+                regular_resources.append(resource)
+
+        # Compose Bicep lines
+        def emit_all_blocks(resources, emit_fn):
+            lines = []
+            for r in resources:
+                lines.extend(emit_fn(r))
+            return lines
 
         if rg_name:
             # Write main.bicep (subscription scope)
@@ -49,15 +65,43 @@ class BicepEmitter(IaCEmitter):
             # Write modules/rg.bicep (resource group scope)
             modules_dir = out_dir / "modules"
             modules_dir.mkdir(parents=True, exist_ok=True)
-            rg_bicep = self._emit_resource_group_module(graph)
+            rg_lines = [
+                "targetScope = 'resourceGroup'",
+                "",
+                "param rgName string",
+                "param rgLocation string",
+                "",
+            ]
+            rg_lines += emit_all_blocks(
+                managed_identities, self._emit_bicep_user_assigned_identity
+            )
+            rg_lines += emit_all_blocks(
+                role_definitions, self._emit_bicep_custom_role_definition
+            )
+            rg_lines += emit_all_blocks(
+                role_assignments, self._emit_bicep_role_assignment
+            )
+            for resource in regular_resources:
+                rg_lines.extend(self._emit_resource_block(resource, in_module=True))
+            rg_lines.append("output resourceGroupId string = resourceGroup().id")
+            rg_bicep = "\n".join(rg_lines)
             rg_path = modules_dir / "rg.bicep"
             with open(rg_path, "w") as f:
                 f.write(rg_bicep)
             paths.append(rg_path)
         else:
-            # Fallback: flat main.bicep
+            # Flat main.bicep
             bicep_lines = ["// Generated Bicep template", ""]
-            for resource in graph.resources:
+            bicep_lines += emit_all_blocks(
+                managed_identities, self._emit_bicep_user_assigned_identity
+            )
+            bicep_lines += emit_all_blocks(
+                role_definitions, self._emit_bicep_custom_role_definition
+            )
+            bicep_lines += emit_all_blocks(
+                role_assignments, self._emit_bicep_role_assignment
+            )
+            for resource in regular_resources:
                 bicep_lines.extend(self._emit_resource_block(resource))
             output_file = out_dir / "main.bicep"
             with open(output_file, "w") as f:
@@ -75,8 +119,124 @@ class BicepEmitter(IaCEmitter):
         import stat
 
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
+        # --- Emit aad_objects.json listing referenced AAD principals ---
+        aad_users: list[dict[str, str]] = []
+        aad_groups: list[dict[str, str]] = []
+        aad_sps: list[dict[str, str]] = []
+        for ra in role_assignments:
+            props = ra.get("properties", ra)
+            pid = props.get("principalId")
+            ptype = (props.get("principalType") or "").lower()
+            if pid:
+                entry = {"id": pid}
+                if ptype == "user":
+                    aad_users.append(entry)
+                elif ptype == "group":
+                    aad_groups.append(entry)
+                elif ptype == "serviceprincipal":
+                    aad_sps.append(entry)
+        aad_data = {
+            "users": aad_users,
+            "groups": aad_groups,
+            "service_principals": aad_sps,
+        }
+        aad_file = out_dir / "aad_objects.json"
+        with open(aad_file, "w") as f:
+            json.dump(aad_data, f, indent=2)
+        paths.append(aad_file)
 
         return paths
+
+    def _emit_bicep_user_assigned_identity(self, mi: dict) -> List[str]:
+        name = mi.get("name", "identity")
+        location = mi.get("location", "eastus")
+        return [
+            f"resource {name}_identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {{",
+            f"  name: '{name}'",
+            f"  location: '{location}'",
+            "  properties: {}",
+            "}\n",
+        ]
+
+    def _emit_bicep_role_assignment(self, ra: dict) -> List[str]:
+        name = ra.get("name", ra.get("id", "roleAssignment"))
+        props = ra.get("properties", ra)
+        return [
+            f"resource {name}_ra 'Microsoft.Authorization/roleAssignments@2022-04-01' = {{",
+            f"  name: '{name}'",
+            "  properties: {",
+            f"    roleDefinitionId: '{props.get('roleDefinitionId', '')}',",
+            f"    principalId: '{props.get('principalId', '')}',",
+            f"    principalType: '{props.get('principalType', '')}',",
+            f"    scope: '{props.get('scope', '')}',",
+            "  }",
+            "}\n",
+        ]
+
+    def _emit_bicep_custom_role_definition(self, rd: dict) -> List[str]:
+        name = rd.get("name", rd.get("id", "roleDefinition"))
+        props = rd.get("properties", rd)
+        permissions = props.get("permissions", [])
+        assignable_scopes = props.get("assignableScopes", [])
+        permissions_str = (
+            "[\n"
+            + "\n".join(
+                [
+                    f"    {{ actions: {json.dumps(p.get('actions', []))}, notActions: {json.dumps(p.get('notActions', []))} }}"
+                    for p in permissions
+                ]
+            )
+            + "\n  ]"
+            if permissions
+            else "[]"
+        )
+        assignable_scopes_str = json.dumps(assignable_scopes)
+        return [
+            f"resource {name}_rd 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {{",
+            f"  name: '{name}'",
+            "  properties: {",
+            f"    roleName: '{props.get('roleName', '')}',",
+            f"    description: '{props.get('description', '')}',",
+            f"    permissions: {permissions_str},",
+            f"    assignableScopes: {assignable_scopes_str},",
+            "    roleType: 'Custom',",
+            "  }",
+            "}\n",
+        ]
+
+    # Patch _emit_resource_block to add identity blocks
+    def _emit_resource_block(
+        self, resource: dict[str, Any], in_module: bool = False
+    ) -> List[str]:
+        az_type = resource.get("type", "")
+        name = resource.get("name", "unnamed")
+        location = resource.get("location", "eastus")
+        lines = [
+            f"resource {name}_res '{az_type}@2023-01-01' = {{",
+            f"  name: '{name}'",
+            "  location: rgLocation" if in_module else f"  location: '{location}'",
+        ]
+        if "tags" in resource and isinstance(resource["tags"], dict):
+            tags = resource["tags"]
+            tag_str = ", ".join(f"{k}: '{v}'" for k, v in tags.items())
+            lines.append(f"  tags: {{ {tag_str} }}")
+        # Add identity block if present
+        identity = resource.get("identity")
+        if identity and isinstance(identity, dict):
+            lines.append("  identity: {")
+            if identity.get("type"):
+                lines.append(f"    type: '{identity['type']}'")
+            if identity.get("userAssignedIdentities"):
+                lines.append("    userAssignedIdentities: {")
+                for k in identity["userAssignedIdentities"]:
+                    lines.append(f"      '{k}': {{}}")
+                lines.append("    }")
+            lines.append("  }")
+        if resource.get("systemAssignedIdentity", False):
+            lines.append("  identity: { type: 'SystemAssigned' }")
+        lines.append("  properties: {}")
+        lines.append("}\n")
+        return lines
 
     async def emit_template(
         self, tenant_graph: TenantGraph, output_path: Optional[str] = None
@@ -144,6 +304,20 @@ class BicepEmitter(IaCEmitter):
             tags = resource["tags"]
             tag_str = ", ".join(f"{k}: '{v}'" for k, v in tags.items())
             lines.append(f"  tags: {{ {tag_str} }}")
+        # Identity block handling
+        identity = resource.get("identity")
+        if identity and isinstance(identity, dict):
+            lines.append("  identity: {")
+            if identity.get("type"):
+                lines.append(f"    type: '{identity['type']}'")
+            if identity.get("userAssignedIdentities"):
+                lines.append("    userAssignedIdentities: {")
+                for k in identity["userAssignedIdentities"]:
+                    lines.append(f"      '{k}': {{}}")
+                lines.append("    }")
+            lines.append("  }")
+        if resource.get("systemAssignedIdentity", False):
+            lines.append("  identity: { type: 'SystemAssigned' }")
         lines.append("  properties: {}")
         lines.append("}\n")
         return lines
