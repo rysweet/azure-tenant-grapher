@@ -1,5 +1,6 @@
 from .creator_rule import CreatorRule
 from .depends_on_rule import DependsOnRule
+from .diagnostic_rule import DiagnosticRule
 from .identity_rule import IdentityRule
 from .monitoring_rule import MonitoringRule
 from .network_rule import NetworkRule
@@ -13,5 +14,6 @@ ALL_RELATIONSHIP_RULES = [
     RegionRule(),
     CreatorRule(),
     MonitoringRule(),
+    DiagnosticRule(),
     DependsOnRule(),
 ]
