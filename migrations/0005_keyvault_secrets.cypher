@@ -15,5 +15,4 @@ CREATE INDEX keyvaultsecret_contentType IF NOT EXISTS
 FOR (s:KeyVaultSecret)
 ON (s.contentType);
 
-// Relationship documentation (no data created here)
 // STORES_SECRET: (KeyVault)-[:STORES_SECRET]->(KeyVaultSecret)
