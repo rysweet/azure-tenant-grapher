@@ -57,6 +57,7 @@ async def build_command_handler(
     tenant_id: str,
     resource_limit: Optional[int],
     max_llm_threads: int,
+    max_retries: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -80,7 +81,9 @@ async def build_command_handler(
             sys.exit(1)
 
         # Create and validate configuration
-        config = create_config_from_env(effective_tenant_id, resource_limit)
+        config = create_config_from_env(
+            effective_tenant_id, resource_limit, max_retries
+        )
         config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container
         config.logging.level = ctx.obj["log_level"]

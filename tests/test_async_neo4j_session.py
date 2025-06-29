@@ -5,7 +5,6 @@ This test suite covers the behaviour we expect from an async context manager
 that wraps the Neo4j Python driver's async session objects.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
