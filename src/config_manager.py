@@ -218,7 +218,10 @@ class AzureTenantGrapherConfig:
 
     @classmethod
     def from_environment(
-        cls, tenant_id: str, resource_limit: Optional[int] = None
+        cls,
+        tenant_id: str,
+        resource_limit: Optional[int] = None,
+        max_retries: Optional[int] = None,
     ) -> "AzureTenantGrapherConfig":
         """
         Create configuration from environment variables.
@@ -226,6 +229,7 @@ class AzureTenantGrapherConfig:
         Args:
             tenant_id: Azure tenant ID
             resource_limit: Optional limit on resources to process
+            max_retries: Optional max retries for failed resources
 
         Returns:
             AzureTenantGrapherConfig: Configured instance
@@ -237,6 +241,8 @@ class AzureTenantGrapherConfig:
         if resource_limit is not None:
             config.processing.resource_limit = resource_limit
             config.specification.resource_limit = resource_limit
+        if max_retries is not None:
+            config.processing.max_retries = max_retries
 
         return config
 
@@ -403,7 +409,9 @@ def setup_logging(config: LoggingConfig) -> None:
 
 
 def create_config_from_env(
-    tenant_id: str, resource_limit: Optional[int] = None
+    tenant_id: str,
+    resource_limit: Optional[int] = None,
+    max_retries: Optional[int] = None,
 ) -> AzureTenantGrapherConfig:
     """
     Factory function to create and validate configuration from environment.
@@ -411,6 +419,7 @@ def create_config_from_env(
     Args:
         tenant_id: Azure tenant ID
         resource_limit: Optional limit on resources to process
+        max_retries: Optional max retries for failed resources
 
     Returns:
         AzureTenantGrapherConfig: Validated configuration instance
@@ -418,7 +427,9 @@ def create_config_from_env(
     Raises:
         ValueError: If configuration is invalid
     """
-    config = AzureTenantGrapherConfig.from_environment(tenant_id, resource_limit)
+    config = AzureTenantGrapherConfig.from_environment(
+        tenant_id, resource_limit, max_retries
+    )
     config.validate_all()
     return config
 
