@@ -43,6 +43,7 @@ class AzureDiscoveryService:
         credential: Optional[Any] = None,
         subscription_client_factory: Optional[Callable[[Any], Any]] = None,
         resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+        change_feed_ingestion_service: Optional[Any] = None,
     ) -> None:
         """
         Initialize the Azure Discovery Service.
@@ -52,6 +53,7 @@ class AzureDiscoveryService:
             credential: Optional Azure credential (for dependency injection/testing)
             subscription_client_factory: Optional factory for SubscriptionClient (for testing)
             resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+            change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
         self.credential = credential or DefaultAzureCredential()
@@ -61,6 +63,7 @@ class AzureDiscoveryService:
         self.resource_client_factory = (
             resource_client_factory or ResourceManagementClient
         )
+        self.change_feed_ingestion_service = change_feed_ingestion_service
         # Maximum retry attempts for transient Azure errors (default 3)
         self._max_retries: int = (
             getattr(getattr(config, "processing", None), "max_retries", 3) or 3
@@ -424,12 +427,32 @@ class AzureDiscoveryService:
         except Exception:
             return False
 
+    async def ingest_delta_for_subscription(
+        self, subscription_id: str, since_timestamp: Optional[str] = None
+    ):
+        """
+        Trigger delta ingestion for a subscription using the ChangeFeedIngestionService.
+
+        Args:
+            subscription_id: Azure subscription ID.
+            since_timestamp: Optional ISO8601 timestamp string.
+
+        Returns:
+            List of upserted or marked resources, or None if not configured.
+        """
+        if not self.change_feed_ingestion_service:
+            raise RuntimeError("ChangeFeedIngestionService is not configured.")
+        return await self.change_feed_ingestion_service.ingest_changes_for_subscription(
+            subscription_id, since_timestamp=since_timestamp
+        )
+
 
 def create_azure_discovery_service(
     config: AzureTenantGrapherConfig,
     credential: Optional[Any] = None,
     subscription_client_factory: Optional[Callable[[Any], Any]] = None,
     resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+    change_feed_ingestion_service: Optional[Any] = None,
 ) -> AzureDiscoveryService:
     """
     Factory function to create an Azure Discovery Service.
@@ -439,6 +462,7 @@ def create_azure_discovery_service(
         credential: Optional Azure credential for dependency injection
         subscription_client_factory: Optional factory for SubscriptionClient (for testing)
         resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+        change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
 
     Returns:
         AzureDiscoveryService: Configured service instance
@@ -448,4 +472,5 @@ def create_azure_discovery_service(
         credential,
         subscription_client_factory=subscription_client_factory,
         resource_client_factory=resource_client_factory,
+        change_feed_ingestion_service=change_feed_ingestion_service,
     )

@@ -76,6 +76,49 @@ class TestAzureDiscoveryService:
             resource_client_factory=resource_client_factory,
         )
 
+    @pytest.fixture
+    def mock_change_feed_ingestion_service(self) -> Mock:
+        """Provide a mock ChangeFeedIngestionService instance."""
+        mock_service = Mock()
+        from unittest.mock import AsyncMock
+        mock_service.ingest_changes_for_subscription = AsyncMock(
+            return_value=["delta1", "delta2"]
+        )
+        return mock_service
+
+    @pytest.fixture
+    def azure_service_with_delta(
+        self,
+        mock_config: Mock,
+        mock_credential: Mock,
+        subscription_client_factory: Callable[[Any], Mock],
+        resource_client_factory: Callable[[Any, str], Mock],
+        mock_change_feed_ingestion_service: Mock,
+    ) -> AzureDiscoveryService:
+        """Provide an AzureDiscoveryService with ChangeFeedIngestionService injected."""
+        return AzureDiscoveryService(
+            mock_config,
+            mock_credential,
+            subscription_client_factory=subscription_client_factory,
+            resource_client_factory=resource_client_factory,
+            change_feed_ingestion_service=mock_change_feed_ingestion_service,
+        )
+
+    @pytest.mark.asyncio
+    async def test_ingest_delta_for_subscription_calls_change_feed(
+        self,
+        azure_service_with_delta: AzureDiscoveryService,
+        mock_change_feed_ingestion_service: Mock,
+    ) -> None:
+        """Test that ingest_delta_for_subscription calls ChangeFeedIngestionService."""
+        result = await azure_service_with_delta.ingest_delta_for_subscription(
+            "sub-id", since_timestamp="2024-01-01T00:00:00Z"
+        )
+        mock_change_feed_ingestion_service.ingest_changes_for_subscription.assert_called_once_with(
+            "sub-id", since_timestamp="2024-01-01T00:00:00Z"
+        )
+        assert result == ["delta1", "delta2"]
+
     def test_initialization(
         self,
         mock_config: Mock,
