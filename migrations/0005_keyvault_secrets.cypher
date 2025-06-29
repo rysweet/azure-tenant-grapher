@@ -16,4 +16,4 @@ FOR (s:KeyVaultSecret)
 ON (s.contentType);
 
 // Relationship documentation (no data created here)
-# STORES_SECRET: (KeyVault)-[:STORES_SECRET]->(KeyVaultSecret)
+// STORES_SECRET: (KeyVault)-[:STORES_SECRET]->(KeyVaultSecret)
