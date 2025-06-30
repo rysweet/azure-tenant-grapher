@@ -749,6 +749,52 @@ The tenant contains {len(relationships)} relationships between resources, indica
 
     # Batch-based LLM resource processing is deprecated and removed.
 
+    async def generate_sim_customer_profile(
+        self,
+        size: Optional[int] = None,
+        seed: Optional[str] = None,
+    ) -> str:
+        """
+        Generate a simulated Azure customer profile as a Markdown narrative.
+
+        Args:
+            size: Optional integer to guide company size/complexity.
+            seed: Optional seed text to steer the generation.
+
+        Returns:
+            Markdown string describing the simulated customer.
+        """
+        prompt = (
+            "I'm a research scientist planning on building accurate simulations of Microsoft Azure customer environments so that security professionals can run realistic security scenarios in those environments. "
+            "We want the environments to be as close to real customer environments of large customers as possible, but we cannot copy real customer data or real customer names/identities etc. "
+            "We care more about simulating customer complexity and configuration than we do about scale. "
+            "We have a large trove of customer stories here: https://www.microsoft.com/en-us/customers/search?filters=product%3Aazure which you can browse and search to find relevant customer profiles. "
+            "We also have a collection of Azure reference architectures here: https://learn.microsoft.com/en-us/azure/architecture/browse/. "
+            "You can use both of these resources to research typical customers and the architectures they deploy on Azure.\n\n"
+            "Please use that background information and produce for me a distinct fake customer profile that describes the customer company, its goals, its personnel, and the solutions that they are leveraging on Azure, "
+            "with enough detail that we could begin to go model that customer environment. The fake profiles must be somewhat realistic in terms of storytelling, application, and personnel, but MAY NOT use any of the content from the Customer Stories site verbatim and MAY NOT use the names of real companies or customers."
+        )
+        if size:
+            prompt += f"\n\nTarget company size: {size} employees (approximate)."
+        if seed:
+            prompt += f"\n\nSeed/suggestions for the profile:\n{seed}"
+
+        response = self.client.chat.completions.create(
+            model=self.config.model_chat,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert Azure cloud architect and technical writer. Generate a realistic, detailed, and original Markdown narrative for a simulated Azure customer profile as described.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_completion_tokens=32768,
+        )
+        content = response.choices[0].message.content
+        markdown = str(content).strip() if content else ""
+        logger.info("Generated simulated customer profile via LLM.")
+        return markdown
+
 
 def create_llm_generator() -> Optional[AzureLLMDescriptionGenerator]:
     """

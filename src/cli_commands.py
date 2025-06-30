@@ -5,6 +5,7 @@ Contains the implementation of various CLI commands to keep the main CLI file fo
 """
 
 import asyncio
+import datetime
 import logging
 import os
 import sys
@@ -601,6 +602,62 @@ async def agent_mode_command_handler(
 
 
 # === Threat Modeling Agent Command Handler ===
+
+
+async def generate_sim_doc_command_handler(
+    ctx: click.Context,
+    size: Optional[int] = None,
+    seed_path: Optional[str] = None,
+    out_path: Optional[str] = None,
+) -> None:
+    """
+    Handle the generate-sim-doc CLI command.
+    """
+    import os
+
+    from src.llm_descriptions import create_llm_generator
+
+    # Read seed file if provided
+    seed_text = None
+    if seed_path:
+        try:
+            with open(seed_path, encoding="utf-8") as f:
+                seed_text = f.read()
+        except Exception as e:
+            click.echo(f"❌ Failed to read seed file: {e}", err=True)
+            sys.exit(1)
+
+    # Create LLM generator
+    llm = create_llm_generator()
+    if not llm:
+        click.echo(
+            "❌ LLM configuration is invalid or missing. Check your environment.",
+            err=True,
+        )
+        sys.exit(1)
+
+    # Generate the profile
+    try:
+        markdown = await llm.generate_sim_customer_profile(size=size, seed=seed_text)
+    except Exception as e:
+        click.echo(f"❌ LLM generation failed: {e}", err=True)
+        sys.exit(1)
+
+    # Determine output path
+    if out_path:
+        output_path = out_path
+    else:
+        os.makedirs("simdocs", exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        output_path = f"simdocs/simdoc-{timestamp}.md"
+
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(markdown)
+        click.echo(f"✅ Simulated customer profile written to: {output_path}")
+    except Exception as e:
+        click.echo(f"❌ Failed to write output file: {e}", err=True)
+        sys.exit(1)
 
 
 async def generate_threat_model_command_handler(
