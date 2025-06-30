@@ -677,3 +677,26 @@ async def generate_threat_model_command_handler(
     click.echo("✅ Threat Modeling Agent workflow complete.")
     if report_path:
         click.echo(f"📄 Threat modeling report saved to: {report_path}")
+
+
+# === Create Tenant Command Handler ===
+
+
+def create_tenant_from_markdown(text: str):
+    """Stub for tenant synthesis from markdown."""
+    print("TODO: synthesize tenant")
+    # Placeholder for future implementation
+
+
+@click.command("create-tenant")
+@click.argument("markdown_file", type=click.Path(exists=True))
+def create_tenant_command(markdown_file: str):
+    """Create a tenant from a markdown file."""
+    try:
+        with open(markdown_file, encoding="utf-8") as f:
+            text = f.read()
+        create_tenant_from_markdown(text)
+        click.echo("✅ Tenant creation (stub) succeeded.")
+    except Exception as e:
+        click.echo(f"❌ Failed to create tenant: {e}", err=True)
+        exit(1)
