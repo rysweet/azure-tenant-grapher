@@ -64,6 +64,7 @@ try:
 
     from src.cli_commands import (
         build_command_handler,
+        create_tenant_command,
         generate_spec_command_handler,
         progress_command_handler,
         spec_command_handler,
@@ -71,6 +72,7 @@ try:
     )
     from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
+    # (Removed: from src.cli_commands import create_tenant_command)
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure all required packages are installed:")
@@ -567,6 +569,9 @@ async def generate_sim_doc(ctx, size, seed, out):
 
 # Alias: gensimdoc
 cli.add_command(generate_sim_doc, "gensimdoc")
+
+# Register create-tenant command
+cli.add_command(create_tenant_command, "create-tenant")
 
 
 @cli.command()
