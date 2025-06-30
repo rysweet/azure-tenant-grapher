@@ -1,0 +1,1 @@
+please read issue 95 (use the gh issue command) and then proceed to implement the feature described. your task is not complete until the PR is created and CI is passing.  Do not forget your responsibility to create prompt history files and reflection files as described in '.roo/rules/02-prompt-history-and-reflection.md'
