@@ -141,12 +141,17 @@ Instructions:
             "DEBUG: No JSON block found in markdown (even with fallback). Using LLM for narrative-to-spec."
         )
         narrative = self._extract_narrative(markdown)
+        # Prepare the prompt for error context
+        prompt = self.LLM_PROMPT_TEMPLATE.format(
+            narrative=narrative, schema=self._tenant_spec_schema_example()
+        )
         json_text = await self._llm_generate_tenant_spec(narrative)
         print("DEBUG: LLM-generated JSON spec:\n", json_text)
         print("DEBUG: Type of json_text:", type(json_text))
         # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
 
+        from src.exceptions import LLMGenerationError
         from src.llm_descriptions import normalize_llm_fields
 
         try:
@@ -160,7 +165,24 @@ Instructions:
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
-            print("DEBUG: Failed to post-process LLM JSON:", e)
+            # Log prompt and raw response for debugging
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(
+                "LLM output parsing failed. Prompt: %r\nRaw response: %r\nException: %s",
+                prompt,
+                json_text,
+                e,
+            )
+            # Raise structured error for CLI and test handling
+            raise LLMGenerationError(
+                "Failed to parse LLM output as valid JSON.",
+                model=getattr(self.llm_generator, "config", None)
+                and getattr(self.llm_generator.config, "model_chat", None),
+                context={"prompt": prompt, "raw_response": json_text},
+                cause=e,
+            ) from e
         return TenantSpec.parse_raw_json(json_text)
 
     async def ingest_to_graph(self, spec: TenantSpec) -> None:

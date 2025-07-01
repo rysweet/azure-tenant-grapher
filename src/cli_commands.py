@@ -693,8 +693,28 @@ def create_tenant_from_markdown(text: str):
     creator = TenantCreator(llm_generator=llm_generator)
 
     async def _run():
-        spec = await creator.create_from_markdown(text)
-        await creator.ingest_to_graph(spec)
+        from src.exceptions import LLMGenerationError
+
+        try:
+            spec = await creator.create_from_markdown(text)
+            await creator.ingest_to_graph(spec)
+        except LLMGenerationError as e:
+            import click
+
+            click.echo("❌ LLM output parsing failed during tenant creation.", err=True)
+            click.echo(f"Error: {e}", err=True)
+            if hasattr(e, "context") and e.context:
+                prompt = e.context.get("prompt")
+                raw_response = e.context.get("raw_response")
+                if prompt:
+                    click.echo("Prompt used for LLM:", err=True)
+                    click.echo(prompt, err=True)
+                if raw_response:
+                    click.echo("Raw LLM response:", err=True)
+                    click.echo(raw_response, err=True)
+            import sys
+
+            sys.exit(1)
 
     asyncio.run(_run())
 
