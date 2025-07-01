@@ -1,11 +1,20 @@
 import os
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
 
 @pytest.mark.integration
+def print_cli_failure(result: Any) -> None:
+    print(f"Process exited with code {result.returncode}")
+    print("STDOUT:")
+    print(result.stdout)
+    print("STDERR:")
+    print(result.stderr)
+
+
 def test_generate_sim_doc_basic(tmp_path):
     # Prepare a minimal seed file
     seed_content = "# Seed\nThis is a test seed for the simulated customer profile."
@@ -38,6 +47,8 @@ def test_generate_sim_doc_basic(tmp_path):
     )
 
     # Check process exit
+    if result.returncode != 0:
+        print_cli_failure(result)
     assert result.returncode == 0, f"CLI failed: {result.stderr}"
 
     # Check output file exists and is not empty

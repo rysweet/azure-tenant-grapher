@@ -2,21 +2,39 @@
 Container orchestration module for managing Neo4j Docker container.
 """
 
-import logging
 import os
+import random
+import string
 import subprocess  # nosec B404
 import time
+import uuid
 from typing import Optional
 
 import docker
+import structlog
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 
-logger = logging.getLogger(__name__)
+from src.logging_config import configure_logging
+
+configure_logging()
+logger = structlog.get_logger(__name__)
 
 
 class Neo4jContainerManager:
-    """Manages Neo4j Docker container lifecycle."""
+    """
+    Manages Neo4j Docker container lifecycle.
+
+    Password Policy:
+    - The Neo4j password for tests must be provided via the NEO4J_PASSWORD environment variable.
+    - If not set, a random password is generated for each test run.
+    - Never hardcode secrets or passwords in test code or fixtures.
+    - The container name is randomized per test run to avoid conflicts in parallel CI.
+
+    Container Naming Policy:
+    - The Neo4j container name is set via the NEO4J_CONTAINER_NAME environment variable.
+    - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
+    """
 
     def __init__(self, compose_file: str = "docker-compose.yml") -> None:
         """
@@ -27,9 +45,21 @@ class Neo4jContainerManager:
         """
         self.compose_file = compose_file
         self.docker_client = None
+
+        # Unique container name per test run
+        self.container_name = os.getenv(
+            "NEO4J_CONTAINER_NAME", f"azure-tenant-grapher-neo4j-{uuid.uuid4().hex[:8]}"
+        )
+        self.volume_name = f"{self.container_name}-data"
+
         self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-        self.neo4j_password = os.getenv("NEO4J_PASSWORD", "example-password")
+        self.neo4j_password = (
+            os.getenv("NEO4J_PASSWORD") or self._generate_random_password()
+        )
+
+        # Readiness timeout configurable via env
+        self.readiness_timeout = int(os.getenv("NEO4J_READY_TIMEOUT", "30"))
 
         try:
             self.docker_client = docker.from_env()
@@ -93,7 +123,7 @@ class Neo4jContainerManager:
 
         try:
             containers = self.docker_client.containers.list(  # type: ignore[misc]
-                filters={"name": "azure-tenant-grapher-neo4j"}
+                filters={"name": self.container_name}
             )
             return len(containers) > 0 and containers[0].status == "running"  # type: ignore[misc]
         except Exception as e:
@@ -120,7 +150,8 @@ class Neo4jContainerManager:
 
             # Start the container
             env = os.environ.copy()
-            env["NEO4J_AUTH"] = "neo4j/neo4j"
+            env["NEO4J_AUTH"] = f"{self.neo4j_user}/{self.neo4j_password}"
+            # Compose service name is always "neo4j", but container name is unique
             result = subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "up", "-d", "neo4j"],
                 capture_output=True,
@@ -139,18 +170,20 @@ class Neo4jContainerManager:
             logger.exception(f"Error output: {e.stderr}")
             return False
 
-    def wait_for_neo4j_ready(self, timeout: int = 30) -> bool:
+    def wait_for_neo4j_ready(self, timeout: Optional[int] = None) -> bool:
         """
         Wait for Neo4j to be ready to accept connections.
 
         Args:
-            timeout: Maximum time to wait in seconds
+            timeout: Maximum time to wait in seconds (overrides env/instance default)
 
         Returns:
             True if Neo4j is ready, False if timeout
         """
+        if timeout is None:
+            timeout = self.readiness_timeout
         logger.info("Waiting for Neo4j to be ready...")
-        print("Waiting for Neo4j to be ready...", flush=True)
+        logger.info("Waiting for Neo4j to be ready...", event="wait_for_neo4j_ready")
         start_time = time.time()
         last_print = start_time
 
@@ -166,23 +199,33 @@ class Neo4jContainerManager:
                     if record and record["test"] == 1:
                         driver.close()
                         logger.info("Neo4j is ready!")
-                        print("Neo4j is ready!", flush=True)
+                        logger.info("Neo4j is ready!", event="wait_for_neo4j_ready")
                         return True
 
             except ServiceUnavailable:
                 logger.debug("Neo4j not ready yet, waiting...")
                 now = time.time()
                 if now - last_print > 5:
-                    print("Still waiting for Neo4j...", flush=True)
+                    logger.info(
+                        "Still waiting for Neo4j...", event="wait_for_neo4j_ready"
+                    )
                     last_print = now
                 time.sleep(2)
             except Exception as e:
                 logger.debug(f"Connection attempt failed: {e}")
-                print(f"Error while waiting for Neo4j: {e}", flush=True)
+                logger.warning(
+                    "Error while waiting for Neo4j",
+                    error=str(e),
+                    event="wait_for_neo4j_ready",
+                )
                 time.sleep(2)
 
         logger.error(f"Neo4j did not become ready within {timeout} seconds")
-        print(f"ERROR: Neo4j did not become ready within {timeout} seconds", flush=True)
+        logger.error(
+            "Neo4j did not become ready within timeout",
+            timeout=timeout,
+            event="wait_for_neo4j_ready",
+        )
         return False
 
     def stop_neo4j_container(self) -> bool:
@@ -282,7 +325,7 @@ class Neo4jContainerManager:
                 return False
 
             containers = self.docker_client.containers.list(
-                filters={"name": "azure-tenant-grapher-neo4j"}
+                filters={"name": self.container_name}
             )
             if not containers:
                 logger.error("Neo4j container not found")
@@ -348,3 +391,43 @@ class Neo4jContainerManager:
         except Exception as e:
             logger.error(f"Backup failed: {e}")
             return False
+
+    def cleanup(self):
+        """
+        Cleanup Neo4j container and volume for this test run.
+        Ensures removal even if container is stopped or exited.
+        """
+        if not self.docker_client:
+            return
+        try:
+            containers = self.docker_client.containers.list(
+                all=True, filters={"name": self.container_name}
+            )
+            for c in containers:
+                try:
+                    c.remove(force=True)
+                    logger.info(f"Removed container {c.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to remove container {c.name}: {e}")
+        except Exception as e:
+            logger.warning(f"Error listing containers for cleanup: {e}")
+
+        # Remove volume
+        try:
+            volumes = self.docker_client.volumes.list(
+                filters={"name": self.volume_name}
+            )
+            for v in volumes:
+                try:
+                    v.remove(force=True)
+                    logger.info(f"Removed volume {v.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to remove volume {v.name}: {e}")
+        except Exception as e:
+            logger.warning(f"Error listing volumes for cleanup: {e}")
+
+    @staticmethod
+    def _generate_random_password(length: int = 16) -> str:
+        """Generate a random password for Neo4j."""
+        chars = string.ascii_letters + string.digits
+        return "".join(random.SystemRandom().choice(chars) for _ in range(length))

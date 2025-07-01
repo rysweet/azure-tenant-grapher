@@ -1,7 +1,16 @@
 import subprocess
 import sys
+from typing import Any
 
 import pytest
+
+
+def print_cli_failure(proc: Any, stdout: str, stderr: str) -> None:
+    print(f"Process exited with code {proc.returncode}")
+    print("STDOUT:")
+    print(stdout)
+    print("STDERR:")
+    print(stderr)
 
 
 def test_agent_mode_requires_resources():
@@ -55,6 +64,7 @@ def test_agent_mode_requires_resources():
                 )
 
         else:
+            print_cli_failure(proc, stdout, stderr)
             pytest.fail(
                 f"Unexpected return code {proc.returncode}. stdout: {stdout}, stderr: {stderr}"
             )
