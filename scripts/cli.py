@@ -4,6 +4,7 @@ Enhanced CLI wrapper for Azure Tenant Grapher
 
 This script provides an improved command-line interface with better error handling,
 configuration validation, and progress tracking.
+import os
 """
 
 import asyncio
@@ -55,9 +56,12 @@ class GreenInfoRichHandler(RichHandler):
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Always load .env if present
-load_dotenv()
+load_dotenv(dotenv_path=".env", override=True)
 
 # (Removed duplicate import of DashboardExitException)
+
+print(f"[DEBUG] CLI startup NEO4J_URI: {os.environ.get('NEO4J_URI')}", flush=True)
+print(f"[DEBUG] CLI startup environment: {os.environ}", flush=True)
 
 try:
     import click
@@ -568,6 +572,20 @@ def doctor() -> None:
     print("Doctor check complete.")
 
 
+import uvicorn
+
+@cli.command()
+@click.option("--port", type=int, default=8000, help="Port to run the SPA server on")
+def app(port):
+    """Start the SPA visualization server and open the browser (SPA mode)."""
+    import os
+    print(f"[DEBUG] CLI app command NEO4J_URI: {os.environ.get('NEO4J_URI')}", flush=True)
+    print(f"[DEBUG] CLI app command environment: {os.environ}", flush=True)
+    from src.visualization.server import app as spa_app
+    print(f"[DEBUG] About to start Uvicorn with NEO4J_URI={os.environ.get('NEO4J_URI')}", flush=True)
+    print(f"Starting SPA server on http://localhost:{port} ...")
+    uvicorn.run(spa_app, host="0.0.0.0", port=port)
+
 def main() -> None:
     """Main entry point."""
     result = cli()  # type: ignore[reportCallIssue]
@@ -584,12 +602,3 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-import uvicorn
-
-@cli.command()
-@click.option("--port", type=int, default=8000, help="Port to run the SPA server on")
-def app(port):
-    """Start the SPA visualization server and open the browser (SPA mode)."""
-    from src.visualization.server import app as spa_app
-    print(f"Starting SPA server on http://localhost:{port} ...")
-    uvicorn.run(spa_app, host="0.0.0.0", port=port, reload=True)
