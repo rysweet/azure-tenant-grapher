@@ -453,3 +453,24 @@ class TestHtmlStructureBuilder:
         # Should contain node info and cluster labels
         assert 'class="node-info"' in html
         assert 'id="cluster-labels"' in html
+
+
+def test_visualization_error_chaining():
+    import pytest
+
+    from src.visualization.html_template_builder import (
+        HtmlTemplateBuilder,
+        VisualizationError,
+    )
+
+    builder = HtmlTemplateBuilder()
+    # Patch _validate_graph_data to raise a ValueError
+    builder._validate_graph_data = lambda data: (_ for _ in ()).throw(
+        ValueError("bad data")
+    )
+    with pytest.raises(VisualizationError) as exc_info:
+        builder.build_template(
+            {"nodes": [], "links": [], "node_types": [], "relationship_types": []}
+        )
+    assert exc_info.value.__cause__ is not None
+    assert isinstance(exc_info.value.__cause__, ValueError)

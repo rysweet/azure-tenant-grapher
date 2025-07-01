@@ -12,8 +12,8 @@ import sys
 from typing import TYPE_CHECKING, Optional
 
 import click
+import structlog
 
-# (removed duplicate import click)
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
@@ -23,7 +23,10 @@ from src.config_manager import (
 )
 from src.container_manager import Neo4jContainerManager
 from src.graph_visualizer import GraphVisualizer
+from src.logging_config import configure_logging
 from src.rich_dashboard import RichDashboard
+
+configure_logging()
 
 if TYPE_CHECKING:
     from src.config_manager import AzureTenantGrapherConfig
@@ -95,7 +98,7 @@ async def build_command_handler(
         # Validate configuration
         config.validate_all()
 
-        logger = logging.getLogger(__name__)
+        logger = structlog.get_logger(__name__)
 
         # Create and run the grapher
         grapher = AzureTenantGrapher(config)
@@ -121,8 +124,16 @@ async def build_command_handler(
             )
 
     except Exception as e:
-        click.echo(f"❌ Unexpected error: {e}", err=True)
-        logging.error(f"CLI exiting with code 1 after dashboard: {e}")
+        click.echo(
+            f"❌ Unexpected error: {e}\n"
+            "If this is a Neo4j error, ensure Neo4j is running and credentials are correct.\n"
+            "If this is an LLM error, check your Azure OpenAI environment variables and network connectivity.\n"
+            "For troubleshooting, run with --log-level DEBUG and see the log file for details.",
+            err=True,
+        )
+        structlog.get_logger(__name__).error(
+            "CLI exiting with code 1 after dashboard", error=str(e), exc_info=True
+        )
         sys.exit(1)
 
 
@@ -139,7 +150,9 @@ async def _run_no_dashboard_mode(
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file_path = f"{tempfile.gettempdir()}/azure_tenant_grapher_{timestamp}.log"
-    print(f"LOG_FILE: {log_file_path}", flush=True)
+    structlog.get_logger(__name__).info(
+        "Log file path for no-dashboard mode", log_file_path=log_file_path
+    )
 
     from rich.logging import RichHandler
     from rich.style import Style
@@ -182,13 +195,20 @@ async def _run_no_dashboard_mode(
         if name in ["httpx", "azure", "openai"]:
             continue
         logging.getLogger(name).setLevel(level_map.get(cli_log_level, logging.INFO))
-    logging.info(
-        f"Running in no-dashboard mode: logs will be emitted line by line. Log level: {cli_log_level}"
+    structlog.get_logger(__name__).info(
+        "Running in no-dashboard mode: logs will be emitted line by line.",
+        log_level=cli_log_level,
     )
     try:
         grapher.connect_to_neo4j()
     except Exception as e:
-        click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+        click.echo(
+            f"❌ Failed to connect to Neo4j: {e}\n"
+            "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
+            "If using Docker, check that the container is started and healthy.\n"
+            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+            err=True,
+        )
         sys.exit(1)
     logger.info("🚀 Starting Azure Tenant Graph building...")
     if hasattr(grapher, "build_graph"):
@@ -226,7 +246,9 @@ async def _run_dashboard_mode(
         max_concurrency=max_llm_threads,
     )
     # Print log file path for test discoverability
-    print(f"LOG_FILE: {dashboard.log_file_path}", flush=True)
+    structlog.get_logger(__name__).info(
+        "Log file path for dashboard mode", log_file_path=dashboard.log_file_path
+    )
 
     # Setup file logging to the dashboard's log file
     file_handler = logging.FileHandler(dashboard.log_file_path)
@@ -239,8 +261,19 @@ async def _run_dashboard_mode(
     try:
         grapher.connect_to_neo4j()
     except Exception as e:
-        dashboard.add_error(f"❌ Failed to connect to Neo4j: {e}")
-        click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+        dashboard.add_error(
+            f"❌ Failed to connect to Neo4j: {e}\n"
+            "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
+            "If using Docker, check that the container is started and healthy.\n"
+            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'."
+        )
+        click.echo(
+            f"❌ Failed to connect to Neo4j: {e}\n"
+            "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
+            "If using Docker, check that the container is started and healthy.\n"
+            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+            err=True,
+        )
         sys.exit(1)
 
     logger.info("🚀 Starting Azure Tenant Graph building...")
@@ -408,7 +441,13 @@ async def visualize_command_handler(
             )
             click.echo(f"✅ Visualization saved to: {viz_path}")
         except Exception as e:
-            click.echo(f"⚠️  Failed to connect to Neo4j: {e}", err=True)
+            click.echo(
+                f"⚠️  Failed to connect to Neo4j: {e}\n"
+                "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
+                "If using Docker, check that the container is started and healthy.\n"
+                "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+                err=True,
+            )
             if not no_container:
                 click.echo("🔄 Attempting to start Neo4j container...")
                 container_manager = Neo4jContainerManager()
@@ -429,16 +468,22 @@ async def visualize_command_handler(
                             time.sleep(3)
                     else:
                         click.echo(
-                            "❌ Failed to connect to Neo4j after starting container.",
+                            "❌ Failed to connect to Neo4j after starting container.\n"
+                            "Action: Check Docker logs and ensure the Neo4j container is healthy.",
                             err=True,
                         )
                         sys.exit(1)
                 else:
-                    click.echo("❌ Failed to start Neo4j container", err=True)
+                    click.echo(
+                        "❌ Failed to start Neo4j container.\n"
+                        "Action: Check Docker is running and you have permission to start containers.",
+                        err=True,
+                    )
                     sys.exit(1)
             else:
                 click.echo(
-                    "❌ Neo4j is not running and --no-container was specified.",
+                    "❌ Neo4j is not running and --no-container was specified.\n"
+                    "Action: Start Neo4j manually or remove --no-container to let the CLI manage it.",
                     err=True,
                 )
                 sys.exit(1)
@@ -470,7 +515,8 @@ async def spec_command_handler(ctx: click.Context, tenant_id: str) -> None:
         # Validate Azure OpenAI configuration
         if not config.azure_openai.is_configured():
             click.echo(
-                "❌ Azure OpenAI not configured. Tenant specification requires LLM capabilities.",
+                "❌ Azure OpenAI not configured. Tenant specification requires LLM capabilities.\n"
+                "Action: Set the required Azure OpenAI environment variables (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_OPENAI_API_VERSION) and try again.",
                 err=True,
             )
             sys.exit(1)
@@ -483,7 +529,11 @@ async def spec_command_handler(ctx: click.Context, tenant_id: str) -> None:
         click.echo("✅ Tenant specification generated successfully")
 
     except Exception as e:
-        click.echo(f"❌ Failed to generate specification: {e}", err=True)
+        click.echo(
+            f"❌ Failed to generate specification: {e}\n"
+            "Action: Check that Neo4j and Azure OpenAI are configured correctly. Run with --log-level DEBUG for more details.",
+            err=True,
+        )
         sys.exit(1)
 
 
@@ -634,7 +684,8 @@ async def generate_sim_doc_command_handler(
     llm = create_llm_generator()
     if not llm:
         click.echo(
-            "❌ LLM configuration is invalid or missing. Check your environment.",
+            "❌ LLM configuration is invalid or missing. Check your environment.\n"
+            "Action: Set the required Azure OpenAI environment variables (AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_OPENAI_API_VERSION) and ensure network connectivity.",
             err=True,
         )
         sys.exit(1)
@@ -643,7 +694,11 @@ async def generate_sim_doc_command_handler(
     try:
         markdown = await llm.generate_sim_customer_profile(size=size, seed=seed_text)
     except Exception as e:
-        click.echo(f"❌ LLM generation failed: {e}", err=True)
+        click.echo(
+            f"❌ LLM generation failed: {e}\n"
+            "Action: Check your Azure OpenAI configuration and network connectivity. Run with --log-level DEBUG for more details.",
+            err=True,
+        )
         sys.exit(1)
 
     # Determine output path
@@ -659,7 +714,11 @@ async def generate_sim_doc_command_handler(
             f.write(markdown)
         click.echo(f"✅ Simulated customer profile written to: {output_path}")
     except Exception as e:
-        click.echo(f"❌ Failed to write output file: {e}", err=True)
+        click.echo(
+            f"❌ Failed to write output file: {e}\n"
+            "Action: Check that the output path is writable and you have sufficient disk space.",
+            err=True,
+        )
         sys.exit(1)
 
 
@@ -680,3 +739,73 @@ async def generate_threat_model_command_handler(
     click.echo("✅ Threat Modeling Agent workflow complete.")
     if report_path:
         click.echo(f"📄 Threat modeling report saved to: {report_path}")
+
+
+# === Create Tenant Command Handler ===
+
+
+def create_tenant_from_markdown(text: str):
+    """Create a tenant from markdown using TenantCreator."""
+    import asyncio
+
+    from src.llm_descriptions import create_llm_generator
+    from src.tenant_creator import TenantCreator
+
+    llm_generator = create_llm_generator()
+    creator = TenantCreator(llm_generator=llm_generator)
+
+    async def _run():
+        from src.exceptions import LLMGenerationError
+
+        try:
+            spec = await creator.create_from_markdown(text)
+            await creator.ingest_to_graph(spec)
+        except LLMGenerationError as e:
+            import click
+
+            click.echo("❌ LLM output parsing failed during tenant creation.", err=True)
+            click.echo(f"Error: {e}", err=True)
+            click.echo(
+                "Action: The LLM response could not be parsed. Check your Azure OpenAI configuration and try again.\n"
+                "If the error persists, run with --log-level DEBUG and review the prompt and raw LLM response below.",
+                err=True,
+            )
+            if hasattr(e, "context") and e.context:
+                prompt = e.context.get("prompt")
+                raw_response = e.context.get("raw_response")
+                if prompt:
+                    click.echo("Prompt used for LLM:", err=True)
+                    click.echo(prompt, err=True)
+                if raw_response:
+                    click.echo("Raw LLM response:", err=True)
+                    click.echo(raw_response, err=True)
+            import sys
+
+            sys.exit(1)
+
+    asyncio.run(_run())
+
+
+@click.command("create-tenant")
+@click.argument("markdown_file", type=click.Path(exists=True))
+def create_tenant_command(markdown_file: str):
+    """Create a tenant from a markdown file."""
+    try:
+        from src.container_manager import Neo4jContainerManager
+
+        container_manager = Neo4jContainerManager()
+        if not container_manager.setup_neo4j():
+            click.echo("❌ Failed to start or connect to Neo4j. Aborting.", err=True)
+            sys.exit(1)
+        with open(markdown_file, encoding="utf-8") as f:
+            text = f.read()
+        print("DEBUG: Raw markdown file contents:\n", text)
+        create_tenant_from_markdown(text)
+        click.echo("✅ Tenant creation (stub) succeeded.")
+    except Exception as e:
+        click.echo(
+            f"❌ Failed to create tenant: {e}\n"
+            "Action: Check that the markdown file is valid and that Neo4j and Azure OpenAI are configured correctly. Run with --log-level DEBUG for more details.",
+            err=True,
+        )
+        exit(1)

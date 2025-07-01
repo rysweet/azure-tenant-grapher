@@ -7,18 +7,21 @@ with improved error handling, progress tracking, and database operations.
 
 import asyncio
 import json
-import logging
 import re
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+import structlog
+
+from src.logging_config import configure_logging
 from src.utils.session_manager import retry_neo4j_operation
 
 from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_description
 
-logger = logging.getLogger(__name__)
+configure_logging()
+logger = structlog.get_logger(__name__)
 
 
 @retry_neo4j_operation()
@@ -272,8 +275,9 @@ class DatabaseOperations:
                 return False
 
             try:
-                print("DEBUG: Running upsert_resource query:", query)
-                print("DEBUG: With props:", resource_data)
+                logger.debug(
+                    "Running upsert_resource query", query=query, props=resource_data
+                )
                 with self.session_manager.session() as session:
                     session.run(query, props=resource_data)
             except Exception as neo4j_exc:

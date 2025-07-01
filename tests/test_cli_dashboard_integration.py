@@ -6,6 +6,15 @@ from typing import Any
 
 import pytest
 
+
+def print_cli_failure(proc, stdout, stderr):
+    print(f"Process exited with code {proc.returncode}")
+    print("STDOUT:")
+    print(stdout)
+    print("STDERR:")
+    print(stderr)
+
+
 pytest.importorskip("readchar", reason="readchar not installed")
 
 
@@ -55,8 +64,8 @@ def test_cli_dashboard_log_level_and_exit(tmp_path: Path):
     assert "DEBUG:" not in stdout and "DEBUG " not in stdout
     # Assert process exited
     if proc.returncode != 0:
-        print("STDOUT:", stdout)
-        print("STDERR:", stderr)
+        print_cli_failure(proc, stdout, stderr)
+        assert proc.returncode == 0, "CLI exited with nonzero code"
 
 
 def test_dashboard_config_panel_displays_log_file(tmp_path: Path, neo4j_container: Any):
@@ -105,6 +114,5 @@ def test_dashboard_config_panel_displays_log_file(tmp_path: Path, neo4j_containe
             f"Log file name not found in dashboard config panel output: {cleaned_stdout}"
         )
     if proc.returncode != 0:
-        print("STDOUT:", stdout)
-        print("STDERR:", stderr)
+        print_cli_failure(proc, stdout, stderr)
     assert proc.returncode == 0
