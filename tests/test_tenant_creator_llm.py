@@ -66,3 +66,61 @@ Users and groups are not described.
     assert (
         spec.tenant.subscriptions[0].resource_groups[0].resources[0].name == "vm-prod"
     )
+
+
+@pytest.mark.asyncio
+async def test_llm_rbac_assignment_field_normalization(monkeypatch):
+    # Simulate LLM output with variant field names
+    llm_json = """
+    {
+      "tenant": {
+        "id": "tenant-001",
+        "display_name": "Example Tenant",
+        "subscriptions": [],
+        "users": [],
+        "groups": [],
+        "service_principals": [],
+        "managed_identities": [],
+        "admin_units": [],
+        "rbac_assignments": [
+          {
+            "role_definition": "Owner",
+            "principalId": "user-123",
+            "scope": "sub-001"
+          },
+          {
+            "roleDefinitionName": "Contributor",
+            "principal_id": "user-456",
+            "scope": "sub-002"
+          },
+          {
+            "role_definition_name": "Reader",
+            "principalId": "user-789",
+            "scope": "sub-003"
+          }
+        ],
+        "relationships": []
+      }
+    }
+    """
+
+    creator = TenantCreator(llm_generator=None)
+    # Patch the LLM call to return our test JSON
+    creator._llm_generate_tenant_spec = AsyncMock(return_value=llm_json)
+
+    # No JSON block in markdown, so LLM will be called
+    markdown = "Some narrative text with no JSON block."
+    spec = await creator.create_from_markdown(markdown)
+
+    rbac = spec.tenant.rbac_assignments
+    assert len(rbac) == 3
+    # All assignments should have canonical field names
+    assert rbac[0].role == "Owner"
+    assert rbac[0].principal_id == "user-123"
+    assert rbac[0].scope == "sub-001"
+    assert rbac[1].role == "Contributor"
+    assert rbac[1].principal_id == "user-456"
+    assert rbac[1].scope == "sub-002"
+    assert rbac[2].role == "Reader"
+    assert rbac[2].principal_id == "user-789"
+    assert rbac[2].scope == "sub-003"
