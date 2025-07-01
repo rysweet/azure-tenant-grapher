@@ -80,6 +80,13 @@ All dashboard sessions automatically create timestamped log files:
 - **Content**: Complete debug-level logs regardless of dashboard filter
 - **Path shown**: In the dashboard config panel
 
+## Error Messages and Troubleshooting
+
+All CLI commands provide actionable error messages for common issues, especially for Neo4j and Azure OpenAI (LLM) failures. If you see an error:
+- **Neo4j errors:** Check that Neo4j is running, the container is healthy, and credentials are correct. Use `atg container` or `docker-compose up` to start the container if needed.
+- **LLM errors:** Ensure all required Azure OpenAI environment variables are set and you have network connectivity.
+- **Logs:** Run with `--log-level DEBUG` for more details. The dashboard and CLI will print the log file location for further inspection.
+
 ## Installation
 
 The CLI commands are automatically available after running:

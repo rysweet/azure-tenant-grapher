@@ -1,5 +1,14 @@
 import subprocess
 import sys
+from typing import Any
+
+
+def print_cli_failure(result: Any) -> None:
+    print(f"Process exited with code {result.returncode}")
+    print("STDOUT:")
+    print(result.stdout)
+    print("STDERR:")
+    print(result.stderr)
 
 
 def test_build_rebuild_edges_flag():
@@ -18,6 +27,8 @@ def test_build_rebuild_edges_flag():
         text=True,
         timeout=60,
     )
+    if result.returncode != 0:
+        print_cli_failure(result)
     assert result.returncode == 0, (
         f"CLI exited with code {result.returncode}. Output: {result.stdout} {result.stderr}"
     )

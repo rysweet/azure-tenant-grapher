@@ -1,17 +1,77 @@
 import asyncio
 import json
-import logging
 import os
 import time
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
 
+import structlog
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
+from src.logging_config import configure_logging
 from src.utils.session_manager import retry_neo4j_operation
 
+configure_logging()
 T = TypeVar("T")
+
+# --- LLM Field Normalization Utilities ---
+
+# Schema-driven mapping table for LLM field normalization
+LLM_FIELD_NORMALIZATION_MAP: Dict[str, Dict[str, List[str]]] = {
+    "rbac_assignment": {
+        "role": [
+            "role",
+            "role_definition",
+            "roleDefinitionName",
+            "role_definition_name",
+        ],
+        "principal_id": ["principal_id", "principalId"],
+        "scope": ["scope"],
+    },
+    # Add more object types and their field mappings here as needed
+}
+
+
+def normalize_llm_fields(
+    data: Any,
+    object_type: str,
+    mapping_table: Optional[Dict[str, Dict[str, List[str]]]] = None,
+) -> Any:
+    """
+    Normalize LLM-generated fields in a dict or list of dicts according to a schema-driven mapping table.
+
+    Args:
+        data: The dict or list of dicts to normalize.
+        object_type: The type of object (e.g., "rbac_assignment") to use for field mapping.
+        mapping_table: Optional custom mapping table; defaults to LLM_FIELD_NORMALIZATION_MAP.
+
+    Returns:
+        The normalized dict or list of dicts.
+    """
+    if mapping_table is None:
+        mapping_table = LLM_FIELD_NORMALIZATION_MAP
+    if object_type not in mapping_table:
+        return data  # No mapping for this type
+
+    field_map = mapping_table[object_type]
+
+    def normalize_single(obj: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = obj.copy()
+        for canonical, variants in field_map.items():
+            for variant in variants:
+                if variant in normalized and canonical not in normalized:
+                    normalized[canonical] = normalized.pop(variant)
+        return normalized
+
+    if isinstance(data, list):
+        return [
+            normalize_single(item) if isinstance(item, dict) else item for item in data
+        ]
+    elif isinstance(data, dict):
+        return normalize_single(data)
+    else:
+        return data
 
 
 def _sort_by_count(item: Tuple[str, int]) -> int:
@@ -26,7 +86,7 @@ def run_neo4j_query_with_retry(session: Any, query: str, **params: Any) -> Any:
 # Load environment variables
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ThrottlingError(Exception):
@@ -85,7 +145,6 @@ def retry_with_throttling(
     max_retries: int = 5,
     initial_delay: int = 2,
     backoff: int = 2,
-    logger: logging.Logger = logger,
 ) -> Callable[..., T]:
     """
     Retry wrapper for LLM calls. Raises ThrottlingError on repeated throttling.
@@ -128,12 +187,25 @@ class LLMConfig:
     @classmethod
     def from_env(cls) -> "LLMConfig":
         """Create LLM configuration from environment variables."""
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+        api_key = os.getenv("AZURE_OPENAI_KEY", "")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-16")
+        model_chat = os.getenv("AZURE_OPENAI_MODEL_CHAT", "gpt-4")
+        model_reasoning = os.getenv("AZURE_OPENAI_MODEL_REASONING", "gpt-4")
+        logger.info(
+            "Loaded LLMConfig from environment",
+            endpoint=endpoint,
+            api_key_set=bool(api_key),
+            api_version=api_version,
+            model_chat=model_chat,
+            model_reasoning=model_reasoning,
+        )
         return cls(
-            endpoint=os.getenv("AZURE_OPENAI_ENDPOINT", ""),
-            api_key=os.getenv("AZURE_OPENAI_KEY", ""),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-16"),
-            model_chat=os.getenv("AZURE_OPENAI_MODEL_CHAT", "gpt-4"),
-            model_reasoning=os.getenv("AZURE_OPENAI_MODEL_REASONING", "gpt-4"),
+            endpoint=endpoint,
+            api_key=api_key,
+            api_version=api_version,
+            model_chat=model_chat,
+            model_reasoning=model_reasoning,
         )
 
     def is_valid(self) -> bool:
@@ -172,11 +244,11 @@ class AzureLLMDescriptionGenerator:
         )
 
         # Suppress HTTP request logging from OpenAI client
-        httpx_logger = logging.getLogger("httpx")
-        httpx_logger.setLevel(logging.WARNING)
+        # Optionally suppress httpx logs if structlog is not configured for it
+        # (structlog handles most logs; if needed, configure httpx separately)
 
         logger.info(
-            f"Initialized Azure LLM Description Generator with endpoint: {self.base_url}"
+            "Initialized Azure LLM Description Generator", endpoint=self.base_url
         )
 
     def _extract_base_url(self, endpoint: str) -> str:
@@ -259,14 +331,20 @@ Be specific about the actual configured values while explaining their architectu
                 content = response.choices[0].message.content
                 description = str(content).strip() if content else ""
                 logger.debug(
-                    f"Generated description for {resource_type} '{resource_name}': {description}"
+                    "Generated resource description",
+                    resource_type=resource_type,
+                    resource_name=resource_name,
+                    description=description,
                 )
 
                 return description
             except Exception as e:
                 if is_throttling_error(e):
                     logger.warning(
-                        f"OpenAI throttling detected (HTTP 429 or similar), attempt {attempt + 1}/{max_retries}"
+                        "OpenAI throttling detected",
+                        error=str(e),
+                        attempt=attempt + 1,
+                        max_retries=max_retries,
                     )
                     if attempt < max_retries - 1:
                         await asyncio.sleep(delay)
@@ -277,7 +355,9 @@ Be specific about the actual configured values while explaining their architectu
                             "LLM API throttling detected after retries"
                         ) from e
                 logger.exception(
-                    f"Failed to generate description for resource {resource_data.get('name', 'Unknown')}: {e!s}"
+                    "Failed to generate resource description",
+                    resource_name=resource_data.get("name", "Unknown"),
+                    error=str(e),
                 )
                 resource_type = resource_data.get("type", "Unknown")
                 return f"Azure {resource_type} resource providing cloud services and functionality."
@@ -359,13 +439,23 @@ Be specific about the architectural implications while keeping it concise and ac
             content = response.choices[0].message.content
             description = str(content).strip() if content else ""
             logger.debug(
-                f"Generated relationship description: {relationship_type} between {source_type} and {target_type}"
+                "Generated relationship description",
+                relationship_type=relationship_type,
+                source_type=source_type,
+                target_type=target_type,
+                description=description,
             )
 
             return description
 
         except Exception as e:
-            logger.exception(f"Failed to generate relationship description: {e!s}")
+            logger.exception(
+                "Failed to generate relationship description",
+                error=str(e),
+                relationship_type=relationship_type,
+                source_type=source_type,
+                target_type=target_type,
+            )
             return f"{relationship_type} relationship between {source_type} and {target_type}."
 
     async def generate_resource_group_description(
@@ -461,14 +551,18 @@ Focus on architectural significance and business purpose rather than just resour
             content = response.choices[0].message.content
             description = str(content).strip() if content else ""
             logger.debug(
-                f"Generated Resource Group description for '{resource_group_name}': {description}"
+                "Generated Resource Group description",
+                resource_group_name=resource_group_name,
+                description=description,
             )
 
             return description
 
         except Exception as e:
             logger.exception(
-                f"Failed to generate Resource Group description for '{resource_group_name}': {e!s}"
+                "Failed to generate Resource Group description",
+                resource_group_name=resource_group_name,
+                error=str(e),
             )
             return f"Azure Resource Group '{resource_group_name}' containing {len(resources)} resources providing organized resource management and deployment boundaries."
 
@@ -576,14 +670,20 @@ Focus on the strategic purpose of this tagging rather than just describing what 
             content = response.choices[0].message.content
             description = str(content).strip() if content else ""
             logger.debug(
-                f"Generated Tag description for '{tag_key}:{tag_value}': {description}"
+                "Generated Tag description",
+                tag_key=tag_key,
+                tag_value=tag_value,
+                description=description,
             )
 
             return description
 
         except Exception as e:
             logger.exception(
-                f"Failed to generate Tag description for '{tag_key}:{tag_value}': {e!s}"
+                "Failed to generate Tag description",
+                tag_key=tag_key,
+                tag_value=tag_value,
+                error=str(e),
             )
             return f"Azure tag '{tag_key}:{tag_value}' applied to {len(tagged_resources)} resources for organizational and management purposes."
 
@@ -674,11 +774,15 @@ Focus on architectural details and relationships, not on recommendations or futu
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(specification)
 
-            logger.info(f"Generated tenant specification: {output_path}")
+            logger.info("Generated tenant specification", output_path=output_path)
             return output_path
 
         except Exception as e:
-            logger.exception(f"Failed to generate tenant specification: {e!s}")
+            logger.exception(
+                "Failed to generate tenant specification",
+                error=str(e),
+                output_path=output_path,
+            )
             # Create a basic fallback specification
             fallback_spec = self._create_fallback_specification(
                 resources, relationships
@@ -813,7 +917,7 @@ def create_llm_generator() -> Optional[AzureLLMDescriptionGenerator]:
 
         return AzureLLMDescriptionGenerator(config)
     except Exception as e:
-        logger.exception(f"Failed to create LLM generator: {e!s}")
+        logger.exception("Failed to create LLM generator", error=str(e))
 
 
 def should_generate_description(resource_dict: dict[str, Any], session: Any) -> bool:
@@ -827,10 +931,14 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
     Returns:
         bool: True if LLM description should be generated, False if it can be skipped.
     """
-    logger = logging.getLogger(__name__)
+    # Use the module-level structlog logger for consistency
+    global logger
     resource_id = resource_dict.get("id")
     if not resource_id:
-        logger.warning("Resource missing 'id'; cannot check for LLM skip.")
+        logger.warning(
+            "Resource missing 'id'; cannot check for LLM skip.",
+            resource_dict=resource_dict,
+        )
         return True
 
     # Query Neo4j for node by id, get llm_description and change-indicator fields
@@ -846,10 +954,16 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
                 key_record = key_result.single()
                 if key_record and "prop_keys" in key_record:
                     prop_keys = key_record["prop_keys"]
-                    logger.debug(f"Resource {resource_id} property keys: {prop_keys}")
+                    logger.debug(
+                        "Resource property keys",
+                        resource_id=resource_id,
+                        prop_keys=prop_keys,
+                    )
             except Exception as prop_exc:
                 logger.warning(
-                    f"Could not inspect properties for {resource_id}: {prop_exc}"
+                    "Could not inspect properties",
+                    resource_id=resource_id,
+                    error=str(prop_exc),
                 )
 
             result = run_neo4j_query_with_retry(
@@ -863,32 +977,34 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
             )
         except BufferError as be:
             logger.warning(
-                f"BufferError during Neo4j query for {resource_id}: {be}; will generate."
+                "BufferError during Neo4j query", resource_id=resource_id, error=str(be)
             )
             return True
         except Exception as e:
             logger.warning(
-                f"Exception during Neo4j query for {resource_id}: {e}; will generate."
+                "Exception during Neo4j query", resource_id=resource_id, error=str(e)
             )
             return True
 
         if result is None:
-            logger.warning(
-                f"Neo4j session.run returned None for resource {resource_id}; will generate."
-            )
+            logger.warning("Neo4j session.run returned None", resource_id=resource_id)
             return True
 
         record = result.single()
         if not record:
             logger.debug(
-                f"No existing node for resource {resource_id}; will generate description."
+                "No existing node for resource; will generate description.",
+                resource_id=resource_id,
             )
             return True
 
         # Defensive: Ensure record is a mapping before accessing .get
         if not hasattr(record, "get"):
             logger.warning(
-                f"Neo4j record for resource {resource_id} is not a mapping (type={type(record)} value={record!r}); will generate."
+                "Neo4j record is not a mapping; will generate.",
+                resource_id=resource_id,
+                record_type=str(type(record)),
+                record_value=repr(record),
             )
             return True
 
@@ -912,38 +1028,54 @@ def should_generate_description(resource_dict: dict[str, Any], session: Any) -> 
                     return str(val)
                 except BufferError as be:
                     logger.warning(
-                        f"BufferError converting value to string for resource {resource_id}: {type(val)}: {be}"
+                        "BufferError converting value to string",
+                        resource_id=resource_id,
+                        value_type=str(type(val)),
+                        error=str(be),
                     )
                     return None
                 except Exception as conv_exc:
                     logger.warning(
-                        f"Could not convert value to string for resource {resource_id}: {type(val)}: {conv_exc}"
+                        "Could not convert value to string",
+                        resource_id=resource_id,
+                        value_type=str(type(val)),
+                        error=str(conv_exc),
                     )
                     return None
 
             db_desc = safe_to_str(db_desc)
         except Exception as rec_exc:
             logger.warning(
-                f"Failed to extract Neo4j record fields for {resource_id}: {rec_exc}; will generate."
+                "Failed to extract Neo4j record fields; will generate.",
+                resource_id=resource_id,
+                error=str(rec_exc),
             )
             return True
 
         # If no description, must generate
         if not db_desc or db_desc.strip() == "" or db_desc.startswith("Azure "):
             logger.debug(
-                f"Resource {resource_id} missing or generic description; will generate."
+                "Resource missing or generic description; will generate.",
+                resource_id=resource_id,
             )
             return True
 
         # Since we don't have etag/last_modified in the current schema,
         # skip LLM generation if a good description already exists
-        logger.info(f"Skipping LLM for {resource_id}: description already present.")
+        logger.info(
+            "Skipping LLM generation; description already present.",
+            resource_id=resource_id,
+        )
         return False
 
     except Exception as e:
         import traceback
 
         logger.warning(
-            f"Error checking LLM skip for {resource_id}: {type(e).__name__}: {e!s}\n{traceback.format_exc()}; will generate."
+            "Error checking LLM skip; will generate.",
+            resource_id=resource_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            traceback=traceback.format_exc(),
         )
         return True
