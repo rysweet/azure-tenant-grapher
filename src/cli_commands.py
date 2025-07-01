@@ -683,9 +683,20 @@ async def generate_threat_model_command_handler(
 
 
 def create_tenant_from_markdown(text: str):
-    """Stub for tenant synthesis from markdown."""
-    print("TODO: synthesize tenant")
-    # Placeholder for future implementation
+    """Create a tenant from markdown using TenantCreator."""
+    import asyncio
+
+    from src.llm_descriptions import create_llm_generator
+    from src.tenant_creator import TenantCreator
+
+    llm_generator = create_llm_generator()
+    creator = TenantCreator(llm_generator=llm_generator)
+
+    async def _run():
+        spec = await creator.create_from_markdown(text)
+        await creator.ingest_to_graph(spec)
+
+    asyncio.run(_run())
 
 
 @click.command("create-tenant")
@@ -693,8 +704,15 @@ def create_tenant_from_markdown(text: str):
 def create_tenant_command(markdown_file: str):
     """Create a tenant from a markdown file."""
     try:
+        from src.container_manager import Neo4jContainerManager
+
+        container_manager = Neo4jContainerManager()
+        if not container_manager.setup_neo4j():
+            click.echo("❌ Failed to start or connect to Neo4j. Aborting.", err=True)
+            sys.exit(1)
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
+        print("DEBUG: Raw markdown file contents:\n", text)
         create_tenant_from_markdown(text)
         click.echo("✅ Tenant creation (stub) succeeded.")
     except Exception as e:
