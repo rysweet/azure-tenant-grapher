@@ -144,24 +144,19 @@ Instructions:
         json_text = await self._llm_generate_tenant_spec(narrative)
         print("DEBUG: LLM-generated JSON spec:\n", json_text)
         print("DEBUG: Type of json_text:", type(json_text))
-        # Fix common LLM field name errors (e.g., role_definition -> role)
+        # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
+
+        from src.llm_descriptions import normalize_llm_fields
 
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
             if "tenant" in data and "rbac_assignments" in data["tenant"]:
-                for rbac in data["tenant"]["rbac_assignments"]:
-                    print("DEBUG: RBAC assignment dict:", rbac, "type:", type(rbac))
-                    # Map common LLM field name variants to schema
-                    if "role_definition" in rbac and "role" not in rbac:
-                        rbac["role"] = rbac.pop("role_definition")
-                    if "roleDefinitionName" in rbac and "role" not in rbac:
-                        rbac["role"] = rbac.pop("roleDefinitionName")
-                    if "role_definition_name" in rbac and "role" not in rbac:
-                        rbac["role"] = rbac.pop("role_definition_name")
-                    if "principalId" in rbac and "principal_id" not in rbac:
-                        rbac["principal_id"] = rbac.pop("principalId")
+                # Centralized normalization for all RBAC assignments
+                data["tenant"]["rbac_assignments"] = normalize_llm_fields(
+                    data["tenant"]["rbac_assignments"], "rbac_assignment"
+                )
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:

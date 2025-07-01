@@ -13,6 +13,64 @@ from src.utils.session_manager import retry_neo4j_operation
 
 T = TypeVar("T")
 
+# --- LLM Field Normalization Utilities ---
+
+# Schema-driven mapping table for LLM field normalization
+LLM_FIELD_NORMALIZATION_MAP: Dict[str, Dict[str, List[str]]] = {
+    "rbac_assignment": {
+        "role": [
+            "role",
+            "role_definition",
+            "roleDefinitionName",
+            "role_definition_name",
+        ],
+        "principal_id": ["principal_id", "principalId"],
+        "scope": ["scope"],
+    },
+    # Add more object types and their field mappings here as needed
+}
+
+
+def normalize_llm_fields(
+    data: Any,
+    object_type: str,
+    mapping_table: Optional[Dict[str, Dict[str, List[str]]]] = None,
+) -> Any:
+    """
+    Normalize LLM-generated fields in a dict or list of dicts according to a schema-driven mapping table.
+
+    Args:
+        data: The dict or list of dicts to normalize.
+        object_type: The type of object (e.g., "rbac_assignment") to use for field mapping.
+        mapping_table: Optional custom mapping table; defaults to LLM_FIELD_NORMALIZATION_MAP.
+
+    Returns:
+        The normalized dict or list of dicts.
+    """
+    if mapping_table is None:
+        mapping_table = LLM_FIELD_NORMALIZATION_MAP
+    if object_type not in mapping_table:
+        return data  # No mapping for this type
+
+    field_map = mapping_table[object_type]
+
+    def normalize_single(obj: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = obj.copy()
+        for canonical, variants in field_map.items():
+            for variant in variants:
+                if variant in normalized and canonical not in normalized:
+                    normalized[canonical] = normalized.pop(variant)
+        return normalized
+
+    if isinstance(data, list):
+        return [
+            normalize_single(item) if isinstance(item, dict) else item for item in data
+        ]
+    elif isinstance(data, dict):
+        return normalize_single(data)
+    else:
+        return data
+
 
 def _sort_by_count(item: Tuple[str, int]) -> int:
     return item[1]
