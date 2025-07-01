@@ -3,6 +3,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Any
 
 import pytest
 
@@ -11,6 +12,14 @@ import pytest
     sys.platform.startswith("win"),
     reason="Subprocess signal handling is not reliable on Windows",
 )
+def print_cli_failure(proc: Any, stdout: str, stderr: str) -> None:
+    print(f"Process exited with code {proc.returncode}")
+    print("STDOUT:")
+    print(stdout)
+    print("STDERR:")
+    print(stderr)
+
+
 def test_real_dashboard_exit_subprocess():
     """
     Launch the CLI dashboard in a subprocess, simulate 'x' keypress via file,
@@ -67,6 +76,8 @@ def test_real_dashboard_exit_subprocess():
                 f"CLI did not exit within 5 seconds after 'x' keypress.\nSTDOUT:\n{outs}\nSTDERR:\n{errs}"
             )
         # Check exit code
+        if proc.returncode != 0:
+            print_cli_failure(proc, outs, errs)
         assert proc.returncode == 0, (
             f"CLI exited with nonzero code: {proc.returncode}\nSTDOUT:\n{outs}\nSTDERR:\n{errs}"
         )
