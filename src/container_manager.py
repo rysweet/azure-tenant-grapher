@@ -119,11 +119,14 @@ class Neo4jContainerManager:
             logger.info("Starting Neo4j container...")
 
             # Start the container
+            env = os.environ.copy()
+            env["NEO4J_AUTH"] = "neo4j/neo4j"
             result = subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "up", "-d", "neo4j"],
                 capture_output=True,
                 text=True,
                 check=True,
+                env=env,
             )
 
             logger.info("Neo4j container started successfully")

@@ -128,12 +128,21 @@ class LLMConfig:
     @classmethod
     def from_env(cls) -> "LLMConfig":
         """Create LLM configuration from environment variables."""
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+        api_key = os.getenv("AZURE_OPENAI_KEY", "")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-16")
+        model_chat = os.getenv("AZURE_OPENAI_MODEL_CHAT", "gpt-4")
+        model_reasoning = os.getenv("AZURE_OPENAI_MODEL_REASONING", "gpt-4")
+        print(
+            f"DEBUG: LLMConfig.from_env() loaded: endpoint={endpoint!r}, api_key={'***' if api_key else ''}, api_version={api_version!r}, model_chat={model_chat!r}, model_reasoning={model_reasoning!r}",
+            flush=True,
+        )
         return cls(
-            endpoint=os.getenv("AZURE_OPENAI_ENDPOINT", ""),
-            api_key=os.getenv("AZURE_OPENAI_KEY", ""),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2025-04-16"),
-            model_chat=os.getenv("AZURE_OPENAI_MODEL_CHAT", "gpt-4"),
-            model_reasoning=os.getenv("AZURE_OPENAI_MODEL_REASONING", "gpt-4"),
+            endpoint=endpoint,
+            api_key=api_key,
+            api_version=api_version,
+            model_chat=model_chat,
+            model_reasoning=model_reasoning,
         )
 
     def is_valid(self) -> bool:
