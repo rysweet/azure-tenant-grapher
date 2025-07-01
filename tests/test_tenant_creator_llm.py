@@ -69,6 +69,29 @@ Users and groups are not described.
 
 
 @pytest.mark.asyncio
+async def test_llm_invalid_json_raises_llm_generation_error(monkeypatch):
+    """Test that invalid LLM output raises LLMGenerationError with context."""
+    from src.exceptions import LLMGenerationError
+    from src.tenant_creator import TenantCreator
+
+    # Simulate LLM output that is not valid JSON
+    invalid_json = "this is not valid json"
+
+    creator = TenantCreator(llm_generator=None)
+    creator._llm_generate_tenant_spec = AsyncMock(return_value=invalid_json)
+
+    markdown = "Some narrative text with no JSON block."
+    with pytest.raises(LLMGenerationError) as excinfo:
+        await creator.create_from_markdown(markdown)
+    err = excinfo.value
+    # The error should include the prompt and raw response in context
+    assert "prompt" in err.context
+    assert "raw_response" in err.context
+    assert err.context["raw_response"] == invalid_json
+    assert "Failed to parse LLM output as valid JSON." in str(err)
+
+
+@pytest.mark.asyncio
 async def test_llm_rbac_assignment_field_normalization(monkeypatch):
     # Simulate LLM output with variant field names
     llm_json = """
