@@ -93,35 +93,6 @@ az login
 
 ## Usage
 
-### Error Handling and Troubleshooting
-
-All CLI commands now provide clear, actionable error messages for common failure scenarios, especially for Neo4j and Azure OpenAI (LLM) issues. If you encounter an error:
-
-- **Neo4j errors:** The CLI will suggest checking that Neo4j is running, the container is healthy, and credentials are correct. If using Docker, ensure the container is started and healthy. You can start it with `azure-tenant-grapher container` or `docker-compose up`.
-- **LLM (Azure OpenAI) errors:** The CLI will prompt you to check that all required environment variables are set (`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_API_VERSION`) and that you have network connectivity.
-- **General troubleshooting:** Run any command with `--log-level DEBUG` to get more detailed logs. The dashboard and CLI will print the log file location for further inspection.
-
-### Structured Logging
-
-All key events and errors are logged using **structured logging** with [`structlog`](https://www.structlog.org/), outputting logs in JSON/key-value format. This enables easy log parsing, filtering, and integration with log management tools.
-
-- Logs are available in the CLI, dashboard, and log files.
-- Adjust log level with `--log-level DEBUG` for more detail.
-- Log files are written to a path printed by the CLI/dashboard for each run.
-- Example log entry (JSON):
-  ```json
-  {
-    "event": "Generated resource description",
-    "resource_type": "Microsoft.Storage/storageAccounts",
-    "resource_name": "mystorage",
-    "description": "...",
-    "level": "info",
-    "timestamp": "2025-07-01T20:00:00Z"
-  }
-  ```
-- For troubleshooting, inspect the log file for structured entries and error context.
-
-
 ```bash
 # Build the Azure graph
 azure-tenant-grapher build --tenant-id <your-tenant-id>
