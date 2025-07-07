@@ -251,6 +251,89 @@ class AzureLLMDescriptionGenerator:
             "Initialized Azure LLM Description Generator", endpoint=self.base_url
         )
 
+    async def generate_description_streaming(
+        self,
+        prompt: str,
+        *,
+        system_prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        max_completion_tokens: int = 32768,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Generate a description using the LLM, yielding tokens as they arrive (streaming).
+        Falls back to non-streaming if streaming is not supported or fails.
+
+        Args:
+            prompt: The user prompt to send to the LLM.
+            system_prompt: Optional system prompt for context.
+            model: Optional model name to override default.
+            max_completion_tokens: Maximum tokens for completion.
+            **kwargs: Additional parameters for the OpenAI API.
+
+        Yields:
+            str: Tokens as they arrive from the LLM API.
+        """
+        chat_model = model or self.config.model_chat
+        sys_prompt = system_prompt or (
+            "You are an expert Azure cloud architect who creates clear, concise descriptions of Azure resources for technical documentation."
+        )
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            logger.info(
+                "Starting streaming LLM description generation",
+                model=chat_model,
+                streaming=True,
+            )
+            # The AzureOpenAI SDK supports streaming with stream=True
+            response = self.client.chat.completions.create(
+                model=chat_model,
+                messages=messages,  # type: ignore[arg-type]
+                max_completion_tokens=max_completion_tokens,
+                stream=True,
+                **kwargs,
+            )
+            # The SDK returns an iterator of events/chunks
+            for chunk in response:
+                # Each chunk is an OpenAI object with .choices[0].delta.content
+                delta = getattr(chunk.choices[0], "delta", None)
+                if delta and hasattr(delta, "content") and delta.content:
+                    yield delta.content
+        except Exception as e:
+            logger.error(
+                "Streaming LLM call failed, falling back to non-streaming",
+                error=str(e),
+                model=chat_model,
+            )
+            # Fallback: call the non-streaming method and yield the full result
+            try:
+                # Use the same prompt and parameters as above
+                resp = self.client.chat.completions.create(
+                    model=chat_model,
+                    messages=messages,  # type: ignore[arg-type]
+                    max_completion_tokens=max_completion_tokens,
+                    **kwargs,
+                )
+                content = resp.choices[0].message.content
+                if content:
+                    yield str(content).strip()
+                else:
+                    yield ""
+                logger.info(
+                    "Fallback to non-streaming LLM call succeeded",
+                    model=chat_model,
+                )
+            except Exception as fallback_exc:
+                logger.error(
+                    "Both streaming and fallback non-streaming LLM calls failed",
+                    error=str(fallback_exc),
+                    model=chat_model,
+                )
+                yield "[Error: LLM streaming and fallback failed]"
+
     def _extract_base_url(self, endpoint: str) -> str:
         """Extract base URL from the full endpoint URL."""
         if "/openai/deployments/" in endpoint:
