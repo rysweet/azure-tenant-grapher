@@ -64,7 +64,7 @@ class Neo4jContainerManager:
         try:
             self.docker_client = docker.from_env()
         except Exception as e:
-            logger.warning(f"Could not connect to Docker daemon: {e}")
+            logger.warning(event=f"Could not connect to Docker daemon: {e}")
 
     def is_docker_available(self) -> bool:
         """Check if Docker is available and running."""
@@ -73,10 +73,12 @@ class Neo4jContainerManager:
                 self.docker_client.ping()  # type: ignore[misc]
                 return True
         except Exception as e:
-            logger.exception(f"Docker is not available: {e}")
-            logger.exception("Please ensure Docker Desktop is installed and running.")
+            logger.exception(event=f"Docker is not available: {e}")
             logger.exception(
-                "You can download Docker Desktop from: https://www.docker.com/products/docker-desktop"
+                event="Please ensure Docker Desktop is installed and running."
+            )
+            logger.exception(
+                event="You can download Docker Desktop from: https://www.docker.com/products/docker-desktop"
             )
         return False
 
@@ -89,7 +91,7 @@ class Neo4jContainerManager:
                 text=True,
                 check=True,
             )
-            logger.info(f"Docker Compose available: {result.stdout.strip()}")
+            logger.info(event=f"Docker Compose available: {result.stdout.strip()}")
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             try:
@@ -100,10 +102,10 @@ class Neo4jContainerManager:
                     text=True,
                     check=True,
                 )
-                logger.info(f"Docker Compose available: {result.stdout.strip()}")
+                logger.info(event=f"Docker Compose available: {result.stdout.strip()}")
                 return True
             except (subprocess.CalledProcessError, FileNotFoundError):
-                logger.exception("Docker Compose is not available")
+                logger.exception(event="Docker Compose is not available")
                 return False
 
     def get_compose_command(self) -> list[str]:
@@ -127,26 +129,26 @@ class Neo4jContainerManager:
             )
             return len(containers) > 0 and containers[0].status == "running"  # type: ignore[misc]
         except Exception as e:
-            logger.exception(f"Error checking container status: {e}")
+            logger.exception(event=f"Error checking container status: {e}")
             return False
 
     def start_neo4j_container(self) -> bool:
         """Start Neo4j container using docker-compose."""
         if not self.is_docker_available():
-            logger.exception("Docker is not available")
+            logger.exception(event="Docker is not available")
             return False
 
         if not self.is_compose_available():
-            logger.exception("Docker Compose is not available")
+            logger.exception(event="Docker Compose is not available")
             return False
 
         if self.is_neo4j_container_running():
-            logger.info("Neo4j container is already running")
+            logger.info(event="Neo4j container is already running")
             return True
 
         try:
             compose_cmd = self.get_compose_command()
-            logger.info("Starting Neo4j container...")
+            logger.info(event="Starting Neo4j container...")
 
             # Start the container
             env = os.environ.copy()
@@ -160,14 +162,14 @@ class Neo4jContainerManager:
                 env=env,
             )
 
-            logger.info("Neo4j container started successfully")
-            logger.debug(f"Docker compose output: {result.stdout}")
+            logger.info(event="Neo4j container started successfully")
+            logger.debug(event=f"Docker compose output: {result.stdout}")
 
             return True
 
         except subprocess.CalledProcessError as e:
-            logger.exception(f"Failed to start Neo4j container: {e}")
-            logger.exception(f"Error output: {e.stderr}")
+            logger.exception(event=f"Failed to start Neo4j container: {e}")
+            logger.exception(event=f"Error output: {e.stderr}")
             return False
 
     def wait_for_neo4j_ready(self, timeout: Optional[int] = None) -> bool:
@@ -182,8 +184,7 @@ class Neo4jContainerManager:
         """
         if timeout is None:
             timeout = self.readiness_timeout
-        logger.info("Waiting for Neo4j to be ready...")
-        logger.info("Waiting for Neo4j to be ready...", event="wait_for_neo4j_ready")
+        logger.info(event="Waiting for Neo4j to be ready...")
         start_time = time.time()
         last_print = start_time
 
@@ -198,45 +199,45 @@ class Neo4jContainerManager:
                     record = result.single()
                     if record and record["test"] == 1:
                         driver.close()
-                        logger.info("Neo4j is ready!")
-                        logger.info("Neo4j is ready!", event="wait_for_neo4j_ready")
+                        logger.info(event="Neo4j is ready!")
                         return True
 
             except ServiceUnavailable:
-                logger.debug("Neo4j not ready yet, waiting...")
+                logger.debug(event="Neo4j not ready yet, waiting...")
                 now = time.time()
                 if now - last_print > 5:
                     logger.info(
-                        "Still waiting for Neo4j...", event="wait_for_neo4j_ready"
+                        event="Still waiting for Neo4j...",
+                        wait_state="wait_for_neo4j_ready",
                     )
                     last_print = now
                 time.sleep(2)
             except Exception as e:
-                logger.debug(f"Connection attempt failed: {e}")
+                logger.debug(event=f"Connection attempt failed: {e}")
                 logger.warning(
-                    "Error while waiting for Neo4j",
+                    event="Error while waiting for Neo4j",
                     error=str(e),
-                    event="wait_for_neo4j_ready",
+                    wait_state="wait_for_neo4j_ready",
                 )
                 time.sleep(2)
 
-        logger.error(f"Neo4j did not become ready within {timeout} seconds")
+        logger.error(event=f"Neo4j did not become ready within {timeout} seconds")
         logger.error(
-            "Neo4j did not become ready within timeout",
+            event="Neo4j did not become ready within timeout",
             timeout=timeout,
-            event="wait_for_neo4j_ready",
+            wait_state="wait_for_neo4j_ready",
         )
         return False
 
     def stop_neo4j_container(self) -> bool:
         """Stop Neo4j container."""
         if not self.is_compose_available():
-            logger.exception("Docker Compose is not available")
+            logger.exception(event="Docker Compose is not available")
             return False
 
         try:
             compose_cmd = self.get_compose_command()
-            logger.info("Stopping Neo4j container...")
+            logger.info(event="Stopping Neo4j container...")
 
             subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "stop", "neo4j"],
@@ -245,7 +246,7 @@ class Neo4jContainerManager:
                 check=True,
             )
 
-            logger.info("Neo4j container stopped successfully")
+            logger.info(event="Neo4j container stopped successfully")
             return True
 
         except subprocess.CalledProcessError as e:
@@ -275,7 +276,7 @@ class Neo4jContainerManager:
             )
             return result.stdout
         except subprocess.CalledProcessError as e:
-            logger.exception(f"Failed to get container logs: {e}")
+            logger.exception(event=f"Failed to get container logs: {e}")
             return None
 
     def setup_neo4j(self) -> bool:
@@ -285,7 +286,7 @@ class Neo4jContainerManager:
         Returns:
             True if setup successful, False otherwise
         """
-        logger.info("Setting up Neo4j container...")
+        logger.info(event="Setting up Neo4j container...")
 
         # Start the container
         if not self.start_neo4j_container():
@@ -293,13 +294,15 @@ class Neo4jContainerManager:
 
         # Wait for it to be ready
         if not self.wait_for_neo4j_ready():
-            logger.exception("Neo4j setup failed - container did not become ready")
+            logger.exception(
+                event="Neo4j setup failed - container did not become ready"
+            )
             logs = self.get_container_logs()
             if logs:
-                logger.exception(f"Container logs:\n{logs}")
+                logger.exception(event=f"Container logs:\n{logs}")
             return False
 
-        logger.info("Neo4j setup completed successfully!")
+        logger.info(event="Neo4j setup completed successfully!")
         return True
 
     def backup_neo4j_database(self, backup_path: str) -> bool:
@@ -313,27 +316,27 @@ class Neo4jContainerManager:
         Returns:
             True if backup succeeded, False otherwise.
         """
-        logger.info(f"Starting Neo4j backup to {backup_path}")
+        logger.info(event=f"Starting Neo4j backup to {backup_path}")
         if not self.is_neo4j_container_running():
-            logger.error("Neo4j container is not running. Cannot perform backup.")
+            logger.error(event="Neo4j container is not running. Cannot perform backup.")
             return False
 
         # Find the container
         try:
             if not self.docker_client:
-                logger.error("Docker client is not available")
+                logger.error(event="Docker client is not available")
                 return False
 
             containers = self.docker_client.containers.list(
                 filters={"name": self.container_name}
             )
             if not containers:
-                logger.error("Neo4j container not found")
+                logger.error(event="Neo4j container not found")
                 return False
 
             container = containers[0]
         except Exception as e:
-            logger.error(f"Could not find Neo4j container: {e}")
+            logger.error(event=f"Could not find Neo4j container: {e}")
             return False
 
         # Run neo4j-admin dump inside the container
@@ -347,15 +350,17 @@ class Neo4jContainerManager:
                 f"mkdir -p {backup_dir_in_container}"
             )
             if exit_code != 0:
-                logger.error(f"Failed to create backup directory: {output.decode()}")
+                logger.error(
+                    event=f"Failed to create backup directory: {output.decode()}"
+                )
                 return False
 
-            logger.info("Stopping Neo4j database for backup...")
+            logger.info(event="Stopping Neo4j database for backup...")
             # Stop the Neo4j database (not the container)
             exit_code, output = container.exec_run("neo4j stop", user="neo4j")
             if exit_code != 0:
                 logger.warning(
-                    f"Failed to stop Neo4j service (this might be okay): {output.decode()}"
+                    event=f"Failed to stop Neo4j service (this might be okay): {output.decode()}"
                 )
 
             # Give it a moment to stop
@@ -368,17 +373,17 @@ class Neo4jContainerManager:
             )
 
             # Restart Neo4j database
-            logger.info("Restarting Neo4j database...")
+            logger.info(event="Restarting Neo4j database...")
             restart_exit_code, restart_output = container.exec_run(
                 "neo4j start", user="neo4j"
             )
             if restart_exit_code != 0:
                 logger.warning(
-                    f"Failed to restart Neo4j service: {restart_output.decode()}"
+                    event=f"Failed to restart Neo4j service: {restart_output.decode()}"
                 )
 
             if exit_code != 0:
-                logger.error(f"neo4j-admin dump failed: {output.decode()}")
+                logger.error(event=f"neo4j-admin dump failed: {output.decode()}")
                 return False
 
             # Copy the backup file from the container to the host
@@ -386,10 +391,10 @@ class Neo4jContainerManager:
             with open(backup_path, "wb") as f:
                 for chunk in bits:
                     f.write(chunk)
-            logger.info(f"Backup completed and saved to {backup_path}")
+            logger.info(event=f"Backup completed and saved to {backup_path}")
             return True
         except Exception as e:
-            logger.error(f"Backup failed: {e}")
+            logger.error(event=f"Backup failed: {e}")
             return False
 
     def cleanup(self):
@@ -406,11 +411,11 @@ class Neo4jContainerManager:
             for c in containers:
                 try:
                     c.remove(force=True)
-                    logger.info(f"Removed container {c.name}")
+                    logger.info(event=f"Removed container {c.name}")
                 except Exception as e:
-                    logger.warning(f"Failed to remove container {c.name}: {e}")
+                    logger.warning(event=f"Failed to remove container {c.name}: {e}")
         except Exception as e:
-            logger.warning(f"Error listing containers for cleanup: {e}")
+            logger.warning(event=f"Error listing containers for cleanup: {e}")
 
         # Remove volume
         try:
@@ -420,11 +425,11 @@ class Neo4jContainerManager:
             for v in volumes:
                 try:
                     v.remove(force=True)
-                    logger.info(f"Removed volume {v.name}")
+                    logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:
-                    logger.warning(f"Failed to remove volume {v.name}: {e}")
+                    logger.warning(event=f"Failed to remove volume {v.name}: {e}")
         except Exception as e:
-            logger.warning(f"Error listing volumes for cleanup: {e}")
+            logger.warning(event=f"Error listing volumes for cleanup: {e}")
 
     @staticmethod
     def _generate_random_password(length: int = 16) -> str:
