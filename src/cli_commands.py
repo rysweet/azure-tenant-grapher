@@ -5,7 +5,6 @@ Contains the implementation of various CLI commands to keep the main CLI file fo
 """
 
 import asyncio
-import datetime
 import logging
 import os
 import sys
@@ -668,8 +667,11 @@ async def generate_sim_doc_command_handler(
     """
     import os
 
+    from rich.console import Console
+
     from src.llm_descriptions import create_llm_generator
 
+    console = Console()
     # Read seed file if provided
     seed_text = None
     if seed_path:
@@ -690,9 +692,56 @@ async def generate_sim_doc_command_handler(
         )
         sys.exit(1)
 
-    # Generate the profile
+    # Build the prompt as in generate_sim_customer_profile
+    prompt = (
+        "I'm a research scientist planning on building accurate simulations of Microsoft Azure customer environments so that security professionals can run realistic security scenarios in those environments. "
+        "We want the environments to be as close to real customer environments of large customers as possible, but we cannot copy real customer data or real customer names/identities etc. "
+        "We care more about simulating customer complexity and configuration than we do about scale. "
+        "We have a large trove of customer stories here: https://www.microsoft.com/en-us/customers/search?filters=product%3Aazure which you can browse and search to find relevant customer profiles. "
+        "We also have a collection of Azure reference architectures here: https://learn.microsoft.com/en-us/azure/architecture/browse/. "
+        "You can use both of these resources to research typical customers and the architectures they deploy on Azure.\n\n"
+        "Please use that background information and produce for me a distinct fake customer profile that describes the customer company, its goals, its personnel, and the solutions that they are leveraging on Azure, "
+        "with enough detail that we could begin to go model that customer environment. The fake profiles must be somewhat realistic in terms of storytelling, application, and personnel, but MAY NOT use any of the content from the Customer Stories site verbatim and MAY NOT use the names of real companies or customers."
+    )
+    if size:
+        prompt += f"\n\nTarget company size: {size} employees (approximate)."
+    if seed_text:
+        prompt += f"\n\nSeed/suggestions for the profile:\n{seed_text}"
+
+    # Generate the profile with streaming and progress indicator
+    markdown = ""
     try:
-        markdown = await llm.generate_sim_customer_profile(size=size, seed=seed_text)
+        with console.status(
+            "[bold green]Generating documentation...", spinner="dots"
+        ) as status:
+            first_token = True
+            tokens = []
+            try:
+                async for token in llm.generate_description_streaming(prompt):
+                    if first_token:
+                        status.stop()
+                        first_token = False
+                    tokens.append(token)
+                    console.print(token, end="", soft_wrap=True, highlight=False)
+                markdown = "".join(tokens)
+            except Exception as stream_exc:
+                if first_token:
+                    status.stop()
+                console.print(
+                    f"\n[red]⚠️ Streaming failed, falling back to non-streaming mode: {stream_exc}[/red]"
+                )
+                try:
+                    markdown = await llm.generate_sim_customer_profile(
+                        size=size, seed=seed_text
+                    )
+                    console.print(markdown)
+                except Exception as e:
+                    click.echo(
+                        f"❌ LLM generation failed: {e}\n"
+                        "Action: Check your Azure OpenAI configuration and network connectivity. Run with --log-level DEBUG for more details.",
+                        err=True,
+                    )
+                    sys.exit(1)
     except Exception as e:
         click.echo(
             f"❌ LLM generation failed: {e}\n"
@@ -706,13 +755,17 @@ async def generate_sim_doc_command_handler(
         output_path = out_path
     else:
         os.makedirs("simdocs", exist_ok=True)
+        import datetime
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         output_path = f"simdocs/simdoc-{timestamp}.md"
 
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(markdown)
-        click.echo(f"✅ Simulated customer profile written to: {output_path}")
+        console.print(
+            f"\n[bold green]✅ Simulated customer profile written to: {output_path}[/bold green]"
+        )
     except Exception as e:
         click.echo(
             f"❌ Failed to write output file: {e}\n"

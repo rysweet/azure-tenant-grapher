@@ -148,6 +148,78 @@ class TestAzureLLMDescriptionGenerator:
             assert generator.base_url == "https://test.openai.azure.com/"
 
     @pytest.mark.asyncio
+    async def test_generate_description_streaming_success(self):
+        """Test streaming description yields tokens as expected."""
+        config = LLMConfig(
+            endpoint="https://test.openai.azure.com/",
+            api_key="test-key",
+            api_version="2025-04-16",
+            model_chat="gpt-4",
+            model_reasoning="gpt-4",
+        )
+
+        # Simulate streaming chunks from OpenAI SDK
+        class MockDelta:
+            def __init__(self, content):
+                self.content = content
+
+        class MockChoice:
+            def __init__(self, delta):
+                self.delta = delta
+
+        class MockChunk:
+            def __init__(self, content):
+                self.choices = [MockChoice(MockDelta(content))]
+
+        mock_stream = [MockChunk("Hello "), MockChunk("world!")]
+        mock_client = Mock()
+        mock_client.chat.completions.create.return_value = iter(mock_stream)
+
+        with patch("src.llm_descriptions.AzureOpenAI", return_value=mock_client):
+            generator = AzureLLMDescriptionGenerator(config)
+            result = []
+            async for token in generator.generate_description_streaming("Say hello"):
+                result.append(token)
+            assert "".join(result) == "Hello world!"
+            assert mock_client.chat.completions.create.called
+
+    @pytest.mark.asyncio
+    async def test_generate_description_streaming_fallback(self):
+        """Test streaming description falls back to non-streaming on error."""
+        config = LLMConfig(
+            endpoint="https://test.openai.azure.com/",
+            api_key="test-key",
+            api_version="2025-04-16",
+            model_chat="gpt-4",
+            model_reasoning="gpt-4",
+        )
+
+        # Simulate streaming raising an exception, fallback returns a full message
+        mock_client = Mock()
+
+        # First call (stream=True) raises, second call (fallback) returns correct structure
+        def fallback_side_effect(*args, **kwargs):
+            if kwargs.get("stream", False):
+                raise Exception("Streaming not supported")
+            # Fallback: return a mock with .choices[0].message.content
+            mock_message = Mock()
+            mock_message.content = "Fallback result"
+            mock_choice = Mock()
+            mock_choice.message = mock_message
+            mock_response = Mock()
+            mock_response.choices = [mock_choice]
+            return mock_response
+
+        mock_client.chat.completions.create.side_effect = fallback_side_effect
+
+        with patch("src.llm_descriptions.AzureOpenAI", return_value=mock_client):
+            generator = AzureLLMDescriptionGenerator(config)
+            result = []
+            async for token in generator.generate_description_streaming("Say hello"):
+                result.append(token)
+            assert "Fallback result" in "".join(result)
+
+    @pytest.mark.asyncio
     async def test_generate_resource_description_success(self) -> None:
         """Test successful resource description generation."""
         config = LLMConfig(
@@ -457,3 +529,6 @@ class TestFactoryFunction:
             ):
                 generator = create_llm_generator()
                 assert generator is None
+
+
+# PATCH: Fix fallback streaming test to properly mock OpenAI fallback response
