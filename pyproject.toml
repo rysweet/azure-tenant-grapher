@@ -1,3 +1,5 @@
+# [PR workflow] No-op change to enable PR creation for azure-mgmt-resourcegraph dependency fix.
+# This line can be removed after merge.
 [project]
 name = "azure-tenant-grapher"
 version = "0.1.0"
