@@ -42,7 +42,6 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - **Agent Mode (MCP/AutoGen)** for natural-language queries over your graph.
 - **Threat Modeling Agent** for automated DFD creation, threat enumeration, and Markdown reports.
 - **Automated CLI tool management** and cross-platform support.
-- **Comprehensive test suite** spanning unit, integration, and end-to-end scenarios.
 - **Database backup & restore utilities** for Neo4j.
 
 ## Quick Start
