@@ -150,7 +150,7 @@ async def _run_no_dashboard_mode(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file_path = f"{tempfile.gettempdir()}/azure_tenant_grapher_{timestamp}.log"
     structlog.get_logger(__name__).info(
-        "Log file path for no-dashboard mode", log_file_path=log_file_path
+        event="Log file path for no-dashboard mode", log_file_path=log_file_path
     )
 
     from rich.logging import RichHandler
@@ -195,7 +195,7 @@ async def _run_no_dashboard_mode(
             continue
         logging.getLogger(name).setLevel(level_map.get(cli_log_level, logging.INFO))
     structlog.get_logger(__name__).info(
-        "Running in no-dashboard mode: logs will be emitted line by line.",
+        event="Running in no-dashboard mode: logs will be emitted line by line.",
         log_level=cli_log_level,
     )
     try:
@@ -246,7 +246,7 @@ async def _run_dashboard_mode(
     )
     # Print log file path for test discoverability
     structlog.get_logger(__name__).info(
-        "Log file path for dashboard mode", log_file_path=dashboard.log_file_path
+        event="Log file path for dashboard mode", log_file_path=dashboard.log_file_path
     )
 
     # Setup file logging to the dashboard's log file
