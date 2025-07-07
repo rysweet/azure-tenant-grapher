@@ -4,4 +4,3 @@
 MATCH (s:Subscription)
 WHERE s.LastSyncedTimestamp IS NULL
 SET s.LastSyncedTimestamp = null;
-

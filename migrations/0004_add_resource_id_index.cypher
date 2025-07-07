@@ -5,4 +5,3 @@
 CREATE INDEX resource_id_index IF NOT EXISTS
   FOR (r:Resource)
   ON (r.id);
-

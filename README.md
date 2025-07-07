@@ -88,10 +88,28 @@ cd azure-tenant-grapher
 uv sync
 source .venv/bin/activate
 
+# Note:
+# All runtime dependencies are managed in pyproject.toml.
+# requirements.txt is provided for compatibility, but you must keep both files in sync.
+# If you add a new dependency, add it to pyproject.toml and run 'uv sync' to update the lockfile and your environment.
+
 # Configure environment variables
 cp .env.example .env
 az login
 ```
+## Dependency Management
+
+All runtime dependencies **must** be listed in [`pyproject.toml`](pyproject.toml) under the `[project.dependencies]` section.
+The [`requirements.txt`](requirements.txt) file is provided for compatibility with some tools, but it is not the source of truth.
+Whenever you add, remove, or update a dependency, you **must**:
+
+1. Edit `pyproject.toml` to reflect the change.
+2. Run `uv sync` to update your environment and the lockfile.
+3. Ensure `requirements.txt` is updated to match `pyproject.toml`.
+
+> **Note:** Keeping `pyproject.toml` and `requirements.txt` in sync is required for correct installation and CI compatibility.
+> Do **not** add dependencies to `requirements.txt` directly—always update `pyproject.toml` first.
+
 
 ## Usage
 
