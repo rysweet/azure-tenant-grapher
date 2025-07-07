@@ -5,7 +5,6 @@ from subprocess import PIPE, STDOUT
 import pytest
 
 
-@pytest.mark.skip(reason="Neo4j container authentication issues - temporarily disabled")
 @pytest.mark.asyncio
 async def test_agent_mode_storage_resource_count(neo4j_container, mcp_server_process):
     """
