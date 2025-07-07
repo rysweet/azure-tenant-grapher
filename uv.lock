@@ -292,6 +292,20 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-mgmt-resourcegraph"
+version = "8.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-common" },
+    { name = "azure-mgmt-core" },
+    { name = "msrest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/be/9f/45ad0c9690dba2bd00760b0dcf6a43414db567e4648a134abd753dc31c7e/azure-mgmt-resourcegraph-8.0.0.zip", hash = "sha256:d25f01dae3897780fb3ddca16d1625b6347c32f1b581c767fba5ef3b24443f11", size = 45769 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/16/63c37bffdce5082c9997ad7783921b02ed534b5971e5bdbd1ae617a5b2e3/azure_mgmt_resourcegraph-8.0.0-py2.py3-none-any.whl", hash = "sha256:0cf55f7ea82dc03e69d0fae0f1606e09b08b80b6ae23bd597d8b62b1ed938ace", size = 27334 },
+]
+
+[[package]]
 name = "azure-mgmt-sql"
 version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -364,6 +378,7 @@ dependencies = [
     { name = "azure-mgmt-monitor" },
     { name = "azure-mgmt-network" },
     { name = "azure-mgmt-resource" },
+    { name = "azure-mgmt-resourcegraph" },
     { name = "azure-mgmt-sql" },
     { name = "azure-mgmt-storage" },
     { name = "azure-mgmt-subscription" },
@@ -410,6 +425,7 @@ requires-dist = [
     { name = "azure-mgmt-monitor", specifier = ">=6.0.0" },
     { name = "azure-mgmt-network", specifier = ">=25.0.0" },
     { name = "azure-mgmt-resource", specifier = ">=23.0.0" },
+    { name = "azure-mgmt-resourcegraph", specifier = ">=8.0.0" },
     { name = "azure-mgmt-sql", specifier = ">=3.0.1" },
     { name = "azure-mgmt-storage", specifier = ">=21.0.0" },
     { name = "azure-mgmt-subscription", specifier = ">=3.1.1" },
