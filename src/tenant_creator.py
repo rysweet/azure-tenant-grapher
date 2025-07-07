@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from src.config_manager import ProcessingConfig, create_neo4j_config_from_env
 from src.llm_descriptions import AzureLLMDescriptionGenerator
@@ -13,9 +13,62 @@ def get_default_session_manager() -> Neo4jSessionManager:
     return Neo4jSessionManager(config.neo4j)
 
 
+def normalize_tenant_spec_fields(obj: Any, context: str | None = None) -> Any:
+    """
+    Recursively normalize 'id' fields to the correct alias for each object type.
+    """
+    if isinstance(obj, dict):
+        # Determine context for aliasing
+        new_obj = {}
+        for k, v in obj.items():
+            # Set context for children
+            child_context = context
+            if k == "tenant":
+                child_context = "tenant"
+            elif k == "subscriptions":
+                child_context = "subscription"
+            elif k == "resource_groups":
+                child_context = "resource_group"
+            elif k == "resources":
+                child_context = "resource"
+            elif k == "users":
+                child_context = "user"
+            elif k == "groups":
+                child_context = "group"
+            elif k == "service_principals":
+                child_context = "service_principal"
+            elif k == "managed_identities":
+                child_context = "managed_identity"
+            elif k == "admin_units":
+                child_context = "admin_unit"
+            # Recursively normalize children
+            new_obj[k] = normalize_tenant_spec_fields(v, child_context)
+        # Now, apply alias mapping for this object if it has an 'id'
+        if "id" in new_obj:
+            alias_map = {
+                "tenant": "tenantId",
+                "subscription": "subscriptionId",
+                "resource_group": "resourceGroupId",
+                "resource": "resourceId",
+                "user": "userId",
+                "group": "groupId",
+                "service_principal": "spId",
+                "managed_identity": "miId",
+                "admin_unit": "adminUnitId",
+            }
+            if context in alias_map:
+                alias = alias_map[context]
+                new_obj[alias] = new_obj.pop("id")
+        return new_obj
+    elif isinstance(obj, list):
+        return [normalize_tenant_spec_fields(item, context) for item in obj]
+    else:
+        return obj
+
+
 class TenantCreator:
     LLM_PROMPT_TEMPLATE = """
-You are an expert Azure cloud architect. Given the following markdown narrative describing an Azure tenant, output ONLY a single JSON object matching the required schema. Do not include any explanation, markdown, or extra text—just the JSON.
+    You are an expert Azure cloud architect. Given the following markdown narrative describing an Azure tenant, output ONLY a single JSON object matching the required schema. Do not include any explanation, markdown, or extra text—just the JSON.
 
 You may reference the following sources for realistic Azure architectures, resource types, and patterns:
 - Azure Customer Stories: https://www.microsoft.com/en-us/customers/search?filters=product%3Aazure
@@ -135,6 +188,12 @@ Instructions:
         if match:
             json_text = match.group(1)
             print("DEBUG: Extracted JSON block:\n", json_text)
+            import json as _json
+
+            # Always normalize the JSON before parsing
+            data = _json.loads(json_text)
+            data = normalize_tenant_spec_fields(data)
+            json_text = _json.dumps(data)
             return TenantSpec.parse_raw_json(json_text)
         # No JSON block: extract narrative and use LLM
         print(
@@ -151,65 +210,8 @@ Instructions:
         # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
 
-        # --- BEGIN: Full-structure normalization for LLM output ---
-        from typing import Any
-
         from src.exceptions import LLMGenerationError
         from src.llm_descriptions import normalize_llm_fields
-
-        def normalize_tenant_spec_fields(obj: Any, context: str | None = None) -> Any:
-            """
-            Recursively normalize 'id' fields to the correct alias for each object type.
-            """
-            if isinstance(obj, dict):
-                # Determine context for aliasing
-                new_obj = {}
-                for k, v in obj.items():
-                    # Set context for children
-                    child_context = context
-                    if k == "tenant":
-                        child_context = "tenant"
-                    elif k == "subscriptions":
-                        child_context = "subscription"
-                    elif k == "resource_groups":
-                        child_context = "resource_group"
-                    elif k == "resources":
-                        child_context = "resource"
-                    elif k == "users":
-                        child_context = "user"
-                    elif k == "groups":
-                        child_context = "group"
-                    elif k == "service_principals":
-                        child_context = "service_principal"
-                    elif k == "managed_identities":
-                        child_context = "managed_identity"
-                    elif k == "admin_units":
-                        child_context = "admin_unit"
-                    # Recursively normalize children
-                    new_obj[k] = normalize_tenant_spec_fields(v, child_context)
-                # Now, apply alias mapping for this object if it has an 'id'
-                if "id" in new_obj:
-                    alias_map = {
-                        "tenant": "tenantId",
-                        "subscription": "subscriptionId",
-                        "resource_group": "resourceGroupId",
-                        "resource": "resourceId",
-                        "user": "userId",
-                        "group": "groupId",
-                        "service_principal": "spId",
-                        "managed_identity": "miId",
-                        "admin_unit": "adminUnitId",
-                    }
-                    if context in alias_map:
-                        alias = alias_map[context]
-                        new_obj[alias] = new_obj.pop("id")
-                return new_obj
-            elif isinstance(obj, list):
-                return [normalize_tenant_spec_fields(item, context) for item in obj]
-            else:
-                return obj
-
-        # --- END: Full-structure normalization for LLM output ---
 
         try:
             data = _json.loads(json_text)

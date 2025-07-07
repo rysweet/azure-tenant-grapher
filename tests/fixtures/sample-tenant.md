@@ -6,7 +6,7 @@ This is a sample tenant markdown file for testing the create-tenant CLI command.
 {
   "tenant": {
     "id": "tenant-001",
-    "name": "Contoso Ltd",
+    "display_name": "Contoso Ltd",
     "subscriptions": [
       {
         "id": "sub-123",
