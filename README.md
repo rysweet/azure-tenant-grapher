@@ -1,6 +1,6 @@
 # Azure Tenant Grapher
 
-Azure Tenant Grapher discovers every resource in your Azure tenant, stores the results in a richly-typed Neo4j graph, and offers powerful tooling to visualize, document, and manage your cloud environment— including Infrastructure-as-Code generation, AI-powered summaries, and interactive dashboards.
+Azure Tenant Grapher discovers every resource in your Azure tenant, stores the results in a richly-typed Neo4j graph, and offers tooling to visualize, document, and recreate your cloud environment — including Infrastructure-as-Code generation, AI-powered summaries, and narrative description to simulated tenant creation.
 
 ![Azure Tenant Grapher Screenshot](docs/resources/screenshot.png)
 
