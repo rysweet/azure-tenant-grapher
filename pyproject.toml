@@ -40,6 +40,8 @@ dependencies = [
     "autogen_agentchat",
     "tiktoken",
     "ruamel.yaml",
+    # Logging dependencies
+    "structlog>=24.1.0",
 ]
 
 
