@@ -36,10 +36,12 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - **Neo4j graph database** with rich schema and relationship modeling.
 - **Extensible relationship engine** with modular rules (Tag, Region, CreatedBy, etc.).
 - **Interactive 3D visualization** with filtering, search, and ResourceGroup labels.
-- **Rich CLI dashboard** with live progress, logs, and configuration.
+- **CLI dashboard** with live progress, logs, and configuration.
 - **AI-powered documentation** and anonymized tenant specification generation.
 - **Infrastructure-as-Code (IaC) generation** supporting Bicep, ARM, and Terraform, plus transformation rules and deployment scripts.
 - **Agent Mode (MCP/AutoGen)** for natural-language queries over your graph.
+- **Generate Detailed Narrative Descriptions** of Simulated Tenants from a seed.
+- **(re)Create a tenant environment** from a narrative description
 - **Threat Modeling Agent** for automated DFD creation, threat enumeration, and Markdown reports.
 - **Automated CLI tool management** and cross-platform support.
 - **Database backup & restore utilities** for Neo4j.
