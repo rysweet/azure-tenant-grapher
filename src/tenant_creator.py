@@ -151,14 +151,73 @@ Instructions:
         # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
 
+        # --- BEGIN: Full-structure normalization for LLM output ---
+        from typing import Any
+
         from src.exceptions import LLMGenerationError
         from src.llm_descriptions import normalize_llm_fields
+
+        def normalize_tenant_spec_fields(obj: Any, context: str | None = None) -> Any:
+            """
+            Recursively normalize 'id' fields to the correct alias for each object type.
+            """
+            if isinstance(obj, dict):
+                # Determine context for aliasing
+                new_obj = {}
+                for k, v in obj.items():
+                    # Set context for children
+                    child_context = context
+                    if k == "tenant":
+                        child_context = "tenant"
+                    elif k == "subscriptions":
+                        child_context = "subscription"
+                    elif k == "resource_groups":
+                        child_context = "resource_group"
+                    elif k == "resources":
+                        child_context = "resource"
+                    elif k == "users":
+                        child_context = "user"
+                    elif k == "groups":
+                        child_context = "group"
+                    elif k == "service_principals":
+                        child_context = "service_principal"
+                    elif k == "managed_identities":
+                        child_context = "managed_identity"
+                    elif k == "admin_units":
+                        child_context = "admin_unit"
+                    # Recursively normalize children
+                    new_obj[k] = normalize_tenant_spec_fields(v, child_context)
+                # Now, apply alias mapping for this object if it has an 'id'
+                if "id" in new_obj:
+                    alias_map = {
+                        "tenant": "tenantId",
+                        "subscription": "subscriptionId",
+                        "resource_group": "resourceGroupId",
+                        "resource": "resourceId",
+                        "user": "userId",
+                        "group": "groupId",
+                        "service_principal": "spId",
+                        "managed_identity": "miId",
+                        "admin_unit": "adminUnitId",
+                    }
+                    if context in alias_map:
+                        alias = alias_map[context]
+                        new_obj[alias] = new_obj.pop("id")
+                return new_obj
+            elif isinstance(obj, list):
+                return [normalize_tenant_spec_fields(item, context) for item in obj]
+            else:
+                return obj
+
+        # --- END: Full-structure normalization for LLM output ---
 
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
+            # Normalize the entire structure
+            data = normalize_tenant_spec_fields(data)
+            # Centralized normalization for all RBAC assignments (legacy, but safe)
             if "tenant" in data and "rbac_assignments" in data["tenant"]:
-                # Centralized normalization for all RBAC assignments
                 data["tenant"]["rbac_assignments"] = normalize_llm_fields(
                     data["tenant"]["rbac_assignments"], "rbac_assignment"
                 )
