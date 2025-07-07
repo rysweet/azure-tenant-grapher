@@ -32,7 +32,6 @@ Each CLI command has a dedicated walkthrough page:
 
 - [build](commands/build.md) - Discover and process Azure tenant resources; builds the resource graph and launches the dashboard by default.
 - [rebuild-edges](commands/rebuild-edges.md) - Recompute and refresh all resource relationships (edges) in the Neo4j graph without reloading raw resources.
-- [progress](commands/progress.md) - Display real-time progress, stats, and summary of current or past graph build operations.
 - [config](commands/config.md) - Show the current configuration, environment variables, and important settings.
 - [visualize](commands/visualize.md) - Generate interactive or static visualizations of the current tenant graph (e.g., 2D/3D diagrams).
 - [spec](commands/spec.md) - Produce a detailed tenant specification (YAML/JSON/Markdown) representing the discovered Azure environment.

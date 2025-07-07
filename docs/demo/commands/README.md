@@ -11,7 +11,6 @@ This directory contains a dedicated walkthrough for each Azure Tenant Grapher CL
 
 - [build.md](build.md)
 - [rebuild-edges.md](rebuild-edges.md)
-- [progress.md](progress.md)
 - [config.md](config.md)
 - [visualize.md](visualize.md)
 - [spec.md](spec.md)

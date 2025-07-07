@@ -74,18 +74,6 @@ def test_azure_tenant_grapher_config():
 
 
 @pytest.mark.integration
-def test_azure_tenant_grapher_progress():
-    result = subprocess.run(
-        ["uv", "run", "azure-tenant-grapher", "progress"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 0
-    assert "progress" in result.stdout.lower() or "processing" in result.stdout.lower()
-
-
-@pytest.mark.integration
 def test_azure_tenant_grapher_visualize_minimal():
     result = subprocess.run(
         ["uv", "run", "azure-tenant-grapher", "visualize", "--no-container"],
