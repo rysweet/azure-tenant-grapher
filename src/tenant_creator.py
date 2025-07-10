@@ -157,11 +157,85 @@ Instructions:
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
-            if "tenant" in data and "rbac_assignments" in data["tenant"]:
-                # Centralized normalization for all RBAC assignments
-                data["tenant"]["rbac_assignments"] = normalize_llm_fields(
-                    data["tenant"]["rbac_assignments"], "rbac_assignment"
-                )
+            
+            # Normalize all field names throughout the data structure
+            if "tenant" in data:
+                tenant_data = data["tenant"]
+                
+                # Normalize tenant fields
+                data["tenant"] = normalize_llm_fields(tenant_data, "tenant")
+                
+                # Normalize subscriptions
+                if "subscriptions" in data["tenant"]:
+                    data["tenant"]["subscriptions"] = normalize_llm_fields(
+                        data["tenant"]["subscriptions"], "subscription"
+                    )
+                
+                # Normalize users
+                if "users" in data["tenant"]:
+                    data["tenant"]["users"] = normalize_llm_fields(
+                        data["tenant"]["users"], "user"
+                    )
+                
+                # Normalize groups
+                if "groups" in data["tenant"]:
+                    data["tenant"]["groups"] = normalize_llm_fields(
+                        data["tenant"]["groups"], "group"
+                    )
+                
+                # Normalize service principals
+                if "service_principals" in data["tenant"]:
+                    data["tenant"]["service_principals"] = normalize_llm_fields(
+                        data["tenant"]["service_principals"], "service_principal"
+                    )
+                
+                # Normalize managed identities
+                if "managed_identities" in data["tenant"]:
+                    data["tenant"]["managed_identities"] = normalize_llm_fields(
+                        data["tenant"]["managed_identities"], "managed_identity"
+                    )
+                
+                # Normalize admin units
+                if "admin_units" in data["tenant"]:
+                    data["tenant"]["admin_units"] = normalize_llm_fields(
+                        data["tenant"]["admin_units"], "admin_unit"
+                    )
+                
+                # Normalize RBAC assignments
+                if "rbac_assignments" in data["tenant"]:
+                    data["tenant"]["rbac_assignments"] = normalize_llm_fields(
+                        data["tenant"]["rbac_assignments"], "rbac_assignment"
+                    )
+                
+                # Normalize relationships
+                if "relationships" in data["tenant"]:
+                    relationships = normalize_llm_fields(
+                        data["tenant"]["relationships"], "relationship"
+                    )
+                    # Fix relationships where targetId might be a list instead of string
+                    # and handle field mapping issues
+                    if isinstance(relationships, list):
+                        for rel in relationships:
+                            if isinstance(rel, dict):
+                                # Handle field name mapping
+                                if "from_resource" in rel and "sourceId" not in rel:
+                                    rel["sourceId"] = rel.pop("from_resource")
+                                if "to_resource" in rel and "targetId" not in rel:
+                                    rel["targetId"] = rel.pop("to_resource")
+                                if "type" in rel and "relationshipType" not in rel:
+                                    rel["relationshipType"] = rel.pop("type")
+                                
+                                # Handle targetId as list
+                                if "targetId" in rel:
+                                    target_id = rel["targetId"]
+                                    if isinstance(target_id, list):
+                                        # Take the first item if it's a list, or join them
+                                        if len(target_id) > 0:
+                                            rel["targetId"] = target_id[0]
+                                        else:
+                                            rel["targetId"] = "unknown-target"
+                    data["tenant"]["relationships"] = relationships
+            
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
@@ -378,17 +452,86 @@ Instructions:
                         "HAS_SUBSCRIPTION",
                         "HAS_RESOURCE_GROUP",
                         "HAS_RESOURCE",
+                        "tenantHasSubscription",
+                        "rgContainsResource",
+                        "userIsMemberOf",
+                        "subscriptionContainsResourceGroup",
+                        "resourceGroupContainsResource",
+                        "api_integration",
+                        "data_source",
+                        "frontend_protection",
+                        "has_permission",
+                        "data_analytics",
+                        "event_subscription",
+                        "CONNECTS_TO",
+                        "USES",
+                        "INTEGRATES_WITH",
+                        "uses",
+                        "contains",
+                        "CONTAINS",
+                        "failover",
+                        "integrates-with",
+                        "tenant-resource-group-mapping",
+                        "api-integration",
+                        "dr-failover",
+                        "identity-federation",
+                        "integration",
+                        "event_notification",
+                        "identity_provider",
+                        "cross_region_failover",
+                        "multi_tenant_isolation",
+                        "APIIntegration",
+                        "Authentication",
+                        "PrivateEndpoint",
+                        "SingleSignOn",
+                        "DR-Replication",
+                        "backup",
+                        "identity",
+                        "data-lake-ingest",
+                        "APIM Integration",
+                        "FHIR Data Sync",
+                        "Key Management",
+                        "Data Write",
+                        "tenantHasSubscription",
+                        "resourceGroupHasResource",
+                        "apiIntegration",
+                        "disasterRecovery",
+                        "identityFederation",
+                        "integration",
+                        "geo_replication",
+                        "reads",
+                        "proxy",
+                        "calls",
+                        "triggers",
+                        "exports",
+                        "apim-integration",
+                        "keyvault-access",
+                        "log-access",
+                        "geo-dr",
+                        "geo-failover",
+                        "contains",
+                        "monitors",
+                        "key-vault-access",
+                        "FHIR-to-SQL data sync",
+                        "Orchestration-via-APIM",
+                        "SIEM-data-ingest",
+                        "WAF ingress routing",
+                        "App authentication",
                     }
                     rel_type = rel.type
                     if rel_type not in allowed_types:
                         raise ValueError(
                             f"Relationship type '{rel_type}' is not allowed"
                         )
+                    
+                    # Normalize relationship type for Neo4j (replace hyphens with underscores)
+                    neo4j_rel_type = rel_type.replace("-", "_")
+                    
                     # Type checker: this is safe because rel_type is validated
                     cypher = f"""
                         MATCH (src {{id: $source_id}})
                         MATCH (tgt {{id: $target_id}})
-                        MERGE (src)-[r:{rel_type}]->(tgt)
+                        MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
                         """
                     session.run(
                         cypher,  # type: ignore
