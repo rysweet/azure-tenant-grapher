@@ -24,8 +24,8 @@
 
 - The Roo agent (or any agent processing user prompts) is MANDATORILY responsible for recording every user prompt in the `.github/prompt-history/` directory.
 - The agent MUST derive a session name from the first prompt for the task and use it for all related history and reflection files.
-- Each prompt received from the user MUST be appended to `.github/prompt-history/{session-name}.md` by the agent immediately after processing.
-- If a user prompt indicates feedback, frustration, repetition, or dissatisfaction, the agent MUST summarize the most recent prompts, API requests, and tool usages, and create a new markdown file `.github/prompt-history/reflection--{session-name}.md` with this summary.
+- Each prompt received from the user MUST be appended to `.github/prompt-history/YYYY-MM-DD--{session-name}.md` by the agent immediately after processing, where the filename starts with the session date in `YYYY-MM-DD` format.
+- If a user prompt indicates feedback, frustration, repetition, or dissatisfaction, the agent MUST summarize the most recent prompts, API requests, and tool usages, and create a new markdown file `.github/prompt-history/reflection--YYYY-MM-DD--{session-name}.md` with this summary, using the same datetime-first naming convention.
 - A script or automation (e.g., pre-commit hook, CI check, or agent integration) must verify that for every session, the corresponding prompt history file exists and is up to date.
 - The repository must include a pre-commit/CI enforcement script (e.g., `scripts/check_prompt_history.py`) that:
   - Checks for at least one session file in `.github/prompt-history/`
