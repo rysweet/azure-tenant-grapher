@@ -216,14 +216,85 @@ Instructions:
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
-            # Normalize the entire structure first
-            data = normalize_tenant_spec_fields(data)
-
-            # Centralized normalization for RBAC assignments (legacy support)
-            if "tenant" in data and "rbac_assignments" in data["tenant"]:
-                data["tenant"]["rbac_assignments"] = normalize_llm_fields(
-                    data["tenant"]["rbac_assignments"], "rbac_assignment"
-                )
+            
+            # Normalize all field names throughout the data structure
+            if "tenant" in data:
+                tenant_data = data["tenant"]
+                
+                # Normalize tenant fields
+                data["tenant"] = normalize_llm_fields(tenant_data, "tenant")
+                
+                # Normalize subscriptions
+                if "subscriptions" in data["tenant"]:
+                    data["tenant"]["subscriptions"] = normalize_llm_fields(
+                        data["tenant"]["subscriptions"], "subscription"
+                    )
+                
+                # Normalize users
+                if "users" in data["tenant"]:
+                    data["tenant"]["users"] = normalize_llm_fields(
+                        data["tenant"]["users"], "user"
+                    )
+                
+                # Normalize groups
+                if "groups" in data["tenant"]:
+                    data["tenant"]["groups"] = normalize_llm_fields(
+                        data["tenant"]["groups"], "group"
+                    )
+                
+                # Normalize service principals
+                if "service_principals" in data["tenant"]:
+                    data["tenant"]["service_principals"] = normalize_llm_fields(
+                        data["tenant"]["service_principals"], "service_principal"
+                    )
+                
+                # Normalize managed identities
+                if "managed_identities" in data["tenant"]:
+                    data["tenant"]["managed_identities"] = normalize_llm_fields(
+                        data["tenant"]["managed_identities"], "managed_identity"
+                    )
+                
+                # Normalize admin units
+                if "admin_units" in data["tenant"]:
+                    data["tenant"]["admin_units"] = normalize_llm_fields(
+                        data["tenant"]["admin_units"], "admin_unit"
+                    )
+                
+                # Normalize RBAC assignments
+                if "rbac_assignments" in data["tenant"]:
+                    data["tenant"]["rbac_assignments"] = normalize_llm_fields(
+                        data["tenant"]["rbac_assignments"], "rbac_assignment"
+                    )
+                
+                # Normalize relationships
+                if "relationships" in data["tenant"]:
+                    relationships = normalize_llm_fields(
+                        data["tenant"]["relationships"], "relationship"
+                    )
+                    # Fix relationships where targetId might be a list instead of string
+                    # and handle field mapping issues
+                    if isinstance(relationships, list):
+                        for rel in relationships:
+                            if isinstance(rel, dict):
+                                # Handle field name mapping
+                                if "from_resource" in rel and "sourceId" not in rel:
+                                    rel["sourceId"] = rel.pop("from_resource")
+                                if "to_resource" in rel and "targetId" not in rel:
+                                    rel["targetId"] = rel.pop("to_resource")
+                                if "type" in rel and "relationshipType" not in rel:
+                                    rel["relationshipType"] = rel.pop("type")
+                                
+                                # Handle targetId as list
+                                if "targetId" in rel:
+                                    target_id = rel["targetId"]
+                                    if isinstance(target_id, list):
+                                        # Take the first item if it's a list, or join them
+                                        if len(target_id) > 0:
+                                            rel["targetId"] = target_id[0]
+                                        else:
+                                            rel["targetId"] = "unknown-target"
+                    data["tenant"]["relationships"] = relationships
+            
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
