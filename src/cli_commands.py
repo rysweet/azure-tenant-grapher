@@ -836,7 +836,21 @@ def create_tenant_from_markdown(text: str):
 
             sys.exit(1)
 
-    asyncio.run(_run())
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # If we're already in an event loop, schedule the task and wait for it
+        task = loop.create_task(_run())
+        # For CLI, block until done
+        import nest_asyncio
+
+        nest_asyncio.apply()
+        loop.run_until_complete(task)
+    else:
+        asyncio.run(_run())
 
 
 @click.command("create-tenant")

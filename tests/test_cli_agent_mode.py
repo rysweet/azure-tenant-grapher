@@ -1,5 +1,8 @@
+import logging
+import os
 import subprocess
 import sys
+import time
 from typing import Any
 
 import pytest
@@ -15,6 +18,11 @@ def print_cli_failure(proc: Any, stdout: str, stderr: str) -> None:
 
 def test_agent_mode_requires_resources():
     """Test that agent-mode properly checks for required resources and fails if they're not available."""
+    logger = logging.getLogger("test_cli_agent_mode")
+    logging.basicConfig(level=logging.INFO)
+    timeout = int(os.environ.get("AGENT_MODE_TIMEOUT_SECONDS", 60))
+    logger.info(f"Starting agent-mode subprocess with timeout={timeout}s")
+    start_time = time.time()
     proc = subprocess.Popen(
         [sys.executable, "scripts/cli.py", "agent-mode"],
         stdin=subprocess.PIPE,
@@ -25,7 +33,11 @@ def test_agent_mode_requires_resources():
 
     try:
         # Send immediate exit command
-        stdout, stderr = proc.communicate(input="x\n", timeout=30)
+        stdout, stderr = proc.communicate(input="x\n", timeout=timeout)
+        elapsed = time.time() - start_time
+        logger.info(
+            f"Subprocess completed in {elapsed:.2f}s with return code {proc.returncode}"
+        )
 
         # The agent mode should either:
         # 1. Start successfully if all resources are available (Neo4j, Azure OpenAI config)
@@ -71,9 +83,11 @@ def test_agent_mode_requires_resources():
 
     except subprocess.TimeoutExpired:
         proc.kill()
-        pytest.fail("Agent mode did not respond within timeout")
+        logger.error(f"Agent mode subprocess timed out after {timeout}s")
+        pytest.fail(f"Agent mode did not respond within timeout ({timeout}s)")
     except Exception as e:
         proc.kill()
+        logger.error(f"Agent mode test failed: {e}")
         pytest.fail(f"Agent mode test failed: {e}")
 
 

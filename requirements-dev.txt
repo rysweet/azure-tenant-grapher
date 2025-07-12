@@ -25,3 +25,8 @@ sphinx-rtd-theme>=2.0.0
 # Pre-commit hooks
 pre-commit>=3.6.0
 ruamel.yaml>=0.18
+
+psutil
+
+# For ephemeral test containers
+testcontainers[neo4j]>=4.2.0
