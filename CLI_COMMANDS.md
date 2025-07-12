@@ -32,9 +32,6 @@ atg test --limit 20
 # Generate visualization
 atg visualize
 
-# Check progress
-atg progress
-
 # Show configuration
 atg config
 ```
