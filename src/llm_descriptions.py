@@ -29,7 +29,50 @@ LLM_FIELD_NORMALIZATION_MAP: Dict[str, Dict[str, List[str]]] = {
         "principal_id": ["principal_id", "principalId"],
         "scope": ["scope"],
     },
-    # Add more object types and their field mappings here as needed
+    "tenant": {
+        "tenantId": ["id", "tenant_id", "tenantId"],
+        "displayName": ["display_name", "displayName", "name"],
+    },
+    "subscription": {
+        "subscriptionId": ["id", "subscription_id", "subscriptionId"],
+        "subscriptionName": ["name", "subscription_name", "subscriptionName"],
+    },
+    "user": {
+        "userId": ["id", "user_id", "userId"],
+        "displayName": ["display_name", "displayName", "name"],
+        "emailAddress": ["email", "email_address", "emailAddress"],
+    },
+    "group": {
+        "groupId": ["id", "group_id", "groupId"],
+        "displayName": ["display_name", "displayName", "name"],
+    },
+    "service_principal": {
+        "spId": ["id", "sp_id", "spId"],
+        "displayName": ["display_name", "displayName", "name"],
+        "appId": ["app_id", "appId", "applicationId"],
+    },
+    "managed_identity": {
+        "miId": ["id", "mi_id", "miId"],
+        "displayName": ["display_name", "displayName", "name"],
+    },
+    "admin_unit": {
+        "adminUnitId": ["id", "admin_unit_id", "adminUnitId"],
+        "displayName": ["display_name", "displayName", "name"],
+    },
+    "relationship": {
+        "sourceId": ["from", "source", "source_id", "sourceId", "tenantId", "primaryResource", "aadB2C", "primary_region"],
+        "targetId": ["to", "target", "target_id", "targetId", "resourceGroups", "secondaryResource", "userPools", "secondary_region"],
+        "relationshipType": ["type", "relationship_type", "relationshipType"],
+    },
+    "resource": {
+        "resourceId": ["id", "resource_id", "resourceId"],
+        "resourceName": ["name", "resource_name", "resourceName"],
+        "resourceType": ["type", "resource_type", "resourceType"],
+    },
+    "resource_group": {
+        "resourceGroupId": ["id", "resource_group_id", "resourceGroupId"],
+        "resourceGroupName": ["name", "resource_group_name", "resourceGroupName"],
+    },
 }
 
 

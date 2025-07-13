@@ -24,8 +24,8 @@
 
 - The Roo agent (or any agent processing user prompts) is MANDATORILY responsible for recording every user prompt in the `.github/prompt-history/` directory.
 - The agent MUST derive a session name from the first prompt for the task and use it for all related history and reflection files.
-- Each prompt received from the user MUST be appended to `.github/prompt-history/{session-name}.md` by the agent immediately after processing.
-- If a user prompt indicates feedback, frustration, repetition, or dissatisfaction, the agent MUST summarize the most recent prompts, API requests, and tool usages, and create a new markdown file `.github/prompt-history/reflection--{session-name}.md` with this summary.
+- Each prompt received from the user MUST be appended to `.github/prompt-history/YYYY-MM-DD--{session-name}.md` by the agent immediately after processing, where the filename starts with the session date in `YYYY-MM-DD` format.
+- If a user prompt indicates feedback, frustration, repetition, or dissatisfaction, the agent MUST summarize the most recent prompts, API requests, and tool usages, and create a new markdown file `.github/prompt-history/reflection--YYYY-MM-DD--{session-name}.md` with this summary, using the same datetime-first naming convention.
 - A script or automation (e.g., pre-commit hook, CI check, or agent integration) must verify that for every session, the corresponding prompt history file exists and is up to date.
 - The repository must include a pre-commit/CI enforcement script (e.g., `scripts/check_prompt_history.py`) that:
   - Checks for at least one session file in `.github/prompt-history/`
@@ -35,10 +35,42 @@
 - If prompt history or reflection files are missing for a session, pre-commit and CI checks WILL fail, and the agent must alert the user to update the files before merging.
 - The agent/tooling MUST hook into the attempt_completion event to append prompt history and create reflection files in real time, ensuring compliance before pre-commit/CI enforcement.
 
+## Real-Time Recording
+
+- A prompt-history file **MUST** be created immediately after the **first** user prompt in a session, before any tool invocation.
+- Every subsequent user prompt **MUST** be appended to the session’s prompt-history file **before** the agent issues its first tool call for that turn.
+
+### Session Naming Convention
+
+- Derive the session name from the first user prompt:
+  1. Convert to lower-case.
+  2. Replace whitespace with dashes (`-`).
+  3. Remove non-alphanumeric/dash characters.
+  4. Collapse multiple consecutive dashes.
+  5. Truncate to 60 characters.
+  6. Prepend the date in `YYYY-MM-DD--` format.
+
+### Automatic Reflection Trigger
+
+- A reflection file MUST be created or appended **immediately** when any of the following occurs:
+  - The user expresses negative sentiment, confusion, or dissatisfaction.
+  - The user repeats an instruction that the agent did not follow.
+  - Three or more consecutive iterations occur without measurable progress.
+
+**NON-NEGOTIABLE COMPLIANCE:**
+
 **NON-NEGOTIABLE COMPLIANCE:**
 - **NO EXCEPTIONS:** Every attempt_completion call MUST include prompt history file creation.
 - **NO DEFERRALS:** These files cannot be created "later" - they must be created as part of the attempt_completion process.
 - **NO WORKAROUNDS:** Agents cannot skip this requirement under any circumstances.
+
+## Pre-Attempt Checklist (MUST be included verbatim in every attempt_completion)
+
+- [ ] Prompt-history file exists for the session.
+- [ ] Current user prompt appended to prompt-history.
+- [ ] Reflection file created/updated if required.
+- [ ] Feedback Summary section completed.
+- [ ] All checklist items manually verified before sending.
 
 ## Feedback Summary Template
 

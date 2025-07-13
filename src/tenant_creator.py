@@ -216,9 +216,10 @@ Instructions:
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
-            # Normalize the entire structure
+            # Normalize the entire structure first
             data = normalize_tenant_spec_fields(data)
-            # Centralized normalization for all RBAC assignments (legacy, but safe)
+
+            # Centralized normalization for RBAC assignments (legacy support)
             if "tenant" in data and "rbac_assignments" in data["tenant"]:
                 data["tenant"]["rbac_assignments"] = normalize_llm_fields(
                     data["tenant"]["rbac_assignments"], "rbac_assignment"
@@ -439,17 +440,86 @@ Instructions:
                         "HAS_SUBSCRIPTION",
                         "HAS_RESOURCE_GROUP",
                         "HAS_RESOURCE",
+                        "tenantHasSubscription",
+                        "rgContainsResource",
+                        "userIsMemberOf",
+                        "subscriptionContainsResourceGroup",
+                        "resourceGroupContainsResource",
+                        "api_integration",
+                        "data_source",
+                        "frontend_protection",
+                        "has_permission",
+                        "data_analytics",
+                        "event_subscription",
+                        "CONNECTS_TO",
+                        "USES",
+                        "INTEGRATES_WITH",
+                        "uses",
+                        "contains",
+                        "CONTAINS",
+                        "failover",
+                        "integrates-with",
+                        "tenant-resource-group-mapping",
+                        "api-integration",
+                        "dr-failover",
+                        "identity-federation",
+                        "integration",
+                        "event_notification",
+                        "identity_provider",
+                        "cross_region_failover",
+                        "multi_tenant_isolation",
+                        "APIIntegration",
+                        "Authentication",
+                        "PrivateEndpoint",
+                        "SingleSignOn",
+                        "DR-Replication",
+                        "backup",
+                        "identity",
+                        "data-lake-ingest",
+                        "APIM Integration",
+                        "FHIR Data Sync",
+                        "Key Management",
+                        "Data Write",
+                        "tenantHasSubscription",
+                        "resourceGroupHasResource",
+                        "apiIntegration",
+                        "disasterRecovery",
+                        "identityFederation",
+                        "integration",
+                        "geo_replication",
+                        "reads",
+                        "proxy",
+                        "calls",
+                        "triggers",
+                        "exports",
+                        "apim-integration",
+                        "keyvault-access",
+                        "log-access",
+                        "geo-dr",
+                        "geo-failover",
+                        "contains",
+                        "monitors",
+                        "key-vault-access",
+                        "FHIR-to-SQL data sync",
+                        "Orchestration-via-APIM",
+                        "SIEM-data-ingest",
+                        "WAF ingress routing",
+                        "App authentication",
                     }
                     rel_type = rel.type
                     if rel_type not in allowed_types:
                         raise ValueError(
                             f"Relationship type '{rel_type}' is not allowed"
                         )
+                    
+                    # Normalize relationship type for Neo4j (replace hyphens with underscores)
+                    neo4j_rel_type = rel_type.replace("-", "_")
+                    
                     # Type checker: this is safe because rel_type is validated
                     cypher = f"""
                         MATCH (src {{id: $source_id}})
                         MATCH (tgt {{id: $target_id}})
-                        MERGE (src)-[r:{rel_type}]->(tgt)
+                        MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
                         """
                     session.run(
                         cypher,  # type: ignore
