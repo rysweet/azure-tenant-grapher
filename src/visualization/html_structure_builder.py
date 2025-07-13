@@ -52,6 +52,8 @@ class HtmlStructureBuilder:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    <!-- Dependency order: three.js must be loaded before 3d-force-graph.min.js -->
+    <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
     <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
     <style>
 {css_content}
@@ -151,6 +153,8 @@ class HtmlStructureBuilder:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    <!-- Dependency order: three.js must be loaded before 3d-force-graph.min.js -->
+    <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
     <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
     <style>
 {css_content}
@@ -186,6 +190,8 @@ class HtmlStructureBuilder:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    <!-- Dependency order: three.js must be loaded before 3d-force-graph.min.js -->
+    <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
     <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
     <style>
 {css_content}
@@ -229,6 +235,8 @@ class HtmlStructureBuilder:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
+    <!-- Dependency order: three.js must be loaded before 3d-force-graph.min.js -->
+    <script src="https://unpkg.com/three@0.134.0/build/three.min.js"></script>
     <script src="https://unpkg.com/3d-force-graph@1.72.2/dist/3d-force-graph.min.js"></script>
     <style>
 {css_content}
