@@ -47,7 +47,7 @@ jobs:
           python3 -m venv .venv
           . .venv/bin/activate
           pip install uv
-          uv pip install -r requirements.txt
+          uv sync --dev
 
       - name: Run migrations
         env:

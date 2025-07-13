@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from src.config_manager import ProcessingConfig, create_neo4j_config_from_env
 from src.llm_descriptions import AzureLLMDescriptionGenerator
@@ -13,9 +13,62 @@ def get_default_session_manager() -> Neo4jSessionManager:
     return Neo4jSessionManager(config.neo4j)
 
 
+def normalize_tenant_spec_fields(obj: Any, context: str | None = None) -> Any:
+    """
+    Recursively normalize 'id' fields to the correct alias for each object type.
+    """
+    if isinstance(obj, dict):
+        # Determine context for aliasing
+        new_obj = {}
+        for k, v in obj.items():
+            # Set context for children
+            child_context = context
+            if k == "tenant":
+                child_context = "tenant"
+            elif k == "subscriptions":
+                child_context = "subscription"
+            elif k == "resource_groups":
+                child_context = "resource_group"
+            elif k == "resources":
+                child_context = "resource"
+            elif k == "users":
+                child_context = "user"
+            elif k == "groups":
+                child_context = "group"
+            elif k == "service_principals":
+                child_context = "service_principal"
+            elif k == "managed_identities":
+                child_context = "managed_identity"
+            elif k == "admin_units":
+                child_context = "admin_unit"
+            # Recursively normalize children
+            new_obj[k] = normalize_tenant_spec_fields(v, child_context)
+        # Now, apply alias mapping for this object if it has an 'id'
+        if "id" in new_obj:
+            alias_map = {
+                "tenant": "tenantId",
+                "subscription": "subscriptionId",
+                "resource_group": "resourceGroupId",
+                "resource": "resourceId",
+                "user": "userId",
+                "group": "groupId",
+                "service_principal": "spId",
+                "managed_identity": "miId",
+                "admin_unit": "adminUnitId",
+            }
+            if context in alias_map:
+                alias = alias_map[context]
+                new_obj[alias] = new_obj.pop("id")
+        return new_obj
+    elif isinstance(obj, list):
+        return [normalize_tenant_spec_fields(item, context) for item in obj]
+    else:
+        return obj
+
+
 class TenantCreator:
     LLM_PROMPT_TEMPLATE = """
-You are an expert Azure cloud architect. Given the following markdown narrative describing an Azure tenant, output ONLY a single JSON object matching the required schema. Do not include any explanation, markdown, or extra text—just the JSON.
+    You are an expert Azure cloud architect. Given the following markdown narrative describing an Azure tenant, output ONLY a single JSON object matching the required schema. Do not include any explanation, markdown, or extra text—just the JSON.
 
 You may reference the following sources for realistic Azure architectures, resource types, and patterns:
 - Azure Customer Stories: https://www.microsoft.com/en-us/customers/search?filters=product%3Aazure
@@ -135,6 +188,12 @@ Instructions:
         if match:
             json_text = match.group(1)
             print("DEBUG: Extracted JSON block:\n", json_text)
+            import json as _json
+
+            # Always normalize the JSON before parsing
+            data = _json.loads(json_text)
+            data = normalize_tenant_spec_fields(data)
+            json_text = _json.dumps(data)
             return TenantSpec.parse_raw_json(json_text)
         # No JSON block: extract narrative and use LLM
         print(
@@ -157,85 +216,14 @@ Instructions:
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
-            
-            # Normalize all field names throughout the data structure
-            if "tenant" in data:
-                tenant_data = data["tenant"]
-                
-                # Normalize tenant fields
-                data["tenant"] = normalize_llm_fields(tenant_data, "tenant")
-                
-                # Normalize subscriptions
-                if "subscriptions" in data["tenant"]:
-                    data["tenant"]["subscriptions"] = normalize_llm_fields(
-                        data["tenant"]["subscriptions"], "subscription"
-                    )
-                
-                # Normalize users
-                if "users" in data["tenant"]:
-                    data["tenant"]["users"] = normalize_llm_fields(
-                        data["tenant"]["users"], "user"
-                    )
-                
-                # Normalize groups
-                if "groups" in data["tenant"]:
-                    data["tenant"]["groups"] = normalize_llm_fields(
-                        data["tenant"]["groups"], "group"
-                    )
-                
-                # Normalize service principals
-                if "service_principals" in data["tenant"]:
-                    data["tenant"]["service_principals"] = normalize_llm_fields(
-                        data["tenant"]["service_principals"], "service_principal"
-                    )
-                
-                # Normalize managed identities
-                if "managed_identities" in data["tenant"]:
-                    data["tenant"]["managed_identities"] = normalize_llm_fields(
-                        data["tenant"]["managed_identities"], "managed_identity"
-                    )
-                
-                # Normalize admin units
-                if "admin_units" in data["tenant"]:
-                    data["tenant"]["admin_units"] = normalize_llm_fields(
-                        data["tenant"]["admin_units"], "admin_unit"
-                    )
-                
-                # Normalize RBAC assignments
-                if "rbac_assignments" in data["tenant"]:
-                    data["tenant"]["rbac_assignments"] = normalize_llm_fields(
-                        data["tenant"]["rbac_assignments"], "rbac_assignment"
-                    )
-                
-                # Normalize relationships
-                if "relationships" in data["tenant"]:
-                    relationships = normalize_llm_fields(
-                        data["tenant"]["relationships"], "relationship"
-                    )
-                    # Fix relationships where targetId might be a list instead of string
-                    # and handle field mapping issues
-                    if isinstance(relationships, list):
-                        for rel in relationships:
-                            if isinstance(rel, dict):
-                                # Handle field name mapping
-                                if "from_resource" in rel and "sourceId" not in rel:
-                                    rel["sourceId"] = rel.pop("from_resource")
-                                if "to_resource" in rel and "targetId" not in rel:
-                                    rel["targetId"] = rel.pop("to_resource")
-                                if "type" in rel and "relationshipType" not in rel:
-                                    rel["relationshipType"] = rel.pop("type")
-                                
-                                # Handle targetId as list
-                                if "targetId" in rel:
-                                    target_id = rel["targetId"]
-                                    if isinstance(target_id, list):
-                                        # Take the first item if it's a list, or join them
-                                        if len(target_id) > 0:
-                                            rel["targetId"] = target_id[0]
-                                        else:
-                                            rel["targetId"] = "unknown-target"
-                    data["tenant"]["relationships"] = relationships
-            
+            # Normalize the entire structure first
+            data = normalize_tenant_spec_fields(data)
+
+            # Centralized normalization for RBAC assignments (legacy support)
+            if "tenant" in data and "rbac_assignments" in data["tenant"]:
+                data["tenant"]["rbac_assignments"] = normalize_llm_fields(
+                    data["tenant"]["rbac_assignments"], "rbac_assignment"
+                )
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:

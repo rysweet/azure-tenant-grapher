@@ -101,7 +101,20 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
     @functools.wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
-            result = asyncio.run(f(*args, **kwargs))
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                # Already in an event loop (e.g., pytest-asyncio, Jupyter)
+                import nest_asyncio
+
+                nest_asyncio.apply()
+                task = loop.create_task(f(*args, **kwargs))
+                result = loop.run_until_complete(task)
+            else:
+                result = asyncio.run(f(*args, **kwargs))
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
                 print(
