@@ -66,7 +66,6 @@ try:
         build_command_handler,
         create_tenant_command,
         generate_spec_command_handler,
-        progress_command_handler,
         spec_command_handler,
         visualize_command_handler,
     )
@@ -149,7 +148,6 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
         "generate-iac": "🏗️ Generate Infrastructure-as-Code templates from graph data",
         "config": "⚙️  Show current configuration template",
-        "progress": "📊 Check processing progress in the database",
         "container": "🐳 Manage Neo4j Docker container",
         "backup-db": "💾 Backup Neo4j database to a local file",
     }
@@ -176,9 +174,6 @@ def show_comprehensive_help(ctx: click.Context) -> None:
     click.echo()
     click.echo("  # Generate visualization from existing data")
     click.echo("  python scripts/cli.py visualize")
-    click.echo()
-    click.echo("  # Check processing progress")
-    click.echo("  python scripts/cli.py progress")
     click.echo()
     click.echo("📖 For detailed help on any command, use: {command} --help")
     click.echo("🌐 Documentation: https://github.com/your-repo/azure-tenant-grapher")
@@ -502,14 +497,6 @@ def config() -> None:
 
     except Exception as e:
         click.echo(f"❌ Failed to display configuration: {e}", err=True)
-
-
-@cli.command()
-@click.pass_context
-@async_command
-async def progress(ctx: click.Context) -> None:
-    """Check processing progress in the database (no tenant-id required)."""
-    await progress_command_handler(ctx)
 
 
 @cli.command()

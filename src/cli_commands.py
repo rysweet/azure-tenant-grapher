@@ -582,26 +582,6 @@ def generate_spec_command_handler(
         sys.exit(1)
 
 
-async def progress_command_handler(ctx: click.Context) -> None:
-    """Handle the progress command logic."""
-
-    try:
-        # Import and run the progress checker
-        from scripts.check_progress import main as check_progress_main
-
-        config = create_neo4j_config_from_env()
-        config.logging.level = ctx.obj["log_level"]
-        setup_logging(config.logging)
-
-        click.echo("📊 Checking processing progress...")
-        check_progress_main()
-
-    except ImportError:
-        click.echo("❌ Progress checker not available", err=True)
-    except Exception as e:
-        click.echo(f"❌ Failed to check progress: {e}", err=True)
-
-
 # === MCP Server Command Handler ===
 
 
