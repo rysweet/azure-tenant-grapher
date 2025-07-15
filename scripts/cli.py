@@ -18,6 +18,7 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_dashboard_manager import DashboardExitException
+from src.utils.neo4j_startup import ensure_neo4j_running
 
 # Set Azure logging levels early
 for name in [
@@ -617,6 +618,7 @@ def doctor() -> None:
 
 def main() -> None:
     """Main entry point."""
+    ensure_neo4j_running()
     result = cli()  # type: ignore[reportCallIssue]
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":

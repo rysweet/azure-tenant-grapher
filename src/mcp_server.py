@@ -6,25 +6,11 @@ from typing import List, Optional
 
 from neo4j import GraphDatabase, basic_auth
 
-from src.container_manager import Neo4jContainerManager
+from src.utils.neo4j_startup import ensure_neo4j_running
 
 logger = logging.getLogger(__name__)
 
 
-async def ensure_neo4j_running() -> None:
-    """Ensure Neo4j container is running, start if needed."""
-    container_manager = Neo4jContainerManager()
-    if not container_manager.is_neo4j_container_running():
-        logger.info("Starting Neo4j container...")
-        if not container_manager.setup_neo4j():
-            logger.error("Failed to start Neo4j container.")
-            raise RuntimeError("Failed to start Neo4j container.")
-        logger.info("Neo4j container started.")
-    else:
-        logger.info("Neo4j container already running.")
-
-    # Verify Neo4j is accepting connections
-    await verify_neo4j_connection()
 
 
 # Additional connection verification utilities
@@ -102,7 +88,7 @@ async def run_mcp_server_foreground() -> int:
     Ensure Neo4j is running, then launch MCP server in foreground (attached).
     Returns the MCP server process exit code.
     """
-    await ensure_neo4j_running()
+    ensure_neo4j_running()
     process = await launch_mcp_server()
     logger.info("MCP server started. Press Ctrl+C to stop.")
     try:

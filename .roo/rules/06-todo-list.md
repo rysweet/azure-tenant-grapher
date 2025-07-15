@@ -34,9 +34,10 @@ Use a single-level markdown checklist (no nesting or subtasks):
 
 ## When to Use
 
-- The task requires ongoing tracking across several agent messages.  
-- The user provides multiple discrete instructions.  
-- New actionable items are discovered during execution.  
+- The task requires ongoing tracking across several agent messages.
+- The user provides multiple discrete instructions.
+- New actionable items are discovered during execution.
+- Diagnostic tasks must be followed by remediation tasks in the same checklist unless the user explicitly defers remediation. The agent should update statuses accordingly.
 
 ## When NOT to Use
 
