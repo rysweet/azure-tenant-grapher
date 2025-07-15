@@ -1,9 +1,9 @@
 # Prompt History: Strengthen Prompt History Rules Enforcement
 
-**Session:** strengthen-prompt-history-rules-2025-01-10  
-**Date:** 2025-01-10  
-**Agent:** Roo Code  
-**Mode:** Code  
+**Session:** strengthen-prompt-history-rules-2025-01-10
+**Date:** 2025-01-10
+**Agent:** Roo Code
+**Mode:** Code
 
 ## User Prompts
 

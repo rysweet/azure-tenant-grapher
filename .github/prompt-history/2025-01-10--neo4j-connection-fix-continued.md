@@ -2,7 +2,7 @@
 
 ## User Prompt
 ```
-we need to figure out why create-tenant cant connect to the neo4j database: (azure-tenant-grapher) ryan@Ryans-MacBook-Pro-3 azure-tenant-grapher % atg create-tenant simdocs/simdoc-20250710-103331.md 
+we need to figure out why create-tenant cant connect to the neo4j database: (azure-tenant-grapher) ryan@Ryans-MacBook-Pro-3 azure-tenant-grapher % atg create-tenant simdocs/simdoc-20250710-103331.md
 {"event": "Setting up Neo4j container...", "timestamp": "2025-07-10T17:34:29.833982Z", "level": "info"}
 {"event": "Docker Compose available: Docker Compose version 2.34.0", "timestamp": "2025-07-10T17:34:30.472698Z", "level": "info"}
 {"event": "Starting Neo4j container...", "timestamp": "2025-07-10T17:34:30.505714Z", "level": "info"}

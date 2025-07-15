@@ -2,6 +2,7 @@ from src.container_manager import Neo4jContainerManager
 
 _manager = Neo4jContainerManager()
 
+
 def ensure_neo4j_running() -> None:
     """
     Idempotently ensure a Neo4j instance is running and reachable.

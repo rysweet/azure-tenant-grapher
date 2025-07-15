@@ -11,8 +11,6 @@ from src.utils.neo4j_startup import ensure_neo4j_running
 logger = logging.getLogger(__name__)
 
 
-
-
 # Additional connection verification utilities
 
 

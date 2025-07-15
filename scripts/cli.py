@@ -123,6 +123,13 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 )
                 sys.stderr.flush()
                 sys.exit(0)
+            if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
+                print(
+                    "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
+                    file=sys.stderr,
+                )
+                sys.stderr.flush()
+                sys.exit(0)
             return result
         except DashboardExitException:
             sys.exit(0)
@@ -627,6 +634,17 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.stderr.flush()
+        sys.exit(0)
+    # Explicitly exit cleanly after build --no-dashboard sentinel
+    if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
+        print(
+            "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
+            file=sys.stderr,
+        )
+        sys.stderr.flush()
+        sys.exit(0)
+    # For any other truthy result, exit as before (legacy fallback)
+    if result:
         sys.exit(0)
 
 

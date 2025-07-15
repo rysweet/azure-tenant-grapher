@@ -60,8 +60,26 @@ LLM_FIELD_NORMALIZATION_MAP: Dict[str, Dict[str, List[str]]] = {
         "displayName": ["display_name", "displayName", "name"],
     },
     "relationship": {
-        "sourceId": ["from", "source", "source_id", "sourceId", "tenantId", "primaryResource", "aadB2C", "primary_region"],
-        "targetId": ["to", "target", "target_id", "targetId", "resourceGroups", "secondaryResource", "userPools", "secondary_region"],
+        "sourceId": [
+            "from",
+            "source",
+            "source_id",
+            "sourceId",
+            "tenantId",
+            "primaryResource",
+            "aadB2C",
+            "primary_region",
+        ],
+        "targetId": [
+            "to",
+            "target",
+            "target_id",
+            "targetId",
+            "resourceGroups",
+            "secondaryResource",
+            "userPools",
+            "secondary_region",
+        ],
         "relationshipType": ["type", "relationship_type", "relationshipType"],
     },
     "resource": {

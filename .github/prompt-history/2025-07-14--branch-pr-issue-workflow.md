@@ -18,11 +18,11 @@ Objectives:
    Capture exit status and confirm container up (`docker ps`).
 
 Deliverables:
-• Confirmation of branch, commit SHA, PR URL.  
-• Confirmation Issue URL.  
+• Confirmation of branch, commit SHA, PR URL.
+• Confirmation Issue URL.
 • Output summary of validation run.
 
-Allowed tools: execute_command for git/gh/docker/uv, etc.  
+Allowed tools: execute_command for git/gh/docker/uv, etc.
 After completion use attempt_completion to report results.
 
 These instructions supersede generic code-mode rules.

@@ -107,7 +107,7 @@ async def build_command_handler(
         if no_dashboard:
             # Removed debug print
             await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
-            return
+            return "__NO_DASHBOARD_BUILD_COMPLETE__"
         else:
             # Removed debug print
             return await _run_dashboard_mode(
@@ -223,6 +223,14 @@ async def _run_no_dashboard_mode(
         result = None
     click.echo("🎉 Graph building completed.")
     click.echo(f"Result: {result}")
+    # Force immediate process exit after no-dashboard build to prevent CLI hang
+    print(
+        "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
+        flush=True,
+    )
+    import os
+
+    os._exit(0)
 
 
 async def _run_dashboard_mode(
