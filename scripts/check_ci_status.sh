@@ -47,9 +47,11 @@ while true; do
   CONCLUSION=$(gh run view "$RUN_ID" --json conclusion -q ".conclusion")
   line="Current status: $STATUS, conclusion: $CONCLUSION"
 
-  # Collapse repeated status lines
+  # Always print the current status line at each polling interval
+  # Collapse repeated status lines, but always show at least once per interval
   if [[ "$line" == "$last_status" ]]; then
     ((repeat_count++))
+    echo "$line"
   else
     if [[ $repeat_count -gt 0 ]]; then
       echo "(repeated $repeat_count times)"
@@ -59,6 +61,7 @@ while true; do
       echo "$last_status"
     fi
     last_status="$line"
+    echo "$line"
   fi
 
   # If completed, print the last status and summary, then exit
@@ -78,5 +81,12 @@ while true; do
     fi
   fi
 
-  sleep 10
+  # Countdown before next poll, showing seconds remaining
+  WAIT_SECONDS=10
+  echo -n "Waiting"
+  for ((i=WAIT_SECONDS; i>0; i--)); do
+    echo -n " ${i}s..."
+    sleep 1
+  done
+  echo ""
 done
