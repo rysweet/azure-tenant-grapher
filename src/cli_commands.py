@@ -201,6 +201,19 @@ async def _run_no_dashboard_mode(
     )
     try:
         grapher.connect_to_neo4j()
+        logger.info("🚀 Starting Azure Tenant Graph building...")
+        if hasattr(grapher, "build_graph"):
+            if rebuild_edges:
+                click.echo(
+                    "🔄 Forcing re-evaluation of all relationships/edges for all resources."
+                )
+                result = await grapher.build_graph(force_rebuild_edges=True)
+            else:
+                result = await grapher.build_graph()
+        else:
+            result = None
+        click.echo("🎉 Graph building completed.")
+        click.echo(f"Result: {result}")
     except Exception as e:
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
@@ -210,27 +223,23 @@ async def _run_no_dashboard_mode(
             err=True,
         )
         sys.exit(1)
-    logger.info("🚀 Starting Azure Tenant Graph building...")
-    if hasattr(grapher, "build_graph"):
-        if rebuild_edges:
-            click.echo(
-                "🔄 Forcing re-evaluation of all relationships/edges for all resources."
-            )
-            result = await grapher.build_graph(force_rebuild_edges=True)
-        else:
-            result = await grapher.build_graph()
-    else:
-        result = None
-    click.echo("🎉 Graph building completed.")
-    click.echo(f"Result: {result}")
-    # Force immediate process exit after no-dashboard build to prevent CLI hang
-    print(
-        "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
-        flush=True,
-    )
-    import os
+    finally:
+        # Defensive cleanup: ensure Neo4j driver is closed before exit
+        try:
+            if hasattr(grapher, "session_manager") and hasattr(
+                grapher.session_manager, "disconnect"
+            ):
+                grapher.session_manager.disconnect()
+        except Exception as cleanup_exc:
+            logger.warning(f"Error during Neo4j driver cleanup: {cleanup_exc}")
+        # Force immediate process exit after no-dashboard build to prevent CLI hang
+        print(
+            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
+            flush=True,
+        )
+        import os
 
-    os._exit(0)
+        os._exit(0)
 
 
 async def _run_dashboard_mode(

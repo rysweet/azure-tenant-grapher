@@ -1,3 +1,5 @@
+import os
+
 from src.container_manager import Neo4jContainerManager
 
 _manager = Neo4jContainerManager()
@@ -11,3 +13,10 @@ def ensure_neo4j_running() -> None:
     container manager's retry logic.
     """
     _manager.setup_neo4j()
+    port_str = os.environ.get("NEO4J_PORT")
+    if not port_str:
+        raise RuntimeError(
+            "NEO4J_PORT must be set in the environment (see .env.example)"
+        )
+    # _manager.setup_neo4j() is responsible for ensuring Neo4j is available on the correct port.
+    # If Neo4j is not available, this should raise an error with a clear message.

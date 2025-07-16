@@ -23,3 +23,9 @@ services:
       - ./neo4j-logs:/logs
       - ./neo4j-import:/var/lib/neo4j/import
       - ./neo4j-plugins:/plugins
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s

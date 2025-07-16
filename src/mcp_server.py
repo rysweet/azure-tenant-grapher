@@ -32,7 +32,12 @@ def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -
 async def verify_neo4j_connection(max_attempts: int = 5, delay: float = 2.0) -> None:
     """Verify Neo4j is accepting connections, with retries."""
     # Read connection info from environment
-    neo4j_uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    neo4j_port = os.environ.get("NEO4J_PORT")
+    if not neo4j_port:
+        raise RuntimeError(
+            "NEO4J_PORT must be set in the environment (see .env.example)"
+        )
+    neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
     neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
     neo4j_password = os.environ.get("NEO4J_PASSWORD", "neo4j")
 

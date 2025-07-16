@@ -193,6 +193,17 @@ class AzureTenantGrapher:
             else:
                 logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
 
+            # Enforce resource_limit if set in config
+            resource_limit = getattr(self.config.processing, "resource_limit", None)
+            if resource_limit:
+                logger.info(
+                    f"🔢 Applying resource_limit: {resource_limit} (before: {len(all_resources)})"
+                )
+                all_resources = all_resources[:resource_limit]
+                logger.info(
+                    f"🔢 Resource list truncated to {len(all_resources)} items due to resource_limit"
+                )
+
             # 3. Process resources
             with self.session_manager:
                 if force_rebuild_edges:
