@@ -163,7 +163,9 @@ class TenantSpecificationGenerator:
         self.anonymizer = anonymizer
         self.config = config
 
-    def generate_specification(self, output_path: Optional[str] = None) -> str:
+    def generate_specification(
+        self, output_path: Optional[str] = None, domain_name: Optional[str] = None
+    ) -> str:
         # Query resources and relationships
         resources = self._query_resources_with_limit()
         self._query_relationships()
@@ -172,6 +174,21 @@ class TenantSpecificationGenerator:
         anonymized_resources = [
             self.anonymizer.anonymize_resource(r) for r in resources
         ]
+
+        # If a domain name is specified, set it for all user account entities
+        if domain_name:
+            for r in anonymized_resources:
+                if r.get("type", "").lower() in (
+                    "user",
+                    "aaduser",
+                    "microsoft.aad/user",
+                ):
+                    # Set a userPrincipalName or email using the anonymized name and domain
+                    base_name = r.get("name", "user")
+                    # Remove any existing domain from base_name
+                    base_name = base_name.split("@")[0]
+                    r["userPrincipalName"] = f"{base_name}@{domain_name}"
+                    r["email"] = f"{base_name}@{domain_name}"
 
         # Anonymize relationships
         for r in anonymized_resources:

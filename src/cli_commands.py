@@ -510,7 +510,12 @@ async def visualize_command_handler(
         sys.exit(1)
 
 
-async def spec_command_handler(ctx: click.Context, tenant_id: str) -> None:
+from typing import Optional
+
+
+async def spec_command_handler(
+    ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None
+) -> None:
     """Handle the spec command logic."""
     ensure_neo4j_running()
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
@@ -542,7 +547,8 @@ async def spec_command_handler(ctx: click.Context, tenant_id: str) -> None:
         grapher = AzureTenantGrapher(config)
 
         click.echo("📋 Generating tenant specification from existing graph...")
-        await grapher.generate_tenant_specification()
+        # Pass domain_name to the grapher if/when supported
+        await grapher.generate_tenant_specification(domain_name=domain_name)
         click.echo("✅ Tenant specification generated successfully")
 
     except Exception as e:

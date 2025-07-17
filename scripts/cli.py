@@ -369,9 +369,14 @@ async def visualize(
 )
 @click.pass_context
 @async_command
-async def spec(ctx: click.Context, tenant_id: str) -> None:
+@click.option(
+    "--domain-name",
+    required=False,
+    help="Domain name to use for all entities that require one (e.g., user accounts)",
+)
+async def spec(ctx: click.Context, tenant_id: str, domain_name: str = None) -> None:
     """Generate only the tenant specification (requires existing graph)."""
-    await spec_command_handler(ctx, tenant_id)
+    await spec_command_handler(ctx, tenant_id, domain_name)
 
 
 @cli.command()
@@ -432,6 +437,11 @@ def generate_spec(
 )
 @click.pass_context
 @async_command
+@click.option(
+    "--domain-name",
+    required=False,
+    help="Domain name to use for all entities that require one (e.g., user accounts)",
+)
 async def generate_iac(
     ctx: click.Context,
     tenant_id: str,
@@ -443,6 +453,7 @@ async def generate_iac(
     subset_filter: Optional[str],
     dest_rg: Optional[str],
     location: Optional[str],
+    domain_name: str = None,
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
     from src.utils.cli_installer import ensure_tool
@@ -475,6 +486,7 @@ async def generate_iac(
         subset_filter=subset_filter,
         dest_rg=dest_rg,
         location=location,
+        domain_name=domain_name,
     )
 
 
