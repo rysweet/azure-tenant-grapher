@@ -22,6 +22,7 @@ class BicepEmitter(IaCEmitter):
         out_dir: Path,
         rg_name: Optional[str] = None,
         rg_location: Optional[str] = None,
+        domain_name: Optional[str] = None,
     ) -> List[Path]:
         """
         Generate Bicep templates from tenant graph, including managed identities and RBAC.
@@ -29,6 +30,19 @@ class BicepEmitter(IaCEmitter):
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         paths = []
+
+        # If a domain name is specified, set it for all user account entities
+        if domain_name:
+            for resource in graph.resources:
+                if resource.get("type", "").lower() in (
+                    "user",
+                    "aaduser",
+                    "microsoft.aad/user",
+                ):
+                    base_name = resource.get("name", "user")
+                    base_name = base_name.split("@")[0]
+                    resource["userPrincipalName"] = f"{base_name}@{domain_name}"
+                    resource["email"] = f"{base_name}@{domain_name}"
 
         # Collect special resources
         managed_identities = []

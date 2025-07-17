@@ -33,16 +33,18 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
     }
 
-    def emit(self, graph: TenantGraph, out_dir: Path) -> List[Path]:
+    def emit(self, graph: TenantGraph, out_dir: Path, domain_name: Optional[str] = None) -> List[Path]:
         """Generate Terraform template from tenant graph.
-
-        Args:
-            graph: Input tenant graph data
-            out_dir: Output directory path
-
-        Returns:
-            List of written file paths
         """
+        # If a domain name is specified, set it for all user account entities
+        if domain_name:
+            for resource in graph.resources:
+                if resource.get("type", "").lower() in ("user", "aaduser", "microsoft.aad/user"):
+                    base_name = resource.get("name", "user")
+                    base_name = base_name.split("@")[0]
+                    resource["userPrincipalName"] = f"{base_name}@{domain_name}"
+                    resource["email"] = f"{base_name}@{domain_name}"
+
         logger.info(f"Generating Terraform templates to {out_dir}")
 
         # Ensure output directory exists

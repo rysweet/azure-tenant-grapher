@@ -102,6 +102,23 @@ def test_azure_tenant_grapher_spec_minimal():
 
 
 @pytest.mark.integration
+def test_azure_tenant_grapher_spec_with_domain_name():
+    """
+    Test: 'spec' command should accept --domain-name and output should include the specified domain.
+    """
+    result = subprocess.run(
+        ["uv", "run", "azure-tenant-grapher", "spec", "--domain-name", "example.com"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    error_text = result.stdout + result.stderr
+    # Should succeed and output should include the specified domain
+    assert result.returncode == 0
+    assert "example.com" in error_text
+
+
+@pytest.mark.integration
 def test_azure_tenant_grapher_generate_spec_minimal():
     result = subprocess.run(
         ["uv", "run", "azure-tenant-grapher", "generate-spec", "--limit", "3"],

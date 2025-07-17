@@ -50,6 +50,7 @@ async def generate_iac_command_handler(
     subset_filter: Optional[str] = None,
     dest_rg: Optional[str] = None,
     location: Optional[str] = None,
+    domain_name: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
