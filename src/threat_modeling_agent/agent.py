@@ -17,10 +17,10 @@ class ThreatModelAgent:
     """
 
     def __init__(self):
-        from src.container_manager import Neo4jContainerManager
+        from src.utils.neo4j_startup import ensure_neo4j_running
 
         self.logger = logging.getLogger("ThreatModelAgent")
-        Neo4jContainerManager().setup_neo4j()
+        ensure_neo4j_running()
         self.neo4j_config = create_neo4j_config_from_env().neo4j
         self.session_manager = create_session_manager(self.neo4j_config)
         self.session_manager.connect()

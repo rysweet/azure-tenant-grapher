@@ -20,10 +20,10 @@ from src.config_manager import (
     create_neo4j_config_from_env,
     setup_logging,
 )
-from src.container_manager import Neo4jContainerManager
 from src.graph_visualizer import GraphVisualizer
 from src.logging_config import configure_logging
 from src.rich_dashboard import RichDashboard
+from src.utils.neo4j_startup import ensure_neo4j_running
 
 configure_logging()
 
@@ -70,6 +70,7 @@ async def build_command_handler(
     rebuild_edges: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
+    ensure_neo4j_running()
     # Removed debug print
 
     try:
@@ -106,7 +107,7 @@ async def build_command_handler(
         if no_dashboard:
             # Removed debug print
             await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
-            return
+            return "__NO_DASHBOARD_BUILD_COMPLETE__"
         else:
             # Removed debug print
             return await _run_dashboard_mode(
@@ -200,6 +201,19 @@ async def _run_no_dashboard_mode(
     )
     try:
         grapher.connect_to_neo4j()
+        logger.info("🚀 Starting Azure Tenant Graph building...")
+        if hasattr(grapher, "build_graph"):
+            if rebuild_edges:
+                click.echo(
+                    "🔄 Forcing re-evaluation of all relationships/edges for all resources."
+                )
+                result = await grapher.build_graph(force_rebuild_edges=True)
+            else:
+                result = await grapher.build_graph()
+        else:
+            result = None
+        click.echo("🎉 Graph building completed.")
+        click.echo(f"Result: {result}")
     except Exception as e:
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
@@ -209,19 +223,23 @@ async def _run_no_dashboard_mode(
             err=True,
         )
         sys.exit(1)
-    logger.info("🚀 Starting Azure Tenant Graph building...")
-    if hasattr(grapher, "build_graph"):
-        if rebuild_edges:
-            click.echo(
-                "🔄 Forcing re-evaluation of all relationships/edges for all resources."
-            )
-            result = await grapher.build_graph(force_rebuild_edges=True)
-        else:
-            result = await grapher.build_graph()
-    else:
-        result = None
-    click.echo("🎉 Graph building completed.")
-    click.echo(f"Result: {result}")
+    finally:
+        # Defensive cleanup: ensure Neo4j driver is closed before exit
+        try:
+            if hasattr(grapher, "session_manager") and hasattr(
+                grapher.session_manager, "disconnect"
+            ):
+                grapher.session_manager.disconnect()
+        except Exception as cleanup_exc:
+            logger.warning(f"Error during Neo4j driver cleanup: {cleanup_exc}")
+        # Force immediate process exit after no-dashboard build to prevent CLI hang
+        print(
+            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
+            flush=True,
+        )
+        import os
+
+        os._exit(0)
 
 
 async def _run_dashboard_mode(
@@ -418,7 +436,7 @@ async def visualize_command_handler(
     ctx: click.Context, link_hierarchy: bool = True, no_container: bool = False
 ) -> None:
     """Handle the visualize command logic."""
-
+    ensure_neo4j_running()
     try:
         # Create configuration (Neo4j-only)
         config = create_neo4j_config_from_env()
@@ -449,8 +467,8 @@ async def visualize_command_handler(
             )
             if not no_container:
                 click.echo("🔄 Attempting to start Neo4j container...")
-                container_manager = Neo4jContainerManager()
-                if container_manager.setup_neo4j():
+                try:
+                    ensure_neo4j_running()
                     click.echo(
                         "✅ Neo4j container started successfully, retrying visualization..."
                     )
@@ -472,9 +490,9 @@ async def visualize_command_handler(
                             err=True,
                         )
                         sys.exit(1)
-                else:
+                except Exception as e:
                     click.echo(
-                        "❌ Failed to start Neo4j container.\n"
+                        f"❌ Failed to start Neo4j container: {e}\n"
                         "Action: Check Docker is running and you have permission to start containers.",
                         err=True,
                     )
@@ -494,7 +512,7 @@ async def visualize_command_handler(
 
 async def spec_command_handler(ctx: click.Context, tenant_id: str) -> None:
     """Handle the spec command logic."""
-
+    ensure_neo4j_running()
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
     if not effective_tenant_id:
         click.echo(
@@ -540,7 +558,7 @@ def generate_spec_command_handler(
     ctx: click.Context, limit: Optional[int], output: Optional[str]
 ) -> None:
     """Handle the generate-spec command logic."""
-
+    ensure_neo4j_running()
     try:
         from src.tenant_spec_generator import (
             ResourceAnonymizer,
@@ -838,12 +856,7 @@ def create_tenant_from_markdown(text: str):
 def create_tenant_command(markdown_file: str):
     """Create a tenant from a markdown file."""
     try:
-        from src.container_manager import Neo4jContainerManager
-
-        container_manager = Neo4jContainerManager()
-        if not container_manager.setup_neo4j():
-            click.echo("❌ Failed to start or connect to Neo4j. Aborting.", err=True)
-            sys.exit(1)
+        ensure_neo4j_running()
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
         print("DEBUG: Raw markdown file contents:\n", text)

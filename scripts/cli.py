@@ -18,6 +18,7 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_dashboard_manager import DashboardExitException
+from src.utils.neo4j_startup import ensure_neo4j_running
 
 # Set Azure logging levels early
 for name in [
@@ -118,6 +119,13 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
             if result == "__DASHBOARD_EXIT__":
                 print(
                     "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
+                    file=sys.stderr,
+                )
+                sys.stderr.flush()
+                sys.exit(0)
+            if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
+                print(
+                    "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
                     file=sys.stderr,
                 )
                 sys.stderr.flush()
@@ -617,6 +625,7 @@ def doctor() -> None:
 
 def main() -> None:
     """Main entry point."""
+    ensure_neo4j_running()
     result = cli()  # type: ignore[reportCallIssue]
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":
@@ -625,6 +634,17 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.stderr.flush()
+        sys.exit(0)
+    # Explicitly exit cleanly after build --no-dashboard sentinel
+    if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
+        print(
+            "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
+            file=sys.stderr,
+        )
+        sys.stderr.flush()
+        sys.exit(0)
+    # For any other truthy result, exit as before (legacy fallback)
+    if result:
         sys.exit(0)
 
 

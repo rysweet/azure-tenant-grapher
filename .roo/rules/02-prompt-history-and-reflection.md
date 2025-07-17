@@ -11,6 +11,7 @@
 - Significant feedback patterns MUST be reported to Orchestrator using the standardized format.
 - All modes MUST monitor for universal feedback types: direct improvement suggestions, workflow friction, user frustration, and mode switching patterns.
 - Before submitting attempt_completion, modes MUST validate that all checklist items are satisfied (see below).
+- Every attempt_completion MUST be immediately followed by a write to the session's reflection file (`.github/prompt-history/reflection--{session-name}.md`) containing the full Feedback Summary and all required sections, regardless of task type or outcome. This is non-negotiable and must be enforced for every attempt_completion event.
 
 ## Enforcement and Implementation
 
@@ -39,6 +40,7 @@
 
 - A prompt-history file **MUST** be created immediately after the **first** user prompt in a session, before any tool invocation.
 - Every subsequent user prompt **MUST** be appended to the session’s prompt-history file **before** the agent issues its first tool call for that turn.
+- Reflection files **MUST** be created **before** any further tool calls once a user expresses dissatisfaction. Delayed creation is considered non-compliant.
 
 ### Session Naming Convention
 
@@ -56,6 +58,7 @@
   - The user expresses negative sentiment, confusion, or dissatisfaction.
   - The user repeats an instruction that the agent did not follow.
   - Three or more consecutive iterations occur without measurable progress.
+  - If a *tool repetition limit* error is encountered, the agent **MUST** write a reflection entry explaining why the limit was reached and how the strategy will change (e.g., switch to `ask_followup_question`, fall back to user-supplied logs, or pause and re-query after a delay).
 
 **NON-NEGOTIABLE COMPLIANCE:**
 

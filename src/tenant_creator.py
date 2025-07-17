@@ -216,56 +216,56 @@ Instructions:
         try:
             data = _json.loads(json_text)
             print("DEBUG: LLM JSON loaded as dict:", data)
-            
+
             # Normalize all field names throughout the data structure
             if "tenant" in data:
                 tenant_data = data["tenant"]
-                
+
                 # Normalize tenant fields
                 data["tenant"] = normalize_llm_fields(tenant_data, "tenant")
-                
+
                 # Normalize subscriptions
                 if "subscriptions" in data["tenant"]:
                     data["tenant"]["subscriptions"] = normalize_llm_fields(
                         data["tenant"]["subscriptions"], "subscription"
                     )
-                
+
                 # Normalize users
                 if "users" in data["tenant"]:
                     data["tenant"]["users"] = normalize_llm_fields(
                         data["tenant"]["users"], "user"
                     )
-                
+
                 # Normalize groups
                 if "groups" in data["tenant"]:
                     data["tenant"]["groups"] = normalize_llm_fields(
                         data["tenant"]["groups"], "group"
                     )
-                
+
                 # Normalize service principals
                 if "service_principals" in data["tenant"]:
                     data["tenant"]["service_principals"] = normalize_llm_fields(
                         data["tenant"]["service_principals"], "service_principal"
                     )
-                
+
                 # Normalize managed identities
                 if "managed_identities" in data["tenant"]:
                     data["tenant"]["managed_identities"] = normalize_llm_fields(
                         data["tenant"]["managed_identities"], "managed_identity"
                     )
-                
+
                 # Normalize admin units
                 if "admin_units" in data["tenant"]:
                     data["tenant"]["admin_units"] = normalize_llm_fields(
                         data["tenant"]["admin_units"], "admin_unit"
                     )
-                
+
                 # Normalize RBAC assignments
                 if "rbac_assignments" in data["tenant"]:
                     data["tenant"]["rbac_assignments"] = normalize_llm_fields(
                         data["tenant"]["rbac_assignments"], "rbac_assignment"
                     )
-                
+
                 # Normalize relationships
                 if "relationships" in data["tenant"]:
                     relationships = normalize_llm_fields(
@@ -283,7 +283,7 @@ Instructions:
                                     rel["targetId"] = rel.pop("to_resource")
                                 if "type" in rel and "relationshipType" not in rel:
                                     rel["relationshipType"] = rel.pop("type")
-                                
+
                                 # Handle targetId as list
                                 if "targetId" in rel:
                                     target_id = rel["targetId"]
@@ -294,7 +294,7 @@ Instructions:
                                         else:
                                             rel["targetId"] = "unknown-target"
                     data["tenant"]["relationships"] = relationships
-            
+
             print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
@@ -551,12 +551,10 @@ Instructions:
                         "FHIR Data Sync",
                         "Key Management",
                         "Data Write",
-                        "tenantHasSubscription",
                         "resourceGroupHasResource",
                         "apiIntegration",
                         "disasterRecovery",
                         "identityFederation",
-                        "integration",
                         "geo_replication",
                         "reads",
                         "proxy",
@@ -568,7 +566,6 @@ Instructions:
                         "log-access",
                         "geo-dr",
                         "geo-failover",
-                        "contains",
                         "monitors",
                         "key-vault-access",
                         "FHIR-to-SQL data sync",
@@ -582,10 +579,10 @@ Instructions:
                         raise ValueError(
                             f"Relationship type '{rel_type}' is not allowed"
                         )
-                    
+
                     # Normalize relationship type for Neo4j (replace hyphens with underscores)
                     neo4j_rel_type = rel_type.replace("-", "_")
-                    
+
                     # Type checker: this is safe because rel_type is validated
                     cypher = f"""
                         MATCH (src {{id: $source_id}})

@@ -18,3 +18,9 @@
 10. Once tests and pre-commit pass, commit and push the work to the branch.
 11. After push, create or update the PR with a summary of changes (using `gh`).
 12. After a push to a PR, run `scripts/check_ci_status.sh` to check CI status. Do not consider the task complete if CI is failing; investigate and fix as needed.
+
+13. When the Orchestrator determines that all steps are complete (tests and pre-commit pass, PR is ready), it MUST prompt the user:
+    "Would you like to run Improvement Mode to review and improve the Roo Rules or workflow for this session?"
+    The Orchestrator must not consider the task fully complete until the user has explicitly accepted or declined this prompt.
+
+14. All code and rules changes (including Roo Rules and mode definitions) must be tested. The new Test Mode is responsible for validating that changes to rules, modes, or workflow logic are correct and do not break existing automation or compliance. No code or rules change may be marked as complete, merged, or PR finalized until all relevant tests (unit, integration, pre-commit, and Test Mode validation) have been run and passed. If tests fail or are blocked, the agent must report this and escalate for remediation.

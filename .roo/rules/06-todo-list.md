@@ -20,32 +20,33 @@ Use a single-level markdown checklist (no nesting or subtasks):
 
 ### Status Meanings
 
-- **[ ] pending** – work not started.  
-- **[-] in progress** – currently being worked on.  
-- **[x] completed** – fully finished, no unresolved issues.  
+- **[ ] pending** – work not started.
+- **[-] in progress** – currently being worked on.
+- **[x] completed** – fully finished, no unresolved issues.
 
 ## Core Principles
 
-1. Confirm which tasks have been completed since the last update before modifying the list.  
-2. Multiple statuses may be updated in a single call.  
-3. Add new tasks immediately when discovered.  
-4. Only mark a task **completed** when all its subtasks and dependencies are resolved.  
-5. If a task is blocked, keep it *in progress* and add a new todo describing the blocking issue.  
+1. Confirm which tasks have been completed since the last update before modifying the list.
+2. Multiple statuses may be updated in a single call.
+3. Add new tasks immediately when discovered.
+4. Only mark a task **completed** when all its subtasks and dependencies are resolved.
+5. If a task is blocked, keep it *in progress* and add a new todo describing the blocking issue.
 
 ## When to Use
 
-- The task requires ongoing tracking across several agent messages.  
-- The user provides multiple discrete instructions.  
-- New actionable items are discovered during execution.  
+- The task requires ongoing tracking across several agent messages.
+- The user provides multiple discrete instructions.
+- New actionable items are discovered during execution.
+- Diagnostic tasks must be followed by remediation tasks in the same checklist unless the user explicitly defers remediation. The agent should update statuses accordingly.
 
 ## When NOT to Use
 
-- The task is trivial and can be completed in a single message.  
-- The user explicitly instructs not to create a todo list.  
+- The task is trivial and can be completed in a single message.
+- The user explicitly instructs not to create a todo list.
 
 ## Task Management Guidelines
 
-- Mark the current task as **completed** immediately after finishing its work.  
-- Start the next task by marking it **in progress**.  
-- Retain all unfinished tasks; update their status as needed.  
+- Mark the current task as **completed** immediately after finishing its work.
+- Start the next task by marking it **in progress**.
+- Retain all unfinished tasks; update their status as needed.
 - Remove tasks only if they are no longer relevant **or** the user requests deletion.

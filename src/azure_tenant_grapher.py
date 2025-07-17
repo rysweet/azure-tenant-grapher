@@ -11,8 +11,8 @@ import warnings
 from typing import Any, Dict, List, Optional
 
 from .config_manager import AzureTenantGrapherConfig
-from .container_manager import Neo4jContainerManager
 from .llm_descriptions import create_llm_generator
+from .utils.neo4j_startup import ensure_neo4j_running
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,8 @@ class AzureTenantGrapher:
         self.config = config
 
         # Compose services per refactoring plan
-        self.container_manager = (
-            Neo4jContainerManager() if config.processing.auto_start_container else None
-        )
+        if config.processing.auto_start_container:
+            ensure_neo4j_running()
 
         # Run migrations early if enabled (guarded for test compatibility)
         # Only run if ENABLE_MIGRATIONS is set, and not during test runs
@@ -193,6 +192,17 @@ class AzureTenantGrapher:
                 )
             else:
                 logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+
+            # Enforce resource_limit if set in config
+            resource_limit = getattr(self.config.processing, "resource_limit", None)
+            if resource_limit:
+                logger.info(
+                    f"🔢 Applying resource_limit: {resource_limit} (before: {len(all_resources)})"
+                )
+                all_resources = all_resources[:resource_limit]
+                logger.info(
+                    f"🔢 Resource list truncated to {len(all_resources)} items due to resource_limit"
+                )
 
             # 3. Process resources
             with self.session_manager:
