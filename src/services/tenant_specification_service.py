@@ -24,7 +24,9 @@ class TenantSpecificationService:
         self.config = config
         self.generator_factory = generator_factory
 
-    async def generate_specification(self, output_path: str) -> str:
+    async def generate_specification(
+        self, output_path: str, domain_name: Optional[str] = None
+    ) -> str:
         def _generate() -> str:
             with self.session_manager as session:
                 uri = getattr(session, "uri", None)
@@ -53,6 +55,7 @@ class TenantSpecificationService:
                 )
 
                 # Only markdown output is supported
+                # domain_name is available here for entity creation logic
                 spec_path = generator.generate_specification(output_path)
 
                 # LLM enrichment if enabled (stub)

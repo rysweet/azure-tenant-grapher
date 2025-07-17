@@ -127,6 +127,45 @@ class TestGenerateIacCLI:
         assert "--format" in result.output
         assert "--dry-run" in result.output
 
+    @patch("src.iac.cli_handler.get_neo4j_driver_from_config")
+    @patch("src.utils.cli_installer.is_tool_installed", return_value=True)
+    def test_generate_iac_with_domain_name_option(
+        self, mock_is_tool, mock_get_driver
+    ) -> None:
+        """
+        Test generate-iac command with --domain-name option sets userPrincipalName/email for user accounts.
+        """
+        # Mock the Neo4j driver and session
+        mock_driver = MagicMock()
+        mock_session = MagicMock()
+        mock_driver.session.return_value.__enter__.return_value = mock_session
+        # Return a sample user resource
+        mock_session.run.return_value = [
+            MagicMock(
+                __getitem__=lambda self, key: {
+                    "r": {
+                        "id": "user-1",
+                        "name": "alice",
+                        "type": "user",
+                        "relationships": [],
+                    },
+                    "rels": [],
+                }[key],
+                __contains__=lambda self, key: key in ["r", "rels"],
+            )
+        ]
+        mock_get_driver.return_value = mock_driver
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["generate-iac", "--domain-name", "example.com", "--dry-run"]
+        )
+
+        # Should succeed and output should include the specified domain
+        assert result.exit_code == 0
+        assert "example.com" in result.output
+        assert "userPrincipalName" in result.output or "email" in result.output
+
 
 class TestGenerateIacCLIIntegration:
     """Integration tests for generate-iac CLI command."""
