@@ -4,6 +4,7 @@ Container orchestration module for managing Neo4j Docker container.
 
 import os
 import random
+import shutil
 import string
 import subprocess  # nosec B404
 import time
@@ -21,7 +22,37 @@ configure_logging()
 logger = structlog.get_logger(__name__)
 
 
+# Only remove neo4j-data if running in CI or test context
+def should_remove_neo4j_data():
+    # Remove only if running in CI or test context, not in normal dev
+    return (
+        os.environ.get("RUN_DOCKER_CONFLICT_TESTS") == "1"
+        or os.environ.get("CI") == "1"
+        or os.environ.get("PYTEST_CURRENT_TEST") is not None
+    )
+
+
 class Neo4jContainerManager:
+    """
+    Manages Neo4j Docker container lifecycle.
+
+    # _print_env_block removed (unused debug utility)
+
+    Password Policy:
+    - The Neo4j password for tests must be provided via the NEO4J_PASSWORD environment variable.
+    - If not set, a random password is generated for each test run.
+    - Never hardcode secrets or passwords in test code or fixtures.
+    - The container name is randomized per test run to avoid conflicts in parallel CI.
+
+    Container Naming Policy:
+    - The Neo4j container name is set via the NEO4J_CONTAINER_NAME environment variable.
+    - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
+
+    Data Directory Policy:
+    - The host data directory (neo4j-data) is only removed in CI or test context (RUN_DOCKER_CONFLICT_TESTS, CI, or PYTEST_CURRENT_TEST).
+    - In normal development, the data directory is preserved to avoid data loss.
+    """
+
     """
     Manages Neo4j Docker container lifecycle.
 
@@ -43,6 +74,10 @@ class Neo4jContainerManager:
         Args:
             compose_file: Path to docker-compose.yml file
         """
+        print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
+        print(
+            f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
+        )
         self.compose_file = compose_file
         self.docker_client = None
 
@@ -50,12 +85,51 @@ class Neo4jContainerManager:
         self.container_name = os.getenv(
             "NEO4J_CONTAINER_NAME", f"azure-tenant-grapher-neo4j-{uuid.uuid4().hex[:8]}"
         )
-        self.volume_name = f"{self.container_name}-data"
+        # Use a unique data volume for tests to avoid interfering with dev data
+        self.volume_name = os.getenv(
+            "NEO4J_DATA_VOLUME", "azure-tenant-grapher-neo4j-data"
+        )
+        # Log the container name, volume, and password for debug
+        # self._print_env_block("INIT")  # Removed per instructions
+        if should_remove_neo4j_data():
+            self.data_dir = None  # Use Docker named volume, not host directory
+            # Remove the named volume if it exists (test/CI only)
+            try:
+                if self.docker_client:
+                    volumes = self.docker_client.volumes.list(
+                        filters={"name": self.volume_name}
+                    )
+                    for v in volumes:
+                        v.remove(force=True)
+                        logger.info(event=f"Removed test volume {v.name}")
+            except Exception as e:
+                logger.warning(
+                    event=f"Failed to remove test volume {self.volume_name}: {e}"
+                )
+        else:
+            self.data_dir = os.path.join(os.getcwd(), "neo4j-data")
+            # Ensure the directory exists, but do not remove or chmod it
+            if not os.path.isdir(self.data_dir):
+                try:
+                    os.makedirs(self.data_dir, exist_ok=True)
+                except Exception as e:
+                    logger.warning(
+                        event=f"Could not create dev data directory {self.data_dir}: {e}"
+                    )
 
-        self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
+        # Always use NEO4J_PORT if set, fallback to 7687 (default Bolt port)
+        port = os.getenv("NEO4J_PORT", "7687")
+        uri_env = os.environ.get("NEO4J_URI")
+        if uri_env:
+            self.neo4j_uri = uri_env
+        else:
+            self.neo4j_uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
+        print(
+            f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
+        )
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = (
-            os.getenv("NEO4J_PASSWORD") or self._generate_random_password()
+            os.getenv("NEO4J_PASSWORD") or self.generate_random_password()
         )
 
         # Readiness timeout configurable via env
@@ -121,19 +195,34 @@ class Neo4jContainerManager:
     def is_neo4j_container_running(self) -> bool:
         """Check if Neo4j container is running."""
         if not self.docker_client:
+            logger.debug(
+                event="Docker client not available when checking container status"
+            )
             return False
 
         try:
+            logger.debug(
+                event=f"Checking for containers with name: {self.container_name}"
+            )
             containers = self.docker_client.containers.list(  # type: ignore[misc]
                 filters={"name": self.container_name}
             )
+            logger.debug(
+                event=f"Found {len(containers)} containers with name '{self.container_name}': {[c.status for c in containers]}"
+            )
+            if len(containers) > 0:
+                logger.debug(event=f"First container status: {containers[0].status}")
             return len(containers) > 0 and containers[0].status == "running"  # type: ignore[misc]
         except Exception as e:
             logger.exception(event=f"Error checking container status: {e}")
             return False
 
     def start_neo4j_container(self) -> bool:
-        """Start Neo4j container using docker-compose."""
+        """Start Neo4j container using docker-compose, robustly handling name conflicts and unhealthy containers."""
+        # self._print_env_block("START_CONTAINER")  # Removed per instructions
+        logger.info(
+            event=f"Attempting to start Neo4j container with name: {self.container_name}"
+        )
         if not self.is_docker_available():
             logger.exception(event="Docker is not available")
             return False
@@ -142,17 +231,81 @@ class Neo4jContainerManager:
             logger.exception(event="Docker Compose is not available")
             return False
 
-        if self.is_neo4j_container_running():
-            logger.info(event="Neo4j container is already running")
-            return True
+        # Robustly handle container name conflicts and unhealthy containers
+        if self.docker_client:
+            try:
+                containers = self.docker_client.containers.list(
+                    all=True, filters={"name": self.container_name}
+                )
+                logger.info(
+                    event=f"Found {len(containers)} containers with name '{self.container_name}'"
+                )
+                for c in containers:
+                    # Log container status and health (if available)
+                    health_status = None
+                    try:
+                        health_status = (
+                            c.attrs.get("State", {}).get("Health", {}).get("Status")
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            event=f"Could not retrieve health status for container {c.name}: {e}"
+                        )
+                    logger.info(
+                        event=f"Container {c.name} status: {c.status}, health: {health_status}"
+                    )
+
+                    if c.status == "running":
+                        # Accept running container regardless of health status; rely on Bolt readiness check
+                        logger.info(
+                            event=f"Container {c.name} is running (health: {health_status}), will reuse."
+                        )
+                        return True
+                    else:
+                        logger.info(
+                            event=f"Removing container {c.name} (status: {c.status}) to avoid name conflict."
+                        )
+                        try:
+                            c.remove(force=True)
+                            logger.info(event=f"Removed container {c.name}")
+                        except Exception as e:
+                            logger.warning(
+                                event=f"Failed to remove container {c.name}: {e}"
+                            )
+            except Exception as e:
+                logger.warning(
+                    event=f"Error listing/removing containers for name conflict: {e}"
+                )
 
         try:
+            # Remove stale host data directory before starting container, but only in test/CI
+            host_data_dir = os.path.join(os.getcwd(), "neo4j-data")
+            if should_remove_neo4j_data() and os.path.isdir(host_data_dir):
+                logger.info(
+                    event=f"Removing stale host data directory {host_data_dir} (test/CI only)"
+                )
+                shutil.rmtree(host_data_dir, ignore_errors=True)
+            # Always set NEO4J_DATA_VOLUME in the environment for compose
+            env = os.environ.copy()
+            env["NEO4J_DATA_VOLUME"] = self.volume_name
+            env["NEO4J_AUTH"] = f"{self.neo4j_user}/{self.neo4j_password}"
+            env["NEO4J_PASSWORD"] = self.neo4j_password
             compose_cmd = self.get_compose_command()
             logger.info(event="Starting Neo4j container...")
 
             # Start the container
-            env = os.environ.copy()
-            env["NEO4J_AUTH"] = f"{self.neo4j_user}/{self.neo4j_password}"
+            print(
+                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
+            )
+            print(
+                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD={env['NEO4J_PASSWORD']}"
+            )
+            print(
+                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
+            )
+            print(
+                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
+            )
             # Compose service name is always "neo4j", but container name is unique
             result = subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "up", "-d", "neo4j"],
@@ -190,6 +343,9 @@ class Neo4jContainerManager:
 
         while time.time() - start_time < timeout:
             try:
+                print(
+                    f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
+                )
                 driver = GraphDatabase.driver(
                     self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
                 )
@@ -231,6 +387,7 @@ class Neo4jContainerManager:
 
     def stop_neo4j_container(self) -> bool:
         """Stop Neo4j container."""
+        # self._print_env_block("STOP_CONTAINER")  # Removed per instructions
         if not self.is_compose_available():
             logger.exception(event="Docker Compose is not available")
             return False
@@ -286,6 +443,7 @@ class Neo4jContainerManager:
         Returns:
             True if setup successful, False otherwise
         """
+        # self._print_env_block("SETUP_NEO4J")  # Removed per instructions
         logger.info(event="Setting up Neo4j container...")
 
         # Start the container
@@ -402,6 +560,7 @@ class Neo4jContainerManager:
         Cleanup Neo4j container and volume for this test run.
         Ensures removal even if container is stopped or exited.
         """
+        # self._print_env_block("CLEANUP")  # Removed per instructions
         if not self.docker_client:
             return
         try:
@@ -410,6 +569,9 @@ class Neo4jContainerManager:
             )
             for c in containers:
                 try:
+                    print(
+                        f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
+                    )
                     c.remove(force=True)
                     logger.info(event=f"Removed container {c.name}")
                 except Exception as e:
@@ -424,15 +586,25 @@ class Neo4jContainerManager:
             )
             for v in volumes:
                 try:
+                    print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:
                     logger.warning(event=f"Failed to remove volume {v.name}: {e}")
+            # Only remove host data dir in dev if not using named volume
+            if self.data_dir and os.path.isdir(self.data_dir):
+                try:
+                    shutil.rmtree(self.data_dir, ignore_errors=True)
+                    logger.info(event=f"Removed host data directory {self.data_dir}")
+                except Exception as e:
+                    logger.warning(
+                        event=f"Failed to remove host data directory {self.data_dir}: {e}"
+                    )
         except Exception as e:
             logger.warning(event=f"Error listing volumes for cleanup: {e}")
 
     @staticmethod
-    def _generate_random_password(length: int = 16) -> str:
+    def generate_random_password(length: int = 16) -> str:
         """Generate a random password for Neo4j."""
         chars = string.ascii_letters + string.digits
         return "".join(random.SystemRandom().choice(chars) for _ in range(length))

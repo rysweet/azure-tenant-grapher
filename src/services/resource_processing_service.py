@@ -40,6 +40,7 @@ class ResourceProcessingService:
         progress_callback: Optional[Callable[[ProcessingStats], None]] = None,
         max_workers: Optional[int] = None,
     ) -> ProcessingStats:
+        logger.info("[DEBUG][RPS] Entered ResourceProcessingService.process_resources")
         """
         Process all resources in parallel using the ResourceProcessor, with progress tracking.
         Optionally ingests AAD users/groups if ENABLE_AAD_IMPORT is set.
@@ -77,8 +78,13 @@ class ResourceProcessingService:
             max_workers = getattr(self.config, "max_concurrency", 5)
         if max_workers is None:
             max_workers = 5
-        return await processor.process_resources(
+        logger.info(
+            f"[DEBUG][RPS] Calling processor.process_resources with {len(resources)} resources, max_workers={max_workers}"
+        )
+        result = await processor.process_resources(
             resources,
             max_workers=max_workers,
             progress_callback=progress_callback,
         )
+        logger.info("[DEBUG][RPS] processor.process_resources returned")
+        return result

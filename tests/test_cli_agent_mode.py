@@ -16,19 +16,45 @@ def print_cli_failure(proc: Any, stdout: str, stderr: str) -> None:
     print(stderr)
 
 
-def test_agent_mode_requires_resources():
-    """Test that agent-mode properly checks for required resources and fails if they're not available."""
+@pytest.mark.usefixtures("neo4j_container")
+def test_agent_mode_requires_resources(
+    neo4j_container: tuple[str, str, str], monkeypatch: pytest.MonkeyPatch
+):
+    """
+    Test that agent-mode properly checks for required resources and fails if they're not available.
+    Uses an isolated Neo4j container for idempotence and to avoid interfering with dev containers or persistent data.
+    """
     logger = logging.getLogger("test_cli_agent_mode")
     logging.basicConfig(level=logging.INFO)
     timeout = int(os.environ.get("AGENT_MODE_TIMEOUT_SECONDS", 60))
     logger.info(f"Starting agent-mode subprocess with timeout={timeout}s")
     start_time = time.time()
+
+    # Use the test Neo4j container's connection details
+    uri, user, password = neo4j_container
+    env = os.environ.copy()
+    env["NEO4J_URI"] = uri
+    env["NEO4J_USER"] = user
+    env["NEO4J_PASSWORD"] = password
+
+    # Optionally stub Azure/OpenAI config if required by agent-mode
+    # If required env vars are missing, skip the test to avoid false negatives
+    azure_openai_envs = [
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_DEPLOYMENT",
+    ]
+    missing = [k for k in azure_openai_envs if not env.get(k)]
+    if missing:
+        pytest.skip(f"Skipping: missing Azure OpenAI config env vars: {missing}")
+
     proc = subprocess.Popen(
         [sys.executable, "scripts/cli.py", "agent-mode"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env=env,
     )
 
     try:

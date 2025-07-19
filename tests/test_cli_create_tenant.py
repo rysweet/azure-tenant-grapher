@@ -14,13 +14,17 @@ def test_create_tenant_help():
     assert "create-tenant" in result.stdout
 
 
-def test_create_tenant_with_sample_markdown():
-    """Test that the create-tenant command runs with a sample markdown file and exits 0."""
+def test_create_tenant_with_sample_markdown(neo4j_container):
+    """Test that the create-tenant command runs with a sample markdown file and exits 0.
+
+    Uses the neo4j_container fixture to ensure isolation and avoid interfering with dev containers or persistent data.
+    """
     sample_md = os.path.join("tests", "fixtures", "sample-tenant.md")
     result = subprocess.run(
         [sys.executable, "scripts/cli.py", "create-tenant", sample_md],
         capture_output=True,
         text=True,
+        env={**os.environ},  # ensure env vars from fixture are passed
     )
     assert result.returncode == 0
     assert (

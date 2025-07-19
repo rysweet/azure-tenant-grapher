@@ -1,3 +1,17 @@
+import os
+def print_cli_env_block(context: str = ""):
+    print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
+    for k in [
+        "NEO4J_CONTAINER_NAME",
+        "NEO4J_DATA_VOLUME",
+        "NEO4J_PASSWORD",
+        "NEO4J_PORT",
+        "NEO4J_URI",
+    ]:
+        print(f"[CLI ENV] {k}={os.environ.get(k)}")
+
+
+print_cli_env_block("STARTUP")
 #!/usr/bin/env python3
 """
 Enhanced CLI wrapper for Azure Tenant Grapher
@@ -6,10 +20,10 @@ This script provides an improved command-line interface with better error handli
 configuration validation, and progress tracking.
 """
 
+import os
 import asyncio
 import functools
 import logging
-import os
 import sys
 from typing import Any, Callable, Coroutine, Optional
 
@@ -93,6 +107,20 @@ except ImportError:
 
 
 # (Removed duplicate import of DashboardExitException)
+
+
+def log_neo4j_env():
+    print(
+        f"[CLI DEBUG][before handler] NEO4J_PASSWORD={os.environ.get('NEO4J_PASSWORD')}"
+    )
+    print(
+        f"[CLI DEBUG][before handler] NEO4J_CONTAINER_NAME={os.environ.get('NEO4J_CONTAINER_NAME')}"
+    )
+    print(
+        f"[CLI DEBUG][before handler] NEO4J_DATA_VOLUME={os.environ.get('NEO4J_DATA_VOLUME')}"
+    )
+    print(f"[CLI DEBUG][before handler] NEO4J_PORT={os.environ.get('NEO4J_PORT')}")
+    print(f"[CLI DEBUG][before handler] NEO4J_URI={os.environ.get('NEO4J_URI')}")
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
@@ -284,6 +312,8 @@ async def build(
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
+    print_cli_env_block("BUILD CMD")
+    log_neo4j_env()
     print("[DEBUG] CLI build command called", flush=True)
     result = await build_command_handler(
         ctx,
@@ -374,7 +404,7 @@ async def visualize(
     required=False,
     help="Domain name to use for all entities that require one (e.g., user accounts)",
 )
-async def spec(ctx: click.Context, tenant_id: str, domain_name: str = None) -> None:
+async def spec(ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None) -> None:
     """Generate only the tenant specification (requires existing graph)."""
     await spec_command_handler(ctx, tenant_id, domain_name)
 
@@ -389,6 +419,8 @@ def generate_spec(
     ctx: click.Context, limit: Optional[int], output: Optional[str]
 ) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
+    print_cli_env_block("GENERATE_SPEC CMD")
+    log_neo4j_env()
     generate_spec_command_handler(ctx, limit, output)
 
 
@@ -453,7 +485,7 @@ async def generate_iac(
     subset_filter: Optional[str],
     dest_rg: Optional[str],
     location: Optional[str],
-    domain_name: str = None,
+    domain_name: Optional[str] = None,
 ) -> None:
     """Generate Infrastructure-as-Code templates from graph data."""
     from src.utils.cli_installer import ensure_tool
@@ -548,7 +580,7 @@ def backup_db(backup_path: str) -> None:
 @cli.command()
 @click.pass_context
 @async_command
-async def mcp_server(ctx):
+async def mcp_server(ctx: click.Context) -> None:
     """Start MCP server (uvx mcp-neo4j-cypher) after ensuring Neo4j is running."""
     from src.cli_commands import mcp_server_command_handler
 
@@ -558,7 +590,7 @@ async def mcp_server(ctx):
 @cli.command()
 @click.pass_context
 @async_command
-async def threat_model(ctx) -> None:
+async def threat_model(ctx: click.Context) -> None:
     """Run the Threat Modeling Agent workflow to generate a DFD, enumerate threats, and produce a Markdown report from the current Neo4j graph."""
     from src.cli_commands import generate_threat_model_command_handler
 
@@ -586,7 +618,9 @@ async def threat_model(ctx) -> None:
 )
 @click.pass_context
 @async_command
-async def generate_sim_doc(ctx, size, seed, out):
+async def generate_sim_doc(
+    ctx: click.Context, size: int, seed: str, out: str
+) -> None:
     """
     Generate a simulated Azure customer profile as a Markdown narrative.
     """
@@ -609,7 +643,7 @@ cli.add_command(create_tenant_command, "create-tenant")
 )
 @click.pass_context
 @async_command
-async def agent_mode(ctx, question: Optional[str]):
+async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     """Start AutoGen MCP agent mode (Neo4j + MCP server + agent chat loop)."""
     from src.cli_commands import agent_mode_command_handler
 

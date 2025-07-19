@@ -223,11 +223,18 @@ class TenantSpecificationGenerator:
             self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
         )
         limit = self.config.resource_limit
-        query = f"""
+        if limit is not None:
+            query = f"""
         MATCH (r)
         WHERE r.id IS NOT NULL AND r.type IS NOT NULL
         RETURN r
         LIMIT {limit}
+        """
+        else:
+            query = """
+        MATCH (r)
+        WHERE r.id IS NOT NULL AND r.type IS NOT NULL
+        RETURN r
         """
         resources: List[Dict[str, Any]] = []
         import json
