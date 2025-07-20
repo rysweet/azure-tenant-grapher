@@ -42,12 +42,11 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Install pipx and uv, then Python dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python dependencies
         run: |
-          python3 -m pip install --user pipx
-          python3 -m pipx ensurepath
-          export PATH="$HOME/.local/bin:$PATH"
-          pipx install uv
           uv venv
           . .venv/bin/activate
           uv pip install -r requirements.txt
