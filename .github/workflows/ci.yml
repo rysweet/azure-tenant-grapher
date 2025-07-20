@@ -51,6 +51,11 @@ jobs:
           which uv || echo "uv not found"
           uv --version || echo "uv not available"
 
+      - name: Install uv (manual fallback)
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Install Python dependencies
         run: |
           uv venv
