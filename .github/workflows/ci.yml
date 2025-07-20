@@ -45,6 +45,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Debug uv install
+        run: |
+          echo "PATH: $PATH"
+          which uv || echo "uv not found"
+          uv --version || echo "uv not available"
+
       - name: Install Python dependencies
         run: |
           uv venv
