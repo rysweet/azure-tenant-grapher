@@ -1,4 +1,6 @@
 import os
+
+
 def print_cli_env_block(context: str = ""):
     print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
     for k in [
@@ -20,7 +22,6 @@ This script provides an improved command-line interface with better error handli
 configuration validation, and progress tracking.
 """
 
-import os
 import asyncio
 import functools
 import logging
@@ -404,7 +405,9 @@ async def visualize(
     required=False,
     help="Domain name to use for all entities that require one (e.g., user accounts)",
 )
-async def spec(ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None) -> None:
+async def spec(
+    ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None
+) -> None:
     """Generate only the tenant specification (requires existing graph)."""
     await spec_command_handler(ctx, tenant_id, domain_name)
 
@@ -618,9 +621,7 @@ async def threat_model(ctx: click.Context) -> None:
 )
 @click.pass_context
 @async_command
-async def generate_sim_doc(
-    ctx: click.Context, size: int, seed: str, out: str
-) -> None:
+async def generate_sim_doc(ctx: click.Context, size: int, seed: str, out: str) -> None:
     """
     Generate a simulated Azure customer profile as a Markdown narrative.
     """

@@ -1,5 +1,5 @@
-import pathlib
 import os
+import pathlib
 import subprocess
 import time
 import uuid
@@ -10,7 +10,7 @@ from testcontainers.neo4j import Neo4jContainer
 
 @pytest.mark.skipif(
     not os.environ.get("RUN_DOCKER_CONFLICT_TESTS"),
-    reason="Set RUN_DOCKER_CONFLICT_TESTS=1 to run this test (it manipulates Docker containers)."
+    reason="Set RUN_DOCKER_CONFLICT_TESTS=1 to run this test (it manipulates Docker containers).",
 )
 def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
     """
@@ -38,22 +38,29 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
     # Remove any existing container with the default name to avoid test setup conflicts
     client = docker.from_env()
     try:
-        existing = client.containers.list(all=True, filters={"name": default_container_name})
+        existing = client.containers.list(
+            all=True, filters={"name": default_container_name}
+        )
         for c in existing:
             c.remove(force=True)
     except Exception as e:
-        print(f"Warning: could not remove existing container {default_container_name}: {e}")
+        print(
+            f"Warning: could not remove existing container {default_container_name}: {e}"
+        )
 
     # Start a Neo4j container with the default name and a known password
     try:
-        with Neo4jContainer("neo4j:5.19") \
-            .with_env("NEO4J_AUTH", f"neo4j/{correct_password}") \
-            .with_name(default_container_name) :
-
+        with (
+            Neo4jContainer("neo4j:5.19")
+            .with_env("NEO4J_AUTH", f"neo4j/{correct_password}")
+            .with_name(default_container_name)
+        ):
             time.sleep(5)  # Ensure container is up
 
             # Now run the CLI with a *different* password, which should cause an auth failure
-            cli_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../scripts/cli.py"))
+            cli_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../../scripts/cli.py")
+            )
             output_path = tmp_path / "spec.json"
             env = {
                 **os.environ,
@@ -64,20 +71,42 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
                 "NEO4J_DATA_VOLUME": "azure-tenant-grapher-neo4j-data",
             }
             print("[TEST ENV DUMP][BEFORE CLI INVOCATION]")
-            for k in ["NEO4J_CONTAINER_NAME", "NEO4J_DATA_VOLUME", "NEO4J_PASSWORD", "NEO4J_PORT", "NEO4J_URI"]:
+            for k in [
+                "NEO4J_CONTAINER_NAME",
+                "NEO4J_DATA_VOLUME",
+                "NEO4J_PASSWORD",
+                "NEO4J_PORT",
+                "NEO4J_URI",
+            ]:
                 print(f"[TEST ENV] {k}={env.get(k)}")
             print(f"[TEST DEBUG] correct_password={correct_password}")
             print(f"[TEST DEBUG] wrong_password={wrong_password}")
-            containers_before = client.containers.list(all=True, filters={"name": default_container_name})
-            print(f"[TEST DEBUG] Containers before CLI: {[c.name + ':' + c.status for c in containers_before]}")
+            containers_before = client.containers.list(
+                all=True, filters={"name": default_container_name}
+            )
+            print(
+                f"[TEST DEBUG] Containers before CLI: {[c.name + ':' + c.status for c in containers_before]}"
+            )
             result = subprocess.run(
-                ["uv", "run", "python", cli_path, "generate-spec", "--output", str(output_path)],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    cli_path,
+                    "generate-spec",
+                    "--output",
+                    str(output_path),
+                ],
                 capture_output=True,
                 text=True,
-                env=env
+                env=env,
             )
-            containers_after = client.containers.list(all=True, filters={"name": default_container_name})
-            print(f"[TEST DEBUG] Containers after CLI: {[c.name + ':' + c.status for c in containers_after]}")
+            containers_after = client.containers.list(
+                all=True, filters={"name": default_container_name}
+            )
+            print(
+                f"[TEST DEBUG] Containers after CLI: {[c.name + ':' + c.status for c in containers_after]}"
+            )
             print(f"[TEST DEBUG] CLI stdout:\n{result.stdout}")
             print(f"[TEST DEBUG] CLI stderr:\n{result.stderr}")
 
@@ -108,19 +137,34 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
     finally:
         # Always clean up the test container and volume
         import docker
+
         client = docker.from_env()
         print("[TEST ENV DUMP][CLEANUP]")
-        for k in ["NEO4J_CONTAINER_NAME", "NEO4J_DATA_VOLUME", "NEO4J_PASSWORD", "NEO4J_PORT", "NEO4J_URI"]:
+        for k in [
+            "NEO4J_CONTAINER_NAME",
+            "NEO4J_DATA_VOLUME",
+            "NEO4J_PASSWORD",
+            "NEO4J_PORT",
+            "NEO4J_URI",
+        ]:
             print(f"[TEST ENV] {k}={os.environ.get(k)}")
         try:
-            containers = client.containers.list(all=True, filters={"name": default_container_name})
+            containers = client.containers.list(
+                all=True, filters={"name": default_container_name}
+            )
             for c in containers:
-                print(f"[TEST CLEANUP] Removing container: {c.name} (status: {c.status})")
+                print(
+                    f"[TEST CLEANUP] Removing container: {c.name} (status: {c.status})"
+                )
                 c.remove(force=True)
         except Exception as e:
-            print(f"Warning: could not remove container {default_container_name} in cleanup: {e}")
+            print(
+                f"Warning: could not remove container {default_container_name} in cleanup: {e}"
+            )
         try:
-            volumes = client.volumes.list(filters={"name": "azure-tenant-grapher-neo4j-data"})
+            volumes = client.volumes.list(
+                filters={"name": "azure-tenant-grapher-neo4j-data"}
+            )
             for v in volumes:
                 print(f"[TEST CLEANUP] Removing volume: {v.name}")
                 v.remove(force=True)
@@ -129,12 +173,15 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
         # Also call the container manager's cleanup for extra reliability
         try:
             from src.container_manager import Neo4jContainerManager
+
             Neo4jContainerManager().cleanup()
         except Exception as e:
             print(f"[TEST DEBUG] Error during container manager cleanup: {e}")
+
+
 @pytest.mark.skipif(
     not os.environ.get("RUN_DOCKER_CONFLICT_TESTS"),
-    reason="Set RUN_DOCKER_CONFLICT_TESTS=1 to run this test (it manipulates Docker containers)."
+    reason="Set RUN_DOCKER_CONFLICT_TESTS=1 to run this test (it manipulates Docker containers).",
 )
 def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
     """
@@ -156,31 +203,42 @@ def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
     # Remove any existing container with the default name to avoid test setup conflicts
     client = docker.from_env()
     try:
-        existing = client.containers.list(all=True, filters={"name": default_container_name})
+        existing = client.containers.list(
+            all=True, filters={"name": default_container_name}
+        )
         for c in existing:
             c.remove(force=True)
     except Exception as e:
-        print(f"Warning: could not remove existing container {default_container_name}: {e}")
+        print(
+            f"Warning: could not remove existing container {default_container_name}: {e}"
+        )
 
     # Start a Neo4j container with a unique name (never the CLI's default)
     unique_container_name = f"testcontainers-neo4j-{uuid.uuid4().hex[:8]}"
     try:
-        with Neo4jContainer("neo4j:5.19") \
-            .with_env("NEO4J_AUTH", f"neo4j/{neo4j_password}") \
-            .with_name(unique_container_name) :
-
+        with (
+            Neo4jContainer("neo4j:5.19")
+            .with_env("NEO4J_AUTH", f"neo4j/{neo4j_password}")
+            .with_name(unique_container_name)
+        ):
             time.sleep(5)  # Ensure container is up
 
             # Remove any container with the CLI's default name to ensure a clean state
             try:
-                existing = client.containers.list(all=True, filters={"name": default_container_name})
+                existing = client.containers.list(
+                    all=True, filters={"name": default_container_name}
+                )
                 for c in existing:
                     c.remove(force=True)
             except Exception as e:
-                print(f"Warning: could not remove existing container {default_container_name}: {e}")
+                print(
+                    f"Warning: could not remove existing container {default_container_name}: {e}"
+                )
 
             # Attempt to run the CLI command that would start another container with the same name
-            cli_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../scripts/cli.py"))
+            cli_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../../scripts/cli.py")
+            )
             output_path = tmp_path / "spec_stopped.json"
             env = {
                 **os.environ,
@@ -191,36 +249,69 @@ def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
             }
             env["NEO4J_URI"] = ""
             print("[TEST ENV DUMP][BEFORE CLI INVOCATION]")
-            for k in ["NEO4J_CONTAINER_NAME", "NEO4J_DATA_VOLUME", "NEO4J_PASSWORD", "NEO4J_PORT", "NEO4J_URI"]:
+            for k in [
+                "NEO4J_CONTAINER_NAME",
+                "NEO4J_DATA_VOLUME",
+                "NEO4J_PASSWORD",
+                "NEO4J_PORT",
+                "NEO4J_URI",
+            ]:
                 print(f"[TEST ENV] {k}={env.get(k)}")
             result = subprocess.run(
-                ["uv", "run", "python", cli_path, "generate-spec", "--output", str(output_path)],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    cli_path,
+                    "generate-spec",
+                    "--output",
+                    str(output_path),
+                ],
                 capture_output=True,
                 text=True,
-                env=env
+                env=env,
             )
             print(f"[TEST DEBUG] CLI stdout:\n{result.stdout}")
             print(f"[TEST DEBUG] CLI stderr:\n{result.stderr}")
 
             # The CLI should succeed and produce a spec file
-            assert result.returncode == 0, f"CLI should succeed even with stopped container. STDERR: {result.stderr}"
-            assert output_path.exists() and output_path.stat().st_size > 0, "Spec output file should be created and non-empty"
+            assert result.returncode == 0, (
+                f"CLI should succeed even with stopped container. STDERR: {result.stderr}"
+            )
+            assert output_path.exists() and output_path.stat().st_size > 0, (
+                "Spec output file should be created and non-empty"
+            )
     finally:
         # Always clean up the test container and volume
         import docker
+
         client = docker.from_env()
         print("[TEST ENV DUMP][CLEANUP]")
-        for k in ["NEO4J_CONTAINER_NAME", "NEO4J_DATA_VOLUME", "NEO4J_PASSWORD", "NEO4J_PORT", "NEO4J_URI"]:
+        for k in [
+            "NEO4J_CONTAINER_NAME",
+            "NEO4J_DATA_VOLUME",
+            "NEO4J_PASSWORD",
+            "NEO4J_PORT",
+            "NEO4J_URI",
+        ]:
             print(f"[TEST ENV] {k}={os.environ.get(k)}")
         try:
-            containers = client.containers.list(all=True, filters={"name": default_container_name})
+            containers = client.containers.list(
+                all=True, filters={"name": default_container_name}
+            )
             for c in containers:
-                print(f"[TEST CLEANUP] Removing container: {c.name} (status: {c.status})")
+                print(
+                    f"[TEST CLEANUP] Removing container: {c.name} (status: {c.status})"
+                )
                 c.remove(force=True)
         except Exception as e:
-            print(f"Warning: could not remove container {default_container_name} in cleanup: {e}")
+            print(
+                f"Warning: could not remove container {default_container_name} in cleanup: {e}"
+            )
         try:
-            volumes = client.volumes.list(filters={"name": "azure-tenant-grapher-neo4j-data"})
+            volumes = client.volumes.list(
+                filters={"name": "azure-tenant-grapher-neo4j-data"}
+            )
             for v in volumes:
                 print(f"[TEST CLEANUP] Removing volume: {v.name}")
                 v.remove(force=True)
@@ -229,6 +320,7 @@ def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
         # Also call the container manager's cleanup for extra reliability
         try:
             from src.container_manager import Neo4jContainerManager
+
             Neo4jContainerManager().cleanup()
         except Exception as e:
             print(f"[TEST DEBUG] Error during container manager cleanup: {e}")
