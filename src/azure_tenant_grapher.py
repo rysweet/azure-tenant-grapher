@@ -118,9 +118,14 @@ class AzureTenantGrapher:
             subscription_id, *args, **kwargs
         )
 
-    async def generate_tenant_specification(self) -> None:
+    async def generate_tenant_specification(
+        self, domain_name: Optional[str] = None
+    ) -> None:
         """
         Generate a comprehensive tenant specification using the composed service.
+
+        Args:
+            domain_name: Optional domain name to use for all entities that require one (e.g., user accounts).
         """
         try:
             tenant_id_suffix = (
@@ -128,7 +133,10 @@ class AzureTenantGrapher:
             )
             spec_filename = f"azure_tenant_specification_{tenant_id_suffix}.md"
             spec_path = os.path.join(os.getcwd(), spec_filename)
-            await self.specification_service.generate_specification(spec_path)
+            # Propagate domain_name if supported by the specification service
+            await self.specification_service.generate_specification(
+                spec_path, domain_name=domain_name
+            )
             logger.info(f"✅ Tenant specification generated: {spec_path}")
         except Exception:
             logger.exception("Error generating tenant specification")
