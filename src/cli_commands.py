@@ -596,8 +596,6 @@ async def visualize_command_handler(
         sys.exit(1)
 
 
-from typing import Optional
-
 
 async def spec_command_handler(
     ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None

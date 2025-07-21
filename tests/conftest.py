@@ -2,9 +2,11 @@ import logging
 import os
 import time
 import uuid
-
 import pytest
 from testcontainers.neo4j import Neo4jContainer
+import subprocess
+import sys
+
 
 
 @pytest.fixture(scope="function")
@@ -104,9 +106,6 @@ def neo4j_container():
 
         yield (uri, user, password)
 
-
-import subprocess
-import sys
 
 
 @pytest.fixture(scope="function")

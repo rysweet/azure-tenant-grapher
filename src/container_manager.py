@@ -118,7 +118,6 @@ class Neo4jContainerManager:
                     )
 
         # Always use NEO4J_PORT if set, fallback to 7687 (default Bolt port)
-        port = os.getenv("NEO4J_PORT", "7687")
         uri_env = os.environ.get("NEO4J_URI")
         if uri_env:
             self.neo4j_uri = uri_env
