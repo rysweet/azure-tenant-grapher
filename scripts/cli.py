@@ -70,8 +70,8 @@ class GreenInfoRichHandler(RichHandler):
 # Add the parent directory to the path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# Always load .env if present
-load_dotenv()
+# Always load .env if present, but do NOT override existing environment variables (test compatibility)
+load_dotenv(override=False)
 
 # (Removed duplicate import of DashboardExitException)
 

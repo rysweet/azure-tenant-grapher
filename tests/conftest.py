@@ -27,12 +27,12 @@ def neo4j_container():
     readiness_timeout = int(os.environ.get("NEO4J_READINESS_TIMEOUT_SECONDS", 60))
     container_name = f"test-neo4j-{uuid.uuid4().hex[:8]}"
     user = "neo4j"
-    password = "test"  # testcontainers default
+    password = "testpass1"  # must be at least 8 characters for test compatibility
 
     # Use a known-good Neo4j image version for testcontainers compatibility
     with (
         Neo4jContainer("neo4j:4.4")
-        .with_env("NEO4J_AUTH", "neo4j/test")
+        .with_env("NEO4J_AUTH", f"neo4j/{password}")
         .with_name(container_name)
     ) as neo4j:
         bolt_port = neo4j.get_exposed_port(7687)

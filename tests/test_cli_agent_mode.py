@@ -40,9 +40,11 @@ def test_agent_mode_requires_resources(
     # Optionally stub Azure/OpenAI config if required by agent-mode
     # If required env vars are missing, skip the test to avoid false negatives
     azure_openai_envs = [
-        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_KEY",
         "AZURE_OPENAI_ENDPOINT",
-        "AZURE_OPENAI_DEPLOYMENT",
+        "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_MODEL_CHAT",
+        "AZURE_OPENAI_MODEL_REASONING",
     ]
     missing = [k for k in azure_openai_envs if not env.get(k)]
     if missing:
@@ -117,7 +119,6 @@ def test_agent_mode_requires_resources(
         pytest.fail(f"Agent mode test failed: {e}")
 
 
-import pytest
 
 
 @pytest.mark.skip(
