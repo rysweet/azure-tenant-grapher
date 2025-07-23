@@ -50,7 +50,6 @@ async def generate_iac_command_handler(
     subset_filter: Optional[str] = None,
     dest_rg: Optional[str] = None,
     location: Optional[str] = None,
-    aad_mode: str = "manual",
     domain_name: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
@@ -96,7 +95,7 @@ async def generate_iac_command_handler(
         logger.info(f"Extracted {len(graph.resources)} resources")
 
         # Apply transformations
-        engine = TransformationEngine(rules_file, aad_mode=aad_mode)
+        engine = TransformationEngine(rules_file, aad_mode="manual")
 
         # Subset filtering
         subset_filter_obj = None

@@ -435,13 +435,7 @@ def generate_spec(
     "--location",
     help="Target location/region for resource deployment",
 )
-@click.option(
-    "--aad-mode",
-    type=click.Choice(["none", "manual", "auto"], case_sensitive=False),
-    default="manual",
-    show_default=True,
-    help="AAD object creation/replication mode: none, manual, or auto (default: manual)",
-)
+# AAD mode is now always 'manual' (default behavior, flag removed)
 @click.pass_context
 @async_command
 @click.option(
@@ -460,7 +454,6 @@ async def generate_iac(
     subset_filter: Optional[str],
     dest_rg: Optional[str],
     location: Optional[str],
-    aad_mode: str = "manual",
     domain_name: str = None,
 ) -> None:
     """
@@ -504,7 +497,7 @@ async def generate_iac(
         subset_filter=subset_filter,
         dest_rg=dest_rg,
         location=location,
-        aad_mode=aad_mode,
+        aad_mode="manual",
         domain_name=domain_name,
     )
 
