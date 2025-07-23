@@ -435,6 +435,13 @@ def generate_spec(
     "--location",
     help="Target location/region for resource deployment",
 )
+@click.option(
+    "--aad-mode",
+    type=click.Choice(["none", "manual", "auto"], case_sensitive=False),
+    default="manual",
+    show_default=True,
+    help="AAD object creation/replication mode: none, manual, or auto (default: manual)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -453,9 +460,20 @@ async def generate_iac(
     subset_filter: Optional[str],
     dest_rg: Optional[str],
     location: Optional[str],
+    aad_mode: str = "manual",
     domain_name: str = None,
 ) -> None:
-    """Generate Infrastructure-as-Code templates from graph data."""
+    """
+    Generate Infrastructure-as-Code templates from graph data.
+
+    Options:
+      --aad-mode [none|manual|auto]  Control AAD object creation/replication mode.
+        - none:   Do not create or replicate AAD objects.
+        - manual: Only create/replicate AAD objects when explicitly specified (default).
+        - auto:   Automatically create/replicate required AAD objects.
+
+    All other standard IaC options are supported. See --help for details.
+    """
     from src.utils.cli_installer import ensure_tool
 
     if format_type.lower() == "terraform":
@@ -486,6 +504,7 @@ async def generate_iac(
         subset_filter=subset_filter,
         dest_rg=dest_rg,
         location=location,
+        aad_mode=aad_mode,
         domain_name=domain_name,
     )
 
