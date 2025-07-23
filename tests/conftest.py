@@ -26,8 +26,11 @@ def neo4j_container():
     logging.basicConfig(level=logging.INFO)
     readiness_timeout = int(os.environ.get("NEO4J_READINESS_TIMEOUT_SECONDS", 60))
     container_name = f"test-neo4j-{uuid.uuid4().hex[:8]}"
+    import secrets
+
     user = "neo4j"
-    password = "testpass1"  # must be at least 8 characters for test compatibility
+    # Generate a random, secure password for each test run
+    password = secrets.token_urlsafe(12)
 
     # Use a known-good Neo4j image version for testcontainers compatibility
     with (
@@ -37,11 +40,17 @@ def neo4j_container():
     ) as neo4j:
         bolt_port = neo4j.get_exposed_port(7687)
         uri = f"bolt://localhost:{bolt_port}"
+        # Log the credentials for debugging
+        print(
+            f"[DEBUG] Neo4j test container started: name={container_name}, uri={uri}, user={user}, password={password}"
+        )
 
-        # Set environment variables for the test
+        # Set environment variables for the test and all subprocesses
         os.environ["NEO4J_URI"] = uri
         os.environ["NEO4J_USER"] = user
         os.environ["NEO4J_PASSWORD"] = password
+        os.environ["NEO4J_AUTH"] = f"neo4j/{password}"
+        os.environ["NEO4J_CONTAINER_NAME"] = container_name
 
         logger.info(
             f"Neo4j test container started with URI: {uri}, user: {user}, password: {password}"
@@ -96,12 +105,16 @@ def neo4j_container():
             logger.error(
                 f"Neo4j did not become ready within {readiness_timeout}s. Last error: {last_error}"
             )
-            import pytest
-
-            pytest.skip(
+            # Print container logs for diagnosis
+            try:
+                logs = neo4j.get_logs()
+                print(f"[DEBUG] Neo4j container logs:\n{logs}")
+            except Exception as log_exc:
+                print(f"[DEBUG] Could not fetch Neo4j container logs: {log_exc}")
+            raise RuntimeError(
                 f"Neo4j testcontainer authentication failed: {last_error}\n"
-                "This is a known issue with testcontainers-python and Neo4j images on some systems. "
-                "See https://github.com/testcontainers/testcontainers-python/issues for details."
+                "This is likely due to a password or startup race condition. "
+                "See the logs above for details. This is now a hard error to ensure it is fixed."
             )
 
         yield (uri, user, password)

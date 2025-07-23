@@ -267,7 +267,7 @@ async def _run_no_dashboard_mode(
         sys.exit(1)
     finally:
         print(
-            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
+            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call sys.exit(0)",
             flush=True,
         )
         import asyncio
@@ -292,10 +292,9 @@ async def _run_no_dashboard_mode(
             )
         except Exception as e:
             print("[DEBUG] Could not get asyncio loop or tasks:", e, flush=True)
-        import os
 
-        print("[DEBUG] Actually calling os._exit(0) now", flush=True)
-        os._exit(0)
+        print("[DEBUG] Actually calling sys.exit(0) now", flush=True)
+        sys.exit(0)
 
 
 async def _run_dashboard_mode(
@@ -533,7 +532,7 @@ async def visualize_command_handler(
 
         # Create visualizer
         visualizer = GraphVisualizer(
-            config.neo4j.uri, config.neo4j.user, config.neo4j.password
+            config.neo4j.uri or "", config.neo4j.user, config.neo4j.password
         )
 
         click.echo("🎨 Generating graph visualization...")
@@ -660,7 +659,7 @@ def generate_spec_command_handler(
         setup_logging(config.logging)
 
         # Neo4j connection info
-        neo4j_uri = config.neo4j.uri
+        neo4j_uri = config.neo4j.uri or ""
         neo4j_user = config.neo4j.user
         neo4j_password = config.neo4j.password
 

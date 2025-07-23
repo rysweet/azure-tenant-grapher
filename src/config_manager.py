@@ -51,7 +51,7 @@ class Neo4jConfig:
             f"[DEBUG][Neo4jConfig] uri={self.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
         )
         """Validate configuration after initialization."""
-        if not self.uri or (isinstance(self.uri, str) and self.uri.strip() == ""):
+        if not self.uri or (self.uri.strip() == ""):
             self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7688')}"
             print(f"[DEBUG][Neo4jConfig] After fallback assignment: uri={self.uri}")
         if not self.uri:

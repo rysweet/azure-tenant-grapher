@@ -32,8 +32,8 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
     from testcontainers.neo4j import Neo4jContainer
 
     default_container_name = "azure-tenant-grapher-neo4j"
-    correct_password = "pw" + uuid.uuid4().hex[:8]
-    wrong_password = "pw" + uuid.uuid4().hex[:8]
+    correct_password = "pw" + uuid.uuid4().hex[:8]  # pragma: allowlist secret
+    wrong_password = "pw" + uuid.uuid4().hex[:8]  # pragma: allowlist secret
 
     # Remove any existing container with the default name to avoid test setup conflicts
     client = docker.from_env()
@@ -50,11 +50,12 @@ def test_generate_spec_container_name_conflict(tmp_path: pathlib.Path):
 
     # Start a Neo4j container with the default name and a known password
     try:
-        with (
+        neo4j_container = (
             Neo4jContainer("neo4j:5.19")
             .with_env("NEO4J_AUTH", f"neo4j/{correct_password}")
             .with_name(default_container_name)
-        ):
+        )
+        with neo4j_container:
             time.sleep(5)  # Ensure container is up
 
             # Now run the CLI with a *different* password, which should cause an auth failure
@@ -198,7 +199,7 @@ def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
     import docker
 
     default_container_name = "azure-tenant-grapher-neo4j"
-    neo4j_password = "test" + uuid.uuid4().hex[:8]
+    neo4j_password = "test" + uuid.uuid4().hex[:8]  # pragma: allowlist secret
 
     # Remove any existing container with the default name to avoid test setup conflicts
     client = docker.from_env()
@@ -216,11 +217,12 @@ def test_generate_spec_container_stopped_container(tmp_path: pathlib.Path):
     # Start a Neo4j container with a unique name (never the CLI's default)
     unique_container_name = f"testcontainers-neo4j-{uuid.uuid4().hex[:8]}"
     try:
-        with (
+        neo4j_container = (
             Neo4jContainer("neo4j:5.19")
             .with_env("NEO4J_AUTH", f"neo4j/{neo4j_password}")
             .with_name(unique_container_name)
-        ):
+        )
+        with neo4j_container:
             time.sleep(5)  # Ensure container is up
 
             # Remove any container with the CLI's default name to ensure a clean state

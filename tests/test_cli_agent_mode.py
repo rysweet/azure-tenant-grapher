@@ -119,8 +119,6 @@ def test_agent_mode_requires_resources(
         pytest.fail(f"Agent mode test failed: {e}")
 
 
-
-
 @pytest.mark.skip(
     reason="Skipped due to CLI subprocess timeout; requires robust test harness or CLI refactor to avoid blocking on --help."
 )
