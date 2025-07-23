@@ -61,6 +61,8 @@ async def generate_iac_command_handler(
         rules_file: Path to transformation rules configuration file
         dry_run: If True, only validate inputs without generating templates
         resource_filters: Optional resource type filters
+        aad_mode: AAD object creation/replication mode (none, manual, auto)
+        domain_name: Domain name for entities that require one
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -93,7 +95,7 @@ async def generate_iac_command_handler(
         logger.info(f"Extracted {len(graph.resources)} resources")
 
         # Apply transformations
-        engine = TransformationEngine(rules_file)
+        engine = TransformationEngine(rules_file, aad_mode="manual")
 
         # Subset filtering
         subset_filter_obj = None

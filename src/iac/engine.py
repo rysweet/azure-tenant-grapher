@@ -29,13 +29,17 @@ class TransformationRule:
 class TransformationEngine:
     """Engine for transforming tenant graphs into IaC templates."""
 
-    def __init__(self, rules_file: Optional[str] = None) -> None:
+    def __init__(
+        self, rules_file: Optional[str] = None, aad_mode: str = "manual"
+    ) -> None:
         """Initialize transformation engine.
 
         Args:
             rules_file: Optional path to rules configuration file
+            aad_mode: AAD object creation/replication mode (none, manual, auto)
         """
         self.rules: List[TransformationRule] = []
+        self.aad_mode: str = aad_mode
         if rules_file:
             self.rules = self._parse_rules(rules_file)
 

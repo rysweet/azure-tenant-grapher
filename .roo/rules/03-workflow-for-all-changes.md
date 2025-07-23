@@ -24,8 +24,10 @@
 8. Always run pre-commit and resolve any failing checks.
 9. The task is not complete until all tests and pre-commit checks pass.
 10. Once tests and pre-commit pass, commit and push the work to the branch.
-11. After push, create or update the PR with a summary of changes (using `gh`).
-12. After a push to a PR, run `scripts/check_ci_status.sh` to check CI status. Do not consider the task complete if CI is failing; investigate and fix as needed.
+11. Before verifying CI status, the agent MUST check for and resolve all merge conflicts in the branch and PR. CI status checks MUST NOT proceed until all conflicts are resolved and the branch is up-to-date.
+12. After push, create or update the PR with a summary of changes (using `gh`).
+13. After a push to a PR, run `scripts/check_ci_status.sh` to check CI status. Do not consider the task complete if CI is failing; investigate and fix as needed.
+14. If CI does not trigger after push, the agent MUST provide actionable feedback indicating the likely cause (e.g., unresolved merge conflicts) and recommend next steps (e.g., resolve conflicts, re-push, or check workflow configuration).
 
 13. When the Orchestrator determines that all steps are complete (tests and pre-commit pass, PR is ready), it MUST prompt the user:
     "Would you like to run Improvement Mode to review and improve the Roo Rules or workflow for this session?"
