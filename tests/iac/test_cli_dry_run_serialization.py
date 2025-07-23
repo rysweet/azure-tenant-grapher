@@ -1,9 +1,7 @@
 import datetime
 import json
+import subprocess
 from unittest.mock import AsyncMock, MagicMock, patch
-
-from click.testing import CliRunner
-from scripts.cli import cli
 
 
 def _mock_graph():
@@ -29,10 +27,12 @@ def test_dry_run_serialization_fails(mock_get_driver, mock_traverser, mock_is_to
     mock_traverser.return_value.traverse = AsyncMock(return_value=_mock_graph())
     mock_get_driver.return_value = MagicMock()
 
-    runner = CliRunner()
-    result = runner.invoke(cli, ["generate-iac", "--dry-run"])
-    # should not raise TypeError after fix
-    assert result.exit_code == 0
-    data = json.loads(result.output)
+    result = subprocess.run(
+        ["uv", "run", "scripts/cli.py", "generate-iac", "--dry-run"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
     assert data["total_count"] == 1
     assert "created" in data["resources"][0]

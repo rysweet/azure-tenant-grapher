@@ -74,6 +74,7 @@ dev-dependencies = [
     "pre-commit>=3.5.0",
     "pytest-timeout>=2.1.0",
     "testcontainers>=4.0.0",
+    "pytest-html>=4.0.0",
 ]
 
 [tool.pytest.ini_options]

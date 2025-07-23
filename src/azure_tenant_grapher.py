@@ -211,6 +211,9 @@ class AzureTenantGrapher:
                 logger.info(
                     f"🔢 Resource list truncated to {len(all_resources)} items due to resource_limit"
                 )
+            logger.info(
+                f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"
+            )
 
             # 3. Process resources
             with self.session_manager:
@@ -312,11 +315,15 @@ class AzureTenantGrapher:
                     stats = await self.processing_service.process_resources(
                         all_resources, progress_callback=progress_callback
                     )
+                    logger.info(
+                        f"[DEBUG][BUILD_GRAPH] Completed resource processing. Stats: {stats.to_dict() if hasattr(stats, 'to_dict') else stats}"
+                    )
 
             # 4. Return stats as dict (back-compat)
             result = stats.to_dict()
             result["subscriptions"] = len(subscriptions)
             result["success"] = True
+            logger.info(f"[DEBUG][BUILD_GRAPH] Returning build result: {result}")
             return result
 
         except Exception as e:

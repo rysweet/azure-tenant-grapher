@@ -42,12 +42,15 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Install uv and Python dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python dependencies
         run: |
-          python3 -m venv .venv
+          uv venv
           . .venv/bin/activate
-          pip install uv
-          uv sync --dev
+          uv pip install -r requirements.txt
+          uv pip install -r requirements-dev.txt
 
       - name: Run migrations
         # NEO4J_PORT is required by scripts/run_migrations.py. See .env.example for all required variables.
@@ -63,4 +66,20 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
-        run: .venv/bin/python -m pytest -q
+        run: |
+          . .venv/bin/activate
+          uv run pytest --junitxml=pytest-results.xml --html=pytest-report.html 2>&1 | tee pytest-output.log
+
+      - name: Check prompt history and reflection files
+        run: |
+          . .venv/bin/activate
+          python scripts/check_prompt_history.py
+
+      - name: Upload test logs and results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-artifacts
+          path: |
+            pytest-output.log
+            pytest-results.xml
+            pytest-report.html

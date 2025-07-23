@@ -38,9 +38,12 @@
 
 ## Real-Time Recording
 
+- Prompt-history and reflection file creation/updating **MUST** be automated by the agent or supporting automation for every user prompt and every tool event (including tool failures, feedback, and attempt_completion).
 - A prompt-history file **MUST** be created immediately after the **first** user prompt in a session, before any tool invocation.
 - Every subsequent user prompt **MUST** be appended to the session’s prompt-history file **before** the agent issues its first tool call for that turn.
 - Reflection files **MUST** be created **before** any further tool calls once a user expresses dissatisfaction. Delayed creation is considered non-compliant.
+- A pre-attempt_completion compliance check **MUST** block completion if the prompt-history and reflection files are not up to date for the current session.
+- This automation **MUST** be enforced both locally (pre-commit) and in CI, and any missing or out-of-date prompt-history/reflection files **MUST** block PR merge.
 
 ### Session Naming Convention
 
@@ -67,13 +70,9 @@
 - **NO DEFERRALS:** These files cannot be created "later" - they must be created as part of the attempt_completion process.
 - **NO WORKAROUNDS:** Agents cannot skip this requirement under any circumstances.
 
-## Pre-Attempt Checklist (MUST be included verbatim in every attempt_completion)
+## Pre-Attempt Checklist
 
-- [ ] Prompt-history file exists for the session.
-- [ ] Current user prompt appended to prompt-history.
-- [ ] Reflection file created/updated if required.
-- [ ] Feedback Summary section completed.
-- [ ] All checklist items manually verified before sending.
+> **Note:** The full, up-to-date Pre-Attempt Checklist (including CI status requirements) is defined in `.roo/rules/03-workflow-for-all-changes.md`. Reference that file for the authoritative list of workflow gating requirements.
 
 ## Feedback Summary Template
 

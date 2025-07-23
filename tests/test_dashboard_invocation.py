@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pytest
-from click.testing import CliRunner
-from neo4j import GraphDatabase
-from scripts.cli import cli
 
+# from click.testing import CliRunner  # Unused, safe to remove
+from neo4j import GraphDatabase
+
+# import subprocess  # Duplicate, safe to remove
 from src.azure_tenant_grapher import AzureTenantGrapher
 from src.rich_dashboard import RichDashboard
 
@@ -206,11 +207,18 @@ def test_dashboard_invokes_processing(monkeypatch: Any) -> None:
     monkeypatch.setattr(RichDashboard, "live", dummy_live_method)
 
     # Run CLI with dashboard (default, i.e. no --no-dashboard)
-    runner = CliRunner()
-    result = runner.invoke(
-        cli,
-        ["build", "--tenant-id", "dummy", "--no-container"],
-        catch_exceptions=False,
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "scripts/cli.py",
+            "build",
+            "--tenant-id",
+            "dummy",
+            "--no-container",
+        ],
+        capture_output=True,
+        text=True,
     )
 
     # Check: build_graph was awaited (event is set)
@@ -226,7 +234,7 @@ def test_dashboard_invokes_processing(monkeypatch: Any) -> None:
 
     assert is_set is None or is_set is True  # event.wait() returns None when set
     # Accept exit code 0 (success) or nonzero (e.g. due to stubbed dashboard)
-    assert result.exit_code == 0 or event.is_set()
+    assert result.returncode == 0 or event.is_set()
     # Optionally, print output for debugging
     # print(result.output)
 
@@ -311,9 +319,21 @@ def test_dashboard_log_view_handles_stack_traces(tmp_path: Path):
         renderable = log_panel.renderable
         # If it's an Align, get the child
         if hasattr(renderable, "renderable"):
-            renderable = renderable.renderable
+            if hasattr(renderable, "renderable"):
+                # Defensive: only access .renderable if present and not str
+                if hasattr(renderable, "renderable") and not isinstance(
+                    renderable, str
+                ):
+                    # Defensive: only access .renderable if present, not str, and attribute exists
+                    if hasattr(renderable, "renderable") and not isinstance(
+                        renderable, str
+                    ):
+                        try:
+                            renderable = renderable.renderable
+                        except AttributeError:
+                            pass
         if hasattr(renderable, "plain"):
-            log_text = renderable.plain
+            log_text = getattr(renderable, "plain", str(renderable))
         else:
             log_text = str(renderable)
     # Should show the error and stack trace, possibly colorized or indented
@@ -371,9 +391,21 @@ def test_dashboard_log_view_updates_in_real_time(tmp_path: Path):
         renderable = log_panel.renderable
         # If it's an Align, get the child
         if hasattr(renderable, "renderable"):
-            renderable = renderable.renderable
+            if hasattr(renderable, "renderable"):
+                # Defensive: only access .renderable if present and not str
+                if hasattr(renderable, "renderable") and not isinstance(
+                    renderable, str
+                ):
+                    # Defensive: only access .renderable if present, not str, and attribute exists
+                    if hasattr(renderable, "renderable") and not isinstance(
+                        renderable, str
+                    ):
+                        try:
+                            renderable = renderable.renderable
+                        except AttributeError:
+                            pass
         if hasattr(renderable, "plain"):
-            log_text = renderable.plain
+            log_text = getattr(renderable, "plain", str(renderable))
         else:
             log_text = str(renderable)
     # Defensive: fallback to str(renderable) if .plain is not present
