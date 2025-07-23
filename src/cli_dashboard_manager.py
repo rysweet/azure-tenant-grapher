@@ -213,7 +213,7 @@ class CLIDashboardManager:
                 from src.graph_visualizer import GraphVisualizer
 
                 visualizer = GraphVisualizer(
-                    config.neo4j.uri,
+                    str(config.neo4j.uri or ""),
                     config.neo4j.user,
                     config.neo4j.password,
                 )

@@ -10,4 +10,9 @@
 8. Do not skip tests unless explicitly instructed.
 9. Do not use mocks in integration tests.
 
-10. All changes to Roo Rules, mode definitions, or workflow logic must be validated by Roo Modes Changes Tester. Roo Modes Changes Tester is responsible for running and reporting on all relevant tests (unit, integration, pre-commit, and compliance) for any change to rules, modes, or workflow logic. No such change may be marked as complete until Roo Modes Changes Tester validation passes.
+# Running the tests
+To run the tests, use the following command:
+
+```bash
+uv run pytest -v
+```

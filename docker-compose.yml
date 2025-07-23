@@ -19,13 +19,18 @@ services:
       NEO4J_dbms_security_procedures_unrestricted: "apoc.*,gds.*"
       NEO4J_dbms_security_procedures_allowlist: "apoc.*,gds.*"
     volumes:
-      - ./neo4j-data:/data
+      - type: volume
+        source: ${NEO4J_DATA_VOLUME:-azure-tenant-grapher-neo4j-data}
+        target: /data
       - ./neo4j-logs:/logs
       - ./neo4j-import:/var/lib/neo4j/import
       - ./neo4j-plugins:/plugins
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474"]
+      test: ["CMD", "curl", "-f", "http://localhost:7474/browser/"]
       interval: 5s
       timeout: 3s
       retries: 20
       start_period: 10s
+
+volumes:
+  azure-tenant-grapher-neo4j-data:

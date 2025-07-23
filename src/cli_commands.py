@@ -70,12 +70,12 @@ async def build_command_handler(
     rebuild_edges: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
+    print("[DEBUG][CLI] Entered build_command_handler", flush=True)
     ensure_neo4j_running()
-    # Removed debug print
+    print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
 
     try:
-        # Removed debug print
-        # Use tenant_id from CLI or .env
+        print("[DEBUG][CLI] Preparing config", flush=True)
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
             click.echo(
@@ -84,7 +84,6 @@ async def build_command_handler(
             )
             sys.exit(1)
 
-        # Create and validate configuration
         config = create_config_from_env(
             effective_tenant_id, resource_limit, max_retries
         )
@@ -92,25 +91,55 @@ async def build_command_handler(
         config.processing.auto_start_container = not no_container
         config.logging.level = ctx.obj["log_level"]
 
-        # Setup logging
         setup_logging(config.logging)
+        print("[DEBUG][CLI] Logging configured", flush=True)
 
-        # Validate configuration
         config.validate_all()
+        print("[DEBUG][CLI] Config validated", flush=True)
 
         logger = structlog.get_logger(__name__)
 
-        # Create and run the grapher
         grapher = AzureTenantGrapher(config)
+        print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
 
-        # Removed debug print
         if no_dashboard:
-            # Removed debug print
+            print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
             await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
+            print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
+            import asyncio
+            import threading
+
+            print(
+                "[DEBUG] Active threads at build_command_handler return:",
+                threading.enumerate(),
+                flush=True,
+            )
+            try:
+                loop = asyncio.get_running_loop()
+                print(
+                    "[DEBUG] asyncio loop at build_command_handler return:",
+                    loop,
+                    flush=True,
+                )
+                print(
+                    "[DEBUG] asyncio tasks at build_command_handler return:",
+                    asyncio.all_tasks(loop),
+                    flush=True,
+                )
+            except Exception as e:
+                print(
+                    "[DEBUG] Could not get asyncio loop or tasks at build_command_handler return:",
+                    e,
+                    flush=True,
+                )
+            print("[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True)
+            structlog.get_logger(__name__).info(
+                "[DEBUG][CLI] build_command_handler returning __NO_DASHBOARD_BUILD_COMPLETE__"
+            )
             return "__NO_DASHBOARD_BUILD_COMPLETE__"
         else:
-            # Removed debug print
-            return await _run_dashboard_mode(
+            print("[DEBUG][CLI] Entering _run_dashboard_mode", flush=True)
+            result = await _run_dashboard_mode(
                 ctx,
                 grapher,
                 config,
@@ -122,8 +151,15 @@ async def build_command_handler(
                 logger,
                 rebuild_edges,
             )
+            print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
+            structlog.get_logger(__name__).info(
+                "[DEBUG][CLI] build_command_handler returning from dashboard mode",
+                result=result,
+            )
+            return result
 
     except Exception as e:
+        print(f"[DEBUG][CLI] Exception in build_command_handler: {e}", flush=True)
         click.echo(
             f"❌ Unexpected error: {e}\n"
             "If this is a Neo4j error, ensure Neo4j is running and credentials are correct.\n"
@@ -144,7 +180,7 @@ async def _run_no_dashboard_mode(
     rebuild_edges: bool = False,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
-    # Print log file path for test discoverability
+    print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
     import tempfile
     from datetime import datetime
 
@@ -173,9 +209,7 @@ async def _run_no_dashboard_mode(
             # Fallback for other levels
             return Style(color="cyan")
 
-    # Standard logging, no dashboard
     root_logger = logging.getLogger()
-    # Set log level from CLI or default to INFO
     cli_log_level = ctx.obj.get("log_level", "INFO").upper()
     level_map = {
         "DEBUG": logging.DEBUG,
@@ -191,7 +225,6 @@ async def _run_no_dashboard_mode(
     handler.setLevel(level_map.get(cli_log_level, logging.INFO))
     root_logger.addHandler(handler)
     for name in logging.root.manager.loggerDict:
-        # Preserve specific logger configurations
         if name in ["httpx", "azure", "openai"]:
             continue
         logging.getLogger(name).setLevel(level_map.get(cli_log_level, logging.INFO))
@@ -200,21 +233,30 @@ async def _run_no_dashboard_mode(
         log_level=cli_log_level,
     )
     try:
+        print("[DEBUG][CLI] Connecting to Neo4j...", flush=True)
         grapher.connect_to_neo4j()
         logger.info("🚀 Starting Azure Tenant Graph building...")
+        print("[DEBUG][CLI] About to await grapher.build_graph()", flush=True)
         if hasattr(grapher, "build_graph"):
             if rebuild_edges:
                 click.echo(
                     "🔄 Forcing re-evaluation of all relationships/edges for all resources."
                 )
                 result = await grapher.build_graph(force_rebuild_edges=True)
+                print(
+                    "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
+                    flush=True,
+                )
             else:
                 result = await grapher.build_graph()
+                print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
         click.echo("🎉 Graph building completed.")
         click.echo(f"Result: {result}")
+        print("[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True)
     except Exception as e:
+        print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
@@ -224,22 +266,35 @@ async def _run_no_dashboard_mode(
         )
         sys.exit(1)
     finally:
-        # Defensive cleanup: ensure Neo4j driver is closed before exit
-        try:
-            if hasattr(grapher, "session_manager") and hasattr(
-                grapher.session_manager, "disconnect"
-            ):
-                grapher.session_manager.disconnect()
-        except Exception as cleanup_exc:
-            logger.warning(f"Error during Neo4j driver cleanup: {cleanup_exc}")
-        # Force immediate process exit after no-dashboard build to prevent CLI hang
         print(
-            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call os._exit(0)",
+            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call sys.exit(0)",
             flush=True,
         )
-        import os
+        import asyncio
+        import threading
 
-        os._exit(0)
+        print(
+            "[DEBUG] Active threads at end of _run_no_dashboard_mode:",
+            threading.enumerate(),
+            flush=True,
+        )
+        try:
+            loop = asyncio.get_running_loop()
+            print(
+                "[DEBUG] asyncio loop at end of _run_no_dashboard_mode:",
+                loop,
+                flush=True,
+            )
+            print(
+                "[DEBUG] asyncio tasks at end of _run_no_dashboard_mode:",
+                asyncio.all_tasks(loop),
+                flush=True,
+            )
+        except Exception as e:
+            print("[DEBUG] Could not get asyncio loop or tasks:", e, flush=True)
+
+        print("[DEBUG] Actually calling sys.exit(0) now", flush=True)
+        sys.exit(0)
 
 
 async def _run_dashboard_mode(
@@ -255,6 +310,7 @@ async def _run_dashboard_mode(
     rebuild_edges: bool = False,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
+    print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
     # Setup RichDashboard
@@ -381,31 +437,55 @@ async def _run_dashboard_mode(
 
     # Removed debug print
     try:
+        print("[DEBUG][CLI] Entering dashboard build task execution", flush=True)
         if test_keypress_file:
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
                 logger.info("[DEBUG] Entering poll_build_task (file keypress)")
                 try:
+                    print(
+                        "[DEBUG][CLI] Awaiting dashboard_manager.poll_build_task",
+                        flush=True,
+                    )
                     await dashboard_manager.poll_build_task(build_task)
+                    print(
+                        "[DEBUG][CLI] Returned from dashboard_manager.poll_build_task",
+                        flush=True,
+                    )
                 except DashboardExitException:
-                    # Dashboard exit was requested, return exit sentinel
+                    print(
+                        "[DEBUG][CLI] DashboardExitException in poll_build_task",
+                        flush=True,
+                    )
                     return "__DASHBOARD_EXIT__"
         elif test_keypress_queue:
-            # Removed debug print
+            print(
+                "[DEBUG][CLI] Awaiting dashboard_manager.run_with_queue_keypress",
+                flush=True,
+            )
             result = await dashboard_manager.run_with_queue_keypress(build_task)
-            # Removed debug print
+            print(
+                "[DEBUG][CLI] Returned from dashboard_manager.run_with_queue_keypress",
+                flush=True,
+            )
             if result == "__DASHBOARD_EXIT__":
-                # Removed debug print
+                print(
+                    "[DEBUG][CLI] DashboardExitException in run_with_queue_keypress",
+                    flush=True,
+                )
                 return "__DASHBOARD_EXIT__"
         else:
-            # Removed debug print
+            print("[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True)
             result = await dashboard_manager.run_normal(build_task)
-            # Removed debug print
+            print("[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True)
             if result == "__DASHBOARD_EXIT__":
-                # Removed debug print
+                print("[DEBUG][CLI] DashboardExitException in run_normal", flush=True)
                 return "__DASHBOARD_EXIT__"
     except DashboardExitException:
-        # Dashboard exit was requested
+        print(
+            "[DEBUG][CLI] DashboardExitException caught in _run_dashboard_mode",
+            flush=True,
+        )
         return "__DASHBOARD_EXIT__"
     finally:
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
@@ -426,8 +506,13 @@ async def _run_dashboard_mode(
         return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing
+    print("[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True)
     await dashboard_manager.handle_build_completion(
         build_task, grapher, config, generate_spec, visualize
+    )
+    print(
+        "[DEBUG][CLI] Returned from dashboard_manager.handle_build_completion",
+        flush=True,
     )
     return None
 
@@ -447,7 +532,7 @@ async def visualize_command_handler(
 
         # Create visualizer
         visualizer = GraphVisualizer(
-            config.neo4j.uri, config.neo4j.user, config.neo4j.password
+            config.neo4j.uri or "", config.neo4j.user, config.neo4j.password
         )
 
         click.echo("🎨 Generating graph visualization...")
@@ -508,9 +593,6 @@ async def visualize_command_handler(
     except Exception as e:
         click.echo(f"❌ Failed to generate visualization: {e}", err=True)
         sys.exit(1)
-
-
-from typing import Optional
 
 
 async def spec_command_handler(
@@ -577,7 +659,7 @@ def generate_spec_command_handler(
         setup_logging(config.logging)
 
         # Neo4j connection info
-        neo4j_uri = config.neo4j.uri
+        neo4j_uri = config.neo4j.uri or ""
         neo4j_user = config.neo4j.user
         neo4j_password = config.neo4j.password
 

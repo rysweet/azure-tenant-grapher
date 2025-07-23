@@ -1,8 +1,7 @@
+import subprocess
 from unittest.mock import patch
 
 import pytest
-from click.testing import CliRunner
-from scripts.cli import cli
 
 import src.utils.cli_installer as cli_installer
 
@@ -40,13 +39,22 @@ class TestGenerateIacAutoDoctor:
         # Ensure terraform is registered for this test
         assert "terraform" in cli_installer.TOOL_REGISTRY
 
-        runner = CliRunner()
-        result = runner.invoke(
-            cli, ["generate-iac", "--format", "terraform", "--dry-run"]
+        result = subprocess.run(
+            [
+                "uv",
+                "run",
+                "scripts/cli.py",
+                "generate-iac",
+                "--format",
+                "terraform",
+                "--dry-run",
+            ],
+            capture_output=True,
+            text=True,
         )
-        assert result.exit_code != 0
+        assert result.returncode != 0
         assert (
-            "Aborting: 'terraform' is required but was not installed." in result.output
+            "Aborting: 'terraform' is required but was not installed." in result.stdout
         )
 
     def test_generate_iac_runs_install_tool_when_missing(self, monkeypatch):
@@ -68,11 +76,20 @@ class TestGenerateIacAutoDoctor:
         # Ensure terraform is registered for this test
         assert "terraform" in cli_installer.TOOL_REGISTRY
 
-        runner = CliRunner()
         # Patch generate_iac_command_handler to avoid running real logic
         with patch("scripts.cli.generate_iac_command_handler", return_value=None):
-            result = runner.invoke(
-                cli, ["generate-iac", "--format", "terraform", "--dry-run"]
+            result = subprocess.run(
+                [
+                    "uv",
+                    "run",
+                    "scripts/cli.py",
+                    "generate-iac",
+                    "--format",
+                    "terraform",
+                    "--dry-run",
+                ],
+                capture_output=True,
+                text=True,
             )
-        assert result.exit_code == 0
+        assert result.returncode == 0
         assert called["tool"] == "terraform"
