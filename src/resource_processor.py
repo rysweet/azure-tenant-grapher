@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
+from src.debug_utils import debug_print
 from src.logging_config import configure_logging
 from src.utils.session_manager import retry_neo4j_operation
 
@@ -723,7 +724,7 @@ class ResourceProcessor:
         progress_every: int = 50,
     ) -> ProcessingStats:
         logger.info("[DEBUG][RP] Entered ResourceProcessor.process_resources")
-        print("[DEBUG][RP] Entered ResourceProcessor.process_resources", flush=True)
+        debug_print("[DEBUG][RP] Entered ResourceProcessor.process_resources", flush=True)
         """
         Process all resources with retry queue, poison list, and exponential back-off.
         """
@@ -740,7 +741,7 @@ class ResourceProcessor:
         self.stats.total_resources = len(resources)
         if not resources:
             logger.info("INFO: No resources to process")
-            print("[DEBUG][RP] No resources to process", flush=True)
+            debug_print("[DEBUG][RP] No resources to process", flush=True)
             return self.stats
 
         retry_queue = deque()
@@ -761,12 +762,12 @@ class ResourceProcessor:
             logger.info(
                 f"[DEBUG][RP] Worker started for resource {resource.get('id')} (index {resource_index}, attempt {attempt})"
             )
-            print(
+            debug_print(
                 f"[DEBUG][RP] Worker started for resource {resource.get('id')} (index {resource_index}, attempt {attempt})",
                 flush=True,
             )
             try:
-                print(
+                debug_print(
                     f"[DEBUG][RP] Awaiting process_single_resource for {resource.get('id')}",
                     flush=True,
                 )
@@ -774,7 +775,7 @@ class ResourceProcessor:
                     f"[DEBUG][RP] About to await process_single_resource for {resource.get('id')}"
                 )
                 result = await self.process_single_resource(resource, resource_index)
-                print(
+                debug_print(
                     f"[DEBUG][RP] Returned from process_single_resource for {resource.get('id')} result={result}",
                     flush=True,
                 )
@@ -789,18 +790,18 @@ class ResourceProcessor:
                 logger.exception(
                     f"Exception in worker for resource {resource.get('id', 'Unknown')}: {e}"
                 )
-                print(
+                debug_print(
                     f"[DEBUG][RP] Exception in worker for resource {resource.get('id', 'Unknown')}: {e}",
                     flush=True,
                 )
                 return False
 
         logger.info("[DEBUG][RP] Entering main processing loop")
-        print("[DEBUG][RP] Entering main processing loop", flush=True)
+        debug_print("[DEBUG][RP] Entering main processing loop", flush=True)
         loop_counter = 0
         while main_queue or retry_queue or in_progress:
             logger.info(f"[DEBUG][RP] Top of main loop iteration {loop_counter}")
-            print(f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True)
+            debug_print(f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True)
             tasks = []
             now = time.time()
             # Fill from main queue
@@ -811,7 +812,7 @@ class ResourceProcessor:
                 resource_attempts[rid] = attempt
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
-                print(
+                debug_print(
                     f"[DEBUG][RP] Scheduling worker for resource {rid} (attempt {attempt})",
                     flush=True,
                 )
@@ -834,7 +835,7 @@ class ResourceProcessor:
                     resource_attempts[rid] = attempt
                     resource["__attempt"] = attempt
                     resource["__id"] = rid
-                    print(
+                    debug_print(
                         f"[DEBUG][RP] Scheduling retry worker for resource {rid} (attempt {attempt})",
                         flush=True,
                     )
@@ -855,7 +856,7 @@ class ResourceProcessor:
                 if retry_queue:
                     soonest = min(next_time for _, _, next_time in retry_queue)
                     sleep_time = max(0.0, soonest - time.time())
-                    print(
+                    debug_print(
                         f"[DEBUG][RP] No tasks, sleeping for {sleep_time}s for next retry",
                         flush=True,
                     )
@@ -864,17 +865,17 @@ class ResourceProcessor:
                     )
                     await asyncio.sleep(sleep_time)
                 else:
-                    print("[DEBUG][RP] No tasks, sleeping for 0.1s", flush=True)
+                    debug_print("[DEBUG][RP] No tasks, sleeping for 0.1s", flush=True)
                     logger.info("[DEBUG][RP] No tasks, sleeping for 0.1s")
                     await asyncio.sleep(0.1)
                 loop_counter += 1
                 continue
 
             # Wait for any task to complete
-            print(f"[DEBUG][RP] Awaiting {len(tasks)} tasks", flush=True)
+            debug_print(f"[DEBUG][RP] Awaiting {len(tasks)} tasks", flush=True)
             logger.info(f"[DEBUG][RP] Awaiting {len(tasks)} tasks")
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            print(f"[DEBUG][RP] {len(done)} tasks completed", flush=True)
+            debug_print(f"[DEBUG][RP] {len(done)} tasks completed", flush=True)
             logger.info(f"[DEBUG][RP] {len(done)} tasks completed")
             for t in done:
                 resource = None
@@ -889,7 +890,7 @@ class ResourceProcessor:
                                 attempt = frame.f_locals.get("attempt", 1)
                         break
                 if resource is None:
-                    print(
+                    debug_print(
                         "[DEBUG][RP] Could not find resource for completed task",
                         flush=True,
                     )
@@ -901,7 +902,7 @@ class ResourceProcessor:
                 rid = resource.get("id")
                 in_progress.discard(rid)
                 result = t.result()
-                print(
+                debug_print(
                     f"[DEBUG][RP] Task for resource {rid} completed with result={result}",
                     flush=True,
                 )
@@ -914,7 +915,7 @@ class ResourceProcessor:
                     attempt = resource_attempts.get(rid, 1)
                     if attempt < self.max_retries:
                         delay = base_delay * (2 ** (attempt - 1))
-                        print(
+                        debug_print(
                             f"[DEBUG][RP] Scheduling retry for resource {rid} in {delay}s (attempt {attempt + 1})",
                             flush=True,
                         )
@@ -929,7 +930,7 @@ class ResourceProcessor:
                     else:
                         poison_list.append(resource)
                         logger.error(f"☠️  Poisoned after {attempt} attempts: {rid}")
-                        print(
+                        debug_print(
                             f"[DEBUG][RP] Poisoned resource {rid} after {attempt} attempts",
                             flush=True,
                         )
@@ -955,36 +956,36 @@ class ResourceProcessor:
                     f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
                 )
             logger.info(f"[DEBUG][RP] End of main loop iteration {loop_counter}")
-            print(f"[DEBUG][RP] End of main loop iteration {loop_counter}", flush=True)
+            debug_print(f"[DEBUG][RP] End of main loop iteration {loop_counter}", flush=True)
             loop_counter += 1
         logger.info("[DEBUG][RP] Exited main processing loop")
-        print("[DEBUG][RP] Exited main processing loop", flush=True)
+        debug_print("[DEBUG][RP] Exited main processing loop", flush=True)
 
         if self.llm_generator:
             logger.info("🤖 Generating LLM summaries for ResourceGroups and Tags...")
-            print(
+            debug_print(
                 "[DEBUG][RP] Generating LLM summaries for ResourceGroups and Tags...",
                 flush=True,
             )
             try:
-                print(
+                debug_print(
                     "[DEBUG][RP] Awaiting generate_resource_group_summaries", flush=True
                 )
                 logger.info("[DEBUG][RP] Awaiting generate_resource_group_summaries")
                 await self.generate_resource_group_summaries()
-                print("[DEBUG][RP] Awaiting generate_tag_summaries", flush=True)
+                debug_print("[DEBUG][RP] Awaiting generate_tag_summaries", flush=True)
                 logger.info("[DEBUG][RP] Awaiting generate_tag_summaries")
                 await self.generate_tag_summaries()
                 logger.info(
                     "✅ Completed LLM summary generation for ResourceGroups and Tags"
                 )
-                print(
+                debug_print(
                     "[DEBUG][RP] Completed LLM summary generation for ResourceGroups and Tags",
                     flush=True,
                 )
             except Exception as e:
                 logger.exception(f"Failed to generate ResourceGroup/Tag summaries: {e}")
-                print(
+                debug_print(
                     f"[DEBUG][RP] Exception during LLM summary generation: {e}",
                     flush=True,
                 )
@@ -995,14 +996,14 @@ class ResourceProcessor:
             )
             for r in poison_list:
                 logger.warning(f"  - {r.get('id', 'Unknown')}")
-                print(
+                debug_print(
                     f"[DEBUG][RP] Poison list resource: {r.get('id', 'Unknown')}",
                     flush=True,
                 )
 
         self._log_final_summary()
         logger.info("[DEBUG][RP] Returning from ResourceProcessor.process_resources")
-        print(
+        debug_print(
             "[DEBUG][RP] Returning from ResourceProcessor.process_resources", flush=True
         )
         return self.stats

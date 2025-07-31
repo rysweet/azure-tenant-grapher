@@ -20,6 +20,7 @@ from src.config_manager import (
     create_neo4j_config_from_env,
     setup_logging,
 )
+from src.debug_utils import debug_print
 from src.graph_visualizer import GraphVisualizer
 from src.logging_config import configure_logging
 from src.rich_dashboard import RichDashboard
@@ -70,12 +71,12 @@ async def build_command_handler(
     rebuild_edges: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
-    print("[DEBUG][CLI] Entered build_command_handler", flush=True)
+    debug_print("[DEBUG][CLI] Entered build_command_handler", flush=True)
     ensure_neo4j_running()
-    print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
+    debug_print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
 
     try:
-        print("[DEBUG][CLI] Preparing config", flush=True)
+        debug_print("[DEBUG][CLI] Preparing config", flush=True)
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
             click.echo(
@@ -92,20 +93,20 @@ async def build_command_handler(
         config.logging.level = ctx.obj["log_level"]
 
         setup_logging(config.logging)
-        print("[DEBUG][CLI] Logging configured", flush=True)
+        debug_print("[DEBUG][CLI] Logging configured", flush=True)
 
         config.validate_all()
-        print("[DEBUG][CLI] Config validated", flush=True)
+        debug_print("[DEBUG][CLI] Config validated", flush=True)
 
         logger = structlog.get_logger(__name__)
 
         grapher = AzureTenantGrapher(config)
-        print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
+        debug_print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
 
         if no_dashboard:
-            print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
+            debug_print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
             await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
-            print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
+            debug_print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
             import asyncio
             import threading
 
@@ -132,13 +133,13 @@ async def build_command_handler(
                     e,
                     flush=True,
                 )
-            print("[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True)
+            debug_print("[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True)
             structlog.get_logger(__name__).info(
                 "[DEBUG][CLI] build_command_handler returning __NO_DASHBOARD_BUILD_COMPLETE__"
             )
             return "__NO_DASHBOARD_BUILD_COMPLETE__"
         else:
-            print("[DEBUG][CLI] Entering _run_dashboard_mode", flush=True)
+            debug_print("[DEBUG][CLI] Entering _run_dashboard_mode", flush=True)
             result = await _run_dashboard_mode(
                 ctx,
                 grapher,
@@ -151,7 +152,7 @@ async def build_command_handler(
                 logger,
                 rebuild_edges,
             )
-            print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
+            debug_print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
             structlog.get_logger(__name__).info(
                 "[DEBUG][CLI] build_command_handler returning from dashboard mode",
                 result=result,
@@ -159,7 +160,7 @@ async def build_command_handler(
             return result
 
     except Exception as e:
-        print(f"[DEBUG][CLI] Exception in build_command_handler: {e}", flush=True)
+        debug_print(f"[DEBUG][CLI] Exception in build_command_handler: {e}", flush=True)
         click.echo(
             f"❌ Unexpected error: {e}\n"
             "If this is a Neo4j error, ensure Neo4j is running and credentials are correct.\n"
@@ -180,7 +181,7 @@ async def _run_no_dashboard_mode(
     rebuild_edges: bool = False,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
-    print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
+    debug_print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
     import tempfile
     from datetime import datetime
 
@@ -233,10 +234,10 @@ async def _run_no_dashboard_mode(
         log_level=cli_log_level,
     )
     try:
-        print("[DEBUG][CLI] Connecting to Neo4j...", flush=True)
+        debug_print("[DEBUG][CLI] Connecting to Neo4j...", flush=True)
         grapher.connect_to_neo4j()
         logger.info("🚀 Starting Azure Tenant Graph building...")
-        print("[DEBUG][CLI] About to await grapher.build_graph()", flush=True)
+        debug_print("[DEBUG][CLI] About to await grapher.build_graph()", flush=True)
         if hasattr(grapher, "build_graph"):
             if rebuild_edges:
                 click.echo(
@@ -249,14 +250,14 @@ async def _run_no_dashboard_mode(
                 )
             else:
                 result = await grapher.build_graph()
-                print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
+                debug_print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
         click.echo("🎉 Graph building completed.")
         click.echo(f"Result: {result}")
-        print("[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True)
+        debug_print("[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True)
     except Exception as e:
-        print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
+        debug_print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
@@ -291,9 +292,9 @@ async def _run_no_dashboard_mode(
                 flush=True,
             )
         except Exception as e:
-            print("[DEBUG] Could not get asyncio loop or tasks:", e, flush=True)
+            debug_print("[DEBUG] Could not get asyncio loop or tasks:", e, flush=True)
 
-        print("[DEBUG] Actually calling sys.exit(0) now", flush=True)
+        debug_print("[DEBUG] Actually calling sys.exit(0) now", flush=True)
         sys.exit(0)
 
 
@@ -310,7 +311,7 @@ async def _run_dashboard_mode(
     rebuild_edges: bool = False,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
-    print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
+    debug_print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
     # Setup RichDashboard
@@ -437,7 +438,7 @@ async def _run_dashboard_mode(
 
     # Removed debug print
     try:
-        print("[DEBUG][CLI] Entering dashboard build task execution", flush=True)
+        debug_print("[DEBUG][CLI] Entering dashboard build task execution", flush=True)
         if test_keypress_file:
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
@@ -475,11 +476,11 @@ async def _run_dashboard_mode(
                 )
                 return "__DASHBOARD_EXIT__"
         else:
-            print("[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True)
+            debug_print("[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True)
             result = await dashboard_manager.run_normal(build_task)
-            print("[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True)
+            debug_print("[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True)
             if result == "__DASHBOARD_EXIT__":
-                print("[DEBUG][CLI] DashboardExitException in run_normal", flush=True)
+                debug_print("[DEBUG][CLI] DashboardExitException in run_normal", flush=True)
                 return "__DASHBOARD_EXIT__"
     except DashboardExitException:
         print(
@@ -506,7 +507,7 @@ async def _run_dashboard_mode(
         return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing
-    print("[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True)
+    debug_print("[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True)
     await dashboard_manager.handle_build_completion(
         build_task, grapher, config, generate_spec, visualize
     )
@@ -947,7 +948,7 @@ def create_tenant_command(markdown_file: str):
         ensure_neo4j_running()
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
-        print("DEBUG: Raw markdown file contents:\n", text)
+        debug_print("DEBUG: Raw markdown file contents:\n", text)
         create_tenant_from_markdown(text)
         click.echo("✅ Tenant creation (stub) succeeded.")
     except Exception as e:

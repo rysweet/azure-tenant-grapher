@@ -2,6 +2,7 @@ import re
 from typing import Any, Optional
 
 from src.config_manager import ProcessingConfig, create_neo4j_config_from_env
+from src.debug_utils import debug_print
 from src.llm_descriptions import AzureLLMDescriptionGenerator
 from src.services.resource_processing_service import ResourceProcessingService
 from src.tenant_spec_models import TenantSpec
@@ -176,18 +177,18 @@ Instructions:
         Extracts a JSON fenced code block from markdown and parses it as TenantSpec.
         If no JSON block is found, uses LLM to generate the spec from the narrative.
         """
-        print("DEBUG: Markdown received by create_from_markdown:\n", markdown)
+        debug_print("DEBUG: Markdown received by create_from_markdown:\n", markdown)
         match = re.search(
             r"```json\s*([\s\S]+?)\s*```", markdown, re.IGNORECASE | re.MULTILINE
         )
         if not match:
-            print("DEBUG: No JSON block found with standard regex, trying fallback.")
+            debug_print("DEBUG: No JSON block found with standard regex, trying fallback.")
             match = re.search(
                 r"```json\s*([\s\S]+)", markdown, re.IGNORECASE | re.MULTILINE
             )
         if match:
             json_text = match.group(1)
-            print("DEBUG: Extracted JSON block:\n", json_text)
+            debug_print("DEBUG: Extracted JSON block:\n", json_text)
             import json as _json
 
             # Always normalize the JSON before parsing
@@ -205,8 +206,8 @@ Instructions:
             narrative=narrative, schema=self._tenant_spec_schema_example()
         )
         json_text = await self._llm_generate_tenant_spec(narrative)
-        print("DEBUG: LLM-generated JSON spec:\n", json_text)
-        print("DEBUG: Type of json_text:", type(json_text))
+        debug_print("DEBUG: LLM-generated JSON spec:\n", json_text)
+        debug_print("DEBUG: Type of json_text:", type(json_text))
         # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
 
@@ -215,7 +216,7 @@ Instructions:
 
         try:
             data = _json.loads(json_text)
-            print("DEBUG: LLM JSON loaded as dict:", data)
+            debug_print("DEBUG: LLM JSON loaded as dict:", data)
 
             # Normalize all field names throughout the data structure
             if "tenant" in data:
@@ -295,7 +296,7 @@ Instructions:
                                             rel["targetId"] = "unknown-target"
                     data["tenant"]["relationships"] = relationships
 
-            print("DEBUG: Post-processed LLM JSON dict:", data)
+            debug_print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
             # Log prompt and raw response for debugging
