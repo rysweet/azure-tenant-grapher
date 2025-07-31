@@ -11,6 +11,7 @@ customModes:
       - For each improvement, propose a series of discreet, actionable edits (not just a summary). Each edit should be described, justified, and, where possible, implemented as a separate atomic change.
       - After examining and making recommendations for any prompt-history files, move each processed file to `.github/prompt-history/already_processed/` to avoid reprocessing.
       - Document your reasoning and the proposed improvement.
+      - Before any attempt_completion or major step, validate workflow compliance (todo list, gating, pre-commit, CI) and document any deviations by creating a reflection entry and remediation instructions.
     groups:
       - read
       - - edit

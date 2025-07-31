@@ -190,3 +190,6 @@ simdocs/
 # environment variables
 .env
 .env.local
+
+# Neo4j logs
+neo4j-logs/
