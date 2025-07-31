@@ -144,4 +144,6 @@ GitHub Actions workflow (`ci.yml`):
 4. Executes test suite with artifacts
 5. Uploads test results
 
-Check CI status: `./scripts/check_ci_status.sh`
+### Helpful Scripts
+
+- **CI Status Check**: Use the script `@scripts/check_ci_status.sh` to efficiently check CI status
