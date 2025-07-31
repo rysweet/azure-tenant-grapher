@@ -147,3 +147,8 @@ GitHub Actions workflow (`ci.yml`):
 ### Helpful Scripts
 
 - **CI Status Check**: Use the script `@scripts/check_ci_status.sh` to efficiently check CI status
+
+## Project Memories
+
+- The CI takes almost 20 minutes to complete. Just run the script and wait for it.
+```
