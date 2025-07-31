@@ -2,7 +2,7 @@ version: "3.8"
 services:
   neo4j:
     image: neo4j:5.19
-    container_name: azure-tenant-grapher-neo4j
+    container_name: ${NEO4J_CONTAINER_NAME:-azure-tenant-grapher-neo4j}
     restart: unless-stopped
     ports:
 

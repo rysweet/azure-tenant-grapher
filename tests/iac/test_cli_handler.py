@@ -1,8 +1,10 @@
 from typing import Optional
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from click.testing import CliRunner
 from scripts.cli import cli
+
 from src.iac.cli_handler import get_neo4j_driver_from_config
 
 
@@ -17,7 +19,8 @@ def test_get_driver_returns_driver(monkeypatch: pytest.MonkeyPatch) -> None:
             self._driver = fake_driver
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.create_session_manager", lambda cfg: FakeManager()  # type: ignore[arg-type]
+        "src.iac.cli_handler.create_session_manager",
+        lambda cfg: FakeManager(),  # type: ignore[arg-type]
     )
     monkeypatch.setattr(
         "src.iac.cli_handler.create_neo4j_config_from_env", lambda: MagicMock()
@@ -25,10 +28,6 @@ def test_get_driver_returns_driver(monkeypatch: pytest.MonkeyPatch) -> None:
 
     driver = get_neo4j_driver_from_config()
     assert driver is fake_driver
-
-
-from click.testing import CliRunner
-from scripts.cli import cli
 
 
 def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
