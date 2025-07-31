@@ -20,21 +20,10 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+from src.debug_utils import DebugState, print_cli_env_block
 
-
-def print_cli_env_block(context: str = ""):
-    print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
-    for k in [
-        "NEO4J_CONTAINER_NAME",
-        "NEO4J_DATA_VOLUME",
-        "NEO4J_PASSWORD",
-        "NEO4J_PORT",
-        "NEO4J_URI",
-    ]:
-        print(f"[CLI ENV] {k}={os.environ.get(k)}")
-
-
-print_cli_env_block("STARTUP")
+# Debug output will be initialized when CLI args are parsed
+# print_cli_env_block("STARTUP") - moved to after CLI arg parsing
 
 # Set Azure logging levels early
 for name in [
@@ -133,14 +122,16 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 result = asyncio.run(f(*args, **kwargs))
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
-                print(
+                from src.debug_utils import debug_print
+                debug_print(
                     "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
                     file=sys.stderr,
                 )
                 sys.stderr.flush()
                 sys.exit(0)
             if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-                print(
+                from src.debug_utils import debug_print
+                debug_print(
                     "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
                     file=sys.stderr,
                 )
@@ -209,11 +200,26 @@ def show_comprehensive_help(ctx: click.Context) -> None:
     default="INFO",
     help="Logging level (DEBUG, INFO, WARNING, ERROR)",
 )
+@click.option(
+    "--debug", "-d",
+    is_flag=True,
+    help="Enable debug output (shows [DEBUG] and [CLI ENV] statements)",
+)
 @click.pass_context
-def cli(ctx: click.Context, log_level: str) -> None:
+def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
+    ctx.obj["debug"] = debug
+    
+    # Initialize debug state based on CLI flag
+    if debug:
+        DebugState.enable_debug()
+    else:
+        DebugState.disable_debug()
+    
+    # Now that debug state is initialized, print startup env if debug is enabled
+    print_cli_env_block("STARTUP")
 
     # If no command is provided, show comprehensive help
     if ctx.invoked_subcommand is None:
@@ -300,7 +306,8 @@ async def build(
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
-    print("[DEBUG] CLI build command called", flush=True)
+    from src.debug_utils import debug_print
+    debug_print("[DEBUG] CLI build command called", flush=True)
     result = await build_command_handler(
         ctx,
         tenant_id,
@@ -315,7 +322,7 @@ async def build(
         test_keypress_file,
         rebuild_edges,
     )
-    print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
+    debug_print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result
 
 
@@ -675,7 +682,8 @@ def main() -> None:
     result = cli()  # type: ignore[reportCallIssue]
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":
-        print(
+        from src.debug_utils import debug_print
+        debug_print(
             "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
             file=sys.stderr,
         )
@@ -683,7 +691,8 @@ def main() -> None:
         sys.exit(0)
     # Explicitly exit cleanly after build --no-dashboard sentinel
     if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-        print(
+        from src.debug_utils import debug_print
+        debug_print(
             "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
             file=sys.stderr,
         )

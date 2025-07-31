@@ -74,8 +74,9 @@ class Neo4jContainerManager:
         Args:
             compose_file: Path to docker-compose.yml file
         """
-        print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
-        print(
+        from src.debug_utils import debug_print
+        debug_print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
+        debug_print(
             f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
         )
         self.compose_file = compose_file
@@ -136,7 +137,7 @@ class Neo4jContainerManager:
             self.neo4j_uri = uri_env
         else:
             self.neo4j_uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
-        print(
+        debug_print(
             f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
         )
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
@@ -306,16 +307,16 @@ class Neo4jContainerManager:
             logger.info(event="Starting Neo4j container...")
 
             # Start the container
-            print(
+            debug_print(
                 f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
             )
-            print(
+            debug_print(
                 f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD={env['NEO4J_PASSWORD']}"
             )
-            print(
+            debug_print(
                 f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
             )
-            print(
+            debug_print(
                 f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
             )
             # Compose service name is always "neo4j", but container name is unique
@@ -355,7 +356,7 @@ class Neo4jContainerManager:
 
         while time.time() - start_time < timeout:
             try:
-                print(
+                debug_print(
                     f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
                 )
                 driver = GraphDatabase.driver(
@@ -581,7 +582,7 @@ class Neo4jContainerManager:
             )
             for c in containers:
                 try:
-                    print(
+                    debug_print(
                         f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
                     )
                     c.remove(force=True)
@@ -598,7 +599,7 @@ class Neo4jContainerManager:
             )
             for v in volumes:
                 try:
-                    print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
+                    debug_print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:
