@@ -6,20 +6,20 @@ This script provides an improved command-line interface with better error handli
 configuration validation, and progress tracking.
 """
 
-import sys
-import functools
 import asyncio
-from typing import Callable, Coroutine, Any, Optional
+import functools
 
-from rich.logging import RichHandler
-from rich.style import Style
-
-from dotenv import load_dotenv
-
-from src.cli_commands import DashboardExitException
 # ensure_neo4j_running import removed (module does not exist)
 import logging
 import os
+import sys
+from typing import Any, Callable, Coroutine, Optional
+
+from dotenv import load_dotenv
+from rich.logging import RichHandler
+from rich.style import Style
+
+from src.cli_commands import DashboardExitException
 
 
 def print_cli_env_block(context: str = ""):
@@ -50,6 +50,7 @@ for name in [
 ]:
     logging.getLogger(name).setLevel(logging.WARNING)
 
+
 class GreenInfoRichHandler(RichHandler):
     def get_level_style(self, level_name: str) -> Style:
         """Override log level colors for better readability."""
@@ -65,19 +66,19 @@ class GreenInfoRichHandler(RichHandler):
             return Style(color="red", bold=True, reverse=True)
         # Fallback for other levels
         return Style(color="cyan")
- 
- 
+
+
 # Add the parent directory to the path for imports
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
- 
+
 # Always load .env if present
 load_dotenv()
- 
+
 # (Removed duplicate import of DashboardExitException)
- 
+
 try:
     import click
- 
+
     from src.cli_commands import (
         build_command_handler,
         create_tenant_command,
@@ -93,26 +94,26 @@ except ImportError as e:
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
- 
+
 # --- CLI installer helper imports ---
 try:
     from src.utils.cli_installer import install_tool, is_tool_installed
 except ImportError:
- 
+
     def is_tool_installed(name: str) -> bool:
         return False
- 
+
     def install_tool(tool: str) -> bool:
         print(f"Install helper unavailable. Please install {tool} manually.")
         return False
- 
- 
+
+
 # (Removed duplicate import of DashboardExitException)
- 
- 
+
+
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:
     """Decorator to make Click commands async-compatible."""
- 
+
     @functools.wraps(f)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
@@ -120,11 +121,11 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 loop = asyncio.get_running_loop()
             except RuntimeError:
                 loop = None
- 
+
             if loop and loop.is_running():
                 # Already in an event loop (e.g., pytest-asyncio, Jupyter)
                 import nest_asyncio
- 
+
                 nest_asyncio.apply()
                 task = loop.create_task(f(*args, **kwargs))
                 result = loop.run_until_complete(task)
@@ -148,20 +149,20 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
             return result
         except DashboardExitException:
             sys.exit(0)
- 
+
     return wrapper
- 
- 
+
+
 def show_comprehensive_help(ctx: click.Context) -> None:
     """Show comprehensive help for all commands."""
     click.echo("🚀 Azure Tenant Grapher - Enhanced CLI")
     click.echo("=" * 60)
     click.echo()
- 
+
     # Show main help
     click.echo(ctx.get_help())
     click.echo()
- 
+
     # Show command descriptions
     commands_info = {
         "build": "🏗️  Build Azure tenant graph with optional dashboard interface",
@@ -174,15 +175,15 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "container": "🐳 Manage Neo4j Docker container",
         "backup-db": "💾 Backup Neo4j database to a local file",
     }
- 
+
     click.echo("📚 COMMAND DESCRIPTIONS:")
     click.echo("=" * 60)
- 
+
     for cmd_name, description in commands_info.items():
         click.echo(f"\n{description}")
         click.echo(f"Usage: {ctx.info_name} {cmd_name} [OPTIONS]")
         click.echo(f"Help:  {ctx.info_name} {cmd_name} --help")
- 
+
     click.echo()
     click.echo("💡 QUICK START EXAMPLES:")
     click.echo("=" * 60)
@@ -200,8 +201,8 @@ def show_comprehensive_help(ctx: click.Context) -> None:
     click.echo()
     click.echo("📖 For detailed help on any command, use: {command} --help")
     click.echo("🌐 Documentation: https://github.com/your-repo/azure-tenant-grapher")
- 
- 
+
+
 @click.group(invoke_without_command=True)
 @click.option(
     "--log-level",
@@ -213,12 +214,12 @@ def cli(ctx: click.Context, log_level: str) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
- 
+
     # If no command is provided, show comprehensive help
     if ctx.invoked_subcommand is None:
         show_comprehensive_help(ctx)
- 
- 
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -292,11 +293,11 @@ async def build(
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
- 
+
     By default, shows a live Rich dashboard with progress, logs, and interactive controls:
       - Press 'x' to exit the dashboard at any time.
       - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
- 
+
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
     print("[DEBUG] CLI build command called", flush=True)
@@ -316,8 +317,8 @@ async def build(
     )
     print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result
- 
- 
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -334,7 +335,7 @@ async def build(
 @async_command
 async def test(ctx: click.Context, tenant_id: str, limit: int) -> None:
     """Run a test with limited resources to validate setup."""
- 
+
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
     if not effective_tenant_id:
         click.echo(
@@ -342,9 +343,9 @@ async def test(ctx: click.Context, tenant_id: str, limit: int) -> None:
             err=True,
         )
         sys.exit(1)
- 
+
     click.echo(f"🧪 Running test mode with up to {limit} resources...")
- 
+
     ctx.invoke(
         build,
         tenant_id=effective_tenant_id,
@@ -354,8 +355,8 @@ async def test(ctx: click.Context, tenant_id: str, limit: int) -> None:
         generate_spec=False,
         visualize=False,
     )
- 
- 
+
+
 @cli.command()
 @click.option(
     "--link-hierarchy/--no-link-hierarchy",
@@ -374,8 +375,8 @@ async def visualize(
 ) -> None:
     """Generate graph visualization from existing Neo4j data (no tenant-id required)."""
     await visualize_command_handler(ctx, link_hierarchy, no_container)
- 
- 
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -389,11 +390,13 @@ async def visualize(
     required=False,
     help="Domain name to use for all entities that require one (e.g., user accounts)",
 )
-async def spec(ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None) -> None:
+async def spec(
+    ctx: click.Context, tenant_id: str, domain_name: Optional[str] = None
+) -> None:
     """Generate only the tenant specification (requires existing graph)."""
     await spec_command_handler(ctx, tenant_id, domain_name)
- 
- 
+
+
 @cli.command()
 @click.option(
     "--limit", type=int, default=None, help="Resource limit (overrides config)"
@@ -405,8 +408,8 @@ def generate_spec(
 ) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
     generate_spec_command_handler(ctx, limit, output)
- 
- 
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -473,17 +476,17 @@ async def generate_iac(
 ) -> None:
     """
     Generate Infrastructure-as-Code templates from graph data.
- 
+
     Options:
       --aad-mode [none|manual|auto]  Control AAD object creation/replication mode.
         - none:   Do not create or replicate AAD objects.
         - manual: Only create/replicate AAD objects when explicitly specified (default).
         - auto:   Automatically create/replicate required AAD objects.
- 
+
     All other standard IaC options are supported. See --help for details.
     """
     from src.utils.cli_installer import ensure_tool
- 
+
     if format_type.lower() == "terraform":
         try:
             ensure_tool("terraform", auto_prompt=True)
@@ -515,21 +518,21 @@ async def generate_iac(
         # aad_mode removed, now always manual by default
         domain_name=domain_name,
     )
- 
- 
+
+
 @cli.command()
 def config() -> None:
     """Show current configuration (without sensitive data)."""
- 
+
     try:
         # Create dummy configuration to show structure
         config = create_config_from_env("example-tenant-id")
- 
+
         click.echo("🔧 Current Configuration Template:")
         click.echo("=" * 60)
- 
+
         config_dict = config.to_dict()
- 
+
         def print_dict(d: Any, indent: int = 0) -> None:
             for key, value in d.items():
                 if isinstance(value, dict):
@@ -537,15 +540,15 @@ def config() -> None:
                     print_dict(value, indent + 1)
                 else:
                     click.echo("  " * indent + f"{key}: {value}")
- 
+
         print_dict(config_dict)
         click.echo("=" * 60)
         click.echo("💡 Set environment variables to customize configuration")
- 
+
     except Exception as e:
         click.echo(f"❌ Failed to display configuration: {e}", err=True)
- 
- 
+
+
 @cli.command()
 def container() -> None:
     """Manage Neo4j container."""
@@ -554,8 +557,8 @@ def container() -> None:
     # build command when needed.
     click.echo("Container management is handled automatically by build commands.")
     click.echo("Use 'build --no-container' to disable automatic container management.")
- 
- 
+
+
 @cli.command()
 @click.argument(
     "backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True)
@@ -563,35 +566,35 @@ def container() -> None:
 def backup_db(backup_path: str) -> None:
     """Backup the Neo4j database and save it to BACKUP_PATH."""
     from src.container_manager import Neo4jContainerManager
- 
+
     container_manager = Neo4jContainerManager()
     if container_manager.backup_neo4j_database(backup_path):
         click.echo(f"✅ Neo4j backup completed and saved to {backup_path}")
     else:
         click.echo("❌ Neo4j backup failed", err=True)
         sys.exit(1)
- 
- 
+
+
 @cli.command()
 @click.pass_context
 @async_command
 async def mcp_server(ctx: click.Context) -> None:
     """Start MCP server (uvx mcp-neo4j-cypher) after ensuring Neo4j is running."""
     from src.cli_commands import mcp_server_command_handler
- 
+
     await mcp_server_command_handler(ctx)
- 
- 
+
+
 @cli.command()
 @click.pass_context
 @async_command
 async def threat_model(ctx: click.Context) -> None:
     """Run the Threat Modeling Agent workflow to generate a DFD, enumerate threats, and produce a Markdown report from the current Neo4j graph."""
     from src.cli_commands import generate_threat_model_command_handler
- 
+
     await generate_threat_model_command_handler(ctx)
- 
- 
+
+
 @cli.command("generate-sim-doc")
 @click.option(
     "--size",
@@ -623,17 +626,17 @@ async def generate_sim_doc(
     Generate a simulated Azure customer profile as a Markdown narrative.
     """
     from src.cli_commands import generate_sim_doc_command_handler
- 
+
     await generate_sim_doc_command_handler(ctx, size=size, seed_path=seed, out_path=out)
- 
- 
+
+
 # Alias: gensimdoc
 cli.add_command(generate_sim_doc, "gensimdoc")
- 
+
 # Register create-tenant command
 cli.add_command(create_tenant_command, "create-tenant")
- 
- 
+
+
 @cli.command()
 @click.option(
     "--question",
@@ -644,10 +647,10 @@ cli.add_command(create_tenant_command, "create-tenant")
 async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     """Start AutoGen MCP agent mode (Neo4j + MCP server + agent chat loop)."""
     from src.cli_commands import agent_mode_command_handler
- 
+
     await agent_mode_command_handler(ctx, question)
- 
- 
+
+
 @cli.command()
 def doctor() -> None:
     """Check for all registered CLI tools and offer to install if missing."""
@@ -656,7 +659,7 @@ def doctor() -> None:
     except ImportError:
         print("Could not import TOOL_REGISTRY. Please check your installation.")
         return
- 
+
     for tool in TOOL_REGISTRY.values():
         print(f"Checking for '{tool.name}' CLI...")
         if is_tool_installed(tool.name):
@@ -665,8 +668,8 @@ def doctor() -> None:
             print(f"❌ {tool.name} is NOT installed.")
             install_tool(tool.name)
     print("Doctor check complete.")
- 
- 
+
+
 def main() -> None:
     """Main entry point."""
     result = cli()  # type: ignore[reportCallIssue]
@@ -689,7 +692,7 @@ def main() -> None:
     # For any other truthy result, exit as before (legacy fallback)
     if result:
         sys.exit(0)
- 
- 
+
+
 if __name__ == "__main__":
     main()

@@ -81,10 +81,23 @@ class Neo4jContainerManager:
         self.compose_file = compose_file
         self.docker_client = None
 
-        # Unique container name per test run
-        self.container_name = os.getenv(
-            "NEO4J_CONTAINER_NAME", f"azure-tenant-grapher-neo4j-{uuid.uuid4().hex[:8]}"
-        )
+        # Unique container name per test run, fixed name for dev
+        # In test/CI environments, use a unique name to avoid conflicts
+        # In dev, use the standard name that matches docker-compose.yml
+        if (
+            os.environ.get("PYTEST_CURRENT_TEST") is not None
+            or os.environ.get("CI") == "1"
+            or os.environ.get("RUN_DOCKER_CONFLICT_TESTS") == "1"
+        ):
+            self.container_name = os.getenv(
+                "NEO4J_CONTAINER_NAME",
+                f"azure-tenant-grapher-neo4j-{uuid.uuid4().hex[:8]}",
+            )
+        else:
+            # In dev mode, use the fixed name from docker-compose.yml
+            self.container_name = os.getenv(
+                "NEO4J_CONTAINER_NAME", "azure-tenant-grapher-neo4j"
+            )
         # Use a unique data volume for tests to avoid interfering with dev data
         self.volume_name = os.getenv(
             "NEO4J_DATA_VOLUME", "azure-tenant-grapher-neo4j-data"
