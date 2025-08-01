@@ -76,6 +76,7 @@ class Neo4jContainerManager:
             compose_file: Path to docker-compose.yml file
         """
         from src.debug_utils import debug_print
+
         debug_print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
         debug_print(
             f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
@@ -600,7 +601,9 @@ class Neo4jContainerManager:
             )
             for v in volumes:
                 try:
-                    debug_print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
+                    debug_print(
+                        f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}"
+                    )
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:

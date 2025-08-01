@@ -123,6 +123,7 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
                 from src.debug_utils import debug_print
+
                 debug_print(
                     "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
                     file=sys.stderr,
@@ -131,6 +132,7 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 sys.exit(0)
             if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
                 from src.debug_utils import debug_print
+
                 debug_print(
                     "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
                     file=sys.stderr,
@@ -201,7 +203,8 @@ def show_comprehensive_help(ctx: click.Context) -> None:
     help="Logging level (DEBUG, INFO, WARNING, ERROR)",
 )
 @click.option(
-    "--debug", "-d",
+    "--debug",
+    "-d",
     is_flag=True,
     help="Enable debug output (shows [DEBUG] and [CLI ENV] statements)",
 )
@@ -211,13 +214,13 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
     ctx.obj["debug"] = debug
-    
+
     # Initialize debug state based on CLI flag
     if debug:
         DebugState.enable_debug()
     else:
         DebugState.disable_debug()
-    
+
     # Now that debug state is initialized, print startup env if debug is enabled
     print_cli_env_block("STARTUP")
 
@@ -307,6 +310,7 @@ async def build(
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
     from src.debug_utils import debug_print
+
     debug_print("[DEBUG] CLI build command called", flush=True)
     result = await build_command_handler(
         ctx,
@@ -683,6 +687,7 @@ def main() -> None:
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":
         from src.debug_utils import debug_print
+
         debug_print(
             "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
             file=sys.stderr,
@@ -692,6 +697,7 @@ def main() -> None:
     # Explicitly exit cleanly after build --no-dashboard sentinel
     if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
         from src.debug_utils import debug_print
+
         debug_print(
             "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
             file=sys.stderr,

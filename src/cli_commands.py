@@ -133,7 +133,9 @@ async def build_command_handler(
                     e,
                     flush=True,
                 )
-            debug_print("[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True)
+            debug_print(
+                "[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True
+            )
             structlog.get_logger(__name__).info(
                 "[DEBUG][CLI] build_command_handler returning __NO_DASHBOARD_BUILD_COMPLETE__"
             )
@@ -255,9 +257,13 @@ async def _run_no_dashboard_mode(
             result = None
         click.echo("🎉 Graph building completed.")
         click.echo(f"Result: {result}")
-        debug_print("[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True)
+        debug_print(
+            "[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True
+        )
     except Exception as e:
-        debug_print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
+        debug_print(
+            f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True
+        )
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
@@ -476,11 +482,17 @@ async def _run_dashboard_mode(
                 )
                 return "__DASHBOARD_EXIT__"
         else:
-            debug_print("[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True)
+            debug_print(
+                "[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True
+            )
             result = await dashboard_manager.run_normal(build_task)
-            debug_print("[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True)
+            debug_print(
+                "[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True
+            )
             if result == "__DASHBOARD_EXIT__":
-                debug_print("[DEBUG][CLI] DashboardExitException in run_normal", flush=True)
+                debug_print(
+                    "[DEBUG][CLI] DashboardExitException in run_normal", flush=True
+                )
                 return "__DASHBOARD_EXIT__"
     except DashboardExitException:
         print(
@@ -507,7 +519,9 @@ async def _run_dashboard_mode(
         return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing
-    debug_print("[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True)
+    debug_print(
+        "[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True
+    )
     await dashboard_manager.handle_build_completion(
         build_task, grapher, config, generate_spec, visualize
     )

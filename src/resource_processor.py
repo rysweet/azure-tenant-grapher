@@ -724,7 +724,9 @@ class ResourceProcessor:
         progress_every: int = 50,
     ) -> ProcessingStats:
         logger.info("[DEBUG][RP] Entered ResourceProcessor.process_resources")
-        debug_print("[DEBUG][RP] Entered ResourceProcessor.process_resources", flush=True)
+        debug_print(
+            "[DEBUG][RP] Entered ResourceProcessor.process_resources", flush=True
+        )
         """
         Process all resources with retry queue, poison list, and exponential back-off.
         """
@@ -801,7 +803,9 @@ class ResourceProcessor:
         loop_counter = 0
         while main_queue or retry_queue or in_progress:
             logger.info(f"[DEBUG][RP] Top of main loop iteration {loop_counter}")
-            debug_print(f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True)
+            debug_print(
+                f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True
+            )
             tasks = []
             now = time.time()
             # Fill from main queue
@@ -956,7 +960,9 @@ class ResourceProcessor:
                     f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
                 )
             logger.info(f"[DEBUG][RP] End of main loop iteration {loop_counter}")
-            debug_print(f"[DEBUG][RP] End of main loop iteration {loop_counter}", flush=True)
+            debug_print(
+                f"[DEBUG][RP] End of main loop iteration {loop_counter}", flush=True
+            )
             loop_counter += 1
         logger.info("[DEBUG][RP] Exited main processing loop")
         debug_print("[DEBUG][RP] Exited main processing loop", flush=True)

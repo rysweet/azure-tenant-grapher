@@ -182,7 +182,9 @@ Instructions:
             r"```json\s*([\s\S]+?)\s*```", markdown, re.IGNORECASE | re.MULTILINE
         )
         if not match:
-            debug_print("DEBUG: No JSON block found with standard regex, trying fallback.")
+            debug_print(
+                "DEBUG: No JSON block found with standard regex, trying fallback."
+            )
             match = re.search(
                 r"```json\s*([\s\S]+)", markdown, re.IGNORECASE | re.MULTILINE
             )
