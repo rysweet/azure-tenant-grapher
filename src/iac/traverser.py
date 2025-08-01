@@ -68,16 +68,29 @@ class GraphTraverser:
                             "target": rel.get("target"),
                             "type": rel.get("type"),
                         }
+                        
+                        # Add additional properties for GENERIC_RELATIONSHIP
+                        if rel.get("type") == "GENERIC_RELATIONSHIP":
+                            if rel.get("original_type"):
+                                relationship_dict["original_type"] = rel.get("original_type")
+                            if rel.get("narrative_context"):
+                                relationship_dict["narrative_context"] = rel.get("narrative_context")
+                        
                         relationships.append(relationship_dict)
 
         if filter_cypher:
             query = filter_cypher
         else:
-            # Default query as specified
+            # Default query as specified - include relationship properties
             query = """
             MATCH (r:Resource)
             OPTIONAL MATCH (r)-[rel]->(t:Resource)
-            RETURN r, collect({type:type(rel), target:t.id}) AS rels
+            RETURN r, collect({
+                type: type(rel), 
+                target: t.id, 
+                original_type: rel.original_type,
+                narrative_context: rel.narrative_context
+            }) AS rels
             """
 
         resources = []
@@ -94,7 +107,12 @@ class GraphTraverser:
                     MATCH (r)
                     WHERE r.type IS NOT NULL
                     OPTIONAL MATCH (r)-[rel]->(t)
-                    RETURN r, collect({type:type(rel), target:t.id}) AS rels
+                    RETURN r, collect({
+                        type: type(rel), 
+                        target: t.id,
+                        original_type: rel.original_type,
+                        narrative_context: rel.narrative_context
+                    }) AS rels
                     """
                     logger.info(
                         "No :Resource nodes found, running fallback query for nodes with 'type' property"

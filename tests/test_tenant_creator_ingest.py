@@ -19,7 +19,8 @@ async def test_tenant_ingest_to_graph(neo4j_container):
 
     creator = TenantCreator()
     spec = await creator.create_from_markdown(markdown)
-    await creator.ingest_to_graph(spec)
+    # For tests, explicitly use strict validation (not LLM-generated)
+    await creator.ingest_to_graph(spec, is_llm_generated=False)
 
     # Assert: check that the Tenant node exists
     from src.tenant_creator import get_default_session_manager
