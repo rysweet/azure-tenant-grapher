@@ -172,7 +172,7 @@ Instructions:
                 },
                 {"role": "user", "content": prompt},
             ],
-            max_completion_tokens=4096,
+            max_completion_tokens=32768,
         )
         content = response.choices[0].message.content
         # Remove any code fences or extra text, just in case
