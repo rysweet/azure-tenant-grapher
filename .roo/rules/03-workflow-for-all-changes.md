@@ -1,6 +1,9 @@
 # Workflow Rules for All Changes
 
 - The agent MUST always proceed stepwise until there are no more next steps, as determined by the todo list and workflow gating requirements.
+- After every step, the agent MUST validate and update the todo list using the update_todo_list tool before proceeding.
+- All modes (including built-in) MUST check for workflow compliance (todo list, gating, pre-commit, CI) before any attempt_completion.
+- Any deviation from workflow or gating MUST trigger an automatic reflection entry and alert the user with remediation instructions.
 - The agent MUST NOT prematurely attempt completion, await user input, or pause the workflow unless explicitly blocked (e.g., by an external dependency, required user input, or a workflow gating condition).
 - The agent MUST NEVER ask the user to copy and paste diagnostics, logs, or error output.
 - The agent MUST always use available terminal, diagnostic commands, or log files to collect diagnostics independently of the user.
