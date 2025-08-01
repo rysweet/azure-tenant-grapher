@@ -312,6 +312,13 @@ class GraphVisualizer:
                     "color": self._get_relationship_color(rel_type),
                     "width": self._get_relationship_width(rel_type),
                 }
+                
+                # Add original type and narrative context for GENERIC_RELATIONSHIP
+                if rel_type == "GENERIC_RELATIONSHIP" and relationship:
+                    if relationship.get("original_type"):
+                        link_data["original_type"] = relationship["original_type"]
+                    if relationship.get("narrative_context"):
+                        link_data["narrative_context"] = relationship["narrative_context"]
 
                 links.append(link_data)
                 rel_count += 1
@@ -484,6 +491,7 @@ class GraphVisualizer:
             "RESOLVES_TO": "#00bfae",  # Teal-green, matches DNSZone
             "DEPENDS_ON": "#fdcb6e",
             "MANAGES": "#e17055",
+            "GENERIC_RELATIONSHIP": "#ff6b9d",  # Pink to distinguish generic relationships
         }
         return color_mapping.get(rel_type, "#ddd")
 
@@ -497,6 +505,7 @@ class GraphVisualizer:
             "RESOLVES_TO": 2,
             "DEPENDS_ON": 1,
             "MANAGES": 2,
+            "GENERIC_RELATIONSHIP": 2,  # Standard width for generic relationships
         }
         return width_mapping.get(rel_type, 1)
 
