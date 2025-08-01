@@ -585,7 +585,7 @@ Instructions:
                 
             if rbac_assignments:
                 for rbac in rbac_assignments:
-                    print(f"DEBUG: Creating RBAC assignment: {rbac.principal_id} -> {rbac.role_definition_name if hasattr(rbac, 'role_definition_name') else 'Unknown Role'}")
+                    print(f"DEBUG: Creating RBAC assignment: {rbac.principal_id} -> {getattr(rbac, 'role_definition_name', getattr(rbac, 'role', 'Unknown Role'))}")
                     with session_manager.session() as session:
                         session.run(
                             """
@@ -672,7 +672,7 @@ Instructions:
                             "logs": "USES",
                             "alerts": "USES",
                             "notifies": "USES"
-                            }
+                        }
                         
                         # For LLM-generated content, attempt to map to canonical types
                         if is_llm_generated and rel_type not in canonical_types:
