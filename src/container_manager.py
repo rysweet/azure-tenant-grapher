@@ -16,6 +16,7 @@ import structlog
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 
+from src.debug_utils import debug_print
 from src.logging_config import configure_logging
 
 configure_logging()

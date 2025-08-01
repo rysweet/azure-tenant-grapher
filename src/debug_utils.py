@@ -6,7 +6,6 @@ Debug output is only shown when the --debug flag is passed to the CLI.
 """
 
 import os
-import sys
 from typing import Any
 
 
