@@ -345,6 +345,17 @@ Instructions:
         # (no longer need asyncio)
 
         tenant = spec.tenant
+        print(f"DEBUG: spec.tenant has these attributes: {dir(tenant)}")
+        print(f"DEBUG: tenant.users exists: {hasattr(tenant, 'users')}")
+        print(f"DEBUG: tenant.groups exists: {hasattr(tenant, 'groups')}")
+        print(f"DEBUG: tenant.service_principals exists: {hasattr(tenant, 'service_principals')}")
+        print(f"DEBUG: tenant.subscriptions length: {len(tenant.subscriptions) if tenant.subscriptions else 0}")
+        if tenant.subscriptions and len(tenant.subscriptions) > 0:
+            first_sub = tenant.subscriptions[0]
+            print(f"DEBUG: first subscription has resource_groups: {hasattr(first_sub, 'resource_groups')}")
+            if hasattr(first_sub, 'resource_groups') and first_sub.resource_groups:
+                print(f"DEBUG: first subscription resource_groups length: {len(first_sub.resource_groups)}")
+        
         session_manager = get_default_session_manager()
         session_manager.connect()
 
@@ -380,13 +391,36 @@ Instructions:
                         },
                     )
 
-        # 3. Flatten resources for processing
+        # 3. Create ResourceGroup nodes and flatten resources for processing
         resources = []
+        print("DEBUG: Starting resource group and resource processing...")
         if tenant.subscriptions:
             for sub in tenant.subscriptions:
+                print(f"DEBUG: Processing subscription {sub.id}")
                 if sub.resource_groups:
+                    print(f"DEBUG: Found {len(sub.resource_groups)} resource groups in subscription {sub.id}")
                     for rg in sub.resource_groups:
+                        print(f"DEBUG: Creating ResourceGroup node: {rg.name}")
+                        # Create ResourceGroup node
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (rg:ResourceGroup {id: $id})
+                                SET rg.name = $name, rg.location = $location
+                                WITH rg
+                                MATCH (s:Subscription {id: $subscription_id})
+                                MERGE (s)-[:CONTAINS]->(rg)
+                                """,
+                                {
+                                    "id": rg.id,
+                                    "name": rg.name,
+                                    "location": getattr(rg, "location", "unknown"),
+                                    "subscription_id": sub.id,
+                                },
+                            )
+                        
                         if rg.resources:
+                            print(f"DEBUG: Found {len(rg.resources)} resources in resource group {rg.name}")
                             for res in rg.resources:
                                 # Attach resource_group and subscription_id for context
                                 res_dict = (
@@ -397,250 +431,317 @@ Instructions:
                                 res_dict["resource_group"] = rg.name
                                 res_dict["subscription_id"] = sub.id
                                 resources.append(res_dict)
+                        else:
+                            print(f"DEBUG: No resources found in resource group {rg.name}")
+                else:
+                    print(f"DEBUG: No resource groups found in subscription {sub.id}")
+
+        print(f"DEBUG: Total resources to process: {len(resources)}")
 
         # 4. Process resources using ResourceProcessingService
-        config = ProcessingConfig()
-        rps = ResourceProcessingService(
-            session_manager=session_manager,
-            llm_generator=self.llm_generator,
-            config=config,
-        )
-        await rps.process_resources(resources, progress_callback=None, max_workers=2)
+        try:
+            config = ProcessingConfig()
+            rps = ResourceProcessingService(
+                session_manager=session_manager,
+                llm_generator=self.llm_generator,
+                config=config,
+            )
+            await rps.process_resources(resources, progress_callback=None, max_workers=2)
+            print("DEBUG: Resource processing completed successfully")
+        except Exception as e:
+            print(f"DEBUG: Error during resource processing: {e}")
+            import traceback
+            traceback.print_exc()
 
         # 5. Ingest identities
+        print("DEBUG: Starting identity processing...")
         # If aad_graph_service is available, use it; otherwise, create minimal nodes
         aad_graph_service = getattr(self, "aad_graph_service", None)
         if aad_graph_service:
+            print("DEBUG: Using AAD graph service for identity processing")
             # Use the db_ops from ResourceProcessor for upserts
             from src.resource_processor import ResourceProcessor
 
             processor = ResourceProcessor(session_manager, self.llm_generator, None)
             aad_graph_service.ingest_into_graph(processor.db_ops)
         else:
-            identities = getattr(spec, "identities", None)
-            if identities:
+            print("DEBUG: Processing identities from tenant spec...")
+            # Look for identities directly under tenant, not under spec.identities
+            try:
                 # Users
-                for user in identities.get("users", []):
-                    with session_manager.session() as session:
-                        session.run(
-                            """
-                            MERGE (u:User {id: $id})
-                            SET u.name = $name, u.department = $department, u.job_title = $job_title
-                            """,
-                            {
-                                "id": user.get("id"),
-                                "name": user.get("name"),
-                                "department": user.get("department"),
-                                "job_title": user.get("job_title"),
-                            },
-                        )
+                if hasattr(tenant, 'users') and tenant.users:
+                    print(f"DEBUG: Found {len(tenant.users)} users to process")
+                    for user in tenant.users:
+                        print(f"DEBUG: Creating user: {user.display_name}")
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (u:User {id: $id})
+                                SET u.display_name = $display_name, 
+                                    u.user_principal_name = $user_principal_name,
+                                    u.job_title = $job_title
+                                """,
+                                {
+                                    "id": user.id,
+                                    "display_name": user.display_name,
+                                    "user_principal_name": getattr(user, "user_principal_name", None),
+                                    "job_title": getattr(user, "job_title", None),
+                                },
+                            )
+                else:
+                    print("DEBUG: No users found in tenant spec")
+                
                 # Groups
-                for group in identities.get("groups", []):
-                    with session_manager.session() as session:
-                        session.run(
-                            """
-                            MERGE (g:IdentityGroup {id: $id})
-                            SET g.name = $name
-                            """,
-                            {
-                                "id": group.get("id"),
-                                "name": group.get("name"),
-                            },
-                        )
+                if hasattr(tenant, 'groups') and tenant.groups:
+                    print(f"DEBUG: Found {len(tenant.groups)} groups to process")
+                    for group in tenant.groups:
+                        print(f"DEBUG: Creating group: {group.display_name}")
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (g:IdentityGroup {id: $id})
+                                SET g.display_name = $display_name
+                                """,
+                                {
+                                    "id": group.id,
+                                    "display_name": group.display_name,
+                                },
+                            )
+                else:
+                    print("DEBUG: No groups found in tenant spec")
+                
                 # Service Principals
-                for sp in identities.get("service_principals", []):
-                    with session_manager.session() as session:
-                        session.run(
-                            """
-                            MERGE (sp:ServicePrincipal {id: $id})
-                            SET sp.name = $name
-                            """,
-                            {
-                                "id": sp.get("id"),
-                                "name": sp.get("name"),
-                            },
-                        )
+                if hasattr(tenant, 'service_principals') and tenant.service_principals:
+                    print(f"DEBUG: Found {len(tenant.service_principals)} service principals to process")
+                    for sp in tenant.service_principals:
+                        print(f"DEBUG: Creating service principal: {sp.display_name}")
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (sp:ServicePrincipal {id: $id})
+                                SET sp.display_name = $display_name
+                                """,
+                                {
+                                    "id": sp.id,
+                                    "display_name": sp.display_name,
+                                },
+                            )
+                else:
+                    print("DEBUG: No service principals found in tenant spec")
+                
                 # Managed Identities
-                for mi in identities.get("managed_identities", []):
-                    with session_manager.session() as session:
-                        session.run(
-                            """
-                            MERGE (mi:ManagedIdentity {id: $id})
-                            SET mi.name = $name
-                            """,
-                            {
-                                "id": mi.get("id"),
-                                "name": mi.get("name"),
-                            },
-                        )
+                if hasattr(tenant, 'managed_identities') and tenant.managed_identities:
+                    print(f"DEBUG: Found {len(tenant.managed_identities)} managed identities to process")
+                    for mi in tenant.managed_identities:
+                        print(f"DEBUG: Creating managed identity: {mi.display_name}")
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (mi:ManagedIdentity {id: $id})
+                                SET mi.display_name = $display_name
+                                """,
+                                {
+                                    "id": mi.id,
+                                    "display_name": mi.display_name,
+                                },
+                            )
+                else:
+                    print("DEBUG: No managed identities found in tenant spec")
+                
                 # Admin Units
-                for au in identities.get("admin_units", []):
-                    with session_manager.session() as session:
-                        session.run(
-                            """
-                            MERGE (au:AdminUnit {id: $id})
-                            SET au.name = $name
-                            """,
-                            {
-                                "id": au.get("id"),
-                                "name": au.get("name"),
-                            },
-                        )
+                if hasattr(tenant, 'admin_units') and tenant.admin_units:
+                    print(f"DEBUG: Found {len(tenant.admin_units)} admin units to process")
+                    for au in tenant.admin_units:
+                        print(f"DEBUG: Creating admin unit: {au.display_name}")
+                        with session_manager.session() as session:
+                            session.run(
+                                """
+                                MERGE (au:AdminUnit {id: $id})
+                                SET au.display_name = $display_name
+                                """,
+                                {
+                                    "id": au.id,
+                                    "display_name": au.display_name,
+                                },
+                            )
+                else:
+                    print("DEBUG: No admin units found in tenant spec")
+                    
+            except Exception as e:
+                print(f"DEBUG: Error during identity processing: {e}")
+                import traceback
+                traceback.print_exc()
 
         # 6. RBAC assignments
-        rbac_assignments = getattr(spec, "rbac_assignments", None)
-        if (
-            not rbac_assignments
-            and hasattr(spec, "tenant")
-            and hasattr(spec.tenant, "rbac_assignments")
-        ):
-            rbac_assignments = spec.tenant.rbac_assignments
-        if rbac_assignments:
-            for rbac in rbac_assignments:
-                with session_manager.session() as session:
-                    session.run(
-                        """
-                        MATCH (p {id: $principal_id})
-                        MATCH (s:Subscription {id: $scope})
-                        MERGE (p)-[r:ASSIGNED_ROLE {role: $role}]->(s)
-                        """,
-                        {
-                            "principal_id": rbac.principal_id,
-                            "role": rbac.role,
-                            "scope": rbac.scope,
-                        },
-                    )
+        print("DEBUG: Starting RBAC assignments processing...")
+        try:
+            rbac_assignments = None
+            # Look for RBAC assignments directly under tenant
+            if hasattr(tenant, "rbac_assignments") and tenant.rbac_assignments:
+                rbac_assignments = tenant.rbac_assignments
+                print(f"DEBUG: Found {len(rbac_assignments)} RBAC assignments to process")
+            else:
+                print("DEBUG: No RBAC assignments found in tenant spec")
+                
+            if rbac_assignments:
+                for rbac in rbac_assignments:
+                    print(f"DEBUG: Creating RBAC assignment: {rbac.principal_id} -> {rbac.role_definition_name if hasattr(rbac, 'role_definition_name') else 'Unknown Role'}")
+                    with session_manager.session() as session:
+                        session.run(
+                            """
+                            MATCH (p {id: $principal_id})
+                            MATCH (s:Subscription {id: $scope})
+                            MERGE (p)-[r:ASSIGNED_ROLE {role: $role}]->(s)
+                            """,
+                            {
+                                "principal_id": rbac.principal_id,
+                                "role": getattr(rbac, "role_definition_name", getattr(rbac, "role", "Unknown")),
+                                "scope": rbac.scope,
+                            },
+                        )
+        except Exception as e:
+            print(f"DEBUG: Error during RBAC assignment processing: {e}")
+            import traceback
+            traceback.print_exc()
 
         # 7. Relationships
-        relationships = getattr(spec, "relationships", None)
-        if (
-            not relationships
-            and hasattr(spec, "tenant")
-            and hasattr(spec.tenant, "relationships")
-        ):
-            relationships = spec.tenant.relationships
-        if relationships:
-            for rel in relationships:
-                with session_manager.session() as session:
-                    rel_type = rel.type
-                    
-                    # Core canonical relationship types that downstream systems understand
-                    canonical_types = {
-                        "CAN_READ_SECRET",
-                        "MEMBER_OF", 
-                        "ASSIGNED_ROLE",
-                        "DEPENDS_ON",
-                        "HAS_SUBSCRIPTION",
-                        "HAS_RESOURCE_GROUP", 
-                        "HAS_RESOURCE",
-                        "CONNECTS_TO",
-                        "USES",
-                        "INTEGRATES_WITH",
-                        "CONTAINS",
-                        "USES_SUBNET",
-                        "SECURED_BY",
-                        "CONNECTED_TO_PE",
-                        "RESOLVES_TO",
-                        "GENERIC_RELATIONSHIP",  # Special type for preserving unknown relationships
-                        "tenantHasSubscription",
-                        "subscriptionContainsResourceGroup",
-                        "resourceGroupContainsResource",
-                        "userIsMemberOf"
-                    }
-                    
-                    # Mapping for LLM-generated relationship types to canonical types
-                    relationship_mappings = {
-                        "onPremisesLink": "CONNECTS_TO",
-                        "api-integration": "INTEGRATES_WITH",
-                        "api_integration": "INTEGRATES_WITH",
-                        "data-source": "DEPENDS_ON",
-                        "data_source": "DEPENDS_ON",
-                        "hybridConnectivity": "CONNECTS_TO",
-                        "spoke-to-hub": "CONNECTS_TO",
-                        "logging": "USES",
-                        "writes": "USES",
-                        "reads": "USES",
-                        "publishes": "USES",
-                        "sendsLogs": "USES",
-                        "connects": "CONNECTS_TO",
-                        "accesses": "USES",
-                        "stores": "USES",
-                        "retrieves": "USES",
-                        "processes": "USES",
-                        "monitors": "USES",
-                        "protects": "USES",
-                        "secures": "USES",
-                        "authenticates": "USES",
-                        "authorizes": "USES",
-                        "logs": "USES",
-                        "alerts": "USES",
-                        "notifies": "USES"
-                    }
-                    
-                    # For LLM-generated content, attempt to map to canonical types
-                    if is_llm_generated and rel_type not in canonical_types:
-                        if rel_type in relationship_mappings:
-                            # Map to canonical type
-                            canonical_rel_type = relationship_mappings[rel_type]
-                            print(f"DEBUG: Mapping LLM relationship '{rel_type}' -> '{canonical_rel_type}'")
-                            rel_type = canonical_rel_type
+        print("DEBUG: Starting relationships processing...")
+        try:
+            relationships = None
+            # Look for relationships directly under tenant
+            if hasattr(tenant, "relationships") and tenant.relationships:
+                relationships = tenant.relationships
+                print(f"DEBUG: Found {len(relationships)} relationships to process")
+            else:
+                print("DEBUG: No relationships found in tenant spec")
+                
+            if relationships:
+                for rel in relationships:
+                    print(f"DEBUG: Processing relationship: {rel.source_id} -> {rel.target_id} ({rel.type})")
+                    with session_manager.session() as session:
+                        rel_type = rel.type
+                        
+                        # Core canonical relationship types that downstream systems understand
+                        canonical_types = {
+                            "CAN_READ_SECRET",
+                            "MEMBER_OF", 
+                            "ASSIGNED_ROLE",
+                            "DEPENDS_ON",
+                            "HAS_SUBSCRIPTION",
+                            "HAS_RESOURCE_GROUP", 
+                            "HAS_RESOURCE",
+                            "CONNECTS_TO",
+                            "USES",
+                            "INTEGRATES_WITH",
+                            "CONTAINS",
+                            "USES_SUBNET",
+                            "SECURED_BY",
+                            "CONNECTED_TO_PE",
+                            "RESOLVES_TO",
+                            "GENERIC_RELATIONSHIP",  # Special type for preserving unknown relationships
+                            "tenantHasSubscription",
+                            "subscriptionContainsResourceGroup",
+                            "resourceGroupContainsResource",
+                            "userIsMemberOf"
+                        }
+                        
+                        # Mapping for LLM-generated relationship types to canonical types
+                        relationship_mappings = {
+                            "onPremisesLink": "CONNECTS_TO",
+                            "api-integration": "INTEGRATES_WITH",
+                            "api_integration": "INTEGRATES_WITH",
+                            "data-source": "DEPENDS_ON",
+                            "data_source": "DEPENDS_ON",
+                            "hybridConnectivity": "CONNECTS_TO",
+                            "spoke-to-hub": "CONNECTS_TO",
+                            "logging": "USES",
+                            "writes": "USES",
+                            "reads": "USES",
+                            "publishes": "USES",
+                            "sendsLogs": "USES",
+                            "connects": "CONNECTS_TO",
+                            "accesses": "USES",
+                            "stores": "USES",
+                            "retrieves": "USES",
+                            "processes": "USES",
+                            "monitors": "USES",
+                            "protects": "USES",
+                            "secures": "USES",
+                            "authenticates": "USES",
+                            "authorizes": "USES",
+                            "logs": "USES",
+                            "alerts": "USES",
+                            "notifies": "USES"
+                            }
+                        
+                        # For LLM-generated content, attempt to map to canonical types
+                        if is_llm_generated and rel_type not in canonical_types:
+                            if rel_type in relationship_mappings:
+                                # Map to canonical type
+                                canonical_rel_type = relationship_mappings[rel_type]
+                                print(f"DEBUG: Mapping LLM relationship '{rel_type}' -> '{canonical_rel_type}'")
+                                rel_type = canonical_rel_type
+                            else:
+                                # Block dangerous patterns
+                                dangerous_patterns = ['DROP', 'DELETE', 'CREATE USER', 'GRANT', 'REVOKE', 'ALTER', 'EXEC']
+                                if any(pattern in rel_type.upper() for pattern in dangerous_patterns):
+                                    raise ValueError(
+                                        f"Relationship type '{rel_type}' contains dangerous patterns and is not allowed"
+                                    )
+                                # Use GENERIC_RELATIONSHIP to preserve unknown types
+                                print(f"DEBUG: Using GENERIC_RELATIONSHIP for unknown type '{rel_type}'")
+                                original_rel_type = rel_type
+                                rel_type = "GENERIC_RELATIONSHIP"
+                        
+                        # For manual specs, enforce strict validation
+                        elif not is_llm_generated and rel_type not in canonical_types:
+                            raise ValueError(
+                                f"Relationship type '{rel_type}' is not allowed for manual specs. "
+                                f"Allowed types: {sorted(canonical_types)}"
+                            )
+
+                        # Normalize relationship type for Neo4j (replace hyphens with underscores)
+                        neo4j_rel_type = rel_type.replace("-", "_")
+
+                        # Prepare relationship properties
+                        rel_properties = {}
+                        if rel_type == "GENERIC_RELATIONSHIP":
+                            rel_properties["original_type"] = original_rel_type
+                        if hasattr(rel, 'narrative_context') and rel.narrative_context:
+                            rel_properties["narrative_context"] = rel.narrative_context
+                        if hasattr(rel, 'original_type') and rel.original_type:
+                            rel_properties["original_type"] = rel.original_type
+
+                        # Build Cypher query with properties
+                        if rel_properties:
+                            props_cypher = ", ".join([f"r.{key} = ${key}" for key in rel_properties.keys()])
+                            cypher = f"""
+                                MATCH (src {{id: $source_id}})
+                                MATCH (tgt {{id: $target_id}})
+                                MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
+                                SET {props_cypher}
+                                """
+                            params = {
+                                "source_id": rel.source_id,
+                                "target_id": rel.target_id,
+                                **rel_properties
+                            }
                         else:
-                            # Block dangerous patterns
-                            dangerous_patterns = ['DROP', 'DELETE', 'CREATE USER', 'GRANT', 'REVOKE', 'ALTER', 'EXEC']
-                            if any(pattern in rel_type.upper() for pattern in dangerous_patterns):
-                                raise ValueError(
-                                    f"Relationship type '{rel_type}' contains dangerous patterns and is not allowed"
-                                )
-                            # Use GENERIC_RELATIONSHIP to preserve unknown types
-                            print(f"DEBUG: Using GENERIC_RELATIONSHIP for unknown type '{rel_type}'")
-                            original_rel_type = rel_type
-                            rel_type = "GENERIC_RELATIONSHIP"
-                    
-                    # For manual specs, enforce strict validation
-                    elif not is_llm_generated and rel_type not in canonical_types:
-                        raise ValueError(
-                            f"Relationship type '{rel_type}' is not allowed for manual specs. "
-                            f"Allowed types: {sorted(canonical_types)}"
-                        )
+                            cypher = f"""
+                                MATCH (src {{id: $source_id}})
+                                MATCH (tgt {{id: $target_id}})
+                                MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
+                                """
+                            params = {
+                                "source_id": rel.source_id,
+                                "target_id": rel.target_id,
+                            }
 
-                    # Normalize relationship type for Neo4j (replace hyphens with underscores)
-                    neo4j_rel_type = rel_type.replace("-", "_")
-
-                    # Prepare relationship properties
-                    rel_properties = {}
-                    if rel_type == "GENERIC_RELATIONSHIP":
-                        rel_properties["original_type"] = original_rel_type
-                    if hasattr(rel, 'narrative_context') and rel.narrative_context:
-                        rel_properties["narrative_context"] = rel.narrative_context
-                    if hasattr(rel, 'original_type') and rel.original_type:
-                        rel_properties["original_type"] = rel.original_type
-
-                    # Build Cypher query with properties
-                    if rel_properties:
-                        props_cypher = ", ".join([f"r.{key} = ${key}" for key in rel_properties.keys()])
-                        cypher = f"""
-                            MATCH (src {{id: $source_id}})
-                            MATCH (tgt {{id: $target_id}})
-                            MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
-                            SET {props_cypher}
-                            """
-                        params = {
-                            "source_id": rel.source_id,
-                            "target_id": rel.target_id,
-                            **rel_properties
-                        }
-                    else:
-                        cypher = f"""
-                            MATCH (src {{id: $source_id}})
-                            MATCH (tgt {{id: $target_id}})
-                            MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
-                            """
-                        params = {
-                            "source_id": rel.source_id,
-                            "target_id": rel.target_id,
-                        }
-
-                    session.run(cypher, params)  # type: ignore
+                        session.run(cypher, params)  # type: ignore
+        except Exception as e:
+            print(f"DEBUG: Error during relationships processing: {e}")
+            import traceback
+            traceback.print_exc()
 
         print(f"✅ Tenant graph created: {getattr(tenant, 'display_name', tenant.id)}")
         session_manager.disconnect()
