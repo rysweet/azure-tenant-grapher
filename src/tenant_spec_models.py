@@ -151,10 +151,14 @@ class Relationship(BaseModel):
         ..., description="Type of the relationship.", alias="relationshipType"
     )
     original_type: Optional[str] = Field(
-        None, description="Original relationship type from LLM (for GENERIC_RELATIONSHIP)", alias="originalType"
+        None,
+        description="Original relationship type from LLM (for GENERIC_RELATIONSHIP)",
+        alias="originalType",
     )
     narrative_context: Optional[str] = Field(
-        None, description="Text snippet from source narrative describing this relationship", alias="narrativeContext"
+        None,
+        description="Text snippet from source narrative describing this relationship",
+        alias="narrativeContext",
     )
 
     @root_validator(pre=True)
@@ -162,39 +166,39 @@ class Relationship(BaseModel):
         """Normalize field names from various LLM outputs."""
         if not isinstance(values, dict):
             return values
-        
+
         # Make a copy to avoid modifying the original
         normalized = dict(values)
-        
+
         # Handle source_id variations
-        if 'source_resource_id' in normalized:
-            normalized['sourceId'] = normalized.pop('source_resource_id')
-        elif 'source_id' not in normalized and 'sourceId' not in normalized:
+        if "source_resource_id" in normalized:
+            normalized["sourceId"] = normalized.pop("source_resource_id")
+        elif "source_id" not in normalized and "sourceId" not in normalized:
             # If neither is present, try other variations
-            for key in ['source', 'from']:
+            for key in ["source", "from"]:
                 if key in normalized:
-                    normalized['sourceId'] = normalized.pop(key)
+                    normalized["sourceId"] = normalized.pop(key)
                     break
-        
+
         # Handle target_id variations
-        if 'target_resource_id' in normalized:
-            normalized['targetId'] = normalized.pop('target_resource_id')
-        elif 'targets' in normalized:
+        if "target_resource_id" in normalized:
+            normalized["targetId"] = normalized.pop("target_resource_id")
+        elif "targets" in normalized:
             # Convert array to single target (take first element)
-            targets = normalized.pop('targets')
+            targets = normalized.pop("targets")
             if isinstance(targets, list) and targets:
-                normalized['targetId'] = targets[0]
-        elif 'target_id' not in normalized and 'targetId' not in normalized:
+                normalized["targetId"] = targets[0]
+        elif "target_id" not in normalized and "targetId" not in normalized:
             # If neither is present, try other variations
-            for key in ['target', 'to']:
+            for key in ["target", "to"]:
                 if key in normalized:
-                    normalized['targetId'] = normalized.pop(key)
+                    normalized["targetId"] = normalized.pop(key)
                     break
-        
+
         # Handle relationship type variations
-        if 'relationship_type' in normalized:
-            normalized['relationshipType'] = normalized.pop('relationship_type')
-            
+        if "relationship_type" in normalized:
+            normalized["relationshipType"] = normalized.pop("relationship_type")
+
         return normalized
 
 
@@ -222,7 +226,9 @@ class Resource(BaseModel):
         None, description="Additional resource properties.", alias="properties"
     )
     narrative_context: Optional[str] = Field(
-        None, description="Text snippet from source narrative describing this resource", alias="narrativeContext"
+        None,
+        description="Text snippet from source narrative describing this resource",
+        alias="narrativeContext",
     )
 
 
@@ -296,7 +302,9 @@ class Tenant(BaseModel):
         None, description="Display name of the tenant.", alias="displayName"
     )
     narrative_context: Optional[str] = Field(
-        None, description="Text snippet from source narrative describing this tenant", alias="narrativeContext"
+        None,
+        description="Text snippet from source narrative describing this tenant",
+        alias="narrativeContext",
     )
     subscriptions: Optional[List[Subscription]] = Field(
         None, description="List of subscriptions in the tenant.", alias="subscriptions"

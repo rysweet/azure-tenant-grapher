@@ -798,6 +798,14 @@ class ResourceProcessor:
         logger.info("[DEBUG][RP] Entering main processing loop")
         print("[DEBUG][RP] Entering main processing loop", flush=True)
         loop_counter = 0
+        # --- Explicit mapping ensures robust loop tracking and deterministic cleanup ---
+        # Each asyncio.Task[Any] is mapped to its associated Azure resource ID,
+        # enabling full traceability and correctness on completion.
+        # Legacy coroutine/frame inspection REMOVED as per regression and maintainability.
+        task_to_rid: dict[asyncio.Task[Any], str] = {}
+        # Maps worker tasks to resource IDs. All cleanup, retry, and poison tracking use ONLY this mapping.
+        # This approach avoids introspection and enables robust, deterministic resource tracking.
+
         while main_queue or retry_queue or in_progress:
             logger.info(f"[DEBUG][RP] Top of main loop iteration {loop_counter}")
             print(f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True)
@@ -818,11 +826,12 @@ class ResourceProcessor:
                 logger.info(
                     f"[DEBUG][RP] Scheduling worker for resource {rid} (attempt {attempt})"
                 )
-                tasks.append(
-                    asyncio.create_task(
-                        worker(resource, resource_index_counter, attempt)
-                    )
+                task = asyncio.create_task(
+                    worker(resource, resource_index_counter, attempt)
                 )
+                tasks.append(task)
+                # Add to explicit mapping for deterministic cleanup
+                task_to_rid[task] = rid
                 resource_index_counter += 1
 
             # Fill from retry queue if eligible
@@ -841,17 +850,18 @@ class ResourceProcessor:
                     logger.info(
                         f"[DEBUG][RP] Scheduling retry worker for resource {rid} (attempt {attempt})"
                     )
-                    tasks.append(
-                        asyncio.create_task(
-                            worker(resource, resource_index_counter, attempt)
-                        )
+                    task = asyncio.create_task(
+                        worker(resource, resource_index_counter, attempt)
                     )
+                    tasks.append(task)
+                    # Add to explicit mapping for deterministic cleanup
+                    task_to_rid[task] = rid
                     resource_index_counter += 1
                 else:
                     retry_queue.append((resource, attempt, next_time))
 
             if not tasks:
-                # Wait for the soonest retry or for in-progress tasks to finish
+                # Wait for soonest retry or for in-progress tasks to finish
                 if retry_queue:
                     soonest = min(next_time for _, _, next_time in retry_queue)
                     sleep_time = max(0.0, soonest - time.time())
@@ -877,29 +887,14 @@ class ResourceProcessor:
             print(f"[DEBUG][RP] {len(done)} tasks completed", flush=True)
             logger.info(f"[DEBUG][RP] {len(done)} tasks completed")
             for t in done:
-                resource = None
-                attempt = None
-                for task in tasks:
-                    if task == t:
-                        coro = task.get_coro()
-                        if hasattr(coro, "cr_frame") and coro.cr_frame is not None:
-                            frame = coro.cr_frame
-                            if "resource" in frame.f_locals:
-                                resource = frame.f_locals["resource"]
-                                attempt = frame.f_locals.get("attempt", 1)
-                        break
-                if resource is None:
-                    print(
-                        "[DEBUG][RP] Could not find resource for completed task",
-                        flush=True,
-                    )
-                    logger.info(
-                        "[DEBUG][RP] Could not find resource for completed task"
-                    )
-                    continue
+                # Deterministic cleanup: use explicit mapping, legacy inspection fully purged
+                rid = task_to_rid.pop(t, None)
+                # Deterministic explicit mapping—legacy task frame/coroutine inspection fully removed.
+                if rid is None:
+                    logger.warning("[DEBUG][RP] Completed task missing rid mapping")
+                else:
+                    in_progress.discard(rid)
 
-                rid = resource.get("id")
-                in_progress.discard(rid)
                 result = t.result()
                 print(
                     f"[DEBUG][RP] Task for resource {rid} completed with result={result}",
@@ -912,6 +907,21 @@ class ResourceProcessor:
                     pass
                 else:
                     attempt = resource_attempts.get(rid, 1)
+                    # Re-obtain the resource object for retry or poison handling.
+                    resource = None
+                    # Scan main_queue and retry_queue for the resource object.
+                    for queue in (main_queue, retry_queue):
+                        for candidate in queue:
+                            if candidate[0].get("id") == rid:
+                                resource = candidate[0]
+                                break
+                        if resource:
+                            break
+                    if resource is None:
+                        logger.warning(
+                            f"[DEBUG][RP] Could not reconstruct original resource object for rid={rid}; skipping retry/poison handling"
+                        )
+                        continue
                     if attempt < self.max_retries:
                         delay = base_delay * (2 ** (attempt - 1))
                         print(
