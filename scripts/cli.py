@@ -238,6 +238,12 @@ def cli(ctx: click.Context, log_level: str) -> None:
     help="Maximum number of parallel LLM threads (default: 5)",
 )
 @click.option(
+    "--max-build-threads",
+    type=int,
+    default=20,
+    help="Maximum concurrent API calls for fetching resource details (default: 20)",
+)
+@click.option(
     "--max-retries",
     type=int,
     default=3,
@@ -282,6 +288,7 @@ async def build(
     tenant_id: str,
     resource_limit: Optional[int],
     max_llm_threads: int,
+    max_build_threads: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -306,6 +313,7 @@ async def build(
         tenant_id,
         resource_limit,
         max_llm_threads,
+        max_build_threads,
         max_retries,
         no_container,
         generate_spec,

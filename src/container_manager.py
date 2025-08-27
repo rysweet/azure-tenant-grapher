@@ -139,7 +139,7 @@ class Neo4jContainerManager:
 
     def _determine_container_name(self) -> str:
         """Determine container name based on environment.
-        
+
         Returns:
             str: Container name - unique for test/CI environments, fixed for dev
         """
@@ -155,9 +155,7 @@ class Neo4jContainerManager:
             )
         else:
             # In dev mode, use the fixed name from docker-compose.yml
-            return os.getenv(
-                "NEO4J_CONTAINER_NAME", "azure-tenant-grapher-neo4j"
-            )
+            return os.getenv("NEO4J_CONTAINER_NAME", "azure-tenant-grapher-neo4j")
 
     def is_docker_available(self) -> bool:
         """Check if Docker is available and running."""

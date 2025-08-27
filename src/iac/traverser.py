@@ -68,14 +68,18 @@ class GraphTraverser:
                             "target": rel.get("target"),
                             "type": rel.get("type"),
                         }
-                        
+
                         # Add additional properties for GENERIC_RELATIONSHIP
                         if rel.get("type") == "GENERIC_RELATIONSHIP":
                             if rel.get("original_type"):
-                                relationship_dict["original_type"] = rel.get("original_type")
+                                relationship_dict["original_type"] = rel.get(
+                                    "original_type"
+                                )
                             if rel.get("narrative_context"):
-                                relationship_dict["narrative_context"] = rel.get("narrative_context")
-                        
+                                relationship_dict["narrative_context"] = rel.get(
+                                    "narrative_context"
+                                )
+
                         relationships.append(relationship_dict)
 
         if filter_cypher:
@@ -86,8 +90,8 @@ class GraphTraverser:
             MATCH (r:Resource)
             OPTIONAL MATCH (r)-[rel]->(t:Resource)
             RETURN r, collect({
-                type: type(rel), 
-                target: t.id, 
+                type: type(rel),
+                target: t.id,
                 original_type: rel.original_type,
                 narrative_context: rel.narrative_context
             }) AS rels
@@ -108,7 +112,7 @@ class GraphTraverser:
                     WHERE r.type IS NOT NULL
                     OPTIONAL MATCH (r)-[rel]->(t)
                     RETURN r, collect({
-                        type: type(rel), 
+                        type: type(rel),
                         target: t.id,
                         original_type: rel.original_type,
                         narrative_context: rel.narrative_context

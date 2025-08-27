@@ -98,6 +98,9 @@ class ResourceAnonymizer:
         return placeholder
 
     def _extract_type_prefix(self, resource_type: str) -> str:
+        # Guard for None or empty resource_type
+        if not resource_type:
+            return "res"
         # Map to short, lower-case Azure type
         type_mapping = {
             "Microsoft.Compute/virtualMachines": "vm",
@@ -285,7 +288,9 @@ class TenantSpecificationGenerator:
                         "type": record["type"],
                         "target_id": record["target_id"],
                         "target_name": record["target_name"],
-                        "target_type": record["target_type"],
+                        "target_type": record["target_type"]
+                        if record["target_type"] is not None
+                        else "",
                     }
                 )
         driver.close()

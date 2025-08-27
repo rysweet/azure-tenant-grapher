@@ -124,6 +124,9 @@ class ProcessingConfig:
     max_retries: int = field(
         default_factory=lambda: int(os.getenv("PROCESSING_MAX_RETRIES", "3"))
     )
+    max_build_threads: int = field(
+        default_factory=lambda: int(os.getenv("MAX_BUILD_THREADS", "20"))
+    )
     retry_delay: float = field(
         default_factory=lambda: float(os.getenv("PROCESSING_RETRY_DELAY", "1.0"))
     )
@@ -226,6 +229,7 @@ class AzureTenantGrapherConfig:
         tenant_id: str,
         resource_limit: Optional[int] = None,
         max_retries: Optional[int] = None,
+        max_build_threads: Optional[int] = None,
     ) -> "AzureTenantGrapherConfig":
         """
         Create configuration from environment variables.
@@ -247,6 +251,8 @@ class AzureTenantGrapherConfig:
             config.specification.resource_limit = resource_limit
         if max_retries is not None:
             config.processing.max_retries = max_retries
+        if max_build_threads is not None:
+            config.processing.max_build_threads = max_build_threads
 
         return config
 
@@ -416,6 +422,7 @@ def create_config_from_env(
     tenant_id: str,
     resource_limit: Optional[int] = None,
     max_retries: Optional[int] = None,
+    max_build_threads: Optional[int] = None,
 ) -> AzureTenantGrapherConfig:
     """
     Factory function to create and validate configuration from environment.
@@ -432,7 +439,7 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries
+        tenant_id, resource_limit, max_retries, max_build_threads
     )
     config.validate_all()
     return config
