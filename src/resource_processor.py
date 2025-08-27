@@ -29,7 +29,7 @@ def run_neo4j_query_with_retry(session: Any, query: str, **params: Any) -> Any:
     return session.run(query, **params)
 
 
-def serialize_value(value: Any, max_json_length: int = 500) -> Any:
+def serialize_value(value: Any, max_json_length: int = 5000) -> Any:
     """
     Safely serialize a value for Neo4j property storage.
     Allowed: str, int, float, bool, list of those.
@@ -54,7 +54,12 @@ def serialize_value(value: Any, max_json_length: int = 500) -> Any:
             return s
         except Exception:
             return str(value)  # type: ignore[misc]
-    # Azure SDK model: try .name, else str
+    # Azure SDK model: try as_dict() for properties, then .name, else str
+    if hasattr(value, "as_dict") and callable(value.as_dict):
+        try:
+            return serialize_value(value.as_dict(), max_json_length)
+        except Exception:
+            pass
     if hasattr(value, "name") and isinstance(value.name, str):
         return value.name
     # Fallback: str

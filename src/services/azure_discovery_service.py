@@ -193,6 +193,7 @@ class AzureDiscoveryService:
                         "type": getattr(res, "type", None),
                         "location": getattr(res, "location", None),
                         "tags": dict(getattr(res, "tags", {}) or {}),
+                        "properties": getattr(res, "properties", {}),
                         "subscription_id": parsed_info.get(
                             "subscription_id", subscription_id
                         ),
