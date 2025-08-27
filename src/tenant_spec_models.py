@@ -162,7 +162,7 @@ class Relationship(BaseModel):
     )
 
     @root_validator(pre=True)
-    def normalize_relationship_fields(cls, values):
+    def normalize_relationship_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize field names from various LLM outputs."""
         if not isinstance(values, dict):
             return values

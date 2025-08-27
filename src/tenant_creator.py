@@ -324,8 +324,10 @@ Instructions:
             # Raise structured error for CLI and test handling
             raise LLMGenerationError(
                 "Failed to parse LLM output as valid JSON.",
-                model=getattr(self.llm_generator, "config", None)
-                and getattr(self.llm_generator.config, "model_chat", None),
+                model=(
+                    getattr(self.llm_generator, "config", None)
+                    and getattr(self.llm_generator.config, "model_chat", None)
+                ),  # type: ignore
                 context={"prompt": prompt, "raw_response": json_text},
                 cause=e,
             ) from e
@@ -713,6 +715,9 @@ Instructions:
                             "notifies": "USES",
                         }
 
+                        # Initialize original_rel_type to avoid unbound variable
+                        original_rel_type = None
+
                         # For LLM-generated content, attempt to map to canonical types
                         if is_llm_generated and rel_type not in canonical_types:
                             if rel_type in relationship_mappings:
@@ -759,7 +764,10 @@ Instructions:
 
                         # Prepare relationship properties
                         rel_properties = {}
-                        if rel_type == "GENERIC_RELATIONSHIP":
+                        if (
+                            rel_type == "GENERIC_RELATIONSHIP"
+                            and original_rel_type is not None
+                        ):
                             rel_properties["original_type"] = original_rel_type
                         if hasattr(rel, "narrative_context") and rel.narrative_context:
                             rel_properties["narrative_context"] = rel.narrative_context

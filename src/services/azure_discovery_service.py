@@ -68,6 +68,12 @@ class AzureDiscoveryService:
         self._max_retries: int = (
             getattr(getattr(config, "processing", None), "max_retries", 3) or 3
         )
+        # Maximum concurrent threads for fetching resource details
+        self._max_build_threads: int = (
+            getattr(getattr(config, "processing", None), "max_build_threads", 20) or 20
+        )
+        # Cache for resource provider API versions
+        self._api_version_cache: Dict[str, str] = {}
         self._subscriptions: List[Dict[str, Any]] = []
 
     @property
@@ -160,13 +166,13 @@ class AzureDiscoveryService:
         self, subscription_id: str
     ) -> List[Dict[str, Any]]:
         """
-        Discover all resources in a specific subscription.
+        Discover all resources in a specific subscription with optional parallel property fetching.
 
         Args:
             subscription_id: Azure subscription ID
 
         Returns:
-            List of resource dictionaries with minimal fields including subscription_id and resource_group
+            List of resource dictionaries with full properties if max_build_threads > 0
 
         Raises:
             AzureDiscoveryError: If resource discovery fails
@@ -178,7 +184,10 @@ class AzureDiscoveryService:
                 resource_client = self.resource_client_factory(
                     self.credential, subscription_id
                 )
-                resources: List[Dict[str, Any]] = []
+
+                # Phase 1: List all resources (lightweight)
+                logger.info("📋 Phase 1: Listing all resource IDs...")
+                resource_basics: List[Dict[str, Any]] = []
                 pager = resource_client.resources.list()
                 for resource in pager:
                     res: Any = resource
@@ -193,18 +202,33 @@ class AzureDiscoveryService:
                         "type": getattr(res, "type", None),
                         "location": getattr(res, "location", None),
                         "tags": dict(getattr(res, "tags", {}) or {}),
-                        "properties": getattr(res, "properties", {}),
+                        "properties": {},  # Will be populated if parallel fetching enabled
                         "subscription_id": parsed_info.get(
                             "subscription_id", subscription_id
                         ),
                         "resource_group": parsed_info.get("resource_group"),
                     }
-                    resources.append(resource_dict)
+                    resource_basics.append(resource_dict)
+
                 logger.info(
-                    f"✅ Found {len(resources)} resources in subscription {subscription_id}"
+                    f"✅ Found {len(resource_basics)} resources in subscription {subscription_id}"
                 )
-                logger.debug(f"Resource IDs: {[r['id'] for r in resources]}")
-                return resources
+
+                # Phase 2: Fetch full properties in parallel if enabled
+                if self._max_build_threads > 0 and resource_basics:
+                    logger.info(
+                        f"🔄 Phase 2: Fetching full properties for {len(resource_basics)} resources "
+                        f"(max {self._max_build_threads} concurrent threads)..."
+                    )
+                    enriched_resources = await self._fetch_resources_with_properties(
+                        resource_basics, resource_client, subscription_id
+                    )
+                    return enriched_resources
+                else:
+                    logger.info(
+                        "Skipping property enrichment (disabled or no resources)"
+                    )
+                    return resource_basics
             except AzureError:
                 # Log and propagate so outer retry loop can handle
                 logger.exception("AzureError during resource discovery")
@@ -356,16 +380,209 @@ class AzureDiscoveryService:
                 tenant_id=self.config.tenant_id,
             ) from exc
 
+    async def _get_api_version_for_resource(
+        self, resource_id: str, resource_client: Any
+    ) -> str:
+        """
+        Get the appropriate API version for a resource type.
+
+        Args:
+            resource_id: Azure resource ID
+            resource_client: ResourceManagementClient instance
+
+        Returns:
+            API version string
+        """
+        # Parse resource ID to extract provider and resource type
+        parsed = self._parse_resource_id(resource_id)
+        if not parsed.get("provider") or not parsed.get("resource_type"):
+            # Default fallback API version
+            return "2021-04-01"
+
+        provider = parsed["provider"]
+        resource_type = parsed["resource_type"]
+        cache_key = f"{provider}/{resource_type}"
+
+        # Check cache first
+        if cache_key in self._api_version_cache:
+            return self._api_version_cache[cache_key]
+
+        try:
+            # Query provider for available API versions
+            provider_info = await asyncio.to_thread(
+                resource_client.providers.get, provider
+            )
+
+            # Find the resource type in the provider
+            for rt in provider_info.resource_types:
+                if rt.resource_type.lower() == resource_type.lower():
+                    if rt.api_versions:
+                        # Use the latest stable version (first in list)
+                        api_version = rt.api_versions[0]
+                        self._api_version_cache[cache_key] = api_version
+                        logger.debug(f"API version for {cache_key}: {api_version}")
+                        return api_version
+        except Exception as e:
+            logger.warning(f"Failed to get API version for {cache_key}: {e}")
+
+        # Default fallback
+        default_version = "2021-04-01"
+        self._api_version_cache[cache_key] = default_version
+        return default_version
+
+    async def _fetch_single_resource_with_properties(
+        self,
+        resource: Dict[str, Any],
+        resource_client: Any,
+        semaphore: asyncio.Semaphore,
+    ) -> Dict[str, Any]:
+        """
+        Fetch full properties for a single resource.
+
+        Args:
+            resource: Basic resource dictionary
+            resource_client: ResourceManagementClient instance
+            semaphore: Semaphore for concurrency control
+
+        Returns:
+            Resource dictionary with full properties
+        """
+        resource_id = resource.get("id")
+        if not resource_id:
+            return resource
+
+        async with semaphore:
+            try:
+                # Get appropriate API version
+                api_version = await self._get_api_version_for_resource(
+                    resource_id, resource_client
+                )
+
+                # Fetch full resource details
+                # Note: Azure SDK handles retries automatically with exponential backoff
+                full_resource = await asyncio.to_thread(
+                    resource_client.resources.get_by_id, resource_id, api_version
+                )
+
+                # Update resource with full properties
+                props = getattr(full_resource, "properties", {})
+
+                # Convert properties if it's an SDK object
+                # Note: props might be an Azure SDK object, not a dict
+                if props and not isinstance(props, dict) and hasattr(props, "as_dict"):
+                    try:
+                        resource["properties"] = props.as_dict()  # type: ignore
+                    except Exception as e:
+                        logger.debug(
+                            f"Failed to convert properties to dict for {resource_id}: {e}"
+                        )
+                        resource["properties"] = {}
+                else:
+                    resource["properties"] = props if isinstance(props, dict) else {}
+
+                logger.debug(
+                    f"Successfully fetched properties for {resource.get('name')}"
+                )
+                return resource
+
+            except Exception as e:
+                # Log the specific error for debugging
+                error_msg = str(e)
+                if "InvalidApiVersionParameter" in error_msg:
+                    logger.error(
+                        f"Invalid API version for {resource_id}: {error_msg[:200]}"
+                    )
+                elif "AuthenticationFailed" in error_msg:
+                    logger.error(
+                        f"Authentication failed for {resource_id}: {error_msg[:200]}"
+                    )
+                elif "TooManyRequests" in error_msg:
+                    logger.warning(f"Rate limited for {resource_id}, SDK will retry")
+                else:
+                    logger.error(f"Failed to fetch {resource_id}: {error_msg[:200]}")
+
+                # Return resource with empty properties on failure
+                return resource
+
+    async def _fetch_resources_with_properties(
+        self,
+        resources: List[Dict[str, Any]],
+        resource_client: Any,
+        subscription_id: str,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch full properties for all resources in parallel.
+
+        Args:
+            resources: List of basic resource dictionaries
+            resource_client: ResourceManagementClient instance
+            subscription_id: Azure subscription ID
+
+        Returns:
+            List of resources with full properties
+        """
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(self._max_build_threads)
+
+        # Create tasks for all resources
+        tasks = [
+            self._fetch_single_resource_with_properties(
+                resource, resource_client, semaphore
+            )
+            for resource in resources
+        ]
+
+        # Process in batches to manage memory for large subscriptions
+        batch_size = 100
+        all_resources = []
+
+        for i in range(0, len(tasks), batch_size):
+            batch = tasks[i : i + batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(tasks) + batch_size - 1) // batch_size
+
+            logger.info(f"Processing batch {batch_num}/{total_batches}")
+
+            try:
+                # Execute batch with timeout
+                results = await asyncio.wait_for(
+                    asyncio.gather(*batch, return_exceptions=True),
+                    timeout=300,  # 5 minute timeout per batch
+                )
+
+                # Process results
+                for result in results:
+                    if isinstance(result, Exception):
+                        logger.warning(f"Task failed with exception: {result}")
+                        # Still include the resource with empty properties
+                        all_resources.append({"properties": {}})
+                    elif result:
+                        all_resources.append(result)
+
+            except asyncio.TimeoutError:
+                logger.error(f"Batch {batch_num} timed out after 5 minutes")
+                # Add resources from timed-out batch with empty properties
+                for _ in batch:
+                    all_resources.append({"properties": {}})
+
+        success_count = len([r for r in all_resources if r.get("properties")])
+        logger.info(
+            f"✅ Successfully fetched properties for {success_count} "
+            f"out of {len(all_resources)} resources"
+        )
+
+        return all_resources
+
     def _parse_resource_id(self, resource_id: Optional[str]) -> Dict[str, str]:
         """
-        Parse an Azure resource ID to extract subscription_id and resource_group.
+        Parse an Azure resource ID to extract subscription_id, resource_group, provider, and resource_type.
 
         Args:
             resource_id: Azure resource ID in format:
                 /subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/{provider}/{type}/{name}
 
         Returns:
-            Dict containing 'subscription_id' and 'resource_group' if found, empty dict otherwise
+            Dict containing parsed components if found, empty dict otherwise
         """
         if not resource_id:
             return {}
@@ -394,6 +611,17 @@ class AzureDiscoveryService:
             except (ValueError, IndexError):
                 logger.debug(
                     f"Could not parse resource_group from resource ID: {resource_id}"
+                )
+
+            # Find provider and resource type (should be after 'providers')
+            try:
+                provider_index = segments.index("providers")
+                if provider_index + 2 < len(segments):
+                    result["provider"] = segments[provider_index + 1]
+                    result["resource_type"] = segments[provider_index + 2]
+            except (ValueError, IndexError):
+                logger.debug(
+                    f"Could not parse provider/resource_type from resource ID: {resource_id}"
                 )
 
             return result
