@@ -52,7 +52,7 @@ You can start the container with 'python scripts/cli.py container' or 'docker-co
 - `--resource-limit 3` ensures the command completes quickly for demo/testing.
 - `--no-dashboard` disables the interactive dashboard for CI/offline use.
 - Output is redacted to remove tenant IDs, UUIDs, and credentials.
-- For troubleshooting, see logs in the output directory or use `--log-level DEBUG`.
+- For troubleshooting, see logs in the outputs/ directory (default) or use `--log-level DEBUG`.
 - If you see a Neo4j connection error, ensure the database is running (see above).
 
 [Back to Command Index](README.md)

@@ -22,7 +22,7 @@ def _set_azure_http_log_level(log_level: str) -> None:
     """Set log levels for HTTP-related loggers to reduce noise."""
     http_loggers = [
         "azure.core.pipeline.policies.http_logging_policy",
-        "azure.core.pipeline.policies.HttpLoggingPolicy", 
+        "azure.core.pipeline.policies.HttpLoggingPolicy",
         "azure.core.pipeline",
         "azure.identity",
         "azure.mgmt",
@@ -148,8 +148,7 @@ class ProcessingConfig:
         == "true"
     )
     enable_aad_import: bool = field(
-        default_factory=lambda: os.getenv("ENABLE_AAD_IMPORT", "true").lower()
-        == "true"
+        default_factory=lambda: os.getenv("ENABLE_AAD_IMPORT", "true").lower() == "true"
     )
 
     def __post_init__(self) -> None:

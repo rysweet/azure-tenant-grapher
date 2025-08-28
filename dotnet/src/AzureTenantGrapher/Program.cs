@@ -117,7 +117,19 @@ namespace AzureTenantGrapher
                     var visPathProp = config.GetType().GetProperty("VisualizationPath") ?? config.GetType().GetProperty("visualizationPath");
                     var outputPath = visPathProp?.GetValue(config) as string;
                     if (string.IsNullOrWhiteSpace(outputPath))
-                        outputPath = Path.Combine(Directory.GetCurrentDirectory(), "visualization.html");
+                    {
+                        var outputsDir = Path.Combine(Directory.GetCurrentDirectory(), "outputs");
+                        if (!Directory.Exists(outputsDir))
+                            Directory.CreateDirectory(outputsDir);
+                        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                        outputPath = Path.Combine(outputsDir, $"visualization-{timestamp}.html");
+                    }
+                    else
+                    {
+                        var outDir = Path.GetDirectoryName(outputPath);
+                        if (!string.IsNullOrWhiteSpace(outDir) && !Directory.Exists(outDir))
+                            Directory.CreateDirectory(outDir);
+                    }
                     Task.Run(() => visualizer.GenerateHtmlVisualizationAsync(outputPath, spec)).Wait();
                     logger.LogInformation("Visualization generated at {Path}", outputPath);
                 }

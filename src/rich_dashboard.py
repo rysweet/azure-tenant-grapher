@@ -24,14 +24,23 @@ class DashboardExit(Exception):
 
 
 class RichDashboard:
-    def __init__(self, config: Dict[str, Any], max_concurrency: int = None, 
-                 max_llm_threads: int = None, max_build_threads: int = None):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        max_concurrency: int = None,
+        max_llm_threads: int = None,
+        max_build_threads: int = None,
+    ):
         self.console = Console()
         self.layout = Layout()
         self.config = config
         # Support both old and new parameter styles
-        self.max_llm_threads = max_llm_threads if max_llm_threads is not None else max_concurrency
-        self.max_build_threads = max_build_threads if max_build_threads is not None else 20
+        self.max_llm_threads = (
+            max_llm_threads if max_llm_threads is not None else max_concurrency
+        )
+        self.max_build_threads = (
+            max_build_threads if max_build_threads is not None else 20
+        )
         # Keep max_concurrency for backward compatibility
         self.max_concurrency = self.max_llm_threads
 

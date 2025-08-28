@@ -14,6 +14,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
   - [Create & Explore Your Graph](#create--explore-your-graph)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Output Convention](#output-convention)
   - [Build & Rebuild Graph](#build--rebuild-graph)
   - [Agent Mode](#agent-mode)
   - [Threat Modeling](#threat-modeling)
@@ -123,6 +124,9 @@ azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
 
 # Rebuild—all relationships will be re-evaluated
 azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
+
+# Example: generate tenant specification to outputs/ directory (default)
+azure-tenant-grapher generate-spec --tenant-id <your-tenant-id> --output outputs/my-tenant-spec.yaml
 ```
 
 ### Azure AD Identity Import
@@ -177,12 +181,12 @@ MCP Agent is ready
 
 ### Generate Tenant Specification
 
-Generate an anonymized tenant specification (YAML/JSON) for documentation, sharing, or further processing.
+Generate an anonymized tenant specification (YAML/JSON) for documentation, sharing, or further processing. By default, generated specifications and most command outputs are written to the `outputs/` directory.
 
 ```bash
 azure-tenant-grapher generate-spec \
   --tenant-id <your-tenant-id> \
-  --output ./my-tenant-spec.yaml
+  --output outputs/my-tenant-spec.yaml
 ```
 
 ### MCP Server
@@ -197,17 +201,17 @@ uv run azure-tenant-grapher mcp-server
 ### Generate & Deploy IaC
 
 ```bash
-# Generate Bicep for a subset of resources
+# Generate Bicep for a subset of resources (writes to outputs/ by default)
 azure-tenant-grapher generate-iac \
   --format bicep \
   --subset-filter "types=Microsoft.Storage/*" \
   --rules-file ./config/replica-rules.yaml \
   --dest-rg "replica-rg" \
   --location "East US" \
-  --output ./my-deployment
+  --output outputs/my-deployment
 
 # Deploy the generated templates
-cd my-deployment
+cd outputs/my-deployment
 ./deploy.sh
 ```
 
@@ -218,13 +222,13 @@ See [./src/threat_model_agent/](./src/threat_model_agent/)
 Generate a Data Flow Diagram, enumerate threats, and produce a Markdown report for your tenant.
 
 ```bash
-azure-tenant-grapher threat-model --spec-path ./my-tenant-spec.md --summaries-path ./summaries.json
+azure-tenant-grapher threat-model --spec-path outputs/my-tenant-spec.md --summaries-path outputs/summaries.json
 ```
 
 ### Database Backup
 
 ```bash
-azure-tenant-grapher backup-db ./my-neo4j-backup.dump
+azure-tenant-grapher backup-db outputs/my-neo4j-backup.dump
 ```
 
 ### IaC Subset & Rules System
@@ -271,6 +275,17 @@ All test output artifacts are excluded from version control via `.gitignore`.
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 - [3D Visualization](docs/design/iac_subset_bicep.md)
 - [Testing](tests/)
+
+## Output Convention
+
+Unless you specify a custom output path (via CLI argument or config), all outputs—including generated specifications, Infrastructure-as-Code templates, and database backups—are written to the `outputs/` directory at the repository root. This ensures all command results and artifacts are organized and easy to locate.
+
+**Examples:**
+- `azure-tenant-grapher generate-spec ... --output outputs/my-tenant-spec.yaml`
+- `azure-tenant-grapher generate-iac ... --output outputs/my-deployment`
+- `azure-tenant-grapher backup-db outputs/my-neo4j-backup.dump`
+
+You can override this default by setting a different output path as needed.
 
 ## Contributing
 

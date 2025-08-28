@@ -33,13 +33,13 @@ logging:
   file_output: None
 specification:
   resource_limit: None
-  output_directory: .
+  output_directory: outputs/
   include_ai_summaries: True
   include_configuration_details: True
   anonymization_seed: None
   template_style: comprehensive
 ============================================================
-💡 Set environment variables to customize configuration
+💡 Set environment variables to customize configuration. Most CLI outputs are written to outputs/ by default unless you set a custom path.
 ```
 
 **Troubleshooting:**

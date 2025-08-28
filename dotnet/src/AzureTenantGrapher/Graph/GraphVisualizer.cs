@@ -50,6 +50,10 @@ namespace AzureTenantGrapher.Graph
 
             try
             {
+                var outDir = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrWhiteSpace(outDir) && !Directory.Exists(outDir))
+                    Directory.CreateDirectory(outDir);
+
                 await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8);
                 _logger.LogInformation("HTML visualization written successfully.");
             }

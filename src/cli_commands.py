@@ -320,7 +320,7 @@ async def _run_dashboard_mode(
     dashboard = RichDashboard(
         config=config.to_dict(),
         max_llm_threads=max_llm_threads,
-        max_build_threads=getattr(config.processing, 'max_build_threads', 20),
+        max_build_threads=getattr(config.processing, "max_build_threads", 20),
     )
     # Print log file path for test discoverability
     structlog.get_logger(__name__).info(
@@ -522,9 +522,14 @@ async def _run_dashboard_mode(
 
 
 async def visualize_command_handler(
-    ctx: click.Context, link_hierarchy: bool = True, no_container: bool = False
+    ctx: click.Context,
+    link_hierarchy: bool = True,
+    no_container: bool = False,
+    output: Optional[str] = None,
 ) -> None:
     """Handle the visualize command logic."""
+    import os
+
     ensure_neo4j_running()
     try:
         # Create configuration (Neo4j-only)
@@ -534,6 +539,9 @@ async def visualize_command_handler(
         # Setup logging
         setup_logging(config.logging)
 
+        # Ensure outputs/ dir exists for default
+        os.makedirs("outputs", exist_ok=True)
+
         # Create visualizer
         visualizer = GraphVisualizer(
             config.neo4j.uri or "", config.neo4j.user, config.neo4j.password
@@ -542,8 +550,17 @@ async def visualize_command_handler(
         click.echo("🎨 Generating graph visualization...")
 
         try:
+            # Default HTML output under outputs/ if not specified
+            effective_output = output
+            if not effective_output:
+                from datetime import datetime
+
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                effective_output = os.path.join(
+                    "outputs", f"azure_graph_visualization_{ts}.html"
+                )
             viz_path = visualizer.generate_html_visualization(
-                link_to_hierarchy=link_hierarchy
+                output_path=effective_output, link_to_hierarchy=link_hierarchy
             )
             click.echo(f"✅ Visualization saved to: {viz_path}")
         except Exception as e:
@@ -566,7 +583,8 @@ async def visualize_command_handler(
                     for _i in range(10):
                         try:
                             viz_path = visualizer.generate_html_visualization(
-                                link_to_hierarchy=link_hierarchy
+                                output_path=effective_output,
+                                link_to_hierarchy=link_hierarchy,
                             )
                             click.echo(f"✅ Visualization saved to: {viz_path}")
                             break
@@ -651,6 +669,8 @@ def generate_spec_command_handler(
 ) -> None:
     """Handle the generate-spec command logic."""
     ensure_neo4j_running()
+    import os
+
     try:
         from src.tenant_spec_generator import (
             ResourceAnonymizer,
@@ -672,6 +692,9 @@ def generate_spec_command_handler(
         if limit is not None:
             spec_config.resource_limit = limit
 
+        # Ensure outputs/ dir exists for defaulting
+        os.makedirs("outputs", exist_ok=True)
+
         # Anonymizer
         anonymizer = ResourceAnonymizer(seed=spec_config.anonymization_seed)
 
@@ -680,8 +703,15 @@ def generate_spec_command_handler(
             neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
         )
 
-        # Generate spec
-        output_path = generator.generate_specification(output_path=output)
+        # Default output to outputs/ if not specified
+        effective_output = output
+        if not effective_output:
+            from datetime import datetime, timezone
+
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            effective_output = os.path.join("outputs", f"{ts}_tenant_spec.md")
+
+        output_path = generator.generate_specification(output_path=effective_output)
         click.echo(f"✅ Tenant Markdown specification generated: {output_path}")
 
     except Exception as e:
@@ -840,15 +870,16 @@ async def generate_sim_doc_command_handler(
         )
         sys.exit(1)
 
-    # Determine output path
-    if out_path:
-        output_path = out_path
+    # Determine output path (migrate simdocs/ to outputs/)
+    effective_out_path = out_path
+    if effective_out_path:
+        output_path = effective_out_path
     else:
-        os.makedirs("simdocs", exist_ok=True)
+        os.makedirs("outputs", exist_ok=True)
         import datetime
 
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        output_path = f"simdocs/simdoc-{timestamp}.md"
+        output_path = os.path.join("outputs", f"simdoc-{timestamp}.md")
 
     try:
         with open(output_path, "w", encoding="utf-8") as f:

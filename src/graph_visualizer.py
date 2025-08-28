@@ -536,7 +536,16 @@ class GraphVisualizer:
         # Generate output path if not provided
         if not output_path:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = f"azure_graph_visualization_{timestamp}.html"
+            if not os.path.exists("outputs"):
+                os.makedirs("outputs", exist_ok=True)
+            output_path = os.path.join(
+                "outputs", f"azure_graph_visualization_{timestamp}.html"
+            )
+        else:
+            # Ensure outputs/ dir exists if output_path is in outputs/
+            outdir = os.path.dirname(output_path)
+            if outdir and not os.path.exists(outdir):
+                os.makedirs(outdir, exist_ok=True)
 
         # Generate HTML content
         html_content = self._generate_html_template(graph_data, specification_path)

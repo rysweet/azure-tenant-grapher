@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """Test that HTTP logging is properly suppressed at INFO level."""
 
-import logging
 import io
-import sys
+import logging
 
 # Capture logging output
 log_capture = io.StringIO()
@@ -27,11 +26,15 @@ test_loggers = [
 
 for logger_name in test_loggers:
     logger = logging.getLogger(logger_name)
-    level = logger.level if logger.level != logging.NOTSET else logger.getEffectiveLevel()
+    level = (
+        logger.level if logger.level != logging.NOTSET else logger.getEffectiveLevel()
+    )
     level_name = logging.getLevelName(level)
     print(f"  {logger_name}: {level_name} (level={level})")
     if logger_name not in ["httpx"]:  # httpx might not be configured yet
-        assert level >= logging.WARNING, f"{logger_name} should be WARNING or higher, got {level_name}"
+        assert level >= logging.WARNING, (
+            f"{logger_name} should be WARNING or higher, got {level_name}"
+        )
 
 print("✅ All HTTP loggers are set to WARNING or higher")
 
@@ -45,7 +48,9 @@ for logger_name in test_loggers:
     level_name = logging.getLevelName(level)
     print(f"  {logger_name}: {level_name} (level={level})")
     if logger_name not in ["httpx"]:  # httpx might not be configured yet
-        assert level == logging.DEBUG, f"{logger_name} should be DEBUG, got {level_name}"
+        assert level == logging.DEBUG, (
+            f"{logger_name} should be DEBUG, got {level_name}"
+        )
 
 print("✅ All HTTP loggers are set to DEBUG when requested")
 

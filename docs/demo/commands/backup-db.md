@@ -3,12 +3,12 @@
 The `backup-db` command creates a backup of the Neo4j database and saves it to the specified path. This is useful for disaster recovery or migration scenarios. The command requires the Neo4j container to be running.
 
 ```bash
-uv run azure-tenant-grapher backup-db ./my-neo4j-backup.dump
+uv run azure-tenant-grapher backup-db outputs/my-neo4j-backup.dump
 ```
 
 **Output:**
 ```text
-{"event": "Starting Neo4j backup to /Users/ryan/src/msec/azure-tenant-grapher/my-neo4j-backup.dump", "timestamp": "...", "level": "info"}
+{"event": "Starting Neo4j backup to outputs/my-neo4j-backup.dump", "timestamp": "...", "level": "info"}
 {"event": "Neo4j container is not running. Cannot perform backup.", "timestamp": "...", "level": "error"}
 ❌ Neo4j backup failed
 ```

@@ -362,5 +362,8 @@ class TenantSpecificationGenerator:
 
     def _get_default_output_path(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        outdir = self.config.output_directory
+        outdir = getattr(self.config, "output_directory", None) or "outputs"
+        # Ensure outputs/ exists
+        if not os.path.exists(outdir):
+            os.makedirs(outdir, exist_ok=True)
         return os.path.join(outdir, f"{ts}_tenant_spec.md")

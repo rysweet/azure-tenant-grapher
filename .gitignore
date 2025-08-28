@@ -173,6 +173,10 @@ demo-bicep*/
 demo-rules.yaml
 iac-out-*/
 
+# Project outputs
+outputs/
+!outputs/.gitkeep
+
 # .NET build and Visual Studio artifacts
 [Bb]in/
 [Oo]bj/

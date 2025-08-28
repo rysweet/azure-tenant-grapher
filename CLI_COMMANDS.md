@@ -53,7 +53,7 @@ atg build --no-container --no-dashboard
 atg spec
 
 # Generate anonymized specification
-atg generate-spec --output ./my-spec.md
+atg generate-spec --output outputs/my-spec.md
 ```
 
 ## Dashboard Features
@@ -69,6 +69,15 @@ The dashboard shows:
 - **Config panel**: Shows all settings including log file location
 - **Progress panel**: Real-time statistics and controls
 - **Scrollable logs**: Filtered by level, with file logging to `/tmp/`
+
+## Output Convention
+
+Unless a custom output path is provided, all CLI commands that generate files will write outputs to the `outputs/` directory at the repository root. This allows for organized output collection across multiple commands.
+
+Example:
+- Specification: `atg generate-spec --output outputs/my-spec.md`
+- IaC: `atg generate-iac --output outputs/iac-artifacts`
+- Database backup: `atg backup-db outputs/my-neo4j-backup.dump`
 
 ## File Logging
 
