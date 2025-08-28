@@ -202,7 +202,9 @@ class AzureDiscoveryService:
                         "type": getattr(res, "type", None),
                         "location": getattr(res, "location", None),
                         "tags": dict(getattr(res, "tags", {}) or {}),
-                        "properties": {},  # Will be populated if parallel fetching enabled
+                        # Start with existing properties if available (usually None from list),
+                        # will be populated by parallel fetching if enabled
+                        "properties": getattr(res, "properties", {}) or {},
                         "subscription_id": parsed_info.get(
                             "subscription_id", subscription_id
                         ),

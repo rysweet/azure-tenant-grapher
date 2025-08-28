@@ -269,6 +269,14 @@ class DatabaseOperations:
             resource_data["llm_description"] = resource.get("llm_description", "")
             resource_data["processing_status"] = processing_status
 
+            # Prevent empty properties from overwriting existing data
+            # If properties is empty dict, remove it from update to preserve existing
+            if resource_data.get("properties") == {}:
+                logger.debug(
+                    f"Skipping empty properties update for {resource.get('id')} to preserve existing data"
+                )
+                resource_data.pop("properties", None)
+
             # Serialize all values for Neo4j compatibility
             try:
                 for k, v in resource_data.items():
