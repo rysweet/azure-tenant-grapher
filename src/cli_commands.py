@@ -1053,6 +1053,29 @@ def spa_start():
                 return
             click.echo("✅ Dependencies installed successfully")
 
+        # Check if the app is built (dist/main/index.js should exist)
+        main_entry = os.path.join(spa_dir, "dist", "main", "index.js")
+        if not os.path.exists(main_entry):
+            click.echo("🔨 Building Electron app (first time setup)...")
+            build_proc = subprocess.run(
+                ["npm", "run", "build"], cwd=spa_dir, capture_output=True, text=True
+            )
+            if build_proc.returncode != 0:
+                click.echo(
+                    f"❌ Failed to build app: {build_proc.stderr}",
+                    err=True,
+                )
+                return
+            
+            # Verify the build created the main entry point
+            if not os.path.exists(main_entry):
+                click.echo(
+                    "❌ Build completed but main entry point not found. Check build configuration.",
+                    err=True,
+                )
+                return
+            click.echo("✅ Electron app built successfully")
+
         # Start the Electron app
         spa_proc = subprocess.Popen(
             ["npm", "run", "start"],

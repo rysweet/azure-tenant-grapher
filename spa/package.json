@@ -1,13 +1,15 @@
 {
-  "name": "azure-tenant-grapher-spa",
+  "name": "azure-tenant-grapher",
+  "productName": "Azure Tenant Grapher",
   "version": "1.0.0",
-  "description": "Electron-based SPA for Azure Tenant Grapher",
+  "description": "Graph visualization and management tool for Azure tenants",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:main\" \"npm run dev:renderer\" \"npm run dev:backend\"",
     "dev:main": "tsc -w -p main/tsconfig.json",
     "dev:renderer": "vite",
     "dev:backend": "tsx watch backend/src/server.ts",
+    "start:backend": "tsx backend/src/server.ts",
     "build": "npm run build:renderer && npm run build:main && npm run build:backend",
     "build:main": "tsc -p main/tsconfig.json",
     "build:renderer": "vite build",
@@ -41,6 +43,7 @@
     "electron-store": "^8.1.0",
     "express": "^4.18.0",
     "monaco-editor": "^0.44.0",
+    "neo4j-driver": "^5.28.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
@@ -81,24 +84,53 @@
     "vite": "^5.0.0"
   },
   "build": {
-    "appId": "com.azuretenantgrapher.spa",
+    "appId": "com.azuretenantgrapher.app",
     "productName": "Azure Tenant Grapher",
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-electron",
+      "buildResources": "assets"
     },
     "files": [
       "dist/**/*",
+      "assets/**/*",
       "package.json"
     ],
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ]
     },
     "linux": {
       "target": "AppImage",
-      "category": "Development"
+      "category": "Development",
+      "icon": "assets/icon.png"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
     }
   }
 }

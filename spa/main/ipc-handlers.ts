@@ -13,7 +13,7 @@ export function setupIPCHandlers(processManager: ProcessManager) {
       const result = await processManager.execute(command, args);
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
 
@@ -22,7 +22,7 @@ export function setupIPCHandlers(processManager: ProcessManager) {
       await processManager.cancel(processId);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
 
@@ -36,7 +36,7 @@ export function setupIPCHandlers(processManager: ProcessManager) {
       const content = await fs.readFile(filePath, 'utf-8');
       return { success: true, data: content };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
 
@@ -45,7 +45,7 @@ export function setupIPCHandlers(processManager: ProcessManager) {
       await fs.writeFile(filePath, content, 'utf-8');
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
 

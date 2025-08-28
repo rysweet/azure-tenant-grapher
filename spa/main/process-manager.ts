@@ -51,14 +51,14 @@ export class ProcessManager extends EventEmitter {
 
     // Handle stdout
     childProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter(line => line);
+      const lines = data.toString().split('\n').filter((line: string) => line);
       processInfo.output.push(...lines);
       this.emit('output', { id, type: 'stdout', data: lines });
     });
 
     // Handle stderr
     childProcess.stderr?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter(line => line);
+      const lines = data.toString().split('\n').filter((line: string) => line);
       processInfo.error.push(...lines);
       this.emit('output', { id, type: 'stderr', data: lines });
     });
@@ -67,7 +67,7 @@ export class ProcessManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       childProcess.on('exit', (code) => {
         processInfo.status = code === 0 ? 'completed' : 'failed';
-        processInfo.exitCode = code;
+        processInfo.exitCode = code ?? undefined;
         processInfo.endTime = new Date();
         
         this.emit('process:exit', { id, code });
@@ -113,11 +113,11 @@ export class ProcessManager extends EventEmitter {
     return this.processes.get(processId);
   }
 
-  listProcesses(): ProcessInfo[] {
-    return Array.from(this.processes.values()).map(p => ({
-      ...p,
-      process: undefined, // Don't send the actual process object
-    }));
+  listProcesses(): Omit<ProcessInfo, 'process'>[] {
+    return Array.from(this.processes.values()).map(p => {
+      const { process, ...rest } = p;
+      return rest;
+    });
   }
 
   async cleanup(): Promise<void> {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Box, Container } from '@mui/material';
+import axios from 'axios';
 import Header from './components/common/Header';
 import TabNavigation from './components/common/TabNavigation';
 import StatusBar from './components/common/StatusBar';
@@ -17,11 +18,15 @@ import { useApp } from './context/AppContext';
 
 const App: React.FC = () => {
   const { state, dispatch } = useApp();
+  const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('disconnected');
+  const [dbPopulated, setDbPopulated] = useState<boolean | null>(null);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
-    // Check backend connection
+    // Check backend connection and DB status
     checkConnection();
+    checkDatabaseStatus();
     
     // Listen for menu events
     window.electronAPI.on('menu:navigate', (tab: string) => {
@@ -37,6 +42,19 @@ const App: React.FC = () => {
     };
   }, [dispatch]);
 
+  useEffect(() => {
+    // Navigate to visualize tab if DB is populated (only on initial load)
+    if (!initialCheckDone && dbPopulated === true) {
+      setInitialCheckDone(true);
+      navigate('/visualize');
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'visualize' });
+    } else if (!initialCheckDone && dbPopulated === false) {
+      setInitialCheckDone(true);
+      navigate('/build');
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+    }
+  }, [dbPopulated, navigate, dispatch, initialCheckDone]);
+
   const checkConnection = async () => {
     try {
       const platform = await window.electronAPI.system.platform();
@@ -45,6 +63,16 @@ const App: React.FC = () => {
       }
     } catch (error) {
       setConnectionStatus('disconnected');
+    }
+  };
+
+  const checkDatabaseStatus = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/graph/status');
+      setDbPopulated(response.data.isPopulated);
+    } catch (error) {
+      console.error('Failed to check DB status:', error);
+      setDbPopulated(false);
     }
   };
 
@@ -57,7 +85,7 @@ const App: React.FC = () => {
         <Container maxWidth={false} sx={{ py: 3, height: '100%' }}>
           <ErrorBoundary>
             <Routes>
-              <Route path="/" element={<Navigate to="/build" replace />} />
+              <Route path="/" element={<Navigate to={dbPopulated ? "/visualize" : "/build"} replace />} />
               <Route path="/build" element={<BuildTab />} />
               <Route path="/generate-spec" element={<GenerateSpecTab />} />
               <Route path="/generate-iac" element={<GenerateIaCTab />} />

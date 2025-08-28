@@ -5,6 +5,8 @@ import cors from 'cors';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { Neo4jService } from './neo4j-service';
+import { Neo4jContainer } from './neo4j-container';
 
 const app = express();
 const httpServer = createServer(app);
@@ -21,6 +23,10 @@ app.use(express.json());
 
 // Store active processes
 const activeProcesses = new Map<string, ChildProcess>();
+
+// Initialize Neo4j service and container manager
+const neo4jService = new Neo4jService();
+const neo4jContainer = new Neo4jContainer();
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
@@ -72,7 +78,7 @@ app.post('/api/execute', (req, res) => {
 
   // Stream stdout
   childProcess.stdout?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter(line => line);
+    const lines = data.toString().split('\n').filter((line: string) => line);
     io.to(`process-${processId}`).emit('output', {
       processId,
       type: 'stdout',
@@ -83,7 +89,7 @@ app.post('/api/execute', (req, res) => {
 
   // Stream stderr
   childProcess.stderr?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter(line => line);
+    const lines = data.toString().split('\n').filter((line: string) => line);
     io.to(`process-${processId}`).emit('output', {
       processId,
       type: 'stderr',
@@ -164,13 +170,163 @@ app.get('/api/processes', (req, res) => {
 });
 
 /**
+ * Check if database is populated
+ */
+app.get('/api/graph/status', async (req, res) => {
+  try {
+    const isPopulated = await neo4jService.isDatabasePopulated();
+    const stats = isPopulated ? await neo4jService.getDatabaseStats() : null;
+    res.json({ 
+      isPopulated, 
+      stats 
+    });
+  } catch (error) {
+    console.error('Error checking database status:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to check database status' 
+    });
+  }
+});
+
+/**
+ * Get database statistics
+ */
+app.get('/api/graph/stats', async (req, res) => {
+  try {
+    const stats = await neo4jService.getDatabaseStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching database stats:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to fetch database statistics' 
+    });
+  }
+});
+
+/**
+ * Get full graph data from Neo4j
+ */
+app.get('/api/graph', async (req, res) => {
+  try {
+    const graphData = await neo4jService.getFullGraph();
+    res.json(graphData);
+  } catch (error) {
+    console.error('Error fetching graph:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to fetch graph data' 
+    });
+  }
+});
+
+/**
+ * Search nodes in the graph
+ */
+app.get('/api/graph/search', async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: 'Query parameter is required' });
+  }
+  
+  try {
+    const nodes = await neo4jService.searchNodes(query);
+    res.json(nodes);
+  } catch (error) {
+    console.error('Error searching nodes:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to search nodes' 
+    });
+  }
+});
+
+/**
+ * Get node details
+ */
+app.get('/api/graph/node/:nodeId', async (req, res) => {
+  const { nodeId } = req.params;
+  
+  try {
+    const details = await neo4jService.getNodeDetails(nodeId);
+    if (!details) {
+      return res.status(404).json({ error: 'Node not found' });
+    }
+    res.json(details);
+  } catch (error) {
+    console.error('Error fetching node details:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to fetch node details' 
+    });
+  }
+});
+
+/**
+ * Neo4j container status endpoint
+ */
+app.get('/api/neo4j/status', async (req, res) => {
+  try {
+    const status = await neo4jContainer.getStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to get Neo4j status' 
+    });
+  }
+});
+
+/**
+ * Start Neo4j container
+ */
+app.post('/api/neo4j/start', async (req, res) => {
+  try {
+    await neo4jContainer.start();
+    res.json({ success: true, message: 'Neo4j container started' });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to start Neo4j' 
+    });
+  }
+});
+
+/**
+ * Stop Neo4j container
+ */
+app.post('/api/neo4j/stop', async (req, res) => {
+  try {
+    await neo4jContainer.stop();
+    res.json({ success: true, message: 'Neo4j container stopped' });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to stop Neo4j' 
+    });
+  }
+});
+
+/**
+ * Get environment configuration
+ */
+app.get('/api/config/env', (req, res) => {
+  // Return safe environment variables that the UI can use
+  res.json({
+    AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
+    AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || '',
+    // Don't send secrets to the frontend
+    HAS_AZURE_CLIENT_SECRET: !!process.env.AZURE_CLIENT_SECRET,
+    NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
+    NEO4J_PORT: process.env.NEO4J_PORT || '7687',
+    RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || '',
+  });
+});
+
+/**
  * Health check endpoint
  */
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  const neo4jStatus = await neo4jContainer.getStatus();
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     activeProcesses: activeProcesses.size,
+    neo4j: neo4jStatus
   });
 });
 
@@ -181,17 +337,42 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Cleanup on exit
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('Shutting down server...');
   activeProcesses.forEach((process) => {
     process.kill('SIGTERM');
   });
+  await neo4jService.close();
   process.exit(0);
 });
 
 const PORT = process.env.BACKEND_PORT || 3001;
 
-httpServer.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log(`WebSocket server ready for connections`);
-});
+// Start the server and initialize Neo4j
+async function startServer() {
+  try {
+    // Start Neo4j container first
+    console.log('Starting Neo4j container...');
+    await neo4jContainer.start();
+    console.log('Neo4j container is ready');
+    
+    // Re-initialize Neo4j service connection after container is ready
+    setTimeout(() => {
+      // Give Neo4j service a moment to reconnect
+      console.log('Neo4j service should now be connected');
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Failed to start Neo4j container:', error);
+    console.log('Continuing without Neo4j - some features may not work');
+  }
+  
+  // Start the HTTP server
+  httpServer.listen(PORT, () => {
+    console.log(`Backend server running on http://localhost:${PORT}`);
+    console.log(`WebSocket server ready for connections`);
+  });
+}
+
+// Start everything
+startServer();
