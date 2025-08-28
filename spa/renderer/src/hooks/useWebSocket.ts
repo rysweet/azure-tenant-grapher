@@ -20,6 +20,9 @@ interface ProcessEvent {
   timestamp: string;
 }
 
+const MAX_OUTPUT_BUFFER_SIZE = 10000; // Maximum lines per process
+const MAX_RECONNECT_DELAY = 30000; // Maximum 30 seconds
+
 export function useWebSocket(options: WebSocketOptions = {}) {
   const {
     url = 'http://localhost:3001',
@@ -30,19 +33,28 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   const [outputs, setOutputs] = useState<Map<string, OutputData[]>>(new Map());
   const socketRef = useRef<Socket | null>(null);
   const subscribedProcesses = useRef<Set<string>>(new Set());
+  const reconnectAttempt = useRef(0);
 
   useEffect(() => {
     if (autoConnect) {
+      // Exponential backoff for reconnection
+      const getReconnectionDelay = () => {
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempt.current), MAX_RECONNECT_DELAY);
+        reconnectAttempt.current++;
+        return delay;
+      };
+
       socketRef.current = io(url, {
         transports: ['websocket'],
         reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
+        reconnectionDelay: getReconnectionDelay,
+        reconnectionAttempts: 10,
       });
 
       socketRef.current.on('connect', () => {
         console.log('WebSocket connected');
         setIsConnected(true);
+        reconnectAttempt.current = 0; // Reset reconnect attempts on successful connection
         
         // Re-subscribe to any processes we were watching
         subscribedProcesses.current.forEach(processId => {
@@ -59,7 +71,20 @@ export function useWebSocket(options: WebSocketOptions = {}) {
         setOutputs(prev => {
           const newMap = new Map(prev);
           const existing = newMap.get(data.processId) || [];
-          newMap.set(data.processId, [...existing, data]);
+          
+          // Enforce memory limit - keep only the most recent outputs
+          let updatedOutputs = [...existing, data];
+          const totalLines = updatedOutputs.reduce((sum, output) => sum + output.data.length, 0);
+          
+          if (totalLines > MAX_OUTPUT_BUFFER_SIZE) {
+            // Remove oldest outputs until under limit
+            while (updatedOutputs.length > 1 && 
+                   updatedOutputs.reduce((sum, output) => sum + output.data.length, 0) > MAX_OUTPUT_BUFFER_SIZE) {
+              updatedOutputs.shift();
+            }
+          }
+          
+          newMap.set(data.processId, updatedOutputs);
           return newMap;
         });
       });
@@ -75,8 +100,21 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       });
 
       return () => {
-        socketRef.current?.disconnect();
-        socketRef.current = null;
+        // Cleanup: unsubscribe from all processes before disconnecting
+        if (socketRef.current) {
+          subscribedProcesses.current.forEach(processId => {
+            socketRef.current?.emit('unsubscribe', processId);
+          });
+          subscribedProcesses.current.clear();
+          
+          // Remove all listeners to prevent memory leaks
+          socketRef.current.removeAllListeners();
+          socketRef.current.disconnect();
+          socketRef.current = null;
+        }
+        
+        // Clear outputs to free memory
+        setOutputs(new Map());
       };
     }
   }, [url, autoConnect]);

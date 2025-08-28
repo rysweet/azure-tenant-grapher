@@ -189,10 +189,38 @@ const VisualizeTab: React.FC = () => {
         </Grid>
 
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button startIcon={<ZoomIn />} size="small" onClick={handleZoomIn}>Zoom In</Button>
-          <Button startIcon={<ZoomOut />} size="small" onClick={handleZoomOut}>Zoom Out</Button>
-          <Button startIcon={<CenterFocusStrong />} size="small" onClick={handleResetView}>Reset View</Button>
-          <Button startIcon={<DownloadIcon />} size="small" onClick={handleExportGraph}>Export</Button>
+          <Button 
+            startIcon={<ZoomIn />} 
+            size="small" 
+            onClick={handleZoomIn}
+            aria-label="Zoom in graph view"
+          >
+            Zoom In
+          </Button>
+          <Button 
+            startIcon={<ZoomOut />} 
+            size="small" 
+            onClick={handleZoomOut}
+            aria-label="Zoom out graph view"
+          >
+            Zoom Out
+          </Button>
+          <Button 
+            startIcon={<CenterFocusStrong />} 
+            size="small" 
+            onClick={handleResetView}
+            aria-label="Reset graph view to default"
+          >
+            Reset View
+          </Button>
+          <Button 
+            startIcon={<DownloadIcon />} 
+            size="small" 
+            onClick={handleExportGraph}
+            aria-label="Export graph data as JSON"
+          >
+            Export
+          </Button>
         </Box>
       </Paper>
 

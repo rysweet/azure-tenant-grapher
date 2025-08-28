@@ -269,7 +269,10 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   return (
     <Paper sx={{ height, position: 'relative', overflow: 'hidden' }}>
       <div 
-        ref={containerRef} 
+        ref={containerRef}
+        role="img"
+        aria-label={`Interactive graph visualization with ${nodes.length} nodes and ${edges.length} edges`}
+        tabIndex={0}
         style={{ 
           width: '100%', 
           height: '100%',
