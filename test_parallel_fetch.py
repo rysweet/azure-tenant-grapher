@@ -27,12 +27,12 @@ async def test_parallel_fetching():
     # Create discovery service
     service = AzureDiscoveryService(config)
     print(
-        f"✅ Discovery service created with _max_build_threads={service._max_build_threads}"
+        f"✅ Discovery service created with _max_build_threads={service._max_build_threads}"  # type: ignore[reportPrivateUsage]
     )
 
     # Verify parallel fetching is enabled
-    assert service._max_build_threads == 5, (
-        f"Expected 5, got {service._max_build_threads}"
+    assert service._max_build_threads == 5, (  # type: ignore[reportPrivateUsage]
+        f"Expected 5, got {service._max_build_threads}"  # type: ignore[reportPrivateUsage]
     )
     print("✅ Parallel fetching is enabled!")
 

@@ -41,7 +41,7 @@ print("✅ Backward compatibility maintained")
 # Test 3: Render config panel to verify display
 print("\nTest 3: Testing panel rendering...")
 try:
-    config_panel = dashboard._render_config_panel()
+    config_panel = dashboard._render_config_panel()  # type: ignore[reportPrivateUsage]
     # Convert panel to string to check content
     import io
 
@@ -49,7 +49,7 @@ try:
 
     console = Console(file=io.StringIO(), force_terminal=True)
     console.print(config_panel)
-    output = console.file.getvalue()
+    output = console.file.getvalue()  # type: ignore[attr-defined]
 
     assert "Max LLM Threads" in output, "Max LLM Threads not found in config panel"
     assert "Max Build Threads" in output, "Max Build Threads not found in config panel"
@@ -75,10 +75,14 @@ try:
     }
     dashboard.processing = True
 
-    progress_panel = dashboard._render_progress_panel()
+    progress_panel = dashboard._render_progress_panel()  # type: ignore[reportPrivateUsage]
+    import io
+
+    from rich.console import Console
+
     console = Console(file=io.StringIO(), force_terminal=True)
     console.print(progress_panel)
-    output = console.file.getvalue()
+    output = console.file.getvalue()  # type: ignore[attr-defined]
 
     # Check that Max Concurrency is NOT in the progress panel
     lines = output.split("\n")

@@ -529,8 +529,18 @@ async def visualize_command_handler(
 ) -> None:
     """Handle the visualize command logic."""
     import os
+    from datetime import datetime
 
     ensure_neo4j_running()
+    effective_output = ""
+    if output and output.strip():
+        effective_output = output
+    else:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        effective_output = os.path.join(
+            "outputs", f"azure_graph_visualization_{ts}.html"
+        )
+
     try:
         # Create configuration (Neo4j-only)
         config = create_neo4j_config_from_env()
@@ -551,14 +561,12 @@ async def visualize_command_handler(
 
         try:
             # Default HTML output under outputs/ if not specified
-            effective_output = output
-            if not effective_output:
-                from datetime import datetime
-
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                effective_output = os.path.join(
-                    "outputs", f"azure_graph_visualization_{ts}.html"
-                )
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            effective_output = os.path.join(
+                "outputs", f"azure_graph_visualization_{ts}.html"
+            )
+            if output and output.strip():
+                effective_output = output
             viz_path = visualizer.generate_html_visualization(
                 output_path=effective_output, link_to_hierarchy=link_hierarchy
             )

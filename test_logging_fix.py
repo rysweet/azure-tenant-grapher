@@ -4,7 +4,9 @@
 import io
 import logging
 
-from src.config_manager import _set_azure_http_log_level
+from src.config_manager import (
+    _set_azure_http_log_level,  # type: ignore[reportPrivateUsage]
+)
 
 # Capture logging output
 log_capture = io.StringIO()
