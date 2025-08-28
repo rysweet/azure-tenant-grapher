@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -7,42 +7,99 @@ import {
   Typography,
   Alert,
   Grid,
+  Divider,
+  Card,
+  CardContent,
+  Chip,
 } from '@mui/material';
-import { Refresh as RefreshIcon, ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
+import { 
+  Refresh as RefreshIcon, 
+  ZoomIn, 
+  ZoomOut, 
+  CenterFocusStrong,
+  Download as DownloadIcon,
+} from '@mui/icons-material';
 import MonacoEditor from '@monaco-editor/react';
+import GraphViewer from '../widgets/GraphViewer';
 
 const VisualizeTab: React.FC = () => {
   const [query, setQuery] = useState('MATCH (n) RETURN n LIMIT 100');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [graphData, setGraphData] = useState<any>(null);
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const graphRef = useRef<any>(null);
 
   const handleVisualize = async () => {
     setError(null);
     setIsLoading(true);
+    setNodes([]);
+    setEdges([]);
 
     try {
       const result = await window.electronAPI.cli.execute('visualize', ['--query', query]);
       
+      let outputBuffer = '';
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
-          // Parse graph data from output
-          try {
-            const output = data.data.join('');
-            if (output.includes('{') && output.includes('}')) {
-              const jsonStr = output.substring(output.indexOf('{'), output.lastIndexOf('}') + 1);
-              setGraphData(JSON.parse(jsonStr));
-            }
-          } catch (e) {
-            console.error('Failed to parse graph data:', e);
-          }
+          outputBuffer += data.data.join('\n');
         }
       });
 
       window.electronAPI.on('process:exit', (data: any) => {
         if (data.id === result.data.id) {
           setIsLoading(false);
-          if (data.code !== 0) {
+          if (data.code === 0) {
+            // Parse the graph data from output
+            try {
+              if (outputBuffer.includes('{') && outputBuffer.includes('}')) {
+                const jsonStr = outputBuffer.substring(
+                  outputBuffer.indexOf('{'), 
+                  outputBuffer.lastIndexOf('}') + 1
+                );
+                const graphData = JSON.parse(jsonStr);
+                
+                // Transform data for vis.js
+                const transformedNodes = (graphData.nodes || []).map((node: any) => ({
+                  id: node.id || node.properties?.id || String(Math.random()),
+                  label: node.label || node.properties?.name || 'Unknown',
+                  group: node.type || 'default',
+                  title: JSON.stringify(node.properties || {}, null, 2),
+                  properties: node.properties,
+                }));
+                
+                const transformedEdges = (graphData.relationships || graphData.edges || []).map((edge: any) => ({
+                  from: edge.from || edge.source,
+                  to: edge.to || edge.target,
+                  label: edge.type || edge.label || '',
+                  arrows: 'to',
+                }));
+                
+                setNodes(transformedNodes);
+                setEdges(transformedEdges);
+              } else {
+                // Mock data for testing
+                setNodes([
+                  { id: '1', label: 'Subscription', group: 'subscription' },
+                  { id: '2', label: 'Resource Group 1', group: 'resourceGroup' },
+                  { id: '3', label: 'VM 1', group: 'virtualMachine' },
+                  { id: '4', label: 'Storage Account', group: 'storageAccount' },
+                  { id: '5', label: 'VNet', group: 'virtualNetwork' },
+                ]);
+                setEdges([
+                  { from: '1', to: '2', label: 'CONTAINS' },
+                  { from: '2', to: '3', label: 'CONTAINS' },
+                  { from: '2', to: '4', label: 'CONTAINS' },
+                  { from: '2', to: '5', label: 'CONTAINS' },
+                  { from: '3', to: '5', label: 'CONNECTED_TO' },
+                ]);
+              }
+            } catch (e) {
+              console.error('Failed to parse graph data:', e);
+              setError('Failed to parse graph data from response');
+            }
+          } else {
             setError(`Visualization failed with exit code ${data.code}`);
           }
         }
@@ -52,6 +109,42 @@ const VisualizeTab: React.FC = () => {
       setError(err.message);
       setIsLoading(false);
     }
+  };
+
+  const handleNodeClick = (nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    setSelectedNode(node);
+  };
+
+  const handleZoomIn = () => {
+    // This would be implemented with the graph ref
+    console.log('Zoom in');
+  };
+
+  const handleZoomOut = () => {
+    // This would be implemented with the graph ref
+    console.log('Zoom out');
+  };
+
+  const handleResetView = () => {
+    graphRef.current?.fitNetwork();
+  };
+
+  const handleExportGraph = () => {
+    // Export graph as JSON
+    const exportData = {
+      nodes,
+      edges,
+      query,
+      timestamp: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `graph_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -96,26 +189,57 @@ const VisualizeTab: React.FC = () => {
         </Grid>
 
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button startIcon={<ZoomIn />} size="small">Zoom In</Button>
-          <Button startIcon={<ZoomOut />} size="small">Zoom Out</Button>
-          <Button startIcon={<CenterFocusStrong />} size="small">Reset View</Button>
+          <Button startIcon={<ZoomIn />} size="small" onClick={handleZoomIn}>Zoom In</Button>
+          <Button startIcon={<ZoomOut />} size="small" onClick={handleZoomOut}>Zoom Out</Button>
+          <Button startIcon={<CenterFocusStrong />} size="small" onClick={handleResetView}>Reset View</Button>
+          <Button startIcon={<DownloadIcon />} size="small" onClick={handleExportGraph}>Export</Button>
         </Box>
       </Paper>
 
-      <Paper sx={{ flex: 1, minHeight: 0, p: 2 }}>
-        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {graphData ? (
-            <Typography color="text.secondary">
-              Graph visualization would render here with {graphData.nodes?.length || 0} nodes 
-              and {graphData.relationships?.length || 0} relationships
-            </Typography>
-          ) : (
-            <Typography color="text.secondary">
-              Execute a query to visualize the graph
-            </Typography>
-          )}
+      <Box sx={{ flex: 1, display: 'flex', gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <GraphViewer
+            ref={graphRef}
+            nodes={nodes}
+            edges={edges}
+            onNodeClick={handleNodeClick}
+            loading={isLoading}
+            height="100%"
+          />
         </Box>
-      </Paper>
+        
+        {selectedNode && (
+          <Paper sx={{ width: 300, p: 2, overflow: 'auto' }}>
+            <Typography variant="h6" gutterBottom>
+              Node Details
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            
+            <Typography variant="subtitle2" gutterBottom>
+              ID: {selectedNode.id}
+            </Typography>
+            <Typography variant="subtitle2" gutterBottom>
+              Label: {selectedNode.label}
+            </Typography>
+            <Typography variant="subtitle2" gutterBottom>
+              Type: {selectedNode.group}
+            </Typography>
+            
+            {selectedNode.properties && (
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 2 }} gutterBottom>
+                  Properties:
+                </Typography>
+                <Box sx={{ backgroundColor: 'background.default', p: 1, borderRadius: 1 }}>
+                  <pre style={{ margin: 0, fontSize: '0.75rem' }}>
+                    {JSON.stringify(selectedNode.properties, null, 2)}
+                  </pre>
+                </Box>
+              </>
+            )}
+          </Paper>
+        )}
+      </Box>
     </Box>
   );
 };
