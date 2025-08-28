@@ -3,6 +3,7 @@
 
 import io
 import logging
+from src.config_manager import _set_azure_http_log_level
 
 # Capture logging output
 log_capture = io.StringIO()
@@ -10,7 +11,6 @@ handler = logging.StreamHandler(log_capture)
 handler.setLevel(logging.INFO)
 
 # Apply our logging configuration
-from src.config_manager import _set_azure_http_log_level
 
 # Test 1: Check that HTTP loggers are set to WARNING when log level is INFO
 print("Test 1: Checking logger levels when log level is INFO...")

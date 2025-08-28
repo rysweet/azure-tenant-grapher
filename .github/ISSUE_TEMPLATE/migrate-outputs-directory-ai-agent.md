@@ -10,7 +10,7 @@ assignees: []
 
 This umbrella Issue migrates all CLI and programmatic output artifacts—code, scripts, logs, dashboards, and generated files—into the `outputs/` directory by default. The migration improves repository hygiene, developer onboarding, local repeatability, and ensures all output artifacts are consistently managed. This covers completed code refactors, legacy output migration, `.gitignore` updates, documentation, and CI/test integration.
 
-**Reasoning:**  
+**Reasoning:**
 Adopting this convention:
 - Prevents accidental artifact sprawl in the repo root and source directories
 - Makes development and debugging easier for all contributors

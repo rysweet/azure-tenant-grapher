@@ -27,9 +27,9 @@ class RichDashboard:
     def __init__(
         self,
         config: Dict[str, Any],
-        max_concurrency: int = None,
-        max_llm_threads: int = None,
-        max_build_threads: int = None,
+        max_concurrency: Optional[int] = None,
+        max_llm_threads: Optional[int] = None,
+        max_build_threads: Optional[int] = None,
     ):
         self.console = Console()
         self.layout = Layout()

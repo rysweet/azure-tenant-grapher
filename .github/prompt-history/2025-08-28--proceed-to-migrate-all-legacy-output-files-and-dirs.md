@@ -1,11 +1,11 @@
 # Prompt History: outputs/ Migration Task
 
-**Session:** 2025-08-28--proceed-to-migrate-all-legacy-output-files-and-dirs  
-**Start:** 2025-08-28  
-**User Task:**  
+**Session:** 2025-08-28--proceed-to-migrate-all-legacy-output-files-and-dirs
+**Start:** 2025-08-28
+**User Task:**
 Proceed to migrate all legacy output files and directories into the `outputs/` directory according to the established repo-wide outputs/ migration convention...
 
-**Actions Taken:**  
+**Actions Taken:**
 - Identified all legacy non-sample output files and directories in the project root.
 - Moved the following outputs into `outputs/`:
   - 20250826_223012_tenant_spec.md
@@ -17,7 +17,7 @@ Proceed to migrate all legacy output files and directories into the `outputs/` d
   - final_test_spec.md
   - simdoc-test.md
 
-**Excluded:**  
+**Excluded:**
 Files judged to be reference/sample/test or documented fixture outputs per instructions and repo docs.
 
 **No user corrections or feedback observed so far.**
