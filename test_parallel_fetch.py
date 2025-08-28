@@ -7,7 +7,7 @@ import os
 # Mock environment to avoid real Azure connections
 os.environ["AZURE_TENANT_ID"] = "test-tenant"
 os.environ["NEO4J_URI"] = "bolt://localhost:7688"
-os.environ["NEO4J_PASSWORD"] = "test"
+os.environ["NEO4J_PASSWORD"] = "test"  # pragma: allowlist secret
 
 from src.config_manager import AzureTenantGrapherConfig, ProcessingConfig
 from src.services.azure_discovery_service import AzureDiscoveryService
