@@ -24,11 +24,16 @@ class DashboardExit(Exception):
 
 
 class RichDashboard:
-    def __init__(self, config: Dict[str, Any], max_concurrency: int):
+    def __init__(self, config: Dict[str, Any], max_concurrency: int = None, 
+                 max_llm_threads: int = None, max_build_threads: int = None):
         self.console = Console()
         self.layout = Layout()
         self.config = config
-        self.max_concurrency = max_concurrency
+        # Support both old and new parameter styles
+        self.max_llm_threads = max_llm_threads if max_llm_threads is not None else max_concurrency
+        self.max_build_threads = max_build_threads if max_build_threads is not None else 20
+        # Keep max_concurrency for backward compatibility
+        self.max_concurrency = self.max_llm_threads
 
         # Add log_file_path for CLI compatibility
         import tempfile
@@ -78,7 +83,9 @@ class RichDashboard:
         table.add_column()
         for k, v in self.config.items():
             table.add_row(str(k), str(v))
-        table.add_row("Max Concurrency", str(self.max_concurrency))
+        # Show both thread parameters instead of generic max_concurrency
+        table.add_row("Max LLM Threads", str(self.max_llm_threads))
+        table.add_row("Max Build Threads", str(self.max_build_threads))
         # Add log file path as a single row, not split across lines
         table.add_row("Log File", self.log_file_path)
         return Panel(
@@ -97,7 +104,6 @@ class RichDashboard:
         table.add_row("LLM Generated", str(stats["llm_generated"]))
         table.add_row("LLM Skipped", str(stats["llm_skipped"]))
         table.add_row("LLM In-Flight", str(stats.get("llm_in_flight", 0)))
-        table.add_row("Max Concurrency", str(self.max_concurrency))
         # Add spinner and label at the bottom if processing
         exit_label = Text("Press 'x' to exit", style="yellow")
         if self.processing:

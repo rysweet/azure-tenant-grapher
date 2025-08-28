@@ -37,6 +37,7 @@ def print_cli_env_block(context: str = ""):
 print_cli_env_block("STARTUP")
 
 # Set Azure logging levels early
+# Suppress verbose HTTP logging from Azure SDK and related libraries
 for name in [
     "azure",
     "azure.core",
@@ -44,9 +45,15 @@ for name in [
     "azure.core.pipeline.policies",
     "azure.core.pipeline.policies.http_logging_policy",
     "azure.core.pipeline.policies.HttpLoggingPolicy",
+    "azure.identity",
+    "azure.mgmt",
     "msrest",
     "urllib3",
+    "urllib3.connectionpool",
     "http.client",
+    "requests.packages.urllib3",
+    "httpx",
+    "openai",
 ]:
     logging.getLogger(name).setLevel(logging.WARNING)
 
@@ -238,6 +245,12 @@ def cli(ctx: click.Context, log_level: str) -> None:
     help="Maximum number of parallel LLM threads (default: 5)",
 )
 @click.option(
+    "--max-build-threads",
+    type=int,
+    default=20,
+    help="Maximum concurrent API calls for fetching resource details (default: 20)",
+)
+@click.option(
     "--max-retries",
     type=int,
     default=3,
@@ -275,6 +288,11 @@ def cli(ctx: click.Context, log_level: str) -> None:
     is_flag=True,
     help="Force re-evaluation of all relationships/edges for all resources in the graph database",
 )
+@click.option(
+    "--no-aad-import",
+    is_flag=True,
+    help="Disable Azure AD user/group import from Microsoft Graph API",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -282,6 +300,7 @@ async def build(
     tenant_id: str,
     resource_limit: Optional[int],
     max_llm_threads: int,
+    max_build_threads: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -290,6 +309,7 @@ async def build(
     test_keypress_queue: bool,
     test_keypress_file: str,
     rebuild_edges: bool = False,
+    no_aad_import: bool = False,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -306,6 +326,7 @@ async def build(
         tenant_id,
         resource_limit,
         max_llm_threads,
+        max_build_threads,
         max_retries,
         no_container,
         generate_spec,
@@ -314,6 +335,7 @@ async def build(
         test_keypress_queue,
         test_keypress_file,
         rebuild_edges,
+        no_aad_import,
     )
     print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result

@@ -19,18 +19,27 @@ environment variable handling, and configuration validation.
 
 
 def _set_azure_http_log_level(log_level: str) -> None:
+    """Set log levels for HTTP-related loggers to reduce noise."""
     http_loggers = [
         "azure.core.pipeline.policies.http_logging_policy",
-        "azure.core.pipeline.policies.HttpLoggingPolicy",
+        "azure.core.pipeline.policies.HttpLoggingPolicy", 
+        "azure.core.pipeline",
+        "azure.identity",
+        "azure.mgmt",
         "msrest",
         "azure",
         "urllib3",
+        "urllib3.connectionpool",
         "http.client",
+        "requests.packages.urllib3",
+        "httpx",
+        "httpcore",
+        "openai",
     ]
+    # HTTP logging should only appear at DEBUG level
+    target_level = logging.DEBUG if log_level == "DEBUG" else logging.WARNING
     for name in http_loggers:
-        logging.getLogger(name).setLevel(
-            logging.DEBUG if log_level == "DEBUG" else logging.WARNING
-        )
+        logging.getLogger(name).setLevel(target_level)
 
 
 logger = logging.getLogger(__name__)
@@ -124,6 +133,9 @@ class ProcessingConfig:
     max_retries: int = field(
         default_factory=lambda: int(os.getenv("PROCESSING_MAX_RETRIES", "3"))
     )
+    max_build_threads: int = field(
+        default_factory=lambda: int(os.getenv("MAX_BUILD_THREADS", "20"))
+    )
     retry_delay: float = field(
         default_factory=lambda: float(os.getenv("PROCESSING_RETRY_DELAY", "1.0"))
     )
@@ -133,6 +145,10 @@ class ProcessingConfig:
     )
     auto_start_container: bool = field(
         default_factory=lambda: os.getenv("AUTO_START_CONTAINER", "true").lower()
+        == "true"
+    )
+    enable_aad_import: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_AAD_IMPORT", "true").lower()
         == "true"
     )
 
@@ -226,6 +242,7 @@ class AzureTenantGrapherConfig:
         tenant_id: str,
         resource_limit: Optional[int] = None,
         max_retries: Optional[int] = None,
+        max_build_threads: Optional[int] = None,
     ) -> "AzureTenantGrapherConfig":
         """
         Create configuration from environment variables.
@@ -247,6 +264,8 @@ class AzureTenantGrapherConfig:
             config.specification.resource_limit = resource_limit
         if max_retries is not None:
             config.processing.max_retries = max_retries
+        if max_build_threads is not None:
+            config.processing.max_build_threads = max_build_threads
 
         return config
 
@@ -390,6 +409,7 @@ def setup_logging(config: LoggingConfig) -> None:
         root_logger.addHandler(file_handler)
 
     # Set specific loggers to appropriate levels
+    # These override any settings from _set_azure_http_log_level for fine control
     azure_logger = logging.getLogger("azure")
     azure_logger.setLevel(logging.WARNING)  # Reduce Azure SDK noise
 
@@ -397,7 +417,7 @@ def setup_logging(config: LoggingConfig) -> None:
     azure_http_logger = logging.getLogger(
         "azure.core.pipeline.policies.http_logging_policy"
     )
-    azure_http_logger.setLevel(logging.DEBUG)  # Only show at DEBUG level
+    azure_http_logger.setLevel(logging.WARNING)  # Suppress HTTP request/response logs
 
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
@@ -416,6 +436,7 @@ def create_config_from_env(
     tenant_id: str,
     resource_limit: Optional[int] = None,
     max_retries: Optional[int] = None,
+    max_build_threads: Optional[int] = None,
 ) -> AzureTenantGrapherConfig:
     """
     Factory function to create and validate configuration from environment.
@@ -432,7 +453,7 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries
+        tenant_id, resource_limit, max_retries, max_build_threads
     )
     config.validate_all()
     return config

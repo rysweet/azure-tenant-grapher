@@ -61,10 +61,9 @@ class ResourceProcessingService:
         )
 
         # --- AAD Graph Ingestion ---
-        enable_aad = (
-            getattr(self.config, "enable_aad_import", None)
-            or os.environ.get("ENABLE_AAD_IMPORT", "false").lower() == "true"
-        )
+        # Use config value which defaults to True, can be overridden by env var
+        enable_aad = getattr(self.config, "enable_aad_import", True)
+        
         if enable_aad and self.aad_graph_service:
             logger.info(
                 "AAD import enabled: ingesting Azure AD users and groups into graph."
