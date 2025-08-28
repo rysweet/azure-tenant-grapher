@@ -314,10 +314,11 @@ async def _run_dashboard_mode(
     print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
-    # Setup RichDashboard
+    # Setup RichDashboard with both thread parameters
     dashboard = RichDashboard(
         config=config.to_dict(),
-        max_concurrency=max_llm_threads,
+        max_llm_threads=max_llm_threads,
+        max_build_threads=getattr(config.processing, 'max_build_threads', 20),
     )
     # Print log file path for test discoverability
     structlog.get_logger(__name__).info(
