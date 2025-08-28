@@ -4,6 +4,7 @@ import { Box, Container } from '@mui/material';
 import Header from './components/common/Header';
 import TabNavigation from './components/common/TabNavigation';
 import StatusBar from './components/common/StatusBar';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import BuildTab from './components/tabs/BuildTab';
 import GenerateSpecTab from './components/tabs/GenerateSpecTab';
 import GenerateIaCTab from './components/tabs/GenerateIaCTab';
@@ -54,17 +55,19 @@ const App: React.FC = () => {
       
       <Box sx={{ flex: 1, overflow: 'auto', backgroundColor: '#f5f5f5' }}>
         <Container maxWidth={false} sx={{ py: 3, height: '100%' }}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/build" replace />} />
-            <Route path="/build" element={<BuildTab />} />
-            <Route path="/generate-spec" element={<GenerateSpecTab />} />
-            <Route path="/generate-iac" element={<GenerateIaCTab />} />
-            <Route path="/create-tenant" element={<CreateTenantTab />} />
-            <Route path="/visualize" element={<VisualizeTab />} />
-            <Route path="/agent-mode" element={<AgentModeTab />} />
-            <Route path="/threat-model" element={<ThreatModelTab />} />
-            <Route path="/config" element={<ConfigTab />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Navigate to="/build" replace />} />
+              <Route path="/build" element={<BuildTab />} />
+              <Route path="/generate-spec" element={<GenerateSpecTab />} />
+              <Route path="/generate-iac" element={<GenerateIaCTab />} />
+              <Route path="/create-tenant" element={<CreateTenantTab />} />
+              <Route path="/visualize" element={<VisualizeTab />} />
+              <Route path="/agent-mode" element={<AgentModeTab />} />
+              <Route path="/threat-model" element={<ThreatModelTab />} />
+              <Route path="/config" element={<ConfigTab />} />
+            </Routes>
+          </ErrorBoundary>
         </Container>
       </Box>
       

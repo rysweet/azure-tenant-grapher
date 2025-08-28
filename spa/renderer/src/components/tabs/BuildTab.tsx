@@ -16,6 +16,7 @@ import {
 import { PlayArrow as PlayIcon, Stop as StopIcon } from '@mui/icons-material';
 import LogViewer from '../common/LogViewer';
 import { useApp } from '../../context/AppContext';
+import { isValidTenantId, isValidResourceLimit, isValidThreadCount } from '../../utils/validation';
 
 const BuildTab: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -34,6 +35,21 @@ const BuildTab: React.FC = () => {
   const handleStart = async () => {
     if (!tenantId) {
       setError('Tenant ID is required');
+      return;
+    }
+
+    if (!isValidTenantId(tenantId)) {
+      setError('Invalid Tenant ID format. Must be a valid UUID or domain.');
+      return;
+    }
+
+    if (!isValidResourceLimit(resourceLimit)) {
+      setError('Resource limit must be between 0 and 10000');
+      return;
+    }
+
+    if (!isValidThreadCount(maxLlmThreads) || !isValidThreadCount(maxBuildThreads)) {
+      setError('Thread counts must be between 1 and 100');
       return;
     }
 

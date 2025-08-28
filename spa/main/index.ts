@@ -98,3 +98,16 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+// Handle process termination signals for clean shutdown
+process.on('SIGINT', () => {
+  processManager.cleanup().then(() => {
+    app.quit();
+  });
+});
+
+process.on('SIGTERM', () => {
+  processManager.cleanup().then(() => {
+    app.quit();
+  });
+});
