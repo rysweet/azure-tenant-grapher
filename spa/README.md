@@ -12,34 +12,37 @@ A desktop application providing a graphical interface for Azure Tenant Grapher, 
 
 ## Quick Start
 
+The SPA is integrated with the Azure Tenant Grapher CLI for easy launching:
+
+```bash
+# Start the SPA/Electron dashboard
+atg start
+
+# Stop the SPA when done
+atg stop
+```
+
+That's it! The CLI handles dependency installation and process management automatically.
+
+### Alternative Launch Methods
+
+```bash
+# Using full command name
+azure-tenant-grapher start
+
+# Using Python directly
+python scripts/cli.py start
+
+# For development with hot reload
+cd spa && npm run dev
+```
+
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 18+ and npm (auto-checked by CLI)
 - Python 3.9+ (for CLI backend)
 - Docker (for Neo4j database)
 - Azure CLI (optional, for Azure operations)
-
-### Installation
-
-1. **Install dependencies:**
-   ```bash
-   cd spa
-   npm install
-   ```
-
-2. **Start the application:**
-   ```bash
-   # Using the CLI wrapper
-   atg start
-   
-   # Or directly with npm
-   npm run start
-   ```
-
-3. **Stop the application:**
-   ```bash
-   atg stop
-   ```
 
 ## Development
 

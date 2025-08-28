@@ -117,13 +117,29 @@ const VisualizeTab: React.FC = () => {
   };
 
   const handleZoomIn = () => {
-    // This would be implemented with the graph ref
-    console.log('Zoom in');
+    if (graphRef.current?.network) {
+      const scale = graphRef.current.network.getScale();
+      graphRef.current.network.moveTo({
+        scale: scale * 1.2,
+        animation: {
+          duration: 300,
+          easingFunction: 'easeInOutQuad',
+        },
+      });
+    }
   };
 
   const handleZoomOut = () => {
-    // This would be implemented with the graph ref
-    console.log('Zoom out');
+    if (graphRef.current?.network) {
+      const scale = graphRef.current.network.getScale();
+      graphRef.current.network.moveTo({
+        scale: scale * 0.8,
+        animation: {
+          duration: 300,
+          easingFunction: 'easeInOutQuad',
+        },
+      });
+    }
   };
 
   const handleResetView = () => {

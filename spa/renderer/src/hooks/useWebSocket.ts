@@ -52,7 +52,6 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       });
 
       socketRef.current.on('connect', () => {
-        console.log('WebSocket connected');
         setIsConnected(true);
         reconnectAttempt.current = 0; // Reset reconnect attempts on successful connection
         
@@ -63,7 +62,6 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       });
 
       socketRef.current.on('disconnect', () => {
-        console.log('WebSocket disconnected');
         setIsConnected(false);
       });
 
@@ -90,12 +88,10 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       });
 
       socketRef.current.on('process-exit', (event: ProcessEvent) => {
-        console.log('Process exited:', event);
         subscribedProcesses.current.delete(event.processId);
       });
 
       socketRef.current.on('process-error', (event: ProcessEvent) => {
-        console.error('Process error:', event);
         subscribedProcesses.current.delete(event.processId);
       });
 

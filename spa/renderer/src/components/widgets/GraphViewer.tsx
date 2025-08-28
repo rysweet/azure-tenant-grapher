@@ -231,7 +231,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     });
   };
 
-  // Expose methods via ref
+  // Expose methods and network instance via ref
   React.useImperativeHandle(
     React.forwardRef((props, ref) => ref),
     () => ({
@@ -239,8 +239,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       centerNode,
       getConnectedNodes,
       highlightPath,
+      network: networkRef.current,
     }),
-    []
+    [networkRef.current]
   );
 
   if (loading) {
