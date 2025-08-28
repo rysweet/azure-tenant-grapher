@@ -258,7 +258,25 @@ export class Neo4jService {
       if (result.records.length > 0) {
         const stats = result.records[0].get('stats');
         
-        // Get database size
+        // Convert Neo4j integers to JavaScript numbers
+        const processedStats: any = {
+          nodeCount: stats.nodeCount?.toNumber ? stats.nodeCount.toNumber() : stats.nodeCount || 0,
+          edgeCount: stats.edgeCount?.toNumber ? stats.edgeCount.toNumber() : stats.edgeCount || 0,
+          nodeTypes: (stats.nodeTypes || []).map((nt: any) => ({
+            type: nt.type,
+            count: nt.count?.toNumber ? nt.count.toNumber() : nt.count || 0
+          })),
+          edgeTypes: (stats.edgeTypes || []).map((et: any) => ({
+            type: et.type,
+            count: et.count?.toNumber ? et.count.toNumber() : et.count || 0
+          })),
+          lastUpdate: stats.lastUpdate,
+          isEmpty: stats.isEmpty,
+          labelCount: 0,
+          relTypeCount: 0
+        };
+        
+        // Try to get additional metadata with APOC
         const sizeResult = await session.run(`
           CALL apoc.meta.stats() YIELD nodeCount, relCount, labelCount, relTypeCount
           RETURN nodeCount, relCount, labelCount, relTypeCount
@@ -266,11 +284,11 @@ export class Neo4jService {
         
         if (sizeResult && sizeResult.records.length > 0) {
           const record = sizeResult.records[0];
-          stats.labelCount = record.get('labelCount').toNumber();
-          stats.relTypeCount = record.get('relTypeCount').toNumber();
+          processedStats.labelCount = record.get('labelCount').toNumber();
+          processedStats.relTypeCount = record.get('relTypeCount').toNumber();
         }
         
-        return stats;
+        return processedStats;
       }
       
       return {

@@ -187,8 +187,15 @@ export class Neo4jContainer {
     const running = await this.isRunning();
     const exists = await this.containerExists();
     
+    const baseStatus = {
+      containerName: this.containerName,
+      uri: `bolt://localhost:${this.neo4jPort}`,
+      port: this.neo4jPort,
+    };
+    
     if (!running) {
       return {
+        ...baseStatus,
         status: exists ? 'stopped' : 'not_created',
         running: false,
         exists
@@ -202,6 +209,7 @@ export class Neo4jContainer {
       const state = JSON.parse(stdout);
       
       return {
+        ...baseStatus,
         status: 'running',
         running: true,
         exists: true,

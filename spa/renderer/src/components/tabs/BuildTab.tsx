@@ -372,21 +372,27 @@ const BuildTab: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" gutterBottom>Node Types</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {dbStats.nodeTypes.slice(0, 10).map((nodeType) => (
-                    <Chip
-                      key={nodeType.type}
-                      label={`${nodeType.type}: ${formatNumber(nodeType.count)}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  ))}
-                  {dbStats.nodeTypes.length > 10 && (
-                    <Chip
-                      label={`+${dbStats.nodeTypes.length - 10} more`}
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                    />
+                  {dbStats && dbStats.nodeTypes && dbStats.nodeTypes.length > 0 ? (
+                    <>
+                      {dbStats.nodeTypes.slice(0, 10).map((nodeType) => (
+                        <Chip
+                          key={nodeType.type}
+                          label={`${nodeType.type}: ${formatNumber(nodeType.count || 0)}`}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))}
+                      {dbStats.nodeTypes.length > 10 && (
+                        <Chip
+                          label={`+${dbStats.nodeTypes.length - 10} more`}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <Typography variant="caption" color="textSecondary">No data</Typography>
                   )}
                 </Box>
               </Grid>
@@ -394,22 +400,28 @@ const BuildTab: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" gutterBottom>Edge Types</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {dbStats.edgeTypes.slice(0, 10).map((edgeType) => (
-                    <Chip
-                      key={edgeType.type}
-                      label={`${edgeType.type}: ${formatNumber(edgeType.count)}`}
-                      size="small"
-                      variant="outlined"
-                      color="secondary"
-                    />
-                  ))}
-                  {dbStats.edgeTypes.length > 10 && (
-                    <Chip
-                      label={`+${dbStats.edgeTypes.length - 10} more`}
-                      size="small"
-                      variant="outlined"
-                      color="secondary"
-                    />
+                  {dbStats && dbStats.edgeTypes && dbStats.edgeTypes.length > 0 ? (
+                    <>
+                      {dbStats.edgeTypes.slice(0, 10).map((edgeType) => (
+                        <Chip
+                          key={edgeType.type}
+                          label={`${edgeType.type}: ${formatNumber(edgeType.count || 0)}`}
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                        />
+                      ))}
+                      {dbStats.edgeTypes.length > 10 && (
+                        <Chip
+                          label={`+${dbStats.edgeTypes.length - 10} more`}
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <Typography variant="caption" color="textSecondary">No data</Typography>
                   )}
                 </Box>
               </Grid>
