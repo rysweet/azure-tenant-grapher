@@ -5,6 +5,10 @@ import { spawn, ChildProcess } from 'child_process';
 import { setupIPCHandlers } from './ipc-handlers';
 import { ProcessManager } from './process-manager';
 import { createApplicationMenu } from './menu';
+import * as dotenv from 'dotenv';
+
+// Load .env file from the project root
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 let mainWindow: BrowserWindow | null = null;
 let processManager: ProcessManager;
@@ -78,9 +82,11 @@ function startBackendServer() {
       env: {
         ...process.env,
         BACKEND_PORT: '3001',
+        NEO4J_PORT: process.env.NEO4J_PORT || '7687',
         NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
         NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
-        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024'
+        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024',
+        NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME || 'azure-tenant-grapher-neo4j'
       }
     });
   } else {
@@ -89,9 +95,11 @@ function startBackendServer() {
       env: {
         ...process.env,
         BACKEND_PORT: '3001',
+        NEO4J_PORT: process.env.NEO4J_PORT || '7687',
         NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
         NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
-        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024'
+        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024',
+        NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME || 'azure-tenant-grapher-neo4j'
       }
     });
   }
