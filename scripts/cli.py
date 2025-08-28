@@ -37,6 +37,7 @@ def print_cli_env_block(context: str = ""):
 print_cli_env_block("STARTUP")
 
 # Set Azure logging levels early
+# Suppress verbose HTTP logging from Azure SDK and related libraries
 for name in [
     "azure",
     "azure.core",
@@ -44,9 +45,15 @@ for name in [
     "azure.core.pipeline.policies",
     "azure.core.pipeline.policies.http_logging_policy",
     "azure.core.pipeline.policies.HttpLoggingPolicy",
+    "azure.identity",
+    "azure.mgmt",
     "msrest",
     "urllib3",
+    "urllib3.connectionpool",
     "http.client",
+    "requests.packages.urllib3",
+    "httpx",
+    "openai",
 ]:
     logging.getLogger(name).setLevel(logging.WARNING)
 

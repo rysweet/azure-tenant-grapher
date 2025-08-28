@@ -19,18 +19,27 @@ environment variable handling, and configuration validation.
 
 
 def _set_azure_http_log_level(log_level: str) -> None:
+    """Set log levels for HTTP-related loggers to reduce noise."""
     http_loggers = [
         "azure.core.pipeline.policies.http_logging_policy",
-        "azure.core.pipeline.policies.HttpLoggingPolicy",
+        "azure.core.pipeline.policies.HttpLoggingPolicy", 
+        "azure.core.pipeline",
+        "azure.identity",
+        "azure.mgmt",
         "msrest",
         "azure",
         "urllib3",
+        "urllib3.connectionpool",
         "http.client",
+        "requests.packages.urllib3",
+        "httpx",
+        "httpcore",
+        "openai",
     ]
+    # HTTP logging should only appear at DEBUG level
+    target_level = logging.DEBUG if log_level == "DEBUG" else logging.WARNING
     for name in http_loggers:
-        logging.getLogger(name).setLevel(
-            logging.DEBUG if log_level == "DEBUG" else logging.WARNING
-        )
+        logging.getLogger(name).setLevel(target_level)
 
 
 logger = logging.getLogger(__name__)
@@ -396,6 +405,7 @@ def setup_logging(config: LoggingConfig) -> None:
         root_logger.addHandler(file_handler)
 
     # Set specific loggers to appropriate levels
+    # These override any settings from _set_azure_http_log_level for fine control
     azure_logger = logging.getLogger("azure")
     azure_logger.setLevel(logging.WARNING)  # Reduce Azure SDK noise
 
@@ -403,7 +413,7 @@ def setup_logging(config: LoggingConfig) -> None:
     azure_http_logger = logging.getLogger(
         "azure.core.pipeline.policies.http_logging_policy"
     )
-    azure_http_logger.setLevel(logging.DEBUG)  # Only show at DEBUG level
+    azure_http_logger.setLevel(logging.WARNING)  # Suppress HTTP request/response logs
 
     openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(logging.WARNING)  # Reduce OpenAI SDK noise
