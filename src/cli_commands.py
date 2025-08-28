@@ -69,6 +69,7 @@ async def build_command_handler(
     test_keypress_queue: bool,
     test_keypress_file: str,
     rebuild_edges: bool = False,
+    no_aad_import: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     print("[DEBUG][CLI] Entered build_command_handler", flush=True)
@@ -90,6 +91,7 @@ async def build_command_handler(
         )
         config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container
+        config.processing.enable_aad_import = not no_aad_import
         config.logging.level = ctx.obj["log_level"]
 
         setup_logging(config.logging)

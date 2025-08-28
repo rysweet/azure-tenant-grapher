@@ -147,6 +147,10 @@ class ProcessingConfig:
         default_factory=lambda: os.getenv("AUTO_START_CONTAINER", "true").lower()
         == "true"
     )
+    enable_aad_import: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_AAD_IMPORT", "true").lower()
+        == "true"
+    )
 
     def __post_init__(self) -> None:
         """Validate processing configuration and handle migration shim for batch_size."""

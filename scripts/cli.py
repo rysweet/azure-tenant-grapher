@@ -288,6 +288,11 @@ def cli(ctx: click.Context, log_level: str) -> None:
     is_flag=True,
     help="Force re-evaluation of all relationships/edges for all resources in the graph database",
 )
+@click.option(
+    "--no-aad-import",
+    is_flag=True,
+    help="Disable Azure AD user/group import from Microsoft Graph API",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -304,6 +309,7 @@ async def build(
     test_keypress_queue: bool,
     test_keypress_file: str,
     rebuild_edges: bool = False,
+    no_aad_import: bool = False,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -329,6 +335,7 @@ async def build(
         test_keypress_queue,
         test_keypress_file,
         rebuild_edges,
+        no_aad_import,
     )
     print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result

@@ -33,7 +33,8 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 ## Features
 
 - **Comprehensive Azure discovery** across all subscriptions.
-- **Neo4j graph database** with rich schema and relationship modeling.
+- **Azure AD identity import** including users, groups, and group memberships from Microsoft Graph API.
+- **Neo4j graph database** with rich schema and relationship modeling including RBAC.
 - **Extensible relationship engine** with modular rules (Tag, Region, CreatedBy, etc.).
 - **Interactive 3D visualization** with filtering, search, and ResourceGroup labels.
 - **CLI dashboard** with live progress, logs, and configuration.
@@ -114,11 +115,37 @@ Whenever you add, remove, or update a dependency, you **must**:
 ## Usage
 
 ```bash
-# Build the Azure graph
+# Build the Azure graph (includes Azure AD identity import by default)
 azure-tenant-grapher build --tenant-id <your-tenant-id>
+
+# Build without Azure AD identity import
+azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
 
 # Rebuild—all relationships will be re-evaluated
 azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
+```
+
+### Azure AD Identity Import
+
+By default, the `build` command imports Azure AD identities (users, groups, and group memberships) from Microsoft Graph API. This enriches the graph with identity and RBAC relationships.
+
+**Requirements:**
+- Service principal credentials (`AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`)
+- Microsoft Graph API permissions for reading users and groups
+
+**What gets imported:**
+- Azure AD users and their properties
+- Security groups and their memberships
+- Role assignments linking identities to resources
+
+**Disabling AAD import:**
+```bash
+# Via CLI flag
+azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
+
+# Via environment variable
+export ENABLE_AAD_IMPORT=false
+azure-tenant-grapher build --tenant-id <your-tenant-id>
 ```
 
 ### Agent Mode
