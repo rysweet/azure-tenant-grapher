@@ -7,6 +7,9 @@ Contains the implementation of various CLI commands to keep the main CLI file fo
 import asyncio
 import logging
 import os
+import shutil
+import signal
+import subprocess
 import sys
 from typing import TYPE_CHECKING, Optional
 
@@ -1002,3 +1005,89 @@ def create_tenant_command(markdown_file: str):
             err=True,
         )
         exit(1)
+
+
+SPA_PIDFILE = os.path.join("outputs", "spa_server.pid")
+
+
+@click.command("start")
+def spa_start():
+    """Start the local SPA/Electron dashboard."""
+    if os.path.exists(SPA_PIDFILE):
+        click.echo(
+            "⚠️  SPA already running (pidfile exists). Use 'atg stop' first or check process state.",
+            err=True,
+        )
+        return
+
+    # Check if npm is available
+    if not shutil.which("npm"):
+        click.echo(
+            "❌ npm is not installed. Please install Node.js and npm first.", err=True
+        )
+        return
+
+    try:
+        # Change to the spa directory
+        spa_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "spa")
+
+        # Check if package.json exists
+        if not os.path.exists(os.path.join(spa_dir, "package.json")):
+            click.echo(
+                "❌ SPA not found. Please ensure the spa directory exists with package.json",
+                err=True,
+            )
+            return
+
+        # Check if node_modules exists, if not, install dependencies
+        if not os.path.exists(os.path.join(spa_dir, "node_modules")):
+            click.echo("📦 Installing SPA dependencies...")
+            install_proc = subprocess.run(
+                ["npm", "install"], cwd=spa_dir, capture_output=True, text=True
+            )
+            if install_proc.returncode != 0:
+                click.echo(
+                    f"❌ Failed to install dependencies: {install_proc.stderr}",
+                    err=True,
+                )
+                return
+            click.echo("✅ Dependencies installed successfully")
+
+        # Start the Electron app
+        spa_proc = subprocess.Popen(
+            ["npm", "run", "start"],
+            cwd=spa_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        # Save the PID
+        os.makedirs("outputs", exist_ok=True)
+        with open(SPA_PIDFILE, "w") as f:
+            f.write(str(spa_proc.pid))
+
+        click.echo("🚀 SPA started. The Electron app should open shortly.")
+        click.echo(f"(PID: {spa_proc.pid} | pidfile: {SPA_PIDFILE})")
+        click.echo("Use 'atg stop' to shut down the SPA when done.")
+    except Exception as e:
+        click.echo(f"❌ Failed to start SPA: {e}", err=True)
+
+
+@click.command("stop")
+def spa_stop():
+    """Stop the local SPA/Electron dashboard."""
+    if not os.path.exists(SPA_PIDFILE):
+        click.echo("⚠️  SPA is not running (no pidfile found).", err=True)
+        return
+    try:
+        with open(SPA_PIDFILE) as f:
+            pid = int(f.read().strip())
+        try:
+            os.kill(pid, signal.SIGTERM)
+            click.echo("🛑 Sent SIGTERM to SPA process.")
+        except Exception as e:
+            click.echo(f"⚠️  Could not terminate SPA process: {e}", err=True)
+        os.remove(SPA_PIDFILE)
+        click.echo("✅ SPA stopped and pidfile cleaned up.")
+    except Exception as e:
+        click.echo(f"❌ Failed to stop SPA: {e}", err=True)

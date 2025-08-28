@@ -86,16 +86,18 @@ load_dotenv()
 try:
     import click
 
+    # (Removed: from src.cli_commands import create_tenant_command)
     from src.cli_commands import (
         build_command_handler,
         create_tenant_command,
         generate_spec_command_handler,
+        spa_start,
+        spa_stop,
         spec_command_handler,
         visualize_command_handler,
     )
     from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
-    # (Removed: from src.cli_commands import create_tenant_command)
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Please ensure all required packages are installed:")
@@ -657,6 +659,8 @@ cli.add_command(generate_sim_doc, "gensimdoc")
 
 # Register create-tenant command
 cli.add_command(create_tenant_command, "create-tenant")
+cli.add_command(spa_start, "start")
+cli.add_command(spa_stop, "stop")
 
 
 @cli.command()
