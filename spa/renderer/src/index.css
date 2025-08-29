@@ -13,6 +13,22 @@ body {
   overflow: hidden;
 }
 
+/* Force AppBar to be black */
+.MuiAppBar-root {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+.MuiAppBar-colorPrimary {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+.MuiToolbar-root {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
 #root {
   width: 100vw;
   height: 100vh;
@@ -100,4 +116,18 @@ body {
 /* Tab panel transitions */
 .tab-panel {
   animation: fadeIn 0.2s ease-in;
+}
+
+/* xterm.js terminal styles */
+.xterm {
+  padding: 10px;
+  height: 100%;
+}
+
+.xterm-viewport {
+  background-color: #1e1e1e !important;
+}
+
+.xterm-screen {
+  background-color: #1e1e1e !important;
 }

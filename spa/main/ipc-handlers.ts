@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { ProcessManager } from './process-manager';
@@ -142,5 +142,20 @@ export function setupIPCHandlers(processManager: ProcessManager) {
   ipcMain.handle('process:cleanup', async () => {
     await processManager.cleanup();
     return { success: true };
+  });
+
+  // Window management
+  ipcMain.handle('window:resize', async (event, width: number, height: number) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (window) {
+        window.setSize(width, height);
+        return { success: true };
+      } else {
+        return { success: false, error: 'Window not found' };
+      }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
   });
 }

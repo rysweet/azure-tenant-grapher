@@ -27,22 +27,22 @@ export class Neo4jContainer {
 
   async isRunning(): Promise<boolean> {
     try {
-      const { stdout } = await execAsync(
-        `docker ps --format "table {{.Names}}" | grep -q "^${this.containerName}$"`
-      );
-      return true;
-    } catch {
+      const { stdout } = await execAsync(`docker ps --format "{{.Names}}"`);
+      const runningContainers = stdout.split('\n').filter(name => name.trim());
+      return runningContainers.includes(this.containerName);
+    } catch (error) {
+      console.error('Error checking if Neo4j is running:', error);
       return false;
     }
   }
 
   async containerExists(): Promise<boolean> {
     try {
-      const { stdout } = await execAsync(
-        `docker ps -a --format "table {{.Names}}" | grep -q "^${this.containerName}$"`
-      );
-      return true;
-    } catch {
+      const { stdout } = await execAsync(`docker ps -a --format "{{.Names}}"`);
+      const allContainers = stdout.split('\n').filter(name => name.trim());
+      return allContainers.includes(this.containerName);
+    } catch (error) {
+      console.error('Error checking if Neo4j container exists:', error);
       return false;
     }
   }

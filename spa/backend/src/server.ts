@@ -4,9 +4,18 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import * as dotenv from 'dotenv';
 import { Neo4jService } from './neo4j-service';
 import { Neo4jContainer } from './neo4j-container';
+
+// Load .env file from the project root  
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
+console.log('Backend starting with environment:');
+console.log('  AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID || 'NOT SET');
+console.log('  NEO4J_URI:', process.env.NEO4J_URI || 'NOT SET');
+console.log('  NEO4J_PORT:', process.env.NEO4J_PORT || 'NOT SET');
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +60,35 @@ io.on('connection', (socket) => {
 
 // API Routes
 
+// Get Azure tenant name
+app.get('/api/tenant-name', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+    
+    try {
+      // Try to get subscription name from Azure CLI (this is the human-readable name)
+      const { stdout } = await execPromise('az account show --query "name" --output tsv');
+      const name = stdout.trim();
+      if (name && !name.includes('error') && name.length > 0) {
+        console.log('Got Azure subscription name:', name);
+        res.json({ name });
+        return;
+      }
+    } catch (azError: any) {
+      console.log('Azure CLI not available or not logged in:', azError?.message || azError);
+    }
+    
+    // Fallback to tenant ID from env
+    const tenantId = process.env.AZURE_TENANT_ID || 'Unknown';
+    res.json({ name: tenantId });
+  } catch (error) {
+    console.error('Error getting tenant name:', error);
+    res.status(500).json({ error: 'Failed to get tenant name' });
+  }
+});
+
 /**
  * Execute a CLI command
  */
@@ -63,14 +101,14 @@ app.post('/api/execute', (req, res) => {
   }
 
   const pythonPath = process.env.PYTHON_PATH || 'python3';
-  const cliPath = path.resolve(__dirname, '../../../../scripts/cli.py');
+  const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
   
   const fullArgs = [cliPath, command, ...args];
   const childProcess = spawn(pythonPath, fullArgs, {
-    cwd: path.resolve(__dirname, '../../../..'),
+    cwd: path.resolve(__dirname, '../../..'),
     env: {
       ...process.env,
-      PYTHONPATH: path.resolve(__dirname, '../../../..'),
+      PYTHONPATH: path.resolve(__dirname, '../../..'),
     },
   });
 
@@ -305,6 +343,8 @@ app.post('/api/neo4j/stop', async (req, res) => {
  * Get environment configuration
  */
 app.get('/api/config/env', (req, res) => {
+  console.log('Config endpoint - AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID);
+  console.log('Config endpoint - NEO4J_URI:', process.env.NEO4J_URI);
   // Return safe environment variables that the UI can use
   res.json({
     AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
@@ -315,6 +355,45 @@ app.get('/api/config/env', (req, res) => {
     NEO4J_PORT: process.env.NEO4J_PORT || '7687',
     RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || '',
   });
+});
+
+/**
+ * Get markdown file content
+ */
+app.get('/api/docs/:filePath(*)', async (req, res) => {
+  try {
+    const filePath = decodeURIComponent(req.params.filePath);
+    
+    // Security: ensure the file is within the project directory
+    // From spa/backend/src, we need to go up 3 levels to reach azure-tenant-grapher root
+    const projectRoot = path.resolve(__dirname, '../../..');
+    const fullFilePath = path.resolve(projectRoot, filePath);
+    
+    // Check if the resolved path is within the project directory
+    if (!fullFilePath.startsWith(projectRoot)) {
+      console.log('Docs API: Access denied - path outside project root:', filePath);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if file exists and is a markdown file
+    if (!fs.existsSync(fullFilePath)) {
+      return res.status(404).json({ error: 'File not found', path: fullFilePath });
+    }
+    
+    if (!fullFilePath.endsWith('.md')) {
+      return res.status(400).json({ error: 'Only markdown files are supported' });
+    }
+    
+    // Read file content
+    const content = fs.readFileSync(fullFilePath, 'utf8');
+    res.json(content);
+    
+  } catch (error) {
+    console.error('Error serving markdown file:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to read file' 
+    });
+  }
 });
 
 /**

@@ -75,13 +75,25 @@ export class Neo4jService {
         const rawNodes = record.get('nodes') || [];
         rawNodes.forEach((node: any) => {
           const labels = node.labels || [];
-          const nodeType = labels[0] || 'Unknown';
+          const props = node.properties || {};
+          
+          // For Resource nodes, use the actual Azure resource type from properties
+          // For other nodes, use the Neo4j label
+          let nodeType = labels[0] || 'Unknown';
+          if (nodeType === 'Resource' && props.type) {
+            // Extract the last part of the Azure resource type (e.g., Microsoft.Compute/virtualMachines -> virtualMachines)
+            const azureType = props.type;
+            const typeParts = azureType.split('/');
+            nodeType = typeParts.length > 1 ? typeParts[typeParts.length - 1] : azureType;
+            
+            // Capitalize first letter for consistency
+            nodeType = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+          }
           
           // Count node types
           nodeTypes[nodeType] = (nodeTypes[nodeType] || 0) + 1;
           
           // Get display name
-          const props = node.properties || {};
           const displayName = props.name || 
                             props.displayName || 
                             props.id || 
@@ -150,6 +162,16 @@ export class Neo4jService {
         const node = record.get('n');
         const labels = node.labels || [];
         const props = node.properties || {};
+        
+        // For Resource nodes, use the actual Azure resource type from properties
+        let nodeType = labels[0] || 'Unknown';
+        if (nodeType === 'Resource' && props.type) {
+          const azureType = props.type;
+          const typeParts = azureType.split('/');
+          nodeType = typeParts.length > 1 ? typeParts[typeParts.length - 1] : azureType;
+          nodeType = nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+        }
+        
         const displayName = props.name || 
                           props.displayName || 
                           props.id || 
@@ -159,7 +181,7 @@ export class Neo4jService {
         return {
           id: node.elementId || node.identity.toString(),
           label: displayName,
-          type: labels[0] || 'Unknown',
+          type: nodeType,
           properties: props
         };
       });

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { useLogger } from './useLogger';
 
 interface WebSocketOptions {
   url?: string;
@@ -28,6 +29,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     url = 'http://localhost:3001',
     autoConnect = true,
   } = options;
+  const logger = useLogger('WebSocket');
 
   const [isConnected, setIsConnected] = useState(false);
   const [outputs, setOutputs] = useState<Map<string, OutputData[]>>(new Map());
@@ -55,6 +57,9 @@ export function useWebSocket(options: WebSocketOptions = {}) {
         setIsConnected(true);
         reconnectAttempt.current = 0; // Reset reconnect attempts on successful connection
         
+        // Log successful connection
+        logger.logWebSocketEvent('connected', { url });
+        
         // Re-subscribe to any processes we were watching
         subscribedProcesses.current.forEach(processId => {
           socketRef.current?.emit('subscribe', processId);
@@ -63,6 +68,9 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
       socketRef.current.on('disconnect', () => {
         setIsConnected(false);
+        
+        // Log disconnection
+        logger.logWebSocketEvent('disconnected', { url });
       });
 
       socketRef.current.on('output', (data: OutputData) => {

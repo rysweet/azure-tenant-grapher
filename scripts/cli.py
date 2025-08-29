@@ -677,6 +677,117 @@ async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     await agent_mode_command_handler(ctx, question)
 
 
+@cli.command("backup")
+@click.option(
+    "--path",
+    "-p",
+    required=True,
+    help="Path to save the backup file (e.g., /path/to/backup.dump)",
+)
+def backup_database(path: str) -> None:
+    """Backup the Neo4j database to a file."""
+    from src.container_manager import Neo4jContainerManager
+
+    click.echo("🔄 Starting database backup...")
+    container_manager = Neo4jContainerManager()
+
+    if not container_manager.is_neo4j_container_running():
+        click.echo("❌ Neo4j container is not running. Please start it first.")
+        return
+
+    if container_manager.backup_neo4j_database(path):
+        click.echo(f"✅ Database backed up successfully to {path}")
+    else:
+        click.echo("❌ Database backup failed. Check the logs for details.")
+
+
+@cli.command("restore")
+@click.option(
+    "--path",
+    "-p",
+    required=True,
+    help="Path to the backup file to restore (e.g., /path/to/backup.dump)",
+)
+def restore_database(path: str) -> None:
+    """Restore the Neo4j database from a backup file."""
+    import os
+
+    from src.container_manager import Neo4jContainerManager
+
+    if not os.path.exists(path):
+        click.echo(f"❌ Backup file not found: {path}")
+        return
+
+    click.echo("🔄 Starting database restore...")
+    click.echo("⚠️  WARNING: This will replace all current data in the database!")
+
+    if not click.confirm("Are you sure you want to continue?"):
+        click.echo("Restore cancelled.")
+        return
+
+    container_manager = Neo4jContainerManager()
+
+    if not container_manager.is_neo4j_container_running():
+        click.echo("❌ Neo4j container is not running. Please start it first.")
+        return
+
+    if container_manager.restore_neo4j_database(path):
+        click.echo("✅ Database restored successfully from backup.")
+        click.echo("The Neo4j database has been restarted with the restored data.")
+    else:
+        click.echo("❌ Database restore failed. Check the logs for details.")
+
+
+@cli.command("wipe")
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Skip confirmation prompt",
+)
+def wipe_database(force: bool) -> None:
+    """Wipe all data from the Neo4j database."""
+    import os
+
+    from neo4j import GraphDatabase
+
+    if not force:
+        click.echo("⚠️  WARNING: This will permanently delete ALL data in the database!")
+        click.echo("This action cannot be undone.")
+        if not click.confirm("Are you sure you want to wipe the database?"):
+            click.echo("Wipe cancelled.")
+            return
+
+    click.echo("🔄 Wiping database...")
+
+    try:
+        # Connect to Neo4j
+        uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        user = os.getenv("NEO4J_USER", "neo4j")
+        password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+
+        with driver.session() as session:
+            # Delete all nodes and relationships
+            session.run("MATCH (n) DETACH DELETE n")
+
+            # Verify the database is empty
+            result = session.run("MATCH (n) RETURN count(n) as count")
+            record = result.single()
+            count = record["count"] if record else 0
+
+            if count == 0:
+                click.echo("✅ Database wiped successfully. All data has been removed.")
+            else:
+                click.echo(f"⚠️  Database wipe incomplete. {count} nodes remain.")
+
+        driver.close()
+
+    except Exception as e:
+        click.echo(f"❌ Failed to wipe database: {e}")
+
+
 @cli.command()
 def doctor() -> None:
     """Check for all registered CLI tools and offer to install if missing."""

@@ -1,5 +1,25 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
+export interface BackgroundOperation {
+  id: string;
+  type: string;
+  name: string;
+  status: 'running' | 'completed' | 'error';
+  startTime: Date;
+  pid?: number;
+}
+
+export type LogLevel = 'debug' | 'info' | 'warning' | 'error';
+
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  level: LogLevel;
+  source: string;
+  message: string;
+  data?: any;
+}
+
 interface AppState {
   activeTab: string;
   currentOperation: any | null;
@@ -10,8 +30,14 @@ interface AppState {
     neo4jConfig: any;
   };
   results: Map<string, any>;
-  logs: string[];
+  logs: LogEntry[];
+  logSettings: {
+    autoScroll: boolean;
+    showLevels: LogLevel[];
+    searchFilter: string;
+  };
   theme: 'light' | 'dark';
+  backgroundOperations: Map<string, BackgroundOperation>;
 }
 
 type AppAction =
@@ -20,9 +46,14 @@ type AppAction =
   | { type: 'SET_OPERATION'; payload: any }
   | { type: 'SET_CONFIG'; payload: Partial<AppState['config']> }
   | { type: 'ADD_RESULT'; payload: { key: string; value: any } }
-  | { type: 'ADD_LOG'; payload: string }
+  | { type: 'ADD_LOG'; payload: string | LogEntry }
+  | { type: 'ADD_STRUCTURED_LOG'; payload: { level: LogLevel; source: string; message: string; data?: any } }
   | { type: 'CLEAR_LOGS' }
-  | { type: 'SET_THEME'; payload: 'light' | 'dark' };
+  | { type: 'SET_LOG_SETTINGS'; payload: Partial<AppState['logSettings']> }
+  | { type: 'SET_THEME'; payload: 'light' | 'dark' }
+  | { type: 'ADD_BACKGROUND_OPERATION'; payload: BackgroundOperation }
+  | { type: 'UPDATE_BACKGROUND_OPERATION'; payload: { id: string; updates: Partial<BackgroundOperation> } }
+  | { type: 'REMOVE_BACKGROUND_OPERATION'; payload: string };
 
 const initialState: AppState = {
   activeTab: 'build',
@@ -35,7 +66,13 @@ const initialState: AppState = {
   },
   results: new Map(),
   logs: [],
+  logSettings: {
+    autoScroll: true,
+    showLevels: ['debug', 'info', 'warning', 'error'],
+    searchFilter: '',
+  },
   theme: 'dark',
+  backgroundOperations: new Map(),
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -61,13 +98,59 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, results: newResults };
     
     case 'ADD_LOG':
+      // Support both string (legacy) and LogEntry formats
+      if (typeof action.payload === 'string') {
+        const logEntry: LogEntry = {
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          level: 'info',
+          source: 'system',
+          message: action.payload,
+        };
+        return { ...state, logs: [...state.logs, logEntry] };
+      }
       return { ...state, logs: [...state.logs, action.payload] };
+    
+    case 'ADD_STRUCTURED_LOG':
+      const logEntry: LogEntry = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        timestamp: new Date(),
+        level: action.payload.level,
+        source: action.payload.source,
+        message: action.payload.message,
+        data: action.payload.data,
+      };
+      return { ...state, logs: [...state.logs, logEntry] };
+    
+    case 'SET_LOG_SETTINGS':
+      return {
+        ...state,
+        logSettings: { ...state.logSettings, ...action.payload },
+      };
     
     case 'CLEAR_LOGS':
       return { ...state, logs: [] };
     
     case 'SET_THEME':
       return { ...state, theme: action.payload };
+    
+    case 'ADD_BACKGROUND_OPERATION':
+      const newBackgroundOps = new Map(state.backgroundOperations);
+      newBackgroundOps.set(action.payload.id, action.payload);
+      return { ...state, backgroundOperations: newBackgroundOps };
+    
+    case 'UPDATE_BACKGROUND_OPERATION':
+      const updatedBackgroundOps = new Map(state.backgroundOperations);
+      const existingOp = updatedBackgroundOps.get(action.payload.id);
+      if (existingOp) {
+        updatedBackgroundOps.set(action.payload.id, { ...existingOp, ...action.payload.updates });
+      }
+      return { ...state, backgroundOperations: updatedBackgroundOps };
+    
+    case 'REMOVE_BACKGROUND_OPERATION':
+      const filteredBackgroundOps = new Map(state.backgroundOperations);
+      filteredBackgroundOps.delete(action.payload);
+      return { ...state, backgroundOperations: filteredBackgroundOps };
     
     default:
       return state;

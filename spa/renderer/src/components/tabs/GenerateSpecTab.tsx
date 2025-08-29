@@ -42,11 +42,14 @@ const GenerateSpecTab: React.FC = () => {
     try {
       const result = await window.electronAPI.cli.execute('generate-spec', args);
       
-      // Listen for output
+      // Listen for output and stream content
       let specContent = '';
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
-          specContent += data.data.join('\n');
+          const newContent = data.data.join('\n');
+          specContent += newContent;
+          // Update the editor content in real-time
+          setGeneratedSpec(specContent);
         }
       });
 
@@ -173,11 +176,13 @@ const GenerateSpecTab: React.FC = () => {
             value={generatedSpec || '// Generated specification will appear here'}
             language={outputFormat}
             theme="vs-dark"
+            loading=""
             options={{
               readOnly: true,
               minimap: { enabled: false },
               fontSize: 14,
               wordWrap: 'on',
+              placeholder: '// Generated specification will appear here',
             }}
           />
         </Box>

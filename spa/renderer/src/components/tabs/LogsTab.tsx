@@ -1,0 +1,400 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Toolbar,
+  IconButton,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+  Chip,
+  Button,
+  Tooltip,
+  FormControlLabel,
+  Switch,
+  Divider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '@mui/material';
+import {
+  Clear as ClearIcon,
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+  VerticalAlignBottom as ScrollDownIcon,
+  ExpandMore as ExpandMoreIcon,
+  Download as DownloadIcon,
+  Refresh as RefreshIcon,
+} from '@mui/icons-material';
+import Editor from '@monaco-editor/react';
+import { useApp } from '../../context/AppContext';
+import { LogEntry, LogLevel } from '../../context/AppContext';
+
+// Log level colors for dark theme
+const logLevelColors: Record<LogLevel, string> = {
+  debug: '#6B7280', // Gray
+  info: '#3B82F6',  // Blue  
+  warning: '#F59E0B', // Amber
+  error: '#EF4444',   // Red
+};
+
+// Log level priorities for sorting
+const logLevelPriority: Record<LogLevel, number> = {
+  debug: 1,
+  info: 2,
+  warning: 3,
+  error: 4,
+};
+
+const LogsTab: React.FC = () => {
+  const { state, dispatch } = useApp();
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [selectedLevels, setSelectedLevels] = useState<LogLevel[]>(['debug', 'info', 'warning', 'error']);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [sortBy, setSortBy] = useState<'timestamp' | 'level' | 'source'>('timestamp');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  const editorRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Filter and format logs for display
+  const filteredLogs = useMemo(() => {
+    let filtered = state.logs.filter(log => {
+      const levelMatch = selectedLevels.includes(log.level);
+      const searchMatch = searchTerm === '' || 
+        log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.source.toLowerCase().includes(searchTerm.toLowerCase());
+      return levelMatch && searchMatch;
+    });
+
+    // Sort logs
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'timestamp':
+          comparison = a.timestamp.getTime() - b.timestamp.getTime();
+          break;
+        case 'level':
+          comparison = logLevelPriority[a.level] - logLevelPriority[b.level];
+          break;
+        case 'source':
+          comparison = a.source.localeCompare(b.source);
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [state.logs, selectedLevels, searchTerm, sortBy, sortOrder]);
+
+  // Format logs as text for Monaco editor
+  const formattedLogsText = useMemo(() => {
+    return filteredLogs.map(log => {
+      const timestamp = log.timestamp.toISOString().replace('T', ' ').replace('Z', '');
+      const level = log.level.toUpperCase().padEnd(7);
+      const source = log.source.padEnd(12);
+      let logLine = `[${timestamp}] ${level} ${source} ${log.message}`;
+      
+      // Add structured data if present
+      if (log.data) {
+        try {
+          const dataStr = typeof log.data === 'string' ? log.data : JSON.stringify(log.data, null, 2);
+          logLine += `\n    ${dataStr.replace(/\n/g, '\n    ')}`;
+        } catch (e) {
+          logLine += `\n    [Data: ${String(log.data)}]`;
+        }
+      }
+      
+      return logLine;
+    }).join('\n');
+  }, [filteredLogs]);
+
+  // Handle level filter changes
+  const handleLevelChange = (event: SelectChangeEvent<LogLevel[]>) => {
+    const value = event.target.value;
+    const levels = typeof value === 'string' ? value.split(',') as LogLevel[] : value as LogLevel[];
+    setSelectedLevels(levels);
+  };
+
+  // Clear all logs
+  const handleClearLogs = () => {
+    dispatch({ type: 'CLEAR_LOGS' });
+  };
+
+  // Export logs
+  const handleExportLogs = () => {
+    const blob = new Blob([formattedLogsText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `azure-tenant-grapher-logs-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Scroll to bottom when new logs arrive (if auto-scroll is enabled)
+  useEffect(() => {
+    if (autoScroll && editorRef.current) {
+      const editor = editorRef.current;
+      const model = editor.getModel();
+      if (model) {
+        const lineCount = model.getLineCount();
+        editor.setPosition({ lineNumber: lineCount, column: 1 });
+        editor.revealLine(lineCount);
+      }
+    }
+  }, [filteredLogs, autoScroll]);
+
+  // Force scroll to bottom
+  const scrollToBottom = () => {
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      const model = editor.getModel();
+      if (model) {
+        const lineCount = model.getLineCount();
+        editor.setPosition({ lineNumber: lineCount, column: 1 });
+        editor.revealLine(lineCount);
+      }
+    }
+  };
+
+  // Add some test logs for demonstration
+  const addTestLogs = () => {
+    const testLogs = [
+      { level: 'info' as LogLevel, source: 'WebSocket', message: 'Connected to backend server' },
+      { level: 'debug' as LogLevel, source: 'API', message: 'GET /api/neo4j/status - 200 OK', data: { responseTime: '45ms' } },
+      { level: 'warning' as LogLevel, source: 'Build', message: 'Resource limit reached, some resources may be skipped' },
+      { level: 'error' as LogLevel, source: 'Graph', message: 'Failed to create relationship: Invalid node ID', data: { nodeId: 'invalid-123', error: 'Node not found' } },
+      { level: 'info' as LogLevel, source: 'Build', message: 'Discovered 1,245 Azure resources across 3 subscriptions' },
+      { level: 'debug' as LogLevel, source: 'Neo4j', message: 'Query executed successfully', data: { query: 'MATCH (n) RETURN count(n)', duration: '12ms' } },
+    ];
+
+    testLogs.forEach(log => {
+      dispatch({
+        type: 'ADD_STRUCTURED_LOG',
+        payload: log,
+      });
+    });
+  };
+
+  return (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Paper sx={{ mb: 1 }}>
+        <Toolbar variant="dense" sx={{ minHeight: 48 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            System Logs
+          </Typography>
+          
+          {/* Log Count Badge */}
+          <Chip
+            label={`${filteredLogs.length} / ${state.logs.length} logs`}
+            size="small"
+            variant="outlined"
+            sx={{ mr: 2 }}
+          />
+          
+          {/* Auto-scroll toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+                size="small"
+              />
+            }
+            label="Auto-scroll"
+            sx={{ mr: 2 }}
+          />
+          
+          {/* Action buttons */}
+          <Tooltip title="Scroll to bottom">
+            <IconButton onClick={scrollToBottom} size="small">
+              <ScrollDownIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Export logs">
+            <IconButton onClick={handleExportLogs} size="small" disabled={state.logs.length === 0}>
+              <DownloadIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Add test logs">
+            <IconButton onClick={addTestLogs} size="small">
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Clear all logs">
+            <IconButton onClick={handleClearLogs} size="small" disabled={state.logs.length === 0}>
+              <ClearIcon />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </Paper>
+
+      {/* Filters */}
+      <Accordion 
+        expanded={filterExpanded} 
+        onChange={(_, expanded) => setFilterExpanded(expanded)}
+        sx={{ mb: 1 }}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <FilterIcon sx={{ mr: 1 }} />
+          <Typography>Filters & Settings</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Search */}
+            <TextField
+              label="Search logs"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              sx={{ minWidth: 200 }}
+            />
+            
+            {/* Level filter */}
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Log Levels</InputLabel>
+              <Select
+                multiple
+                value={selectedLevels}
+                onChange={handleLevelChange}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip
+                        key={value}
+                        label={value}
+                        size="small"
+                        sx={{
+                          backgroundColor: logLevelColors[value],
+                          color: 'white',
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              >
+                {(['debug', 'info', 'warning', 'error'] as LogLevel[]).map((level) => (
+                  <MenuItem key={level} value={level}>
+                    <Chip
+                      label={level}
+                      size="small"
+                      sx={{
+                        backgroundColor: logLevelColors[level],
+                        color: 'white',
+                        mr: 1,
+                      }}
+                    />
+                    {level}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            {/* Sort options */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'timestamp' | 'level' | 'source')}
+              >
+                <MenuItem value="timestamp">Time</MenuItem>
+                <MenuItem value="level">Level</MenuItem>
+                <MenuItem value="source">Source</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Order</InputLabel>
+              <Select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              >
+                <MenuItem value="desc">Latest</MenuItem>
+                <MenuItem value="asc">Oldest</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Logs Display */}
+      <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {state.logs.length === 0 ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'text.secondary',
+            }}
+          >
+            <Typography variant="body1">
+              No logs available. System logs will appear here as operations are performed.
+            </Typography>
+          </Box>
+        ) : (
+          <Box ref={containerRef} sx={{ flex: 1 }}>
+            <Editor
+              height="100%"
+              defaultLanguage="plaintext"
+              value={formattedLogsText}
+              loading=""
+              onMount={(editor) => {
+                editorRef.current = editor;
+                // Scroll to bottom on mount if auto-scroll is enabled
+                if (autoScroll) {
+                  setTimeout(scrollToBottom, 100);
+                }
+              }}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                glyphMargin: false,
+                folding: false,
+                lineDecorationsWidth: 0,
+                lineNumbersMinChars: 4,
+                renderLineHighlight: 'none',
+                selectionHighlight: false,
+                occurrencesHighlight: false,
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                scrollbar: {
+                  vertical: 'visible',
+                  horizontal: 'visible',
+                  verticalScrollbarSize: 12,
+                  horizontalScrollbarSize: 12,
+                },
+                fontSize: 13,
+                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                theme: state.theme === 'dark' ? 'vs-dark' : 'vs-light',
+              }}
+              theme={state.theme === 'dark' ? 'vs-dark' : 'vs-light'}
+            />
+          </Box>
+        )}
+      </Paper>
+    </Box>
+  );
+};
+
+export default LogsTab;

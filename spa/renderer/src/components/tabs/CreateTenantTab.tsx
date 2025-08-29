@@ -124,11 +124,13 @@ const CreateTenantTab: React.FC = () => {
               value={specContent || '// Paste or upload your tenant specification here'}
               language="json"
               theme="vs-dark"
+              loading=""
               onChange={(value) => setSpecContent(value || '')}
               options={{
                 minimap: { enabled: false },
                 fontSize: 14,
                 wordWrap: 'on',
+                placeholder: '// Paste or upload your tenant specification here',
               }}
             />
           </Box>

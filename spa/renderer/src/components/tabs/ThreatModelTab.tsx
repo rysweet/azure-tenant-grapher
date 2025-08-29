@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -13,6 +13,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { Security as SecurityIcon, Assessment as AssessmentIcon, GetApp as ExportIcon } from '@mui/icons-material';
+import axios from 'axios';
 
 interface ThreatResult {
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
@@ -32,6 +33,26 @@ const ThreatModelTab: React.FC = () => {
   const [results, setResults] = useState<ThreatResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+
+  // Load environment configuration on component mount
+  useEffect(() => {
+    const loadEnvConfig = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/api/config/env');
+        const envData = response.data;
+        
+        // Set tenant ID from .env if available and current value is empty
+        if (envData.AZURE_TENANT_ID && !tenantId) {
+          setTenantId(envData.AZURE_TENANT_ID);
+        }
+      } catch (err) {
+        console.error('Failed to load env config:', err);
+        // Silently fail - user can still manually enter tenant ID
+      }
+    };
+    
+    loadEnvConfig();
+  }, [tenantId]);
 
   const handleAnalyze = async () => {
     if (!tenantId) {

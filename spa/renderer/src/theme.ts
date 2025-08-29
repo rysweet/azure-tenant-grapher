@@ -94,5 +94,33 @@ export const theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      defaultProps: {
+        color: 'default',
+      },
+      styleOverrides: {
+        root: {
+          backgroundColor: '#000000 !important',
+          backgroundImage: 'none !important',
+          color: '#ffffff !important',
+        },
+        colorDefault: {
+          backgroundColor: '#000000 !important',
+          backgroundImage: 'none !important',
+          color: '#ffffff !important',
+        },
+        colorPrimary: {
+          backgroundColor: '#000000 !important',
+          backgroundImage: 'none !important',
+        },
+      },
+    },
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'transparent !important',
+        },
+      },
+    },
   },
 });

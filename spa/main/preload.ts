@@ -76,6 +76,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),
     close: () => ipcRenderer.send('window:close'),
+    resize: (width: number, height: number) => 
+      ipcRenderer.invoke('window:resize', width, height),
   },
 
   // Event listeners
@@ -142,6 +144,7 @@ export interface ElectronAPI {
     minimize: () => void;
     maximize: () => void;
     close: () => void;
+    resize: (width: number, height: number) => Promise<any>;
   };
   on: (channel: string, callback: (...args: any[]) => void) => void;
   off: (channel: string, callback: (...args: any[]) => void) => void;

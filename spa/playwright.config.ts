@@ -27,6 +27,16 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
+      name: 'electron-screenshots',
+      testMatch: /screenshot-features\.spec\.ts/,
+      timeout: 120000,
+      use: {
+        trace: 'off',
+        screenshot: 'off', // We'll take screenshots manually
+        video: 'off',
+      },
+    },
+    {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
@@ -63,10 +73,10 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev:renderer',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // webServer: {
+  //   command: 'npm run dev:renderer',
+  //   url: 'http://127.0.0.1:5173',
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120 * 1000,
+  // },
 });

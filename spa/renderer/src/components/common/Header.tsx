@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Typography, IconButton, Box } from '@mui/material';
 import {
   Minimize as MinimizeIcon,
   Crop54 as MaximizeIcon,
@@ -19,26 +19,79 @@ const Header: React.FC = () => {
     window.electronAPI.window.close();
   };
 
+  // Force black background with useEffect as a last resort
+  useEffect(() => {
+    const forceBlackBackground = () => {
+      // Find all MUI AppBar elements and force them to be black
+      const appBars = document.querySelectorAll('.MuiAppBar-root');
+      appBars.forEach((el: any) => {
+        el.style.backgroundColor = '#000000';
+        el.style.backgroundImage = 'none';
+      });
+      
+      const toolbars = document.querySelectorAll('.MuiToolbar-root');
+      toolbars.forEach((el: any) => {
+        el.style.backgroundColor = '#000000';
+        el.style.backgroundImage = 'none';
+      });
+    };
+
+    // Run immediately and after a delay to catch any late renders
+    forceBlackBackground();
+    setTimeout(forceBlackBackground, 100);
+    setTimeout(forceBlackBackground, 500);
+  }, []);
+
   return (
-    <AppBar position="static" sx={{ WebkitAppRegion: 'drag', userSelect: 'none' }}>
-      <Toolbar variant="dense">
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Azure Tenant Grapher
-        </Typography>
-        
-        <Box sx={{ WebkitAppRegion: 'no-drag', display: 'flex', gap: 1 }}>
-          <IconButton size="small" onClick={handleMinimize} color="inherit">
-            <MinimizeIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={handleMaximize} color="inherit">
-            <MaximizeIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={handleClose} color="inherit">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Toolbar>
-    </AppBar>
+    <div 
+      className="MuiAppBar-root"
+      style={{ 
+        backgroundColor: '#000000',
+        color: '#ffffff',
+        padding: '8px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        position: 'relative',
+        WebkitAppRegion: 'drag',
+        userSelect: 'none',
+        height: '48px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <Typography 
+        variant="h6" 
+        component="div" 
+        style={{ 
+          position: 'absolute', 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          color: '#ffffff',
+          fontSize: '1.25rem',
+          fontWeight: 500,
+        }}
+      >
+        Azure Tenant Grapher
+      </Typography>
+      
+      <Box 
+        style={{ 
+          WebkitAppRegion: 'no-drag', 
+          display: 'flex', 
+          gap: '8px', 
+          marginLeft: 'auto' 
+        }}
+      >
+        <IconButton size="small" onClick={handleMinimize} sx={{ color: '#ffffff' }}>
+          <MinimizeIcon fontSize="small" />
+        </IconButton>
+        <IconButton size="small" onClick={handleMaximize} sx={{ color: '#ffffff' }}>
+          <MaximizeIcon fontSize="small" />
+        </IconButton>
+        <IconButton size="small" onClick={handleClose} sx={{ color: '#ffffff' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    </div>
   );
 };
 

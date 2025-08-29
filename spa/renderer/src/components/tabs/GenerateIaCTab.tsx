@@ -57,7 +57,10 @@ const GenerateIaCTab: React.FC = () => {
       let codeContent = '';
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
-          codeContent += data.data.join('\n');
+          const newContent = data.data.join('\n');
+          codeContent += newContent;
+          // Update the editor content in real-time
+          setGeneratedCode(codeContent);
         }
       });
 
@@ -256,11 +259,13 @@ const GenerateIaCTab: React.FC = () => {
             value={generatedCode || `// Generated ${outputFormat.toUpperCase()} code will appear here`}
             language={getLanguage()}
             theme="vs-dark"
+            loading=""
             options={{
               readOnly: true,
               minimap: { enabled: false },
               fontSize: 14,
               wordWrap: 'on',
+              placeholder: `// Generated ${outputFormat.toUpperCase()} code will appear here`,
             }}
           />
         </Box>

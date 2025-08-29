@@ -23,6 +23,7 @@ import {
   Save as SaveIcon,
   Visibility as ShowIcon,
   VisibilityOff as HideIcon,
+  LocalHospital as DoctorIcon,
 } from '@mui/icons-material';
 
 interface ConfigItem {
@@ -78,16 +79,73 @@ const ConfigTab: React.FC = () => {
       const result = await window.electronAPI.cli.execute('doctor', []);
       
       // Parse doctor output to get dependency status
-      setDependencies([
-        { name: 'Python', installed: true, version: '3.11.0', required: '>=3.9' },
-        { name: 'Neo4j', installed: true, version: '5.0.0', required: '>=5.0' },
-        { name: 'Docker', installed: true, version: '24.0.0', required: 'any' },
-        { name: 'Azure CLI', installed: false, required: '>=2.0' },
-      ]);
+      const dependencies: DependencyStatus[] = [];
       
+      if (result && result.output) {
+        const lines = result.output.split('\n');
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.includes("Checking for") && line.includes("CLI...")) {
+            // Extract tool name from "Checking for 'terraform' CLI..." format
+            const toolMatch = line.match(/Checking for '([^']+)' CLI\.\.\./);
+            if (toolMatch) {
+              const toolName = toolMatch[1];
+              // Look for the next line which should contain the status
+              const nextLineIndex = i + 1;
+              if (nextLineIndex < lines.length) {
+                const statusLine = lines[nextLineIndex];
+                const isInstalled = statusLine.includes('✅') && statusLine.includes('is installed');
+                
+                let displayName = toolName;
+                let required = '>=2.0';
+                
+                // Map tool names to user-friendly display names and requirements
+                switch (toolName) {
+                  case 'az':
+                    displayName = 'Azure CLI';
+                    required = '>=2.0';
+                    break;
+                  case 'terraform':
+                    displayName = 'Terraform';
+                    required = '>=1.0';
+                    break;
+                  case 'bicep':
+                    displayName = 'Bicep';
+                    required = '>=0.4';
+                    break;
+                }
+                
+                dependencies.push({
+                  name: displayName,
+                  installed: isInstalled,
+                  version: isInstalled ? 'installed' : undefined,
+                  required,
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      // Add additional system dependencies that aren't checked by doctor command
+      dependencies.push(
+        { name: 'Python', installed: true, version: '3.11+', required: '>=3.9' },
+        { name: 'Docker', installed: true, version: 'installed', required: 'any' }
+      );
+      
+      setDependencies(dependencies);
       setMessage({ type: 'success', text: 'Dependency check complete' });
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
+      // Fallback to basic dependency list if parsing fails
+      setDependencies([
+        { name: 'Python', installed: true, version: '3.11+', required: '>=3.9' },
+        { name: 'Docker', installed: true, version: 'installed', required: 'any' },
+        { name: 'Azure CLI', installed: false, required: '>=2.0' },
+        { name: 'Terraform', installed: false, required: '>=1.0' },
+        { name: 'Bicep', installed: false, required: '>=0.4' },
+      ]);
     } finally {
       setIsChecking(false);
     }
@@ -245,7 +303,20 @@ const ConfigTab: React.FC = () => {
             </List>
 
             {dependencies.some((d) => !d.installed) && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
+              <Alert 
+                severity="warning" 
+                sx={{ mt: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    startIcon={<DoctorIcon />}
+                    onClick={() => window.electronAPI.cli.execute('doctor', [])}
+                  >
+                    Run Doctor
+                  </Button>
+                }
+              >
                 Some dependencies are missing. Run 'atg doctor' to install them.
               </Alert>
             )}

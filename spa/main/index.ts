@@ -8,7 +8,11 @@ import { createApplicationMenu } from './menu';
 import * as dotenv from 'dotenv';
 
 // Load .env file from the project root
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+const envPath = path.join(__dirname, '../../.env');
+console.log('Loading .env from:', envPath);
+dotenv.config({ path: envPath });
+console.log('Loaded AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID);
+console.log('Loaded NEO4J_URI:', process.env.NEO4J_URI);
 
 let mainWindow: BrowserWindow | null = null;
 let processManager: ProcessManager;
@@ -17,10 +21,12 @@ let backendProcess: ChildProcess | null = null;
 async function createWindow() {
   const iconPath = path.join(__dirname, '../../assets/icon.png');
   const windowOptions: any = {
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
+    width: 1600,
+    height: 1000,
+    minWidth: 1200,
+    minHeight: 800,
+    resizable: true,
+    maximizable: true,
     title: 'Azure Tenant Grapher',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -69,24 +75,32 @@ async function createWindow() {
 // Start the backend server
 function startBackendServer() {
   console.log('Starting backend server...');
+  console.log('Current directory:', __dirname);
+  console.log('Environment variables loaded:', {
+    NEO4J_URI: process.env.NEO4J_URI,
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD ? '***' : undefined,
+    NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME
+  });
   
-  const backendPath = path.join(__dirname, '../backend/server.js');
+  const backendPath = path.join(__dirname, '../backend/src/server.js');
   const tsxPath = path.join(__dirname, '../../node_modules/.bin/tsx');
   
   // Check if we're in development mode
+  console.log('Checking backend path:', backendPath);
+  console.log('Backend path exists:', require('fs').existsSync(backendPath));
+  
   if (process.env.NODE_ENV === 'development' || !require('fs').existsSync(backendPath)) {
     // Use tsx to run TypeScript directly in development
-    const backendTsPath = path.join(__dirname, '../../backend/src/server.ts');
+    const backendTsPath = path.join(__dirname, '../backend/src/server.ts');
+    console.log('Using TypeScript backend at:', backendTsPath);
+    console.log('TypeScript backend exists:', require('fs').existsSync(backendTsPath));
+    
     backendProcess = spawn('npx', ['tsx', backendTsPath], {
-      cwd: path.join(__dirname, '../..'),
+      cwd: path.join(__dirname, '..'),
       env: {
         ...process.env,
-        BACKEND_PORT: '3001',
-        NEO4J_PORT: process.env.NEO4J_PORT || '7687',
-        NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
-        NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
-        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024',
-        NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME || 'azure-tenant-grapher-neo4j'
+        BACKEND_PORT: '3001'
+        // Pass through all environment variables as-is from the parent process
       }
     });
   } else {
@@ -94,15 +108,18 @@ function startBackendServer() {
     backendProcess = spawn('node', [backendPath], {
       env: {
         ...process.env,
-        BACKEND_PORT: '3001',
-        NEO4J_PORT: process.env.NEO4J_PORT || '7687',
-        NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
-        NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
-        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024',
-        NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME || 'azure-tenant-grapher-neo4j'
+        BACKEND_PORT: '3001'
+        // Pass through all environment variables as-is from the parent process
       }
     });
   }
+
+  if (!backendProcess) {
+    console.error('Failed to spawn backend process');
+    return;
+  }
+
+  console.log('Backend process spawned with PID:', backendProcess.pid);
 
   backendProcess.stdout?.on('data', (data) => {
     console.log(`Backend: ${data}`);
