@@ -5,12 +5,14 @@ Contains the implementation of various CLI commands to keep the main CLI file fo
 """
 
 import asyncio
+import json
 import logging
 import os
 import shutil
 import signal
 import subprocess
 import sys
+import time
 from typing import TYPE_CHECKING, Optional
 
 import click
@@ -1173,6 +1175,35 @@ def spa_stop():
         click.echo("ℹ️  No services were running.")
 
 
+def _save_to_env(tenant_id: str, app_id: str, client_secret: Optional[str] = None) -> None:
+    """Helper function to save configuration to .env file."""
+    env_file_path = os.path.join(os.getcwd(), ".env")
+    click.echo(f"\n💾 Saving configuration to {env_file_path}...")
+    
+    # Read existing .env file if it exists
+    env_vars = {}
+    if os.path.exists(env_file_path):
+        with open(env_file_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    env_vars[key.strip()] = value.strip()
+    
+    # Update with new values
+    env_vars['AZURE_TENANT_ID'] = tenant_id
+    env_vars['AZURE_CLIENT_ID'] = app_id
+    if client_secret:
+        env_vars['AZURE_CLIENT_SECRET'] = client_secret
+    
+    # Write back to file
+    with open(env_file_path, 'w') as f:
+        for key, value in env_vars.items():
+            f.write(f"{key}={value}\n")
+    
+    click.echo("✅ Configuration saved to .env file!")
+
+
 @click.command("app-registration")
 @click.option(
     "--tenant-id",
@@ -1262,6 +1293,52 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
     
     # Azure CLI is available, proceed with automated creation
     click.echo("✅ Azure CLI detected. Proceeding with automated setup...")
+    
+    # Check current user's permissions
+    click.echo("\n🔍 Checking your permissions...")
+    
+    # Get current user info
+    user_result = subprocess.run(
+        ["az", "ad", "signed-in-user", "show", "--query", "{id:id,displayName:displayName,userPrincipalName:userPrincipalName}", "-o", "json"],
+        capture_output=True,
+        text=True,
+    )
+    
+    if user_result.returncode == 0:
+        user_info = json.loads(user_result.stdout)
+        click.echo(f"   Signed in as: {user_info.get('displayName', 'Unknown')} ({user_info.get('userPrincipalName', 'Unknown')})")
+        
+        # Check if user has admin roles
+        roles_result = subprocess.run(
+            ["az", "role", "assignment", "list", "--assignee", user_info['id'], "--query", "[].roleDefinitionName", "-o", "json"],
+            capture_output=True,
+            text=True,
+        )
+        
+        if roles_result.returncode == 0:
+            roles = json.loads(roles_result.stdout)
+            admin_roles = [r for r in roles if any(admin in r.lower() for admin in ['administrator', 'owner', 'contributor'])]
+            
+            if admin_roles:
+                click.echo(f"   Your roles: {', '.join(admin_roles[:3])}")
+                if 'Global Administrator' in roles or 'Application Administrator' in roles:
+                    click.echo("   ✅ You have sufficient permissions to grant admin consent")
+                else:
+                    click.echo("   ⚠️  You can create apps but may need a Global Admin to grant consent")
+            else:
+                click.echo("   ⚠️  Limited permissions detected - some operations may fail")
+        
+        # Check if user can create applications
+        can_create_apps = subprocess.run(
+            ["az", "ad", "app", "list", "--query", "[0].id", "-o", "tsv"],
+            capture_output=True,
+            text=True,
+        )
+        
+        if can_create_apps.returncode != 0:
+            click.echo("   ❌ You don't have permission to create app registrations")
+            click.echo("   Please contact your Azure AD administrator")
+            return
     
     # Get or use provided tenant ID
     if not tenant_id:
