@@ -57,8 +57,9 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
 - Docker & Docker Compose (for Neo4j)
 - Azure CLI & Bicep CLI (for authentication and IaC deployment)
+- Node.js & npm (for the Electron GUI app)
 
-### Create & Explore Your Graph
+### Option 1: Desktop GUI Application (Recommended)
 
 ```bash
 # 1. Install dependencies
@@ -73,7 +74,22 @@ cp .env.example .env
 # 4. Authenticate with Azure
 az login --tenant <your-tenant-id>
 
-# 5. Build the graph with the interactive dashboard
+# 5. Launch the desktop GUI application
+atg start
+# The GUI will open with full access to all features:
+# - Build graphs with visual progress tracking
+# - Visualize in an interactive graph viewer
+# - Generate IaC templates
+# - Run threat modeling
+# - And much more!
+```
+
+### Option 2: CLI with Dashboard
+
+```bash
+# 1-4. Same setup as above
+
+# 5. Build the graph with the interactive CLI dashboard
 azure-tenant-grapher build --tenant-id <your-tenant-id>
 # (Pro tip: Press 'g' in the dashboard to launch the GUI interface!)
 
