@@ -1195,7 +1195,13 @@ def spa_stop():
     default=True,
     help="Create a client secret for the app registration",
 )
-def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: str, create_secret: bool):
+@click.option(
+    "--save-to-env",
+    is_flag=True,
+    default=False,
+    help="Automatically save configuration to .env file",
+)
+def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: str, create_secret: bool, save_to_env: bool):
     """Create an Azure AD app registration for Azure Tenant Grapher.
     
     This command guides you through creating an Azure AD application registration
@@ -1363,6 +1369,7 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
                     "az", "ad", "app", "credential", "reset",
                     "--id", app_id,
                     "--display-name", "Azure Tenant Grapher Secret",
+                    "--years", "2",  # Valid for 2 years
                     "--query", "password",
                     "-o", "tsv"
                 ],
@@ -1374,7 +1381,53 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
                 click.echo(f"❌ Failed to create client secret: {result.stderr}", err=True)
             else:
                 client_secret = result.stdout.strip()
-                click.echo("✅ Client secret created")
+                click.echo("✅ Client secret created successfully!")
+        
+        # Try to grant admin consent automatically
+        click.echo("\n🔐 Attempting to grant admin consent...")
+        consent_result = subprocess.run(
+            ["az", "ad", "app", "permission", "admin-consent", "--id", app_id],
+            capture_output=True,
+            text=True,
+        )
+        
+        consent_granted = False
+        if consent_result.returncode == 0:
+            click.echo("✅ Admin consent granted successfully!")
+            consent_granted = True
+        else:
+            if "AADSTS50058" in consent_result.stderr or "signed in" in consent_result.stderr.lower():
+                click.echo("⚠️  Cannot grant admin consent automatically - requires interactive login as Global Administrator")
+            else:
+                click.echo(f"⚠️  Admin consent failed: {consent_result.stderr}")
+        
+        # Save to .env file if requested
+        if save_to_env:
+            env_file_path = os.path.join(os.getcwd(), ".env")
+            click.echo(f"\n💾 Saving configuration to {env_file_path}...")
+            
+            # Read existing .env file if it exists
+            env_vars = {}
+            if os.path.exists(env_file_path):
+                with open(env_file_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            env_vars[key.strip()] = value.strip()
+            
+            # Update with new values
+            env_vars['AZURE_TENANT_ID'] = tenant_id
+            env_vars['AZURE_CLIENT_ID'] = app_id
+            if client_secret:
+                env_vars['AZURE_CLIENT_SECRET'] = client_secret
+            
+            # Write back to file
+            with open(env_file_path, 'w') as f:
+                for key, value in env_vars.items():
+                    f.write(f"{key}={value}\n")
+            
+            click.echo("✅ Configuration saved to .env file!")
         
         # Display configuration
         click.echo("\n" + "=" * 50)
@@ -1386,12 +1439,26 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             click.echo(f"AZURE_CLIENT_SECRET={client_secret}")
         click.echo("=" * 50)
         
-        click.echo("\n⚠️  Important next steps:")
-        click.echo("1. Copy the above configuration to your .env file")
+        # Display next steps with proper numbering
+        click.echo("\n✅ Next steps:")
+        step_num = 1
+        
+        if not save_to_env:
+            click.echo(f"{step_num}. Copy the above configuration to your .env file")
+            step_num += 1
+        
         if client_secret:
-            click.echo("2. Store the client secret securely - it won't be shown again")
-        click.echo("3. Grant admin consent for the API permissions in Azure Portal")
-        click.echo("   Navigate to: Azure AD → App registrations → Your app → API permissions → Grant admin consent")
+            click.echo(f"{step_num}. Store the client secret securely - it won't be shown again")
+            step_num += 1
+        
+        if not consent_granted:
+            click.echo(f"{step_num}. Grant admin consent for the API permissions:")
+            click.echo(f"   Option A: Run as Global Admin: az ad app permission admin-consent --id {app_id}")
+            click.echo(f"   Option B: Use Azure Portal: Azure AD → App registrations → {name} → API permissions → Grant admin consent")
+            click.echo(f"   Option C: Use consent URL: https://login.microsoftonline.com/{tenant_id}/adminconsent?client_id={app_id}")
+            step_num += 1
+        
+        click.echo(f"\n✨ App registration setup complete!")
         
     finally:
         # Clean up temp file
