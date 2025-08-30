@@ -1397,30 +1397,3 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
         # Clean up temp file
         if os.path.exists(manifest_path):
             os.remove(manifest_path)
-=======
-            click.echo(f"❌ Failed to stop SPA: {e}", err=True)
-    else:
-        click.echo("⚠️  SPA is not running (no pidfile found).")
-
-    # Stop MCP server
-    if os.path.exists(MCP_PIDFILE):
-        try:
-            with open(MCP_PIDFILE) as f:
-                pid = int(f.read().strip())
-            try:
-                os.kill(pid, signal.SIGTERM)
-                click.echo("🛑 Sent SIGTERM to MCP server.")
-                mcp_stopped = True
-            except Exception as e:
-                click.echo(f"⚠️  Could not terminate MCP server: {e}", err=True)
-            os.remove(MCP_PIDFILE)
-        except Exception as e:
-            click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
-    else:
-        click.echo("⚠️  MCP server is not running (no pidfile found).")
-
-    if spa_stopped or mcp_stopped:
-        click.echo("✅ Services stopped and pidfiles cleaned up.")
-    else:
-        click.echo("⚠️  No services were running.")
->>>>>>> 786f1c8 (feat: start MCP server automatically with atg start)
