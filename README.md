@@ -39,6 +39,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - **Extensible relationship engine** with modular rules (Tag, Region, CreatedBy, etc.).
 - **Interactive 3D visualization** with filtering, search, and ResourceGroup labels.
 - **CLI dashboard** with live progress, logs, and configuration.
+- **Electron SPA GUI** providing a desktop application interface with all CLI functionality.
 - **AI-powered documentation** and anonymized tenant specification generation.
 - **Infrastructure-as-Code (IaC) generation** supporting Bicep, ARM, and Terraform, plus transformation rules and deployment scripts.
 - **Agent Mode (MCP/AutoGen)** for natural-language queries over your graph.
@@ -74,10 +75,41 @@ az login --tenant <your-tenant-id>
 
 # 5. Build the graph with the interactive dashboard
 azure-tenant-grapher build --tenant-id <your-tenant-id>
+# (Pro tip: Press 'g' in the dashboard to launch the GUI interface!)
 
 # 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
 ```
+
+## Electron SPA GUI
+
+For a desktop application experience, launch the Electron-based GUI that provides access to all CLI functionality through an intuitive interface:
+
+```bash
+# Launch the desktop GUI application
+atg start
+
+# Alternative command names
+azure-tenant-grapher start
+azure-graph start
+
+# Stop the GUI when done
+atg stop
+```
+
+The GUI provides:
+- **Tabbed Interface**: Separate tabs for Build, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, and more
+- **Real-time Logs**: Live streaming of operation logs and progress
+- **Visual Configuration**: GUI for environment variables and settings
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+
+### Quick Launch from CLI Dashboard
+When running CLI operations with the dashboard (e.g., `atg build`), you can press **'g'** to instantly launch the GUI without interrupting your current operation. This provides:
+- **Seamless workflow**: Continue monitoring CLI progress while accessing GUI features
+- **No terminal switching**: Launch GUI directly from the dashboard
+- **Error handling**: Proper feedback if GUI is already running or encounters issues
+
+For detailed GUI documentation, see [`spa/README.md`](spa/README.md).
 
 ## Installation
 

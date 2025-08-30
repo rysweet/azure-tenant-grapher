@@ -55,6 +55,10 @@ uv run atg visualize
 uv run atg agent-mode
 uv run atg threat-model
 uv run atg doctor  # Check and install CLI dependencies
+
+# SPA/GUI commands
+uv run atg start    # Launch Electron GUI
+uv run atg stop     # Stop GUI application
 ```
 
 ## Architecture Overview
@@ -92,6 +96,7 @@ uv run atg doctor  # Check and install CLI dependencies
 - **Dashboard Integration**: Rich TUI dashboard for progress tracking during long operations
 - **MCP Server**: Model Context Protocol server for AI agent integration
 - **Migration System**: Database schema versioning and migrations in `migrations/`
+- **Electron SPA**: Desktop GUI application with React frontend and Express backend
 
 ### Neo4j Graph Schema
 
@@ -106,6 +111,22 @@ uv run atg doctor  # Check and install CLI dependencies
 - **Integration Tests**: Use testcontainers for Neo4j
 - **E2E Tests**: Full workflow testing with real containers
 - **Coverage Target**: 40% minimum (per pyproject.toml)
+
+### SPA/GUI Architecture
+
+The Electron-based desktop GUI provides a full-featured interface for all CLI functionality:
+
+**Key Directories:**
+- `spa/main/`: Electron main process (app lifecycle, IPC, subprocess management)
+- `spa/renderer/`: React frontend (UI components, context providers, hooks)
+- `spa/backend/`: Express server (optional API layer)
+- `spa/tests/`: Comprehensive test suites (unit, integration, e2e)
+
+**Core Features:**
+- **Tabbed Interface**: Build, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, Threat Model, Config
+- **Real-time Communication**: WebSocket for live logs and progress updates
+- **Process Management**: Spawns and manages CLI subprocesses
+- **Cross-Platform**: Windows, macOS, and Linux support
 
 ## Common Development Tasks
 
@@ -124,6 +145,23 @@ uv run atg doctor  # Check and install CLI dependencies
 1. Update traverser logic in `src/iac/traverser.py`
 2. Modify emitter in `src/iac/emitters/`
 3. Test with `--dry-run` flag first
+
+### Working with the SPA/GUI
+1. **Start Development Environment**:
+   ```bash
+   cd spa && npm run dev
+   ```
+2. **Add New UI Components**: Place in `spa/renderer/src/components/`
+3. **Add New Tabs**: Create in `spa/renderer/src/components/tabs/`
+4. **Test Changes**:
+   ```bash
+   cd spa && npm test
+   npm run test:e2e
+   ```
+5. **Build for Production**:
+   ```bash
+   cd spa && npm run build && npm run package
+   ```
 
 ## Environment Configuration
 
@@ -149,6 +187,13 @@ Check CI status: `./scripts/check_ci_status.sh`
 ### Helpful Scripts
 
 - **CI Status Check**: Use the script `@scripts/check_ci_status.sh` to efficiently check CI status
+
+## CLI Dashboard Shortcuts
+
+When using the CLI dashboard (during `atg build` operations):
+- **Press 'x'** to exit the dashboard
+- **Press 'g'** to launch the GUI (SPA) - provides quick access to the desktop interface
+- **Press 'i', 'd', 'w'** to change log levels (INFO, DEBUG, WARNING)
 
 ## Project Memories
 

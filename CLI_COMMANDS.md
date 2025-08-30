@@ -34,6 +34,17 @@ atg visualize
 
 # Show configuration
 atg config
+
+# Launch GUI application
+atg start
+
+# Stop GUI application
+atg stop
+
+# Database management
+atg backup outputs/my-backup.dump
+atg restore outputs/my-backup.dump
+atg wipe --force
 ```
 
 ### Detailed Examples
@@ -60,11 +71,26 @@ atg generate-spec --output outputs/my-spec.md
 
 When using the dashboard (default for `atg build`):
 
+### Keyboard Shortcuts
 - **Press 'x'** to exit the dashboard at any time
+- **Press 'g'** to launch the GUI (SPA) - quick access to desktop interface
+  - Equivalent to running `atg start` in a new terminal
+  - Launches the Electron-based desktop application
+  - Shows success/error messages in dashboard logs
+  - Handles cases where GUI is already running
 - **Press 'i'** to set log level to INFO
-- **Press 'd'** to set log level to DEBUG
+- **Press 'd'** to set log level to DEBUG  
 - **Press 'w'** to set log level to WARNING
 
+### GUI Launch Options
+The 'g' hotkey provides a convenient way to launch the desktop GUI without leaving the CLI dashboard. There are two ways to access the GUI:
+
+1. **Direct command**: `atg start` (run in a separate terminal)
+2. **Dashboard hotkey**: Press 'g' while in the build dashboard
+
+Both methods launch the same Electron application with full CLI functionality.
+
+### Dashboard Panels
 The dashboard shows:
 - **Config panel**: Shows all settings including log file location
 - **Progress panel**: Real-time statistics and controls
@@ -77,7 +103,30 @@ Unless a custom output path is provided, all CLI commands that generate files wi
 Example:
 - Specification: `atg generate-spec --output outputs/my-spec.md`
 - IaC: `atg generate-iac --output outputs/iac-artifacts`
-- Database backup: `atg backup-db outputs/my-neo4j-backup.dump`
+- Database backup: `atg backup outputs/my-neo4j-backup.dump`
+
+## Database Management Commands
+
+### Backup Database
+```bash
+# Create a backup of the current Neo4j database
+atg backup outputs/my-backup-$(date +%Y%m%d).dump
+```
+
+### Restore Database
+```bash
+# Restore database from a backup file
+atg restore outputs/my-backup-20240101.dump
+```
+
+### Wipe Database
+```bash
+# Completely clear the database (with confirmation prompt)
+atg wipe
+
+# Force wipe without confirmation (use with caution)
+atg wipe --force
+```
 
 ## File Logging
 
