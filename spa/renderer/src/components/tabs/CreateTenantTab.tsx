@@ -6,8 +6,16 @@ import {
   Button,
   Typography,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  OutlinedInput,
+  InputAdornment,
 } from '@mui/material';
-import { Upload as UploadIcon, Create as CreateIcon } from '@mui/icons-material';
+import { Upload as UploadIcon, Create as CreateIcon, AutoAwesome as GenerateIcon } from '@mui/icons-material';
 import MonacoEditor from '@monaco-editor/react';
 import LogViewer from '../common/LogViewer';
 
@@ -16,6 +24,10 @@ const CreateTenantTab: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [genSimDialogOpen, setGenSimDialogOpen] = useState(false);
+  const [companySize, setCompanySize] = useState<number>(100);
+  const [seedFile, setSeedFile] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleFileUpload = async () => {
     try {
@@ -83,7 +95,7 @@ const CreateTenantTab: React.FC = () => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 3, mb: 2 }}>
         <Typography variant="h5" gutterBottom>
-          Create Tenant from Specification
+          Create a new Tenant in the Graph
         </Typography>
         
         {error && (
@@ -93,6 +105,14 @@ const CreateTenantTab: React.FC = () => {
         )}
 
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<GenerateIcon />}
+            onClick={() => setGenSimDialogOpen(true)}
+            disabled={isCreating}
+          >
+            Generate new Tenant Specification using LLM
+          </Button>
           <Button
             variant="outlined"
             startIcon={<UploadIcon />}
@@ -144,6 +164,117 @@ const CreateTenantTab: React.FC = () => {
           />
         </Box>
       </Box>
+      
+      {/* Generate Tenant Specification Dialog */}
+      <Dialog
+        open={genSimDialogOpen}
+        onClose={() => setGenSimDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Generate Tenant Specification using LLM</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel htmlFor="company-size">Company Size</InputLabel>
+              <OutlinedInput
+                id="company-size"
+                type="number"
+                value={companySize}
+                onChange={(e) => setCompanySize(Number(e.target.value))}
+                endAdornment={<InputAdornment position="end">employees</InputAdornment>}
+                label="Company Size"
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                Target company size (approximate number of employees)
+              </Typography>
+            </FormControl>
+            
+            <Box>
+              <Button
+                variant="outlined"
+                onClick={async () => {
+                  try {
+                    const filePath = await window.electronAPI.dialog.openFile({
+                      filters: [
+                        { name: 'Markdown Files', extensions: ['md'] },
+                        { name: 'All Files', extensions: ['*'] }
+                      ]
+                    });
+                    if (filePath) {
+                      setSeedFile(filePath);
+                    }
+                  } catch (err: any) {
+                    setError(err.message);
+                  }
+                }}
+                fullWidth
+              >
+                {seedFile ? `Seed File: ${seedFile.split('/').pop()}` : 'Select Seed File (Optional)'}
+              </Button>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                Path to a markdown file with seed/suggestions for the profile
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGenSimDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              setGenSimDialogOpen(false);
+              setIsGenerating(true);
+              setError(null);
+              setLogs([]);
+              
+              try {
+                const args = ['--size', companySize.toString()];
+                if (seedFile) {
+                  args.push('--seed', seedFile);
+                }
+                
+                const result = await window.electronAPI.cli.execute('gensimdoc', args);
+                
+                window.electronAPI.on('process:output', (data: any) => {
+                  if (data.id === result.data.id) {
+                    const output = data.data.join('\n');
+                    setLogs((prev) => [...prev, output]);
+                    
+                    // Check if output contains the generated file path
+                    const pathMatch = output.match(/Generated simulation document: (.+\.md)/);
+                    if (pathMatch) {
+                      // Read the generated file and set it as spec content
+                      window.electronAPI.file.read(pathMatch[1]).then((readResult: any) => {
+                        if (readResult.success) {
+                          setSpecContent(readResult.data);
+                        }
+                      });
+                    }
+                  }
+                });
+                
+                window.electronAPI.on('process:exit', (data: any) => {
+                  if (data.id === result.data.id) {
+                    setIsGenerating(false);
+                    if (data.code === 0) {
+                      setLogs((prev) => [...prev, 'Tenant specification generated successfully!']);
+                    } else {
+                      setError(`Generation failed with exit code ${data.code}`);
+                    }
+                  }
+                });
+              } catch (err: any) {
+                setError(err.message);
+                setIsGenerating(false);
+              }
+            }}
+            variant="contained"
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating...' : 'Generate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
