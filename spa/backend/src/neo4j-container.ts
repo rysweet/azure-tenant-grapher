@@ -188,7 +188,13 @@ export class Neo4jContainer {
       const neo4j = require('neo4j-driver');
       const driver = neo4j.driver(
         `bolt://localhost:${this.neo4jPort}`,
-        neo4j.auth.basic('neo4j', this.neo4jPassword)
+        neo4j.auth.basic('neo4j', this.neo4jPassword),
+        {
+          connectionTimeout: 5000, // 5 second timeout
+          maxConnectionLifetime: 60 * 60 * 1000, // 1 hour
+          maxConnectionPoolSize: 50,
+          connectionAcquisitionTimeout: 10000 // 10 second timeout
+        }
       );
       
       const session = driver.session();
@@ -198,6 +204,7 @@ export class Neo4jContainer {
       
       return true;
     } catch (error) {
+      console.log('Neo4j connection test failed:', error instanceof Error ? error.message : error);
       return false;
     }
   }
@@ -228,9 +235,33 @@ export class Neo4jContainer {
       );
       const state = JSON.parse(stdout);
       
+      // First check Docker's built-in health status
+      let dockerHealth = 'unknown';
+      try {
+        const { stdout: healthOut } = await execAsync(
+          `docker inspect ${this.containerName} --format='{{.State.Health.Status}}'`
+        );
+        dockerHealth = healthOut.trim();
+      } catch {
+        // Container might not have health check configured
+      }
+      
       // Test actual Neo4j connection to determine real health
       const isHealthy = await this.testNeo4jConnection();
-      const containerHealth = isHealthy ? 'healthy' : 'starting';
+      
+      // Determine final health status
+      let containerHealth = 'starting';
+      if (isHealthy) {
+        containerHealth = 'healthy';
+      } else if (dockerHealth === 'healthy') {
+        // Docker says healthy but we can't connect - might be auth issue
+        containerHealth = 'unhealthy';
+      } else if (dockerHealth === 'unhealthy') {
+        containerHealth = 'unhealthy';
+      } else if (state.Running && Date.now() - new Date(state.StartedAt).getTime() > 60000) {
+        // If running for more than 60 seconds and still can't connect
+        containerHealth = 'unhealthy';
+      }
       
       return {
         ...baseStatus,
@@ -238,6 +269,7 @@ export class Neo4jContainer {
         running: true,
         exists: true,
         health: containerHealth,
+        dockerHealth,
         startedAt: state.StartedAt,
         pid: state.Pid
       };
