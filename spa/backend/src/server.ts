@@ -298,6 +298,39 @@ app.get('/api/graph/node/:nodeId', async (req, res) => {
 });
 
 /**
+ * Fetch tenants from Neo4j graph database
+ */
+app.get('/api/neo4j/tenants', async (req, res) => {
+  try {
+    const neo4j = require('neo4j-driver');
+    const driver = neo4j.driver(
+      process.env.NEO4J_URI || 'bolt://localhost:7687',
+      neo4j.auth.basic('neo4j', process.env.NEO4J_PASSWORD || 'password')
+    );
+    
+    const session = driver.session();
+    try {
+      const result = await session.run(
+        'MATCH (t:Tenant) RETURN t.id as id, t.name as name ORDER BY t.name'
+      );
+      
+      const tenants = result.records.map((record: any) => ({
+        id: record.get('id'),
+        name: record.get('name') || record.get('id')
+      }));
+      
+      res.json({ tenants });
+    } finally {
+      await session.close();
+      await driver.close();
+    }
+  } catch (error: any) {
+    console.error('Failed to fetch tenants from Neo4j:', error);
+    res.json({ tenants: [], error: error.message });
+  }
+});
+
+/**
  * Neo4j container status endpoint
  */
 app.get('/api/neo4j/status', async (req, res) => {

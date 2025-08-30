@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -13,8 +13,14 @@ import {
   MenuItem,
 } from '@mui/material';
 import { PlayArrow as GenerateIcon, Save as SaveIcon } from '@mui/icons-material';
+import axios from 'axios';
 import MonacoEditor from '@monaco-editor/react';
 import { useApp } from '../../context/AppContext';
+
+interface TenantInfo {
+  id: string;
+  name: string;
+}
 
 const GenerateSpecTab: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -23,6 +29,30 @@ const GenerateSpecTab: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSpec, setGeneratedSpec] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<TenantInfo[]>([]);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+
+  // Fetch tenants from Neo4j on mount
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  const fetchTenants = async () => {
+    setLoadingTenants(true);
+    try {
+      const response = await axios.get('http://localhost:3001/api/neo4j/tenants');
+      setTenants(response.data.tenants || []);
+      // If there's only one tenant, auto-select it
+      if (response.data.tenants?.length === 1 && !tenantId) {
+        setTenantId(response.data.tenants[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tenants:', err);
+      // Don't show error, just allow manual input
+    } finally {
+      setLoadingTenants(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!tenantId) {
@@ -102,7 +132,7 @@ const GenerateSpecTab: React.FC = () => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 3, mb: 2 }}>
         <Typography variant="h5" gutterBottom>
-          Generate Tenant Specification
+          Generate Tenant Specification From Graph
         </Typography>
         
         {error && (
@@ -113,15 +143,26 @@ const GenerateSpecTab: React.FC = () => {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Tenant ID"
-              value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              disabled={isGenerating}
-              helperText="Azure AD Tenant ID"
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Tenant ID</InputLabel>
+              <Select
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                disabled={isGenerating || loadingTenants}
+                label="Tenant ID"
+              >
+                {tenants.length === 0 && !loadingTenants && (
+                  <MenuItem value="" disabled>
+                    <em>No tenants found in graph database</em>
+                  </MenuItem>
+                )}
+                {tenants.map((tenant) => (
+                  <MenuItem key={tenant.id} value={tenant.id}>
+                    {tenant.name} ({tenant.id})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           
           <Grid item xs={12} md={6}>
