@@ -10,6 +10,7 @@ import {
   Api as BackendIcon,
   Psychology as McpIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTenantName } from '../../hooks/useTenantName';
 import { useApp } from '../../context/AppContext';
@@ -27,6 +28,7 @@ interface ActiveProcess {
 const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
   const { state } = useApp();
   const tenantName = useTenantName();
+  const navigate = useNavigate();
   const [activeProcesses, setActiveProcesses] = useState<ActiveProcess[]>([]);
   const [neo4jStatus, setNeo4jStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [mcpStatus, setMcpStatus] = useState<'connected' | 'disconnected'>('disconnected');
@@ -45,6 +47,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
       
       return true;
     });
+
+  // Handle PID chip click - navigate to Logs tab with PID filter
+  const handlePidClick = (pid: number) => {
+    navigate(`/logs?pid=${pid}`);
+  };
 
   // Fetch active processes and Neo4j status periodically
   useEffect(() => {
@@ -130,7 +137,12 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                   label={op.type}
                   color="info"
                   variant="outlined"
-                  sx={{ fontSize: '0.7rem', height: 20 }}
+                  onClick={op.pid ? () => handlePidClick(op.pid!) : undefined}
+                  sx={{ 
+                    fontSize: '0.7rem', 
+                    height: 20,
+                    cursor: op.pid ? 'pointer' : 'default'
+                  }}
                 />
               </Tooltip>
             ))}
@@ -147,14 +159,19 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                 return true;
               })
               .map((process) => (
-                <Tooltip key={process.id} title={`PID: ${process.pid} - Command: ${process.command}`}>
+                <Tooltip key={process.id} title={`PID: ${process.pid} - Command: ${process.command} (Click to view logs)`}>
                   <Chip
                     size="small"
                     icon={<RunningIcon />}
                     label={`PID ${process.pid}`}
                     color="warning"
                     variant="outlined"
-                    sx={{ fontSize: '0.7rem', height: 20 }}
+                    onClick={() => handlePidClick(process.pid!)}
+                    sx={{ 
+                      fontSize: '0.7rem', 
+                      height: 20,
+                      cursor: 'pointer'
+                    }}
                   />
                 </Tooltip>
               ))}
