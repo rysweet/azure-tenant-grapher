@@ -1,4 +1,4 @@
-import neo4j, { Driver, Session } from 'neo4j-driver';
+import neo4j, { Driver, Session, DateTime } from 'neo4j-driver';
 
 export interface GraphNode {
   id: string;
@@ -15,6 +15,13 @@ export interface GraphEdge {
   properties: Record<string, any>;
 }
 
+export interface TimestampInfo {
+  timestamp: DateTime | string | null;
+  utcString: string | null;
+  localString: string | null;
+  timezone: string;
+}
+
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -24,6 +31,17 @@ export interface GraphData {
     nodeTypes: Record<string, number>;
     edgeTypes: Record<string, number>;
   };
+}
+
+export interface DatabaseStats {
+  nodeCount: number;
+  edgeCount: number;
+  nodeTypes: Array<{ type: string; count: number }>;
+  edgeTypes: Array<{ type: string; count: number }>;
+  lastUpdate: TimestampInfo;
+  isEmpty: boolean;
+  labelCount?: number;
+  relTypeCount?: number;
 }
 
 export class Neo4jService {
@@ -233,7 +251,62 @@ export class Neo4jService {
     }
   }
 
-  async getDatabaseStats(): Promise<any> {
+  private formatTimestamp(timestamp: any): TimestampInfo {
+    if (!timestamp) {
+      return {
+        timestamp: null,
+        utcString: null,
+        localString: null,
+        timezone: 'N/A'
+      };
+    }
+
+    try {
+      // Handle Neo4j DateTime objects
+      if (timestamp && typeof timestamp === 'object' && 'toString' in timestamp) {
+        const utcString = timestamp.toString();
+        const localDate = new Date(utcString);
+        
+        return {
+          timestamp: timestamp,
+          utcString: utcString + ' UTC',
+          localString: localDate.toLocaleString() + ' (Local)',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+      }
+      
+      // Handle ISO string timestamps
+      if (typeof timestamp === 'string') {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return {
+            timestamp: timestamp,
+            utcString: date.toISOString() + ' UTC',
+            localString: date.toLocaleString() + ' (Local)',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          };
+        }
+      }
+      
+      // Fallback for other timestamp formats
+      return {
+        timestamp: timestamp,
+        utcString: String(timestamp) + ' (Unknown timezone)',
+        localString: String(timestamp) + ' (Unknown timezone)',
+        timezone: 'Unknown'
+      };
+    } catch (error) {
+      console.error('Error formatting timestamp:', error);
+      return {
+        timestamp: timestamp,
+        utcString: 'Error formatting timestamp',
+        localString: 'Error formatting timestamp',
+        timezone: 'Error'
+      };
+    }
+  }
+
+  async getDatabaseStats(): Promise<DatabaseStats> {
     if (!this.driver) {
       throw new Error('Neo4j connection not available');
     }
@@ -259,11 +332,27 @@ export class Neo4jService {
         OPTIONAL MATCH ()-[r]->()
         WITH nodeStats, edgeStats, totalNodes, count(r) as totalEdges
         
-        // Get the most recent created/modified timestamp
+        // Get the most recent created/modified timestamp (optimized query)
         OPTIONAL MATCH (n)
-        WHERE n.updated_at IS NOT NULL OR n.created_at IS NOT NULL
+        WHERE n.updated_at IS NOT NULL
         WITH nodeStats, edgeStats, totalNodes, totalEdges, 
-             max(coalesce(n.updated_at, n.created_at)) as lastUpdate
+             max(n.updated_at) as lastUpdateFromUpdated
+        
+        OPTIONAL MATCH (n)
+        WHERE n.created_at IS NOT NULL AND n.updated_at IS NULL
+        WITH nodeStats, edgeStats, totalNodes, totalEdges, lastUpdateFromUpdated,
+             max(n.created_at) as lastUpdateFromCreated
+        
+        WITH nodeStats, edgeStats, totalNodes, totalEdges,
+             CASE 
+               WHEN lastUpdateFromUpdated IS NOT NULL AND lastUpdateFromCreated IS NOT NULL 
+               THEN CASE WHEN lastUpdateFromUpdated > lastUpdateFromCreated 
+                         THEN lastUpdateFromUpdated 
+                         ELSE lastUpdateFromCreated END
+               WHEN lastUpdateFromUpdated IS NOT NULL THEN lastUpdateFromUpdated
+               WHEN lastUpdateFromCreated IS NOT NULL THEN lastUpdateFromCreated
+               ELSE null
+             END as lastUpdate
         
         RETURN {
           nodeCount: totalNodes,
@@ -292,7 +381,7 @@ export class Neo4jService {
             type: et.type,
             count: et.count?.toNumber ? et.count.toNumber() : et.count || 0
           })),
-          lastUpdate: stats.lastUpdate ? stats.lastUpdate.toString() : null,
+          lastUpdate: this.formatTimestamp(stats.lastUpdate),
           isEmpty: stats.isEmpty,
           labelCount: 0,
           relTypeCount: 0
@@ -318,7 +407,7 @@ export class Neo4jService {
         edgeCount: 0,
         nodeTypes: [],
         edgeTypes: [],
-        lastUpdate: null,
+        lastUpdate: this.formatTimestamp(null),
         isEmpty: true
       };
     } catch (error) {
@@ -340,7 +429,7 @@ export class Neo4jService {
             isEmpty: record.get('isEmpty'),
             nodeTypes: [],
             edgeTypes: [],
-            lastUpdate: null
+            lastUpdate: this.formatTimestamp(null)
           };
         }
       } catch (fallbackError) {
