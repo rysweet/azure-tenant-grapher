@@ -14,6 +14,7 @@ interface ProcessInfo {
   startTime: Date;
   endTime?: Date;
   exitCode?: number;
+  pid?: number;
 }
 
 export class ProcessManager extends EventEmitter {
@@ -45,6 +46,7 @@ export class ProcessManager extends EventEmitter {
       output: [],
       error: [],
       startTime: new Date(),
+      pid: typeof childProcess.pid === 'number' ? childProcess.pid : undefined,
     };
 
     this.processes.set(id, processInfo);
@@ -67,7 +69,7 @@ export class ProcessManager extends EventEmitter {
     return new Promise((resolve, reject) => {
       childProcess.on('exit', (code) => {
         processInfo.status = code === 0 ? 'completed' : 'failed';
-        processInfo.exitCode = code ?? undefined;
+        processInfo.exitCode = code !== null ? code : undefined;
         processInfo.endTime = new Date();
         
         this.emit('process:exit', { id, code });
@@ -116,7 +118,19 @@ export class ProcessManager extends EventEmitter {
   listProcesses(): Omit<ProcessInfo, 'process'>[] {
     return Array.from(this.processes.values()).map(p => {
       const { process, ...rest } = p;
-      return rest;
+      
+      // Validate PID with explicit type checking
+      let validPid: number | undefined = undefined;
+      if (typeof p.pid === 'number' && p.pid > 0) {
+        validPid = p.pid;
+      } else if (p.pid !== undefined) {
+        console.warn(`Process ${p.id} has invalid PID:`, p.pid);
+      }
+      
+      return {
+        ...rest,
+        pid: validPid,
+      };
     });
   }
 

@@ -475,9 +475,7 @@ const BuildTab: React.FC = () => {
         id: processId,
         type: 'Build',
         name: `Building graph for ${tenantId}`,
-        pid: undefined, // Backend handles PID internally
-        status: 'running',
-        startTime: new Date(),
+        // Backend handles PID internally, so we don't include it
       });
       
       // Subscribe to process output via WebSocket
