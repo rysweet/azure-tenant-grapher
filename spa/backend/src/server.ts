@@ -103,15 +103,24 @@ app.post('/api/execute', (req, res) => {
     return res.status(400).json({ error: 'Command is required' });
   }
 
-  const pythonPath = process.env.PYTHON_PATH || 'python3';
-  const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
+  // Use uv to run the atg CLI command
+  const uvPath = process.env.UV_PATH || 'uv';
+  const projectRoot = path.resolve(__dirname, '../../..');
   
-  const fullArgs = [cliPath, command, ...args];
-  const childProcess = spawn(pythonPath, fullArgs, {
-    cwd: path.resolve(__dirname, '../../..'),
+  const fullArgs = ['run', 'atg', command, ...args];
+  
+  logger.info('Executing CLI command:', { 
+    command: `${uvPath} ${fullArgs.join(' ')}`,
+    cwd: projectRoot,
+    processId 
+  });
+  
+  const childProcess = spawn(uvPath, fullArgs, {
+    cwd: projectRoot,
     env: {
       ...process.env,
-      PYTHONPATH: path.resolve(__dirname, '../../..'),
+      // Ensure the project root is in PYTHONPATH for proper module resolution
+      PYTHONPATH: projectRoot,
     },
   });
 
