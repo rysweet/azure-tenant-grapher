@@ -96,11 +96,17 @@ const StatusTab: React.FC = () => {
   const checkNeo4jStatus = async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/neo4j/status');
+      const prevRunning = neo4jStatus?.running;
       setNeo4jStatus(response.data);
       
       // If Neo4j is running, load database stats
       if (response.data.running) {
         await loadDatabaseStats();
+      }
+      
+      // If Neo4j status changed, refresh dependencies to update Neo4j status
+      if (prevRunning !== response.data.running) {
+        checkDependencies();
       }
     } catch (err) {
       console.error('Failed to check Neo4j status:', err);
@@ -132,17 +138,32 @@ const StatusTab: React.FC = () => {
   const checkDependencies = async () => {
     setIsCheckingDeps(true);
     try {
-      const result = await window.electronAPI.cli.execute('doctor', []);
+      const response = await axios.get('http://localhost:3001/api/dependencies');
+      const deps = response.data;
       
-      // Parse doctor output to get dependency status
-      setDependencies([
-        { name: 'Python', installed: true, version: '3.11.0', required: '>=3.9' },
-        { name: 'Neo4j', installed: true, version: '5.0.0', required: '>=5.0' },
-        { name: 'Docker', installed: true, version: '24.0.0', required: 'any' },
-        { name: 'Azure CLI', installed: false, required: '>=2.0' },
-      ]);
+      // Add Neo4j status based on our Neo4j container status
+      const dependenciesWithNeo4j = [
+        ...deps,
+        { 
+          name: 'Neo4j', 
+          installed: neo4jStatus?.running || false, 
+          version: neo4jStatus?.running ? '5.0.0' : undefined, 
+          required: '>=5.0' 
+        }
+      ];
+      
+      setDependencies(dependenciesWithNeo4j);
     } catch (err: any) {
       console.error('Failed to check dependencies:', err);
+      // Fallback to showing unknown status for all dependencies
+      setDependencies([
+        { name: 'Python', installed: false, required: '>=3.9' },
+        { name: 'Neo4j', installed: neo4jStatus?.running || false, required: '>=5.0' },
+        { name: 'Docker', installed: false, required: 'any' },
+        { name: 'Azure CLI', installed: false, required: '>=2.0' },
+        { name: 'Terraform', installed: false, required: 'any' },
+        { name: 'Bicep', installed: false, required: 'any' }
+      ]);
     } finally {
       setIsCheckingDeps(false);
     }
