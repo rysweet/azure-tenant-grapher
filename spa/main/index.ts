@@ -14,6 +14,7 @@ dotenv.config({ path: envPath });
 let mainWindow: BrowserWindow | null = null;
 let processManager: ProcessManager;
 let backendProcess: ChildProcess | null = null;
+let mcpServerProcess: ChildProcess | null = null;
 
 async function createWindow() {
   const iconPath = path.join(__dirname, '../../assets/icon.png');
@@ -124,6 +125,47 @@ function startBackendServer() {
   });
 }
 
+// Start the MCP server
+function startMcpServer() {
+  const pythonPath = process.env.PYTHON_PATH || 'python3';
+  const projectRoot = path.join(__dirname, '../../..');
+  
+  // Start MCP server using python -m src.mcp_server
+  mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_server', '--foreground'], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      PYTHONPATH: projectRoot,
+    }
+  });
+
+  if (!mcpServerProcess) {
+    console.error('Failed to spawn MCP server process');
+    return;
+  }
+
+  console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
+
+  mcpServerProcess.stdout?.on('data', (data) => {
+    console.log(`MCP Server: ${data}`);
+  });
+
+  mcpServerProcess.stderr?.on('data', (data) => {
+    console.error(`MCP Server Error: ${data}`);
+  });
+
+  mcpServerProcess.on('error', (error) => {
+    console.error('Failed to start MCP server:', error);
+  });
+
+  mcpServerProcess.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`MCP server process exited with code ${code}`);
+    }
+    mcpServerProcess = null;
+  });
+}
+
 // Set app name
 app.setName('Azure Tenant Grapher');
 
@@ -142,6 +184,9 @@ if (process.platform === 'darwin') {
 app.whenReady().then(async () => {
   // Start backend server
   startBackendServer();
+  
+  // Start MCP server
+  startMcpServer();
   
   // Initialize process manager
   processManager = new ProcessManager();
@@ -170,6 +215,11 @@ app.on('window-all-closed', () => {
     backendProcess.kill('SIGTERM');
   }
   
+  // Stop MCP server
+  if (mcpServerProcess) {
+    mcpServerProcess.kill('SIGTERM');
+  }
+  
   // Always quit the app when the window is closed
   // This is a single-window application, so we want it to fully quit
   app.quit();
@@ -186,12 +236,20 @@ app.on('before-quit', (event) => {
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
   }
+  
+  // Stop MCP server
+  if (mcpServerProcess) {
+    mcpServerProcess.kill('SIGTERM');
+  }
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   processManager.cleanup();
+  if (mcpServerProcess) {
+    mcpServerProcess.kill('SIGTERM');
+  }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -201,12 +259,18 @@ process.on('unhandledRejection', (reason, promise) => {
 // Handle process termination signals for clean shutdown
 process.on('SIGINT', () => {
   processManager.cleanup().then(() => {
+    if (mcpServerProcess) {
+      mcpServerProcess.kill('SIGTERM');
+    }
     app.quit();
   });
 });
 
 process.on('SIGTERM', () => {
   processManager.cleanup().then(() => {
+    if (mcpServerProcess) {
+      mcpServerProcess.kill('SIGTERM');
+    }
     app.quit();
   });
 });
