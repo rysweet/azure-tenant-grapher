@@ -369,9 +369,35 @@ const StatusTab: React.FC = () => {
                 <Typography color="textSecondary" gutterBottom>
                   Container Health
                 </Typography>
-                <Typography variant="h6">
-                  {neo4jStatus?.health || 'Unknown'}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {neo4jStatus?.health === 'healthy' && (
+                    <>
+                      <CheckIcon color="success" />
+                      <Typography variant="h6" color="success.main">Healthy</Typography>
+                    </>
+                  )}
+                  {neo4jStatus?.health === 'starting' && (
+                    <>
+                      <LinearProgress sx={{ width: 16, height: 16, borderRadius: 1 }} />
+                      <Typography variant="h6" color="warning.main">Starting</Typography>
+                    </>
+                  )}
+                  {neo4jStatus?.health === 'stopped' && (
+                    <>
+                      <StopIcon color="disabled" />
+                      <Typography variant="h6" color="text.disabled">Stopped</Typography>
+                    </>
+                  )}
+                  {neo4jStatus?.health === 'error' && (
+                    <>
+                      <ErrorIcon color="error" />
+                      <Typography variant="h6" color="error.main">Error</Typography>
+                    </>
+                  )}
+                  {!neo4jStatus?.health && (
+                    <Typography variant="h6" color="text.disabled">Unknown</Typography>
+                  )}
+                </Box>
                 {neo4jStatus?.startedAt && (
                   <Typography variant="caption" color="textSecondary">
                     Started: {new Date(neo4jStatus.startedAt).toLocaleTimeString()}

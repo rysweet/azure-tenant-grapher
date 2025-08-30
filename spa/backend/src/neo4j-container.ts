@@ -183,6 +183,25 @@ export class Neo4jContainer {
     }
   }
 
+  async testNeo4jConnection(): Promise<boolean> {
+    try {
+      const neo4j = require('neo4j-driver');
+      const driver = neo4j.driver(
+        `bolt://localhost:${this.neo4jPort}`,
+        neo4j.auth.basic('neo4j', this.neo4jPassword)
+      );
+      
+      const session = driver.session();
+      await session.run('RETURN 1');
+      await session.close();
+      await driver.close();
+      
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async getStatus(): Promise<any> {
     const running = await this.isRunning();
     const exists = await this.containerExists();
@@ -198,7 +217,8 @@ export class Neo4jContainer {
         ...baseStatus,
         status: exists ? 'stopped' : 'not_created',
         running: false,
-        exists
+        exists,
+        health: 'stopped'
       };
     }
 
@@ -208,20 +228,26 @@ export class Neo4jContainer {
       );
       const state = JSON.parse(stdout);
       
+      // Test actual Neo4j connection to determine real health
+      const isHealthy = await this.testNeo4jConnection();
+      const containerHealth = isHealthy ? 'healthy' : 'starting';
+      
       return {
         ...baseStatus,
         status: 'running',
         running: true,
         exists: true,
-        health: state.Health?.Status || 'unknown',
+        health: containerHealth,
         startedAt: state.StartedAt,
         pid: state.Pid
       };
     } catch (error) {
       return {
+        ...baseStatus,
         status: 'error',
         running: false,
         exists: false,
+        health: 'error',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
