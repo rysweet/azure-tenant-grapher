@@ -261,9 +261,9 @@ export class Neo4jService {
         
         // Get the most recent created/modified timestamp
         OPTIONAL MATCH (n)
-        WHERE n.createdAt IS NOT NULL OR n.modifiedAt IS NOT NULL OR n.created IS NOT NULL OR n.modified IS NOT NULL
+        WHERE n.updated_at IS NOT NULL OR n.created_at IS NOT NULL
         WITH nodeStats, edgeStats, totalNodes, totalEdges, 
-             max(coalesce(n.modifiedAt, n.modified, n.createdAt, n.created)) as lastUpdate
+             max(coalesce(n.updated_at, n.created_at)) as lastUpdate
         
         RETURN {
           nodeCount: totalNodes,
@@ -292,7 +292,7 @@ export class Neo4jService {
             type: et.type,
             count: et.count?.toNumber ? et.count.toNumber() : et.count || 0
           })),
-          lastUpdate: stats.lastUpdate,
+          lastUpdate: stats.lastUpdate ? stats.lastUpdate.toString() : null,
           isEmpty: stats.isEmpty,
           labelCount: 0,
           relTypeCount: 0

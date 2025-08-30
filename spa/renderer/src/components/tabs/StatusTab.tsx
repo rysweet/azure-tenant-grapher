@@ -265,7 +265,18 @@ const StatusTab: React.FC = () => {
 
   const formatTimestamp = (timestamp: string | null) => {
     if (!timestamp) return 'Never';
-    return new Date(timestamp).toLocaleString();
+    try {
+      // Handle different timestamp formats
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid timestamp received:', timestamp);
+        return 'Invalid Date';
+      }
+      return date.toLocaleString();
+    } catch (error) {
+      console.error('Error formatting timestamp:', error, timestamp);
+      return 'Error formatting date';
+    }
   };
 
   return (
