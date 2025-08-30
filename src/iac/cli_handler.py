@@ -35,9 +35,11 @@ def get_neo4j_driver_from_config() -> Driver:
 
 
 def default_timestamped_dir() -> Path:
-    """Create default timestamped output directory."""
+    """Create default timestamped output directory inside outputs/."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return Path(f"./iac-out-{timestamp}")
+    outdir = Path("outputs") / f"iac-out-{timestamp}"
+    outdir.mkdir(parents=True, exist_ok=True)
+    return outdir
 
 
 async def generate_iac_command_handler(

@@ -57,7 +57,7 @@ class CLIDashboardManager:
         exit_checker = asyncio.create_task(check_exit_file())
 
         with self.dashboard.live():
-            self.dashboard.log_info("Press 'x' to exit the dashboard")
+            self.dashboard.log_info("Press 'x' to exit | Press 'g' to launch GUI")
             # Use the same polling logic as other methods for consistency
             await self.poll_build_task(build_task)
         # Clean up
@@ -74,7 +74,7 @@ class CLIDashboardManager:
         self.dashboard._test_keypress_queue = key_q  # type: ignore[attr-defined]
 
         with self.dashboard.live(key_queue=key_q):
-            self.dashboard.log_info("Press 'x' to exit the dashboard")
+            self.dashboard.log_info("Press 'x' to exit | Press 'g' to launch GUI")
             await self.poll_build_task(build_task)
 
     async def run_normal(self, build_task: asyncio.Task[Any]) -> str | None:
@@ -86,7 +86,7 @@ class CLIDashboardManager:
         def dashboard_thread_fn():
             # Removed debug print
             with self.dashboard.live():
-                self.dashboard.log_info("Press 'x' to exit the dashboard")
+                self.dashboard.log_info("Press 'x' to exit | Press 'g' to launch GUI")
                 while not self.dashboard.should_exit:
                     import time
 

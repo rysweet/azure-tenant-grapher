@@ -24,14 +24,23 @@ class DashboardExit(Exception):
 
 
 class RichDashboard:
-    def __init__(self, config: Dict[str, Any], max_concurrency: int = None, 
-                 max_llm_threads: int = None, max_build_threads: int = None):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        max_concurrency: Optional[int] = None,
+        max_llm_threads: Optional[int] = None,
+        max_build_threads: Optional[int] = None,
+    ):
         self.console = Console()
         self.layout = Layout()
         self.config = config
         # Support both old and new parameter styles
-        self.max_llm_threads = max_llm_threads if max_llm_threads is not None else max_concurrency
-        self.max_build_threads = max_build_threads if max_build_threads is not None else 20
+        self.max_llm_threads = (
+            max_llm_threads if max_llm_threads is not None else max_concurrency
+        )
+        self.max_build_threads = (
+            max_build_threads if max_build_threads is not None else 20
+        )
         # Keep max_concurrency for backward compatibility
         self.max_concurrency = self.max_llm_threads
 
@@ -105,7 +114,7 @@ class RichDashboard:
         table.add_row("LLM Skipped", str(stats["llm_skipped"]))
         table.add_row("LLM In-Flight", str(stats.get("llm_in_flight", 0)))
         # Add spinner and label at the bottom if processing
-        exit_label = Text("Press 'x' to exit", style="yellow")
+        exit_label = Text("Press 'x' to exit | Press 'g' to launch GUI", style="yellow")
         if self.processing:
             spinner = Spinner("dots", text="processing...", style="green")
             group = Group(table, exit_label, Align.center(spinner))
@@ -225,7 +234,7 @@ class RichDashboard:
             else:
                 with self.lock:
                     self.log_widget.add_line(
-                        "Keypress thread started. Waiting for 'x', 'i', 'd', 'w'...",
+                        "Keypress thread started. Waiting for 'x' to exit, 'g' to launch GUI...",
                         style="yellow",
                         level="info",
                     )
@@ -263,6 +272,66 @@ class RichDashboard:
                     except SystemExit:
                         # If sys.exit is caught, force immediate termination
                         os._exit(0)  # type: ignore[reportPrivateUsage]
+                elif key and key.lower() == "g":
+                    # Launch the GUI (SPA)
+                    import subprocess
+                    with self.lock:
+                        self.log_widget.add_line(
+                            "Launching GUI...", style="green", level="info"
+                        )
+                        self.layout["logs"].update(self.render_log_panel())
+                    try:
+                        # Use the atg start command which handles all the setup
+                        result = subprocess.run(
+                            ["atg", "start"],
+                            capture_output=True,
+                            text=True
+                        )
+                        
+                        if result.returncode == 0:
+                            with self.lock:
+                                self.log_widget.add_line(
+                                    "GUI launched successfully! The Electron app should open in a new window.", 
+                                    style="green", 
+                                    level="info"
+                                )
+                                self.layout["logs"].update(self.render_log_panel())
+                        else:
+                            with self.lock:
+                                # Parse the output for error messages
+                                error_msg = result.stderr or result.stdout or "Unknown error"
+                                if "already running" in error_msg:
+                                    self.log_widget.add_line(
+                                        "GUI is already running. Check your desktop for the Electron window.", 
+                                        style="yellow", 
+                                        level="warning"
+                                    )
+                                else:
+                                    self.log_widget.add_line(
+                                        f"Failed to launch GUI: {error_msg}", 
+                                        style="red", 
+                                        level="error"
+                                    )
+                                self.layout["logs"].update(self.render_log_panel())
+                    except FileNotFoundError:
+                        with self.lock:
+                            self.log_widget.add_line(
+                                "Failed to launch GUI: 'atg' command not found in PATH", 
+                                style="red", 
+                                level="error"
+                            )
+                            self.log_widget.add_line(
+                                "Make sure you're running from the project directory or have installed the CLI", 
+                                style="yellow", 
+                                level="warning"
+                            )
+                            self.layout["logs"].update(self.render_log_panel())
+                    except Exception as e:
+                        with self.lock:
+                            self.log_widget.add_line(
+                                f"Failed to launch GUI: {e}", style="red", level="error"
+                            )
+                            self.layout["logs"].update(self.render_log_panel())
                 elif key and key.lower() in ("i", "d", "w"):
                     level = {"i": "info", "d": "debug", "w": "warning"}[key.lower()]
                     with self.lock:

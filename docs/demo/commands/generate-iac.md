@@ -4,6 +4,8 @@ The `generate-iac` command generates Infrastructure-as-Code (IaC) templates from
 
 ```bash
 uv run azure-tenant-grapher generate-iac --dry-run
+# To generate templates to files (default: outputs/ directory):
+# uv run azure-tenant-grapher generate-iac --format bicep --output outputs/bicep-templates
 ```
 
 **Output:**
@@ -17,6 +19,7 @@ Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reas
 Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [Errno 61] Connection refused)
 Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [Errno 61] Connection refused)) (suggestion: Check Neo4j connection settings and ensure the database is running)
 ```
+All generated IaC templates will be written to the outputs/ directory by default unless overridden with --output.
 
 **Troubleshooting:**
 - If you see a connection error, ensure Neo4j is running and accessible at the configured URI. The graph must be built before running this command.

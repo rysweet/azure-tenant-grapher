@@ -572,6 +572,108 @@ class Neo4jContainerManager:
             logger.error(event=f"Backup failed: {e}")
             return False
 
+    def restore_neo4j_database(self, backup_path: str) -> bool:
+        """
+        Restore the Neo4j database from a backup file using neo4j-admin load.
+        This requires stopping the database temporarily.
+
+        Args:
+            backup_path: Local path to the backup file to restore from.
+
+        Returns:
+            True if restore succeeded, False otherwise.
+        """
+        logger.info(event=f"Starting Neo4j restore from {backup_path}")
+
+        # Check if backup file exists
+        if not os.path.exists(backup_path):
+            logger.error(event=f"Backup file not found: {backup_path}")
+            return False
+
+        if not self.is_neo4j_container_running():
+            logger.error(
+                event="Neo4j container is not running. Cannot perform restore."
+            )
+            return False
+
+        # Find the container
+        try:
+            if not self.docker_client:
+                logger.error(event="Docker client is not available")
+                return False
+
+            containers = self.docker_client.containers.list(
+                filters={"name": self.container_name}
+            )
+            if not containers:
+                logger.error(event="Neo4j container not found")
+                return False
+
+            container = containers[0]
+        except Exception as e:
+            logger.error(event=f"Could not find Neo4j container: {e}")
+            return False
+
+        # Copy backup file to container
+        try:
+            # Create restore directory in container
+            exit_code, output = container.exec_run("mkdir -p /data/restore")
+            if exit_code != 0:
+                logger.error(
+                    event=f"Failed to create restore directory: {output.decode()}"
+                )
+                return False
+
+            # Copy the backup file to the container
+            # We need to create a tar archive containing the backup file
+            import io
+            import tarfile
+
+            tar_stream = io.BytesIO()
+            with tarfile.open(fileobj=tar_stream, mode="w") as tar:
+                tar.add(backup_path, arcname="neo4j.dump")
+            tar_stream.seek(0)
+
+            container.put_archive("/data/restore", tar_stream.read())
+
+            logger.info(event="Stopping Neo4j database for restore...")
+            # Stop the Neo4j database (not the container)
+            exit_code, output = container.exec_run("neo4j stop", user="neo4j")
+            if exit_code != 0:
+                logger.warning(
+                    event=f"Failed to stop Neo4j service (this might be okay): {output.decode()}"
+                )
+
+            # Give it a moment to stop
+            time.sleep(2)
+
+            # Run the load command
+            logger.info(event="Loading database from backup...")
+            exit_code, output = container.exec_run(
+                "neo4j-admin database load neo4j --from-path=/data/restore --overwrite-destination=true",
+                user="neo4j",
+            )
+
+            # Restart Neo4j database
+            logger.info(event="Restarting Neo4j database...")
+            restart_exit_code, restart_output = container.exec_run(
+                "neo4j start", user="neo4j"
+            )
+            if restart_exit_code != 0:
+                logger.warning(
+                    event=f"Failed to restart Neo4j service: {restart_output.decode()}"
+                )
+
+            if exit_code != 0:
+                logger.error(event=f"neo4j-admin load failed: {output.decode()}")
+                return False
+
+            logger.info(event=f"Restore completed successfully from {backup_path}")
+            return True
+        except Exception as e:
+            logger.error(event=f"Restore failed: {e}")
+            return False
+
     def cleanup(self):
         """
         Cleanup Neo4j container and volume for this test run.

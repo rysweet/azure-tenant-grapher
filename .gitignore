@@ -173,6 +173,10 @@ demo-bicep*/
 demo-rules.yaml
 iac-out-*/
 
+# Project outputs
+outputs/
+!outputs/.gitkeep
+
 # .NET build and Visual Studio artifacts
 [Bb]in/
 [Oo]bj/
@@ -193,3 +197,40 @@ simdocs/
 
 # Neo4j logs
 neo4j-logs/
+
+# Node.js / Electron / SPA
+spa/node_modules/
+spa/dist/
+spa/dist-electron/
+spa/coverage/
+spa/.parcel-cache/
+spa/out/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Electron
+spa/release/
+spa/.webpack/
+spa/.cache/
+
+# Testing
+spa/playwright-report/
+spa/playwright/.cache/
+spa/test-results/
+
+# TypeScript
+spa/*.tsbuildinfo
+spa/**/*.js.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo

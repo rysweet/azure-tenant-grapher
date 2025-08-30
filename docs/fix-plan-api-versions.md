@@ -71,13 +71,13 @@ class AzureDiscoveryService:
     def __init__(self, ...):
         self._api_version_cache = {}  # Cache for provider API versions
         self._max_build_threads = getattr(config.processing, 'max_build_threads', 20)
-    
+
     async def _get_api_version(self, resource_id: str) -> str:
         """Get appropriate API version for resource type."""
         # Parse resource ID to get provider and type
         # Query provider if not cached
         # Return appropriate version
-    
+
     async def _fetch_resource_with_properties(self, resource_id: str, ...):
         """Fetch full resource with proper API version and error handling."""
         api_version = await self._get_api_version(resource_id)
@@ -90,7 +90,7 @@ class AzureDiscoveryService:
             )
         except specific_errors as e:
             # Handle specific error types
-            
+
     async def discover_resources_in_subscription(self, ...):
         """Enhanced discovery with parallel property fetching."""
         # Phase 1: List resources
@@ -100,7 +100,7 @@ class AzureDiscoveryService:
 ## Success Criteria
 
 1. ✅ Properties are successfully fetched for all resource types
-2. ✅ Errors are properly logged with actionable information  
+2. ✅ Errors are properly logged with actionable information
 3. ✅ SDK retry mechanism is utilized (not duplicated)
 4. ✅ Tests cover success and failure scenarios
 5. ✅ No regression in existing functionality

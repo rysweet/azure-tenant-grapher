@@ -40,10 +40,10 @@ resource["properties"] = existing_props or {}
 # Use conditional update for properties
 SET r.id = $props.id,
     r.name = $props.name,
-    r.properties = CASE 
-        WHEN $props.properties IS NOT NULL AND $props.properties <> {} 
-        THEN $props.properties 
-        ELSE r.properties 
+    r.properties = CASE
+        WHEN $props.properties IS NOT NULL AND $props.properties <> {}
+        THEN $props.properties
+        ELSE r.properties
     END
 ```
 

@@ -27,7 +27,7 @@ resources.list() → Resource IDs → Parallel get_by_id() → Full properties �
 #### 2.1 Add Parallel Fetch Method
 ```python
 async def _fetch_resource_with_properties(
-    self, 
+    self,
     resource_id: str,
     semaphore: asyncio.Semaphore
 ) -> Dict[str, Any]:
@@ -59,14 +59,14 @@ async def discover_resources_in_subscription(self, subscription_id: str):
             "location": resource.location,
             "tags": resource.tags
         })
-    
+
     # Phase 2: Fetch full details in parallel (slower but complete)
     semaphore = asyncio.Semaphore(self.max_build_threads)
     tasks = [
         self._fetch_resource_with_properties(r["id"], semaphore)
         for r in resource_basics
     ]
-    
+
     # Process in batches to avoid memory issues
     batch_size = 100
     all_resources = []
@@ -74,7 +74,7 @@ async def discover_resources_in_subscription(self, subscription_id: str):
         batch = tasks[i:i + batch_size]
         results = await asyncio.gather(*batch, return_exceptions=True)
         all_resources.extend([r for r in results if r and not isinstance(r, Exception)])
-    
+
     return all_resources
 ```
 
@@ -86,7 +86,7 @@ class RateLimiter:
         self.semaphore = asyncio.Semaphore(max_calls_per_second)
         self.min_interval = 1.0 / max_calls_per_second
         self.last_call = 0
-    
+
     async def acquire(self):
         async with self.semaphore:
             now = time.time()
@@ -154,7 +154,7 @@ If issues occur:
 
 ## Success Criteria
 - [ ] Properties populated for all resource types
-- [ ] Build time remains under 5 minutes for 1000 resources  
+- [ ] Build time remains under 5 minutes for 1000 resources
 - [ ] Memory usage stays under 2GB
 - [ ] Rate limits handled gracefully
 - [ ] Generated specs show complete configuration details
