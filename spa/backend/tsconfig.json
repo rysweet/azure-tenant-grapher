@@ -13,7 +13,8 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "declaration": true,
-    "types": ["node", "express"]
+    "types": ["node", "express"],
+    "composite": true
   },
   "include": [
     "src/**/*.ts"
