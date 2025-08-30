@@ -1117,3 +1117,229 @@ def spa_stop():
         click.echo("✅ SPA stopped and pidfile cleaned up.")
     except Exception as e:
         click.echo(f"❌ Failed to stop SPA: {e}", err=True)
+
+
+@click.command("app-registration")
+@click.option(
+    "--tenant-id",
+    help="Azure tenant ID for the app registration",
+    required=False,
+)
+@click.option(
+    "--name",
+    default="Azure Tenant Grapher",
+    help="Display name for the app registration",
+)
+@click.option(
+    "--redirect-uri",
+    default="http://localhost:3000",
+    help="Redirect URI for the app registration",
+)
+@click.option(
+    "--create-secret",
+    is_flag=True,
+    default=True,
+    help="Create a client secret for the app registration",
+)
+def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: str, create_secret: bool):
+    """Create an Azure AD app registration for Azure Tenant Grapher.
+    
+    This command guides you through creating an Azure AD application registration
+    with the necessary permissions for Azure Tenant Grapher to function properly.
+    
+    The app registration will be configured with:
+    - Microsoft Graph API permissions (User.Read, Directory.Read.All)
+    - Azure Management API permissions (user_impersonation)
+    - Optional client secret for authentication
+    
+    You can either:
+    1. Run this command with Azure CLI installed to automatically create the registration
+    2. Follow the manual instructions provided to create it through the Azure Portal
+    """
+    import json
+    import subprocess
+    from typing import Dict, Any
+    
+    click.echo("🔐 Azure AD App Registration Setup")
+    click.echo("=" * 50)
+    
+    # Check if Azure CLI is installed
+    try:
+        result = subprocess.run(
+            ["az", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        has_azure_cli = result.returncode == 0
+    except (subprocess.SubprocessError, FileNotFoundError):
+        has_azure_cli = False
+    
+    if not has_azure_cli:
+        click.echo("⚠️  Azure CLI not detected. Showing manual instructions...")
+        click.echo("\n📋 Manual App Registration Steps:")
+        click.echo("\n1. Navigate to Azure Portal (https://portal.azure.com)")
+        click.echo("2. Go to Azure Active Directory → App registrations → New registration")
+        click.echo(f"3. Name: {name}")
+        click.echo("4. Supported account types: Single tenant")
+        click.echo(f"5. Redirect URI: Web - {redirect_uri}")
+        click.echo("\n6. After creation, go to API permissions and add:")
+        click.echo("   - Microsoft Graph:")
+        click.echo("     • User.Read (Delegated)")
+        click.echo("     • Directory.Read.All (Application)")
+        click.echo("   - Azure Service Management:")
+        click.echo("     • user_impersonation (Delegated)")
+        click.echo("\n7. Grant admin consent for the permissions")
+        if create_secret:
+            click.echo("\n8. Go to Certificates & secrets → New client secret")
+            click.echo("   - Description: Azure Tenant Grapher")
+            click.echo("   - Expires: Choose appropriate expiration")
+            click.echo("\n9. Copy the following values to your .env file:")
+            click.echo("   - AZURE_CLIENT_ID = <Application (client) ID>")
+            click.echo("   - AZURE_CLIENT_SECRET = <Client secret value>")
+            click.echo("   - AZURE_TENANT_ID = <Directory (tenant) ID>")
+        return
+    
+    # Azure CLI is available, proceed with automated creation
+    click.echo("✅ Azure CLI detected. Proceeding with automated setup...")
+    
+    # Get or use provided tenant ID
+    if not tenant_id:
+        try:
+            result = subprocess.run(
+                ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                tenant_id = result.stdout.strip()
+                click.echo(f"📍 Using current tenant: {tenant_id}")
+            else:
+                click.echo("❌ Could not determine tenant ID. Please provide --tenant-id", err=True)
+                return
+        except subprocess.SubprocessError as e:
+            click.echo(f"❌ Failed to get tenant ID: {e}", err=True)
+            return
+    
+    # Create the app registration
+    click.echo(f"\n📝 Creating app registration '{name}'...")
+    
+    manifest = {
+        "requiredResourceAccess": [
+            {
+                "resourceAppId": "00000003-0000-0000-c000-000000000000",  # Microsoft Graph
+                "resourceAccess": [
+                    {
+                        "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",  # User.Read
+                        "type": "Scope"
+                    },
+                    {
+                        "id": "7ab1d382-f21e-4acd-a863-ba3e13f7da61",  # Directory.Read.All
+                        "type": "Role"
+                    }
+                ]
+            },
+            {
+                "resourceAppId": "797f4846-ba00-4fd7-ba43-dac1f8f63013",  # Azure Service Management
+                "resourceAccess": [
+                    {
+                        "id": "41094075-9dad-400e-a0bd-54e686782033",  # user_impersonation
+                        "type": "Scope"
+                    }
+                ]
+            }
+        ],
+        "web": {
+            "redirectUris": [redirect_uri]
+        }
+    }
+    
+    # Save manifest to temp file
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(manifest, f)
+        manifest_path = f.name
+    
+    try:
+        # Create the app
+        result = subprocess.run(
+            [
+                "az", "ad", "app", "create",
+                "--display-name", name,
+                "--sign-in-audience", "AzureADMyOrg",
+                "--required-resource-accesses", f"@{manifest_path}",
+                "--query", "{appId:appId, objectId:id}",
+                "-o", "json"
+            ],
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode != 0:
+            click.echo(f"❌ Failed to create app registration: {result.stderr}", err=True)
+            return
+        
+        app_info = json.loads(result.stdout)
+        app_id = app_info["appId"]
+        object_id = app_info["objectId"]
+        
+        click.echo(f"✅ App registration created successfully!")
+        click.echo(f"   Client ID: {app_id}")
+        click.echo(f"   Object ID: {object_id}")
+        
+        # Create service principal
+        click.echo("\n📝 Creating service principal...")
+        result = subprocess.run(
+            ["az", "ad", "sp", "create", "--id", app_id],
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode != 0:
+            click.echo(f"⚠️  Failed to create service principal: {result.stderr}", err=True)
+        else:
+            click.echo("✅ Service principal created")
+        
+        # Create client secret if requested
+        client_secret = None
+        if create_secret:
+            click.echo("\n🔑 Creating client secret...")
+            result = subprocess.run(
+                [
+                    "az", "ad", "app", "credential", "reset",
+                    "--id", app_id,
+                    "--display-name", "Azure Tenant Grapher Secret",
+                    "--query", "password",
+                    "-o", "tsv"
+                ],
+                capture_output=True,
+                text=True,
+            )
+            
+            if result.returncode != 0:
+                click.echo(f"❌ Failed to create client secret: {result.stderr}", err=True)
+            else:
+                client_secret = result.stdout.strip()
+                click.echo("✅ Client secret created")
+        
+        # Display configuration
+        click.echo("\n" + "=" * 50)
+        click.echo("📋 Configuration for .env file:")
+        click.echo("=" * 50)
+        click.echo(f"AZURE_TENANT_ID={tenant_id}")
+        click.echo(f"AZURE_CLIENT_ID={app_id}")
+        if client_secret:
+            click.echo(f"AZURE_CLIENT_SECRET={client_secret}")
+        click.echo("=" * 50)
+        
+        click.echo("\n⚠️  Important next steps:")
+        click.echo("1. Copy the above configuration to your .env file")
+        if client_secret:
+            click.echo("2. Store the client secret securely - it won't be shown again")
+        click.echo("3. Grant admin consent for the API permissions in Azure Portal")
+        click.echo("   Navigate to: Azure AD → App registrations → Your app → API permissions → Grant admin consent")
+        
+    finally:
+        # Clean up temp file
+        if os.path.exists(manifest_path):
+            os.remove(manifest_path)
