@@ -501,38 +501,48 @@ app.get('/api/dependencies', async (req, res) => {
   let azInstalled = false;
   let azVersion = 'unknown';
   
-  // Try direct az command
+  // Method 1: Try 'which az' command
   try {
-    const { stdout } = await execPromise('az --version 2>&1 | head -1');
-    if (stdout && stdout.includes('azure-cli')) {
-      azVersion = stdout.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
-      azInstalled = true;
+    const { stdout: whichOutput } = await execPromise('which az');
+    if (whichOutput && whichOutput.trim()) {
+      // Found az in PATH, now get version
+      const { stdout: versionOutput } = await execPromise('az --version 2>&1 | head -1');
+      if (versionOutput && versionOutput.includes('azure-cli')) {
+        azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+        azInstalled = true;
+      }
     }
-  } catch {
-    // Try with full path
-    try {
-      const { stdout: whichAz } = await execPromise('which az');
-      if (whichAz && whichAz.trim()) {
-        const { stdout: versionOut } = await execPromise(`${whichAz.trim()} --version 2>&1 | head -1`);
-        if (versionOut && versionOut.includes('azure-cli')) {
-          azVersion = versionOut.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+  } catch (error) {
+    // Method 2: Try common installation paths
+    const commonPaths = ['/usr/local/bin/az', '/opt/homebrew/bin/az', '/usr/bin/az'];
+    
+    for (const azPath of commonPaths) {
+      try {
+        // Check if file exists and is executable
+        await execPromise(`test -x "${azPath}"`);
+        // If we get here, the file exists and is executable
+        const { stdout: versionOutput } = await execPromise(`"${azPath}" --version 2>&1 | head -1`);
+        if (versionOutput && versionOutput.includes('azure-cli')) {
+          azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+          azInstalled = true;
+          break;
+        }
+      } catch (pathError) {
+        // Continue to next path
+        continue;
+      }
+    }
+    
+    // Method 3: Last resort - try direct az command (might work even if which fails)
+    if (!azInstalled) {
+      try {
+        const { stdout: directOutput } = await execPromise('az --version 2>&1 | head -1');
+        if (directOutput && directOutput.includes('azure-cli')) {
+          azVersion = directOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
           azInstalled = true;
         }
-      }
-    } catch {
-      // Check common installation paths
-      const paths = ['/usr/local/bin/az', '/usr/bin/az', '/opt/homebrew/bin/az'];
-      for (const path of paths) {
-        try {
-          const { stdout } = await execPromise(`${path} --version 2>&1 | head -1`);
-          if (stdout && stdout.includes('azure-cli')) {
-            azVersion = stdout.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
-            azInstalled = true;
-            break;
-          }
-        } catch {
-          // Continue to next path
-        }
+      } catch (finalError) {
+        // All methods failed
       }
     }
   }
@@ -544,13 +554,14 @@ app.get('/api/dependencies', async (req, res) => {
     required: '>=2.0' 
   });
   
-  // Check Neo4j
+  // Check Neo4j - check if Docker container is running
   const neo4jStatus = await neo4jContainer.getStatus();
   dependencies.push({ 
     name: 'Neo4j', 
-    installed: neo4jStatus.isRunning, 
-    version: neo4jStatus.version || '5.0.0',
-    required: '>=5.0' 
+    installed: neo4jStatus.running && (neo4jStatus.health === 'healthy' || neo4jStatus.health === 'starting'), 
+    version: neo4jStatus.version || '5.25.1', // Use actual version from container if available
+    required: '>=5.0',
+    status: neo4jStatus.health
   });
   
   // Check Terraform
