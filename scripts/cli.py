@@ -90,6 +90,7 @@ try:
 
     # (Removed: from src.cli_commands import create_tenant_command)
     from src.cli_commands import (
+        app_registration_command,
         build_command_handler,
         create_tenant_command,
         generate_spec_command_handler,
@@ -682,6 +683,7 @@ cli.add_command(generate_sim_doc, "gensimdoc")
 cli.add_command(create_tenant_command, "create-tenant")
 cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
+cli.add_command(app_registration_command, "app-registration")
 
 
 @cli.command()
