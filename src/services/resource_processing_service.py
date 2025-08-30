@@ -68,7 +68,7 @@ class ResourceProcessingService:
                 "AAD import enabled: ingesting Azure AD users and groups into graph."
             )
             try:
-                self.aad_graph_service.ingest_into_graph(processor.db_ops)
+                await self.aad_graph_service.ingest_into_graph(processor.db_ops)
             except Exception as ex:
                 logger.exception(f"Failed to ingest AAD users/groups: {ex}")
 

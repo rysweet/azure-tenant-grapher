@@ -27,9 +27,10 @@ class MockDBOps:
         self.rels.append((src_id, rel_type, tgt_key_value, tgt_label, tgt_key_prop))
 
 
-def test_get_users_mock():
+@pytest.mark.asyncio
+async def test_get_users_mock():
     service = AADGraphService(use_mock=True)
-    users = service.get_users()
+    users = await service.get_users()
     assert isinstance(users, list)
     assert users
     for user in users:
@@ -37,9 +38,10 @@ def test_get_users_mock():
         assert "displayName" in user
 
 
-def test_get_groups_mock():
+@pytest.mark.asyncio
+async def test_get_groups_mock():
     service = AADGraphService(use_mock=True)
-    groups = service.get_groups()
+    groups = await service.get_groups()
     assert isinstance(groups, list)
     assert groups
     for group in groups:
@@ -57,9 +59,10 @@ def test_get_groups_mock():
     ),
     reason="Azure AD credentials not set in environment",
 )
-def test_get_users_real():
+@pytest.mark.asyncio
+async def test_get_users_real():
     service = AADGraphService()
-    users = service.get_users()
+    users = await service.get_users()
     assert isinstance(users, list)
 
 
@@ -73,33 +76,40 @@ def test_get_users_real():
     ),
     reason="Azure AD credentials not set in environment",
 )
-def test_get_groups_real():
+@pytest.mark.asyncio
+async def test_get_groups_real():
     service = AADGraphService()
-    groups = service.get_groups()
+    groups = await service.get_groups()
     assert isinstance(groups, list)
 
 
-def test_ingest_into_graph_with_fixtures(monkeypatch):
+@pytest.mark.asyncio
+async def test_ingest_into_graph_with_fixtures(monkeypatch):
     # Patch AADGraphService to use fixture data
     users = load_fixture("users.json")["value"]
     groups = load_fixture("groups.json")["value"]
     group_members = load_fixture("group_members_group-1.json")["value"]
 
     class FixtureAADGraphService(AADGraphService):
-        def get_users(self):
+        def __init__(self):
+            # Skip the parent __init__ to avoid graph client initialization
+            self.use_mock = True
+            self.client = None
+
+        async def get_users(self):
             return users
 
-        def get_groups(self):
+        async def get_groups(self):
             return groups
 
-        def get_group_memberships(self, group_id):
+        async def get_group_memberships(self, group_id):
             if group_id == "group-1":
                 return group_members
             return []
 
     db_ops = MockDBOps()
     service = FixtureAADGraphService()
-    service.ingest_into_graph(db_ops)
+    await service.ingest_into_graph(db_ops)
 
     # Check User nodes
     user_ids = {u["id"] for u in users}
@@ -124,27 +134,33 @@ def test_ingest_into_graph_with_fixtures(monkeypatch):
         assert (mid, "group-1") in member_of_edges
 
 
-def test_ingest_into_graph_dry_run(monkeypatch):
+@pytest.mark.asyncio
+async def test_ingest_into_graph_dry_run(monkeypatch):
     # Patch AADGraphService to use fixture data
     users = load_fixture("users.json")["value"]
     groups = load_fixture("groups.json")["value"]
     group_members = load_fixture("group_members_group-1.json")["value"]
 
     class FixtureAADGraphService(AADGraphService):
-        def get_users(self):
+        def __init__(self):
+            # Skip the parent __init__ to avoid graph client initialization
+            self.use_mock = True
+            self.client = None
+
+        async def get_users(self):
             return users
 
-        def get_groups(self):
+        async def get_groups(self):
             return groups
 
-        def get_group_memberships(self, group_id):
+        async def get_group_memberships(self, group_id):
             if group_id == "group-1":
                 return group_members
             return []
 
     db_ops = MockDBOps()
     service = FixtureAADGraphService()
-    service.ingest_into_graph(db_ops, dry_run=True)
+    await service.ingest_into_graph(db_ops, dry_run=True)
 
     # No upserts or rels should be recorded in dry_run
     assert not db_ops.upserts

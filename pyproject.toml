@@ -23,6 +23,9 @@ dependencies = [
     "azure-mgmt-resourcegraph>=8.0.0",
     "azure-mgmt-subscription>=3.1.1",
     "azure-mgmt-resourcegraph>=8.0.0",
+    # Microsoft Graph SDK for AAD operations
+    "msgraph-sdk>=1.0.0",
+    "msal>=1.28.0",
     "openai>=1.12.0",
     # Neo4j dependencies
     "neo4j>=5.14.0",
