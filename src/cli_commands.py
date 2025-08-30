@@ -1012,11 +1012,12 @@ def create_tenant_command(markdown_file: str):
 
 
 SPA_PIDFILE = os.path.join("outputs", "spa_server.pid")
+MCP_PIDFILE = os.path.join("outputs", "mcp_server.pid")
 
 
 @click.command("start")
 def spa_start():
-    """Start the local SPA/Electron dashboard."""
+    """Start the local SPA/Electron dashboard and MCP server."""
     if os.path.exists(SPA_PIDFILE):
         click.echo(
             "⚠️  SPA already running (pidfile exists). Use 'atg stop' first or check process state.",
@@ -1079,6 +1080,30 @@ def spa_start():
             return
         click.echo("✅ Electron app built successfully")
 
+        # Start the MCP server
+        click.echo("🤖 Starting MCP server...")
+        try:
+            # Check if MCP server is already running
+            if not os.path.exists(MCP_PIDFILE):
+                # Start MCP server in the background
+                mcp_proc = subprocess.Popen(
+                    [sys.executable, "-m", "src.mcp.server"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.dirname(__file__))}
+                )
+                
+                # Save MCP PID
+                with open(MCP_PIDFILE, "w") as f:
+                    f.write(str(mcp_proc.pid))
+                    
+                click.echo(f"✅ MCP server started (PID: {mcp_proc.pid})")
+            else:
+                click.echo("⚠️  MCP server already running, skipping...")
+        except Exception as e:
+            click.echo(f"⚠️  Failed to start MCP server: {e}")
+            # Continue even if MCP fails to start
+
         # Start the Electron app
         spa_proc = subprocess.Popen(
             ["npm", "run", "start"],
@@ -1094,29 +1119,55 @@ def spa_start():
 
         click.echo("🚀 SPA started. The Electron app should open shortly.")
         click.echo(f"(PID: {spa_proc.pid} | pidfile: {SPA_PIDFILE})")
-        click.echo("Use 'atg stop' to shut down the SPA when done.")
+        click.echo("Use 'atg stop' to shut down the SPA and MCP server when done.")
     except Exception as e:
         click.echo(f"❌ Failed to start SPA: {e}", err=True)
 
 
 @click.command("stop")
 def spa_stop():
-    """Stop the local SPA/Electron dashboard."""
-    if not os.path.exists(SPA_PIDFILE):
-        click.echo("⚠️  SPA is not running (no pidfile found).", err=True)
-        return
-    try:
-        with open(SPA_PIDFILE) as f:
-            pid = int(f.read().strip())
+    """Stop the local SPA/Electron dashboard and MCP server."""
+    spa_stopped = False
+    mcp_stopped = False
+    
+    # Stop SPA
+    if os.path.exists(SPA_PIDFILE):
         try:
-            os.kill(pid, signal.SIGTERM)
-            click.echo("🛑 Sent SIGTERM to SPA process.")
+            with open(SPA_PIDFILE) as f:
+                pid = int(f.read().strip())
+            try:
+                os.kill(pid, signal.SIGTERM)
+                click.echo("🛑 Sent SIGTERM to SPA process.")
+                spa_stopped = True
+            except Exception as e:
+                click.echo(f"⚠️  Could not terminate SPA process: {e}", err=True)
+            os.remove(SPA_PIDFILE)
         except Exception as e:
-            click.echo(f"⚠️  Could not terminate SPA process: {e}", err=True)
-        os.remove(SPA_PIDFILE)
-        click.echo("✅ SPA stopped and pidfile cleaned up.")
-    except Exception as e:
-        click.echo(f"❌ Failed to stop SPA: {e}", err=True)
+            click.echo(f"❌ Failed to stop SPA: {e}", err=True)
+    else:
+        click.echo("ℹ️  No SPA process running.")
+    
+    # Stop MCP server
+    if os.path.exists(MCP_PIDFILE):
+        try:
+            with open(MCP_PIDFILE) as f:
+                pid = int(f.read().strip())
+            try:
+                os.kill(pid, signal.SIGTERM)
+                click.echo("🛑 Sent SIGTERM to MCP server.")
+                mcp_stopped = True
+            except Exception as e:
+                click.echo(f"⚠️  Could not terminate MCP server: {e}", err=True)
+            os.remove(MCP_PIDFILE)
+        except Exception as e:
+            click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
+    else:
+        click.echo("ℹ️  No MCP server running.")
+    
+    if spa_stopped or mcp_stopped:
+        click.echo("✅ Services stopped successfully.")
+    else:
+        click.echo("ℹ️  No services were running.")
 
 
 @click.command("app-registration")
@@ -1343,3 +1394,30 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
         # Clean up temp file
         if os.path.exists(manifest_path):
             os.remove(manifest_path)
+=======
+            click.echo(f"❌ Failed to stop SPA: {e}", err=True)
+    else:
+        click.echo("⚠️  SPA is not running (no pidfile found).")
+    
+    # Stop MCP server
+    if os.path.exists(MCP_PIDFILE):
+        try:
+            with open(MCP_PIDFILE) as f:
+                pid = int(f.read().strip())
+            try:
+                os.kill(pid, signal.SIGTERM)
+                click.echo("🛑 Sent SIGTERM to MCP server.")
+                mcp_stopped = True
+            except Exception as e:
+                click.echo(f"⚠️  Could not terminate MCP server: {e}", err=True)
+            os.remove(MCP_PIDFILE)
+        except Exception as e:
+            click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
+    else:
+        click.echo("⚠️  MCP server is not running (no pidfile found).")
+    
+    if spa_stopped or mcp_stopped:
+        click.echo("✅ Services stopped and pidfiles cleaned up.")
+    else:
+        click.echo("⚠️  No services were running.")
+>>>>>>> 786f1c8 (feat: start MCP server automatically with atg start)
