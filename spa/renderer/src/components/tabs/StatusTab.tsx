@@ -22,6 +22,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Stack,
 } from '@mui/material';
 import {
   Storage as StorageIcon,
@@ -43,12 +44,19 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+interface TimestampInfo {
+  timestamp: any;
+  utcString: string | null;
+  localString: string | null;
+  timezone: string;
+}
+
 interface DBStats {
   nodeCount: number;
   edgeCount: number;
   nodeTypes: Array<{ type: string; count: number }>;
   edgeTypes: Array<{ type: string; count: number }>;
-  lastUpdate: string | null;
+  lastUpdate: TimestampInfo;
   isEmpty: boolean;
   labelCount?: number;
   relTypeCount?: number;
@@ -121,7 +129,7 @@ const StatusTab: React.FC = () => {
         edgeCount: 0,
         nodeTypes: [],
         edgeTypes: [],
-        lastUpdate: null,
+        lastUpdate: { timestamp: null, utcString: null, localString: null, timezone: 'N/A' },
         isEmpty: true
       });
     } finally {
@@ -263,9 +271,40 @@ const StatusTab: React.FC = () => {
     return num.toLocaleString();
   };
 
-  const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return 'Never';
-    return new Date(timestamp).toLocaleString();
+  const formatTimestampDisplay = (timestampInfo: TimestampInfo | null) => {
+    if (!timestampInfo || !timestampInfo.timestamp) {
+      return (
+        <Typography variant="body2" color="textSecondary">
+          Never
+        </Typography>
+      );
+    }
+
+    const { utcString, localString, timezone } = timestampInfo;
+
+    if (!utcString && !localString) {
+      return (
+        <Typography variant="body2" color="error">
+          Invalid timestamp
+        </Typography>
+      );
+    }
+
+    return (
+      <Stack spacing={0.5}>
+        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+          {localString || 'Unable to display local time'}
+        </Typography>
+        <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem' }}>
+          {utcString || 'Unable to display UTC time'}
+        </Typography>
+        {timezone && timezone !== 'N/A' && timezone !== 'Unknown' && (
+          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem', fontStyle: 'italic' }}>
+            Timezone: {timezone}
+          </Typography>
+        )}
+      </Stack>
+    );
   };
 
   return (
@@ -512,9 +551,7 @@ const StatusTab: React.FC = () => {
                     <Typography color="textSecondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ScheduleIcon fontSize="small" /> Last Update
                     </Typography>
-                    <Typography variant="body1">
-                      {formatTimestamp(dbStats?.lastUpdate)}
-                    </Typography>
+                    {formatTimestampDisplay(dbStats?.lastUpdate)}
                   </CardContent>
                 </Card>
               </Grid>
