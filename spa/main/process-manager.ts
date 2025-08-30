@@ -14,6 +14,7 @@ interface ProcessInfo {
   startTime: Date;
   endTime?: Date;
   exitCode?: number;
+  pid?: number;
 }
 
 export class ProcessManager extends EventEmitter {
@@ -45,6 +46,7 @@ export class ProcessManager extends EventEmitter {
       output: [],
       error: [],
       startTime: new Date(),
+      pid: childProcess.pid,
     };
 
     this.processes.set(id, processInfo);
@@ -116,7 +118,11 @@ export class ProcessManager extends EventEmitter {
   listProcesses(): Omit<ProcessInfo, 'process'>[] {
     return Array.from(this.processes.values()).map(p => {
       const { process, ...rest } = p;
-      return rest;
+      return {
+        ...rest,
+        // Ensure PID is included and valid
+        pid: p.pid && p.pid > 0 ? p.pid : undefined,
+      };
     });
   }
 

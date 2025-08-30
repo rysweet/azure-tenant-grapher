@@ -19,7 +19,7 @@ interface StatusBarProps {
 
 interface ActiveProcess {
   id: string;
-  pid: number;
+  pid?: number;
   command: string;
 }
 
@@ -29,9 +29,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
   const [activeProcesses, setActiveProcesses] = useState<ActiveProcess[]>([]);
   const [neo4jStatus, setNeo4jStatus] = useState<'connected' | 'disconnected'>('disconnected');
 
-  // Get active background operations from app state
+  // Get active background operations from app state (only show ones with valid PIDs)
   const activeOperations = Array.from(state.backgroundOperations.values())
-    .filter(op => op.status === 'running');
+    .filter(op => op.status === 'running' && op.pid !== undefined);
 
   // Fetch active processes and Neo4j status periodically
   useEffect(() => {
@@ -112,18 +112,20 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             ))}
             
             {/* Active CLI Processes */}
-            {activeProcesses.map((process) => (
-              <Tooltip key={process.id} title={`PID: ${process.pid} - Command: ${process.command}`}>
-                <Chip
-                  size="small"
-                  icon={<RunningIcon />}
-                  label={`PID ${process.pid}`}
-                  color="warning"
-                  variant="outlined"
-                  sx={{ fontSize: '0.7rem', height: 20 }}
-                />
-              </Tooltip>
-            ))}
+            {activeProcesses
+              .filter(process => process.pid !== undefined && process.pid !== null)
+              .map((process) => (
+                <Tooltip key={process.id} title={`PID: ${process.pid} - Command: ${process.command}`}>
+                  <Chip
+                    size="small"
+                    icon={<RunningIcon />}
+                    label={`PID ${process.pid}`}
+                    color="warning"
+                    variant="outlined"
+                    sx={{ fontSize: '0.7rem', height: 20 }}
+                  />
+                </Tooltip>
+              ))}
           </Box>
         )}
       </Box>
