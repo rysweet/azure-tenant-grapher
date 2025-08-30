@@ -994,7 +994,7 @@ def create_tenant_from_markdown(text: str):
 @click.command("create-tenant")
 @click.argument("markdown_file", type=click.Path(exists=True))
 def create_tenant_command(markdown_file: str):
-    """Create a tenant from a markdown file."""
+    """Create a tenant graph from a tenant spec."""
     try:
         ensure_neo4j_running()
         with open(markdown_file, encoding="utf-8") as f:
