@@ -22,19 +22,21 @@ from rich.style import Style
 from src.cli_commands import DashboardExitException
 
 
-def print_cli_env_block(context: str = ""):
-    print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
-    for k in [
-        "NEO4J_CONTAINER_NAME",
-        "NEO4J_DATA_VOLUME",
-        "NEO4J_PASSWORD",
-        "NEO4J_PORT",
-        "NEO4J_URI",
-    ]:
-        print(f"[CLI ENV] {k}={os.environ.get(k)}")
+def print_cli_env_block(context: str = "", debug: bool = False):
+    # Only print environment variables if debug is enabled
+    if debug:
+        print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
+        for k in [
+            "NEO4J_CONTAINER_NAME",
+            "NEO4J_DATA_VOLUME",
+            "NEO4J_PASSWORD",
+            "NEO4J_PORT",
+            "NEO4J_URI",
+        ]:
+            print(f"[CLI ENV] {k}={os.environ.get(k)}")
 
 
-print_cli_env_block("STARTUP")
+# We'll call this later after parsing debug flag
 
 # Set Azure logging levels early
 # Suppress verbose HTTP logging from Azure SDK and related libraries
@@ -142,17 +144,23 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 result = asyncio.run(f(*args, **kwargs))
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
-                print(
-                    "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
-                    file=sys.stderr,
-                )
+                # Extract debug flag from context if available
+                debug = getattr(args[0], 'obj', {}).get('debug', False) if args else False
+                if debug:
+                    print(
+                        "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
+                        file=sys.stderr,
+                    )
                 sys.stderr.flush()
                 sys.exit(0)
             if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-                print(
-                    "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
-                    file=sys.stderr,
-                )
+                # Extract debug flag from context if available
+                debug = getattr(args[0], 'obj', {}).get('debug', False) if args else False
+                if debug:
+                    print(
+                        "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
+                        file=sys.stderr,
+                    )
                 sys.stderr.flush()
                 sys.exit(0)
             return result
@@ -218,11 +226,20 @@ def show_comprehensive_help(ctx: click.Context) -> None:
     default="INFO",
     help="Logging level (DEBUG, INFO, WARNING, ERROR)",
 )
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Enable debug output including environment variables",
+)
 @click.pass_context
-def cli(ctx: click.Context, log_level: str) -> None:
+def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     """Azure Tenant Grapher - Enhanced CLI for building Neo4j graphs of Azure resources."""
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
+    ctx.obj["debug"] = debug
+    
+    # Print debug environment block if debug is enabled
+    print_cli_env_block("STARTUP", debug)
 
     # If no command is provided, show comprehensive help
     if ctx.invoked_subcommand is None:
@@ -322,7 +339,9 @@ async def build(
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
-    print("[DEBUG] CLI build command called", flush=True)
+    debug = ctx.obj.get("debug", False)
+    if debug:
+        print("[DEBUG] CLI build command called", flush=True)
     result = await build_command_handler(
         ctx,
         tenant_id,
@@ -338,8 +357,10 @@ async def build(
         test_keypress_file,
         rebuild_edges,
         no_aad_import,
+        debug,
     )
-    print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
+    if debug:
+        print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result
 
 
@@ -812,18 +833,12 @@ def main() -> None:
     result = cli()  # type: ignore[reportCallIssue]
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":
-        print(
-            "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
-            file=sys.stderr,
-        )
+        # Note: We can't access debug flag here, so no debug output
         sys.stderr.flush()
         sys.exit(0)
     # Explicitly exit cleanly after build --no-dashboard sentinel
     if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-        print(
-            "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
-            file=sys.stderr,
-        )
+        # Note: We can't access debug flag here, so no debug output
         sys.stderr.flush()
         sys.exit(0)
     # For any other truthy result, exit as before (legacy fallback)

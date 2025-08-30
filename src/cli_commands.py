@@ -73,14 +73,18 @@ async def build_command_handler(
     test_keypress_file: str,
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
+    debug: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
-    print("[DEBUG][CLI] Entered build_command_handler", flush=True)
-    ensure_neo4j_running()
-    print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
+    if debug:
+        print("[DEBUG][CLI] Entered build_command_handler", flush=True)
+    ensure_neo4j_running(debug)
+    if debug:
+        print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
 
     try:
-        print("[DEBUG][CLI] Preparing config", flush=True)
+        if debug:
+            print("[DEBUG][CLI] Preparing config", flush=True)
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
             click.echo(
@@ -90,7 +94,7 @@ async def build_command_handler(
             sys.exit(1)
 
         config = create_config_from_env(
-            effective_tenant_id, resource_limit, max_retries, max_build_threads
+            effective_tenant_id, resource_limit, max_retries, max_build_threads, debug
         )
         config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container

@@ -56,13 +56,9 @@ class Neo4jConfig:
     )
 
     def __post_init__(self) -> None:
-        print(
-            f"[DEBUG][Neo4jConfig] uri={self.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
-        )
         """Validate configuration after initialization."""
         if not self.uri or (self.uri.strip() == ""):
             self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7688')}"
-            print(f"[DEBUG][Neo4jConfig] After fallback assignment: uri={self.uri}")
         if not self.uri:
             raise ValueError("Neo4j URI is required")
         if not self.user:
@@ -242,6 +238,7 @@ class AzureTenantGrapherConfig:
         resource_limit: Optional[int] = None,
         max_retries: Optional[int] = None,
         max_build_threads: Optional[int] = None,
+        debug: bool = False,
     ) -> "AzureTenantGrapherConfig":
         """
         Create configuration from environment variables.
@@ -265,6 +262,12 @@ class AzureTenantGrapherConfig:
             config.processing.max_retries = max_retries
         if max_build_threads is not None:
             config.processing.max_build_threads = max_build_threads
+            
+        # Debug output after Neo4j config is initialized
+        if debug:
+            print(
+                f"[DEBUG][Neo4jConfig] uri={config.neo4j.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
+            )
 
         return config
 
@@ -436,6 +439,7 @@ def create_config_from_env(
     resource_limit: Optional[int] = None,
     max_retries: Optional[int] = None,
     max_build_threads: Optional[int] = None,
+    debug: bool = False,
 ) -> AzureTenantGrapherConfig:
     """
     Factory function to create and validate configuration from environment.
@@ -452,7 +456,7 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries, max_build_threads
+        tenant_id, resource_limit, max_retries, max_build_threads, debug
     )
     config.validate_all()
     return config

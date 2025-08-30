@@ -67,17 +67,21 @@ class Neo4jContainerManager:
     - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
     """
 
-    def __init__(self, compose_file: str = "docker-compose.yml") -> None:
+    def __init__(self, compose_file: str = "docker-compose.yml", debug: bool = False) -> None:
         """
         Initialize the container manager.
 
         Args:
             compose_file: Path to docker-compose.yml file
+            debug: Enable debug output
         """
-        print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
-        print(
-            f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
-        )
+        self.debug = debug
+        # Only show debug env output if debug is enabled
+        if self.debug:
+            print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
+            print(
+                f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
+            )
         self.compose_file = compose_file
         self.docker_client = None
 
@@ -121,9 +125,10 @@ class Neo4jContainerManager:
             self.neo4j_uri = uri_env
         else:
             self.neo4j_uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
-        print(
-            f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
-        )
+        if self.debug:
+            print(
+                f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
+            )
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = (
             os.getenv("NEO4J_PASSWORD") or self.generate_random_password()
@@ -311,18 +316,19 @@ class Neo4jContainerManager:
             logger.info(event="Starting Neo4j container...")
 
             # Start the container
-            print(
-                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
-            )
-            print(
-                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD={env['NEO4J_PASSWORD']}"
-            )
-            print(
-                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
-            )
-            print(
-                f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
-            )
+            if self.debug:
+                print(
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
+                )
+                print(
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD={env['NEO4J_PASSWORD']}"
+                )
+                print(
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
+                )
+                print(
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
+                )
             # Compose service name is always "neo4j", but container name is unique
             result = subprocess.run(  # nosec B603
                 [*compose_cmd, "-f", self.compose_file, "up", "-d", "neo4j"],
@@ -360,9 +366,10 @@ class Neo4jContainerManager:
 
         while time.time() - start_time < timeout:
             try:
-                print(
-                    f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
-                )
+                if self.debug:
+                    print(
+                        f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
+                    )
                 driver = GraphDatabase.driver(
                     self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
                 )
@@ -453,7 +460,7 @@ class Neo4jContainerManager:
             logger.exception(event=f"Failed to get container logs: {e}")
             return None
 
-    def setup_neo4j(self) -> bool:
+    def setup_neo4j(self, debug: bool = False) -> bool:
         """
         Complete Neo4j setup: start container and wait for readiness.
 
@@ -688,9 +695,10 @@ class Neo4jContainerManager:
             )
             for c in containers:
                 try:
-                    print(
-                        f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
-                    )
+                    if self.debug:
+                        print(
+                            f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
+                        )
                     c.remove(force=True)
                     logger.info(event=f"Removed container {c.name}")
                 except Exception as e:
@@ -705,7 +713,8 @@ class Neo4jContainerManager:
             )
             for v in volumes:
                 try:
-                    print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
+                    if self.debug:
+                        print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:
