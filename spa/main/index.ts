@@ -185,9 +185,9 @@ app.on('window-all-closed', () => {
     backendProcess.kill('SIGTERM');
   }
   
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Always quit the app when the window is closed
+  // This is a single-window application, so we want it to fully quit
+  app.quit();
 });
 
 app.on('before-quit', (event) => {
