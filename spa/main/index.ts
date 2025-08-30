@@ -70,6 +70,47 @@ async function createWindow() {
   ipcMain.on('window:close', () => mainWindow?.close());
 }
 
+// Start the MCP server
+function startMcpServer() {
+  const pythonPath = process.env.PYTHON_PATH || 'python3';
+  const projectRoot = path.join(__dirname, '../../..');
+  
+  // Start MCP server using python -m src.mcp_server
+  mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_server', '--foreground'], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      PYTHONPATH: projectRoot,
+    }
+  });
+
+  if (!mcpServerProcess) {
+    console.error('Failed to spawn MCP server process');
+    return;
+  }
+
+  console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
+
+  mcpServerProcess.stdout?.on('data', (data) => {
+    console.log(`MCP Server: ${data}`);
+  });
+
+  mcpServerProcess.stderr?.on('data', (data) => {
+    console.error(`MCP Server Error: ${data}`);
+  });
+
+  mcpServerProcess.on('error', (error) => {
+    console.error('Failed to start MCP server:', error);
+  });
+
+  mcpServerProcess.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`MCP server process exited with code ${code}`);
+    }
+    mcpServerProcess = null;
+  });
+}
+
 // Start the backend server
 function startBackendServer() {
   

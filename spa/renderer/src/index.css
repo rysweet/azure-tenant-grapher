@@ -141,38 +141,170 @@ body {
 
 .vis-button {
   background-color: #000000 !important;
+  background-image: none !important;
   border: 1px solid #4caf50 !important;
   color: #4caf50 !important;
   border-radius: 4px !important;
   margin: 2px !important;
   padding: 4px 8px !important;
+  box-shadow: none !important;
 }
 
 .vis-button:hover {
   background-color: #000000 !important;
+  background-image: none !important;
   border-color: #4caf50 !important;
   color: #4caf50 !important;
   filter: brightness(1.2) !important;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5) !important;
 }
 
 .vis-button:active {
   background-color: #000000 !important;
+  background-image: none !important;
   border-color: #4caf50 !important;
   color: #4caf50 !important;
+  box-shadow: none !important;
 }
 
 /* Vis-network built-in zoom and navigation controls */
 .vis-zoomExtends, .vis-zoomIn, .vis-zoomOut,
 .vis-up, .vis-down, .vis-left, .vis-right {
   background-color: #000000 !important;
+  background-image: none !important;
   border: 1px solid #4caf50 !important;
   color: #4caf50 !important;
+  fill: #4caf50 !important;
+  stroke: #4caf50 !important;
 }
 
 .vis-zoomExtends:hover, .vis-zoomIn:hover, .vis-zoomOut:hover,
 .vis-up:hover, .vis-down:hover, .vis-left:hover, .vis-right:hover {
   background-color: #000000 !important;
+  background-image: none !important;
   border-color: #4caf50 !important;
   color: #4caf50 !important;
+  fill: #4caf50 !important;
+  stroke: #4caf50 !important;
   filter: brightness(1.2) !important;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5) !important;
+}
+
+/* Override any SVG or Canvas styling in vis-network buttons */
+.vis-navigation .vis-button div {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: #4caf50 !important;
+}
+
+.vis-navigation .vis-button:before,
+.vis-navigation .vis-button:after {
+  background-color: #4caf50 !important;
+  border-color: #4caf50 !important;
+}
+
+/* Force icon colors in navigation buttons */
+.vis-navigation .vis-button.vis-up:after,
+.vis-navigation .vis-button.vis-down:after,
+.vis-navigation .vis-button.vis-left:after,
+.vis-navigation .vis-button.vis-right:after,
+.vis-navigation .vis-button.vis-zoomIn:after,
+.vis-navigation .vis-button.vis-zoomOut:after,
+.vis-navigation .vis-button.vis-zoomExtends:after {
+  border-color: #4caf50 !important;
+  background-color: transparent !important;
+}
+
+/* Override default vis-network button images/sprites */
+.vis-navigation .vis-button.vis-up {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-up:after {
+  content: '▲';
+  color: #4caf50 !important;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-down {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-down:after {
+  content: '▼';
+  color: #4caf50 !important;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-left {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-left:after {
+  content: '◀';
+  color: #4caf50 !important;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-right {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-right:after {
+  content: '▶';
+  color: #4caf50 !important;
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-zoomIn {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-zoomIn:after {
+  content: '+';
+  color: #4caf50 !important;
+  font-size: 20px;
+  font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-zoomOut {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-zoomOut:after {
+  content: '−';
+  color: #4caf50 !important;
+  font-size: 20px;
+  font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.vis-navigation .vis-button.vis-zoomExtends {
+  background-image: none !important;
+}
+.vis-navigation .vis-button.vis-zoomExtends:after {
+  content: '⊡';
+  color: #4caf50 !important;
+  font-size: 18px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }

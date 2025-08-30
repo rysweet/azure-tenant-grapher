@@ -310,7 +310,7 @@ const ConfigTab: React.FC = () => {
         onClose={() => setShowAppRegDialog(false)}
         title="Create Azure AD App Registration"
         command="app-registration"
-        args={[]}
+        args={['--create-secret', '--save-to-env']}
         onCommandComplete={handleAppRegistrationComplete}
         onError={handleAppRegistrationError}
       />
