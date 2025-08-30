@@ -436,6 +436,16 @@ export class Neo4jService {
         console.error('Error getting DB stats:', fallbackError);
         throw fallbackError;
       }
+      
+      // This should never be reached but TypeScript needs it
+      return {
+        nodeCount: 0,
+        edgeCount: 0,
+        isEmpty: true,
+        nodeTypes: [],
+        edgeTypes: [],
+        lastUpdate: this.formatTimestamp(null)
+      };
     } finally {
       await session.close();
     }
