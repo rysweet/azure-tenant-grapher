@@ -19,9 +19,25 @@ import { Code as GenerateIcon, FilterList as FilterIcon, FolderOpen as FolderIco
 import axios from 'axios';
 import { useApp } from '../../context/AppContext';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 interface TenantInfo {
   id: string;
   name: string;
+}
+
+interface TenantsResponse {
+  tenants: TenantInfo[];
+}
+
+interface ProcessOutputData {
+  id: string;
+  data: string[];
+}
+
+interface ProcessExitData {
+  id: string;
+  code: number;
 }
 
 const GenerateIaCTab: React.FC = () => {
@@ -46,14 +62,14 @@ const GenerateIaCTab: React.FC = () => {
   const fetchTenants = async () => {
     setLoadingTenants(true);
     try {
-      const response = await axios.get('http://localhost:3001/api/neo4j/tenants');
+      const response = await axios.get<TenantsResponse>(`${API_BASE_URL}/api/neo4j/tenants`);
       setTenants(response.data.tenants || []);
       // If there's only one tenant, auto-select it
       if (response.data.tenants?.length === 1 && !tenantId) {
         setTenantId(response.data.tenants[0].id);
       }
     } catch (err) {
-      console.error('Failed to fetch tenants:', err);
+      console.warn('Failed to fetch tenants:', err);
       // Don't show error, just allow manual input
     } finally {
       setLoadingTenants(false);
@@ -88,7 +104,7 @@ const GenerateIaCTab: React.FC = () => {
       let outputContent = '';
       let foundOutputPath = false;
       
-      window.electronAPI.on('process:output', (data: any) => {
+      const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
           const newContent = data.data.join('\n');
           outputContent += newContent + '\n';
@@ -109,9 +125,11 @@ const GenerateIaCTab: React.FC = () => {
             }
           }
         }
-      });
+      };
+      
+      window.electronAPI.on('process:output', outputHandler);
 
-      window.electronAPI.on('process:exit', (data: any) => {
+      const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setIsGenerating(false);
           if (data.code === 0) {
@@ -122,8 +140,14 @@ const GenerateIaCTab: React.FC = () => {
           } else {
             setError(`Generation failed with exit code ${data.code}`);
           }
+          
+          // Clean up event listeners
+          window.electronAPI.off('process:output', outputHandler);
+          window.electronAPI.off('process:exit', exitHandler);
         }
-      });
+      };
+      
+      window.electronAPI.on('process:exit', exitHandler);
 
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
       
