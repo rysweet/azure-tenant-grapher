@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Box, Container } from '@mui/material';
+import { Box, Container, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import Header from './components/common/Header';
 import TabNavigation from './components/common/TabNavigation';
 import StatusBar from './components/common/StatusBar';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import StatusTab from './components/tabs/StatusTab';
-import LogsTab from './components/tabs/LogsTab';
-import BuildTab from './components/tabs/BuildTab';
-import CLITab from './components/tabs/CLITab';
-import GenerateSpecTab from './components/tabs/GenerateSpecTab';
-import GenerateIaCTab from './components/tabs/GenerateIaCTab';
-import CreateTenantTab from './components/tabs/CreateTenantTab';
-import VisualizeTab from './components/tabs/VisualizeTab';
-import AgentModeTab from './components/tabs/AgentModeTab';
-import ThreatModelTab from './components/tabs/ThreatModelTab';
-import DocsTab from './components/tabs/DocsTab';
-import ConfigTab from './components/tabs/ConfigTab';
 import { useApp } from './context/AppContext';
+
+// Lazy load heavy components
+const StatusTab = lazy(() => import('./components/tabs/StatusTab'));
+const LogsTab = lazy(() => import('./components/tabs/LogsTab'));
+const BuildTab = lazy(() => import('./components/tabs/BuildTab'));
+const CLITab = lazy(() => import('./components/tabs/CLITab'));
+const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
+const GenerateIaCTab = lazy(() => import('./components/tabs/GenerateIaCTab'));
+const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
+const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
+const AgentModeTab = lazy(() => import('./components/tabs/AgentModeTab'));
+const ThreatModelTab = lazy(() => import('./components/tabs/ThreatModelTab'));
+const DocsTab = lazy(() => import('./components/tabs/DocsTab'));
+const ConfigTab = lazy(() => import('./components/tabs/ConfigTab'));
 
 const App: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -111,21 +113,27 @@ const App: React.FC = () => {
       <Box sx={{ flex: 1, overflow: 'auto', backgroundColor: '#f5f5f5' }}>
         <Container maxWidth={false} sx={{ py: 3, height: '100%' }}>
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Navigate to="/status" replace />} />
-              <Route path="/status" element={<StatusTab />} />
-              <Route path="/logs" element={<LogsTab />} />
-              <Route path="/build" element={<BuildTab />} />
-              <Route path="/cli" element={<CLITab />} />
-              <Route path="/visualize" element={<VisualizeTab />} />
-              <Route path="/generate-spec" element={<GenerateSpecTab />} />
-              <Route path="/generate-iac" element={<GenerateIaCTab />} />
-              <Route path="/create-tenant" element={<CreateTenantTab />} />
-              <Route path="/agent-mode" element={<AgentModeTab />} />
-              <Route path="/threat-model" element={<ThreatModelTab />} />
-              <Route path="/docs" element={<DocsTab />} />
-              <Route path="/config" element={<ConfigTab />} />
-            </Routes>
+            <Suspense fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress />
+              </Box>
+            }>
+              <Routes>
+                <Route path="/" element={<Navigate to="/status" replace />} />
+                <Route path="/status" element={<StatusTab />} />
+                <Route path="/logs" element={<LogsTab />} />
+                <Route path="/build" element={<BuildTab />} />
+                <Route path="/cli" element={<CLITab />} />
+                <Route path="/visualize" element={<VisualizeTab />} />
+                <Route path="/generate-spec" element={<GenerateSpecTab />} />
+                <Route path="/generate-iac" element={<GenerateIaCTab />} />
+                <Route path="/create-tenant" element={<CreateTenantTab />} />
+                <Route path="/agent-mode" element={<AgentModeTab />} />
+                <Route path="/threat-model" element={<ThreatModelTab />} />
+                <Route path="/docs" element={<DocsTab />} />
+                <Route path="/config" element={<ConfigTab />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </Container>
       </Box>
