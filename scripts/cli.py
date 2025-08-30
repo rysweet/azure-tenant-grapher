@@ -146,7 +146,9 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
                 # Extract debug flag from context if available
-                debug = getattr(args[0], 'obj', {}).get('debug', False) if args else False
+                debug = (
+                    getattr(args[0], "obj", {}).get("debug", False) if args else False
+                )
                 if debug:
                     print(
                         "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
@@ -156,7 +158,9 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 sys.exit(0)
             if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
                 # Extract debug flag from context if available
-                debug = getattr(args[0], 'obj', {}).get('debug', False) if args else False
+                debug = (
+                    getattr(args[0], "obj", {}).get("debug", False) if args else False
+                )
                 if debug:
                     print(
                         "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
@@ -238,7 +242,7 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     ctx.ensure_object(dict)
     ctx.obj["log_level"] = log_level.upper()
     ctx.obj["debug"] = debug
-    
+
     # Print debug environment block if debug is enabled
     print_cli_env_block("STARTUP", debug)
 
@@ -759,6 +763,10 @@ def restore_database(path: str) -> None:
         click.echo("The Neo4j database has been restarted with the restored data.")
     else:
         click.echo("❌ Database restore failed. Check the logs for details.")
+
+
+# Add alias for restore command
+cli.add_command(restore_database, "restore-db")
 
 
 @cli.command("wipe")
