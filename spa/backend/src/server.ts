@@ -397,6 +397,102 @@ app.get('/api/docs/:filePath(*)', async (req, res) => {
 });
 
 /**
+ * Check system dependencies
+ */
+app.get('/api/dependencies', async (req, res) => {
+  const { exec } = require('child_process');
+  const util = require('util');
+  const execPromise = util.promisify(exec);
+  
+  const dependencies = [];
+  
+  // Check Python
+  try {
+    const { stdout } = await execPromise('python3 --version');
+    const version = stdout.trim().split(' ')[1];
+    dependencies.push({ name: 'Python', installed: true, version, required: '>=3.9' });
+  } catch {
+    dependencies.push({ name: 'Python', installed: false, required: '>=3.9' });
+  }
+  
+  // Check Docker
+  try {
+    const { stdout } = await execPromise('docker --version');
+    const version = stdout.match(/Docker version ([0-9.]+)/)?.[1] || 'unknown';
+    dependencies.push({ name: 'Docker', installed: true, version, required: 'any' });
+  } catch {
+    dependencies.push({ name: 'Docker', installed: false, required: 'any' });
+  }
+  
+  // Check Azure CLI - try multiple approaches
+  let azInstalled = false;
+  let azVersion = 'unknown';
+  
+  // Try direct az command
+  try {
+    const { stdout } = await execPromise('az --version 2>&1 | head -1');
+    if (stdout && stdout.includes('azure-cli')) {
+      azVersion = stdout.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+      azInstalled = true;
+    }
+  } catch {
+    // Try with full path
+    try {
+      const { stdout: whichAz } = await execPromise('which az');
+      if (whichAz && whichAz.trim()) {
+        const { stdout: versionOut } = await execPromise(`${whichAz.trim()} --version 2>&1 | head -1`);
+        if (versionOut && versionOut.includes('azure-cli')) {
+          azVersion = versionOut.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+          azInstalled = true;
+        }
+      }
+    } catch {
+      // Check common installation paths
+      const paths = ['/usr/local/bin/az', '/usr/bin/az', '/opt/homebrew/bin/az'];
+      for (const path of paths) {
+        try {
+          const { stdout } = await execPromise(`${path} --version 2>&1 | head -1`);
+          if (stdout && stdout.includes('azure-cli')) {
+            azVersion = stdout.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+            azInstalled = true;
+            break;
+          }
+        } catch {
+          // Continue to next path
+        }
+      }
+    }
+  }
+  
+  dependencies.push({ 
+    name: 'Azure CLI', 
+    installed: azInstalled, 
+    version: azInstalled ? azVersion : undefined,
+    required: '>=2.0' 
+  });
+  
+  // Check Neo4j
+  const neo4jStatus = await neo4jContainer.getStatus();
+  dependencies.push({ 
+    name: 'Neo4j', 
+    installed: neo4jStatus.isRunning, 
+    version: neo4jStatus.version || '5.0.0',
+    required: '>=5.0' 
+  });
+  
+  // Check Terraform
+  try {
+    const { stdout } = await execPromise('terraform --version');
+    const version = stdout.match(/Terraform v([0-9.]+)/)?.[1] || 'unknown';
+    dependencies.push({ name: 'Terraform', installed: true, version, required: '>=1.0' });
+  } catch {
+    dependencies.push({ name: 'Terraform', installed: false, required: '>=1.0' });
+  }
+  
+  res.json(dependencies);
+});
+
+/**
  * Health check endpoint
  */
 app.get('/api/health', async (req, res) => {

@@ -140,17 +140,12 @@ const StatusTab: React.FC = () => {
   const checkDependencies = async () => {
     setIsCheckingDeps(true);
     try {
-      const result = await window.electronAPI.cli.execute('doctor', []);
-      
-      // Parse doctor output to get dependency status
-      setDependencies([
-        { name: 'Python', installed: true, version: '3.11.0', required: '>=3.9' },
-        { name: 'Neo4j', installed: true, version: '5.0.0', required: '>=5.0' },
-        { name: 'Docker', installed: true, version: '24.0.0', required: 'any' },
-        { name: 'Azure CLI', installed: false, required: '>=2.0' },
-      ]);
+      const response = await axios.get('http://localhost:3001/api/dependencies');
+      setDependencies(response.data);
     } catch (err: any) {
       console.error('Failed to check dependencies:', err);
+      // Fallback to empty array if API fails
+      setDependencies([]);
     } finally {
       setIsCheckingDeps(false);
     }
