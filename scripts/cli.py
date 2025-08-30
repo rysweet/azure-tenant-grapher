@@ -685,6 +685,9 @@ cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
 
+# Add alias for restore command
+cli.add_command(restore_database, "restore-db")
+
 
 @cli.command()
 @click.option(
