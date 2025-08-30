@@ -626,12 +626,26 @@ export const GraphVisualization: React.FC = () => {
           </ButtonGroup>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Show Legend">
-              <IconButton onClick={() => setLegendOpen(true)} size="small" sx={{ color: '#4caf50', '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' } }}>
+              <IconButton onClick={() => setLegendOpen(true)} size="small" sx={{ 
+                color: '#4caf50', 
+                backgroundColor: '#000000',
+                '&:hover': { 
+                  backgroundColor: '#000000',
+                  filter: 'brightness(1.2)'
+                }
+              }}>
                 <InfoIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Refresh">
-              <IconButton onClick={fetchGraphData} size="small" sx={{ color: '#4caf50', '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' } }}>
+              <IconButton onClick={fetchGraphData} size="small" sx={{ 
+                color: '#4caf50', 
+                backgroundColor: '#000000',
+                '&:hover': { 
+                  backgroundColor: '#000000',
+                  filter: 'brightness(1.2)'
+                }
+              }}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
@@ -1018,7 +1032,14 @@ export const GraphVisualization: React.FC = () => {
           <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">Node Details</Typography>
-              <IconButton onClick={() => setDetailsOpen(false)} sx={{ color: '#4caf50', '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' } }}>
+              <IconButton onClick={() => setDetailsOpen(false)} sx={{ 
+                color: '#4caf50', 
+                backgroundColor: '#000000',
+                '&:hover': { 
+                  backgroundColor: '#000000',
+                  filter: 'brightness(1.2)'
+                }
+              }}>
                 <CloseIcon />
               </IconButton>
             </Box>
@@ -1086,7 +1107,14 @@ export const GraphVisualization: React.FC = () => {
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6">Graph Legend</Typography>
-            <IconButton onClick={() => setLegendOpen(false)} sx={{ color: '#4caf50', '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' } }}>
+            <IconButton onClick={() => setLegendOpen(false)} sx={{ 
+              color: '#4caf50', 
+              backgroundColor: '#000000',
+              '&:hover': { 
+                backgroundColor: '#000000',
+                filter: 'brightness(1.2)'
+              }
+            }}>
               <CloseIcon />
             </IconButton>
           </Box>
