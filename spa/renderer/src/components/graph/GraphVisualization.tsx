@@ -609,17 +609,41 @@ export const GraphVisualization: React.FC = () => {
           <Typography variant="subtitle2" sx={{ color: 'white', mb: 1 }}>View Controls</Typography>
           <ButtonGroup size="small" sx={{ mb: 2 }}>
             <Tooltip title="Zoom In">
-              <Button onClick={handleZoomIn} sx={{ color: '#4caf50', borderColor: '#4caf50' }}>
+              <Button onClick={handleZoomIn} sx={{ 
+                backgroundColor: '#000000',
+                color: '#4caf50', 
+                borderColor: '#4caf50',
+                '&:hover': {
+                  backgroundColor: '#000000',
+                  borderColor: '#4caf50'
+                }
+              }}>
                 <ZoomInIcon />
               </Button>
             </Tooltip>
             <Tooltip title="Zoom Out">
-              <Button onClick={handleZoomOut} sx={{ color: '#4caf50', borderColor: '#4caf50' }}>
+              <Button onClick={handleZoomOut} sx={{ 
+                backgroundColor: '#000000',
+                color: '#4caf50', 
+                borderColor: '#4caf50',
+                '&:hover': {
+                  backgroundColor: '#000000',
+                  borderColor: '#4caf50'
+                }
+              }}>
                 <ZoomOutIcon />
               </Button>
             </Tooltip>
             <Tooltip title="Fit to Screen">
-              <Button onClick={handleFit} sx={{ color: '#4caf50', borderColor: '#4caf50' }}>
+              <Button onClick={handleFit} sx={{ 
+                backgroundColor: '#000000',
+                color: '#4caf50', 
+                borderColor: '#4caf50',
+                '&:hover': {
+                  backgroundColor: '#000000',
+                  borderColor: '#4caf50'
+                }
+              }}>
                 <FitIcon />
               </Button>
             </Tooltip>
@@ -687,6 +711,13 @@ export const GraphVisualization: React.FC = () => {
                 startIcon={<SearchIcon />}
                 size="small"
                 fullWidth
+                sx={{
+                  backgroundColor: '#000000',
+                  color: '#4caf50',
+                  '&:hover': {
+                    backgroundColor: '#000000'
+                  }
+                }}
               >
                 Search
               </Button>
@@ -695,7 +726,15 @@ export const GraphVisualization: React.FC = () => {
                 onClick={clearAllFilters}
                 startIcon={<ClearIcon />}
                 size="small"
-                sx={{ color: 'white', borderColor: 'white' }}
+                sx={{ 
+                  backgroundColor: '#000000',
+                  color: '#4caf50', 
+                  borderColor: '#4caf50',
+                  '&:hover': {
+                    backgroundColor: '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}
               >
                 Clear
               </Button>
@@ -709,15 +748,15 @@ export const GraphVisualization: React.FC = () => {
             variant="outlined" 
             onClick={() => setFiltersOpen(!filtersOpen)}
             startIcon={<FilterIcon />}
-            color={filtersOpen ? 'primary' : 'inherit'}
             size="small"
             fullWidth
             sx={{ 
-              color: 'white', 
-              borderColor: 'white',
+              backgroundColor: '#000000',
+              color: '#4caf50', 
+              borderColor: '#4caf50',
               '&:hover': {
-                borderColor: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                backgroundColor: '#000000',
+                borderColor: '#4caf50'
               }
             }}
           >
