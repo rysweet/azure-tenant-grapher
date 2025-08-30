@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -15,9 +15,30 @@ import {
   Checkbox,
   Chip,
 } from '@mui/material';
-import { Code as GenerateIcon, Save as SaveIcon, FilterList as FilterIcon } from '@mui/icons-material';
-import MonacoEditor from '@monaco-editor/react';
+import { Code as GenerateIcon, FilterList as FilterIcon, FolderOpen as FolderIcon } from '@mui/icons-material';
+import axios from 'axios';
 import { useApp } from '../../context/AppContext';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+interface TenantInfo {
+  id: string;
+  name: string;
+}
+
+interface TenantsResponse {
+  tenants: TenantInfo[];
+}
+
+interface ProcessOutputData {
+  id: string;
+  data: string[];
+}
+
+interface ProcessExitData {
+  id: string;
+  code: number;
+}
 
 const GenerateIaCTab: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -27,8 +48,33 @@ const GenerateIaCTab: React.FC = () => {
   const [filterInput, setFilterInput] = useState('');
   const [dryRun, setDryRun] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [terminalOutput, setTerminalOutput] = useState('');
+  const [outputPath, setOutputPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<TenantInfo[]>([]);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+
+  // Fetch tenants from Neo4j on mount
+  useEffect(() => {
+    fetchTenants();
+  }, []);
+
+  const fetchTenants = async () => {
+    setLoadingTenants(true);
+    try {
+      const response = await axios.get<TenantsResponse>(`${API_BASE_URL}/api/neo4j/tenants`);
+      setTenants(response.data.tenants || []);
+      // If there's only one tenant, auto-select it
+      if (response.data.tenants?.length === 1 && !tenantId) {
+        setTenantId(response.data.tenants[0].id);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch tenants:', err);
+      // Don't show error, just allow manual input
+    } finally {
+      setLoadingTenants(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!tenantId) {
@@ -38,7 +84,8 @@ const GenerateIaCTab: React.FC = () => {
 
     setError(null);
     setIsGenerating(true);
-    setGeneratedCode('');
+    setTerminalOutput('');
+    setOutputPath(null);
 
     const args = [
       '--tenant-id', tenantId,
@@ -54,26 +101,53 @@ const GenerateIaCTab: React.FC = () => {
     try {
       const result = await window.electronAPI.cli.execute('generate-iac', args);
       
-      let codeContent = '';
-      window.electronAPI.on('process:output', (data: any) => {
+      let outputContent = '';
+      let foundOutputPath = false;
+      
+      const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
           const newContent = data.data.join('\n');
-          codeContent += newContent;
-          // Update the editor content in real-time
-          setGeneratedCode(codeContent);
+          outputContent += newContent + '\n';
+          setTerminalOutput(outputContent);
+          
+          // Look for output path in the terminal output
+          if (!foundOutputPath) {
+            const pathMatch = newContent.match(/Generated .* files? in: (.+)/);
+            if (pathMatch) {
+              setOutputPath(pathMatch[1]);
+              foundOutputPath = true;
+            }
+            // Also check for other patterns
+            const altMatch = newContent.match(/Output written to: (.+)/);
+            if (altMatch) {
+              setOutputPath(altMatch[1]);
+              foundOutputPath = true;
+            }
+          }
         }
-      });
+      };
+      
+      window.electronAPI.on('process:output', outputHandler);
 
-      window.electronAPI.on('process:exit', (data: any) => {
+      const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setIsGenerating(false);
           if (data.code === 0) {
-            setGeneratedCode(codeContent);
+            // If we didn't find a specific path, use default
+            if (!foundOutputPath && !dryRun) {
+              setOutputPath(`outputs/iac/${tenantId}/${outputFormat}`);
+            }
           } else {
             setError(`Generation failed with exit code ${data.code}`);
           }
+          
+          // Clean up event listeners
+          window.electronAPI.off('process:output', outputHandler);
+          window.electronAPI.off('process:exit', exitHandler);
         }
-      });
+      };
+      
+      window.electronAPI.on('process:exit', exitHandler);
 
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
       
@@ -83,33 +157,13 @@ const GenerateIaCTab: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!generatedCode) {
-      setError('No code to save');
-      return;
-    }
-
-    const extensions: Record<string, string> = {
-      terraform: 'tf',
-      arm: 'json',
-      bicep: 'bicep',
-    };
-
+  const handleOpenFolder = async () => {
+    if (!outputPath) return;
+    
     try {
-      const filePath = await window.electronAPI.dialog.saveFile({
-        defaultPath: `infrastructure.${extensions[outputFormat]}`,
-        filters: [
-          { name: outputFormat.toUpperCase(), extensions: [extensions[outputFormat]] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
-      });
-
-      if (filePath) {
-        await window.electronAPI.file.write(filePath, generatedCode);
-        setError(null);
-      }
+      await window.electronAPI.shell.openPath(outputPath);
     } catch (err: any) {
-      setError(err.message);
+      setError(`Failed to open folder: ${err.message}`);
     }
   };
 
@@ -124,20 +178,11 @@ const GenerateIaCTab: React.FC = () => {
     setResourceFilters(resourceFilters.filter(f => f !== filter));
   };
 
-  const getLanguage = () => {
-    switch (outputFormat) {
-      case 'terraform': return 'hcl';
-      case 'arm': return 'json';
-      case 'bicep': return 'bicep';
-      default: return 'plaintext';
-    }
-  };
-
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 3, mb: 2 }}>
         <Typography variant="h5" gutterBottom>
-          Generate Infrastructure as Code
+          Generate Infrastructure as Code from Graph
         </Typography>
         
         {error && (
@@ -148,15 +193,26 @@ const GenerateIaCTab: React.FC = () => {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Tenant ID"
-              value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              disabled={isGenerating}
-              helperText="Azure AD Tenant ID"
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Tenant ID</InputLabel>
+              <Select
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                disabled={isGenerating || loadingTenants}
+                label="Tenant ID"
+              >
+                {tenants.length === 0 && !loadingTenants && (
+                  <MenuItem value="" disabled>
+                    <em>No tenants found in graph database</em>
+                  </MenuItem>
+                )}
+                {tenants.map((tenant) => (
+                  <MenuItem key={tenant.id} value={tenant.id}>
+                    {tenant.name} ({tenant.id})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           
           <Grid item xs={12} md={4}>
@@ -235,14 +291,14 @@ const GenerateIaCTab: React.FC = () => {
                 {isGenerating ? 'Generating...' : 'Generate IaC'}
               </Button>
               
-              {generatedCode && (
+              {outputPath && (
                 <Button
                   variant="outlined"
-                  startIcon={<SaveIcon />}
-                  onClick={handleSave}
+                  startIcon={<FolderIcon />}
+                  onClick={handleOpenFolder}
                   size="large"
                 >
-                  Save to File
+                  Open Output Folder
                 </Button>
               )}
             </Box>
@@ -251,23 +307,39 @@ const GenerateIaCTab: React.FC = () => {
       </Paper>
 
       <Paper sx={{ flex: 1, minHeight: 0, p: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          Generated Infrastructure Code
-        </Typography>
-        <Box sx={{ height: 'calc(100% - 30px)' }}>
-          <MonacoEditor
-            value={generatedCode || `// Generated ${outputFormat.toUpperCase()} code will appear here`}
-            language={getLanguage()}
-            theme="vs-dark"
-            loading=""
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: 14,
-              wordWrap: 'on',
-              placeholder: `// Generated ${outputFormat.toUpperCase()} code will appear here`,
-            }}
-          />
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {outputPath && (
+            <Alert 
+              severity="success" 
+              sx={{ mb: 2 }}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  onClick={handleOpenFolder}
+                  startIcon={<FolderIcon />}
+                >
+                  Open Folder
+                </Button>
+              }
+            >
+              Files generated in: {outputPath}
+            </Alert>
+          )}
+          <Box sx={{ 
+            flex: 1, 
+            backgroundColor: '#1e1e1e', 
+            color: '#cccccc',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            overflow: 'auto',
+            p: 2,
+            borderRadius: 1,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all'
+          }}>
+            {terminalOutput || (isGenerating ? 'Generating infrastructure code...\n' : 'Terminal output will appear here when you generate IaC')}
+          </Box>
         </Box>
       </Paper>
     </Box>
