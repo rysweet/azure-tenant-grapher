@@ -527,7 +527,7 @@ const ScanTab: React.FC = () => {
       {/* Connection Status for Connected State */}
       {connectionStatus === 'connected' && !isRunning && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          ✓ Connected to backend server - Ready to start builds with real-time monitoring
+          ✓ Connected to backend server - Ready to start scanning your tenant
         </Alert>
       )}
       
