@@ -8,6 +8,7 @@ import {
   Business as TenantIcon,
   Storage as DatabaseIcon,
   Api as BackendIcon,
+  Psychology as McpIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useTenantName } from '../../hooks/useTenantName';
@@ -28,6 +29,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
   const tenantName = useTenantName();
   const [activeProcesses, setActiveProcesses] = useState<ActiveProcess[]>([]);
   const [neo4jStatus, setNeo4jStatus] = useState<'connected' | 'disconnected'>('disconnected');
+  const [mcpStatus, setMcpStatus] = useState<'connected' | 'disconnected'>('disconnected');
 
   // Get active background operations from app state (only show ones with valid PIDs)
   const activeOperations = Array.from(state.backgroundOperations.values())
@@ -65,12 +67,23 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
       }
     };
 
+    const checkMcpStatus = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/api/mcp/status');
+        setMcpStatus(response.data.running ? 'connected' : 'disconnected');
+      } catch (error) {
+        setMcpStatus('disconnected');
+      }
+    };
+
     fetchActiveProcesses();
     checkNeo4jStatus();
+    checkMcpStatus();
     
     const interval = setInterval(() => {
       fetchActiveProcesses();
       checkNeo4jStatus();
+      checkMcpStatus();
     }, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
@@ -168,6 +181,17 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             icon={<DatabaseIcon />}
             label={neo4jStatus === 'connected' ? 'Neo4j' : 'Neo4j Offline'}
             color={neo4jStatus === 'connected' ? 'success' : 'error'}
+            variant="outlined"
+          />
+        </Tooltip>
+        
+        {/* MCP Server Status */}
+        <Tooltip title="Model Context Protocol server status">
+          <Chip
+            size="small"
+            icon={<McpIcon />}
+            label={mcpStatus === 'connected' ? 'MCP' : 'MCP Offline'}
+            color={mcpStatus === 'connected' ? 'success' : 'error'}
             variant="outlined"
           />
         </Tooltip>
