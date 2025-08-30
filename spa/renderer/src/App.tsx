@@ -11,7 +11,7 @@ import { useApp } from './context/AppContext';
 // Lazy load heavy components
 const StatusTab = lazy(() => import('./components/tabs/StatusTab'));
 const LogsTab = lazy(() => import('./components/tabs/LogsTab'));
-const BuildTab = lazy(() => import('./components/tabs/BuildTab'));
+const ScanTab = lazy(() => import('./components/tabs/ScanTab'));
 const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
 const GenerateIaCTab = lazy(() => import('./components/tabs/GenerateIaCTab'));
@@ -122,7 +122,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<Navigate to="/status" replace />} />
                 <Route path="/status" element={<StatusTab />} />
                 <Route path="/logs" element={<LogsTab />} />
-                <Route path="/build" element={<BuildTab />} />
+                <Route path="/scan" element={<ScanTab />} />
                 <Route path="/cli" element={<CLITab />} />
                 <Route path="/visualize" element={<VisualizeTab />} />
                 <Route path="/generate-spec" element={<GenerateSpecTab />} />

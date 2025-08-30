@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { BrowserRouter } from 'react-router-dom';
-import BuildTab from '../../renderer/src/components/tabs/BuildTab';
+import ScanTab from '../../renderer/src/components/tabs/ScanTab';
 import { AppProvider } from '../../renderer/src/context/AppContext';
 
 // Mock the validation utilities
@@ -23,7 +23,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   );
 };
 
-describe('BuildTab', () => {
+describe('ScanTab', () => {
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
@@ -40,10 +40,10 @@ describe('BuildTab', () => {
     };
   });
 
-  test('renders build tab with all required fields', () => {
-    renderWithProviders(<BuildTab />);
+  test('renders scan tab with all required fields', () => {
+    renderWithProviders(<ScanTab />);
     
-    expect(screen.getByText('Build Azure Tenant Graph')).toBeInTheDocument();
+    expect(screen.getByText('Scan Azure Tenant')).toBeInTheDocument();
     expect(screen.getByLabelText(/Tenant ID/i)).toBeInTheDocument();
     expect(screen.getByText(/Resource Limit/i)).toBeInTheDocument();
     expect(screen.getByText(/Max LLM Threads/i)).toBeInTheDocument();

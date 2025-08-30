@@ -52,19 +52,19 @@ interface DBStats {
   relTypeCount?: number;
 }
 
-const BuildTab: React.FC = () => {
+const ScanTab: React.FC = () => {
   const { state, dispatch } = useApp();
   const { addBackgroundOperation, updateBackgroundOperation, removeBackgroundOperation } = useBackgroundOperations();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
-  const logger = useLogger('Build');
+  const logger = useLogger('Scan');
   
   // State declarations
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
   const [hasResourceLimit, setHasResourceLimit] = useState(false);
   const [resourceLimit, setResourceLimit] = useState<number>(100);
-  const [maxLlmThreads, setMaxLlmThreads] = useState<number>(5);
-  const [maxBuildThreads, setMaxBuildThreads] = useState<number>(10);
-  const [rebuildEdges, setRebuildEdges] = useState(false);
+  const [maxLlmThreads, setMaxLlmThreads] = useState<number>(20);
+  const [maxBuildThreads, setMaxBuildThreads] = useState<number>(20);
+  const [rebuildEdges, setRebuildEdges] = useState(true);
   const [noAadImport, setNoAadImport] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null);
@@ -457,8 +457,8 @@ const BuildTab: React.FC = () => {
       // Add to background operations tracker
       addBackgroundOperation({
         id: processId,
-        type: 'Build',
-        name: `Building graph for ${tenantId}`,
+        type: 'Scan',
+        name: `Scanning tenant ${tenantId}`,
         // Backend handles PID internally, so we don't include it
       });
       
@@ -659,7 +659,7 @@ const BuildTab: React.FC = () => {
         // Build Configuration Form
         <Paper sx={{ p: 3, mb: 2 }}>
           <Typography variant="h6" gutterBottom>
-            {dbPopulated ? 'Update Graph Database' : 'Build Graph Database'}
+            {dbPopulated ? 'Update Graph Database' : 'Scan Azure Tenant'}
           </Typography>
           
           {error && (
@@ -780,7 +780,7 @@ const BuildTab: React.FC = () => {
                 onClick={handleStart}
                 size="large"
               >
-                {dbPopulated ? 'Update Database' : 'Start Build'}
+                {dbPopulated ? 'Update Database' : 'Start Scan'}
               </Button>
             </Box>
           </Grid>
@@ -801,4 +801,4 @@ const BuildTab: React.FC = () => {
   );
 };
 
-export default BuildTab;
+export default ScanTab;
