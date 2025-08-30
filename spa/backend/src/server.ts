@@ -340,6 +340,35 @@ app.post('/api/neo4j/stop', async (req, res) => {
 });
 
 /**
+ * MCP server status endpoint
+ */
+app.get('/api/mcp/status', async (req, res) => {
+  try {
+    // Check if MCP pidfile exists
+    const mcpPidfile = path.join(process.cwd(), 'outputs', 'mcp_server.pid');
+    
+    if (fs.existsSync(mcpPidfile)) {
+      const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
+      
+      // Check if process is actually running
+      try {
+        process.kill(pid, 0); // Signal 0 checks if process exists
+        res.json({ running: true, pid });
+      } catch {
+        // Process not running, clean up pidfile
+        fs.unlinkSync(mcpPidfile);
+        res.json({ running: false });
+      }
+    } else {
+      res.json({ running: false });
+    }
+  } catch (error) {
+    console.error('Failed to check MCP status:', error);
+    res.json({ running: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
  * Get environment configuration
  */
 app.get('/api/config/env', (req, res) => {
