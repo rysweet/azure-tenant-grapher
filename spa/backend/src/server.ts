@@ -558,8 +558,8 @@ app.get('/api/dependencies', async (req, res) => {
   const neo4jStatus = await neo4jContainer.getStatus();
   dependencies.push({ 
     name: 'Neo4j', 
-    installed: neo4jStatus.running && neo4jStatus.health === 'healthy', 
-    version: '5.25.1', // This is the image version we use
+    installed: neo4jStatus.running && (neo4jStatus.health === 'healthy' || neo4jStatus.health === 'starting'), 
+    version: neo4jStatus.version || '5.25.1', // Use actual version from container if available
     required: '>=5.0',
     status: neo4jStatus.health
   });
