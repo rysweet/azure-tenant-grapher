@@ -1069,7 +1069,7 @@ def spa_start():
                 err=True,
             )
             return
-        
+
         # Verify the build created the main entry point
         main_entry = os.path.join(spa_dir, "dist", "main", "index.js")
         if not os.path.exists(main_entry):
@@ -1090,13 +1090,16 @@ def spa_start():
                     [sys.executable, "-m", "src.mcp.server"],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    env={**os.environ, "PYTHONPATH": os.path.dirname(os.path.dirname(__file__))}
+                    env={
+                        **os.environ,
+                        "PYTHONPATH": os.path.dirname(os.path.dirname(__file__)),
+                    },
                 )
-                
+
                 # Save MCP PID
                 with open(MCP_PIDFILE, "w") as f:
                     f.write(str(mcp_proc.pid))
-                    
+
                 click.echo(f"✅ MCP server started (PID: {mcp_proc.pid})")
             else:
                 click.echo("⚠️  MCP server already running, skipping...")
@@ -1129,7 +1132,7 @@ def spa_stop():
     """Stop the local SPA/Electron dashboard and MCP server."""
     spa_stopped = False
     mcp_stopped = False
-    
+
     # Stop SPA
     if os.path.exists(SPA_PIDFILE):
         try:
@@ -1398,7 +1401,7 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             click.echo(f"❌ Failed to stop SPA: {e}", err=True)
     else:
         click.echo("⚠️  SPA is not running (no pidfile found).")
-    
+
     # Stop MCP server
     if os.path.exists(MCP_PIDFILE):
         try:
@@ -1415,7 +1418,7 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
     else:
         click.echo("⚠️  MCP server is not running (no pidfile found).")
-    
+
     if spa_stopped or mcp_stopped:
         click.echo("✅ Services stopped and pidfiles cleaned up.")
     else:
