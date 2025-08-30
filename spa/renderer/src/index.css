@@ -132,7 +132,7 @@ body {
   background-color: #1e1e1e !important;
 }
 
-/* vis-network navigation button styles */
+/* vis-network navigation button styles - green on black theme */
 .vis-navigation {
   background-color: #000000 !important;
   border: 1px solid #4caf50 !important;
@@ -161,14 +161,16 @@ body {
   color: #4caf50 !important;
 }
 
-/* Vis-network built-in zoom controls */
-.vis-zoomExtends, .vis-zoomIn, .vis-zoomOut {
+/* Vis-network built-in zoom and navigation controls */
+.vis-zoomExtends, .vis-zoomIn, .vis-zoomOut,
+.vis-up, .vis-down, .vis-left, .vis-right {
   background-color: #000000 !important;
   border: 1px solid #4caf50 !important;
   color: #4caf50 !important;
 }
 
-.vis-zoomExtends:hover, .vis-zoomIn:hover, .vis-zoomOut:hover {
+.vis-zoomExtends:hover, .vis-zoomIn:hover, .vis-zoomOut:hover,
+.vis-up:hover, .vis-down:hover, .vis-left:hover, .vis-right:hover {
   background-color: #000000 !important;
   border-color: #4caf50 !important;
   color: #4caf50 !important;
