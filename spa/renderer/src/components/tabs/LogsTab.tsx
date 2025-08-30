@@ -30,6 +30,7 @@ import {
   Download as DownloadIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { useApp } from '../../context/AppContext';
 import { LogEntry, LogLevel } from '../../context/AppContext';
@@ -54,12 +55,14 @@ const logLevelPriority: Record<LogLevel, number> = {
 
 const LogsTab: React.FC = () => {
   const { state, dispatch } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<LogLevel[]>(['debug', 'info', 'warning', 'error']);
   const [searchTerm, setSearchTerm] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const [sortBy, setSortBy] = useState<'timestamp' | 'level' | 'source'>('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [pidFilter, setPidFilter] = useState<string>('');
   
   const editorRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +103,19 @@ const LogsTab: React.FC = () => {
     return [...state.logs, ...processLogs];
   }, [state.logs, processLogs]);
 
+  // Handle PID parameter from URL
+  useEffect(() => {
+    const pid = searchParams.get('pid');
+    if (pid) {
+      setPidFilter(pid);
+      setFilterExpanded(true);
+      // Clear the URL parameter after setting the filter
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('pid');
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Filter and format logs for display
   const filteredLogs = useMemo(() => {
     let filtered = allLogs.filter(log => {
@@ -107,7 +123,12 @@ const LogsTab: React.FC = () => {
       const searchMatch = searchTerm === '' || 
         log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.source.toLowerCase().includes(searchTerm.toLowerCase());
-      return levelMatch && searchMatch;
+      const pidMatch = pidFilter === '' || 
+        log.message.includes(`PID ${pidFilter}`) ||
+        log.source.includes(`PID ${pidFilter}`) ||
+        (log.data && String(log.data).includes(`PID ${pidFilter}`)) ||
+        (log.data && typeof log.data === 'object' && 'pid' in log.data && String(log.data.pid) === pidFilter);
+      return levelMatch && searchMatch && pidMatch;
     });
 
     // Sort logs
@@ -128,7 +149,7 @@ const LogsTab: React.FC = () => {
     });
 
     return filtered;
-  }, [allLogs, selectedLevels, searchTerm, sortBy, sortOrder]);
+  }, [allLogs, selectedLevels, searchTerm, pidFilter, sortBy, sortOrder]);
 
   // Format logs as text for Monaco editor
   const formattedLogsText = useMemo(() => {
@@ -377,6 +398,16 @@ const LogsTab: React.FC = () => {
                 startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
               }}
               sx={{ minWidth: 200 }}
+            />
+            
+            {/* PID Filter */}
+            <TextField
+              label="Filter by PID"
+              value={pidFilter}
+              onChange={(e) => setPidFilter(e.target.value)}
+              size="small"
+              placeholder="e.g., 1234"
+              sx={{ minWidth: 150 }}
             />
             
             {/* Level filter */}
