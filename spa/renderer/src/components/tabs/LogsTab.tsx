@@ -33,6 +33,8 @@ import {
 import Editor from '@monaco-editor/react';
 import { useApp } from '../../context/AppContext';
 import { LogEntry, LogLevel } from '../../context/AppContext';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { useLogger } from '../../hooks/useLogger';
 
 // Log level colors for dark theme
 const logLevelColors: Record<LogLevel, string> = {
@@ -61,10 +63,46 @@ const LogsTab: React.FC = () => {
   
   const editorRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const processOutputRef = useRef<Map<string, string[]>>(new Map());
+  
+  // Initialize WebSocket connection and logger
+  const webSocket = useWebSocket();
+  const logger = useLogger('LogsTab');
+  
+  // Track active processes that we're subscribing to
+  const [activeProcesses, setActiveProcesses] = useState<Set<string>>(new Set());
+
+  // Convert WebSocket process outputs to LogEntry format
+  const processLogs = useMemo(() => {
+    const logs: LogEntry[] = [];
+    
+    webSocket.outputs.forEach((outputs, processId) => {
+      outputs.forEach(output => {
+        output.data.forEach(line => {
+          if (line.trim()) {
+            logs.push({
+              id: `${processId}-${output.timestamp}-${Math.random()}`,
+              timestamp: new Date(output.timestamp),
+              level: output.type === 'stderr' ? 'error' : 'info',
+              source: `Process-${processId.slice(0, 8)}`,
+              message: line.trim()
+            });
+          }
+        });
+      });
+    });
+    
+    return logs;
+  }, [webSocket.outputs]);
+
+  // Combine system logs and process logs
+  const allLogs = useMemo(() => {
+    return [...state.logs, ...processLogs];
+  }, [state.logs, processLogs]);
 
   // Filter and format logs for display
   const filteredLogs = useMemo(() => {
-    let filtered = state.logs.filter(log => {
+    let filtered = allLogs.filter(log => {
       const levelMatch = selectedLevels.includes(log.level);
       const searchMatch = searchTerm === '' || 
         log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,7 +128,7 @@ const LogsTab: React.FC = () => {
     });
 
     return filtered;
-  }, [state.logs, selectedLevels, searchTerm, sortBy, sortOrder]);
+  }, [allLogs, selectedLevels, searchTerm, sortBy, sortOrder]);
 
   // Format logs as text for Monaco editor
   const formattedLogsText = useMemo(() => {
@@ -124,6 +162,11 @@ const LogsTab: React.FC = () => {
   // Clear all logs
   const handleClearLogs = () => {
     dispatch({ type: 'CLEAR_LOGS' });
+    // Also clear WebSocket outputs
+    activeProcesses.forEach(processId => {
+      webSocket.clearProcessOutput(processId);
+    });
+    logger.info('Cleared all logs');
   };
 
   // Export logs
@@ -165,6 +208,55 @@ const LogsTab: React.FC = () => {
     }
   };
 
+  // Monitor running processes and auto-subscribe to their logs
+  useEffect(() => {
+    const checkActiveProcesses = async () => {
+      try {
+        const processes = await window.electronAPI.process.list();
+        const runningProcessIds = new Set(
+          processes
+            .filter(p => p.status === 'running')
+            .map(p => p.id)
+        );
+        
+        // Subscribe to new processes
+        runningProcessIds.forEach(processId => {
+          if (!activeProcesses.has(processId)) {
+            webSocket.subscribeToProcess(processId);
+            logger.debug(`Subscribed to process logs: ${processId}`);
+          }
+        });
+        
+        // Unsubscribe from completed processes
+        activeProcesses.forEach(processId => {
+          if (!runningProcessIds.has(processId)) {
+            webSocket.unsubscribeFromProcess(processId);
+            logger.debug(`Unsubscribed from process logs: ${processId}`);
+          }
+        });
+        
+        setActiveProcesses(runningProcessIds);
+      } catch (error) {
+        logger.error('Failed to check active processes', { error });
+      }
+    };
+    
+    // Check immediately and then every 5 seconds
+    checkActiveProcesses();
+    const interval = setInterval(checkActiveProcesses, 5000);
+    
+    return () => clearInterval(interval);
+  }, [activeProcesses, webSocket, logger]);
+
+  // Log WebSocket connection status
+  useEffect(() => {
+    if (webSocket.isConnected) {
+      logger.info('Connected to backend WebSocket server');
+    } else {
+      logger.warning('Disconnected from backend WebSocket server');
+    }
+  }, [webSocket.isConnected, logger]);
+
   // Add some test logs for demonstration
   const addTestLogs = () => {
     const testLogs = [
@@ -182,6 +274,8 @@ const LogsTab: React.FC = () => {
         payload: log,
       });
     });
+    
+    logger.info(`Added ${testLogs.length} test logs`);
   };
 
   return (
@@ -195,11 +289,31 @@ const LogsTab: React.FC = () => {
           
           {/* Log Count Badge */}
           <Chip
-            label={`${filteredLogs.length} / ${state.logs.length} logs`}
+            label={`${filteredLogs.length} / ${allLogs.length} logs`}
             size="small"
             variant="outlined"
             sx={{ mr: 2 }}
           />
+          
+          {/* WebSocket Status Badge */}
+          <Chip
+            label={webSocket.isConnected ? 'Live' : 'Offline'}
+            size="small"
+            variant="outlined"
+            color={webSocket.isConnected ? 'success' : 'error'}
+            sx={{ mr: 2 }}
+          />
+          
+          {/* Active Processes Badge */}
+          {activeProcesses.size > 0 && (
+            <Chip
+              label={`${activeProcesses.size} process${activeProcesses.size === 1 ? '' : 'es'}`}
+              size="small"
+              variant="outlined"
+              color="info"
+              sx={{ mr: 2 }}
+            />
+          )}
           
           {/* Auto-scroll toggle */}
           <FormControlLabel
@@ -222,7 +336,7 @@ const LogsTab: React.FC = () => {
           </Tooltip>
           
           <Tooltip title="Export logs">
-            <IconButton onClick={handleExportLogs} size="small" disabled={state.logs.length === 0}>
+            <IconButton onClick={handleExportLogs} size="small" disabled={allLogs.length === 0}>
               <DownloadIcon />
             </IconButton>
           </Tooltip>
@@ -234,7 +348,7 @@ const LogsTab: React.FC = () => {
           </Tooltip>
           
           <Tooltip title="Clear all logs">
-            <IconButton onClick={handleClearLogs} size="small" disabled={state.logs.length === 0}>
+            <IconButton onClick={handleClearLogs} size="small" disabled={allLogs.length === 0}>
               <ClearIcon />
             </IconButton>
           </Tooltip>
@@ -335,19 +449,28 @@ const LogsTab: React.FC = () => {
 
       {/* Logs Display */}
       <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {state.logs.length === 0 ? (
+        {allLogs.length === 0 ? (
           <Box
             sx={{
               flex: 1,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'text.secondary',
             }}
           >
-            <Typography variant="body1">
-              No logs available. System logs will appear here as operations are performed.
+            <Typography variant="body1" gutterBottom>
+              No logs available yet.
             </Typography>
+            <Typography variant="body2">
+              System logs and process output will appear here in real-time.
+            </Typography>
+            {!webSocket.isConnected && (
+              <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
+                WebSocket disconnected - some logs may not appear.
+              </Typography>
+            )}
           </Box>
         ) : (
           <Box ref={containerRef} sx={{ flex: 1 }}>
