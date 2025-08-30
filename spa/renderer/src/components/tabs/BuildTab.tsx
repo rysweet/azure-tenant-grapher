@@ -95,11 +95,10 @@ const BuildTab: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:3001/api/graph/stats');
       const stats = response.data;
-      console.log('Database stats:', stats);
       setDbStats(stats);
       setDbPopulated(!stats.isEmpty);
     } catch (err) {
-      console.error('Failed to load database stats:', err);
+      // Handle database stats loading error silently
       // Set empty stats when database is empty or error occurs
       setDbStats({
         nodeCount: 0,
@@ -120,7 +119,6 @@ const BuildTab: React.FC = () => {
       const response = await axios.get('http://localhost:3001/api/neo4j/status', {
         timeout: 5000 // 5 second timeout
       });
-      console.log('Neo4j status response:', response.data);
       setNeo4jStatus(response.data);
       
       // If Neo4j is running, load database stats
@@ -128,7 +126,7 @@ const BuildTab: React.FC = () => {
         await loadDatabaseStats();
       }
     } catch (err: any) {
-      console.error('Failed to check Neo4j status:', err);
+      // Handle Neo4j status check error
       
       // Check if it's a connection error (backend not running)
       if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
@@ -143,11 +141,9 @@ const BuildTab: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:3001/api/config/env');
       const envData = response.data;
-      console.log('Loaded env config:', envData);
       
       // Set values from .env if available
       if (envData.AZURE_TENANT_ID) {
-        console.log('Setting tenant ID from env:', envData.AZURE_TENANT_ID);
         setTenantId(envData.AZURE_TENANT_ID);
         dispatch({ type: 'UPDATE_CONFIG', payload: { tenantId: envData.AZURE_TENANT_ID } });
       }
@@ -158,7 +154,7 @@ const BuildTab: React.FC = () => {
         setResourceLimit(parseInt(envData.RESOURCE_LIMIT, 10));
       }
     } catch (err) {
-      console.error('Failed to load env config:', err);
+      // Handle env config loading error
       throw err; // Re-throw to trigger retry
     }
   }, [dispatch]);
@@ -230,7 +226,6 @@ const BuildTab: React.FC = () => {
 
   // Define event handlers with useCallback to avoid stale closures
   const handleProcessExit = useCallback((event: { processId: string; code?: number; timestamp: string }) => {
-    console.log(`🏁 Process ${event.processId} exited with code ${event.code}`);
     if (event.processId === currentProcessId) {
       setIsRunning(false);
       setProgress(100);
@@ -260,7 +255,6 @@ const BuildTab: React.FC = () => {
   }, [currentProcessId, updateBackgroundOperation, dispatch, loadDatabaseStats, unsubscribeFromProcess, removeBackgroundOperation]);
 
   const handleProcessError = useCallback((event: { processId: string; error?: string; timestamp: string }) => {
-    console.log(`❌ Process ${event.processId} error: ${event.error}`);
     if (event.processId === currentProcessId) {
       setIsRunning(false);
       setError(`Process error: ${event.error}`);
@@ -278,11 +272,9 @@ const BuildTab: React.FC = () => {
   useEffect(() => {
     if (isConnected) {
       setConnectionStatus('connected');
-      console.log('✓ Socket.IO connected to backend server');
       dispatch({ type: 'ADD_LOG', payload: 'Connected to backend server' });
     } else {
       setConnectionStatus('disconnected');
-      console.log('✗ Socket.IO disconnected from backend server');
       dispatch({ type: 'ADD_LOG', payload: 'Disconnected from backend server' });
     }
   }, [isConnected, dispatch]);
@@ -294,10 +286,9 @@ const BuildTab: React.FC = () => {
     }
 
     const socket = io('http://localhost:3001');
-    console.log('🔌 Creating dedicated socket for process events');
     
     socket.on('connect', () => {
-      console.log('✅ Process event socket connected');
+      // Process event socket connected
     });
     
     socket.on('process-exit', handleProcessExit);
@@ -306,7 +297,6 @@ const BuildTab: React.FC = () => {
     setProcessSocket(socket);
     
     return () => {
-      console.log('🔌 Disconnecting process event socket');
       socket.disconnect();
       setProcessSocket(null);
     };
@@ -318,7 +308,6 @@ const BuildTab: React.FC = () => {
       const processOutput = getProcessOutput(currentProcessId);
       if (processOutput.length > logs.length) {
         const newLogs = processOutput.slice(logs.length);
-        console.log(`📝 Received ${newLogs.length} new log lines`);
         setLogs(processOutput);
         updateProgress(newLogs);
       }
@@ -329,7 +318,6 @@ const BuildTab: React.FC = () => {
   useEffect(() => {
     return () => {
       if (currentProcessId && isRunning) {
-        console.log('🧹 Cleaning up on unmount');
         unsubscribeFromProcess(currentProcessId);
       }
     };
@@ -346,12 +334,10 @@ const BuildTab: React.FC = () => {
           await checkNeo4jStatus();
           await loadEnvConfig();
         } catch (err) {
-          console.log(`Backend not ready, retrying... (${retries + 1}/${maxRetries})`);
           if (retries < maxRetries) {
             retries++;
             setTimeout(tryInit, 2000); // Retry after 2 seconds
           } else {
-            console.error('Failed to connect to backend after retries');
             setNeo4jStatus({ status: 'error', running: false, message: 'Backend server not responding' });
           }
         }
@@ -374,7 +360,7 @@ const BuildTab: React.FC = () => {
       try {
         await checkNeo4jStatus();
       } catch (err) {
-        console.error('Failed to refresh Neo4j status:', err);
+        // Handle refresh error silently
       }
     }, 5000);
     
@@ -425,7 +411,6 @@ const BuildTab: React.FC = () => {
       return;
     }
 
-    console.log('🚀 Starting build process...');
     logger.info(`Starting build process for tenant: ${tenantId}`, { 
       tenantId, 
       hasResourceLimit, 
@@ -467,7 +452,6 @@ const BuildTab: React.FC = () => {
       const processId = response.data.processId;
       setCurrentProcessId(processId);
       
-      console.log(`📡 Process started with ID: ${processId}`);
       logger.logProcessEvent(processId, 'started');
       
       // Add to background operations tracker
@@ -479,17 +463,15 @@ const BuildTab: React.FC = () => {
       });
       
       // Subscribe to process output via WebSocket
-      console.log(`🔌 Subscribing to process output: ${processId}`);
       subscribeToProcess(processId);
       
       // Check if process is already running by polling status initially
       setTimeout(async () => {
         try {
           const statusResponse = await axios.get(`http://localhost:3001/api/status/${processId}`);
-          console.log(`📊 Process ${processId} status:`, statusResponse.data);
+          // Process status retrieved successfully
         } catch (err) {
           // Process might have already completed, that's ok
-          console.log(`ℹ️ Process ${processId} status check failed (likely completed):`, err);
         }
       }, 1000);
 
@@ -497,7 +479,6 @@ const BuildTab: React.FC = () => {
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
       
     } catch (err: any) {
-      console.error('❌ Failed to start build:', err);
       dispatch({ type: 'ADD_LOG', payload: `Build failed to start: ${err.message}` });
       setError(err.response?.data?.error || err.message);
       setIsRunning(false);
@@ -507,7 +488,6 @@ const BuildTab: React.FC = () => {
   const handleStop = async () => {
     if (currentProcessId) {
       try {
-        console.log(`🛑 Stopping build process: ${currentProcessId}`);
         dispatch({ type: 'ADD_LOG', payload: `Stopping process: ${currentProcessId}` });
         
         // Cancel the process via backend API
@@ -518,10 +498,8 @@ const BuildTab: React.FC = () => {
         
         setIsRunning(false);
         setLogs((prev) => [...prev, 'Build cancelled by user']);
-        console.log('✅ Build process stopped');
         dispatch({ type: 'ADD_LOG', payload: 'Build cancelled by user' });
       } catch (err: any) {
-        console.error('❌ Failed to stop build:', err);
         setError(err.response?.data?.error || err.message);
       }
     }

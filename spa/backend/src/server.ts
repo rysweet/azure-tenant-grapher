@@ -9,13 +9,16 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { Neo4jService } from './neo4j-service';
 import { Neo4jContainer } from './neo4j-container';
+import { logger } from './logger';
 
 // Load .env file from the project root  
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
-console.log('Backend starting with environment:');
-console.log('  AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID || 'NOT SET');
-console.log('  NEO4J_URI:', process.env.NEO4J_URI || 'NOT SET');
-console.log('  NEO4J_PORT:', process.env.NEO4J_PORT || 'NOT SET');
+logger.info('Backend starting with environment');
+logger.debug('Environment variables:', {
+  AZURE_TENANT_ID: process.env.AZURE_TENANT_ID ? 'SET' : 'NOT SET',
+  NEO4J_URI: process.env.NEO4J_URI || 'NOT SET',
+  NEO4J_PORT: process.env.NEO4J_PORT || 'NOT SET'
+});
 
 const app = express();
 const httpServer = createServer(app);
@@ -39,22 +42,22 @@ const neo4jContainer = new Neo4jContainer();
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+  logger.info('Client connected:', socket.id);
 
   // Subscribe to process output
   socket.on('subscribe', (processId: string) => {
     socket.join(`process-${processId}`);
-    console.log(`Client ${socket.id} subscribed to process ${processId}`);
+    logger.debug(`Client ${socket.id} subscribed to process ${processId}`);
   });
 
   // Unsubscribe from process output
   socket.on('unsubscribe', (processId: string) => {
     socket.leave(`process-${processId}`);
-    console.log(`Client ${socket.id} unsubscribed from process ${processId}`);
+    logger.debug(`Client ${socket.id} unsubscribed from process ${processId}`);
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    logger.info('Client disconnected:', socket.id);
   });
 });
 
@@ -72,19 +75,19 @@ app.get('/api/tenant-name', async (req, res) => {
       const { stdout } = await execPromise('az account show --query "name" --output tsv');
       const name = stdout.trim();
       if (name && !name.includes('error') && name.length > 0) {
-        console.log('Got Azure subscription name:', name);
+        logger.debug('Got Azure subscription name:', name);
         res.json({ name });
         return;
       }
     } catch (azError: any) {
-      console.log('Azure CLI not available or not logged in:', azError?.message || azError);
+      logger.debug('Azure CLI not available or not logged in:', azError?.message || azError);
     }
     
     // Fallback to tenant ID from env
     const tenantId = process.env.AZURE_TENANT_ID || 'Unknown';
     res.json({ name: tenantId });
   } catch (error) {
-    console.error('Error getting tenant name:', error);
+    logger.error('Error getting tenant name:', error);
     res.status(500).json({ error: 'Failed to get tenant name' });
   }
 });
@@ -219,7 +222,7 @@ app.get('/api/graph/status', async (req, res) => {
       stats 
     });
   } catch (error) {
-    console.error('Error checking database status:', error);
+    logger.error('Error checking database status:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to check database status' 
     });
@@ -234,7 +237,7 @@ app.get('/api/graph/stats', async (req, res) => {
     const stats = await neo4jService.getDatabaseStats();
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching database stats:', error);
+    logger.error('Error fetching database stats:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to fetch database statistics' 
     });
@@ -249,7 +252,7 @@ app.get('/api/graph', async (req, res) => {
     const graphData = await neo4jService.getFullGraph();
     res.json(graphData);
   } catch (error) {
-    console.error('Error fetching graph:', error);
+    logger.error('Error fetching graph:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to fetch graph data' 
     });
@@ -270,7 +273,7 @@ app.get('/api/graph/search', async (req, res) => {
     const nodes = await neo4jService.searchNodes(query);
     res.json(nodes);
   } catch (error) {
-    console.error('Error searching nodes:', error);
+    logger.error('Error searching nodes:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to search nodes' 
     });
@@ -290,7 +293,7 @@ app.get('/api/graph/node/:nodeId', async (req, res) => {
     }
     res.json(details);
   } catch (error) {
-    console.error('Error fetching node details:', error);
+    logger.error('Error fetching node details:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to fetch node details' 
     });
@@ -343,8 +346,7 @@ app.post('/api/neo4j/stop', async (req, res) => {
  * Get environment configuration
  */
 app.get('/api/config/env', (req, res) => {
-  console.log('Config endpoint - AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID);
-  console.log('Config endpoint - NEO4J_URI:', process.env.NEO4J_URI);
+  logger.debug('Config endpoint accessed');
   // Return safe environment variables that the UI can use
   res.json({
     AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
@@ -371,7 +373,7 @@ app.get('/api/docs/:filePath(*)', async (req, res) => {
     
     // Check if the resolved path is within the project directory
     if (!fullFilePath.startsWith(projectRoot)) {
-      console.log('Docs API: Access denied - path outside project root:', filePath);
+      logger.warn('Docs API: Access denied - path outside project root:', filePath);
       return res.status(403).json({ error: 'Access denied' });
     }
     
@@ -389,7 +391,7 @@ app.get('/api/docs/:filePath(*)', async (req, res) => {
     res.json(content);
     
   } catch (error) {
-    console.error('Error serving markdown file:', error);
+    logger.error('Error serving markdown file:', error);
     res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Failed to read file' 
     });
@@ -411,13 +413,13 @@ app.get('/api/health', async (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  logger.error('Internal server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
 // Cleanup on exit
 process.on('SIGINT', async () => {
-  console.log('Shutting down server...');
+  logger.info('Shutting down server...');
   activeProcesses.forEach((process) => {
     process.kill('SIGTERM');
   });
@@ -431,25 +433,25 @@ const PORT = process.env.BACKEND_PORT || 3001;
 async function startServer() {
   try {
     // Start Neo4j container first
-    console.log('Starting Neo4j container...');
+    logger.info('Starting Neo4j container...');
     await neo4jContainer.start();
-    console.log('Neo4j container is ready');
+    logger.info('Neo4j container is ready');
     
     // Re-initialize Neo4j service connection after container is ready
     setTimeout(() => {
       // Give Neo4j service a moment to reconnect
-      console.log('Neo4j service should now be connected');
+      logger.debug('Neo4j service should now be connected');
     }, 2000);
     
   } catch (error) {
-    console.error('Failed to start Neo4j container:', error);
-    console.log('Continuing without Neo4j - some features may not work');
+    logger.error('Failed to start Neo4j container:', error);
+    logger.warn('Continuing without Neo4j - some features may not work');
   }
   
   // Start the HTTP server
   httpServer.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-    console.log(`WebSocket server ready for connections`);
+    logger.info(`Backend server running on http://localhost:${PORT}`);
+    logger.info('WebSocket server ready for connections');
   });
 }
 
