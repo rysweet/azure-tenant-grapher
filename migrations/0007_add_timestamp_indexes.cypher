@@ -1,11 +1,11 @@
 // Migration 0007 - Add indexes for timestamp fields for performance optimization
 // This migration adds indexes on updated_at and created_at fields to improve query performance
 
-// Create index on updated_at field for all nodes (if the field exists)
-CREATE INDEX updated_at_index IF NOT EXISTS FOR (n) ON (n.updated_at);
+// Create index on updated_at field for Resource nodes
+CREATE INDEX updated_at_index IF NOT EXISTS FOR (r:Resource) ON (r.updated_at);
 
-// Create index on created_at field for all nodes (if the field exists)
-CREATE INDEX created_at_index IF NOT EXISTS FOR (n) ON (n.created_at);
+// Create index on created_at field for Resource nodes
+CREATE INDEX created_at_index IF NOT EXISTS FOR (r:Resource) ON (r.created_at);
 
 // Create index on LastSyncedTimestamp field for Subscription nodes
 CREATE INDEX last_synced_timestamp_index IF NOT EXISTS FOR (s:Subscription) ON (s.LastSyncedTimestamp);
