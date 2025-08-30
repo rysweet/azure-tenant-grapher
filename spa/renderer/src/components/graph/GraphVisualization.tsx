@@ -221,7 +221,7 @@ export const GraphVisualization: React.FC = () => {
       extractFilterOptions(data);
       renderGraph(data);
     } catch (err: any) {
-      console.error('Failed to fetch graph data:', err);
+      // Handle fetch error
       
       // Provide more detailed error messages
       if (err.code === 'ERR_NETWORK') {
@@ -450,19 +450,17 @@ export const GraphVisualization: React.FC = () => {
           setSelectedNode(response.data);
           setDetailsOpen(true);
         } catch (err) {
-          console.error('Failed to fetch node details:', err);
+          // Handle node details fetch error
         }
       }
     });
 
     // Stabilization progress
     network.on('stabilizationProgress', (params) => {
-      const progress = params.iterations / params.total * 100;
-      console.log(`Stabilization progress: ${progress.toFixed(0)}%`);
+      // Physics stabilization in progress
     });
 
     network.once('stabilizationIterationsDone', () => {
-      console.log('Stabilization complete');
       network.setOptions({ physics: { enabled: false } });
     });
   }, [nodeMatchesFilters]);
@@ -529,7 +527,7 @@ export const GraphVisualization: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Search failed:', err);
+      // Handle search error
     }
   };
 

@@ -9,10 +9,7 @@ import * as dotenv from 'dotenv';
 
 // Load .env file from the project root
 const envPath = path.join(__dirname, '../../.env');
-console.log('Loading .env from:', envPath);
 dotenv.config({ path: envPath });
-console.log('Loaded AZURE_TENANT_ID:', process.env.AZURE_TENANT_ID);
-console.log('Loaded NEO4J_URI:', process.env.NEO4J_URI);
 
 let mainWindow: BrowserWindow | null = null;
 let processManager: ProcessManager;
@@ -74,26 +71,14 @@ async function createWindow() {
 
 // Start the backend server
 function startBackendServer() {
-  console.log('Starting backend server...');
-  console.log('Current directory:', __dirname);
-  console.log('Environment variables loaded:', {
-    NEO4J_URI: process.env.NEO4J_URI,
-    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD ? '***' : undefined,
-    NEO4J_CONTAINER_NAME: process.env.NEO4J_CONTAINER_NAME
-  });
   
   const backendPath = path.join(__dirname, '../backend/src/server.js');
   const tsxPath = path.join(__dirname, '../../node_modules/.bin/tsx');
   
   // Check if we're in development mode
-  console.log('Checking backend path:', backendPath);
-  console.log('Backend path exists:', require('fs').existsSync(backendPath));
-  
   if (process.env.NODE_ENV === 'development' || !require('fs').existsSync(backendPath)) {
     // Use tsx to run TypeScript directly in development
     const backendTsPath = path.join(__dirname, '../backend/src/server.ts');
-    console.log('Using TypeScript backend at:', backendTsPath);
-    console.log('TypeScript backend exists:', require('fs').existsSync(backendTsPath));
     
     backendProcess = spawn('npx', ['tsx', backendTsPath], {
       cwd: path.join(__dirname, '..'),
@@ -119,10 +104,8 @@ function startBackendServer() {
     return;
   }
 
-  console.log('Backend process spawned with PID:', backendProcess.pid);
-
   backendProcess.stdout?.on('data', (data) => {
-    console.log(`Backend: ${data}`);
+    // Backend output handled by backend logger
   });
 
   backendProcess.stderr?.on('data', (data) => {
@@ -134,7 +117,9 @@ function startBackendServer() {
   });
 
   backendProcess.on('close', (code) => {
-    console.log(`Backend process exited with code ${code}`);
+    if (code !== 0) {
+      console.error(`Backend process exited with code ${code}`);
+    }
     backendProcess = null;
   });
 }
@@ -149,7 +134,7 @@ if (process.platform === 'darwin') {
     try {
       app.dock.setIcon(iconPath);
     } catch (error) {
-      console.warn('Failed to set dock icon:', error);
+      // Silently handle dock icon errors
     }
   }
 }
