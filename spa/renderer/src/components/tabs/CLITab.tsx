@@ -49,6 +49,10 @@ import {
   AddCircle as AddCircleIcon,
   Security as SecurityIcon,
   Psychology as PsychologyIcon,
+  Backup as BackupIcon,
+  Restore as RestoreIcon,
+  AppRegistration as AppRegIcon,
+  Storage as DatabaseIcon,
 } from '@mui/icons-material';
 import { Terminal } from 'xterm';
 import axios from 'axios';
@@ -217,6 +221,98 @@ const CLI_COMMANDS: CommandDefinition[] = [
     args: [],
     examples: [
       'doctor',
+    ],
+  },
+  {
+    name: 'backup',
+    label: 'Backup Database',
+    description: 'Backup the Neo4j database to a file',
+    icon: <BackupIcon />,
+    category: 'Database',
+    args: [
+      { name: 'path', label: 'Backup Path', type: 'string', description: 'Path for the backup file (defaults to outputs/backups/)' },
+    ],
+    examples: [
+      'backup',
+      'backup --path /path/to/backup.dump',
+    ],
+  },
+  {
+    name: 'restore',
+    label: 'Restore Database',
+    description: 'Restore the Neo4j database from a backup file',
+    icon: <RestoreIcon />,
+    category: 'Database',
+    args: [
+      { name: 'path', label: 'Backup Path', type: 'string', required: true, description: 'Path to the backup file to restore' },
+    ],
+    examples: [
+      'restore --path /path/to/backup.dump',
+      'restore-db --path outputs/backups/backup-20241230.dump',
+    ],
+  },
+  {
+    name: 'wipe',
+    label: 'Wipe Database',
+    description: 'Clear all data from the Neo4j database',
+    icon: <ClearIcon />,
+    category: 'Database',
+    args: [
+      { name: 'force', label: 'Force', type: 'boolean', description: 'Skip confirmation prompt' },
+    ],
+    examples: [
+      'wipe',
+      'wipe --force',
+    ],
+  },
+  {
+    name: 'start',
+    label: 'Start SPA',
+    description: 'Start the local SPA/Electron dashboard and MCP server',
+    icon: <PlayIcon />,
+    category: 'Application',
+    args: [],
+    examples: [
+      'start',
+    ],
+  },
+  {
+    name: 'stop',
+    label: 'Stop SPA',
+    description: 'Stop the local SPA/Electron dashboard and MCP server',
+    icon: <StopIcon />,
+    category: 'Application',
+    args: [],
+    examples: [
+      'stop',
+    ],
+  },
+  {
+    name: 'app-registration',
+    label: 'App Registration',
+    description: 'Create an Azure AD app registration for Azure Tenant Grapher',
+    icon: <AppRegIcon />,
+    category: 'Setup',
+    args: [
+      { name: 'tenant-id', label: 'Tenant ID', type: 'string', description: 'Azure tenant ID for the app registration' },
+      { name: 'name', label: 'App Name', type: 'string', default: 'Azure Tenant Grapher', description: 'Display name for the app registration' },
+      { name: 'redirect-uri', label: 'Redirect URI', type: 'string', default: 'http://localhost:3000', description: 'Redirect URI for the app registration' },
+      { name: 'create-secret', label: 'Create Secret', type: 'boolean', default: true, description: 'Create a client secret for the app registration' },
+    ],
+    examples: [
+      'app-registration',
+      'app-registration --tenant-id contoso.onmicrosoft.com --name "My ATG App"',
+    ],
+  },
+  {
+    name: 'mcp-server',
+    label: 'MCP Server',
+    description: 'Start the Model Context Protocol server',
+    icon: <PsychologyIcon />,
+    category: 'Application',
+    args: [],
+    examples: [
+      'mcp-server',
     ],
   },
 ];
