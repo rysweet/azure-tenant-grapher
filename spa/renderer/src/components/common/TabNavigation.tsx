@@ -10,7 +10,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Dashboard as StatusIcon,
   BugReport as LogsIcon,
-  Build as BuildIcon,
+  Search as ScanIcon,
   Visibility as VisualizeIcon,
   Description as SpecIcon,
   Code as CodeIcon,
@@ -25,7 +25,7 @@ import {
 // All tabs in a simple flat array
 const allTabs = [
   { label: 'Status', path: '/status', icon: <StatusIcon /> },
-  { label: 'Build', path: '/build', icon: <BuildIcon /> },
+  { label: 'Scan', path: '/scan', icon: <ScanIcon /> },
   { label: 'Visualize', path: '/visualize', icon: <VisualizeIcon /> },
   { label: 'Generate Spec', path: '/generate-spec', icon: <SpecIcon /> },
   { label: 'Generate IaC', path: '/generate-iac', icon: <CodeIcon /> },
