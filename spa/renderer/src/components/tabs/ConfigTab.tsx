@@ -24,6 +24,7 @@ import {
   Visibility as ShowIcon,
   VisibilityOff as HideIcon,
   LocalHospital as DoctorIcon,
+  AppRegistration as AppRegIcon,
 } from '@mui/icons-material';
 
 interface ConfigItem {
@@ -203,6 +204,43 @@ const ConfigTab: React.FC = () => {
       )}
 
       <Grid container spacing={3} sx={{ p: 3 }}>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Azure AD App Registration
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create an Azure AD application with the required permissions for Azure Tenant Grapher
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AppRegIcon />}
+                onClick={async () => {
+                  try {
+                    const result = await window.electronAPI.cli.execute('app-registration', []);
+                    setMessage({ type: 'success', text: 'App registration command launched' });
+                  } catch (err: any) {
+                    setMessage({ type: 'error', text: `Failed to run app-registration: ${err.message}` });
+                  }
+                }}
+              >
+                Create App Registration
+              </Button>
+            </Box>
+            
+            {(!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value || 
+              !config.find(c => c.key === 'AZURE_CLIENT_SECRET')?.value) && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                Azure AD credentials not configured. Click "Create App Registration" to set up authentication.
+              </Alert>
+            )}
+          </Paper>
+        </Grid>
+        
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
