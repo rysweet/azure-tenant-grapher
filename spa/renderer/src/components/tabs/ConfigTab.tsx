@@ -17,6 +17,7 @@ import {
   VisibilityOff as HideIcon,
   AppRegistration as AppRegIcon,
 } from '@mui/icons-material';
+import CommandOutputDialog from '../common/CommandOutputDialog';
 
 interface ConfigItem {
   key: string;
@@ -37,6 +38,7 @@ const ConfigTab: React.FC = () => {
   const [showSecrets, setShowSecrets] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showAppRegDialog, setShowAppRegDialog] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -92,6 +94,104 @@ const ConfigTab: React.FC = () => {
     }
   };
 
+  const parseAppRegistrationOutput = (output: string[]): { clientId?: string; clientSecret?: string } => {
+    const result: { clientId?: string; clientSecret?: string } = {};
+    
+    // Look for patterns in the output that indicate client ID and secret
+    for (const line of output) {
+      // Look for Client ID patterns
+      if (line.includes('Client ID') || line.includes('Application ID') || line.includes('client_id')) {
+        const clientIdMatch = line.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (clientIdMatch) {
+          result.clientId = clientIdMatch[0];
+        }
+      }
+      
+      // Look for Client Secret patterns
+      if (line.includes('Client Secret') || line.includes('client_secret') || line.includes('Secret Value')) {
+        // Client secrets are typically base64-like strings or specific patterns
+        const secretMatch = line.match(/[A-Za-z0-9~._-]{32,}/);
+        if (secretMatch && !secretMatch[0].match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
+          result.clientSecret = secretMatch[0];
+        }
+      }
+      
+      // Alternative patterns for secrets
+      if (line.includes('Secret:') || line.includes('secret=')) {
+        const secretMatch = line.split(/Secret:?|secret=/).pop()?.trim();
+        if (secretMatch && secretMatch.length > 16) {
+          result.clientSecret = secretMatch;
+        }
+      }
+    }
+    
+    return result;
+  };
+
+  const handleAppRegistrationComplete = async (output: string[], exitCode: number) => {
+    setShowAppRegDialog(false);
+    
+    if (exitCode === 0) {
+      // Parse the output to extract client ID and secret
+      const { clientId, clientSecret } = parseAppRegistrationOutput(output);
+      
+      if (clientId || clientSecret) {
+        // Update config state
+        setConfig(prev => prev.map(item => {
+          if (item.key === 'AZURE_CLIENT_ID' && clientId) {
+            return { ...item, value: clientId };
+          }
+          if (item.key === 'AZURE_CLIENT_SECRET' && clientSecret) {
+            return { ...item, value: clientSecret };
+          }
+          return item;
+        }));
+
+        // Save to backend
+        try {
+          if (clientId) {
+            await window.electronAPI.config.set('AZURE_CLIENT_ID', clientId);
+          }
+          if (clientSecret) {
+            await window.electronAPI.config.set('AZURE_CLIENT_SECRET', clientSecret);
+          }
+          
+          let message = 'App registration completed successfully';
+          if (clientId && clientSecret) {
+            message += '. Client ID and Secret have been saved to configuration.';
+          } else if (clientId) {
+            message += '. Client ID has been saved to configuration.';
+          } else if (clientSecret) {
+            message += '. Client Secret has been saved to configuration.';
+          }
+          
+          setMessage({ type: 'success', text: message });
+          
+          // Reload config to ensure everything is up to date
+          await loadConfig();
+          
+        } catch (err: any) {
+          setMessage({ 
+            type: 'error', 
+            text: `App registration completed but failed to save configuration: ${err.message}` 
+          });
+        }
+      } else {
+        setMessage({ 
+          type: 'success', 
+          text: 'App registration completed successfully. Please manually copy the Client ID and Secret from the output above.' 
+        });
+      }
+    } else {
+      setMessage({ type: 'error', text: 'App registration failed. Please check the output above for details.' });
+    }
+  };
+
+  const handleAppRegistrationError = (error: string) => {
+    setShowAppRegDialog(false);
+    setMessage({ type: 'error', text: `App registration failed: ${error}` });
+  };
+
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       <Typography variant="h5" sx={{ p: 3, pb: 0 }}>
@@ -124,14 +224,7 @@ const ConfigTab: React.FC = () => {
                 variant="contained"
                 color="primary"
                 startIcon={<AppRegIcon />}
-                onClick={async () => {
-                  try {
-                    const result = await window.electronAPI.cli.execute('app-registration', []);
-                    setMessage({ type: 'success', text: 'App registration command launched' });
-                  } catch (err: any) {
-                    setMessage({ type: 'error', text: `Failed to run app-registration: ${err.message}` });
-                  }
-                }}
+                onClick={() => setShowAppRegDialog(true)}
               >
                 Create App Registration
               </Button>
@@ -210,6 +303,17 @@ const ConfigTab: React.FC = () => {
         </Grid>
 
       </Grid>
+
+      {/* App Registration Command Dialog */}
+      <CommandOutputDialog
+        open={showAppRegDialog}
+        onClose={() => setShowAppRegDialog(false)}
+        title="Create Azure AD App Registration"
+        command="app-registration"
+        args={[]}
+        onCommandComplete={handleAppRegistrationComplete}
+        onError={handleAppRegistrationError}
+      />
     </Box>
   );
 };
