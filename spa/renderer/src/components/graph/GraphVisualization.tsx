@@ -41,7 +41,11 @@ import {
   Info as InfoIcon,
   FilterList as FilterIcon,
   Clear as ClearIcon,
-  ExpandMore as ExpandMoreIcon
+  ExpandMore as ExpandMoreIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon,
+  ArrowBack as ArrowLeftIcon,
+  ArrowForward as ArrowRightIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -424,7 +428,7 @@ export const GraphVisualization: React.FC = () => {
       interaction: {
         hover: true,
         tooltipDelay: 200,
-        navigationButtons: true,
+        navigationButtons: false,  // Disabled - using Graph Controls pane instead
         keyboard: true
       },
       layout: {
@@ -560,6 +564,36 @@ export const GraphVisualization: React.FC = () => {
     }
   };
 
+  // Pan controls
+  const handlePan = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (networkRef.current) {
+      const viewPosition = networkRef.current.getViewPosition();
+      const scale = networkRef.current.getScale();
+      const panDistance = 100 / scale; // Adjust pan distance based on zoom level
+      
+      let newPosition = { ...viewPosition };
+      switch (direction) {
+        case 'up':
+          newPosition.y -= panDistance;
+          break;
+        case 'down':
+          newPosition.y += panDistance;
+          break;
+        case 'left':
+          newPosition.x -= panDistance;
+          break;
+        case 'right':
+          newPosition.x += panDistance;
+          break;
+      }
+      
+      networkRef.current.moveTo({
+        position: newPosition,
+        animation: { duration: 200, easingFunction: 'easeInOutQuad' }
+      });
+    }
+  };
+
   useEffect(() => {
     fetchGraphData();
   }, [fetchGraphData]);
@@ -646,6 +680,71 @@ export const GraphVisualization: React.FC = () => {
               </Button>
             </Tooltip>
           </ButtonGroup>
+          
+          {/* Pan Controls */}
+          <Typography variant="subtitle2" sx={{ color: 'white', mb: 1, mt: 2 }}>Pan Controls</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+            <Box>
+              <Tooltip title="Pan Up">
+                <IconButton onClick={() => handlePan('up')} size="small" sx={{ 
+                  color: '#4caf50',
+                  backgroundColor: '#000000',
+                  border: '1px solid #4caf50',
+                  '&:hover': { 
+                    backgroundColor: '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}>
+                  <ArrowUpIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box sx={{ display: 'flex' }}>
+              <Tooltip title="Pan Left">
+                <IconButton onClick={() => handlePan('left')} size="small" sx={{ 
+                  color: '#4caf50',
+                  backgroundColor: '#000000',
+                  border: '1px solid #4caf50',
+                  '&:hover': { 
+                    backgroundColor: '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}>
+                  <ArrowLeftIcon />
+                </IconButton>
+              </Tooltip>
+              <Box sx={{ width: 40 }} />
+              <Tooltip title="Pan Right">
+                <IconButton onClick={() => handlePan('right')} size="small" sx={{ 
+                  color: '#4caf50',
+                  backgroundColor: '#000000',
+                  border: '1px solid #4caf50',
+                  '&:hover': { 
+                    backgroundColor: '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}>
+                  <ArrowRightIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box>
+              <Tooltip title="Pan Down">
+                <IconButton onClick={() => handlePan('down')} size="small" sx={{ 
+                  color: '#4caf50',
+                  backgroundColor: '#000000',
+                  border: '1px solid #4caf50',
+                  '&:hover': { 
+                    backgroundColor: '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}>
+                  <ArrowDownIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+          
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Show Legend">
               <IconButton onClick={() => setLegendOpen(true)} size="small" sx={{ 

@@ -505,11 +505,17 @@ app.get('/api/dependencies', async (req, res) => {
   try {
     const { stdout: whichOutput } = await execPromise('which az');
     if (whichOutput && whichOutput.trim()) {
-      // Found az in PATH, now get version
-      const { stdout: versionOutput } = await execPromise('az --version 2>&1 | head -1');
-      if (versionOutput && versionOutput.includes('azure-cli')) {
-        azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+      // Found az in PATH, now get version (capture both stdout and stderr)
+      try {
+        const { stdout: versionOutput } = await execPromise('az --version 2>&1 | grep azure-cli | head -1');
+        if (versionOutput && versionOutput.includes('azure-cli')) {
+          azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
+          azInstalled = true;
+        }
+      } catch {
+        // Fallback: just check if az command exists
         azInstalled = true;
+        azVersion = 'detected';
       }
     }
   } catch (error) {
@@ -521,10 +527,15 @@ app.get('/api/dependencies', async (req, res) => {
         // Check if file exists and is executable
         await execPromise(`test -x "${azPath}"`);
         // If we get here, the file exists and is executable
-        const { stdout: versionOutput } = await execPromise(`"${azPath}" --version 2>&1 | head -1`);
+        const { stdout: versionOutput } = await execPromise(`"${azPath}" --version 2>&1 | grep azure-cli | head -1`);
         if (versionOutput && versionOutput.includes('azure-cli')) {
           azVersion = versionOutput.match(/azure-cli\s+([0-9.]+)/)?.[1] || 'unknown';
           azInstalled = true;
+          break;
+        } else {
+          // File exists but couldn't get version - still mark as installed
+          azInstalled = true;
+          azVersion = 'detected';
           break;
         }
       } catch (pathError) {
