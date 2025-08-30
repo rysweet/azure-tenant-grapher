@@ -298,6 +298,31 @@ const StatusTab: React.FC = () => {
                 {startingNeo4j ? 'Starting...' : 'Start'}
               </Button>
             )}
+            <Button
+              variant="outlined"
+              startIcon={<BackupIcon />}
+              onClick={() => setBackupDialog(true)}
+              disabled={!neo4jStatus?.running || operationInProgress}
+            >
+              Backup
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<RestoreIcon />}
+              onClick={() => setRestoreDialog(true)}
+              disabled={!neo4jStatus?.running || operationInProgress}
+            >
+              Restore
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<WipeIcon />}
+              onClick={() => setWipeDialog(true)}
+              disabled={!neo4jStatus?.running || operationInProgress}
+            >
+              Wipe
+            </Button>
             <Tooltip title="Refresh Status">
               <IconButton onClick={checkNeo4jStatus} disabled={loadingStats}>
                 <RefreshIcon />
@@ -316,6 +341,15 @@ const StatusTab: React.FC = () => {
           <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
             {success}
           </Alert>
+        )}
+
+        {operationInProgress && (
+          <Box sx={{ mb: 2 }}>
+            <LinearProgress />
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {operationMessage}
+            </Typography>
+          </Box>
         )}
 
         <Grid container spacing={2}>
@@ -540,58 +574,6 @@ const StatusTab: React.FC = () => {
         )}
       </Paper>
 
-      {/* Database Management */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Database Management
-        </Typography>
-        
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<BackupIcon />}
-              onClick={() => setBackupDialog(true)}
-              disabled={!neo4jStatus?.running || operationInProgress}
-            >
-              Backup Database
-            </Button>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<RestoreIcon />}
-              onClick={() => setRestoreDialog(true)}
-              disabled={!neo4jStatus?.running || operationInProgress}
-            >
-              Restore Database
-            </Button>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Button
-              fullWidth
-              variant="outlined"
-              color="error"
-              startIcon={<WipeIcon />}
-              onClick={() => setWipeDialog(true)}
-              disabled={!neo4jStatus?.running || operationInProgress}
-            >
-              Wipe Database
-            </Button>
-          </Grid>
-        </Grid>
-
-        {operationInProgress && (
-          <Box sx={{ mt: 2 }}>
-            <LinearProgress />
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {operationMessage}
-            </Typography>
-          </Box>
-        )}
-      </Paper>
 
       {/* Backup Dialog */}
       <Dialog open={backupDialog} onClose={() => setBackupDialog(false)} maxWidth="sm" fullWidth>
