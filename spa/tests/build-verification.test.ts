@@ -83,7 +83,7 @@ describe('SPA Electron Build Verification', () => {
     // Check that output files are created
     const backendPath = path.join(projectRoot, 'dist', 'backend');
     expect(fs.existsSync(backendPath)).toBe(true);
-    expect(fs.existsSync(path.join(backendPath, 'server.js'))).toBe(true);
+    expect(fs.existsSync(path.join(backendPath, 'src', 'server.js'))).toBe(true);
   }, 30000);
 
   test('npm run build should complete full build successfully', async () => {
