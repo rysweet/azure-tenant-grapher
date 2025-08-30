@@ -173,6 +173,9 @@ Required environment variables (see .env.example):
 - `NEO4J_URI` (default: bolt://localhost:7687)
 - `OPENAI_API_KEY` (for LLM descriptions)
 
+Optional debugging environment variables:
+- `ATG_DEBUG=1` (enables verbose debug output including environment variables)
+
 ## CI/CD Pipeline
 
 GitHub Actions workflow (`ci.yml`):

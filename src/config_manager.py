@@ -56,13 +56,15 @@ class Neo4jConfig:
     )
 
     def __post_init__(self) -> None:
-        print(
-            f"[DEBUG][Neo4jConfig] uri={self.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
-        )
+        if os.environ.get("ATG_DEBUG") == "1":
+            print(
+                f"[DEBUG][Neo4jConfig] uri={self.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
+            )
         """Validate configuration after initialization."""
         if not self.uri or (self.uri.strip() == ""):
             self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7688')}"
-            print(f"[DEBUG][Neo4jConfig] After fallback assignment: uri={self.uri}")
+            if os.environ.get("ATG_DEBUG") == "1":
+                print(f"[DEBUG][Neo4jConfig] After fallback assignment: uri={self.uri}")
         if not self.uri:
             raise ValueError("Neo4j URI is required")
         if not self.user:

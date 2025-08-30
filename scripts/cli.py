@@ -23,15 +23,17 @@ from src.cli_commands import DashboardExitException
 
 
 def print_cli_env_block(context: str = ""):
-    print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
-    for k in [
-        "NEO4J_CONTAINER_NAME",
-        "NEO4J_DATA_VOLUME",
-        "NEO4J_PASSWORD",
-        "NEO4J_PORT",
-        "NEO4J_URI",
-    ]:
-        print(f"[CLI ENV] {k}={os.environ.get(k)}")
+    # Only print environment variables if ATG_DEBUG is set
+    if os.environ.get("ATG_DEBUG") == "1":
+        print(f"[CLI ENV DUMP]{'[' + context + ']' if context else ''}")
+        for k in [
+            "NEO4J_CONTAINER_NAME",
+            "NEO4J_DATA_VOLUME",
+            "NEO4J_PASSWORD",
+            "NEO4J_PORT",
+            "NEO4J_URI",
+        ]:
+            print(f"[CLI ENV] {k}={os.environ.get(k)}")
 
 
 print_cli_env_block("STARTUP")
@@ -142,17 +144,19 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
                 result = asyncio.run(f(*args, **kwargs))
             # If the async command returns a sentinel indicating dashboard exit, exit here
             if result == "__DASHBOARD_EXIT__":
-                print(
-                    "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
-                    file=sys.stderr,
-                )
+                if os.environ.get("ATG_DEBUG") == "1":
+                    print(
+                        "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in async_command. Exiting now.",
+                        file=sys.stderr,
+                    )
                 sys.stderr.flush()
                 sys.exit(0)
             if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-                print(
-                    "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
-                    file=sys.stderr,
-                )
+                if os.environ.get("ATG_DEBUG") == "1":
+                    print(
+                        "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in async_command. Exiting now.",
+                        file=sys.stderr,
+                    )
                 sys.stderr.flush()
                 sys.exit(0)
             return result
@@ -322,7 +326,8 @@ async def build(
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
     """
-    print("[DEBUG] CLI build command called", flush=True)
+    if os.environ.get("ATG_DEBUG") == "1":
+        print("[DEBUG] CLI build command called", flush=True)
     result = await build_command_handler(
         ctx,
         tenant_id,
@@ -339,7 +344,8 @@ async def build(
         rebuild_edges,
         no_aad_import,
     )
-    print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
+    if os.environ.get("ATG_DEBUG") == "1":
+        print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
     return result
 
 
@@ -812,18 +818,20 @@ def main() -> None:
     result = cli()  # type: ignore[reportCallIssue]
     # If the CLI returns a sentinel indicating dashboard exit, exit here
     if result == "__DASHBOARD_EXIT__":
-        print(
-            "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
-            file=sys.stderr,
-        )
+        if os.environ.get("ATG_DEBUG") == "1":
+            print(
+                "[DEBUG] EXIT SENTINEL '__DASHBOARD_EXIT__' detected in main entrypoint. Exiting now.",
+                file=sys.stderr,
+            )
         sys.stderr.flush()
         sys.exit(0)
     # Explicitly exit cleanly after build --no-dashboard sentinel
     if result == "__NO_DASHBOARD_BUILD_COMPLETE__":
-        print(
-            "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
-            file=sys.stderr,
-        )
+        if os.environ.get("ATG_DEBUG") == "1":
+            print(
+                "[DEBUG] EXIT SENTINEL '__NO_DASHBOARD_BUILD_COMPLETE__' detected in main entrypoint. Exiting now.",
+                file=sys.stderr,
+            )
         sys.stderr.flush()
         sys.exit(0)
     # For any other truthy result, exit as before (legacy fallback)
