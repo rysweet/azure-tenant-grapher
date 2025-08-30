@@ -7,23 +7,14 @@ import {
   Typography,
   Alert,
   Grid,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
   FormControlLabel,
   Switch,
   IconButton,
 } from '@mui/material';
 import {
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Refresh as RefreshIcon,
   Save as SaveIcon,
   Visibility as ShowIcon,
   VisibilityOff as HideIcon,
-  LocalHospital as DoctorIcon,
   AppRegistration as AppRegIcon,
 } from '@mui/icons-material';
 
@@ -33,12 +24,6 @@ interface ConfigItem {
   isSecret?: boolean;
 }
 
-interface DependencyStatus {
-  name: string;
-  installed: boolean;
-  version?: string;
-  required?: string;
-}
 
 const ConfigTab: React.FC = () => {
   const [config, setConfig] = useState<ConfigItem[]>([
@@ -49,15 +34,12 @@ const ConfigTab: React.FC = () => {
     { key: 'NEO4J_PASSWORD', value: '', isSecret: true },
     { key: 'OPENAI_API_KEY', value: '', isSecret: true },
   ]);
-  const [dependencies, setDependencies] = useState<DependencyStatus[]>([]);
   const [showSecrets, setShowSecrets] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     loadConfig();
-    checkDependencies();
   }, []);
 
   const loadConfig = async () => {
@@ -74,83 +56,6 @@ const ConfigTab: React.FC = () => {
     }
   };
 
-  const checkDependencies = async () => {
-    setIsChecking(true);
-    try {
-      const result = await window.electronAPI.cli.execute('doctor', []);
-      
-      // Parse doctor output to get dependency status
-      const dependencies: DependencyStatus[] = [];
-      
-      if (result && result.output) {
-        const lines = result.output.split('\n');
-        
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.includes("Checking for") && line.includes("CLI...")) {
-            // Extract tool name from "Checking for 'terraform' CLI..." format
-            const toolMatch = line.match(/Checking for '([^']+)' CLI\.\.\./);
-            if (toolMatch) {
-              const toolName = toolMatch[1];
-              // Look for the next line which should contain the status
-              const nextLineIndex = i + 1;
-              if (nextLineIndex < lines.length) {
-                const statusLine = lines[nextLineIndex];
-                const isInstalled = statusLine.includes('✅') && statusLine.includes('is installed');
-                
-                let displayName = toolName;
-                let required = '>=2.0';
-                
-                // Map tool names to user-friendly display names and requirements
-                switch (toolName) {
-                  case 'az':
-                    displayName = 'Azure CLI';
-                    required = '>=2.0';
-                    break;
-                  case 'terraform':
-                    displayName = 'Terraform';
-                    required = '>=1.0';
-                    break;
-                  case 'bicep':
-                    displayName = 'Bicep';
-                    required = '>=0.4';
-                    break;
-                }
-                
-                dependencies.push({
-                  name: displayName,
-                  installed: isInstalled,
-                  version: isInstalled ? 'installed' : undefined,
-                  required,
-                });
-              }
-            }
-          }
-        }
-      }
-      
-      // Add additional system dependencies that aren't checked by doctor command
-      dependencies.push(
-        { name: 'Python', installed: true, version: '3.11+', required: '>=3.9' },
-        { name: 'Docker', installed: true, version: 'installed', required: 'any' }
-      );
-      
-      setDependencies(dependencies);
-      setMessage({ type: 'success', text: 'Dependency check complete' });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-      // Fallback to basic dependency list if parsing fails
-      setDependencies([
-        { name: 'Python', installed: true, version: '3.11+', required: '>=3.9' },
-        { name: 'Docker', installed: true, version: 'installed', required: 'any' },
-        { name: 'Azure CLI', installed: false, required: '>=2.0' },
-        { name: 'Terraform', installed: false, required: '>=1.0' },
-        { name: 'Bicep', installed: false, required: '>=0.4' },
-      ]);
-    } finally {
-      setIsChecking(false);
-    }
-  };
 
   const handleConfigChange = (index: number, value: string) => {
     setConfig((prev) => {
@@ -241,7 +146,7 @@ const ConfigTab: React.FC = () => {
           </Paper>
         </Grid>
         
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Environment Variables
@@ -304,62 +209,6 @@ const ConfigTab: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
-                System Dependencies
-              </Typography>
-              <IconButton onClick={checkDependencies} disabled={isChecking}>
-                <RefreshIcon />
-              </IconButton>
-            </Box>
-
-            <List>
-              {dependencies.map((dep) => (
-                <React.Fragment key={dep.name}>
-                  <ListItem>
-                    <ListItemIcon>
-                      {dep.installed ? (
-                        <CheckIcon color="success" />
-                      ) : (
-                        <ErrorIcon color="error" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={dep.name}
-                      secondary={
-                        dep.installed
-                          ? `Version: ${dep.version} (Required: ${dep.required})`
-                          : `Not installed (Required: ${dep.required})`
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                </React.Fragment>
-              ))}
-            </List>
-
-            {dependencies.some((d) => !d.installed) && (
-              <Alert 
-                severity="warning" 
-                sx={{ mt: 2 }}
-                action={
-                  <Button
-                    color="inherit"
-                    size="small"
-                    startIcon={<DoctorIcon />}
-                    onClick={() => window.electronAPI.cli.execute('doctor', [])}
-                  >
-                    Run Doctor
-                  </Button>
-                }
-              >
-                Some dependencies are missing. Run 'atg doctor' to install them.
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
       </Grid>
     </Box>
   );
