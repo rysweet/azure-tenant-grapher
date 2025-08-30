@@ -67,15 +67,17 @@ class Neo4jContainerManager:
     - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
     """
 
-    def __init__(self, compose_file: str = "docker-compose.yml") -> None:
+    def __init__(self, compose_file: str = "docker-compose.yml", debug: bool = False) -> None:
         """
         Initialize the container manager.
 
         Args:
             compose_file: Path to docker-compose.yml file
+            debug: Enable debug output
         """
-        # Only show debug env output if ATG_DEBUG is set
-        if os.environ.get("ATG_DEBUG") == "1":
+        self.debug = debug
+        # Only show debug env output if debug is enabled
+        if self.debug:
             print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
             print(
                 f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
@@ -123,7 +125,7 @@ class Neo4jContainerManager:
             self.neo4j_uri = uri_env
         else:
             self.neo4j_uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
-        if os.environ.get("ATG_DEBUG") == "1":
+        if self.debug:
             print(
                 f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
             )
@@ -314,7 +316,7 @@ class Neo4jContainerManager:
             logger.info(event="Starting Neo4j container...")
 
             # Start the container
-            if os.environ.get("ATG_DEBUG") == "1":
+            if self.debug:
                 print(
                     f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
                 )
@@ -364,7 +366,7 @@ class Neo4jContainerManager:
 
         while time.time() - start_time < timeout:
             try:
-                if os.environ.get("ATG_DEBUG") == "1":
+                if self.debug:
                     print(
                         f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
                     )
@@ -458,7 +460,7 @@ class Neo4jContainerManager:
             logger.exception(event=f"Failed to get container logs: {e}")
             return None
 
-    def setup_neo4j(self) -> bool:
+    def setup_neo4j(self, debug: bool = False) -> bool:
         """
         Complete Neo4j setup: start container and wait for readiness.
 
@@ -693,7 +695,7 @@ class Neo4jContainerManager:
             )
             for c in containers:
                 try:
-                    if os.environ.get("ATG_DEBUG") == "1":
+                    if self.debug:
                         print(
                             f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
                         )
@@ -711,7 +713,7 @@ class Neo4jContainerManager:
             )
             for v in volumes:
                 try:
-                    if os.environ.get("ATG_DEBUG") == "1":
+                    if self.debug:
                         print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
