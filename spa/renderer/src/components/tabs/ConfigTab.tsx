@@ -232,7 +232,7 @@ const ConfigTab: React.FC = () => {
             
             {(!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value || 
               !config.find(c => c.key === 'AZURE_CLIENT_SECRET')?.value) && (
-              <Alert severity="info" sx={{ mt: 2 }}>
+              <Alert severity="error" sx={{ mt: 2 }}>
                 Azure AD credentials not configured. Click "Create App Registration" to set up authentication.
               </Alert>
             )}
