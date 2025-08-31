@@ -155,7 +155,7 @@ const StatusTab: React.FC = () => {
   const checkOpenAIConnection = async () => {
     setOpenAIStatus(prev => ({ ...prev, loading: true }));
     try {
-      const response = await axios.get('http://localhost:3001/api/test/openai');
+      const response = await axios.get('http://localhost:3001/api/test/azure-openai');
       setOpenAIStatus({ connected: response.data.success, error: response.data.error, loading: false });
     } catch (err: any) {
       setOpenAIStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
@@ -652,7 +652,7 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
           
-          {/* OpenAI Connection */}
+          {/* Azure OpenAI Connection */}
           <Grid item xs={6}>
             <Card variant="outlined" sx={{ 
               backgroundColor: openAIStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
@@ -662,7 +662,7 @@ const StatusTab: React.FC = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box>
                     <Typography color="textSecondary" variant="caption">
-                      OpenAI
+                      Azure OpenAI
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                       {openAIStatus.loading ? (
@@ -685,7 +685,7 @@ const StatusTab: React.FC = () => {
                       </Typography>
                     )}
                   </Box>
-                  <Tooltip title="Test OpenAI Connection">
+                  <Tooltip title="Test Azure OpenAI Connection">
                     <IconButton 
                       onClick={checkOpenAIConnection} 
                       disabled={openAIStatus.loading}

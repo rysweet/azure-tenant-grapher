@@ -31,9 +31,16 @@ const ConfigTab: React.FC = () => {
     { key: 'AZURE_TENANT_ID', value: '', isSecret: false },
     { key: 'AZURE_CLIENT_ID', value: '', isSecret: false },
     { key: 'AZURE_CLIENT_SECRET', value: '', isSecret: true },
+    { key: 'NEO4J_PORT', value: '7687', isSecret: false },
     { key: 'NEO4J_URI', value: 'bolt://localhost:7687', isSecret: false },
+    { key: 'NEO4J_USER', value: 'neo4j', isSecret: false },
     { key: 'NEO4J_PASSWORD', value: '', isSecret: true },
-    { key: 'OPENAI_API_KEY', value: '', isSecret: true },
+    { key: 'LOG_LEVEL', value: 'INFO', isSecret: false },
+    { key: 'AZURE_OPENAI_ENDPOINT', value: '', isSecret: false },
+    { key: 'AZURE_OPENAI_KEY', value: '', isSecret: true },
+    { key: 'AZURE_OPENAI_API_VERSION', value: '2024-02-01', isSecret: false },
+    { key: 'AZURE_OPENAI_MODEL_CHAT', value: '', isSecret: false },
+    { key: 'AZURE_OPENAI_MODEL_REASONING', value: '', isSecret: false },
   ]);
   const [showSecrets, setShowSecrets] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -295,8 +302,8 @@ const ConfigTab: React.FC = () => {
               <Button size="small" onClick={() => testConnection('azure')}>
                 Test Azure
               </Button>
-              <Button size="small" onClick={() => testConnection('openai')}>
-                Test OpenAI
+              <Button size="small" onClick={() => testConnection('azure-openai')}>
+                Test Azure OpenAI
               </Button>
             </Box>
           </Paper>

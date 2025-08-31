@@ -389,8 +389,9 @@ app.post('/api/neo4j/stop', async (req, res) => {
  */
 app.get('/api/mcp/status', async (req, res) => {
   try {
-    // Check if MCP pidfile exists
-    const mcpPidfile = path.join(process.cwd(), 'outputs', 'mcp_server.pid');
+    // Check if MCP pidfile exists - use the project root path
+    const projectRoot = path.join(__dirname, '../../..');
+    const mcpPidfile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
     
     if (fs.existsSync(mcpPidfile)) {
       const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
@@ -445,9 +446,16 @@ app.get('/api/config/env', (req, res) => {
     AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || envConfig.AZURE_TENANT_ID || '',
     AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || envConfig.AZURE_CLIENT_ID || '',
     AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || envConfig.AZURE_CLIENT_SECRET || '',
+    NEO4J_PORT: process.env.NEO4J_PORT || envConfig.NEO4J_PORT || '7687',
     NEO4J_URI: process.env.NEO4J_URI || envConfig.NEO4J_URI || 'bolt://localhost:7687',
+    NEO4J_USER: process.env.NEO4J_USER || envConfig.NEO4J_USER || 'neo4j',
     NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || envConfig.NEO4J_PASSWORD || '',
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY || '',
+    LOG_LEVEL: process.env.LOG_LEVEL || envConfig.LOG_LEVEL || 'INFO',
+    AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT || envConfig.AZURE_OPENAI_ENDPOINT || '',
+    AZURE_OPENAI_KEY: process.env.AZURE_OPENAI_KEY || envConfig.AZURE_OPENAI_KEY || '',
+    AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION || envConfig.AZURE_OPENAI_API_VERSION || '2024-02-01',
+    AZURE_OPENAI_MODEL_CHAT: process.env.AZURE_OPENAI_MODEL_CHAT || envConfig.AZURE_OPENAI_MODEL_CHAT || '',
+    AZURE_OPENAI_MODEL_REASONING: process.env.AZURE_OPENAI_MODEL_REASONING || envConfig.AZURE_OPENAI_MODEL_REASONING || '',
     RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || envConfig.RESOURCE_LIMIT || '',
   };
   
@@ -664,37 +672,40 @@ app.get('/api/test/azure', async (req, res) => {
 });
 
 /**
- * Test OpenAI connection
+ * Test Azure OpenAI connection
  */
-app.get('/api/test/openai', async (req, res) => {
+app.get('/api/test/azure-openai', async (req, res) => {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+    const apiKey = process.env.AZURE_OPENAI_KEY;
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-01';
     
-    if (!apiKey) {
-      return res.json({ success: false, error: 'OpenAI API key not configured' });
+    if (!endpoint || !apiKey) {
+      return res.json({ success: false, error: 'Azure OpenAI not configured' });
     }
     
-    // Test the API key by making a simple request to OpenAI
+    // Test the API key by making a simple request to Azure OpenAI
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
+      const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'api-key': apiKey,
         },
       });
       
       if (response.ok) {
         return res.json({ success: true });
       } else if (response.status === 401) {
-        return res.json({ success: false, error: 'Invalid OpenAI API key' });
+        return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
       } else {
-        return res.json({ success: false, error: `OpenAI API returned status ${response.status}` });
+        return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
       }
     } catch (error: any) {
-      return res.json({ success: false, error: 'Failed to connect to OpenAI API' });
+      return res.json({ success: false, error: 'Failed to connect to Azure OpenAI API' });
     }
   } catch (error: any) {
-    logger.error('OpenAI connection test failed:', error);
+    logger.error('Azure OpenAI connection test failed:', error);
     res.json({ success: false, error: error.message });
   }
 });

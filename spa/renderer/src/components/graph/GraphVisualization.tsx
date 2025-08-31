@@ -1206,7 +1206,7 @@ export const GraphVisualization: React.FC = () => {
           sx={{ 
             width: '100%', 
             height: '100%',
-            backgroundColor: '#f5f5f5'
+            backgroundColor: '#000000'
           }}
         />
       </Paper>
