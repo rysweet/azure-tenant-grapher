@@ -83,6 +83,7 @@ const NODE_COLORS: Record<string, string> = {
   Subscription: '#4ECDC4',
   ResourceGroup: '#45B7D1',
   Resource: '#96CEB4', // Fallback for generic resources
+  Region: '#FFA500', // Orange for regions
   
   // Compute resources
   VirtualMachines: '#FFEAA7',
@@ -98,6 +99,7 @@ const NODE_COLORS: Record<string, string> = {
   // Network resources
   VirtualNetworks: '#6C5CE7',
   VirtualNetwork: '#6C5CE7', // Alternative naming
+  PrivateEndpoint: '#FF69B4', // Hot pink for private endpoints
   NetworkInterfaces: '#A29BFE',
   NetworkInterface: '#A29BFE', // Alternative naming
   NetworkSecurityGroups: '#9966CC',
@@ -1105,38 +1107,74 @@ export const GraphVisualization: React.FC = () => {
         {/* Node Types */}
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Nodes</Typography>
         <Box sx={{ mb: 1, mt: 0.5 }}>
-          {Object.entries(NODE_COLORS).slice(0, 8).map(([type, color]) => (
-            <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
-              <Box sx={{ 
-                width: 10, 
-                height: 10, 
-                borderRadius: '50%',
-                backgroundColor: color,
-                flexShrink: 0
-              }} />
-              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
-                {type.replace(/_/g, ' ')}
-              </Typography>
-            </Box>
-          ))}
+          {Object.entries(NODE_COLORS).slice(0, 10).map(([type, color]) => {
+            const isVisible = visibleNodeTypes.has(type);
+            return (
+              <Box 
+                key={type} 
+                onClick={() => toggleNodeType(type)}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5, 
+                  mb: 0.25,
+                  cursor: 'pointer',
+                  opacity: isVisible ? 1 : 0.4,
+                  '&:hover': {
+                    opacity: 0.8
+                  }
+                }}
+              >
+                <Box sx={{ 
+                  width: 10, 
+                  height: 10, 
+                  borderRadius: '50%',
+                  backgroundColor: color,
+                  flexShrink: 0,
+                  border: isVisible ? '1px solid #4caf50' : 'none'
+                }} />
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isVisible ? '#4caf50' : 'rgba(255,255,255,0.8)' }}>
+                  {type.replace(/_/g, ' ')}
+                </Typography>
+              </Box>
+            );
+          })
         </Box>
         
         {/* Edge Types */}
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', mt: 1 }}>Edges</Typography>
         <Box sx={{ mt: 0.5 }}>
-          {Object.entries(EDGE_STYLES).slice(0, 6).map(([type, style]) => (
-            <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
-              <Box sx={{ 
-                width: 16, 
-                height: 2, 
-                backgroundColor: style.color || '#888',
-                flexShrink: 0
-              }} />
-              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
-                {type.replace(/_/g, ' ')}
-              </Typography>
-            </Box>
-          ))}
+          {Object.entries(EDGE_STYLES).slice(0, 8).map(([type, style]) => {
+            const isVisible = visibleEdgeTypes.has(type);
+            return (
+              <Box 
+                key={type} 
+                onClick={() => toggleEdgeType(type)}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5, 
+                  mb: 0.25,
+                  cursor: 'pointer',
+                  opacity: isVisible ? 1 : 0.4,
+                  '&:hover': {
+                    opacity: 0.8
+                  }
+                }}
+              >
+                <Box sx={{ 
+                  width: 16, 
+                  height: 2, 
+                  backgroundColor: style.color || '#888',
+                  flexShrink: 0,
+                  border: isVisible ? '1px solid #4caf50' : 'none'
+                }} />
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isVisible ? '#4caf50' : 'rgba(255,255,255,0.8)' }}>
+                  {type.replace(/_/g, ' ')}
+                </Typography>
+              </Box>
+            );
+          })}
         </Box>
       </Paper>
       
