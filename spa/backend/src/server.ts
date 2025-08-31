@@ -648,22 +648,48 @@ app.get('/api/test/azure', async (req, res) => {
       return res.json({ success: false, error: 'Azure CLI not installed' });
     }
     
-    // Check if we have Azure credentials configured
-    const tenantId = process.env.AZURE_TENANT_ID;
-    const clientId = process.env.AZURE_CLIENT_ID;
-    const clientSecret = process.env.AZURE_CLIENT_SECRET;
-    
-    if (!tenantId || !clientId || !clientSecret) {
-      return res.json({ success: false, error: 'Azure credentials not configured' });
-    }
-    
-    // Try to authenticate with Azure
+    // Check current Azure authentication status
     try {
-      await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
-      await execPromise('az account show --only-show-errors 2>&1');
-      return res.json({ success: true });
+      const { stdout } = await execPromise('az account show --only-show-errors 2>&1');
+      const account = JSON.parse(stdout);
+      
+      // Successfully got account info, we're authenticated
+      return res.json({ 
+        success: true, 
+        accountInfo: {
+          name: account.name,
+          id: account.id,
+          tenantId: account.tenantId,
+          user: account.user?.name || account.user?.type || 'Service Principal'
+        }
+      });
     } catch (error: any) {
-      return res.json({ success: false, error: 'Failed to authenticate with Azure' });
+      // Not authenticated, check if we have service principal credentials to try
+      const tenantId = process.env.AZURE_TENANT_ID;
+      const clientId = process.env.AZURE_CLIENT_ID;
+      const clientSecret = process.env.AZURE_CLIENT_SECRET;
+      
+      if (tenantId && clientId && clientSecret) {
+        // Try to authenticate with service principal
+        try {
+          await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
+          const { stdout } = await execPromise('az account show --only-show-errors 2>&1');
+          const account = JSON.parse(stdout);
+          return res.json({ 
+            success: true,
+            accountInfo: {
+              name: account.name,
+              id: account.id,
+              tenantId: account.tenantId,
+              user: 'Service Principal'
+            }
+          });
+        } catch (loginError: any) {
+          return res.json({ success: false, error: 'Failed to authenticate with service principal' });
+        }
+      } else {
+        return res.json({ success: false, error: 'Not authenticated with Azure CLI' });
+      }
     }
   } catch (error: any) {
     logger.error('Azure connection test failed:', error);
@@ -679,9 +705,25 @@ app.get('/api/test/azure-openai', async (req, res) => {
     const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
     const apiKey = process.env.AZURE_OPENAI_KEY;
     const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-01';
+    const modelChat = process.env.AZURE_OPENAI_MODEL_CHAT;
+    const modelReasoning = process.env.AZURE_OPENAI_MODEL_REASONING;
+    
+    logger.debug('Azure OpenAI config check:', {
+      endpoint: endpoint ? 'SET' : 'NOT SET',
+      apiKey: apiKey ? 'SET' : 'NOT SET',
+      apiVersion,
+      modelChat: modelChat || 'NOT SET',
+      modelReasoning: modelReasoning || 'NOT SET'
+    });
     
     if (!endpoint || !apiKey) {
-      return res.json({ success: false, error: 'Azure OpenAI not configured' });
+      const missing = [];
+      if (!endpoint) missing.push('AZURE_OPENAI_ENDPOINT');
+      if (!apiKey) missing.push('AZURE_OPENAI_KEY');
+      return res.json({ 
+        success: false, 
+        error: `Azure OpenAI not configured. Missing: ${missing.join(', ')}`
+      });
     }
     
     // Test the API key by making a simple request to Azure OpenAI
@@ -695,14 +737,24 @@ app.get('/api/test/azure-openai', async (req, res) => {
       });
       
       if (response.ok) {
-        return res.json({ success: true });
+        // Extract just the host from the endpoint for display
+        const endpointHost = new URL(endpoint).host;
+        return res.json({ 
+          success: true,
+          endpoint: endpointHost,
+          models: {
+            chat: modelChat || 'Not configured',
+            reasoning: modelReasoning || 'Not configured'
+          }
+        });
       } else if (response.status === 401) {
         return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
       } else {
         return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
       }
     } catch (error: any) {
-      return res.json({ success: false, error: 'Failed to connect to Azure OpenAI API' });
+      logger.error('Azure OpenAI API call failed:', error);
+      return res.json({ success: false, error: `Failed to connect to Azure OpenAI: ${error.message}` });
     }
   } catch (error: any) {
     logger.error('Azure OpenAI connection test failed:', error);

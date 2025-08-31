@@ -89,8 +89,8 @@ const StatusTab: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [isCheckingDeps, setIsCheckingDeps] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
-  const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean }>({ connected: false, loading: true });
-  const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean }>({ connected: false, loading: true });
+  const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean; accountInfo?: any }>({ connected: false, loading: true });
+  const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean; endpoint?: string; models?: any }>({ connected: false, loading: true });
 
   useEffect(() => {
     // Initial load
@@ -147,7 +147,12 @@ const StatusTab: React.FC = () => {
     setAzureStatus(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.get('http://localhost:3001/api/test/azure');
-      setAzureStatus({ connected: response.data.success, error: response.data.error, loading: false });
+      setAzureStatus({ 
+        connected: response.data.success, 
+        error: response.data.error, 
+        loading: false,
+        accountInfo: response.data.accountInfo
+      });
     } catch (err: any) {
       setAzureStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
     }
@@ -157,7 +162,13 @@ const StatusTab: React.FC = () => {
     setOpenAIStatus(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.get('http://localhost:3001/api/test/azure-openai');
-      setOpenAIStatus({ connected: response.data.success, error: response.data.error, loading: false });
+      setOpenAIStatus({ 
+        connected: response.data.success, 
+        error: response.data.error, 
+        loading: false,
+        endpoint: response.data.endpoint,
+        models: response.data.models
+      });
     } catch (err: any) {
       setOpenAIStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
     }
@@ -637,6 +648,16 @@ const StatusTab: React.FC = () => {
                         {azureStatus.error}
                       </Typography>
                     )}
+                    {azureStatus.connected && azureStatus.accountInfo && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', display: 'block', color: 'text.secondary' }}>
+                          {azureStatus.accountInfo.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontSize: '0.6rem', display: 'block', color: 'text.disabled' }}>
+                          {azureStatus.accountInfo.user}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Tooltip title="Test Azure Connection">
                     <IconButton 
@@ -681,6 +702,23 @@ const StatusTab: React.FC = () => {
                       )}
                     </Box>
                     {openAIStatus.error && (
+                      <Typography variant="caption" color="error" sx={{ fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
+                        {openAIStatus.error}
+                      </Typography>
+                    )}
+                    {openAIStatus.connected && openAIStatus.endpoint && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', display: 'block', color: 'text.secondary' }}>
+                          {openAIStatus.endpoint}
+                        </Typography>
+                        {openAIStatus.models && (
+                          <Typography variant="caption" sx={{ fontSize: '0.6rem', display: 'block', color: 'text.disabled' }}>
+                            Chat: {openAIStatus.models.chat}
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                    {!openAIStatus.connected && !openAIStatus.error && (
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
                         Optional - Used for enhanced descriptions
                       </Typography>
