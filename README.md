@@ -14,7 +14,6 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
   - [Create & Explore Your Graph](#create--explore-your-graph)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Output Convention](#output-convention)
   - [Build & Rebuild Graph](#build--rebuild-graph)
   - [Agent Mode](#agent-mode)
   - [Threat Modeling](#threat-modeling)
@@ -39,7 +38,6 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - **Extensible relationship engine** with modular rules (Tag, Region, CreatedBy, etc.).
 - **Interactive 3D visualization** with filtering, search, and ResourceGroup labels.
 - **CLI dashboard** with live progress, logs, and configuration.
-- **Electron SPA GUI** providing a desktop application interface with all CLI functionality.
 - **AI-powered documentation** and anonymized tenant specification generation.
 - **Infrastructure-as-Code (IaC) generation** supporting Bicep, ARM, and Terraform, plus transformation rules and deployment scripts.
 - **Agent Mode (MCP/AutoGen)** for natural-language queries over your graph.
@@ -57,9 +55,8 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - [uv](https://docs.astral.sh/uv/) (recommended for dependency management)
 - Docker & Docker Compose (for Neo4j)
 - Azure CLI & Bicep CLI (for authentication and IaC deployment)
-- Node.js & npm (for the Electron GUI app)
 
-### Option 1: Desktop GUI Application (Recommended)
+### Create & Explore Your Graph
 
 ```bash
 # 1. Install dependencies
@@ -74,58 +71,12 @@ cp .env.example .env
 # 4. Authenticate with Azure
 az login --tenant <your-tenant-id>
 
-# 5. Launch the desktop GUI application
-atg start
-# The GUI will open with full access to all features:
-# - Build graphs with visual progress tracking
-# - Visualize in an interactive graph viewer
-# - Generate IaC templates
-# - Run threat modeling
-# - And much more!
-```
-
-### Option 2: CLI with Dashboard
-
-```bash
-# 1-4. Same setup as above
-
-# 5. Build the graph with the interactive CLI dashboard
+# 5. Build the graph with the interactive dashboard
 azure-tenant-grapher build --tenant-id <your-tenant-id>
-# (Pro tip: Press 'g' in the dashboard to launch the GUI interface!)
 
 # 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
 ```
-
-## Electron SPA GUI
-
-For a desktop application experience, launch the Electron-based GUI that provides access to all CLI functionality through an intuitive interface:
-
-```bash
-# Launch the desktop GUI application
-atg start
-
-# Alternative command names
-azure-tenant-grapher start
-azure-graph start
-
-# Stop the GUI when done
-atg stop
-```
-
-The GUI provides:
-- **Tabbed Interface**: Separate tabs for Build, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, and more
-- **Real-time Logs**: Live streaming of operation logs and progress
-- **Visual Configuration**: GUI for environment variables and settings
-- **Cross-Platform**: Works on Windows, macOS, and Linux
-
-### Quick Launch from CLI Dashboard
-When running CLI operations with the dashboard (e.g., `atg build`), you can press **'g'** to instantly launch the GUI without interrupting your current operation. This provides:
-- **Seamless workflow**: Continue monitoring CLI progress while accessing GUI features
-- **No terminal switching**: Launch GUI directly from the dashboard
-- **Error handling**: Proper feedback if GUI is already running or encounters issues
-
-For detailed GUI documentation, see [`spa/README.md`](spa/README.md).
 
 ## Installation
 
@@ -172,9 +123,6 @@ azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
 
 # Rebuild—all relationships will be re-evaluated
 azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
-
-# Example: generate tenant specification to outputs/ directory (default)
-azure-tenant-grapher generate-spec --tenant-id <your-tenant-id> --output outputs/my-tenant-spec.yaml
 ```
 
 ### Azure AD Identity Import
@@ -229,12 +177,12 @@ MCP Agent is ready
 
 ### Generate Tenant Specification
 
-Generate an anonymized tenant specification (YAML/JSON) for documentation, sharing, or further processing. By default, generated specifications and most command outputs are written to the `outputs/` directory.
+Generate an anonymized tenant specification (YAML/JSON) for documentation, sharing, or further processing.
 
 ```bash
 azure-tenant-grapher generate-spec \
   --tenant-id <your-tenant-id> \
-  --output outputs/my-tenant-spec.yaml
+  --output ./my-tenant-spec.yaml
 ```
 
 ### MCP Server
@@ -249,17 +197,17 @@ uv run azure-tenant-grapher mcp-server
 ### Generate & Deploy IaC
 
 ```bash
-# Generate Bicep for a subset of resources (writes to outputs/ by default)
+# Generate Bicep for a subset of resources
 azure-tenant-grapher generate-iac \
   --format bicep \
   --subset-filter "types=Microsoft.Storage/*" \
   --rules-file ./config/replica-rules.yaml \
   --dest-rg "replica-rg" \
   --location "East US" \
-  --output outputs/my-deployment
+  --output ./my-deployment
 
 # Deploy the generated templates
-cd outputs/my-deployment
+cd my-deployment
 ./deploy.sh
 ```
 
@@ -270,13 +218,13 @@ See [./src/threat_model_agent/](./src/threat_model_agent/)
 Generate a Data Flow Diagram, enumerate threats, and produce a Markdown report for your tenant.
 
 ```bash
-azure-tenant-grapher threat-model --spec-path outputs/my-tenant-spec.md --summaries-path outputs/summaries.json
+azure-tenant-grapher threat-model --spec-path ./my-tenant-spec.md --summaries-path ./summaries.json
 ```
 
 ### Database Backup
 
 ```bash
-azure-tenant-grapher backup-db outputs/my-neo4j-backup.dump
+azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 ```
 
 ### IaC Subset & Rules System
@@ -323,17 +271,6 @@ All test output artifacts are excluded from version control via `.gitignore`.
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 - [3D Visualization](docs/design/iac_subset_bicep.md)
 - [Testing](tests/)
-
-## Output Convention
-
-Unless you specify a custom output path (via CLI argument or config), all outputs—including generated specifications, Infrastructure-as-Code templates, and database backups—are written to the `outputs/` directory at the repository root. This ensures all command results and artifacts are organized and easy to locate.
-
-**Examples:**
-- `azure-tenant-grapher generate-spec ... --output outputs/my-tenant-spec.yaml`
-- `azure-tenant-grapher generate-iac ... --output outputs/my-deployment`
-- `azure-tenant-grapher backup-db outputs/my-neo4j-backup.dump`
-
-You can override this default by setting a different output path as needed.
 
 ## Contributing
 

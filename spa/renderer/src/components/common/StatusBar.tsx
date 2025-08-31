@@ -74,18 +74,29 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
       }
     };
 
-    const checkMcpStatus = async () => {
+    const checkMcpStatus = async (retryCount = 0) => {
       try {
         const response = await axios.get('http://localhost:3001/api/mcp/status');
         setMcpStatus(response.data.running ? 'connected' : 'disconnected');
+        
+        // If not running and we haven't retried much, try again
+        if (!response.data.running && retryCount < 3) {
+          setTimeout(() => checkMcpStatus(retryCount + 1), 2000);
+        }
       } catch (error) {
         setMcpStatus('disconnected');
+        // Retry on error too
+        if (retryCount < 3) {
+          setTimeout(() => checkMcpStatus(retryCount + 1), 2000);
+        }
       }
     };
 
     fetchActiveProcesses();
     checkNeo4jStatus();
-    checkMcpStatus();
+    
+    // Delay initial MCP check to give it time to start
+    setTimeout(() => checkMcpStatus(), 2000);
     
     const interval = setInterval(() => {
       fetchActiveProcesses();

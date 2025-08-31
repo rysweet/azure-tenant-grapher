@@ -71,9 +71,11 @@ async function createWindow() {
 }
 
 // Start the MCP server
-function startMcpServer() {
+async function startMcpServer() {
   const pythonPath = process.env.PYTHON_PATH || 'python3';
   const projectRoot = path.join(__dirname, '../../..');
+  
+  console.log('Starting MCP server with:', pythonPath, 'from', projectRoot);
   
   // Start MCP server using python -m src.mcp_server
   mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_server', '--foreground'], {
@@ -84,17 +86,22 @@ function startMcpServer() {
     }
   });
 
-  if (!mcpServerProcess) {
+  if (!mcpServerProcess || !mcpServerProcess.pid) {
     console.error('Failed to spawn MCP server process');
     return;
   }
 
   console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
   
-  // Write PID file for status tracking
+  // Write PID file for status tracking - ensure directory exists first
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
-  fs.mkdirSync(path.dirname(pidFile), { recursive: true });
-  fs.writeFileSync(pidFile, mcpServerProcess.pid?.toString() || '');
+  try {
+    fs.mkdirSync(path.dirname(pidFile), { recursive: true });
+    fs.writeFileSync(pidFile, mcpServerProcess.pid.toString());
+    console.log(`MCP PID file written to: ${pidFile}`);
+  } catch (err) {
+    console.error('Failed to write MCP PID file:', err);
+  }
 
   mcpServerProcess.stdout?.on('data', (data) => {
     console.log(`MCP Server: ${data}`);
@@ -106,6 +113,11 @@ function startMcpServer() {
 
   mcpServerProcess.on('error', (error) => {
     console.error('Failed to start MCP server:', error);
+    // Clean up PID file on error
+    const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
+    }
   });
 
   mcpServerProcess.on('close', (code) => {
@@ -196,7 +208,10 @@ app.whenReady().then(async () => {
   startBackendServer();
   
   // Start MCP server
-  startMcpServer();
+  await startMcpServer();
+  
+  // Add a small delay to ensure MCP server is ready
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
   // Initialize process manager
   processManager = new ProcessManager();

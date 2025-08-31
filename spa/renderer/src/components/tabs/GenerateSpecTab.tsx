@@ -25,7 +25,7 @@ interface TenantInfo {
 const GenerateSpecTab: React.FC = () => {
   const { state, dispatch } = useApp();
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
-  const [outputFormat, setOutputFormat] = useState<'json' | 'yaml'>('json');
+  const [outputFormat, setOutputFormat] = useState<'json' | 'yaml' | 'markdown'>('json');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSpec, setGeneratedSpec] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +41,7 @@ const GenerateSpecTab: React.FC = () => {
     setLoadingTenants(true);
     try {
       const response = await axios.get('http://localhost:3001/api/neo4j/tenants');
+      console.log('Fetched tenants response:', response.data);
       setTenants(response.data.tenants || []);
       // If there's only one tenant, auto-select it
       if (response.data.tenants?.length === 1 && !tenantId) {
@@ -132,7 +133,7 @@ const GenerateSpecTab: React.FC = () => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 3, mb: 2 }}>
         <Typography variant="h5" gutterBottom>
-          Generate Tenant Specification From Graph
+          Export Specification for Tenant from Graph
         </Typography>
         
         {error && (
@@ -143,26 +144,33 @@ const GenerateSpecTab: React.FC = () => {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Tenant ID</InputLabel>
-              <Select
+            {tenants.length > 0 ? (
+              <FormControl fullWidth required>
+                <InputLabel>Tenant</InputLabel>
+                <Select
+                  value={tenantId}
+                  onChange={(e) => setTenantId(e.target.value)}
+                  disabled={isGenerating || loadingTenants}
+                  label="Tenant"
+                >
+                  {tenants.map((tenant) => (
+                    <MenuItem key={tenant.id} value={tenant.id}>
+                      {tenant.name || tenant.id}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              <TextField
+                fullWidth
+                label="Tenant ID"
                 value={tenantId}
                 onChange={(e) => setTenantId(e.target.value)}
-                disabled={isGenerating || loadingTenants}
-                label="Tenant ID"
-              >
-                {tenants.length === 0 && !loadingTenants && (
-                  <MenuItem value="" disabled>
-                    <em>No tenants found in graph database</em>
-                  </MenuItem>
-                )}
-                {tenants.map((tenant) => (
-                  <MenuItem key={tenant.id} value={tenant.id}>
-                    {tenant.name} ({tenant.id})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                disabled={isGenerating}
+                required
+                helperText={loadingTenants ? "Loading tenants..." : "Enter tenant ID manually or check Neo4j connection"}
+              />
+            )}
           </Grid>
           
           <Grid item xs={12} md={6}>
@@ -170,12 +178,13 @@ const GenerateSpecTab: React.FC = () => {
               <InputLabel>Output Format</InputLabel>
               <Select
                 value={outputFormat}
-                onChange={(e) => setOutputFormat(e.target.value as 'json' | 'yaml')}
+                onChange={(e) => setOutputFormat(e.target.value as 'json' | 'yaml' | 'markdown')}
                 disabled={isGenerating}
                 label="Output Format"
               >
                 <MenuItem value="json">JSON</MenuItem>
                 <MenuItem value="yaml">YAML</MenuItem>
+                <MenuItem value="markdown">Markdown</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -190,7 +199,7 @@ const GenerateSpecTab: React.FC = () => {
                 disabled={isGenerating}
                 size="large"
               >
-                {isGenerating ? 'Generating...' : 'Generate Spec'}
+                {isGenerating ? 'Exporting...' : 'Export Spec'}
               </Button>
               
               {generatedSpec && (
