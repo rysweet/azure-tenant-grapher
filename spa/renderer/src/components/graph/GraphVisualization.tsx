@@ -28,6 +28,7 @@ import {
   Collapse,
   Grid,
   Accordion,
+  InputAdornment,
   AccordionSummary,
   AccordionDetails
 } from '@mui/material';
@@ -751,67 +752,55 @@ export const GraphVisualization: React.FC = () => {
         {/* Search bar */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" sx={{ color: 'white', mb: 1 }}>Search</Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Search nodes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'white',
-                  },
+          <TextField
+            size="small"
+            placeholder="Search nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            fullWidth
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Search">
+                    <IconButton 
+                      onClick={handleSearch}
+                      size="small"
+                      sx={{ color: '#4caf50' }}
+                    >
+                      <SearchIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Clear">
+                    <IconButton 
+                      onClick={clearAllFilters}
+                      size="small"
+                      sx={{ color: '#4caf50' }}
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
                 },
-                '& .MuiInputBase-input::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.7)',
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.5)',
                 },
-              }}
-            />
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button 
-                variant="contained" 
-                onClick={handleSearch} 
-                startIcon={<SearchIcon />}
-                size="small"
-                fullWidth
-                sx={{
-                  backgroundColor: '#000000',
-                  color: '#4caf50',
-                  '&:hover': {
-                    backgroundColor: '#000000'
-                  }
-                }}
-              >
-                Search
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={clearAllFilters}
-                startIcon={<ClearIcon />}
-                size="small"
-                sx={{ 
-                  backgroundColor: '#000000',
-                  color: '#4caf50', 
-                  borderColor: '#4caf50',
-                  '&:hover': {
-                    backgroundColor: '#000000',
-                    borderColor: '#4caf50'
-                  }
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-          </Box>
+                '&.Mui-focused fieldset': {
+                  borderColor: 'white',
+                },
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: 'rgba(255, 255, 255, 0.7)',
+              },
+            }}
+          />
         </Box>
 
         {/* Advanced Filters Toggle */}
