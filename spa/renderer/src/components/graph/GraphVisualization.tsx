@@ -1138,7 +1138,7 @@ export const GraphVisualization: React.FC = () => {
                 </Typography>
               </Box>
             );
-          })
+          })}
         </Box>
         
         {/* Edge Types */}
