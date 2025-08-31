@@ -617,28 +617,14 @@ export const GraphVisualization: React.FC = () => {
         color: 'white',
         overflowY: 'auto'
       }}>
-        {/* Header with stats */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>Graph Controls</Typography>
-          {graphData && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Chip 
-                label={`${graphData.stats.nodeCount} Nodes`} 
-                color="primary" 
-                size="small" 
-              />
-              <Chip 
-                label={`${graphData.stats.edgeCount} Edges`} 
-                color="secondary" 
-                size="small" 
-              />
-            </Box>
-          )}
+        {/* Header */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ color: 'white', fontSize: '1rem' }}>Graph Controls</Typography>
         </Box>
 
-        {/* Compact Controls */}
-        <Box sx={{ mb: 2 }}>
-          <ButtonGroup size="small" sx={{ mb: 2 }}>
+        {/* All Controls in Single Line */}
+        <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+          <ButtonGroup size="small">
             <Tooltip title="Zoom In">
               <Button onClick={handleZoomIn} sx={{ 
                 backgroundColor: '#000000',
@@ -680,14 +666,12 @@ export const GraphVisualization: React.FC = () => {
             </Tooltip>
           </ButtonGroup>
           
-          {/* Compact pan and utility controls */}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center' }}>
-            {/* Compact pan control grid */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 28px)', gap: 0.25 }}>
+          {/* Pan controls inline */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 24px)', gap: 0 }}>
               <Box />
               <Tooltip title="Pan Up">
                 <IconButton onClick={() => handlePan('up')} size="small" sx={{ 
-                  padding: '4px',
+                  padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
@@ -702,7 +686,7 @@ export const GraphVisualization: React.FC = () => {
               <Box />
               <Tooltip title="Pan Left">
                 <IconButton onClick={() => handlePan('left')} size="small" sx={{ 
-                  padding: '4px',
+                  padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
@@ -717,7 +701,7 @@ export const GraphVisualization: React.FC = () => {
               <Box />
               <Tooltip title="Pan Right">
                 <IconButton onClick={() => handlePan('right')} size="small" sx={{ 
-                  padding: '4px',
+                  padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
@@ -732,7 +716,7 @@ export const GraphVisualization: React.FC = () => {
               <Box />
               <Tooltip title="Pan Down">
                 <IconButton onClick={() => handlePan('down')} size="small" sx={{ 
-                  padding: '4px',
+                  padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
@@ -745,38 +729,23 @@ export const GraphVisualization: React.FC = () => {
                 </IconButton>
               </Tooltip>
               <Box />
-            </Box>
-            
-            {/* Utility buttons */}
-            <Tooltip title="Legend">
-              <IconButton onClick={() => setLegendOpen(true)} size="small" sx={{ 
-                padding: '4px',
-                color: '#4caf50', 
-                backgroundColor: '#000000',
-                border: '1px solid #4caf50',
-                '&:hover': { 
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#4caf50'
-                }
-              }}>
-                <InfoIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchGraphData} size="small" sx={{ 
-                padding: '4px',
-                color: '#4caf50', 
-                backgroundColor: '#000000',
-                border: '1px solid #4caf50',
-                '&:hover': { 
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#4caf50'
-                }
-              }}>
-                <RefreshIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
           </Box>
+          
+          {/* Refresh button */}
+          <Tooltip title="Refresh">
+            <IconButton onClick={fetchGraphData} size="small" sx={{ 
+              padding: '2px',
+                color: '#4caf50', 
+                backgroundColor: '#000000',
+                border: '1px solid #4caf50',
+                '&:hover': { 
+                  backgroundColor: '#1a1a1a',
+                  borderColor: '#4caf50'
+                }
+            }}>
+              <RefreshIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* Search bar */}
@@ -1133,7 +1102,56 @@ export const GraphVisualization: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* Graph container - 75% width on the right */}
+      {/* Legend Panel - Inline Compact */}
+      <Paper sx={{ 
+        width: '180px',
+        p: 1.5,
+        mr: 1,
+        backgroundColor: '#1a1a1a',
+        color: 'white',
+        overflowY: 'auto'
+      }}>
+        <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.85rem', color: '#4caf50' }}>Legend</Typography>
+        
+        {/* Node Types */}
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Nodes</Typography>
+        <Box sx={{ mb: 1, mt: 0.5 }}>
+          {Object.entries(NODE_COLORS).slice(0, 8).map(([type, color]) => (
+            <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+              <Box sx={{ 
+                width: 10, 
+                height: 10, 
+                borderRadius: '50%',
+                backgroundColor: color,
+                flexShrink: 0
+              }} />
+              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
+                {type.replace(/_/g, ' ')}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+        
+        {/* Edge Types */}
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', mt: 1 }}>Edges</Typography>
+        <Box sx={{ mt: 0.5 }}>
+          {Object.entries(EDGE_STYLES).slice(0, 6).map(([type, style]) => (
+            <Box key={type} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+              <Box sx={{ 
+                width: 16, 
+                height: 2, 
+                backgroundColor: style.color || '#888',
+                flexShrink: 0
+              }} />
+              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.8)' }}>
+                {type.replace(/_/g, ' ')}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Paper>
+      
+      {/* Graph container */}
       <Paper sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {loading && (
           <Box sx={{ 
@@ -1151,6 +1169,36 @@ export const GraphVisualization: React.FC = () => {
           <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>
+        )}
+        
+        {/* Floating stats */}
+        {graphData && (
+          <Box sx={{ 
+            position: 'absolute', 
+            top: 10, 
+            left: 10, 
+            zIndex: 5,
+            display: 'flex',
+            gap: 2,
+            pointerEvents: 'none'
+          }}>
+            <Typography sx={{ 
+              color: '#4caf50', 
+              fontSize: '0.85rem',
+              fontWeight: 'medium',
+              textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+            }}>
+              {graphData.stats.nodeCount.toLocaleString()} nodes
+            </Typography>
+            <Typography sx={{ 
+              color: '#4caf50', 
+              fontSize: '0.85rem',
+              fontWeight: 'medium',
+              textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+            }}>
+              {graphData.stats.edgeCount.toLocaleString()} edges
+            </Typography>
+          </Box>
         )}
         
         <Box

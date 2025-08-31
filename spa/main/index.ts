@@ -90,6 +90,11 @@ function startMcpServer() {
   }
 
   console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
+  
+  // Write PID file for status tracking
+  const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+  fs.mkdirSync(path.dirname(pidFile), { recursive: true });
+  fs.writeFileSync(pidFile, mcpServerProcess.pid?.toString() || '');
 
   mcpServerProcess.stdout?.on('data', (data) => {
     console.log(`MCP Server: ${data}`);
@@ -106,6 +111,11 @@ function startMcpServer() {
   mcpServerProcess.on('close', (code) => {
     if (code !== 0) {
       console.error(`MCP server process exited with code ${code}`);
+    }
+    // Clean up PID file
+    const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
     }
     mcpServerProcess = null;
   });
@@ -218,6 +228,11 @@ app.on('window-all-closed', () => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
+    // Clean up PID file
+    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
+    }
   }
   
   // Always quit the app when the window is closed
@@ -240,6 +255,11 @@ app.on('before-quit', (event) => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
+    // Clean up PID file
+    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
+    }
   }
 });
 
