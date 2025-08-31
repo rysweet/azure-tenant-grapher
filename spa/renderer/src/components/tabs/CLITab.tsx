@@ -936,11 +936,11 @@ const CLITab: React.FC = () => {
             )}
 
             {/* Generated Command Line */}
-            <Paper variant="outlined" sx={{ p: 1, mb: 2, bgcolor: 'grey.100' }}>
-              <Typography variant="caption" color="text.secondary">
+            <Paper variant="outlined" sx={{ p: 1, mb: 2, bgcolor: '#000000', borderColor: '#4caf50' }}>
+              <Typography variant="caption" sx={{ color: 'white' }}>
                 Command Line:
               </Typography>
-              <Typography variant="body2" fontFamily="monospace">
+              <Typography variant="body2" fontFamily="monospace" sx={{ color: '#4caf50' }}>
                 {commandLine}
               </Typography>
             </Paper>

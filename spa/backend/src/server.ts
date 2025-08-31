@@ -624,6 +624,81 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+/**
+ * Test Azure connection
+ */
+app.get('/api/test/azure', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execPromise = promisify(exec);
+    
+    // Check if Azure CLI is installed
+    try {
+      await execPromise('which az');
+    } catch {
+      return res.json({ success: false, error: 'Azure CLI not installed' });
+    }
+    
+    // Check if we have Azure credentials configured
+    const tenantId = process.env.AZURE_TENANT_ID;
+    const clientId = process.env.AZURE_CLIENT_ID;
+    const clientSecret = process.env.AZURE_CLIENT_SECRET;
+    
+    if (!tenantId || !clientId || !clientSecret) {
+      return res.json({ success: false, error: 'Azure credentials not configured' });
+    }
+    
+    // Try to authenticate with Azure
+    try {
+      await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
+      await execPromise('az account show --only-show-errors 2>&1');
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.json({ success: false, error: 'Failed to authenticate with Azure' });
+    }
+  } catch (error: any) {
+    logger.error('Azure connection test failed:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Test OpenAI connection
+ */
+app.get('/api/test/openai', async (req, res) => {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      return res.json({ success: false, error: 'OpenAI API key not configured' });
+    }
+    
+    // Test the API key by making a simple request to OpenAI
+    try {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      });
+      
+      if (response.ok) {
+        return res.json({ success: true });
+      } else if (response.status === 401) {
+        return res.json({ success: false, error: 'Invalid OpenAI API key' });
+      } else {
+        return res.json({ success: false, error: `OpenAI API returned status ${response.status}` });
+      }
+    } catch (error: any) {
+      return res.json({ success: false, error: 'Failed to connect to OpenAI API' });
+    }
+  } catch (error: any) {
+    logger.error('OpenAI connection test failed:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Internal server error:', err);

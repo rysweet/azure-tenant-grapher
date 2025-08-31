@@ -106,13 +106,23 @@ export function setupIPCHandlers(processManager: ProcessManager) {
   });
 
   ipcMain.handle('env:getAll', async () => {
-    // Return only safe environment variables
-    const safeEnvVars = {
-      AZURE_TENANT_ID: process.env.AZURE_TENANT_ID,
-      NEO4J_URI: process.env.NEO4J_URI,
-      NODE_ENV: process.env.NODE_ENV,
-    };
-    return safeEnvVars;
+    // Fetch from backend API which reads from .env file
+    try {
+      const axios = require('axios');
+      const response = await axios.get('http://localhost:3001/api/config/env');
+      return response.data;
+    } catch (error) {
+      // Fallback to process.env if backend is not available
+      return {
+        AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
+        AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || '',
+        AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || '',
+        NEO4J_URI: process.env.NEO4J_URI || '',
+        NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || '',
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+        RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || '',
+      };
+    }
   });
 
   // System operations

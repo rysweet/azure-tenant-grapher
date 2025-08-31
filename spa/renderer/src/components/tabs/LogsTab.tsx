@@ -503,6 +503,24 @@ const LogsTab: React.FC = () => {
               </Typography>
             )}
           </Box>
+        ) : filteredLogs.length === 0 ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'text.secondary',
+            }}
+          >
+            <Typography variant="body1" gutterBottom>
+              No logs match current filters.
+            </Typography>
+            <Typography variant="body2">
+              {allLogs.length} log{allLogs.length === 1 ? '' : 's'} available. Adjust filters to see them.
+            </Typography>
+          </Box>
         ) : (
           <Box ref={containerRef} sx={{ flex: 1 }}>
             <Editor

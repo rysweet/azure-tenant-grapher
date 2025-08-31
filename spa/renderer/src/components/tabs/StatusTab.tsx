@@ -40,6 +40,7 @@ import {
   Check as CheckIcon,
   Error as ErrorIcon,
   LocalHospital as DoctorIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -87,13 +88,17 @@ const StatusTab: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [isCheckingDeps, setIsCheckingDeps] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
+  const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean }>({ connected: false, loading: true });
+  const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean }>({ connected: false, loading: true });
 
   useEffect(() => {
     // Initial load
     checkNeo4jStatus();
     checkDependencies();
+    checkAzureConnection();
+    checkOpenAIConnection();
     
-    // Set up auto-refresh every 5 seconds
+    // Set up auto-refresh every 5 seconds for Neo4j
     const interval = setInterval(() => {
       checkNeo4jStatus();
     }, 5000);
@@ -134,6 +139,26 @@ const StatusTab: React.FC = () => {
       });
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const checkAzureConnection = async () => {
+    setAzureStatus(prev => ({ ...prev, loading: true }));
+    try {
+      const response = await axios.get('http://localhost:3001/api/test/azure');
+      setAzureStatus({ connected: response.data.success, error: response.data.error, loading: false });
+    } catch (err: any) {
+      setAzureStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
+    }
+  };
+
+  const checkOpenAIConnection = async () => {
+    setOpenAIStatus(prev => ({ ...prev, loading: true }));
+    try {
+      const response = await axios.get('http://localhost:3001/api/test/openai');
+      setOpenAIStatus({ connected: response.data.success, error: response.data.error, loading: false });
+    } catch (err: any) {
+      setOpenAIStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
     }
   };
 
@@ -571,6 +596,110 @@ const StatusTab: React.FC = () => {
           )}
           </>
         )}
+      </Paper>
+
+      {/* External Services Status */}
+      <Paper sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontSize: '1.1rem', mb: 1.5 }}>
+          External Services
+        </Typography>
+        <Grid container spacing={1}>
+          {/* Azure Connection */}
+          <Grid item xs={6}>
+            <Card variant="outlined" sx={{ 
+              backgroundColor: azureStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
+              borderColor: azureStatus.connected ? 'success.main' : 'error.main'
+            }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Box>
+                    <Typography color="textSecondary" variant="caption">
+                      Azure
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {azureStatus.loading ? (
+                        <CircularProgress size={16} />
+                      ) : azureStatus.connected ? (
+                        <>
+                          <CheckIcon color="success" sx={{ fontSize: 16 }} />
+                          <Typography variant="body2" color="success.main">Connected</Typography>
+                        </>
+                      ) : (
+                        <>
+                          <ErrorIcon color="error" sx={{ fontSize: 16 }} />
+                          <Typography variant="body2" color="error.main">Disconnected</Typography>
+                        </>
+                      )}
+                    </Box>
+                    {azureStatus.error && (
+                      <Typography variant="caption" color="error" sx={{ fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
+                        {azureStatus.error}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Tooltip title="Test Azure Connection">
+                    <IconButton 
+                      onClick={checkAzureConnection} 
+                      disabled={azureStatus.loading}
+                      size="small"
+                      sx={{ padding: '2px' }}
+                    >
+                      <RefreshIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          {/* OpenAI Connection */}
+          <Grid item xs={6}>
+            <Card variant="outlined" sx={{ 
+              backgroundColor: openAIStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
+              borderColor: openAIStatus.connected ? 'success.main' : 'warning.main'
+            }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Box>
+                    <Typography color="textSecondary" variant="caption">
+                      OpenAI
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {openAIStatus.loading ? (
+                        <CircularProgress size={16} />
+                      ) : openAIStatus.connected ? (
+                        <>
+                          <CheckIcon color="success" sx={{ fontSize: 16 }} />
+                          <Typography variant="body2" color="success.main">Connected</Typography>
+                        </>
+                      ) : (
+                        <>
+                          <WarningIcon color="warning" sx={{ fontSize: 16 }} />
+                          <Typography variant="body2" color="warning.main">Not Configured</Typography>
+                        </>
+                      )}
+                    </Box>
+                    {openAIStatus.error && (
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', mt: 0.5, display: 'block' }}>
+                        Optional - Used for enhanced descriptions
+                      </Typography>
+                    )}
+                  </Box>
+                  <Tooltip title="Test OpenAI Connection">
+                    <IconButton 
+                      onClick={checkOpenAIConnection} 
+                      disabled={openAIStatus.loading}
+                      size="small"
+                      sx={{ padding: '2px' }}
+                    >
+                      <RefreshIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Paper>
 
       {/* System Dependencies - Compact */}
