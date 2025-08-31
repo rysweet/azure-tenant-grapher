@@ -48,18 +48,6 @@ const ConfigTab: React.FC = () => {
   const [showAppRegDialog, setShowAppRegDialog] = useState(false);
   const [appRegStatus, setAppRegStatus] = useState<{ exists: boolean; checking: boolean; appName?: string }>({ exists: false, checking: false });
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
-  
-  // Check if app registration exists when client ID changes
-  useEffect(() => {
-    const clientId = config.find(c => c.key === 'AZURE_CLIENT_ID')?.value;
-    if (clientId) {
-      checkAppRegistration(clientId);
-    }
-  }, [config]);
-
   const loadConfig = async () => {
     try {
       const envVars = await window.electronAPI.env.getAll();
@@ -101,6 +89,18 @@ const ConfigTab: React.FC = () => {
       setAppRegStatus({ exists: false, checking: false });
     }
   };
+  
+  useEffect(() => {
+    loadConfig();
+  }, []);
+  
+  // Check if app registration exists when client ID changes
+  useEffect(() => {
+    const clientId = config.find(c => c.key === 'AZURE_CLIENT_ID')?.value;
+    if (clientId) {
+      checkAppRegistration(clientId);
+    }
+  }, [config]);
 
 
   const handleConfigChange = (index: number, value: string) => {
