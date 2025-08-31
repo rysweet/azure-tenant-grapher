@@ -418,16 +418,40 @@ app.get('/api/mcp/status', async (req, res) => {
  */
 app.get('/api/config/env', (req, res) => {
   logger.debug('Config endpoint accessed');
-  // Return safe environment variables that the UI can use
-  res.json({
-    AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
-    AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || '',
-    // Don't send secrets to the frontend
-    HAS_AZURE_CLIENT_SECRET: !!process.env.AZURE_CLIENT_SECRET,
-    NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
-    NEO4J_PORT: process.env.NEO4J_PORT || '7687',
-    RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || '',
-  });
+  
+  // Read from .env file if it exists
+  const envPath = path.join(process.cwd(), '.env');
+  let envConfig: Record<string, string> = {};
+  
+  if (fs.existsSync(envPath)) {
+    try {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      envContent.split('\n').forEach(line => {
+        line = line.trim();
+        if (line && !line.startsWith('#')) {
+          const [key, ...valueParts] = line.split('=');
+          if (key) {
+            envConfig[key.trim()] = valueParts.join('=').trim();
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Failed to read .env file:', error);
+    }
+  }
+  
+  // Merge with process.env (process.env takes precedence)
+  const config = {
+    AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || envConfig.AZURE_TENANT_ID || '',
+    AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || envConfig.AZURE_CLIENT_ID || '',
+    AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || envConfig.AZURE_CLIENT_SECRET || '',
+    NEO4J_URI: process.env.NEO4J_URI || envConfig.NEO4J_URI || 'bolt://localhost:7687',
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || envConfig.NEO4J_PASSWORD || '',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY || '',
+    RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || envConfig.RESOURCE_LIMIT || '',
+  };
+  
+  res.json(config);
 });
 
 /**

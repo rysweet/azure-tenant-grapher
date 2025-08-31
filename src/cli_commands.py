@@ -1089,7 +1089,7 @@ def spa_start():
             if not os.path.exists(MCP_PIDFILE):
                 # Start MCP server in the background
                 mcp_proc = subprocess.Popen(
-                    [sys.executable, "-m", "src.mcp.server"],
+                    [sys.executable, "-m", "src.mcp_server"],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     env={

@@ -304,11 +304,11 @@ const StatusTab: React.FC = () => {
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Neo4j Connection Status */}
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <StorageIcon /> Neo4j Database Status
+      {/* Neo4j Database Status with Statistics */}
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: '1.1rem' }}>
+            <StorageIcon fontSize="small" /> Neo4j Database
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             {neo4jStatus?.running ? (
@@ -386,23 +386,23 @@ const StatusTab: React.FC = () => {
           </Box>
         )}
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
+        <Grid container spacing={1}>
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography color="textSecondary" variant="caption">
                   Status
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   {neo4jStatus?.running ? (
                     <>
-                      <ConnectedIcon color="success" />
-                      <Typography variant="h6" color="success.main">Connected</Typography>
+                      <ConnectedIcon color="success" fontSize="small" />
+                      <Typography variant="body2" color="success.main" fontWeight="medium">Connected</Typography>
                     </>
                   ) : (
                     <>
-                      <DisconnectedIcon color="error" />
-                      <Typography variant="h6" color="error.main">Disconnected</Typography>
+                      <DisconnectedIcon color="error" fontSize="small" />
+                      <Typography variant="body2" color="error.main" fontWeight="medium">Disconnected</Typography>
                     </>
                   )}
                 </Box>
@@ -415,13 +415,13 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Connection URI
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography color="textSecondary" variant="caption">
+                  Connection
                 </Typography>
-                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
                   {neo4jStatus?.uri || 'Not available'}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
@@ -431,17 +431,17 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Container Health
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography color="textSecondary" variant="caption">
+                  Health
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {neo4jStatus?.health === 'healthy' && (
                     <>
                       <CheckIcon color="success" />
-                      <Typography variant="h6" color="success.main">Healthy</Typography>
+                      <Typography variant="body2" color="success.main" fontWeight="medium">Healthy</Typography>
                     </>
                   )}
                   {neo4jStatus?.health === 'starting' && (
@@ -475,13 +475,13 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={3}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Process ID
+          <Grid item xs={6} md={3}>
+            <Card variant="outlined" sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Typography color="textSecondary" variant="caption">
+                  PID
                 </Typography>
-                <Typography variant="h6">
+                <Typography variant="body2" fontWeight="medium">
                   {neo4jStatus?.pid || 'N/A'}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
@@ -491,26 +491,25 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
-      </Paper>
-
-      {/* Database Statistics */}
-      {neo4jStatus?.running && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Database Statistics
-          </Typography>
-          
-          {loadingStats ? (
-            <LinearProgress />
+        
+        {/* Database Statistics - integrated */}
+        {neo4jStatus?.running && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              Database Statistics
+            </Typography>
+            {loadingStats ? (
+              <LinearProgress />
           ) : (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={3}>
+            <Grid container spacing={1}>
+              <Grid item xs={6} md={3}>
                 <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TreeIcon fontSize="small" /> Total Nodes
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography color="textSecondary" variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <TreeIcon sx={{ fontSize: 14 }} /> Nodes
                     </Typography>
-                    <Typography variant="h4">
+                    <Typography variant="h6">
                       {formatNumber(dbStats?.nodeCount || 0)}
                     </Typography>
                     {dbStats?.labelCount && (
@@ -522,13 +521,13 @@ const StatusTab: React.FC = () => {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} md={3}>
+              <Grid item xs={6} md={3}>
                 <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LinkIcon fontSize="small" /> Total Edges
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography color="textSecondary" variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LinkIcon sx={{ fontSize: 14 }} /> Edges
                     </Typography>
-                    <Typography variant="h4">
+                    <Typography variant="h6">
                       {formatNumber(dbStats?.edgeCount || 0)}
                     </Typography>
                     {dbStats?.relTypeCount && (
@@ -540,26 +539,29 @@ const StatusTab: React.FC = () => {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} md={3}>
+              <Grid item xs={6} md={3}>
                 <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ScheduleIcon fontSize="small" /> Last Update
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography color="textSecondary" variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <ScheduleIcon sx={{ fontSize: 14 }} /> Updated
                     </Typography>
-                    {formatTimestampDisplay(dbStats?.lastUpdate)}
+                    <Typography variant="body2">
+                      {dbStats?.lastUpdate?.localString ? dbStats.lastUpdate.localString.split(' ')[1] : 'Never'}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               
-              <Grid item xs={12} md={3}>
+              <Grid item xs={6} md={3}>
                 <Card variant="outlined">
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Database State
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography color="textSecondary" variant="caption">
+                      State
                     </Typography>
                     <Chip 
                       label={dbStats?.isEmpty ? 'Empty' : 'Populated'} 
                       color={dbStats?.isEmpty ? 'default' : 'success'}
+                      size="small"
                       variant="outlined"
                     />
                   </CardContent>
@@ -567,17 +569,18 @@ const StatusTab: React.FC = () => {
               </Grid>
             </Grid>
           )}
-        </Paper>
-      )}
+          </>
+        )}
+      </Paper>
 
-      {/* System Dependencies */}
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
+      {/* System Dependencies - Compact */}
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>
             System Dependencies
           </Typography>
-          <IconButton onClick={checkDependencies} disabled={isCheckingDeps}>
-            <RefreshIcon />
+          <IconButton onClick={checkDependencies} disabled={isCheckingDeps} size="small">
+            <RefreshIcon fontSize="small" />
           </IconButton>
         </Box>
 
@@ -585,30 +588,34 @@ const StatusTab: React.FC = () => {
           <LinearProgress />
         ) : (
           <>
-            <List>
+            <Grid container spacing={1}>
               {dependencies.map((dep) => (
-                <React.Fragment key={dep.name}>
-                  <ListItem>
-                    <ListItemIcon>
-                      {dep.installed ? (
-                        <CheckIcon color="success" />
-                      ) : (
-                        <ErrorIcon color="error" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={dep.name}
-                      secondary={
-                        dep.installed
-                          ? `Version: ${dep.version} (Required: ${dep.required})`
-                          : `Not installed (Required: ${dep.required})`
-                      }
-                    />
-                  </ListItem>
-                  <Divider />
-                </React.Fragment>
+                <Grid item xs={6} md={3} key={dep.name}>
+                  <Card variant="outlined" sx={{ 
+                    backgroundColor: dep.installed ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
+                    borderColor: dep.installed ? 'success.main' : 'error.main'
+                  }}>
+                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                        {dep.installed ? (
+                          <CheckIcon color="success" sx={{ fontSize: 16 }} />
+                        ) : (
+                          <ErrorIcon color="error" sx={{ fontSize: 16 }} />
+                        )}
+                        <Typography variant="body2" fontWeight="medium">
+                          {dep.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
+                        {dep.installed
+                          ? `v${dep.version}`
+                          : `Required: ${dep.required}`}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
               ))}
-            </List>
+            </Grid>
 
             {dependencies.some((d) => !d.installed) && (
               <Alert 
