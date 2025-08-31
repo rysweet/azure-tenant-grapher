@@ -267,16 +267,16 @@ const LogsTab: React.FC = () => {
     const interval = setInterval(checkActiveProcesses, 5000);
     
     return () => clearInterval(interval);
-  }, [activeProcesses, webSocket, logger]);
+  }, [activeProcesses, webSocket]); // Remove logger from deps to prevent re-runs
 
-  // Log WebSocket connection status
+  // Log WebSocket connection status (only when it changes)
   useEffect(() => {
     if (webSocket.isConnected) {
       logger.info('Connected to backend WebSocket server');
     } else {
       logger.warning('Disconnected from backend WebSocket server');
     }
-  }, [webSocket.isConnected, logger]);
+  }, [webSocket.isConnected]); // Remove logger from deps to prevent infinite loop
 
   // Add some test logs for demonstration
   const addTestLogs = () => {
