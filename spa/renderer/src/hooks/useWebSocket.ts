@@ -74,6 +74,16 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       });
 
       socketRef.current.on('output', (data: OutputData) => {
+        // Optional debug logging in development
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('WebSocket: Received output', {
+            processId: data.processId,
+            type: data.type,
+            dataType: Array.isArray(data.data) ? 'array' : typeof data.data,
+            dataLength: Array.isArray(data.data) ? data.data.length : 1,
+          });
+        }
+        
         setOutputs(prev => {
           const newMap = new Map(prev);
           const existing = newMap.get(data.processId) || [];

@@ -76,6 +76,9 @@ azure-tenant-grapher build --tenant-id <your-tenant-id>
 
 # 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
+
+# Or use the desktop GUI (Electron app)
+cd spa && npm install && npm run start
 ```
 
 ## Installation
@@ -231,6 +234,34 @@ azure-tenant-grapher backup-db ./my-neo4j-backup.dump
 
 Details in [`docs/design/iac_subset_bicep.md`](docs/design/iac_subset_bicep.md).
 
+## Desktop GUI (Electron App)
+
+The project includes a full-featured desktop application built with Electron and React that provides a graphical interface for all CLI functionality.
+
+### GUI Quick Start
+
+```bash
+# Install dependencies
+cd spa
+npm install
+
+# Start the desktop app
+npm run start
+
+# Or for development with hot reload
+npm run dev
+```
+
+### GUI Features
+
+- **Tabbed Interface**: All CLI commands accessible through intuitive tabs
+- **Visual Graph Explorer**: Interactive 3D visualization with search and filtering
+- **Real-time Logs**: Live log streaming with filtering and export
+- **Configuration Manager**: Manage environment variables and Azure credentials
+- **Integrated Terminal**: Run CLI commands directly from the GUI
+- **Process Management**: Monitor and control running operations
+
+The GUI automatically detects your Neo4j database state and Azure configuration, providing a seamless experience for both new and existing users.
 
 ## Development & Testing
 

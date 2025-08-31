@@ -72,18 +72,55 @@ async function createWindow() {
 
 // Start the MCP server
 async function startMcpServer() {
-  const pythonPath = process.env.PYTHON_PATH || 'python3';
   const projectRoot = path.join(__dirname, '../../..');
+  const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
+  const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
   
-  console.log('Starting MCP server with:', pythonPath, 'from', projectRoot);
+  console.log('Starting MCP server from:', projectRoot);
   
-  // Start MCP server using python -m src.mcp_server
-  mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_server', '--foreground'], {
+  // Ensure outputs directory exists
+  const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+  const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
+  const outputsDir = path.dirname(pidFile);
+  
+  try {
+    fs.mkdirSync(outputsDir, { recursive: true });
+    
+    // Clean up any stale PID file
+    if (fs.existsSync(pidFile)) {
+      try {
+        const oldPid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim());
+        // Try to kill old process if it exists
+        try {
+          process.kill(oldPid, 0); // Check if process exists
+          process.kill(oldPid, 'SIGTERM'); // Kill it
+          console.log(`Killed stale MCP server with PID ${oldPid}`);
+        } catch (e) {
+          // Process doesn't exist, which is fine
+        }
+      } catch (e) {
+        // Ignore errors reading old PID
+      }
+      fs.unlinkSync(pidFile);
+    }
+    
+    // Clean up status file
+    if (fs.existsSync(statusFile)) {
+      fs.unlinkSync(statusFile);
+    }
+  } catch (err) {
+    console.error('Error preparing for MCP server:', err);
+  }
+  
+  // Start MCP server using the CLI
+  mcpServerProcess = spawn(pythonPath, [scriptPath, 'mcp-server'], {
     cwd: projectRoot,
     env: {
       ...process.env,
-      PYTHONPATH: projectRoot,
-    }
+      PYTHONPATH: projectRoot
+    },
+    detached: false,
+    stdio: ['ignore', 'pipe', 'pipe']
   });
 
   if (!mcpServerProcess || !mcpServerProcess.pid) {
@@ -93,22 +130,38 @@ async function startMcpServer() {
 
   console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
   
-  // Write PID file for status tracking - ensure directory exists first
-  const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+  // Write PID and initial status file
   try {
-    fs.mkdirSync(path.dirname(pidFile), { recursive: true });
     fs.writeFileSync(pidFile, mcpServerProcess.pid.toString());
+    fs.writeFileSync(statusFile, 'starting');
     console.log(`MCP PID file written to: ${pidFile}`);
   } catch (err) {
-    console.error('Failed to write MCP PID file:', err);
+    console.error('Failed to write MCP files:', err);
   }
 
+  let mcpReady = false;
+  
   mcpServerProcess.stdout?.on('data', (data) => {
-    console.log(`MCP Server: ${data}`);
+    const output = data.toString();
+    console.log(`MCP Server: ${output}`);
+    
+    // Check for ready message - the MCP server outputs "MCP server started. Press Ctrl+C to stop."
+    if (!mcpReady && (output.includes('MCP server started') || output.includes('Press Ctrl+C to stop'))) {
+      mcpReady = true;
+      const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
+      try {
+        fs.writeFileSync(statusFile, 'ready');
+        console.log('MCP server is ready!');
+      } catch (e) {
+        console.error('Failed to update MCP status file:', e);
+      }
+    }
   });
 
   mcpServerProcess.stderr?.on('data', (data) => {
-    console.error(`MCP Server Error: ${data}`);
+    const error = data.toString();
+    // Log but don't treat all stderr as errors - some tools use stderr for info
+    console.log(`MCP Server (stderr): ${error}`);
   });
 
   mcpServerProcess.on('error', (error) => {
@@ -124,11 +177,21 @@ async function startMcpServer() {
     if (code !== 0) {
       console.error(`MCP server process exited with code ${code}`);
     }
-    // Clean up PID file
+    // Clean up PID and status files
     const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
+    const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
+    
+    try {
+      if (fs.existsSync(pidFile)) {
+        fs.unlinkSync(pidFile);
+      }
+      if (fs.existsSync(statusFile)) {
+        fs.unlinkSync(statusFile);
+      }
+    } catch (e) {
+      console.error('Error cleaning up MCP files:', e);
     }
+    
     mcpServerProcess = null;
   });
 }
@@ -210,8 +273,27 @@ app.whenReady().then(async () => {
   // Start MCP server
   await startMcpServer();
   
-  // Add a small delay to ensure MCP server is ready
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Wait for MCP server to be ready by checking status file
+  const projectRoot = path.join(__dirname, '../../..');
+  const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
+  let mcpAttempts = 0;
+  
+  console.log('Waiting for MCP server to be ready...');
+  while (mcpAttempts < 20) { // Wait up to 10 seconds
+    if (fs.existsSync(statusFile)) {
+      const status = fs.readFileSync(statusFile, 'utf-8').trim();
+      if (status === 'ready') {
+        console.log('MCP server confirmed ready');
+        break;
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+    mcpAttempts++;
+  }
+  
+  if (mcpAttempts >= 20) {
+    console.warn('MCP server may not be fully ready yet');
+  }
   
   // Initialize process manager
   processManager = new ProcessManager();

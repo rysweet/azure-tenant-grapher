@@ -392,7 +392,35 @@ app.get('/api/mcp/status', async (req, res) => {
     // Check if MCP pidfile exists - use the project root path
     const projectRoot = path.join(__dirname, '../../..');
     const mcpPidfile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+    const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
     
+    // First check the status file for readiness state
+    if (fs.existsSync(statusFile)) {
+      const status = fs.readFileSync(statusFile, 'utf-8').trim();
+      if (status === 'ready') {
+        // Double-check the PID is still valid
+        if (fs.existsSync(mcpPidfile)) {
+          const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
+          try {
+            process.kill(pid, 0); // Signal 0 checks if process exists
+            res.json({ running: true, pid, status: 'ready' });
+            return;
+          } catch {
+            // Process doesn't exist, clean up files
+            fs.unlinkSync(mcpPidfile);
+            fs.unlinkSync(statusFile);
+            res.json({ running: false });
+            return;
+          }
+        }
+      } else if (status === 'starting') {
+        // MCP is still starting up
+        res.json({ running: false, status: 'starting' });
+        return;
+      }
+    }
+    
+    // Fallback to just PID check
     if (fs.existsSync(mcpPidfile)) {
       const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
       
@@ -726,31 +754,72 @@ app.get('/api/test/azure-openai', async (req, res) => {
       });
     }
     
-    // Test the API key by making a simple request to Azure OpenAI
+    // Test the API key by making a minimal inference request
     try {
-      const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'api-key': apiKey,
-        },
-      });
-      
-      if (response.ok) {
-        // Extract just the host from the endpoint for display
-        const endpointHost = new URL(endpoint).host;
-        return res.json({ 
-          success: true,
-          endpoint: endpointHost,
-          models: {
-            chat: modelChat || 'Not configured',
-            reasoning: modelReasoning || 'Not configured'
-          }
+      // If we have a chat model configured, test with actual inference
+      if (modelChat) {
+        const url = `${endpoint}/openai/deployments/${modelChat}/chat/completions?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: [{role: 'user', content: 'test'}],
+            max_tokens: 1,
+            temperature: 0
+          })
         });
-      } else if (response.status === 401) {
-        return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const endpointHost = new URL(endpoint).host;
+          return res.json({ 
+            success: true,
+            message: 'Inference test successful',
+            endpoint: endpointHost,
+            model: data.model || modelChat,
+            models: {
+              chat: modelChat,
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        } else if (response.status === 404) {
+          return res.json({ success: false, error: `Deployment '${modelChat}' not found` });
+        } else {
+          const errorText = await response.text();
+          logger.error('Azure OpenAI inference failed:', response.status, errorText);
+          return res.json({ success: false, error: `Inference test failed: ${response.status}` });
+        }
       } else {
-        return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
+        // Fallback to listing deployments if no model configured
+        const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'api-key': apiKey,
+          },
+        });
+        
+        if (response.ok) {
+          const endpointHost = new URL(endpoint).host;
+          return res.json({ 
+            success: true,
+            message: 'API key valid (configure chat model for full test)',
+            endpoint: endpointHost,
+            models: {
+              chat: 'Not configured',
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        } else {
+          return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
+        }
       }
     } catch (error: any) {
       logger.error('Azure OpenAI API call failed:', error);
