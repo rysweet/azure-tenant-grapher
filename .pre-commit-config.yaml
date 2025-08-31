@@ -28,10 +28,10 @@ repos:
         additional_dependencies: [pyright==1.1.350]
         entry: pyright
         pass_filenames: false
-      - id: spa-build
-        name: SPA Build Test
+      - id: spa-test
+        name: SPA Tests
         language: system
-        entry: bash -c "cd spa && npm run build"
+        entry: bash -c "cd spa && npm test -- --no-coverage --watchAll=false"
         pass_filenames: false
         files: '^spa/.*\.(ts|tsx|js|jsx|css)$'
 
