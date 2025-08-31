@@ -46,10 +46,19 @@ const ConfigTab: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAppRegDialog, setShowAppRegDialog] = useState(false);
+  const [appRegStatus, setAppRegStatus] = useState<{ exists: boolean; checking: boolean; appName?: string }>({ exists: false, checking: false });
 
   useEffect(() => {
     loadConfig();
   }, []);
+  
+  // Check if app registration exists when client ID changes
+  useEffect(() => {
+    const clientId = config.find(c => c.key === 'AZURE_CLIENT_ID')?.value;
+    if (clientId) {
+      checkAppRegistration(clientId);
+    }
+  }, [config]);
 
   const loadConfig = async () => {
     try {
@@ -62,6 +71,34 @@ const ConfigTab: React.FC = () => {
       );
     } catch (err) {
       console.error('Failed to load config:', err);
+    }
+  };
+  
+  const checkAppRegistration = async (clientId: string) => {
+    setAppRegStatus({ exists: false, checking: true });
+    try {
+      // Use Azure CLI to check if the app registration exists
+      const result = await window.electronAPI.cli.execute('bash', [
+        '-c',
+        `az ad app show --id ${clientId} --query displayName -o tsv 2>/dev/null`
+      ]);
+      
+      // Listen for the result
+      window.electronAPI.on('process:exit', (data: any) => {
+        if (data.id === result.data.id) {
+          if (data.code === 0 && data.output && data.output.length > 0) {
+            // App exists
+            const appName = data.output.join('').trim();
+            setAppRegStatus({ exists: true, checking: false, appName });
+          } else {
+            // App doesn't exist or error
+            setAppRegStatus({ exists: false, checking: false });
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Failed to check app registration:', err);
+      setAppRegStatus({ exists: false, checking: false });
     }
   };
 
@@ -224,21 +261,31 @@ const ConfigTab: React.FC = () => {
                   Azure AD App Registration
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Create an Azure AD application with the required permissions for Azure Tenant Grapher
+                  {appRegStatus.checking ? 'Checking app registration...' :
+                   appRegStatus.exists ? `App registration found: ${appRegStatus.appName}` :
+                   'Create an Azure AD application with the required permissions for Azure Tenant Grapher'}
                 </Typography>
               </Box>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AppRegIcon />}
-                onClick={() => setShowAppRegDialog(true)}
-              >
-                Create App Registration
-              </Button>
+              {!appRegStatus.exists && !appRegStatus.checking && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AppRegIcon />}
+                  onClick={() => setShowAppRegDialog(true)}
+                >
+                  Create App Registration
+                </Button>
+              )}
             </Box>
             
-            {(!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value || 
-              !config.find(c => c.key === 'AZURE_CLIENT_SECRET')?.value) && (
+            {appRegStatus.exists && config.find(c => c.key === 'AZURE_CLIENT_ID')?.value && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                App registration configured: {appRegStatus.appName}
+              </Alert>
+            )}
+            
+            {!appRegStatus.exists && (!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value || 
+              !config.find(c => c.key === 'AZURE_CLIENT_SECRET')?.value) && !appRegStatus.checking && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 Azure AD credentials not configured. Click "Create App Registration" to set up authentication.
               </Alert>
