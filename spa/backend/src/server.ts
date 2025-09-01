@@ -394,7 +394,25 @@ app.get('/api/mcp/status', async (req, res) => {
     const mcpPidfile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
     const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
     
-    // First check the status file for readiness state
+    // First try to check the healthcheck endpoint
+    try {
+      const healthResponse = await fetch('http://localhost:8080/health', { 
+        signal: AbortSignal.timeout(1000) // 1 second timeout
+      });
+      if (healthResponse.ok) {
+        // MCP server is running with healthcheck
+        let pid: number | undefined;
+        if (fs.existsSync(mcpPidfile)) {
+          pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
+        }
+        res.json({ running: true, pid, status: 'ready', healthcheck: true });
+        return;
+      }
+    } catch (e) {
+      // Healthcheck failed, fall back to file checks
+    }
+    
+    // Check the status file for readiness state
     if (fs.existsSync(statusFile)) {
       const status = fs.readFileSync(statusFile, 'utf-8').trim();
       if (status === 'ready') {

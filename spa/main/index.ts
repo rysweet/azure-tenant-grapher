@@ -112,15 +112,19 @@ async function startMcpServer() {
     console.error('Error preparing for MCP server:', err);
   }
   
-  // Start MCP server using the CLI
-  mcpServerProcess = spawn(pythonPath, [scriptPath, 'mcp-server'], {
+  // Start MCP server as a persistent service with healthcheck
+  // Use the mcp_service module that provides HTTP healthcheck
+  mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_service'], {
     cwd: projectRoot,
     env: {
       ...process.env,
-      PYTHONPATH: projectRoot
+      PYTHONPATH: projectRoot,
+      NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7688',
+      NEO4J_PORT: process.env.NEO4J_PORT || '7688',
+      NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024'
     },
     detached: false,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe']  // MCP service doesn't need stdin
   });
 
   if (!mcpServerProcess || !mcpServerProcess.pid) {
@@ -145,13 +149,15 @@ async function startMcpServer() {
     const output = data.toString();
     console.log(`MCP Server: ${output}`);
     
-    // Check for ready message - the MCP server outputs "MCP server started. Press Ctrl+C to stop."
-    if (!mcpReady && (output.includes('MCP server started') || output.includes('Press Ctrl+C to stop'))) {
+    // Check for ready messages - MCP service or healthcheck
+    if (!mcpReady && (output.includes('MCP service is ready') || 
+                      output.includes('Healthcheck available') ||
+                      output.includes('healthcheck server running'))) {
       mcpReady = true;
       const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
       try {
         fs.writeFileSync(statusFile, 'ready');
-        console.log('MCP server is ready!');
+        console.log('MCP server is ready with healthcheck!');
       } catch (e) {
         console.error('Failed to update MCP status file:', e);
       }
@@ -177,6 +183,7 @@ async function startMcpServer() {
     if (code !== 0) {
       console.error(`MCP server process exited with code ${code}`);
     }
+    
     // Clean up PID and status files
     const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
     const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
