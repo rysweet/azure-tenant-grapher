@@ -69,7 +69,7 @@ async def run_agent_mode(question: str | None = None):
         question: Optional single question to ask in non-interactive mode
     """
     try:
-        await ensure_neo4j_running()
+        ensure_neo4j_running()
     except Exception as e:
         logger.error(f"Failed to start Neo4j: {e}")
         print(f"❌ Failed to start Neo4j: {e}", file=sys.stderr)
