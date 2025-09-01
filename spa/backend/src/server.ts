@@ -773,7 +773,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
         });
         
         if (response.ok) {
-          const data = await response.json();
+          const data: any = await response.json();
           const endpointHost = new URL(endpoint).host;
           return res.json({ 
             success: true,
