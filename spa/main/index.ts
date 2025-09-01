@@ -8,7 +8,7 @@ import { createApplicationMenu } from './menu';
 import * as dotenv from 'dotenv';
 
 // Load .env file from the project root
-const envPath = path.join(__dirname, '../../.env');
+const envPath = path.join(__dirname, '../../../.env');
 dotenv.config({ path: envPath });
 
 let mainWindow: BrowserWindow | null = null;
