@@ -246,6 +246,8 @@ class MultiTenantThreatModeler:
 
 ## Implementation Roadmap
 
+**Note**: Since the tool is not in production, we can implement these changes directly without maintaining backward compatibility.
+
 ### Milestone 1: Foundation (Weeks 1-2)
 - [ ] Implement TenantRegistry and CredentialManager
 - [ ] Add tenant CLI commands (add, list, remove, use)
@@ -280,19 +282,17 @@ class MultiTenantThreatModeler:
 - [ ] Comprehensive multi-tenant tests
 - [ ] Performance testing with multiple tenants
 - [ ] Security audit of credential management
-- [ ] Complete documentation and migration guide
+- [ ] Complete documentation for multi-tenant usage
 
 ## Breaking Changes
 
+Since the tool is not yet in production, we can make breaking changes without migration concerns:
+
 ### API Changes
 - All CLI commands will require explicit tenant context
-- Environment variables will be deprecated in favor of tenant registry
-- Database schema changes require migration
-
-### Migration Strategy
-1. Provide migration tool to convert single-tenant to multi-tenant
-2. Support legacy single-tenant mode with deprecation warnings
-3. Gradual migration path over 2-3 releases
+- Environment variables will be replaced by tenant registry
+- Database schema will be updated directly for multi-tenant support
+- No backward compatibility with single-tenant mode required
 
 ## Security Considerations
 
@@ -368,7 +368,7 @@ class MultiTenantThreatModeler:
 4. **User Experience**
    - Intuitive tenant management
    - Clear tenant context indicators
-   - Smooth migration from single-tenant
+   - Simple and clean multi-tenant workflows
 
 ## Open Questions
 
