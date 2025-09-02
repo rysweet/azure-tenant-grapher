@@ -21,10 +21,14 @@ export class ProcessManager extends EventEmitter {
   private processes: Map<string, ProcessInfo> = new Map();
   private cleanedUp: boolean = false;
 
-  async execute(command: string, args: string[]): Promise<any> {
+  execute(command: string, args: string[]): any {
     const id = uuidv4();
     const pythonPath = process.env.PYTHON_PATH || 'python3';
     const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
+    
+    console.log('[ProcessManager] Executing command:', command, 'with args:', args);
+    console.log('[ProcessManager] Python path:', pythonPath);
+    console.log('[ProcessManager] CLI path:', cliPath);
     
     // Build the full command
     const fullArgs = [cliPath, command, ...args];
@@ -34,6 +38,7 @@ export class ProcessManager extends EventEmitter {
       env: {
         ...process.env,
         PYTHONPATH: path.resolve(__dirname, '../../..'),
+        PYTHONUNBUFFERED: '1', // Force Python to flush output immediately
       },
     });
 
@@ -53,45 +58,55 @@ export class ProcessManager extends EventEmitter {
 
     // Handle stdout
     childProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line);
+      const text = data.toString();
+      console.log('[ProcessManager] stdout received:', text);
+      const lines = text.split('\n');
+      // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline
+      if (lines[lines.length - 1] === '' && !text.endsWith('\n')) {
+        lines.pop();
+      }
       processInfo.output.push(...lines);
+      console.log('[ProcessManager] Emitting output event with', lines.length, 'lines');
       this.emit('output', { id, type: 'stdout', data: lines });
     });
 
     // Handle stderr
     childProcess.stderr?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line);
+      const text = data.toString();
+      console.log('[ProcessManager] stderr received:', text);
+      const lines = text.split('\n');
+      // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline
+      if (lines[lines.length - 1] === '' && !text.endsWith('\n')) {
+        lines.pop();
+      }
       processInfo.error.push(...lines);
+      console.log('[ProcessManager] Emitting stderr event with', lines.length, 'lines');
       this.emit('output', { id, type: 'stderr', data: lines });
     });
 
     // Handle process completion
-    return new Promise((resolve, reject) => {
-      childProcess.on('exit', (code) => {
-        processInfo.status = code === 0 ? 'completed' : 'failed';
-        processInfo.exitCode = code !== null ? code : undefined;
-        processInfo.endTime = new Date();
-        
-        this.emit('process:exit', { id, code });
-        
-        if (code === 0) {
-          resolve({
-            id,
-            output: processInfo.output,
-            exitCode: code,
-          });
-        } else {
-          reject(new Error(`Process failed with exit code ${code}`));
-        }
-      });
-
-      childProcess.on('error', (error) => {
-        processInfo.status = 'failed';
-        processInfo.endTime = new Date();
-        this.emit('process:error', { id, error });
-        reject(error);
-      });
+    childProcess.on('exit', (code) => {
+      processInfo.status = code === 0 ? 'completed' : 'failed';
+      processInfo.exitCode = code !== null ? code : undefined;
+      processInfo.endTime = new Date();
+      
+      this.emit('process:exit', { id, code });
     });
+
+    childProcess.on('error', (error) => {
+      processInfo.status = 'failed';
+      processInfo.endTime = new Date();
+      this.emit('process:error', { id, error });
+    });
+
+    // Return immediately with process info
+    return {
+      id,
+      pid: processInfo.pid,
+      command,
+      args,
+      startTime: processInfo.startTime
+    };
   }
 
   async cancel(processId: string): Promise<void> {

@@ -81,10 +81,12 @@ const LogsTab: React.FC = () => {
     
     webSocket.outputs.forEach((outputs, processId) => {
       outputs.forEach(output => {
-        output.data.forEach(line => {
-          if (line.trim()) {
+        // Handle both single line and array of lines
+        const lines = Array.isArray(output.data) ? output.data : [output.data];
+        lines.forEach((line, index) => {
+          if (line && line.trim()) {
             logs.push({
-              id: `${processId}-${output.timestamp}-${Math.random()}`,
+              id: `${processId}-${output.timestamp}-${index}-${Math.random()}`,
               timestamp: new Date(output.timestamp),
               level: output.type === 'stderr' ? 'error' : 'info',
               source: `Process-${processId.slice(0, 8)}`,
@@ -153,7 +155,7 @@ const LogsTab: React.FC = () => {
 
   // Format logs as text for Monaco editor
   const formattedLogsText = useMemo(() => {
-    return filteredLogs.map(log => {
+    const formattedText = filteredLogs.map(log => {
       const timestamp = log.timestamp.toISOString().replace('T', ' ').replace('Z', '');
       const level = log.level.toUpperCase().padEnd(7);
       const source = log.source.padEnd(12);
@@ -171,7 +173,21 @@ const LogsTab: React.FC = () => {
       
       return logLine;
     }).join('\n');
-  }, [filteredLogs]);
+    
+    // Optional debug logging (disabled in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('LogsTab: Formatting logs', {
+        totalLogs: allLogs.length,
+        filteredLogs: filteredLogs.length,
+        processLogs: processLogs.length,
+        systemLogs: state.logs.length,
+        webSocketOutputs: webSocket.outputs.size,
+        formattedTextLength: formattedText.length,
+      });
+    }
+    
+    return formattedText;
+  }, [filteredLogs, allLogs.length, processLogs.length, state.logs.length, webSocket.outputs.size]);
 
   // Handle level filter changes
   const handleLevelChange = (event: SelectChangeEvent<LogLevel[]>) => {
@@ -267,16 +283,16 @@ const LogsTab: React.FC = () => {
     const interval = setInterval(checkActiveProcesses, 5000);
     
     return () => clearInterval(interval);
-  }, [activeProcesses, webSocket, logger]);
+  }, [activeProcesses, webSocket]); // Remove logger from deps to prevent re-runs
 
-  // Log WebSocket connection status
+  // Log WebSocket connection status (only when it changes)
   useEffect(() => {
     if (webSocket.isConnected) {
       logger.info('Connected to backend WebSocket server');
     } else {
       logger.warning('Disconnected from backend WebSocket server');
     }
-  }, [webSocket.isConnected, logger]);
+  }, [webSocket.isConnected]); // Remove logger from deps to prevent infinite loop
 
   // Add some test logs for demonstration
   const addTestLogs = () => {
@@ -296,7 +312,23 @@ const LogsTab: React.FC = () => {
       });
     });
     
-    logger.info(`Added ${testLogs.length} test logs`);
+    // Also add some process-like logs directly to test the formatting
+    const processLogs = [
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Starting Azure resource discovery...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Authenticating with Azure...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Discovered 15 resources in resource group "test-rg"' },
+      { level: 'debug' as LogLevel, source: 'Process-abcd1234', message: 'Processing virtual machines...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Found 3 VMs, 2 storage accounts, 1 network security group' },
+    ];
+    
+    processLogs.forEach(log => {
+      dispatch({
+        type: 'ADD_STRUCTURED_LOG',
+        payload: log,
+      });
+    });
+    
+    logger.info(`Added ${testLogs.length} test system logs and simulated process output`);
   };
 
   return (
@@ -362,7 +394,7 @@ const LogsTab: React.FC = () => {
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Add test logs">
+          <Tooltip title="Add test logs (system + process)">
             <IconButton onClick={addTestLogs} size="small">
               <RefreshIcon />
             </IconButton>

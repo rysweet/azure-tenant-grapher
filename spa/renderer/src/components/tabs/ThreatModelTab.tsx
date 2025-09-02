@@ -85,20 +85,71 @@ const ThreatModelTab: React.FC = () => {
         if (data.id === result.data.id) {
           setIsAnalyzing(false);
           if (data.code === 0) {
-            // Parse results from output
-            setResults({
-              riskLevel: 'medium',
-              threats: [
-                {
-                  id: '1',
-                  name: 'Excessive Permissions',
-                  description: 'Service principals have broad access',
-                  severity: 'high',
-                  mitigation: 'Implement least privilege principle',
-                },
-              ],
-              summary: 'Analysis complete. Found potential security issues.',
-            });
+            // Parse results from output buffer
+            try {
+              // Look for JSON output in the buffer
+              const jsonMatch = outputBuffer.match(/\{[\s\S]*"threats"[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsedResults = JSON.parse(jsonMatch[0]);
+                setResults(parsedResults);
+              } else {
+                // Fallback: create results from output analysis
+                const threats = [];
+                let threatId = 1;
+                
+                // Parse common threat patterns from output
+                if (outputBuffer.includes('Excessive permissions') || outputBuffer.includes('broad access')) {
+                  threats.push({
+                    id: String(threatId++),
+                    name: 'Excessive Permissions',
+                    description: 'Service principals or users have overly broad access rights',
+                    severity: 'high',
+                    mitigation: 'Implement least privilege principle and review permissions',
+                  });
+                }
+                
+                if (outputBuffer.includes('No MFA') || outputBuffer.includes('multi-factor')) {
+                  threats.push({
+                    id: String(threatId++),
+                    name: 'Missing Multi-Factor Authentication',
+                    description: 'Accounts without MFA are vulnerable to credential attacks',
+                    severity: 'high',
+                    mitigation: 'Enable MFA for all privileged accounts',
+                  });
+                }
+                
+                if (outputBuffer.includes('stale') || outputBuffer.includes('unused')) {
+                  threats.push({
+                    id: String(threatId++),
+                    name: 'Stale Resources',
+                    description: 'Unused resources increase attack surface',
+                    severity: 'medium',
+                    mitigation: 'Remove or disable unused resources',
+                  });
+                }
+                
+                // Determine risk level based on threats found
+                const highSeverityCount = threats.filter(t => t.severity === 'high').length;
+                let riskLevel = 'low';
+                if (highSeverityCount >= 2) riskLevel = 'high';
+                else if (highSeverityCount === 1 || threats.length >= 2) riskLevel = 'medium';
+                
+                setResults({
+                  riskLevel,
+                  threats: threats.length > 0 ? threats : [{
+                    id: '1',
+                    name: 'No Critical Issues Found',
+                    description: 'Security posture appears acceptable',
+                    severity: 'low',
+                    mitigation: 'Continue monitoring and regular reviews',
+                  }],
+                  summary: `Analysis complete. Found ${threats.length} potential security issues.`,
+                });
+              }
+            } catch (parseError) {
+              console.error('Failed to parse threat model results:', parseError);
+              setError('Failed to parse analysis results');
+            }
           } else {
             setError(`Analysis failed with exit code ${data.code}`);
           }

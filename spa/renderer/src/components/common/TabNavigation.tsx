@@ -27,7 +27,7 @@ const allTabs = [
   { label: 'Status', path: '/status', icon: <StatusIcon /> },
   { label: 'Scan', path: '/scan', icon: <ScanIcon /> },
   { label: 'Visualize', path: '/visualize', icon: <VisualizeIcon /> },
-  { label: 'Generate Spec', path: '/generate-spec', icon: <SpecIcon /> },
+  { label: 'Export Spec', path: '/generate-spec', icon: <SpecIcon /> },
   { label: 'Generate IaC', path: '/generate-iac', icon: <CodeIcon /> },
   { label: 'Create Tenant', path: '/create-tenant', icon: <CreateIcon /> },
   { label: 'Agent Mode', path: '/agent-mode', icon: <AgentIcon /> },

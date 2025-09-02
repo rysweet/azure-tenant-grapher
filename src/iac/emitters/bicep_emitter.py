@@ -437,7 +437,31 @@ class BicepEmitter(IaCEmitter):
         return "\n".join(lines)
 
     def validate_template(self, template_data: Dict[str, Any]) -> bool:
-        raise NotImplementedError("Bicep template validation not yet implemented")
+        """Validate the Bicep template structure."""
+        # Basic validation for Bicep templates
+        required_fields = ["targetScope", "metadata", "resources"]
+        
+        for field in required_fields:
+            if field not in template_data:
+                self.logger.error(f"Missing required field in Bicep template: {field}")
+                return False
+        
+        # Validate resources structure
+        if not isinstance(template_data.get("resources"), list):
+            self.logger.error("Resources must be a list in Bicep template")
+            return False
+        
+        # Validate each resource has required fields
+        for idx, resource in enumerate(template_data.get("resources", [])):
+            if not isinstance(resource, dict):
+                self.logger.error(f"Resource {idx} is not a dictionary")
+                return False
+            
+            if "type" not in resource or "name" not in resource:
+                self.logger.error(f"Resource {idx} missing required 'type' or 'name' field")
+                return False
+        
+        return True
 
 
 register_emitter("bicep", BicepEmitter)

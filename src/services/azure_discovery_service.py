@@ -81,7 +81,7 @@ class AzureDiscoveryService:
         """Get the cached list of discovered subscriptions."""
         return self._subscriptions.copy()
 
-    async def discover_subscriptions(self) -> List[Dict[str, Any]]:
+    async def discover_subscriptions(self, _skip_fallback: bool = False) -> List[Dict[str, Any]]:
         """
         Discover all subscriptions in the tenant.
 
@@ -110,6 +110,21 @@ class AzureDiscoveryService:
                     )
                 self._subscriptions = subscriptions
                 logger.info(f"✅ Discovered {len(subscriptions)} subscriptions total")
+                
+                # If we get 0 subscriptions but no error, it might be a permissions issue
+                # Try Azure CLI credential as a fallback (only if not already in fallback mode)
+                if len(subscriptions) == 0 and not _skip_fallback:
+                    logger.warning("🔄 Got 0 subscriptions with current credential, attempting Azure CLI fallback...")
+                    try:
+                        fallback_subs = await self._handle_auth_fallback()
+                        if len(fallback_subs) > 0:
+                            logger.info(f"✅ Azure CLI fallback succeeded, found {len(fallback_subs)} subscriptions")
+                            self._subscriptions = fallback_subs
+                            return fallback_subs
+                    except Exception as fallback_exc:
+                        logger.warning(f"Azure CLI fallback failed: {fallback_exc}")
+                        # Continue with original empty result
+                
                 return subscriptions
             except AzureError:
                 # Log and propagate so outer retry loop can handle
@@ -367,8 +382,8 @@ class AzureDiscoveryService:
             logger.info("✅ Successfully authenticated with AzureCliCredential")
             if discovery_func:
                 return await discovery_func(self.credential, *args, **kwargs)
-            # Default: retry subscription discovery with new credential
-            return await self.discover_subscriptions()
+            # Default: retry subscription discovery with new credential (skip fallback to avoid recursion)
+            return await self.discover_subscriptions(_skip_fallback=True)
         except CredentialUnavailableError as exc:
             logger.exception("AzureCliCredential unavailable")
             raise AzureAuthenticationError(

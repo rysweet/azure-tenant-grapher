@@ -34,23 +34,29 @@ body {
   height: 100vh;
 }
 
-/* Custom scrollbar styles */
+/* Custom scrollbar styles - more visible */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #2d2d30;
+  background: #1a1a1a;
+  border: 1px solid #333;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 5px;
+  background: #4caf50;
+  border-radius: 6px;
+  border: 1px solid #2d2d30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: #5cbf60;
+}
+
+::-webkit-scrollbar-corner {
+  background: #1a1a1a;
 }
 
 /* Monaco Editor styles */

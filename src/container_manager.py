@@ -124,7 +124,10 @@ class Neo4jContainerManager:
         if uri_env:
             self.neo4j_uri = uri_env
         else:
-            self.neo4j_uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
+            port = os.environ.get('NEO4J_PORT')
+            if not port:
+                raise ValueError("NEO4J_PORT environment variable is required when NEO4J_URI is not set")
+            self.neo4j_uri = f"bolt://localhost:{port}"
         if self.debug:
             print(
                 f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"

@@ -1,0 +1,326 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: azure-tenant-grapher
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atg-config
+  namespace: azure-tenant-grapher
+data:
+  NEO4J_URI: "bolt://neo4j-service:7687"
+  NEO4J_USER: "neo4j"
+  NEO4J_PORT: "7687"
+  MCP_URL: "http://mcp-service:8080"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atg-secrets
+  namespace: azure-tenant-grapher
+type: Opaque
+stringData:
+  NEO4J_PASSWORD: "CHANGE_ME"
+  AZURE_TENANT_ID: "CHANGE_ME"
+  AZURE_CLIENT_ID: "CHANGE_ME"
+  AZURE_CLIENT_SECRET: "CHANGE_ME"
+  AZURE_OPENAI_ENDPOINT: "CHANGE_ME"
+  AZURE_OPENAI_API_KEY: "CHANGE_ME"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  namespace: azure-tenant-grapher
+spec:
+  serviceName: neo4j-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      containers:
+      - name: neo4j
+        image: neo4j:5.19-community
+        ports:
+        - containerPort: 7687
+          name: bolt
+        - containerPort: 7474
+          name: http
+        env:
+        - name: NEO4J_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: NEO4J_PASSWORD
+        - name: NEO4J_PLUGINS
+          value: '["apoc"]'
+        - name: NEO4J_dbms_memory_pagecache_size
+          value: "1G"
+        - name: NEO4J_dbms_memory_heap_max__size
+          value: "2G"
+        volumeMounts:
+        - name: neo4j-data
+          mountPath: /data
+        - name: neo4j-logs
+          mountPath: /logs
+        livenessProbe:
+          exec:
+            command:
+            - cypher-shell
+            - -u
+            - neo4j
+            - -p
+            - $(NEO4J_PASSWORD)
+            - "RETURN 1"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - cypher-shell
+            - -u
+            - neo4j
+            - -p
+            - $(NEO4J_PASSWORD)
+            - "RETURN 1"
+          initialDelaySeconds: 15
+          periodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: neo4j-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+  - metadata:
+      name: neo4j-logs
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j-service
+  namespace: azure-tenant-grapher
+spec:
+  selector:
+    app: neo4j
+  ports:
+  - name: bolt
+    port: 7687
+    targetPort: 7687
+  - name: http
+    port: 7474
+    targetPort: 7474
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  namespace: azure-tenant-grapher
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+      - name: mcp-server
+        image: atg-mcp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: NEO4J_URI
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: NEO4J_URI
+        - name: NEO4J_USER
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: NEO4J_USER
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: NEO4J_PASSWORD
+        - name: NEO4J_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: NEO4J_PORT
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-service
+  namespace: azure-tenant-grapher
+spec:
+  selector:
+    app: mcp-server
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spa
+  namespace: azure-tenant-grapher
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spa
+  template:
+    metadata:
+      labels:
+        app: spa
+    spec:
+      containers:
+      - name: spa
+        image: atg-spa:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEO4J_URI
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: NEO4J_URI
+        - name: NEO4J_USER
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: NEO4J_USER
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: NEO4J_PASSWORD
+        - name: MCP_URL
+          valueFrom:
+            configMapKeyRef:
+              name: atg-config
+              key: MCP_URL
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: AZURE_TENANT_ID
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: AZURE_CLIENT_ID
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: AZURE_CLIENT_SECRET
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: AZURE_OPENAI_ENDPOINT
+        - name: AZURE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: atg-secrets
+              key: AZURE_OPENAI_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spa-service
+  namespace: azure-tenant-grapher
+spec:
+  selector:
+    app: spa
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atg-ingress
+  namespace: azure-tenant-grapher
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - atg.yourdomain.com
+    secretName: atg-tls
+  rules:
+  - host: atg.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: spa-service
+            port:
+              number: 3000
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: mcp-service
+            port:
+              number: 8080
