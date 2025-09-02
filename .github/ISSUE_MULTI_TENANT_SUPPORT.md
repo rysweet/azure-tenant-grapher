@@ -65,18 +65,63 @@ class TenantRegistry:
     def get_credential(self, tenant_id: str) -> ClientSecretCredential
 ```
 
-#### 1.2 Secure Credential Storage
+#### 1.2 Secure Credential Storage (Enhanced with Azure MCP)
 
-Implement encrypted credential storage using keyring or Azure Key Vault:
+**Update**: Based on Azure MCP Server analysis (Issue #201), we should leverage Azure Key Vault via Azure MCP for credential management instead of local storage.
 
 ```python
 # src/credential_manager.py
+from azure_mcp_client import AzureMCPClient
+
 class CredentialManager:
-    def store_credential(self, tenant_id: str, client_id: str, client_secret: str)
-    def retrieve_credential(self, tenant_id: str) -> Tuple[str, str]
-    def delete_credential(self, tenant_id: str)
-    def rotate_credential(self, tenant_id: str, new_secret: str)
+    """
+    Secure credential management using Azure Key Vault via Azure MCP.
+    This provides enterprise-grade security for multi-tenant credentials.
+    """
+    def __init__(self):
+        self.mcp = AzureMCPClient()
+        self.vault_name = "atg-credentials"
+    
+    async def store_credential(self, tenant_id: str, client_id: str, client_secret: str):
+        """Store tenant credentials in Azure Key Vault."""
+        await self.mcp.tools.azure_keyvault.set_secret(
+            vault_name=self.vault_name,
+            secret_name=f"tenant-{tenant_id}-clientid",
+            value=client_id
+        )
+        await self.mcp.tools.azure_keyvault.set_secret(
+            vault_name=self.vault_name,
+            secret_name=f"tenant-{tenant_id}-secret",
+            value=client_secret
+        )
+    
+    async def retrieve_credential(self, tenant_id: str) -> Tuple[str, str]:
+        """Retrieve tenant credentials from Azure Key Vault."""
+        client_id = await self.mcp.tools.azure_keyvault.get_secret(
+            vault_name=self.vault_name,
+            secret_name=f"tenant-{tenant_id}-clientid"
+        )
+        client_secret = await self.mcp.tools.azure_keyvault.get_secret(
+            vault_name=self.vault_name,
+            secret_name=f"tenant-{tenant_id}-secret"
+        )
+        return client_id, client_secret
+    
+    async def rotate_credential(self, tenant_id: str, new_secret: str):
+        """Rotate tenant credential with versioning."""
+        await self.mcp.tools.azure_keyvault.set_secret(
+            vault_name=self.vault_name,
+            secret_name=f"tenant-{tenant_id}-secret",
+            value=new_secret
+        )
 ```
+
+**Benefits of Azure Key Vault Integration:**
+- Enterprise-grade encryption and security
+- Automatic credential rotation support
+- Audit logging and compliance tracking
+- Integration with Azure RBAC for access control
+- No local credential storage required
 
 ### Phase 2: Database Schema Evolution
 
@@ -162,6 +207,78 @@ class TenantContext:
     def with_tenant(self, tenant_id: str) -> ContextManager
 ```
 
+### Phase 3.5: Azure MCP Integration for Multi-Tenant Operations
+
+**Update**: Leverage Azure MCP Server (Issue #201) for enhanced multi-tenant capabilities.
+
+#### 3.5.1 Multi-Tenant Resource Discovery via Azure MCP
+
+```python
+# src/services/multi_tenant_discovery.py
+class MultiTenantDiscoveryService:
+    """
+    Use Azure MCP for efficient multi-tenant resource discovery.
+    """
+    def __init__(self):
+        self.mcp = AzureMCPClient()
+        self.credential_manager = CredentialManager()
+    
+    async def discover_all_tenants(self, tenant_ids: List[str]):
+        """Discover resources across multiple tenants concurrently."""
+        tasks = []
+        for tenant_id in tenant_ids:
+            # Retrieve credentials from Key Vault
+            creds = await self.credential_manager.retrieve_credential(tenant_id)
+            
+            # Create tenant-specific MCP context
+            tenant_mcp = self.mcp.with_credentials(tenant_id, creds)
+            
+            # Launch discovery task
+            tasks.append(self.discover_tenant(tenant_mcp, tenant_id))
+        
+        results = await asyncio.gather(*tasks)
+        return dict(zip(tenant_ids, results))
+    
+    async def discover_tenant(self, mcp_client, tenant_id: str):
+        """Discover all resources in a single tenant via MCP."""
+        resources = await mcp_client.tools.azure_resources.list_all()
+        
+        # Tag resources with tenant context
+        for resource in resources:
+            resource['tenant_id'] = tenant_id
+        
+        return resources
+```
+
+#### 3.5.2 Cross-Tenant Permission Analysis
+
+```python
+async def analyze_cross_tenant_permissions(self):
+    """Use Azure MCP RBAC tools to analyze permissions across tenants."""
+    analysis = {}
+    
+    for tenant_id in self.tenant_ids:
+        tenant_mcp = await self.get_tenant_mcp(tenant_id)
+        
+        # Get role assignments via MCP
+        assignments = await tenant_mcp.tools.azure_rbac.list_role_assignments()
+        
+        # Check for cross-tenant service principals
+        for assignment in assignments:
+            if assignment.principal_type == "ServicePrincipal":
+                # Check if this SP exists in other tenants
+                cross_tenant = await self.check_cross_tenant_sp(
+                    assignment.principal_id
+                )
+                if cross_tenant:
+                    analysis[tenant_id] = {
+                        'risk': 'high',
+                        'detail': f'Service principal {assignment.principal_id} has access to multiple tenants'
+                    }
+    
+    return analysis
+```
+
 ### Phase 4: User Interface Enhancements
 
 #### 4.1 Tenant Selector Component
@@ -244,15 +361,170 @@ class MultiTenantThreatModeler:
         """Discover potential lateral movement between tenants"""
 ```
 
+### Phase 6: Enhanced Agent Mode with Azure MCP Integration
+
+**Update**: Integrate Azure MCP Server with Agent Mode for powerful multi-tenant AI capabilities (Issues #201).
+
+#### 6.1 Dual MCP Architecture for Agent Mode
+
+```python
+# src/agent_mode_enhanced.py
+class EnhancedAgentMode:
+    """
+    Agent Mode with dual MCP servers:
+    - Azure MCP for Azure service interactions
+    - Neo4j MCP for graph database queries
+    """
+    def __init__(self):
+        self.azure_mcp = AzureMCPClient()
+        self.neo4j_mcp = Neo4jMCPClient()
+        self.credential_manager = CredentialManager()
+        self.tenant_registry = TenantRegistry()
+    
+    async def setup_multi_tenant_context(self):
+        """Initialize MCP clients for all registered tenants."""
+        self.tenant_contexts = {}
+        
+        for tenant in self.tenant_registry.list_tenants():
+            # Get credentials from Key Vault via Azure MCP
+            creds = await self.credential_manager.retrieve_credential(tenant.tenant_id)
+            
+            # Create tenant-specific Azure MCP context
+            self.tenant_contexts[tenant.tenant_id] = {
+                'azure_mcp': self.azure_mcp.with_credentials(tenant.tenant_id, creds),
+                'display_name': tenant.display_name
+            }
+```
+
+#### 6.2 Natural Language Multi-Tenant Queries
+
+```python
+async def process_multi_tenant_query(self, query: str):
+    """
+    Process natural language queries across multiple tenants.
+    
+    Examples:
+    - "Compare storage accounts between prod and dev tenants"
+    - "Find all VMs without backup across all tenants"
+    - "Show cross-tenant network connections"
+    """
+    # Use LLM to understand query intent
+    intent = await self.analyze_query_intent(query)
+    
+    if intent.scope == "all_tenants":
+        results = {}
+        for tenant_id, context in self.tenant_contexts.items():
+            # Use Azure MCP to get Azure resources
+            azure_data = await context['azure_mcp'].tools.query(intent.azure_query)
+            
+            # Store in Neo4j with tenant context
+            await self.neo4j_mcp.tools.store_with_tenant(azure_data, tenant_id)
+            
+            # Query Neo4j for analysis
+            graph_results = await self.neo4j_mcp.tools.query(
+                f"MATCH (r:Resource {{tenant_id: '{tenant_id}'}}) {intent.cypher_filter}"
+            )
+            
+            results[context['display_name']] = graph_results
+        
+        return self.format_multi_tenant_results(results)
+    
+    elif intent.scope == "cross_tenant":
+        # Handle cross-tenant relationship queries
+        return await self.analyze_cross_tenant_relationships(intent)
+```
+
+#### 6.3 Agent Mode System Prompt Enhancement
+
+```python
+ENHANCED_SYSTEM_MESSAGE = """
+You are a multi-tenant Azure graph/security assistant with access to:
+
+1. Azure MCP Server - For interacting with Azure services:
+   - List and analyze resources across multiple tenants
+   - Query Azure Monitor, Key Vault, RBAC, and 30+ services
+   - Execute Azure CLI commands
+   - Manage credentials securely via Key Vault
+
+2. Neo4j MCP Server - For graph database operations:
+   - Query the graph with Cypher
+   - Analyze relationships and patterns
+   - Perform threat modeling
+
+3. Multi-Tenant Context:
+   - You can switch between tenants using 'use tenant <name>'
+   - Compare resources across tenants
+   - Identify cross-tenant security risks
+
+When answering questions:
+1. Determine if the query is single-tenant or multi-tenant
+2. Use Azure MCP to gather Azure-specific data
+3. Use Neo4j MCP to analyze graph relationships
+4. Combine insights from both sources
+
+Example workflows:
+- "Which tenant has the most exposed storage accounts?"
+  1. Use Azure MCP to list storage accounts per tenant
+  2. Check public access settings via Azure MCP
+  3. Store results in Neo4j with tenant context
+  4. Query Neo4j to compare across tenants
+
+- "Find service principals with access to multiple tenants"
+  1. Use Azure MCP RBAC tools per tenant
+  2. Correlate principal IDs across tenants
+  3. Create cross-tenant relationships in Neo4j
+  4. Query for security risks
+"""
+```
+
+#### 6.4 Agent Mode CLI Integration
+
+```bash
+# Multi-tenant agent mode commands
+atg agent-mode --all-tenants  # Load all tenant contexts
+atg agent-mode --tenants prod,dev,staging  # Specific tenants
+atg agent-mode --tenant prod  # Single tenant (backward compatible)
+
+# In agent mode session
+> list all key vaults across tenants
+> compare VM configurations between prod and dev
+> find resources accessible from multiple tenants
+> which tenant has the highest security risk score?
+```
+
+#### 6.5 Agent Mode UI Enhancement
+
+```typescript
+// Enhanced Agent Mode tab with tenant context
+interface AgentModeState {
+  selectedTenants: string[];
+  currentQuery: string;
+  results: {
+    tenantId: string;
+    tenantName: string;
+    data: any;
+  }[];
+  comparisonMode: boolean;
+}
+
+const EnhancedAgentModeTab: React.FC = () => {
+  // Tenant selector for scoping queries
+  // Results display with tenant grouping
+  // Comparison view for multi-tenant results
+  // Cross-tenant relationship visualization
+}
+```
+
 ## Implementation Roadmap
 
 **Note**: Since the tool is not in production, we can implement these changes directly without maintaining backward compatibility.
 
-### Milestone 1: Foundation (Weeks 1-2)
-- [ ] Implement TenantRegistry and CredentialManager
+### Milestone 1: Foundation with Azure MCP (Weeks 1-2)
+- [ ] Implement TenantRegistry 
+- [ ] Integrate Azure MCP for Key Vault credential management
 - [ ] Add tenant CLI commands (add, list, remove, use)
 - [ ] Update configuration system for multi-tenant
-- [ ] Add secure credential storage
+- [ ] Set up Azure Key Vault for credential storage via MCP
 
 ### Milestone 2: Database (Weeks 3-4)
 - [ ] Create schema migrations for tenant context
@@ -260,11 +532,13 @@ class MultiTenantThreatModeler:
 - [ ] Implement tenant data isolation
 - [ ] Add cross-tenant relationship support
 
-### Milestone 3: Core Services (Weeks 5-6)
-- [ ] Update AzureDiscoveryService for multi-tenant
+### Milestone 3: Core Services with Azure MCP (Weeks 5-6)
+- [ ] Integrate Azure MCP alongside AzureDiscoveryService
+- [ ] Implement MultiTenantDiscoveryService using Azure MCP
 - [ ] Modify ResourceProcessingService for tenant context
 - [ ] Update AADGraphService for multiple tenants
-- [ ] Add concurrent multi-tenant discovery
+- [ ] Add concurrent multi-tenant discovery via MCP
+- [ ] Implement cross-tenant permission analysis
 
 ### Milestone 4: User Interface (Weeks 7-8)
 - [ ] Build TenantSelector component
@@ -272,9 +546,11 @@ class MultiTenantThreatModeler:
 - [ ] Update all tabs for tenant context
 - [ ] Add multi-tenant dashboard views
 
-### Milestone 5: Advanced Features (Weeks 9-10)
-- [ ] Implement cross-tenant hydration
+### Milestone 5: Advanced Features & Agent Mode (Weeks 9-10)
+- [ ] Implement enhanced Agent Mode with dual MCP architecture
+- [ ] Add natural language multi-tenant queries
 - [ ] Build tenant comparison engine
+- [ ] Implement cross-tenant hydration via Azure MCP
 - [ ] Add multi-tenant threat modeling
 - [ ] Create tenant synchronization tools
 
@@ -373,20 +649,40 @@ Since the tool is not yet in production, we can make breaking changes without mi
 ## Open Questions
 
 1. **Database Architecture**: Single Neo4j instance with tenant isolation vs. separate instances per tenant?
-2. **Credential Storage**: OS keyring vs. Azure Key Vault vs. custom encryption?
+2. ~~**Credential Storage**: OS keyring vs. Azure Key Vault vs. custom encryption?~~ **RESOLVED**: Use Azure Key Vault via Azure MCP (Issue #201)
 3. **UI/UX**: How to best visualize cross-tenant relationships?
 4. **Performance**: Maximum number of concurrent tenants to support?
 5. **Compliance**: How to handle data residency requirements?
+
+## Integration with Azure MCP Server
+
+Based on the Azure MCP Server analysis (Issue #201), this multi-tenant implementation will leverage Azure MCP for:
+
+1. **Credential Management**: Azure Key Vault integration for secure multi-tenant credentials
+2. **Resource Discovery**: Simplified multi-tenant resource enumeration
+3. **RBAC Analysis**: Cross-tenant permission auditing
+4. **Agent Mode**: Dual MCP architecture for powerful multi-tenant queries
+5. **Real-time Monitoring**: Azure Monitor integration for change detection
+
+## Dependencies
+
+- **Azure MCP Server** (Issue #201) - For Azure service interactions
+- **Neo4j MCP Server** (existing) - For graph database operations
+- **Azure Key Vault** - For credential storage
+- **Azure subscription** - For Key Vault and Azure MCP testing
 
 ## References
 
 - [Azure Multi-Tenant Best Practices](https://docs.microsoft.com/en-us/azure/architecture/guide/multitenant/overview)
 - [Neo4j Multi-Tenancy Patterns](https://neo4j.com/docs/operations-manual/current/manage-databases/multi-tenancy/)
+- [Azure MCP Server](https://github.com/Azure/azure-mcp) (Issue #201)
 - [Secure Credential Storage Patterns](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
 
 ---
 
-**Labels**: `enhancement`, `architecture`, `breaking-change`, `security`
+**Labels**: `enhancement`, `architecture`, `breaking-change`, `security`, `azure-mcp`
+
+**Related Issues**: #201 (Azure MCP Server Integration)
 
 **Assignees**: TBD
 
