@@ -16,9 +16,11 @@ def check_database_progress() -> None:
     """Check the current state of the Neo4j database."""
 
     # Connect to Neo4j
-    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7688")
+    neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
-    neo4j_password = os.getenv("NEO4J_PASSWORD", "example-password")
+    neo4j_password = os.getenv("NEO4J_PASSWORD")
+    if not neo4j_password:
+        raise ValueError("NEO4J_PASSWORD environment variable is required")
 
     try:
         driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
@@ -139,7 +141,7 @@ def check_database_progress() -> None:
 
     except Exception as e:
         print(f"❌ Error connecting to Neo4j: {e}")
-        print("💡 Make sure Neo4j is running on bolt://localhost:7688")
+        print("💡 Make sure Neo4j is running on bolt://localhost:7687")
 
 
 def main() -> None:

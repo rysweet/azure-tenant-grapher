@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.19-community
+    container_name: atg-neo4j-prod
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - NEO4J_dbms_memory_heap_initial__size=1G
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_server_bolt_advertised__address=:7687
+      - NEO4J_server_http_advertised__address=:7474
+    ports:
+      - "${NEO4J_PORT:-7687}:7687"
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_plugins:/plugins
+    networks:
+      - atg_network
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1' | cypher-shell -u neo4j -p ${NEO4J_PASSWORD} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: atg-mcp-server
+    restart: unless-stopped
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_PORT=7687
+    ports:
+      - "${MCP_PORT:-8080}:8080"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - atg_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  spa:
+    build:
+      context: ./spa
+      dockerfile: Dockerfile
+    container_name: atg-spa
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - MCP_URL=http://mcp-server:8080
+      # Azure configuration
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      # OpenAI configuration
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - AZURE_OPENAI_MODEL_CHAT=${AZURE_OPENAI_MODEL_CHAT}
+    ports:
+      - "${SPA_PORT:-3000}:3000"
+    depends_on:
+      - neo4j
+      - mcp-server
+    networks:
+      - atg_network
+    volumes:
+      - spa_data:/app/data
+
+  nginx:
+    image: nginx:alpine
+    container_name: atg-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - spa
+      - mcp-server
+    networks:
+      - atg_network
+
+networks:
+  atg_network:
+    driver: bridge
+
+volumes:
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_plugins:
+    driver: local
+  spa_data:
+    driver: local

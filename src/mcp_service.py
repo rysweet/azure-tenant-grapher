@@ -43,10 +43,12 @@ async def start_healthcheck_server(port: int = 8080):
     
     async def health_handler(request: web.Request):
         # Check Neo4j connection
-        neo4j_port = os.environ.get("NEO4J_PORT", "7688")
+        neo4j_port = os.environ.get("NEO4J_PORT", "7687")
         neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
         neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-        neo4j_password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+        neo4j_password = os.environ.get("NEO4J_PASSWORD")
+        if not neo4j_password:
+            raise ValueError("NEO4J_PASSWORD environment variable is required")
         
         neo4j_connected = can_connect_to_neo4j(neo4j_uri, neo4j_user, neo4j_password)
         
@@ -95,10 +97,12 @@ async def run_mcp_service():
             await asyncio.sleep(60)  # Check every minute
             
             # Verify Neo4j is still accessible
-            neo4j_port = os.environ.get("NEO4J_PORT", "7688")
+            neo4j_port = os.environ.get("NEO4J_PORT", "7687")
             neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
             neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-            neo4j_password = os.environ.get("NEO4J_PASSWORD", "azure-grapher-2024")
+            neo4j_password = os.environ.get("NEO4J_PASSWORD")
+        if not neo4j_password:
+            raise ValueError("NEO4J_PASSWORD environment variable is required")
             
             if not can_connect_to_neo4j(neo4j_uri, neo4j_user, neo4j_password):
                 logger.warning("Neo4j connection lost, attempting to reconnect...")

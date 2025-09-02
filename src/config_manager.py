@@ -52,13 +52,13 @@ class Neo4jConfig:
     uri: Optional[str] = None
     user: str = field(default_factory=lambda: os.getenv("NEO4J_USER", "neo4j"))
     password: str = field(
-        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "example-password")
+        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "")
     )
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if not self.uri or (self.uri.strip() == ""):
-            self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7688')}"
+            self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
         if not self.uri:
             raise ValueError("Neo4j URI is required")
         if not self.user:

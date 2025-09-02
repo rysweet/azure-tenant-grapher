@@ -1,0 +1,27 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY migrations/ ./migrations/
+
+# Install Python dependencies
+RUN uv sync --frozen
+
+# Expose healthcheck port
+EXPOSE 8080
+
+# Run the MCP service
+CMD ["uv", "run", "python", "-m", "src.mcp_service"]
