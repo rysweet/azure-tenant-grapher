@@ -58,7 +58,10 @@ class Neo4jConfig:
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if not self.uri or (self.uri.strip() == ""):
-            self.uri = f"bolt://localhost:{os.environ.get('NEO4J_PORT', '7687')}"
+            port = os.environ.get('NEO4J_PORT')
+            if not port:
+                raise ValueError("NEO4J_PORT environment variable is required when NEO4J_URI is not set")
+            self.uri = f"bolt://localhost:{port}"
         if not self.uri:
             raise ValueError("Neo4j URI is required")
         if not self.user:

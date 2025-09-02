@@ -43,7 +43,9 @@ async def start_healthcheck_server(port: int = 8080):
     
     async def health_handler(request: web.Request):
         # Check Neo4j connection
-        neo4j_port = os.environ.get("NEO4J_PORT", "7687")
+        neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            raise ValueError("NEO4J_PORT environment variable is required")
         neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
         neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
         neo4j_password = os.environ.get("NEO4J_PASSWORD")
@@ -97,7 +99,9 @@ async def run_mcp_service():
             await asyncio.sleep(60)  # Check every minute
             
             # Verify Neo4j is still accessible
-            neo4j_port = os.environ.get("NEO4J_PORT", "7687")
+            neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            raise ValueError("NEO4J_PORT environment variable is required")
             neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
             neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
             neo4j_password = os.environ.get("NEO4J_PASSWORD")

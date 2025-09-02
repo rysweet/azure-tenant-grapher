@@ -793,9 +793,18 @@ def wipe_database(force: bool) -> None:
 
     try:
         # Connect to Neo4j
-        uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        uri = os.getenv("NEO4J_URI")
+        if not uri:
+            port = os.getenv("NEO4J_PORT")
+            if not port:
+                console.print("[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]")
+                return False
+            uri = f"bolt://localhost:{port}"
         user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+        password = os.getenv("NEO4J_PASSWORD")
+        if not password:
+            console.print("[red]❌ NEO4J_PASSWORD environment variable is required[/red]")
+            return False
 
         driver = GraphDatabase.driver(uri, auth=(user, password))
 
