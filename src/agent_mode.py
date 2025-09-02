@@ -336,54 +336,70 @@ async def _process_question_manually(workbench: any, question: str):
             if isinstance(get_schema_tool, dict)
             else getattr(get_schema_tool, "name", None)
         )
-        await workbench.call_tool(schema_tool_name, {})
+        schema_result = await workbench.call_tool(schema_tool_name, {})
         print("✅ Schema retrieved")
+        
+        # Extract schema from result
+        schema_text = ""
+        if hasattr(schema_result, "result") and schema_result.result:
+            for item in schema_result.result:
+                if hasattr(item, "content"):
+                    schema_text = item.content
+                    break
 
-        # Step 2: Execute query for storage resources
-        # Step 2: Dynamically generate the Cypher query based on the question
-        print("🔄 Step 2: Generating and executing Cypher query...")
-        user_q = question.lower()
-        from src.agent_mode_knowledge import HIGH_VALUE_AZURE_RESOURCE_TYPES
+        # Step 2: Use LLM to generate Cypher query based on schema and question
+        print("🔄 Step 2: Generating Cypher query with LLM...", flush=True)
+        
+        # Get LLM config
+        from src.llm_descriptions import LLMConfig
+        llm_config = LLMConfig.from_env()
+        if not llm_config.is_valid():
+            print("❌ Azure OpenAI configuration is invalid")
+            return
+            
+        # Create prompt for query generation
+        query_prompt = f"""Given the following Neo4j database schema and user question, generate a Cypher query to answer the question.
 
-        if (
-            "valuable" in user_q
-            or "attacker" in user_q
-            or "sensitive" in user_q
-            or "critical" in user_q
-        ):
-            # Find all resources of high-value types
-            cypher_query = f"""
-            MATCH (r:Resource)
-            WHERE {" OR ".join([f"r.type CONTAINS '{t}'" for t in HIGH_VALUE_AZURE_RESOURCE_TYPES])}
-            RETURN r.type AS type, r.name AS name, r.resource_group AS resource_group, r.id AS id
-            """
-            result_key = None  # We'll process the result as a list
-            resource_label = "high-value resources"
-        elif "vm" in user_q or "virtual machine" in user_q:
-            cypher_query = """
-            MATCH (r:Resource)
-            WHERE toLower(r.type) CONTAINS 'virtualmachine'
-            RETURN count(r) as vm_count
-            """
-            result_key = "vm_count"
-            resource_label = "VMs"
-        elif "storage" in user_q:
-            cypher_query = """
-            MATCH (r:Resource)
-            WHERE toLower(r.type) CONTAINS 'storage'
-            RETURN count(r) as storage_count
-            """
-            result_key = "storage_count"
-            resource_label = "storage resources"
-        else:
-            # Fallback: count all resources
-            cypher_query = """
-            MATCH (r:Resource)
-            RETURN count(r) as resource_count
-            """
-            result_key = "resource_count"
-            resource_label = "resources"
+Database Schema:
+{schema_text}
 
+User Question: {question}
+
+Instructions:
+1. Generate a valid Cypher query that answers the user's question
+2. Use the node labels and relationship types from the schema
+3. Return relevant data fields in the query results
+4. If counting, use count() function
+5. If listing, return the relevant properties
+6. For questions about resource groups and their resources, use the CONTAINS relationship
+7. Use case-insensitive matching with toLower() when searching text fields
+8. Only return the Cypher query, no explanation
+
+Cypher Query:"""
+
+        # Call LLM to generate query
+        from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+        model_client = AzureOpenAIChatCompletionClient(
+            api_key=llm_config.api_key,
+            azure_endpoint=llm_config.endpoint,
+            api_version=llm_config.api_version,
+            model=llm_config.model_chat,
+        )
+        
+        from autogen_agentchat.messages import TextMessage
+        response = await model_client.create([TextMessage(content=query_prompt, source="system")])
+        
+        # Extract the generated query
+        cypher_query = response.content.strip()
+        # Remove markdown code blocks if present
+        if cypher_query.startswith("```"):
+            lines = cypher_query.split("\n")
+            cypher_query = "\n".join(lines[1:-1])
+            
+        print(f"Generated Cypher query:\n{cypher_query}", flush=True)
+
+        # Step 3: Execute the generated Cypher query
+        print("🔄 Step 3: Executing Cypher query...", flush=True)
         cypher_tool_name = (
             read_cypher_tool.get("name")
             if isinstance(read_cypher_tool, dict)
@@ -392,51 +408,48 @@ async def _process_question_manually(workbench: any, question: str):
         query_result = await workbench.call_tool(
             cypher_tool_name, {"query": cypher_query}
         )
-        print("✅ Query executed")
+        print("✅ Query executed", flush=True)
 
-        # Step 3: Extract and present the result
-        print("🔄 Step 3: Processing results...")
-
+        # Step 4: Extract and format the result
+        print("🔄 Step 4: Processing results with LLM...", flush=True)
+        
         # Parse the query result
-        # Try to extract the result from query_result.result
         result_list = getattr(query_result, "result", None)
         import json
-
+        
         if result_list and len(result_list) > 0:
             text_content = getattr(result_list[0], "content", None)
             result_data = json.loads(text_content) if text_content else []
-            if (
-                "valuable" in user_q
-                or "attacker" in user_q
-                or "sensitive" in user_q
-                or "critical" in user_q
-            ):
-                if result_data and len(result_data) > 0:
-                    print(
-                        "\n🎯 Final Answer: The following resources are most likely to be valuable to an attacker (based on Azure security best practices):"
-                    )
-                    for item in result_data:
-                        print(
-                            f"- {item.get('type', 'UnknownType')}: {item.get('name', 'UnknownName')} (Resource Group: {item.get('resource_group', 'N/A')})"
-                        )
-                else:
-                    print(
-                        "\n🎯 Final Answer: No high-value resources found in the tenant."
-                    )
-            elif result_key:
-                if result_data and len(result_data) > 0:
-                    count_value = result_data[0].get(result_key, 0)
-                    print(
-                        f"\n🎯 Final Answer: There are {count_value} {resource_label} in the tenant."
-                    )
-                else:
-                    print(
-                        f"\n🎯 Final Answer: There are 0 {resource_label} in the tenant."
-                    )
-            else:
-                print("\n🎯 Final Answer: No results found.")
+            
+            # Create prompt for answer generation
+            answer_prompt = f"""Based on the following query results, provide a clear, concise answer to the user's question.
+
+User Question: {question}
+
+Cypher Query Used:
+{cypher_query}
+
+Query Results:
+{json.dumps(result_data, indent=2)}
+
+Instructions:
+1. Provide a natural language answer to the user's question
+2. If the results are empty, say so clearly
+3. If listing items, format them nicely
+4. If counting, provide the count in a sentence
+5. Be specific and accurate based on the data
+6. Keep the answer concise but complete
+
+Answer:"""
+
+            # Call LLM to generate answer
+            answer_response = await model_client.create([TextMessage(content=answer_prompt, source="system")])
+            final_answer = answer_response.content.strip()
+            
+            print(f"\n🎯 Final Answer: {final_answer}", flush=True)
+            print(f"\n📊 Query used:\n{cypher_query}", flush=True)
         else:
-            print("\n❌ No results returned")
+            print("\n❌ No results returned from database", flush=True)
 
     except Exception as e:
         print(f"\n❌ Error in manual processing: {e}")
