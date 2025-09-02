@@ -53,14 +53,24 @@ export class ProcessManager extends EventEmitter {
 
     // Handle stdout
     childProcess.stdout?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line);
+      const text = data.toString();
+      const lines = text.split('\n');
+      // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline
+      if (lines[lines.length - 1] === '' && !text.endsWith('\n')) {
+        lines.pop();
+      }
       processInfo.output.push(...lines);
       this.emit('output', { id, type: 'stdout', data: lines });
     });
 
     // Handle stderr
     childProcess.stderr?.on('data', (data) => {
-      const lines = data.toString().split('\n').filter((line: string) => line);
+      const text = data.toString();
+      const lines = text.split('\n');
+      // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline
+      if (lines[lines.length - 1] === '' && !text.endsWith('\n')) {
+        lines.pop();
+      }
       processInfo.error.push(...lines);
       this.emit('output', { id, type: 'stderr', data: lines });
     });
