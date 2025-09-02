@@ -27,9 +27,10 @@ import {
 } from '@mui/icons-material';
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system' | 'log';
   content: string;
   timestamp: Date;
+  type?: 'stdout' | 'stderr' | 'info';
 }
 
 interface SampleQuery {
@@ -89,7 +90,9 @@ const AgentModeTab: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentProcessId, setCurrentProcessId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const outputBufferRef = useRef<string>('');
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,6 +101,58 @@ const AgentModeTab: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Set up event listeners for process output
+  useEffect(() => {
+    const handleProcessOutput = (data: any) => {
+      if (currentProcessId && data.id === currentProcessId) {
+        const lines = Array.isArray(data.data) ? data.data : [data.data];
+        lines.forEach((line: string) => {
+          if (line && line.trim()) {
+            // Add each line as a log message
+            const logMessage: Message = {
+              role: 'log',
+              content: line,
+              timestamp: new Date(),
+              type: data.type === 'stderr' ? 'stderr' : 'stdout'
+            };
+            setMessages(prev => [...prev, logMessage]);
+            
+            // Also accumulate for final response
+            outputBufferRef.current += line + '\n';
+          }
+        });
+      }
+    };
+
+    const handleProcessExit = (data: any) => {
+      if (currentProcessId && data.id === currentProcessId) {
+        setIsProcessing(false);
+        setCurrentProcessId(null);
+        
+        // Add a system message indicating completion
+        const systemMessage: Message = {
+          role: 'system',
+          content: `Process completed with exit code: ${data.code}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, systemMessage]);
+        
+        // Clear the buffer
+        outputBufferRef.current = '';
+      }
+    };
+
+    // Subscribe to events
+    window.electronAPI.on('process:output', handleProcessOutput);
+    window.electronAPI.on('process:exit', handleProcessExit);
+
+    // Cleanup
+    return () => {
+      window.electronAPI.off('process:output', handleProcessOutput);
+      window.electronAPI.off('process:exit', handleProcessExit);
+    };
+  }, [currentProcessId]);
 
   const handleSend = async (queryText?: string) => {
     const messageText = queryText || input;
@@ -112,31 +167,33 @@ const AgentModeTab: React.FC = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsProcessing(true);
+    outputBufferRef.current = '';
+
+    // Add system message showing command being executed
+    const commandMessage: Message = {
+      role: 'system',
+      content: `Executing: atg agent-mode --question "${messageText}"`,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, commandMessage]);
 
     try {
-      const result = await window.electronAPI.cli.execute('agent-mode', ['--prompt', messageText]);
+      // Execute with --question parameter instead of --prompt
+      const result = await window.electronAPI.cli.execute('agent-mode', ['--question', messageText]);
       
-      let response = '';
-      window.electronAPI.on('process:output', (data: any) => {
-        if (data.id === result.data.id) {
-          response += data.data.join('\n');
-        }
-      });
-
-      window.electronAPI.on('process:exit', (data: any) => {
-        if (data.id === result.data.id) {
-          setIsProcessing(false);
-          
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: response || 'No response received',
-            timestamp: new Date(),
-          };
-          
-          setMessages((prev) => [...prev, assistantMessage]);
-        }
-      });
-      
+      if (result.success && result.data?.id) {
+        setCurrentProcessId(result.data.id);
+        
+        // Add system message with process ID
+        const startMessage: Message = {
+          role: 'system',
+          content: `Process started with ID: ${result.data.id}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, startMessage]);
+      } else {
+        throw new Error(result.error || 'Failed to start agent mode');
+      }
     } catch (err: any) {
       setIsProcessing(false);
       const errorMessage: Message = {
@@ -263,9 +320,17 @@ const AgentModeTab: React.FC = () => {
                         <Typography
                           component="span"
                           variant="subtitle2"
-                          color={message.role === 'user' ? 'primary' : 'secondary'}
+                          color={
+                            message.role === 'user' ? 'primary' : 
+                            message.role === 'system' ? 'info' :
+                            message.role === 'log' ? 'text.secondary' :
+                            'secondary'
+                          }
                         >
-                          {message.role === 'user' ? 'You' : 'Assistant'}
+                          {message.role === 'user' ? 'You' : 
+                           message.role === 'assistant' ? 'Assistant' :
+                           message.role === 'system' ? 'System' :
+                           message.role === 'log' ? 'Output' : ''}
                         </Typography>
                       }
                       secondary={
@@ -273,8 +338,16 @@ const AgentModeTab: React.FC = () => {
                           <Typography
                             component="span"
                             variant="body2"
-                            color="text.primary"
-                            sx={{ whiteSpace: 'pre-wrap' }}
+                            color={
+                              message.role === 'log' && message.type === 'stderr' ? 'error.main' : 
+                              message.role === 'system' ? 'info.main' :
+                              'text.primary'
+                            }
+                            sx={{ 
+                              whiteSpace: 'pre-wrap',
+                              fontFamily: message.role === 'log' ? 'monospace' : 'inherit',
+                              fontSize: message.role === 'log' ? '0.875rem' : 'inherit'
+                            }}
                           >
                             {message.content}
                           </Typography>

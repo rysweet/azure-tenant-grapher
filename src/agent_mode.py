@@ -139,9 +139,10 @@ async def run_agent_mode(question: str | None = None):
 
     # Handle single question mode vs interactive mode
     if question:
-        print(f"🤖 Processing question: {question}")
+        print(f"🤖 Processing question: {question}", flush=True)
         # Use manual orchestration to guarantee correct tool chaining
         await _process_question_manually(workbench, question)
+        print("✅ Question processing complete", flush=True)
     else:
         print(
             "🤖 Type your graph/tenant question (type 'x', 'exit', or 'quit' to exit):",
@@ -304,11 +305,13 @@ async def _interactive_chat_loop(assistant: any):
 
 async def _process_question_manually(workbench: any, question: str):
     """Process a question by manually orchestrating the multi-step workflow."""
-    print("🔄 Step 1: Getting database schema...")
+    print("🔄 Step 1: Getting database schema...", flush=True)
 
     try:
         # Step 1: Get the schema
+        print("Listing available tools...", flush=True)
         schema_tools = await workbench.list_tools()
+        print(f"Found {len(schema_tools)} tools", flush=True)
         get_schema_tool = None
         read_cypher_tool = None
 

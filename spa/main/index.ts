@@ -305,6 +305,25 @@ app.whenReady().then(async () => {
   // Initialize process manager
   processManager = new ProcessManager();
   
+  // Forward ProcessManager events to renderer
+  processManager.on('output', (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('process:output', data);
+    }
+  });
+  
+  processManager.on('process:exit', (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('process:exit', data);
+    }
+  });
+  
+  processManager.on('process:error', (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('process:error', data);
+    }
+  });
+  
   // Setup IPC handlers
   setupIPCHandlers(processManager);
   
