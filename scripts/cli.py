@@ -829,6 +829,59 @@ def wipe_database(force: bool) -> None:
 
 
 @cli.command()
+def check_permissions() -> None:
+    """Check Microsoft Graph API permissions for AAD/Entra ID discovery."""
+    click.echo("🔍 Checking Microsoft Graph API Permissions")
+    
+    # Run the test script
+    import subprocess
+    import sys
+    
+    try:
+        result = subprocess.run(
+            [sys.executable, "test_graph_api.py"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        # Parse the output for display
+        if "✅ Can read users" in result.stdout:
+            click.echo("✅ User.Read permission granted")
+        else:
+            click.echo("❌ User.Read permission missing")
+            
+        if "✅ Can read groups" in result.stdout:
+            click.echo("✅ Group.Read permission granted")
+        else:
+            click.echo("❌ Group.Read permission missing")
+            
+        if "✅ Can read service principals" in result.stdout:
+            click.echo("✅ Application.Read permission granted")
+        else:
+            click.echo("⚠️ Application.Read permission missing (optional)")
+            
+        if "✅ Can read directory roles" in result.stdout:
+            click.echo("✅ RoleManagement.Read permission granted")
+        else:
+            click.echo("⚠️ RoleManagement.Read permission missing (optional)")
+        
+        # Show setup instructions if permissions are missing
+        has_users = "✅ Can read users" in result.stdout
+        has_groups = "✅ Can read groups" in result.stdout
+        
+        if not has_users or not has_groups:
+            click.echo("\n📚 See docs/GRAPH_API_SETUP.md for setup instructions")
+            click.echo("Or run: uv run python test_graph_api.py for detailed diagnostics")
+        else:
+            click.echo("\n✅ All required Graph API permissions are configured!")
+            
+    except subprocess.TimeoutExpired:
+        click.echo("❌ Permission check timed out")
+    except Exception as e:
+        click.echo(f"❌ Error checking permissions: {e}")
+
+@cli.command()
 def doctor() -> None:
     """Check for all registered CLI tools and offer to install if missing."""
     try:
