@@ -5,7 +5,7 @@ test('debug toolbar color', async ({ page }) => {
   let debugOutput = [];
   await page.goto('http://localhost:5173');
   await page.waitForLoadState('networkidle');
-  
+
   // Get all elements that might be the toolbar
   const possibleToolbars = [
     '.MuiAppBar-root',
@@ -14,7 +14,7 @@ test('debug toolbar color', async ({ page }) => {
     '[role="banner"]',
     'div:has-text("Azure Tenant Grapher")',
   ];
-  
+
   for (const selector of possibleToolbars) {
     const elements = await page.$$(selector);
     for (let i = 0; i < elements.length; i++) {
@@ -35,15 +35,15 @@ test('debug toolbar color', async ({ page }) => {
           textContent: el.textContent?.substring(0, 100),
         };
       }, i);
-      
+
       debugOutput.push(`\n=== Element ${i} matching "${selector}" ===`);
       debugOutput.push(JSON.stringify(info, null, 2));
     }
   }
-  
+
   // Take a screenshot
   await page.screenshot({ path: 'screenshots/debug-toolbar.png', fullPage: false });
-  
+
   // Check what's actually being rendered
   const headerDiv = await page.$('div:has(> div > span:has-text("Azure Tenant Grapher"))');
   if (headerDiv) {
@@ -53,7 +53,7 @@ test('debug toolbar color', async ({ page }) => {
     });
     debugOutput.push('\nDirect header div background: ' + bgColor);
   }
-  
+
   // Write debug output to file
   fs.writeFileSync('toolbar-debug.txt', debugOutput.join('\n'));
   console.log('Debug output written to toolbar-debug.txt');

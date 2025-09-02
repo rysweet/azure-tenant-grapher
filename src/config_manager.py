@@ -3,7 +3,8 @@ import os
 
 # Removed unused imports tempfile and uuid to satisfy pyright
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 
@@ -51,16 +52,16 @@ class Neo4jConfig:
 
     uri: Optional[str] = None
     user: str = field(default_factory=lambda: os.getenv("NEO4J_USER", "neo4j"))
-    password: str = field(
-        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "")
-    )
+    password: str = field(default_factory=lambda: os.getenv("NEO4J_PASSWORD", ""))
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if not self.uri or (self.uri.strip() == ""):
-            port = os.environ.get('NEO4J_PORT')
+            port = os.environ.get("NEO4J_PORT")
             if not port:
-                raise ValueError("NEO4J_PORT environment variable is required when NEO4J_URI is not set")
+                raise ValueError(
+                    "NEO4J_PORT environment variable is required when NEO4J_URI is not set"
+                )
             self.uri = f"bolt://localhost:{port}"
         if not self.uri:
             raise ValueError("Neo4j URI is required")
@@ -157,8 +158,11 @@ class ProcessingConfig:
         if legacy_batch_size and "MAX_CONCURRENCY" not in os.environ:
             try:
                 self.max_concurrency = int(legacy_batch_size)
-            except Exception:
-                pass
+            except (ValueError, TypeError):
+                # If legacy batch size is not a valid integer, keep default
+                logger.debug(
+                    f"Invalid legacy batch size value: {legacy_batch_size}, using default"
+                )
         if self.max_concurrency < 1:
             raise ValueError("Max concurrency must be at least 1")
         if self.max_retries < 0:
@@ -200,6 +204,53 @@ class LoggingConfig:
 
 
 @dataclass
+class TenantConfig:
+    """Configuration for multi-tenant support."""
+
+    tenant_id: str
+    display_name: str = ""
+    subscription_ids: List[str] = field(default_factory=list)
+    config_path: Optional[Path] = None
+    auto_switch: bool = field(
+        default_factory=lambda: os.getenv("AZTG_TENANT_AUTO_SWITCH", "false").lower()
+        == "true"
+    )
+
+    def __post_init__(self) -> None:
+        """Validate tenant configuration."""
+        if not self.tenant_id:
+            raise ValueError("Tenant ID is required")
+
+        # Set default display name if not provided
+        if not self.display_name:
+            self.display_name = f"Tenant {self.tenant_id[:8]}"
+
+        # Set default config path if not provided
+        if not self.config_path:
+            self.config_path = (
+                Path.home() / ".atg" / "tenants" / f"{self.tenant_id}.json"
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "tenant_id": self.tenant_id,
+            "display_name": self.display_name,
+            "subscription_ids": self.subscription_ids,
+            "config_path": str(self.config_path) if self.config_path else None,
+            "auto_switch": self.auto_switch,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TenantConfig":
+        """Create from dictionary."""
+        config_path = data.get("config_path")
+        if config_path:
+            data["config_path"] = Path(config_path)
+        return cls(**data)
+
+
+@dataclass
 class SpecificationConfig:
     """Configuration for specification generation."""
 
@@ -233,6 +284,7 @@ class AzureTenantGrapherConfig:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     specification: SpecificationConfig = field(default_factory=SpecificationConfig)
     tenant_id: Optional[str] = None
+    tenant: Optional[TenantConfig] = None
 
     @classmethod
     def from_environment(
@@ -242,6 +294,7 @@ class AzureTenantGrapherConfig:
         max_retries: Optional[int] = None,
         max_build_threads: Optional[int] = None,
         debug: bool = False,
+        tenant_config: Optional[TenantConfig] = None,
     ) -> "AzureTenantGrapherConfig":
         """
         Create configuration from environment variables.
@@ -250,12 +303,22 @@ class AzureTenantGrapherConfig:
             tenant_id: Azure tenant ID
             resource_limit: Optional limit on resources to process
             max_retries: Optional max retries for failed resources
+            max_build_threads: Optional max build threads
+            debug: Enable debug output
+            tenant_config: Optional tenant configuration
 
         Returns:
             AzureTenantGrapherConfig: Configured instance
         """
         config = cls()
         config.tenant_id = tenant_id
+
+        # Set tenant configuration if provided
+        if tenant_config:
+            config.tenant = tenant_config
+        else:
+            # Create basic tenant config from tenant_id
+            config.tenant = TenantConfig(tenant_id=tenant_id)
 
         # Override resource limit if provided
         if resource_limit is not None:
@@ -265,7 +328,7 @@ class AzureTenantGrapherConfig:
             config.processing.max_retries = max_retries
         if max_build_threads is not None:
             config.processing.max_build_threads = max_build_threads
-            
+
         # Debug output after Neo4j config is initialized
         if debug:
             print(
@@ -303,6 +366,12 @@ class AzureTenantGrapherConfig:
         logger.info("🔧 AZURE TENANT GRAPHER CONFIGURATION")
         logger.info("=" * 60)
         logger.info(f"📋 Tenant ID: {self.tenant_id}")
+        if self.tenant:
+            logger.info(f"   Display Name: {self.tenant.display_name}")
+            if self.tenant.subscription_ids:
+                logger.info(
+                    f"   Subscriptions: {len(self.tenant.subscription_ids)} configured"
+                )
         logger.info(f"🗄️  Neo4j: {self.neo4j.get_connection_string()}")
         logger.info(f"🤖 Azure OpenAI: {self.azure_openai.get_safe_endpoint()}")
         logger.info("⚙️  Processing:")
@@ -334,6 +403,7 @@ class AzureTenantGrapherConfig:
         """Convert configuration to dictionary for serialization."""
         return {
             "tenant_id": self.tenant_id,
+            "tenant": self.tenant.to_dict() if self.tenant else None,
             "neo4j": {
                 "uri": self.neo4j.uri,
                 "user": self.neo4j.user,

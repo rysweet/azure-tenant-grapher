@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
+import {
   Box,
   Tabs,
   Tab,
   useTheme,
-  useMediaQuery 
+  useMediaQuery
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -49,7 +49,7 @@ const TabNavigation: React.FC = () => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       backgroundColor: '#000000',  // Black background to match header
       px: isSmallScreen ? 1 : 2,
       py: isSmallScreen ? 0.5 : 1,

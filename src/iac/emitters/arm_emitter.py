@@ -39,12 +39,12 @@ class ArmEmitter(IaCEmitter):
 
         # Generate AAD objects file for role assignments
         files: list[Path] = [output_file]
-        
+
         # Collect AAD objects from role assignments
         aad_users: list[dict[str, str]] = []
         aad_groups: list[dict[str, str]] = []
         aad_sps: list[dict[str, str]] = []
-        
+
         for resource in graph.resources:
             if resource.get("type", "").endswith("roleAssignments"):
                 props = resource.get("properties", resource)
@@ -172,38 +172,48 @@ class ArmEmitter(IaCEmitter):
             True if template is valid, False otherwise
         """
         # Validate required ARM template schema elements
-        required_keys = ["$schema", "contentVersion", "parameters", "variables", "resources", "outputs"]
-        
+        required_keys = [
+            "$schema",
+            "contentVersion",
+            "parameters",
+            "variables",
+            "resources",
+            "outputs",
+        ]
+
         for key in required_keys:
             if key not in template_data:
                 return False
-        
+
         # Validate schema URL
-        if not template_data["$schema"].startswith("https://schema.management.azure.com"):
+        if not template_data["$schema"].startswith(
+            "https://schema.management.azure.com"
+        ):
             return False
-            
+
         # Validate contentVersion format
         if not template_data["contentVersion"]:
             return False
-            
+
         # Validate resources is a list
         if not isinstance(template_data["resources"], list):
             return False
-            
+
         # Validate each resource has required properties
         for resource in template_data["resources"]:
             if not isinstance(resource, dict):
                 return False
-            if "type" not in resource or "name" not in resource or "apiVersion" not in resource:
+            if (
+                "type" not in resource
+                or "name" not in resource
+                or "apiVersion" not in resource
+            ):
                 return False
-                
+
         return True
 
     def emit_to_file(
-        self, 
-        graph: TenantGraph, 
-        file_path: Path, 
-        domain_name: Optional[str] = None
+        self, graph: TenantGraph, file_path: Path, domain_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate ARM template and write to a specific file.
 
@@ -216,21 +226,20 @@ class ArmEmitter(IaCEmitter):
             Dictionary containing the ARM template data
         """
         template_data = self._generate_template_data(graph, domain_name)
-        
+
         # Ensure parent directory exists
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Write the ARM template to the specified file
         import json
+
         with open(file_path, "w") as f:
             json.dump(template_data, f, indent=2)
-            
+
         return template_data
 
     def emit_to_string(
-        self, 
-        graph: TenantGraph, 
-        domain_name: Optional[str] = None
+        self, graph: TenantGraph, domain_name: Optional[str] = None
     ) -> str:
         """Generate ARM template as a JSON string.
 
@@ -242,14 +251,13 @@ class ArmEmitter(IaCEmitter):
             ARM template as a JSON string
         """
         template_data = self._generate_template_data(graph, domain_name)
-        
+
         import json
+
         return json.dumps(template_data, indent=2)
 
     def _generate_template_data(
-        self, 
-        graph: TenantGraph, 
-        domain_name: Optional[str] = None
+        self, graph: TenantGraph, domain_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Generate ARM template data structure from tenant graph.
 
@@ -261,7 +269,7 @@ class ArmEmitter(IaCEmitter):
             Dictionary containing ARM template data
         """
         from typing import cast
-        
+
         # If a domain name is specified, set it for all user account entities
         if domain_name:
             for resource in graph.resources:
@@ -282,9 +290,7 @@ class ArmEmitter(IaCEmitter):
                 "location": {
                     "type": "string",
                     "defaultValue": "[resourceGroup().location]",
-                    "metadata": {
-                        "description": "Location for all resources"
-                    }
+                    "metadata": {"description": "Location for all resources"},
                 }
             },
             "variables": {},
@@ -386,9 +392,9 @@ class ArmEmitter(IaCEmitter):
         # Add outputs section with resource information
         arm_template["outputs"]["deployedResources"] = {
             "type": "array",
-            "value": "[variables('resourceNames')]"
+            "value": "[variables('resourceNames')]",
         }
-        
+
         # Add variables for resource tracking
         arm_template["variables"]["resourceNames"] = [
             resource.get("name", "unnamed") for resource in graph.resources
@@ -397,9 +403,7 @@ class ArmEmitter(IaCEmitter):
         return arm_template
 
     def _convert_resource_to_arm(
-        self, 
-        resource: Dict[str, Any], 
-        mapping: Dict[str, Any]
+        self, resource: Dict[str, Any], mapping: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Convert a tenant graph resource to ARM template resource format.
 
@@ -420,22 +424,18 @@ class ArmEmitter(IaCEmitter):
 
         # Add resource-specific required properties
         az_type = resource.get("type", "")
-        
+
         if az_type == "Microsoft.Storage/storageAccounts":
             arm_resource["sku"] = resource.get("sku", {"name": "Standard_LRS"})
             arm_resource["kind"] = resource.get("kind", "StorageV2")
         elif az_type == "Microsoft.Network/virtualNetworks":
             if "properties" not in arm_resource or not arm_resource["properties"]:
                 arm_resource["properties"] = {
-                    "addressSpace": {
-                        "addressPrefixes": ["10.0.0.0/16"]
-                    }
+                    "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}
                 }
         elif az_type == "Microsoft.Network/publicIPAddresses":
             if "properties" not in arm_resource or not arm_resource["properties"]:
-                arm_resource["properties"] = {
-                    "publicIPAllocationMethod": "Dynamic"
-                }
+                arm_resource["properties"] = {"publicIPAllocationMethod": "Dynamic"}
 
         # Add tags if present
         if "tags" in resource:
@@ -451,7 +451,9 @@ class ArmEmitter(IaCEmitter):
             if "identity" not in arm_resource:
                 arm_resource["identity"] = {}
             arm_resource["identity"]["type"] = "UserAssigned"
-            arm_resource["identity"]["userAssignedIdentities"] = resource["userAssignedIdentities"]
+            arm_resource["identity"]["userAssignedIdentities"] = resource[
+                "userAssignedIdentities"
+            ]
 
         # Handle system-assigned identity
         if resource.get("systemAssignedIdentity", False):

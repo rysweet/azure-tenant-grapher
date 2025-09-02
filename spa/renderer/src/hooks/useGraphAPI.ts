@@ -36,7 +36,7 @@ export const useGraphAPI = () => {
   const fetchGraph = useCallback(async (): Promise<GraphData | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get(`${API_BASE_URL}/api/graph`);
       return response.data;
@@ -53,7 +53,7 @@ export const useGraphAPI = () => {
   const searchNodes = useCallback(async (query: string): Promise<GraphNode[]> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get(`${API_BASE_URL}/api/graph/search`, {
         params: { query }
@@ -72,7 +72,7 @@ export const useGraphAPI = () => {
   const getNodeDetails = useCallback(async (nodeId: string): Promise<any> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get(`${API_BASE_URL}/api/graph/node/${nodeId}`);
       return response.data;

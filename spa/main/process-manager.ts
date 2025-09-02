@@ -25,14 +25,14 @@ export class ProcessManager extends EventEmitter {
     const id = uuidv4();
     const pythonPath = process.env.PYTHON_PATH || 'python3';
     const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
-    
+
     console.log('[ProcessManager] Executing command:', command, 'with args:', args);
     console.log('[ProcessManager] Python path:', pythonPath);
     console.log('[ProcessManager] CLI path:', cliPath);
-    
+
     // Build the full command
     const fullArgs = [cliPath, command, ...args];
-    
+
     const childProcess = spawn(pythonPath, fullArgs, {
       cwd: path.resolve(__dirname, '../../..'),
       env: {
@@ -89,7 +89,7 @@ export class ProcessManager extends EventEmitter {
       processInfo.status = code === 0 ? 'completed' : 'failed';
       processInfo.exitCode = code !== null ? code : undefined;
       processInfo.endTime = new Date();
-      
+
       this.emit('process:exit', { id, code });
     });
 
@@ -122,7 +122,7 @@ export class ProcessManager extends EventEmitter {
     processInfo.process.kill('SIGTERM');
     processInfo.status = 'cancelled';
     processInfo.endTime = new Date();
-    
+
     this.emit('process:cancelled', { id: processId });
   }
 
@@ -133,7 +133,7 @@ export class ProcessManager extends EventEmitter {
   listProcesses(): Omit<ProcessInfo, 'process'>[] {
     return Array.from(this.processes.values()).map(p => {
       const { process, ...rest } = p;
-      
+
       // Validate PID with explicit type checking
       let validPid: number | undefined = undefined;
       if (typeof p.pid === 'number' && p.pid > 0) {
@@ -141,7 +141,7 @@ export class ProcessManager extends EventEmitter {
       } else if (p.pid !== undefined) {
         console.warn(`Process ${p.id} has invalid PID:`, p.pid);
       }
-      
+
       return {
         ...rest,
         pid: validPid,
@@ -151,7 +151,7 @@ export class ProcessManager extends EventEmitter {
 
   async cleanup(): Promise<void> {
     if (this.cleanedUp) return;
-    
+
     // Kill all running processes
     for (const [id, info] of this.processes) {
       if (info.status === 'running') {
@@ -167,7 +167,7 @@ export class ProcessManager extends EventEmitter {
         }
       }
     }
-    
+
     this.cleanedUp = true;
     this.processes.clear();
   }
@@ -185,7 +185,7 @@ export class ProcessManager extends EventEmitter {
     };
 
     this.on('output', outputHandler);
-    
+
     // Return cleanup function
     return () => {
       this.off('output', outputHandler);

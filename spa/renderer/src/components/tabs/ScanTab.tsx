@@ -22,9 +22,9 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { 
-  PlayArrow as PlayIcon, 
-  Stop as StopIcon, 
+import {
+  PlayArrow as PlayIcon,
+  Stop as StopIcon,
   Refresh as RefreshIcon,
   Update as UpdateIcon,
   Storage as StorageIcon,
@@ -57,7 +57,7 @@ const ScanTab: React.FC = () => {
   const { addBackgroundOperation, updateBackgroundOperation, removeBackgroundOperation } = useBackgroundOperations();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
   const logger = useLogger('Scan');
-  
+
   // State declarations
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
   const [hasResourceLimit, setHasResourceLimit] = useState(false);
@@ -73,7 +73,7 @@ const ScanTab: React.FC = () => {
   const [processSocket, setProcessSocket] = useState<Socket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  
+
   // Build statistics
   const [buildStats, setBuildStats] = useState({
     resourcesDiscovered: 0,
@@ -81,7 +81,7 @@ const ScanTab: React.FC = () => {
     edgesCreated: 0,
     currentPhase: 'Initializing'
   });
-  
+
   // Database stats
   const [dbStats, setDbStats] = useState<DBStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -120,19 +120,19 @@ const ScanTab: React.FC = () => {
         timeout: 5000 // 5 second timeout
       });
       setNeo4jStatus(response.data);
-      
+
       // If Neo4j is running, load database stats
       if (response.data.running) {
         await loadDatabaseStats();
       }
     } catch (err: any) {
       // Handle Neo4j status check error
-      
+
       // Check if it's a connection error (backend not running)
       if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
         throw err; // Rethrow to trigger retry
       }
-      
+
       setNeo4jStatus({ status: 'error', running: false });
     }
   }, [loadDatabaseStats]);
@@ -141,13 +141,13 @@ const ScanTab: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:3001/api/config/env');
       const envData = response.data;
-      
+
       // Set values from .env if available
       if (envData.AZURE_TENANT_ID) {
         setTenantId(envData.AZURE_TENANT_ID);
         dispatch({ type: 'UPDATE_CONFIG', payload: { tenantId: envData.AZURE_TENANT_ID } });
       }
-      
+
       // Note: ResourceLimit is typically not set in .env but could be
       if (envData.RESOURCE_LIMIT) {
         setHasResourceLimit(true);
@@ -196,23 +196,23 @@ const ScanTab: React.FC = () => {
         setProgress(100);
         setBuildStats(prev => ({ ...prev, currentPhase: 'Complete' }));
       }
-      
+
       // Parse statistics from log lines
       const resourceCountMatch = line.match(/Discovered (\d+) resources/);
       if (resourceCountMatch) {
         setBuildStats(prev => ({ ...prev, resourcesDiscovered: parseInt(resourceCountMatch[1]) }));
       }
-      
+
       const nodeCountMatch = line.match(/Created (\d+) nodes/);
       if (nodeCountMatch) {
         setBuildStats(prev => ({ ...prev, nodesCreated: parseInt(nodeCountMatch[1]) }));
       }
-      
+
       const edgeCountMatch = line.match(/Created (\d+) (edges|relationships)/);
       if (edgeCountMatch) {
         setBuildStats(prev => ({ ...prev, edgesCreated: parseInt(edgeCountMatch[1]) }));
       }
-      
+
       // Also check for resource counts to estimate progress
       const resourceMatch = line.match(/Processing (\d+)\/(\d+)/);
       if (resourceMatch) {
@@ -229,7 +229,7 @@ const ScanTab: React.FC = () => {
     if (event.processId === currentProcessId) {
       setIsRunning(false);
       setProgress(100);
-      
+
       // Update background operation status
       if (event.code === 0) {
         setLogs((prev) => [...prev, '✅ Build completed successfully!']);
@@ -243,10 +243,10 @@ const ScanTab: React.FC = () => {
         updateBackgroundOperation(event.processId, { status: 'error' });
         dispatch({ type: 'ADD_LOG', payload: `Build failed with exit code ${event.code}` });
       }
-      
+
       // Clean up
       unsubscribeFromProcess(event.processId);
-      
+
       // Remove from background operations after 5 seconds
       setTimeout(() => {
         removeBackgroundOperation(event.processId);
@@ -261,7 +261,7 @@ const ScanTab: React.FC = () => {
       setLogs((prev) => [...prev, `❌ Process error: ${event.error}`]);
       updateBackgroundOperation(event.processId, { status: 'error' });
       dispatch({ type: 'ADD_LOG', payload: `Process error: ${event.error}` });
-      
+
       // Clean up
       unsubscribeFromProcess(event.processId);
     }
@@ -286,16 +286,16 @@ const ScanTab: React.FC = () => {
     }
 
     const socket = io('http://localhost:3001');
-    
+
     socket.on('connect', () => {
       // Process event socket connected
     });
-    
+
     socket.on('process-exit', handleProcessExit);
     socket.on('process-error', handleProcessError);
-    
+
     setProcessSocket(socket);
-    
+
     return () => {
       socket.disconnect();
       setProcessSocket(null);
@@ -328,7 +328,7 @@ const ScanTab: React.FC = () => {
     const initializeTab = async () => {
       let retries = 0;
       const maxRetries = 5;
-      
+
       const tryInit = async () => {
         try {
           await checkNeo4jStatus();
@@ -342,10 +342,10 @@ const ScanTab: React.FC = () => {
           }
         }
       };
-      
+
       tryInit();
     };
-    
+
     initializeTab();
   }, []); // Remove circular dependencies, run only on mount
 
@@ -363,7 +363,7 @@ const ScanTab: React.FC = () => {
         // Handle refresh error silently
       }
     }, 5000);
-    
+
     return () => clearInterval(refreshInterval);
   }, [neo4jStatus?.running, isRunning, checkNeo4jStatus]);
 
@@ -411,9 +411,9 @@ const ScanTab: React.FC = () => {
       return;
     }
 
-    logger.info(`Starting build process for tenant: ${tenantId}`, { 
-      tenantId, 
-      hasResourceLimit, 
+    logger.info(`Starting build process for tenant: ${tenantId}`, {
+      tenantId,
+      hasResourceLimit,
       resourceLimit: hasResourceLimit ? resourceLimit : null
     });
 
@@ -438,7 +438,7 @@ const ScanTab: React.FC = () => {
     if (hasResourceLimit) {
       args.push('--resource-limit', resourceLimit.toString());
     }
-    
+
     if (rebuildEdges) args.push('--rebuild-edges');
     if (noAadImport) args.push('--no-aad-import');
 
@@ -448,12 +448,12 @@ const ScanTab: React.FC = () => {
         command: 'build',
         args: args
       });
-      
+
       const processId = response.data.processId;
       setCurrentProcessId(processId);
-      
+
       logger.logProcessEvent(processId, 'started');
-      
+
       // Add to background operations tracker
       addBackgroundOperation({
         id: processId,
@@ -461,10 +461,10 @@ const ScanTab: React.FC = () => {
         name: `Scanning tenant ${tenantId}`,
         // Backend handles PID internally, so we don't include it
       });
-      
+
       // Subscribe to process output via WebSocket
       subscribeToProcess(processId);
-      
+
       // Check if process is already running by polling status initially
       setTimeout(async () => {
         try {
@@ -477,7 +477,7 @@ const ScanTab: React.FC = () => {
 
       // Save config
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
-      
+
     } catch (err: any) {
       dispatch({ type: 'ADD_LOG', payload: `Build failed to start: ${err.message}` });
       setError(err.response?.data?.error || err.message);
@@ -489,13 +489,13 @@ const ScanTab: React.FC = () => {
     if (currentProcessId) {
       try {
         dispatch({ type: 'ADD_LOG', payload: `Stopping process: ${currentProcessId}` });
-        
+
         // Cancel the process via backend API
         await axios.post(`http://localhost:3001/api/cancel/${currentProcessId}`);
-        
+
         // Clean up WebSocket subscription
         unsubscribeFromProcess(currentProcessId);
-        
+
         setIsRunning(false);
         setLogs((prev) => [...prev, 'Build cancelled by user']);
         dispatch({ type: 'ADD_LOG', payload: 'Build cancelled by user' });
@@ -519,34 +519,34 @@ const ScanTab: React.FC = () => {
       {/* WebSocket Connection Status */}
       {connectionStatus !== 'connected' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server. 
+          WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server.
           Real-time updates may not work properly.
         </Alert>
       )}
-      
+
       {/* Connection Status for Connected State */}
       {connectionStatus === 'connected' && !isRunning && (
         <Alert severity="success" sx={{ mb: 2 }}>
           ✓ Connected to backend server - Ready to start scanning your tenant
         </Alert>
       )}
-      
+
       {/* Backend/Neo4j Status Alert */}
       {neo4jStatus && neo4jStatus.message && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {neo4jStatus.message}
         </Alert>
       )}
-      
+
       {/* Neo4j Status Alert - Show when Neo4j is not running */}
       {neo4jStatus && !neo4jStatus.message && !neo4jStatus.running && (
-        <Alert 
-          severity="warning" 
+        <Alert
+          severity="warning"
           sx={{ mb: 2 }}
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
+            <Button
+              color="inherit"
+              size="small"
               onClick={startNeo4j}
               disabled={startingNeo4j}
             >
@@ -612,7 +612,7 @@ const ScanTab: React.FC = () => {
                 Stop Build
               </Button>
             </Box>
-            
+
             {/* Progress Bar */}
             <LinearProgress variant="determinate" value={progress} sx={{ mb: 1, height: 8 }} />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -623,7 +623,7 @@ const ScanTab: React.FC = () => {
                 Phase: {buildStats.currentPhase}
               </Typography>
             </Box>
-            
+
             {/* Build Statistics */}
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid item xs={4}>
@@ -645,7 +645,7 @@ const ScanTab: React.FC = () => {
                 </Card>
               </Grid>
             </Grid>
-            
+
             {/* Current Status */}
             <Box sx={{ mt: 2, p: 1, bgcolor: 'background.default', borderRadius: 1 }}>
               <Typography variant="caption" color="textSecondary">Current Activity:</Typography>
@@ -661,7 +661,7 @@ const ScanTab: React.FC = () => {
           <Typography variant="h6" gutterBottom>
             {dbPopulated ? 'Update Graph Database' : 'Scan Azure Tenant'}
           </Typography>
-          
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
               {error}
@@ -680,7 +680,7 @@ const ScanTab: React.FC = () => {
               error={!!error && error.includes('Tenant ID')}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <FormControlLabel

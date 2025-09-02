@@ -67,7 +67,9 @@ class Neo4jContainerManager:
     - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
     """
 
-    def __init__(self, compose_file: str = "docker-compose.yml", debug: bool = False) -> None:
+    def __init__(
+        self, compose_file: str = "docker-compose.yml", debug: bool = False
+    ) -> None:
         """
         Initialize the container manager.
 
@@ -124,9 +126,11 @@ class Neo4jContainerManager:
         if uri_env:
             self.neo4j_uri = uri_env
         else:
-            port = os.environ.get('NEO4J_PORT')
+            port = os.environ.get("NEO4J_PORT")
             if not port:
-                raise ValueError("NEO4J_PORT environment variable is required when NEO4J_URI is not set")
+                raise ValueError(
+                    "NEO4J_PORT environment variable is required when NEO4J_URI is not set"
+                )
             self.neo4j_uri = f"bolt://localhost:{port}"
         if self.debug:
             print(

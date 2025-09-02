@@ -16,10 +16,14 @@ import sys
 from typing import Any, Callable, Coroutine, Optional
 
 from dotenv import load_dotenv
+from rich.console import Console
 from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+
+# Initialize console for rich output
+console = Console()
 
 
 def print_cli_env_block(context: str = "", debug: bool = False):
@@ -797,13 +801,17 @@ def wipe_database(force: bool) -> None:
         if not uri:
             port = os.getenv("NEO4J_PORT")
             if not port:
-                console.print("[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]")
+                console.print(
+                    "[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]"
+                )
                 return False
             uri = f"bolt://localhost:{port}"
         user = os.getenv("NEO4J_USER", "neo4j")
         password = os.getenv("NEO4J_PASSWORD")
         if not password:
-            console.print("[red]❌ NEO4J_PASSWORD environment variable is required[/red]")
+            console.print(
+                "[red]❌ NEO4J_PASSWORD environment variable is required[/red]"
+            )
             return False
 
         driver = GraphDatabase.driver(uri, auth=(user, password))
@@ -832,61 +840,64 @@ def wipe_database(force: bool) -> None:
 def check_permissions() -> None:
     """Check Microsoft Graph API permissions for AAD/Entra ID discovery."""
     click.echo("🔍 Checking Microsoft Graph API Permissions")
-    
+
     # Run the test script
     import subprocess
-    
+
     try:
         result = subprocess.run(
             ["uv", "run", "python", "test_graph_api.py"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
-        
+
         # Check if the command failed
         if result.returncode != 0:
             click.echo(f"❌ Error running test script: {result.stderr}")
             return
-        
+
         # Combine stdout and stderr for parsing (logging might go to stderr)
         output = result.stdout + result.stderr
-        
+
         # Parse the output for display
         if "✅ Can read users" in output:
             click.echo("✅ User.Read permission granted")
         else:
             click.echo("❌ User.Read permission missing")
-            
+
         if "✅ Can read groups" in output:
             click.echo("✅ Group.Read permission granted")
         else:
             click.echo("❌ Group.Read permission missing")
-            
+
         if "✅ Can read service principals" in output:
             click.echo("✅ Application.Read permission granted")
         else:
             click.echo("⚠️ Application.Read permission missing (optional)")
-            
+
         if "✅ Can read directory roles" in output:
             click.echo("✅ RoleManagement.Read permission granted")
         else:
             click.echo("⚠️ RoleManagement.Read permission missing (optional)")
-        
+
         # Show setup instructions if permissions are missing
         has_users = "✅ Can read users" in output
         has_groups = "✅ Can read groups" in output
-        
+
         if not has_users or not has_groups:
             click.echo("\n📚 See docs/GRAPH_API_SETUP.md for setup instructions")
-            click.echo("Or run: uv run python test_graph_api.py for detailed diagnostics")
+            click.echo(
+                "Or run: uv run python test_graph_api.py for detailed diagnostics"
+            )
         else:
             click.echo("\n✅ All required Graph API permissions are configured!")
-            
+
     except subprocess.TimeoutExpired:
         click.echo("❌ Permission check timed out")
     except Exception as e:
         click.echo(f"❌ Error checking permissions: {e}")
+
 
 @cli.command()
 def doctor() -> None:

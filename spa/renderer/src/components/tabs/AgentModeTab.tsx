@@ -146,7 +146,7 @@ const AgentModeTab: React.FC = () => {
   useEffect(() => {
     const handleProcessOutput = (data: any) => {
       console.log('Process output received:', data);
-      
+
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const lines = Array.isArray(data.data) ? data.data : [data.data];
         lines.forEach((line: string) => {
@@ -157,11 +157,11 @@ const AgentModeTab: React.FC = () => {
             timestamp: new Date(),
           };
           addConsoleOutput(activeSessionId, output);
-          
+
           // Parse for important messages to add to chat
           if (line && line.trim()) {
-            if (line.includes('🎯 Final Answer:') || 
-                line.includes('✅') || 
+            if (line.includes('🎯 Final Answer:') ||
+                line.includes('✅') ||
                 line.includes('❌') ||
                 line.includes('🔄')) {
               const assistantMessage: Message = {
@@ -178,11 +178,11 @@ const AgentModeTab: React.FC = () => {
 
     const handleProcessExit = (data: any) => {
       console.log('Process exit received:', data);
-      
+
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         setIsProcessing(false);
         setCurrentProcessId(null);
-        
+
         // Add console message
         const exitOutput: ConsoleOutput = {
           type: 'info',
@@ -190,7 +190,7 @@ const AgentModeTab: React.FC = () => {
           timestamp: new Date(),
         };
         addConsoleOutput(activeSessionId, exitOutput);
-        
+
         // Add chat message if exit was not successful
         if (data.code !== 0) {
           const errorMessage: Message = {
@@ -205,7 +205,7 @@ const AgentModeTab: React.FC = () => {
 
     const handleProcessError = (data: any) => {
       console.log('Process error received:', data);
-      
+
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const errorOutput: ConsoleOutput = {
           type: 'stderr',
@@ -265,10 +265,10 @@ const AgentModeTab: React.FC = () => {
       // Execute with --question parameter
       const result = await window.electronAPI.cli.execute('agent-mode', ['--question', messageText]);
       console.log('CLI execute result:', result);
-      
+
       if (result.success && result.data?.id) {
         setCurrentProcessId(result.data.id);
-        
+
         // Add console info
         const processOutput: ConsoleOutput = {
           type: 'info',
@@ -281,14 +281,14 @@ const AgentModeTab: React.FC = () => {
       }
     } catch (err: any) {
       setIsProcessing(false);
-      
+
       const errorMessage: Message = {
         role: 'system',
         content: `Error: ${err.message}`,
         timestamp: new Date(),
       };
       addMessage(sessionId, errorMessage);
-      
+
       const errorOutput: ConsoleOutput = {
         type: 'stderr',
         content: `Error: ${err.message}\n`,
@@ -371,12 +371,12 @@ const AgentModeTab: React.FC = () => {
               </Box>
             )}
           </Box>
-          
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             Ask questions about your Azure tenant graph using natural language.
             The agent will analyze your Neo4j database and provide insights.
           </Typography>
-          
+
           {sessions.length > 0 && (
             <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 2 }}>
               {sessions.map(session => (
@@ -396,10 +396,10 @@ const AgentModeTab: React.FC = () => {
         <Grid container spacing={3} sx={{ flex: 1, overflow: 'auto' }}>
           {sampleQueries.map((sample, index) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-              <Card 
-                sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
                   flexDirection: 'column',
                   transition: 'transform 0.2s, box-shadow 0.2s',
                   cursor: 'pointer',
@@ -422,11 +422,11 @@ const AgentModeTab: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {sample.description}
                   </Typography>
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 1, 
-                      bgcolor: '#000000', 
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1,
+                      bgcolor: '#000000',
                       borderRadius: 1,
                       fontFamily: 'monospace',
                       fontSize: '0.875rem',
@@ -438,9 +438,9 @@ const AgentModeTab: React.FC = () => {
                   </Paper>
                 </CardContent>
                 <CardActions>
-                  <Button 
-                    size="small" 
-                    fullWidth 
+                  <Button
+                    size="small"
+                    fullWidth
                     variant="contained"
                     disabled={isProcessing}
                     startIcon={isProcessing ? <CircularProgress size={16} /> : <SendIcon />}
@@ -551,11 +551,11 @@ const AgentModeTab: React.FC = () => {
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
         {/* Chat Panel */}
         <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              height: '100%', 
-              display: 'flex', 
+          <Paper
+            elevation={2}
+            sx={{
+              height: '100%',
+              display: 'flex',
               flexDirection: 'column',
               bgcolor: 'background.paper'
             }}
@@ -563,11 +563,11 @@ const AgentModeTab: React.FC = () => {
             <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
               <Typography variant="h6">Chat</Typography>
             </Box>
-            
-            <List 
-              sx={{ 
-                flex: 1, 
-                overflow: 'auto', 
+
+            <List
+              sx={{
+                flex: 1,
+                overflow: 'auto',
                 p: 2,
                 bgcolor: 'background.default'
               }}
@@ -579,13 +579,13 @@ const AgentModeTab: React.FC = () => {
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     mb: 2,
-                    bgcolor: message.role === 'user' ? 'rgba(25, 118, 210, 0.15)' : 
-                             message.role === 'system' ? 'rgba(2, 136, 209, 0.15)' : 
+                    bgcolor: message.role === 'user' ? 'rgba(25, 118, 210, 0.15)' :
+                             message.role === 'system' ? 'rgba(2, 136, 209, 0.15)' :
                              'rgba(255, 255, 255, 0.05)',
                     borderRadius: 1,
                     border: '1px solid',
-                    borderColor: message.role === 'user' ? 'primary.dark' : 
-                                 message.role === 'system' ? 'info.dark' : 
+                    borderColor: message.role === 'user' ? 'primary.dark' :
+                                 message.role === 'system' ? 'info.dark' :
                                  'divider',
                   }}
                 >
@@ -596,7 +596,7 @@ const AgentModeTab: React.FC = () => {
                       <AIIcon fontSize="small" color="secondary" />
                     )}
                     <Typography variant="subtitle2" fontWeight="bold" color="text.primary">
-                      {message.role === 'user' ? 'You' : 
+                      {message.role === 'user' ? 'You' :
                        message.role === 'system' ? 'System' : 'Assistant'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -615,11 +615,11 @@ const AgentModeTab: React.FC = () => {
 
         {/* Console Panel */}
         <Grid item xs={12} md={6}>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              height: '100%', 
-              display: 'flex', 
+          <Paper
+            elevation={2}
+            sx={{
+              height: '100%',
+              display: 'flex',
               flexDirection: 'column',
               bgcolor: 'background.paper'
             }}
@@ -629,11 +629,11 @@ const AgentModeTab: React.FC = () => {
               <Typography variant="h6">Console Output</Typography>
               {isProcessing && <CircularProgress size={20} />}
             </Box>
-            
-            <Box 
-              sx={{ 
-                flex: 1, 
-                overflow: 'auto', 
+
+            <Box
+              sx={{
+                flex: 1,
+                overflow: 'auto',
                 p: 2,
                 bgcolor: '#1e1e1e',
                 fontFamily: 'monospace',
@@ -644,8 +644,8 @@ const AgentModeTab: React.FC = () => {
                 <Box
                   key={index}
                   sx={{
-                    color: output.type === 'stderr' ? '#ff6b6b' : 
-                           output.type === 'info' ? '#4fc3f7' : 
+                    color: output.type === 'stderr' ? '#ff6b6b' :
+                           output.type === 'info' ? '#4fc3f7' :
                            '#90ee90',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',

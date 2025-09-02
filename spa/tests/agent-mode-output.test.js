@@ -63,10 +63,10 @@ class TestResults {
     console.log(`\n${BLUE}═══════════════════════════════════════════${RESET}`);
     console.log(`${BLUE}Test Summary${RESET}`);
     console.log(`${BLUE}═══════════════════════════════════════════${RESET}`);
-    
+
     const passed = this.tests.filter(t => t.passed).length;
     const failed = this.tests.filter(t => !t.passed).length;
-    
+
     this.tests.forEach(test => {
       const status = test.passed ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`;
       console.log(`  ${status} ${test.name}`);
@@ -74,7 +74,7 @@ class TestResults {
         test.errors.forEach(err => console.log(`    ${err}`));
       }
     });
-    
+
     console.log(`\n${BLUE}Results: ${GREEN}${passed} passed${RESET}, ${RED}${failed} failed${RESET}`);
     return failed === 0;
   }
@@ -85,14 +85,14 @@ const results = new TestResults();
 // Test 1: Direct Python execution
 async function testDirectPythonExecution() {
   results.startTest('Direct Python Execution');
-  
+
   return new Promise((resolve) => {
     const pythonPath = 'python3';
     const cliPath = path.resolve(__dirname, '../../scripts/cli.py');
     const args = [cliPath, 'agent-mode', '--question', 'test'];
-    
+
     results.info(`Command: ${pythonPath} ${args.join(' ')}`);
-    
+
     const child = spawn(pythonPath, args, {
       cwd: path.resolve(__dirname, '../..'),
       env: {
@@ -101,34 +101,34 @@ async function testDirectPythonExecution() {
         PYTHONUNBUFFERED: '1'
       }
     });
-    
+
     let stdoutData = '';
     let stderrData = '';
     let outputReceived = false;
-    
+
     child.stdout.on('data', (data) => {
       stdoutData += data.toString();
       outputReceived = true;
       results.pass(`Received stdout: ${data.toString().slice(0, 50)}...`);
     });
-    
+
     child.stderr.on('data', (data) => {
       stderrData += data.toString();
       outputReceived = true;
       results.info(`Received stderr: ${data.toString().slice(0, 50)}...`);
     });
-    
+
     // Kill after 5 seconds
     setTimeout(() => {
       child.kill('SIGTERM');
-      
+
       if (!outputReceived) {
         results.fail('No output received from Python process');
       } else {
         results.pass(`Total stdout: ${stdoutData.length} bytes`);
         results.pass(`Total stderr: ${stderrData.length} bytes`);
       }
-      
+
       results.endTest();
       resolve();
     }, 5000);
@@ -138,7 +138,7 @@ async function testDirectPythonExecution() {
 // Test 2: ProcessManager simulation
 async function testProcessManagerCapture() {
   results.startTest('ProcessManager Output Capture');
-  
+
   return new Promise((resolve) => {
     class MockProcessManager extends EventEmitter {
       execute(command, args) {
@@ -146,9 +146,9 @@ async function testProcessManagerCapture() {
         const pythonPath = 'python3';
         const cliPath = path.resolve(__dirname, '../../scripts/cli.py');
         const fullArgs = [cliPath, command, ...args];
-        
+
         results.info(`Spawning: ${pythonPath} ${fullArgs.join(' ')}`);
-        
+
         const child = spawn(pythonPath, fullArgs, {
           cwd: path.resolve(__dirname, '../..'),
           env: {
@@ -157,9 +157,9 @@ async function testProcessManagerCapture() {
             PYTHONUNBUFFERED: '1'
           }
         });
-        
+
         let outputEmitted = false;
-        
+
         child.stdout?.on('data', (data) => {
           const text = data.toString();
           const lines = text.split('\n');
@@ -167,7 +167,7 @@ async function testProcessManagerCapture() {
           this.emit('output', { id, type: 'stdout', data: lines });
           outputEmitted = true;
         });
-        
+
         child.stderr?.on('data', (data) => {
           const text = data.toString();
           const lines = text.split('\n');
@@ -175,24 +175,24 @@ async function testProcessManagerCapture() {
           this.emit('output', { id, type: 'stderr', data: lines });
           outputEmitted = true;
         });
-        
+
         child.on('exit', (code) => {
           results.info(`Process exited with code: ${code}`);
           this.emit('process:exit', { id, code });
         });
-        
+
         return { success: true, data: { id } };
       }
     }
-    
+
     const pm = new MockProcessManager();
     let eventsReceived = 0;
-    
+
     pm.on('output', (data) => {
       eventsReceived++;
       results.pass(`Event emitted: ${data.type} with ${data.data.length} lines`);
     });
-    
+
     pm.on('process:exit', (data) => {
       if (eventsReceived === 0) {
         results.fail('No output events were emitted');
@@ -202,9 +202,9 @@ async function testProcessManagerCapture() {
       results.endTest();
       resolve();
     });
-    
+
     pm.execute('agent-mode', ['--question', 'test']);
-    
+
     // Timeout after 5 seconds
     setTimeout(() => {
       if (eventsReceived === 0) {
@@ -219,7 +219,7 @@ async function testProcessManagerCapture() {
 // Test 3: Check if Python is buffering output
 async function testPythonBuffering() {
   results.startTest('Python Output Buffering');
-  
+
   return new Promise((resolve) => {
     // Create a simple Python script that outputs immediately
     const testScript = `
@@ -233,29 +233,29 @@ sys.stderr.flush()
 time.sleep(1)
 print("Line 3", flush=True)
 `;
-    
+
     const child = spawn('python3', ['-c', testScript], {
       env: {
         ...process.env,
         PYTHONUNBUFFERED: '1'
       }
     });
-    
+
     let outputCount = 0;
     let expectedOutput = ['Line 1', 'Line 2', 'Line 3'];
     let receivedOutput = [];
-    
+
     child.stdout.on('data', (data) => {
       const lines = data.toString().trim().split('\n');
       receivedOutput.push(...lines);
       outputCount++;
       results.pass(`Received output chunk ${outputCount}: ${data.toString().trim()}`);
     });
-    
+
     child.stderr.on('data', (data) => {
       results.info(`Stderr: ${data.toString().trim()}`);
     });
-    
+
     child.on('exit', () => {
       if (receivedOutput.length === expectedOutput.length) {
         results.pass('All expected output received');
@@ -271,10 +271,10 @@ print("Line 3", flush=True)
 // Test 4: Check actual CLI path and execution
 async function testCLIPath() {
   results.startTest('CLI Path and Execution');
-  
+
   const fs = require('fs');
   const cliPath = path.resolve(__dirname, '../../scripts/cli.py');
-  
+
   if (fs.existsSync(cliPath)) {
     results.pass(`CLI script exists at: ${cliPath}`);
   } else {
@@ -282,18 +282,18 @@ async function testCLIPath() {
     results.endTest();
     return;
   }
-  
+
   // Try to run just the help command
   return new Promise((resolve) => {
     const child = spawn('python3', [cliPath, '--help'], {
       cwd: path.resolve(__dirname, '../..')
     });
-    
+
     let output = '';
     child.stdout.on('data', (data) => {
       output += data.toString();
     });
-    
+
     child.on('exit', (code) => {
       if (code === 0 && output.length > 0) {
         results.pass('CLI script executes successfully');
@@ -310,7 +310,7 @@ async function testCLIPath() {
 // Test 5: Test with uv run
 async function testWithUv() {
   results.startTest('UV Run Execution');
-  
+
   return new Promise((resolve) => {
     const child = spawn('uv', ['run', 'atg', 'agent-mode', '--question', 'test'], {
       cwd: path.resolve(__dirname, '../..'),
@@ -319,28 +319,28 @@ async function testWithUv() {
         PYTHONUNBUFFERED: '1'
       }
     });
-    
+
     let outputReceived = false;
-    
+
     child.stdout.on('data', (data) => {
       outputReceived = true;
       results.pass(`UV stdout: ${data.toString().slice(0, 50)}...`);
     });
-    
+
     child.stderr.on('data', (data) => {
       results.info(`UV stderr: ${data.toString().slice(0, 50)}...`);
     });
-    
+
     // Kill after 5 seconds
     setTimeout(() => {
       child.kill('SIGTERM');
-      
+
       if (!outputReceived) {
         results.fail('No output from uv run command');
       } else {
         results.pass('Output received from uv run');
       }
-      
+
       results.endTest();
       resolve();
     }, 5000);
@@ -352,13 +352,13 @@ async function runTests() {
   console.log(`${BLUE}═══════════════════════════════════════════${RESET}`);
   console.log(`${BLUE}Agent Mode Output Diagnostic Tests${RESET}`);
   console.log(`${BLUE}═══════════════════════════════════════════${RESET}`);
-  
+
   await testCLIPath();
   await testPythonBuffering();
   await testDirectPythonExecution();
   await testProcessManagerCapture();
   await testWithUv();
-  
+
   const allPassed = results.summary();
   process.exit(allPassed ? 0 : 1);
 }

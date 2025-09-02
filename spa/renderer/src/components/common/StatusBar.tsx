@@ -37,14 +37,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
   const activeOperations = Array.from(state.backgroundOperations.values())
     .filter(op => {
       if (op.status !== 'running') return false;
-      
+
       if (typeof op.pid !== 'number' || op.pid <= 0) {
         if (op.pid !== undefined) {
           console.warn(`Background operation ${op.id} has invalid PID:`, op.pid);
         }
         return false;
       }
-      
+
       return true;
     });
 
@@ -78,7 +78,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
       try {
         const response = await axios.get('http://localhost:3001/api/mcp/status');
         setMcpStatus(response.data.running ? 'connected' : 'disconnected');
-        
+
         // If not running and we haven't retried much, try again
         if (!response.data.running && retryCount < 3) {
           setTimeout(() => checkMcpStatus(retryCount + 1), 2000);
@@ -94,10 +94,10 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
 
     fetchActiveProcesses();
     checkNeo4jStatus();
-    
+
     // Delay initial MCP check to give it time to start
     setTimeout(() => checkMcpStatus(), 2000);
-    
+
     const interval = setInterval(() => {
       fetchActiveProcesses();
       checkNeo4jStatus();
@@ -124,7 +124,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
         <Typography variant="caption" color="text.secondary">
           Azure Tenant Grapher v1.0.0
         </Typography>
-        
+
         {/* Tenant Information */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TenantIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -135,7 +135,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             {tenantName}
           </Typography>
         </Box>
-        
+
         {/* Active Operations */}
         {(activeOperations.length > 0 || activeProcesses.length > 0) && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -149,15 +149,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                   color="info"
                   variant="outlined"
                   onClick={op.pid ? () => handlePidClick(op.pid!) : undefined}
-                  sx={{ 
-                    fontSize: '0.7rem', 
+                  sx={{
+                    fontSize: '0.7rem',
                     height: 20,
                     cursor: op.pid ? 'pointer' : 'default'
                   }}
                 />
               </Tooltip>
             ))}
-            
+
             {/* Active CLI Processes */}
             {activeProcesses
               .filter(process => {
@@ -178,8 +178,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
                     color="warning"
                     variant="outlined"
                     onClick={() => handlePidClick(process.pid!)}
-                    sx={{ 
-                      fontSize: '0.7rem', 
+                    sx={{
+                      fontSize: '0.7rem',
                       height: 20,
                       cursor: 'pointer'
                     }}
@@ -189,7 +189,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
           </Box>
         )}
       </Box>
-      
+
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         {/* Backend Connection Status */}
         <Tooltip title="Backend server connection status">
@@ -201,7 +201,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             variant="outlined"
           />
         </Tooltip>
-        
+
         {/* Neo4j Database Status */}
         <Tooltip title="Neo4j database connection status">
           <Chip
@@ -212,7 +212,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             variant="outlined"
           />
         </Tooltip>
-        
+
         {/* MCP Server Status */}
         <Tooltip title="Model Context Protocol server status">
           <Chip
@@ -223,7 +223,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
             variant="outlined"
           />
         </Tooltip>
-        
+
         <Typography variant="caption" color="text.secondary">
           {new Date().toLocaleTimeString()}
         </Typography>

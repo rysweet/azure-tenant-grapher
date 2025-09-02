@@ -31,7 +31,7 @@ class ThreatModelReportBuilder:
     ) -> Optional[str]:
         """
         Build a comprehensive threat model report with detailed analysis and recommendations.
-        
+
         Args:
             dfd_artifact: DFD specification or artifact
             enriched_threats: List of threats with ASB control mappings
@@ -39,7 +39,7 @@ class ThreatModelReportBuilder:
             output_format: Output format ('markdown', 'html', 'json')
             include_implementation_guide: Include implementation guidance
             logger: Optional logger
-            
+
         Returns:
             Path to generated report or None if failed
         """
@@ -49,20 +49,32 @@ class ThreatModelReportBuilder:
         try:
             if output_format.lower() == "markdown":
                 return self._build_markdown_report(
-                    dfd_artifact, enriched_threats, spec_path, include_implementation_guide, logger
+                    dfd_artifact,
+                    enriched_threats,
+                    spec_path,
+                    include_implementation_guide,
+                    logger,
                 )
             elif output_format.lower() == "html":
                 return self._build_html_report(
-                    dfd_artifact, enriched_threats, spec_path, include_implementation_guide, logger
+                    dfd_artifact,
+                    enriched_threats,
+                    spec_path,
+                    include_implementation_guide,
+                    logger,
                 )
             elif output_format.lower() == "json":
                 return self._build_json_report(
-                    dfd_artifact, enriched_threats, spec_path, include_implementation_guide, logger
+                    dfd_artifact,
+                    enriched_threats,
+                    spec_path,
+                    include_implementation_guide,
+                    logger,
                 )
             else:
                 logger.error(f"Unsupported output format: {output_format}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"Failed to build comprehensive report: {e}")
             return None
@@ -76,48 +88,52 @@ class ThreatModelReportBuilder:
         logger: logging.Logger,
     ) -> Optional[str]:
         """Build a comprehensive Markdown threat model report."""
-        
+
         # Generate report content
         report_lines = []
-        
+
         # Header and metadata
         report_lines.extend(self._generate_markdown_header(spec_path, enriched_threats))
-        
+
         # Executive summary
         report_lines.extend(self._generate_executive_summary(enriched_threats))
-        
+
         # Threat analysis overview
         report_lines.extend(self._generate_threat_overview(enriched_threats))
-        
+
         # Data flow diagram
         report_lines.extend(self._generate_dfd_section(dfd_artifact))
-        
+
         # Detailed threat analysis
         report_lines.extend(self._generate_detailed_threat_analysis(enriched_threats))
-        
+
         # ASB control mappings
         report_lines.extend(self._generate_asb_mappings_section(enriched_threats))
-        
+
         # Implementation guidance
         if include_implementation_guide:
-            report_lines.extend(self._generate_implementation_guidance(enriched_threats))
-        
+            report_lines.extend(
+                self._generate_implementation_guidance(enriched_threats)
+            )
+
         # Risk matrix and recommendations
         report_lines.extend(self._generate_risk_matrix(enriched_threats))
         report_lines.extend(self._generate_recommendations(enriched_threats))
-        
+
         # Appendices
         report_lines.extend(self._generate_appendices(enriched_threats))
-        
+
         # Write report to file
         return self._write_report_file(report_lines, spec_path, "md", logger)
 
-    def _generate_markdown_header(self, spec_path: str, threats: List[Dict[str, Any]]) -> List[str]:
+    def _generate_markdown_header(
+        self, spec_path: str, threats: List[Dict[str, Any]]
+    ) -> List[str]:
         """Generate markdown report header."""
         total_threats = len(threats)
         critical_threats = len([t for t in threats if t.get("severity") == "Critical"])
         high_threats = len([t for t in threats if t.get("severity") == "High"])
-        
+
         return [
             "# Azure Threat Model Report",
             "",
@@ -128,11 +144,11 @@ class ThreatModelReportBuilder:
             f"- **Total Threats Identified:** {total_threats}",
             f"- **Critical Threats:** {critical_threats}",
             f"- **High Severity Threats:** {high_threats}",
-            f"- **Analysis Framework:** STRIDE Methodology",
-            f"- **Security Benchmark:** Azure Security Benchmark v3",
+            "- **Analysis Framework:** STRIDE Methodology",
+            "- **Security Benchmark:** Azure Security Benchmark v3",
             "",
             "---",
-            ""
+            "",
         ]
 
     def _generate_executive_summary(self, threats: List[Dict[str, Any]]) -> List[str]:
@@ -144,27 +160,27 @@ class ThreatModelReportBuilder:
                 "No threats were identified during the analysis.",
                 "",
             ]
-        
+
         # Calculate summary statistics
         total_threats = len(threats)
         severity_counts = {}
         stride_counts = {}
         resource_types = set()
-        
+
         for threat in threats:
             severity = threat.get("severity", "Unknown")
             stride = threat.get("stride", "Unknown")
             resource_type = threat.get("resource_type", "Unknown")
-            
+
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
             stride_counts[stride] = stride_counts.get(stride, 0) + 1
             if resource_type != "Unknown":
                 resource_types.add(resource_type)
-        
+
         # Risk level assessment
         critical_count = severity_counts.get("Critical", 0)
         high_count = severity_counts.get("High", 0)
-        
+
         if critical_count > 0:
             risk_level = "**CRITICAL**"
             risk_description = "Immediate action required to address critical security vulnerabilities."
@@ -176,8 +192,10 @@ class ThreatModelReportBuilder:
             risk_description = "Several high-priority security issues identified."
         else:
             risk_level = "**MEDIUM**"
-            risk_description = "Moderate security risks identified that should be addressed."
-        
+            risk_description = (
+                "Moderate security risks identified that should be addressed."
+            )
+
         lines = [
             "## Executive Summary",
             "",
@@ -188,32 +206,32 @@ class ThreatModelReportBuilder:
             "### Key Findings",
             "",
         ]
-        
+
         # Add severity breakdown
         for severity in ["Critical", "High", "Medium", "Low"]:
             count = severity_counts.get(severity, 0)
             if count > 0:
                 lines.append(f"- **{severity} Severity:** {count} threats")
-        
+
         lines.append("")
-        
+
         # Add STRIDE breakdown
         lines.append("### STRIDE Category Breakdown")
         lines.append("")
         stride_names = {
             "S": "Spoofing",
-            "T": "Tampering", 
+            "T": "Tampering",
             "R": "Repudiation",
             "I": "Information Disclosure",
             "D": "Denial of Service",
-            "E": "Elevation of Privilege"
+            "E": "Elevation of Privilege",
         }
-        
+
         for stride_code, stride_name in stride_names.items():
             count = stride_counts.get(stride_code, 0)
             if count > 0:
                 lines.append(f"- **{stride_name} ({stride_code}):** {count} threats")
-        
+
         lines.extend(["", "---", ""])
         return lines
 
@@ -221,7 +239,7 @@ class ThreatModelReportBuilder:
         """Generate threat overview section with summary table."""
         if not threats:
             return []
-        
+
         lines = [
             "## Threat Analysis Overview",
             "",
@@ -230,18 +248,20 @@ class ThreatModelReportBuilder:
             "| # | Threat | Severity | STRIDE | Resource Type | ASB Controls |",
             "|---|--------|----------|--------|---------------|--------------|",
         ]
-        
+
         for idx, threat in enumerate(threats, 1):
             title = threat.get("title", "Unknown Threat")
             severity = threat.get("severity", "N/A")
             stride = threat.get("stride", "")
             resource_type = threat.get("resource_type", "").replace("Microsoft.", "")
-            
+
             # Get ASB control count
             asb_controls = threat.get("asb_controls", [])
             control_count = len(asb_controls)
-            control_display = f"{control_count} controls" if control_count > 0 else "No controls"
-            
+            control_display = (
+                f"{control_count} controls" if control_count > 0 else "No controls"
+            )
+
             # Format severity with appropriate emphasis
             if severity == "Critical":
                 severity_display = f"🔴 **{severity}**"
@@ -251,9 +271,11 @@ class ThreatModelReportBuilder:
                 severity_display = f"🟡 {severity}"
             else:
                 severity_display = severity
-            
-            lines.append(f"| {idx} | {title} | {severity_display} | {stride} | {resource_type} | {control_display} |")
-        
+
+            lines.append(
+                f"| {idx} | {title} | {severity_display} | {stride} | {resource_type} | {control_display} |"
+            )
+
         lines.extend(["", "---", ""])
         return lines
 
@@ -265,39 +287,38 @@ class ThreatModelReportBuilder:
             "The following diagram represents the system architecture analyzed for threats:",
             "",
         ]
-        
+
         if dfd_artifact and dfd_artifact.strip():
             # Check if it's a Mermaid diagram
-            if any(keyword in dfd_artifact.lower() for keyword in ["flowchart", "graph", "-->", "mermaid"]):
-                lines.extend([
-                    "```mermaid",
-                    dfd_artifact.strip(),
-                    "```"
-                ])
+            if any(
+                keyword in dfd_artifact.lower()
+                for keyword in ["flowchart", "graph", "-->", "mermaid"]
+            ):
+                lines.extend(["```mermaid", dfd_artifact.strip(), "```"])
             else:
-                lines.extend([
-                    "```",
-                    dfd_artifact.strip(),
-                    "```"
-                ])
+                lines.extend(["```", dfd_artifact.strip(), "```"])
         else:
-            lines.append("*System architecture diagram not provided or could not be parsed.*")
-        
+            lines.append(
+                "*System architecture diagram not provided or could not be parsed.*"
+            )
+
         lines.extend(["", "---", ""])
         return lines
 
-    def _generate_detailed_threat_analysis(self, threats: List[Dict[str, Any]]) -> List[str]:
+    def _generate_detailed_threat_analysis(
+        self, threats: List[Dict[str, Any]]
+    ) -> List[str]:
         """Generate detailed threat analysis section."""
         if not threats:
             return []
-        
+
         lines = [
             "## Detailed Threat Analysis",
             "",
             "This section provides comprehensive analysis of each identified threat, including impact assessment, likelihood evaluation, and recommended mitigations.",
             "",
         ]
-        
+
         # Group threats by severity for better organization
         threats_by_severity = {}
         for threat in threats:
@@ -305,22 +326,22 @@ class ThreatModelReportBuilder:
             if severity not in threats_by_severity:
                 threats_by_severity[severity] = []
             threats_by_severity[severity].append(threat)
-        
+
         # Process threats in severity order
         for severity in ["Critical", "High", "Medium", "Low", "Unknown"]:
             if severity not in threats_by_severity:
                 continue
-                
+
             severity_threats = threats_by_severity[severity]
             if not severity_threats:
                 continue
-                
+
             lines.append(f"### {severity} Severity Threats")
             lines.append("")
-            
+
             for idx, threat in enumerate(severity_threats, 1):
                 lines.extend(self._format_detailed_threat(threat, idx))
-        
+
         lines.extend(["---", ""])
         return lines
 
@@ -335,7 +356,7 @@ class ThreatModelReportBuilder:
         resource_type = threat.get("resource_type", "")
         impact = threat.get("impact", "Unknown")
         likelihood = threat.get("likelihood", "Unknown")
-        
+
         lines = [
             f"#### T-{index}: {title}",
             "",
@@ -349,7 +370,7 @@ class ThreatModelReportBuilder:
             f"{description}",
             "",
         ]
-        
+
         # Add ASB controls if available
         asb_controls = threat.get("asb_controls", [])
         if asb_controls:
@@ -360,11 +381,11 @@ class ThreatModelReportBuilder:
                 control_title = control.get("title", "")
                 control_desc = control.get("description", "")
                 priority = control.get("priority", "Medium")
-                
+
                 lines.append(f"- **{control_id}** - {control_title}")
                 lines.append(f"  - *Priority: {priority}*")
                 lines.append(f"  - {control_desc}")
-                
+
                 # Add implementation steps if available
                 implementation = control.get("implementation", [])
                 if implementation:
@@ -372,12 +393,14 @@ class ThreatModelReportBuilder:
                     for step in implementation:
                         lines.append(f"    - {step}")
                 lines.append("")
-        
+
         lines.append("---")
         lines.append("")
         return lines
 
-    def _generate_asb_mappings_section(self, threats: List[Dict[str, Any]]) -> List[str]:
+    def _generate_asb_mappings_section(
+        self, threats: List[Dict[str, Any]]
+    ) -> List[str]:
         """Generate Azure Security Benchmark mappings section."""
         lines = [
             "## Azure Security Benchmark Control Mappings",
@@ -385,7 +408,7 @@ class ThreatModelReportBuilder:
             "This section maps identified threats to Azure Security Benchmark (ASB) v3 controls, providing a structured approach to security implementation.",
             "",
         ]
-        
+
         # Collect all unique controls
         all_controls = {}
         for threat in threats:
@@ -394,12 +417,12 @@ class ThreatModelReportBuilder:
                 control_id = control.get("control_id", "")
                 if control_id and control_id not in all_controls:
                     all_controls[control_id] = control
-        
+
         if not all_controls:
             lines.append("No ASB control mappings available.")
             lines.extend(["", "---", ""])
             return lines
-        
+
         # Group controls by category
         controls_by_category = {}
         for control in all_controls.values():
@@ -407,18 +430,18 @@ class ThreatModelReportBuilder:
             if category not in controls_by_category:
                 controls_by_category[category] = []
             controls_by_category[category].append(control)
-        
+
         # Generate control mappings by category
         for category, controls in controls_by_category.items():
             lines.append(f"### {category}")
             lines.append("")
-            
+
             for control in controls:
                 control_id = control.get("control_id", "")
                 title = control.get("title", "")
                 description = control.get("description", "")
                 guidance = control.get("guidance", "")
-                
+
                 lines.append(f"#### {control_id}: {title}")
                 lines.append("")
                 lines.append(f"**Description:** {description}")
@@ -426,11 +449,13 @@ class ThreatModelReportBuilder:
                 if guidance:
                     lines.append(f"**Implementation Guidance:** {guidance}")
                     lines.append("")
-        
+
         lines.extend(["---", ""])
         return lines
 
-    def _generate_implementation_guidance(self, threats: List[Dict[str, Any]]) -> List[str]:
+    def _generate_implementation_guidance(
+        self, threats: List[Dict[str, Any]]
+    ) -> List[str]:
         """Generate implementation guidance section."""
         lines = [
             "## Implementation Guidance",
@@ -438,13 +463,13 @@ class ThreatModelReportBuilder:
             "This section provides prioritized implementation recommendations based on threat severity and business impact.",
             "",
         ]
-        
+
         # Collect implementation priorities
         immediate_actions = []
         high_priority = []
         medium_priority = []
         low_priority = []
-        
+
         for threat in threats:
             asb_controls = threat.get("asb_controls", [])
             for control in asb_controls:
@@ -457,13 +482,15 @@ class ThreatModelReportBuilder:
                     medium_priority.append((threat, control))
                 else:
                     low_priority.append((threat, control))
-        
+
         # Generate implementation roadmap
         if immediate_actions:
             lines.append("### Immediate Actions Required (Within 24 Hours)")
             lines.append("")
             for threat, control in immediate_actions:
-                lines.append(f"- **{control.get('control_id', '')}**: {control.get('title', '')}")
+                lines.append(
+                    f"- **{control.get('control_id', '')}**: {control.get('title', '')}"
+                )
                 lines.append(f"  - **Threat:** {threat.get('title', '')}")
                 lines.append(f"  - **Resource:** {threat.get('element', '')}")
                 implementation = control.get("implementation", [])
@@ -472,22 +499,26 @@ class ThreatModelReportBuilder:
                     for action in implementation:
                         lines.append(f"    - {action}")
                 lines.append("")
-        
+
         if high_priority:
             lines.append("### High Priority (Within 1 Week)")
             lines.append("")
             for threat, control in high_priority:
-                lines.append(f"- **{control.get('control_id', '')}**: {control.get('title', '')}")
+                lines.append(
+                    f"- **{control.get('control_id', '')}**: {control.get('title', '')}"
+                )
                 lines.append(f"  - **Threat:** {threat.get('title', '')}")
                 lines.append("")
-        
+
         if medium_priority:
             lines.append("### Medium Priority (Within 1 Month)")
             lines.append("")
             for threat, control in medium_priority:
-                lines.append(f"- **{control.get('control_id', '')}**: {control.get('title', '')}")
+                lines.append(
+                    f"- **{control.get('control_id', '')}**: {control.get('title', '')}"
+                )
                 lines.append("")
-        
+
         lines.extend(["---", ""])
         return lines
 
@@ -501,19 +532,19 @@ class ThreatModelReportBuilder:
             "| Likelihood \\ Severity | Critical | High | Medium | Low |",
             "|----------------------|----------|------|--------|-----|",
         ]
-        
+
         # Build risk matrix
         matrix = {}
         for threat in threats:
             severity = threat.get("severity", "Unknown")
             likelihood = threat.get("likelihood", "Unknown")
-            
+
             if likelihood not in matrix:
                 matrix[likelihood] = {}
             if severity not in matrix[likelihood]:
                 matrix[likelihood][severity] = 0
             matrix[likelihood][severity] += 1
-        
+
         # Generate matrix rows
         for likelihood in ["High", "Medium", "Low"]:
             row = f"| {likelihood} |"
@@ -521,7 +552,7 @@ class ThreatModelReportBuilder:
                 count = matrix.get(likelihood, {}).get(severity, 0)
                 row += f" {count} |"
             lines.append(row)
-        
+
         lines.extend(["", "---", ""])
         return lines
 
@@ -533,45 +564,51 @@ class ThreatModelReportBuilder:
             "Based on the threat analysis, the following strategic recommendations are provided:",
             "",
         ]
-        
+
         # Calculate high-level recommendations
         critical_threats = [t for t in threats if t.get("severity") == "Critical"]
         high_threats = [t for t in threats if t.get("severity") == "High"]
-        
+
         if critical_threats:
-            lines.extend([
-                "### Critical Priority Recommendations",
-                "",
-                f"- **Immediate attention required** for {len(critical_threats)} critical threats",
-                "- Implement emergency incident response procedures",
-                "- Conduct security control gap analysis",
-                "- Establish continuous monitoring for affected resources",
-                "",
-            ])
-        
+            lines.extend(
+                [
+                    "### Critical Priority Recommendations",
+                    "",
+                    f"- **Immediate attention required** for {len(critical_threats)} critical threats",
+                    "- Implement emergency incident response procedures",
+                    "- Conduct security control gap analysis",
+                    "- Establish continuous monitoring for affected resources",
+                    "",
+                ]
+            )
+
         if high_threats:
-            lines.extend([
-                "### High Priority Recommendations",
+            lines.extend(
+                [
+                    "### High Priority Recommendations",
+                    "",
+                    f"- Address {len(high_threats)} high severity threats within one week",
+                    "- Implement defense-in-depth security controls",
+                    "- Enhance logging and monitoring capabilities",
+                    "- Conduct security awareness training for relevant teams",
+                    "",
+                ]
+            )
+
+        lines.extend(
+            [
+                "### Strategic Recommendations",
                 "",
-                f"- Address {len(high_threats)} high severity threats within one week",
-                "- Implement defense-in-depth security controls",
-                "- Enhance logging and monitoring capabilities",
-                "- Conduct security awareness training for relevant teams",
+                "- Implement a formal threat modeling process as part of the development lifecycle",
+                "- Establish regular security assessments and penetration testing",
+                "- Develop incident response and disaster recovery procedures",
+                "- Create security metrics and KPIs for continuous improvement",
                 "",
-            ])
-        
-        lines.extend([
-            "### Strategic Recommendations",
-            "",
-            "- Implement a formal threat modeling process as part of the development lifecycle",
-            "- Establish regular security assessments and penetration testing",
-            "- Develop incident response and disaster recovery procedures",
-            "- Create security metrics and KPIs for continuous improvement",
-            "",
-            "---",
-            ""
-        ])
-        
+                "---",
+                "",
+            ]
+        )
+
         return lines
 
     def _generate_appendices(self, threats: List[Dict[str, Any]]) -> List[str]:
@@ -582,7 +619,7 @@ class ThreatModelReportBuilder:
             "### Appendix A: STRIDE Methodology Reference",
             "",
             "- **S - Spoofing:** Identity spoofing attacks",
-            "- **T - Tampering:** Data or process tampering attacks", 
+            "- **T - Tampering:** Data or process tampering attacks",
             "- **R - Repudiation:** Non-repudiation attacks",
             "- **I - Information Disclosure:** Information disclosure attacks",
             "- **D - Denial of Service:** Availability attacks",
@@ -595,13 +632,13 @@ class ThreatModelReportBuilder:
             "",
             "### Appendix C: Report Generation Details",
             "",
-            f"- **Analysis Framework:** STRIDE Threat Modeling",
-            f"- **Security Benchmark:** Azure Security Benchmark v3",
+            "- **Analysis Framework:** STRIDE Threat Modeling",
+            "- **Security Benchmark:** Azure Security Benchmark v3",
             f"- **Total Threats Analyzed:** {len(threats)}",
             f"- **Report Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC",
             "",
         ]
-        
+
         return lines
 
     def _build_html_report(
@@ -618,15 +655,15 @@ class ThreatModelReportBuilder:
         md_lines.extend(self._generate_markdown_header(spec_path, enriched_threats))
         md_lines.extend(self._generate_executive_summary(enriched_threats))
         md_lines.extend(self._generate_detailed_threat_analysis(enriched_threats))
-        
+
         # Convert to basic HTML
         html_lines = [
             "<!DOCTYPE html>",
             "<html><head><title>Threat Model Report</title>",
             "<style>body{font-family:Arial,sans-serif;margin:40px;} h1,h2,h3{color:#333;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#f2f2f2;}</style>",
-            "</head><body>"
+            "</head><body>",
         ]
-        
+
         # Simple markdown to HTML conversion
         for line in md_lines:
             if line.startswith("# "):
@@ -639,9 +676,9 @@ class ThreatModelReportBuilder:
                 html_lines.append("<br>")
             else:
                 html_lines.append(f"<p>{line}</p>")
-        
+
         html_lines.append("</body></html>")
-        
+
         return self._write_report_file(html_lines, spec_path, "html", logger)
 
     def _build_json_report(
@@ -659,42 +696,48 @@ class ThreatModelReportBuilder:
                 "specification": spec_path,
                 "total_threats": len(enriched_threats),
                 "analysis_framework": "STRIDE",
-                "security_benchmark": "Azure Security Benchmark v3"
+                "security_benchmark": "Azure Security Benchmark v3",
             },
             "dfd_artifact": dfd_artifact,
             "threats": enriched_threats,
-            "summary": self._generate_summary_statistics(enriched_threats)
+            "summary": self._generate_summary_statistics(enriched_threats),
         }
-        
+
         json_content = json.dumps(report_data, indent=2, ensure_ascii=False)
         return self._write_report_file([json_content], spec_path, "json", logger)
 
-    def _generate_summary_statistics(self, threats: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _generate_summary_statistics(
+        self, threats: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Generate summary statistics for JSON report."""
         severity_counts = {}
         stride_counts = {}
         resource_types = set()
-        
+
         for threat in threats:
             severity = threat.get("severity", "Unknown")
             stride = threat.get("stride", "Unknown")
             resource_type = threat.get("resource_type", "")
-            
+
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
             stride_counts[stride] = stride_counts.get(stride, 0) + 1
             if resource_type:
                 resource_types.add(resource_type)
-        
+
         return {
             "total_threats": len(threats),
             "severity_distribution": severity_counts,
             "stride_distribution": stride_counts,
             "resource_types_analyzed": len(resource_types),
-            "unique_resource_types": list(resource_types)
+            "unique_resource_types": list(resource_types),
         }
 
     def _write_report_file(
-        self, content_lines: List[str], spec_path: str, extension: str, logger: logging.Logger
+        self,
+        content_lines: List[str],
+        spec_path: str,
+        extension: str,
+        logger: logging.Logger,
     ) -> Optional[str]:
         """Write report content to file."""
         try:
@@ -715,7 +758,7 @@ class ThreatModelReportBuilder:
 
             logger.info(f"Threat model report generated at: {report_path}")
             return report_path
-            
+
         except Exception as e:
             logger.error(f"Failed to write report file: {e}")
             return None

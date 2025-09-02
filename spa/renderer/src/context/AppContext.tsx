@@ -79,24 +79,24 @@ function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
-    
+
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
-    
+
     case 'SET_OPERATION':
       return { ...state, currentOperation: action.payload };
-    
+
     case 'SET_CONFIG':
       return {
         ...state,
         config: { ...state.config, ...action.payload },
       };
-    
+
     case 'ADD_RESULT':
       const newResults = new Map(state.results);
       newResults.set(action.payload.key, action.payload.value);
       return { ...state, results: newResults };
-    
+
     case 'ADD_LOG':
       // Support both string (legacy) and LogEntry formats
       if (typeof action.payload === 'string') {
@@ -110,7 +110,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         return { ...state, logs: [...state.logs, logEntry] };
       }
       return { ...state, logs: [...state.logs, action.payload] };
-    
+
     case 'ADD_STRUCTURED_LOG':
       const logEntry: LogEntry = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -121,24 +121,24 @@ function appReducer(state: AppState, action: AppAction): AppState {
         data: action.payload.data,
       };
       return { ...state, logs: [...state.logs, logEntry] };
-    
+
     case 'SET_LOG_SETTINGS':
       return {
         ...state,
         logSettings: { ...state.logSettings, ...action.payload },
       };
-    
+
     case 'CLEAR_LOGS':
       return { ...state, logs: [] };
-    
+
     case 'SET_THEME':
       return { ...state, theme: action.payload };
-    
+
     case 'ADD_BACKGROUND_OPERATION':
       const newBackgroundOps = new Map(state.backgroundOperations);
       newBackgroundOps.set(action.payload.id, action.payload);
       return { ...state, backgroundOperations: newBackgroundOps };
-    
+
     case 'UPDATE_BACKGROUND_OPERATION':
       const updatedBackgroundOps = new Map(state.backgroundOperations);
       const existingOp = updatedBackgroundOps.get(action.payload.id);
@@ -146,12 +146,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
         updatedBackgroundOps.set(action.payload.id, { ...existingOp, ...action.payload.updates });
       }
       return { ...state, backgroundOperations: updatedBackgroundOps };
-    
+
     case 'REMOVE_BACKGROUND_OPERATION':
       const filteredBackgroundOps = new Map(state.backgroundOperations);
       filteredBackgroundOps.delete(action.payload);
       return { ...state, backgroundOperations: filteredBackgroundOps };
-    
+
     default:
       return state;
   }
@@ -178,7 +178,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (savedConfig) {
         dispatch({ type: 'SET_CONFIG', payload: savedConfig });
       }
-      
+
       const theme = await window.electronAPI.config.get('theme');
       if (theme) {
         dispatch({ type: 'SET_THEME', payload: theme });

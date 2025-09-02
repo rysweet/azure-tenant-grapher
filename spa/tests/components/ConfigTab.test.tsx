@@ -25,7 +25,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('ConfigTab', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock window.electronAPI
     (window as any).electronAPI = {
       store: {
@@ -43,9 +43,9 @@ describe('ConfigTab', () => {
 
   test('renders configuration tab with all sections', () => {
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     expect(screen.getByText('Configuration')).toBeInTheDocument();
     expect(screen.getByText('Azure Credentials')).toBeInTheDocument();
     expect(screen.getByText('Neo4j Settings')).toBeInTheDocument();
@@ -63,11 +63,11 @@ describe('ConfigTab', () => {
       'app.maxThreads': 10,
       'app.resourceLimit': 1000,
     };
-    
+
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue(mockConfig);
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     await waitFor(() => {
       expect(screen.getByDisplayValue('test-tenant-id')).toBeInTheDocument();
       expect(screen.getByDisplayValue('test-client-id')).toBeInTheDocument();
@@ -79,17 +79,17 @@ describe('ConfigTab', () => {
   test('validates Azure tenant ID format', async () => {
     const { isValidUUID } = require('../../renderer/src/utils/validation');
     isValidUUID.mockReturnValue(false);
-    
+
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(tenantInput, { target: { value: 'invalid-id' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Invalid Tenant ID format/i)).toBeInTheDocument();
     });
@@ -100,19 +100,19 @@ describe('ConfigTab', () => {
     isValidUUID.mockImplementation((id) => {
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
     });
-    
+
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
     const clientInput = screen.getByLabelText(/Client ID/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(tenantInput, { target: { value: '12345678-1234-1234-1234-123456789012' } });
     fireEvent.change(clientInput, { target: { value: 'invalid-client-id' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Invalid Client ID format/i)).toBeInTheDocument();
     });
@@ -121,23 +121,23 @@ describe('ConfigTab', () => {
   test('saves configuration successfully', async () => {
     const { isValidUUID } = require('../../renderer/src/utils/validation');
     isValidUUID.mockReturnValue(true);
-    
+
     const mockSet = jest.fn().mockResolvedValue(undefined);
     (window as any).electronAPI.store.set = mockSet;
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
     const clientInput = screen.getByLabelText(/Client ID/i);
     const secretInput = screen.getByLabelText(/Client Secret/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(tenantInput, { target: { value: '12345678-1234-1234-1234-123456789012' } });
     fireEvent.change(clientInput, { target: { value: '87654321-4321-4321-4321-210987654321' } });
     fireEvent.change(secretInput, { target: { value: 'test-secret' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(mockSet).toHaveBeenCalledWith('azure.tenantId', '12345678-1234-1234-1234-123456789012');
       expect(mockSet).toHaveBeenCalledWith('azure.clientId', '87654321-4321-4321-4321-210987654321');
@@ -151,23 +151,23 @@ describe('ConfigTab', () => {
       'azure.clientSecret': 'hidden-secret',
       'neo4j.password': 'hidden-password',
     });
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const secretInput = screen.getByLabelText(/Client Secret/i);
     const neo4jPasswordInput = screen.getByLabelText(/Neo4j Password/i);
-    
+
     // Initially passwords should be hidden
     expect(secretInput).toHaveAttribute('type', 'password');
     expect(neo4jPasswordInput).toHaveAttribute('type', 'password');
-    
+
     // Find and click visibility toggle buttons
     const visibilityButtons = screen.getAllByRole('button', { name: /toggle password visibility/i });
-    
+
     // Toggle Azure client secret visibility
     fireEvent.click(visibilityButtons[0]);
     expect(secretInput).toHaveAttribute('type', 'text');
-    
+
     // Toggle Neo4j password visibility
     fireEvent.click(visibilityButtons[1]);
     expect(neo4jPasswordInput).toHaveAttribute('type', 'text');
@@ -177,19 +177,19 @@ describe('ConfigTab', () => {
     const mockSet = jest.fn().mockResolvedValue(undefined);
     (window as any).electronAPI.store.set = mockSet;
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const uriInput = screen.getByLabelText(/Neo4j URI/i);
     const usernameInput = screen.getByLabelText(/Neo4j Username/i);
     const passwordInput = screen.getByLabelText(/Neo4j Password/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(uriInput, { target: { value: 'bolt://neo4j-server:7687' } });
     fireEvent.change(usernameInput, { target: { value: 'admin' } });
     fireEvent.change(passwordInput, { target: { value: 'secure-password' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(mockSet).toHaveBeenCalledWith('neo4j.uri', 'bolt://neo4j-server:7687');
       expect(mockSet).toHaveBeenCalledWith('neo4j.username', 'admin');
@@ -201,17 +201,17 @@ describe('ConfigTab', () => {
     const mockSet = jest.fn().mockResolvedValue(undefined);
     (window as any).electronAPI.store.set = mockSet;
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const threadsSlider = screen.getByLabelText(/Max Threads/i);
     const limitSlider = screen.getByLabelText(/Resource Limit/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(threadsSlider, { target: { value: 20 } });
     fireEvent.change(limitSlider, { target: { value: 2000 } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(mockSet).toHaveBeenCalledWith('app.maxThreads', 20);
       expect(mockSet).toHaveBeenCalledWith('app.resourceLimit', 2000);
@@ -227,16 +227,16 @@ describe('ConfigTab', () => {
       'azure.tenantId': 'old-tenant',
       'neo4j.uri': 'bolt://old-server:7687',
     });
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const resetButton = screen.getByText(/Reset to Defaults/i);
-    
+
     // Mock window.confirm
     window.confirm = jest.fn(() => true);
-    
+
     fireEvent.click(resetButton);
-    
+
     await waitFor(() => {
       expect(window.confirm).toHaveBeenCalledWith(
         'Are you sure you want to reset all settings to their default values?'
@@ -244,7 +244,7 @@ describe('ConfigTab', () => {
       expect(mockDelete).toHaveBeenCalled();
       expect(screen.getByText(/Configuration reset to defaults/i)).toBeInTheDocument();
     });
-    
+
     // Check that fields are reset
     const uriInput = screen.getByLabelText(/Neo4j URI/i) as HTMLInputElement;
     expect(uriInput.value).toBe('bolt://localhost:7687');
@@ -256,21 +256,21 @@ describe('ConfigTab', () => {
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({
       'azure.tenantId': 'existing-tenant',
     });
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const resetButton = screen.getByText(/Reset to Defaults/i);
-    
+
     // Mock window.confirm to return false
     window.confirm = jest.fn(() => false);
-    
+
     fireEvent.click(resetButton);
-    
+
     await waitFor(() => {
       expect(window.confirm).toHaveBeenCalled();
       expect(mockDelete).not.toHaveBeenCalled();
     });
-    
+
     // Original values should remain
     const tenantInput = screen.getByLabelText(/Tenant ID/i) as HTMLInputElement;
     expect(tenantInput.value).toBe('existing-tenant');
@@ -280,15 +280,15 @@ describe('ConfigTab', () => {
     const mockSet = jest.fn().mockRejectedValue(new Error('Failed to save'));
     (window as any).electronAPI.store.set = mockSet;
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(tenantInput, { target: { value: '12345678-1234-1234-1234-123456789012' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Failed to save configuration/i)).toBeInTheDocument();
     });
@@ -296,15 +296,15 @@ describe('ConfigTab', () => {
 
   test('validates Neo4j URI format', async () => {
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({});
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const uriInput = screen.getByLabelText(/Neo4j URI/i);
     const saveButton = screen.getByText(/Save Configuration/i);
-    
+
     fireEvent.change(uriInput, { target: { value: 'invalid-uri' } });
     fireEvent.click(saveButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Invalid Neo4j URI format/i)).toBeInTheDocument();
     });
@@ -316,22 +316,22 @@ describe('ConfigTab', () => {
       'azure.clientId': 'export-client-id',
       'neo4j.uri': 'bolt://localhost:7687',
     };
-    
+
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue(mockConfig);
-    
+
     // Mock URL and document methods
     global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
     global.URL.revokeObjectURL = jest.fn();
-    
+
     const mockClick = jest.fn();
     const mockAnchor = { href: '', download: '', click: mockClick };
     jest.spyOn(document, 'createElement').mockReturnValue(mockAnchor as any);
-    
+
     renderWithProviders(<ConfigTab />);
-    
+
     const exportButton = screen.getByText(/Export Configuration/i);
     fireEvent.click(exportButton);
-    
+
     await waitFor(() => {
       expect(global.URL.createObjectURL).toHaveBeenCalled();
       expect(mockAnchor.download).toMatch(/atg_config_\d+\.json/);

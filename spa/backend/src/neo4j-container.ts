@@ -55,7 +55,7 @@ export class Neo4jContainer {
     }
 
     console.log(`Checking Neo4j container status (${this.containerName})...`);
-    
+
     const running = await this.isRunning();
     if (running) {
       console.log(`Neo4j container '${this.containerName}' is already running on port ${this.neo4jPort}`);
@@ -112,7 +112,7 @@ export class Neo4jContainer {
 
     return new Promise((resolve, reject) => {
       const dockerProcess = spawn('docker', cmd);
-      
+
       dockerProcess.stdout.on('data', (data) => {
         console.log(`Docker: ${data}`);
       });
@@ -157,7 +157,7 @@ export class Neo4jContainer {
 
   async waitForReady(maxRetries: number = 30, delayMs: number = 2000): Promise<void> {
     console.log('Waiting for Neo4j to be ready...');
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         // Try to connect using the Neo4j driver
@@ -166,12 +166,12 @@ export class Neo4jContainer {
           `bolt://localhost:${this.neo4jPort}`,
           neo4j.auth.basic('neo4j', this.neo4jPassword)
         );
-        
+
         const session = driver.session();
         await session.run('RETURN 1');
         await session.close();
         await driver.close();
-        
+
         console.log('Neo4j is ready!');
         return;
       } catch (error) {
@@ -196,12 +196,12 @@ export class Neo4jContainer {
           connectionAcquisitionTimeout: 10000 // 10 second timeout
         }
       );
-      
+
       const session = driver.session();
       await session.run('RETURN 1');
       await session.close();
       await driver.close();
-      
+
       return true;
     } catch (error) {
       console.log('Neo4j connection test failed:', error instanceof Error ? error.message : error);
@@ -212,13 +212,13 @@ export class Neo4jContainer {
   async getStatus(): Promise<any> {
     const running = await this.isRunning();
     const exists = await this.containerExists();
-    
+
     const baseStatus = {
       containerName: this.containerName,
       uri: `bolt://localhost:${this.neo4jPort}`,
       port: this.neo4jPort,
     };
-    
+
     if (!running) {
       return {
         ...baseStatus,
@@ -234,7 +234,7 @@ export class Neo4jContainer {
         `docker inspect ${this.containerName} --format='{{json .State}}'`
       );
       const state = JSON.parse(stdout);
-      
+
       // First check Docker's built-in health status
       let dockerHealth = 'unknown';
       try {
@@ -245,10 +245,10 @@ export class Neo4jContainer {
       } catch {
         // Container might not have health check configured
       }
-      
+
       // Test actual Neo4j connection to determine real health
       const isHealthy = await this.testNeo4jConnection();
-      
+
       // Determine final health status
       let containerHealth = 'starting';
       if (isHealthy) {
@@ -262,7 +262,7 @@ export class Neo4jContainer {
         // If running for more than 60 seconds and still can't connect
         containerHealth = 'unhealthy';
       }
-      
+
       return {
         ...baseStatus,
         status: 'running',

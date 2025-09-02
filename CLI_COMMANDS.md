@@ -79,7 +79,7 @@ When using the dashboard (default for `atg build`):
   - Shows success/error messages in dashboard logs
   - Handles cases where GUI is already running
 - **Press 'i'** to set log level to INFO
-- **Press 'd'** to set log level to DEBUG  
+- **Press 'd'** to set log level to DEBUG
 - **Press 'w'** to set log level to WARNING
 
 ### GUI Launch Options

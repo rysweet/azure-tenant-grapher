@@ -28,12 +28,12 @@ const App: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [dbPopulated, setDbPopulated] = useState<boolean | null>(null);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
-  
+
   // Force black toolbar on mount
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      .MuiAppBar-root, 
+      .MuiAppBar-root,
       .MuiToolbar-root,
       header,
       div:first-child > div:first-child,
@@ -56,7 +56,7 @@ const App: React.FC = () => {
     // Check backend connection and DB status
     checkConnection();
     checkDatabaseStatus();
-    
+
     // Listen for menu events
     window.electronAPI.on('menu:navigate', (tab: string) => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
@@ -109,7 +109,7 @@ const App: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
       <TabNavigation />
-      
+
       <Box sx={{ flex: 1, overflow: 'auto', backgroundColor: '#f5f5f5' }}>
         <Container maxWidth={false} sx={{ py: 3, height: '100%' }}>
           <ErrorBoundary>
@@ -137,7 +137,7 @@ const App: React.FC = () => {
           </ErrorBoundary>
         </Container>
       </Box>
-      
+
       <StatusBar connectionStatus={connectionStatus} />
     </Box>
   );

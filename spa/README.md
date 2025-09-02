@@ -138,7 +138,7 @@ spa/
 # Development (hot reload enabled)
 npm run dev              # All processes concurrently
 npm run dev:main         # Watch main process only
-npm run dev:renderer     # Watch renderer process only  
+npm run dev:renderer     # Watch renderer process only
 npm run dev:backend      # Watch backend server only
 
 # Building
@@ -151,7 +151,7 @@ npm run build:backend   # Build backend server
 npm run package         # Package for current platform
 npm run package:all     # Package for all platforms (macOS, Windows, Linux)
 
-# Testing  
+# Testing
 npm test               # Run unit tests
 npm run test:e2e       # Run end-to-end tests with Playwright
 npm run test:coverage  # Generate coverage report

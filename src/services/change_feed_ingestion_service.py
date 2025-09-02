@@ -207,35 +207,41 @@ class ChangeFeedIngestionService:
             Dict mapping subscription_id to list of upserted/marked resources.
         """
         logger.info("Starting change feed ingestion for all subscriptions")
-        
+
         # Get all subscriptions from the database
-        with self.driver.session() as session:
-            result = session.run("MATCH (s:Subscription) RETURN s.subscription_id as id")
+        with self.neo4j_session_manager.driver.session() as session:
+            result = session.run(
+                "MATCH (s:Subscription) RETURN s.subscription_id as id"
+            )
             subscription_ids = [record["id"] for record in result]
-        
+
         if not subscription_ids:
             logger.warning("No subscriptions found in database")
             return {}
-        
+
         logger.info(f"Found {len(subscription_ids)} subscriptions to process")
-        
+
         # Process each subscription concurrently
         tasks = []
         for subscription_id in subscription_ids:
-            task = self.ingest_for_subscription(subscription_id)
+            task = self.ingest_changes_for_subscription(subscription_id)
             tasks.append(task)
-        
+
         # Wait for all tasks to complete
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Build result dictionary
         all_results = {}
         for subscription_id, result in zip(subscription_ids, results):
             if isinstance(result, Exception):
-                logger.error(f"Error processing subscription {subscription_id}: {result}")
+                logger.error(
+                    f"Error processing subscription {subscription_id}: {result}"
+                )
                 all_results[subscription_id] = {"error": str(result)}
             else:
                 all_results[subscription_id] = result
-        
-        logger.info(f"Completed change feed ingestion for {len(all_results)} subscriptions")
+
+        logger.info(
+            f"Completed change feed ingestion for {len(all_results)} subscriptions"
+        )
         return all_results

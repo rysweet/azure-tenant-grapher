@@ -12,14 +12,14 @@ describe('MCP Server Startup Integration', () => {
   const projectRoot = path.join(__dirname, '../../../../');
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
   const backendUrl = 'http://localhost:5174';
-  
+
   afterEach(async () => {
     // Clean up any spawned processes
     if (mcpProcess && !mcpProcess.killed) {
       mcpProcess.kill();
       mcpProcess = null;
     }
-    
+
     // Clean up PID file
     if (fs.existsSync(pidFile)) {
       try {
@@ -30,7 +30,7 @@ describe('MCP Server Startup Integration', () => {
       }
       fs.unlinkSync(pidFile);
     }
-    
+
     // Wait for cleanup
     await new Promise(resolve => setTimeout(resolve, 500));
   });
@@ -45,7 +45,7 @@ describe('MCP Server Startup Integration', () => {
     // Start MCP server using the same command as main/index.ts
     const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
     const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
-    
+
     mcpProcess = spawn(pythonPath, [scriptPath, 'mcp-server'], {
       cwd: projectRoot,
       env: { ...process.env },
@@ -61,11 +61,11 @@ describe('MCP Server Startup Integration', () => {
 
     // Check that PID file exists
     expect(fs.existsSync(pidFile)).toBe(true);
-    
+
     // Check that the process is actually running
     const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim());
     expect(pid).toBeGreaterThan(0);
-    
+
     // Verify process is alive
     let processAlive = false;
     try {
@@ -86,7 +86,7 @@ describe('MCP Server Startup Integration', () => {
 
     const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
     const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
-    
+
     mcpProcess = spawn(pythonPath, [scriptPath, 'mcp-server'], {
       cwd: projectRoot,
       env: { ...process.env },
@@ -103,7 +103,7 @@ describe('MCP Server Startup Integration', () => {
     // Mock the backend endpoint check
     const checkMcpStatus = () => {
       const pidFilePath = path.join(projectRoot, 'outputs', 'mcp_server.pid');
-      
+
       if (!fs.existsSync(pidFilePath)) {
         return { connected: false, error: 'PID file not found' };
       }
@@ -131,7 +131,7 @@ describe('MCP Server Startup Integration', () => {
 
     const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
     const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
-    
+
     mcpProcess = spawn(pythonPath, [scriptPath, 'mcp-server'], {
       cwd: projectRoot,
       env: { ...process.env },
@@ -144,11 +144,11 @@ describe('MCP Server Startup Integration', () => {
     // Collect output
     let output = '';
     let errorOutput = '';
-    
+
     mcpProcess.stdout?.on('data', (data) => {
       output += data.toString();
     });
-    
+
     mcpProcess.stderr?.on('data', (data) => {
       errorOutput += data.toString();
     });
@@ -170,7 +170,7 @@ describe('MCP Server Startup Integration', () => {
 
     // Check that we got some output (server is responding)
     expect(output.length + errorOutput.length).toBeGreaterThan(0);
-    
+
     // Check process is still alive
     expect(mcpProcess.killed).toBe(false);
   }, 10000);

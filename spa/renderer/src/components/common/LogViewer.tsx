@@ -52,7 +52,7 @@ const LogViewer: React.FC<LogViewerProps> = ({ logs, onClear, height = 300 }) =>
           )}
         </Box>
       </Box>
-      
+
       <Box
         ref={scrollRef}
         className="log-viewer"

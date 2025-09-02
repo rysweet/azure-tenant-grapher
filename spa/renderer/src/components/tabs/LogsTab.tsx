@@ -40,7 +40,7 @@ import { useLogger } from '../../hooks/useLogger';
 // Log level colors for dark theme
 const logLevelColors: Record<LogLevel, string> = {
   debug: '#6B7280', // Gray
-  info: '#3B82F6',  // Blue  
+  info: '#3B82F6',  // Blue
   warning: '#F59E0B', // Amber
   error: '#EF4444',   // Red
 };
@@ -63,22 +63,22 @@ const LogsTab: React.FC = () => {
   const [sortBy, setSortBy] = useState<'timestamp' | 'level' | 'source'>('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [pidFilter, setPidFilter] = useState<string>('');
-  
+
   const editorRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const processOutputRef = useRef<Map<string, string[]>>(new Map());
-  
+
   // Initialize WebSocket connection and logger
   const webSocket = useWebSocket();
   const logger = useLogger('LogsTab');
-  
+
   // Track active processes that we're subscribing to
   const [activeProcesses, setActiveProcesses] = useState<Set<string>>(new Set());
 
   // Convert WebSocket process outputs to LogEntry format
   const processLogs = useMemo(() => {
     const logs: LogEntry[] = [];
-    
+
     webSocket.outputs.forEach((outputs, processId) => {
       outputs.forEach(output => {
         // Handle both single line and array of lines
@@ -96,7 +96,7 @@ const LogsTab: React.FC = () => {
         });
       });
     });
-    
+
     return logs;
   }, [webSocket.outputs]);
 
@@ -122,10 +122,10 @@ const LogsTab: React.FC = () => {
   const filteredLogs = useMemo(() => {
     let filtered = allLogs.filter(log => {
       const levelMatch = selectedLevels.includes(log.level);
-      const searchMatch = searchTerm === '' || 
+      const searchMatch = searchTerm === '' ||
         log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.source.toLowerCase().includes(searchTerm.toLowerCase());
-      const pidMatch = pidFilter === '' || 
+      const pidMatch = pidFilter === '' ||
         log.message.includes(`PID ${pidFilter}`) ||
         log.source.includes(`PID ${pidFilter}`) ||
         (log.data && String(log.data).includes(`PID ${pidFilter}`)) ||
@@ -160,7 +160,7 @@ const LogsTab: React.FC = () => {
       const level = log.level.toUpperCase().padEnd(7);
       const source = log.source.padEnd(12);
       let logLine = `[${timestamp}] ${level} ${source} ${log.message}`;
-      
+
       // Add structured data if present
       if (log.data) {
         try {
@@ -170,10 +170,10 @@ const LogsTab: React.FC = () => {
           logLine += `\n    [Data: ${String(log.data)}]`;
         }
       }
-      
+
       return logLine;
     }).join('\n');
-    
+
     // Optional debug logging (disabled in production)
     if (process.env.NODE_ENV === 'development') {
       console.debug('LogsTab: Formatting logs', {
@@ -185,7 +185,7 @@ const LogsTab: React.FC = () => {
         formattedTextLength: formattedText.length,
       });
     }
-    
+
     return formattedText;
   }, [filteredLogs, allLogs.length, processLogs.length, state.logs.length, webSocket.outputs.size]);
 
@@ -255,7 +255,7 @@ const LogsTab: React.FC = () => {
             .filter(p => p.status === 'running')
             .map(p => p.id)
         );
-        
+
         // Subscribe to new processes
         runningProcessIds.forEach(processId => {
           if (!activeProcesses.has(processId)) {
@@ -263,7 +263,7 @@ const LogsTab: React.FC = () => {
             logger.debug(`Subscribed to process logs: ${processId}`);
           }
         });
-        
+
         // Unsubscribe from completed processes
         activeProcesses.forEach(processId => {
           if (!runningProcessIds.has(processId)) {
@@ -271,17 +271,17 @@ const LogsTab: React.FC = () => {
             logger.debug(`Unsubscribed from process logs: ${processId}`);
           }
         });
-        
+
         setActiveProcesses(runningProcessIds);
       } catch (error) {
         logger.error('Failed to check active processes', { error });
       }
     };
-    
+
     // Check immediately and then every 5 seconds
     checkActiveProcesses();
     const interval = setInterval(checkActiveProcesses, 5000);
-    
+
     return () => clearInterval(interval);
   }, [activeProcesses, webSocket]); // Remove logger from deps to prevent re-runs
 
@@ -311,7 +311,7 @@ const LogsTab: React.FC = () => {
         payload: log,
       });
     });
-    
+
     // Also add some process-like logs directly to test the formatting
     const processLogs = [
       { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Starting Azure resource discovery...' },
@@ -320,14 +320,14 @@ const LogsTab: React.FC = () => {
       { level: 'debug' as LogLevel, source: 'Process-abcd1234', message: 'Processing virtual machines...' },
       { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Found 3 VMs, 2 storage accounts, 1 network security group' },
     ];
-    
+
     processLogs.forEach(log => {
       dispatch({
         type: 'ADD_STRUCTURED_LOG',
         payload: log,
       });
     });
-    
+
     logger.info(`Added ${testLogs.length} test system logs and simulated process output`);
   };
 
@@ -339,7 +339,7 @@ const LogsTab: React.FC = () => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             System Logs
           </Typography>
-          
+
           {/* Log Count Badge */}
           <Chip
             label={`${filteredLogs.length} / ${allLogs.length} logs`}
@@ -347,7 +347,7 @@ const LogsTab: React.FC = () => {
             variant="outlined"
             sx={{ mr: 2 }}
           />
-          
+
           {/* WebSocket Status Badge */}
           <Chip
             label={webSocket.isConnected ? 'Live' : 'Offline'}
@@ -356,7 +356,7 @@ const LogsTab: React.FC = () => {
             color={webSocket.isConnected ? 'success' : 'error'}
             sx={{ mr: 2 }}
           />
-          
+
           {/* Active Processes Badge */}
           {activeProcesses.size > 0 && (
             <Chip
@@ -367,7 +367,7 @@ const LogsTab: React.FC = () => {
               sx={{ mr: 2 }}
             />
           )}
-          
+
           {/* Auto-scroll toggle */}
           <FormControlLabel
             control={
@@ -380,26 +380,26 @@ const LogsTab: React.FC = () => {
             label="Auto-scroll"
             sx={{ mr: 2 }}
           />
-          
+
           {/* Action buttons */}
           <Tooltip title="Scroll to bottom">
             <IconButton onClick={scrollToBottom} size="small">
               <ScrollDownIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Export logs">
             <IconButton onClick={handleExportLogs} size="small" disabled={allLogs.length === 0}>
               <DownloadIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Add test logs (system + process)">
             <IconButton onClick={addTestLogs} size="small">
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Clear all logs">
             <IconButton onClick={handleClearLogs} size="small" disabled={allLogs.length === 0}>
               <ClearIcon />
@@ -409,8 +409,8 @@ const LogsTab: React.FC = () => {
       </Paper>
 
       {/* Filters */}
-      <Accordion 
-        expanded={filterExpanded} 
+      <Accordion
+        expanded={filterExpanded}
         onChange={(_, expanded) => setFilterExpanded(expanded)}
         sx={{ mb: 1 }}
       >
@@ -431,7 +431,7 @@ const LogsTab: React.FC = () => {
               }}
               sx={{ minWidth: 200 }}
             />
-            
+
             {/* PID Filter */}
             <TextField
               label="Filter by PID"
@@ -441,7 +441,7 @@ const LogsTab: React.FC = () => {
               placeholder="e.g., 1234"
               sx={{ minWidth: 150 }}
             />
-            
+
             {/* Level filter */}
             <FormControl size="small" sx={{ minWidth: 180 }}>
               <InputLabel>Log Levels</InputLabel>
@@ -482,7 +482,7 @@ const LogsTab: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-            
+
             {/* Sort options */}
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Sort by</InputLabel>
@@ -495,7 +495,7 @@ const LogsTab: React.FC = () => {
                 <MenuItem value="source">Source</MenuItem>
               </Select>
             </FormControl>
-            
+
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Order</InputLabel>
               <Select

@@ -57,7 +57,7 @@ class TenantConfig:
 class TenantRegistry:
     def __init__(self, storage_path: str = "~/.atg/tenants.json"):
         self.tenants: Dict[str, TenantConfig] = {}
-        
+
     def add_tenant(self, config: TenantConfig) -> None
     def remove_tenant(self, tenant_id: str) -> None
     def get_tenant(self, tenant_id: str) -> TenantConfig
@@ -81,7 +81,7 @@ class CredentialManager:
     def __init__(self):
         self.mcp = AzureMCPClient()
         self.vault_name = "atg-credentials"
-    
+
     async def store_credential(self, tenant_id: str, client_id: str, client_secret: str):
         """Store tenant credentials in Azure Key Vault."""
         await self.mcp.tools.azure_keyvault.set_secret(
@@ -94,7 +94,7 @@ class CredentialManager:
             secret_name=f"tenant-{tenant_id}-secret",
             value=client_secret
         )
-    
+
     async def retrieve_credential(self, tenant_id: str) -> Tuple[str, str]:
         """Retrieve tenant credentials from Azure Key Vault."""
         client_id = await self.mcp.tools.azure_keyvault.get_secret(
@@ -106,7 +106,7 @@ class CredentialManager:
             secret_name=f"tenant-{tenant_id}-secret"
         )
         return client_id, client_secret
-    
+
     async def rotate_credential(self, tenant_id: str, new_secret: str):
         """Rotate tenant credential with versioning."""
         await self.mcp.tools.azure_keyvault.set_secret(
@@ -131,7 +131,7 @@ Add tenant context to all nodes and relationships:
 
 ```cypher
 // Migration: Add tenant context
-CREATE CONSTRAINT tenant_unique IF NOT EXISTS 
+CREATE CONSTRAINT tenant_unique IF NOT EXISTS
   FOR (t:Tenant) REQUIRE t.id IS UNIQUE;
 
 // Update Resource nodes to include tenant context
@@ -164,7 +164,7 @@ Support relationships between resources in different tenants:
 
 ```cypher
 // Cross-tenant peering relationship
-MATCH (r1:Resource {tenant_id: $tenant1}), 
+MATCH (r1:Resource {tenant_id: $tenant1}),
       (r2:Resource {tenant_id: $tenant2})
 WHERE r1.type = 'VirtualNetwork' AND r2.type = 'VirtualNetwork'
 CREATE (r1)-[:PEERED_WITH {cross_tenant: true}]->(r2)
@@ -201,7 +201,7 @@ class TenantContext:
     def __init__(self):
         self.current_tenant: Optional[str] = None
         self.registry = TenantRegistry()
-    
+
     def set_current(self, tenant_id: str)
     def get_current(self) -> TenantConfig
     def with_tenant(self, tenant_id: str) -> ContextManager
@@ -222,31 +222,31 @@ class MultiTenantDiscoveryService:
     def __init__(self):
         self.mcp = AzureMCPClient()
         self.credential_manager = CredentialManager()
-    
+
     async def discover_all_tenants(self, tenant_ids: List[str]):
         """Discover resources across multiple tenants concurrently."""
         tasks = []
         for tenant_id in tenant_ids:
             # Retrieve credentials from Key Vault
             creds = await self.credential_manager.retrieve_credential(tenant_id)
-            
+
             # Create tenant-specific MCP context
             tenant_mcp = self.mcp.with_credentials(tenant_id, creds)
-            
+
             # Launch discovery task
             tasks.append(self.discover_tenant(tenant_mcp, tenant_id))
-        
+
         results = await asyncio.gather(*tasks)
         return dict(zip(tenant_ids, results))
-    
+
     async def discover_tenant(self, mcp_client, tenant_id: str):
         """Discover all resources in a single tenant via MCP."""
         resources = await mcp_client.tools.azure_resources.list_all()
-        
+
         # Tag resources with tenant context
         for resource in resources:
             resource['tenant_id'] = tenant_id
-        
+
         return resources
 ```
 
@@ -256,13 +256,13 @@ class MultiTenantDiscoveryService:
 async def analyze_cross_tenant_permissions(self):
     """Use Azure MCP RBAC tools to analyze permissions across tenants."""
     analysis = {}
-    
+
     for tenant_id in self.tenant_ids:
         tenant_mcp = await self.get_tenant_mcp(tenant_id)
-        
+
         # Get role assignments via MCP
         assignments = await tenant_mcp.tools.azure_rbac.list_role_assignments()
-        
+
         # Check for cross-tenant service principals
         for assignment in assignments:
             if assignment.principal_type == "ServicePrincipal":
@@ -275,7 +275,7 @@ async def analyze_cross_tenant_permissions(self):
                         'risk': 'high',
                         'detail': f'Service principal {assignment.principal_id} has access to multiple tenants'
                     }
-    
+
     return analysis
 ```
 
@@ -328,7 +328,7 @@ class CrossTenantHydrator:
         resource_filter: Dict[str, Any]
     ):
         """
-        Read resources from source tenant graph and 
+        Read resources from source tenant graph and
         create them in target tenant
         """
         source_resources = await self.read_resources(source_tenant, resource_filter)
@@ -342,10 +342,10 @@ class CrossTenantHydrator:
 class TenantComparator:
     def compare_resources(self, tenant1: str, tenant2: str) -> ComparisonResult:
         """Compare resource configurations between tenants"""
-        
+
     def find_drift(self, tenant1: str, tenant2: str) -> List[ResourceDrift]:
         """Identify configuration drift between tenants"""
-        
+
     def generate_sync_plan(self, source: str, target: str) -> SyncPlan:
         """Create plan to synchronize tenants"""
 ```
@@ -356,7 +356,7 @@ class TenantComparator:
 class MultiTenantThreatModeler:
     def analyze_cross_tenant_risks(self, tenants: List[str]) -> ThreatReport:
         """Identify security risks in cross-tenant configurations"""
-        
+
     def find_lateral_movement_paths(self) -> List[AttackPath]:
         """Discover potential lateral movement between tenants"""
 ```
@@ -380,15 +380,15 @@ class EnhancedAgentMode:
         self.neo4j_mcp = Neo4jMCPClient()
         self.credential_manager = CredentialManager()
         self.tenant_registry = TenantRegistry()
-    
+
     async def setup_multi_tenant_context(self):
         """Initialize MCP clients for all registered tenants."""
         self.tenant_contexts = {}
-        
+
         for tenant in self.tenant_registry.list_tenants():
             # Get credentials from Key Vault via Azure MCP
             creds = await self.credential_manager.retrieve_credential(tenant.tenant_id)
-            
+
             # Create tenant-specific Azure MCP context
             self.tenant_contexts[tenant.tenant_id] = {
                 'azure_mcp': self.azure_mcp.with_credentials(tenant.tenant_id, creds),
@@ -402,7 +402,7 @@ class EnhancedAgentMode:
 async def process_multi_tenant_query(self, query: str):
     """
     Process natural language queries across multiple tenants.
-    
+
     Examples:
     - "Compare storage accounts between prod and dev tenants"
     - "Find all VMs without backup across all tenants"
@@ -410,25 +410,25 @@ async def process_multi_tenant_query(self, query: str):
     """
     # Use LLM to understand query intent
     intent = await self.analyze_query_intent(query)
-    
+
     if intent.scope == "all_tenants":
         results = {}
         for tenant_id, context in self.tenant_contexts.items():
             # Use Azure MCP to get Azure resources
             azure_data = await context['azure_mcp'].tools.query(intent.azure_query)
-            
+
             # Store in Neo4j with tenant context
             await self.neo4j_mcp.tools.store_with_tenant(azure_data, tenant_id)
-            
+
             # Query Neo4j for analysis
             graph_results = await self.neo4j_mcp.tools.query(
                 f"MATCH (r:Resource {{tenant_id: '{tenant_id}'}}) {intent.cypher_filter}"
             )
-            
+
             results[context['display_name']] = graph_results
-        
+
         return self.format_multi_tenant_results(results)
-    
+
     elif intent.scope == "cross_tenant":
         # Handle cross-tenant relationship queries
         return await self.analyze_cross_tenant_relationships(intent)
@@ -520,7 +520,7 @@ const EnhancedAgentModeTab: React.FC = () => {
 **Note**: Since the tool is not in production, we can implement these changes directly without maintaining backward compatibility.
 
 ### Milestone 1: Foundation with Azure MCP (Weeks 1-2)
-- [ ] Implement TenantRegistry 
+- [ ] Implement TenantRegistry
 - [ ] Integrate Azure MCP for Key Vault credential management
 - [ ] Add tenant CLI commands (add, list, remove, use)
 - [ ] Update configuration system for multi-tenant

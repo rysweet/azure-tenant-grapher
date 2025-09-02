@@ -52,7 +52,7 @@ export function useLogger(defaultSource: string = 'System') {
   ) => {
     const level: LogLevel = status >= 400 ? 'error' : status >= 300 ? 'warning' : 'debug';
     const message = `${method.toUpperCase()} ${url} - ${status}`;
-    
+
     log(level, message, {
       method,
       url,
