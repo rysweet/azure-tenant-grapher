@@ -307,18 +307,21 @@ app.whenReady().then(async () => {
   
   // Forward ProcessManager events to renderer
   processManager.on('output', (data) => {
+    console.log('[Main] Forwarding output event:', data);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('process:output', data);
     }
   });
   
   processManager.on('process:exit', (data) => {
+    console.log('[Main] Forwarding exit event:', data);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('process:exit', data);
     }
   });
   
   processManager.on('process:error', (data) => {
+    console.log('[Main] Forwarding error event:', data);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('process:error', data);
     }

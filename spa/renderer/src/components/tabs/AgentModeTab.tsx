@@ -7,6 +7,7 @@ import {
   Typography,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   Divider,
   Alert,
@@ -19,6 +20,8 @@ import {
   CardContent,
   CardActions,
   Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -26,77 +29,102 @@ import {
   Person as PersonIcon,
   Terminal as TerminalIcon,
   Clear as ClearIcon,
+  ArrowBack as ArrowBackIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  MoreVert as MoreVertIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
-
-interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-}
-
-interface ConsoleOutput {
-  type: 'stdout' | 'stderr' | 'info';
-  content: string;
-  timestamp: Date;
-}
+import { useChatSessions, Message, ConsoleOutput, ChatSession } from '../../hooks/useChatSessions';
 
 interface SampleQuery {
   title: string;
   query: string;
   description: string;
+  icon?: string;
 }
 
 const sampleQueries: SampleQuery[] = [
   {
-    title: 'Resource Groups',
+    title: 'Count Resources',
     query: 'How many resource groups are in the tenant?',
-    description: 'Count all resource groups'
+    description: 'Get a count of all resource groups in your Azure tenant',
+    icon: '📊',
   },
   {
-    title: 'Key Vaults',
+    title: 'Find Key Vaults',
     query: 'Which resource groups have key vaults?',
-    description: 'Find resource groups containing Key Vaults'
+    description: 'Identify resource groups containing Azure Key Vaults',
+    icon: '🔐',
   },
   {
-    title: 'Virtual Networks',
+    title: 'List Virtual Networks',
     query: 'List all virtual networks and their address spaces',
-    description: 'Show VNet configurations'
+    description: 'Show all VNets with their CIDR blocks and configurations',
+    icon: '🌐',
   },
   {
     title: 'Storage Accounts',
     query: 'What storage accounts exist and what are their configurations?',
-    description: 'List storage account details'
+    description: 'Enumerate storage accounts with their settings',
+    icon: '💾',
   },
   {
     title: 'Network Security',
     query: 'Show me all network security groups and their rules',
-    description: 'Analyze NSG configurations'
+    description: 'Analyze NSG rules and configurations across the tenant',
+    icon: '🛡️',
   },
   {
     title: 'Identity Resources',
     query: 'List all service principals and managed identities',
-    description: 'Show identity resources'
+    description: 'Show all identity resources in the tenant',
+    icon: '👤',
   },
   {
     title: 'Database Resources',
     query: 'What databases are deployed in the tenant?',
-    description: 'Find all database resources'
+    description: 'Find all SQL, Cosmos DB, and other database resources',
+    icon: '🗄️',
   },
   {
     title: 'Resource Dependencies',
     query: 'Show the dependencies between resources in the tenant',
-    description: 'Analyze resource relationships'
-  }
+    description: 'Analyze relationships and dependencies between Azure resources',
+    icon: '🔗',
+  },
 ];
 
 const AgentModeTab: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [consoleOutput, setConsoleOutput] = useState<ConsoleOutput[]>([]);
+  const [showLanding, setShowLanding] = useState(true);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    sessions,
+    activeSessionId,
+    getActiveSession,
+    createSession,
+    addMessage,
+    addConsoleOutput,
+    clearSession,
+    deleteSession,
+    switchSession,
+    clearAllSessions
+  } = useChatSessions();
+
+  const activeSession = getActiveSession();
+
+  // Check if we should show the landing page
+  useEffect(() => {
+    if (activeSession && activeSession.messages.length > 0) {
+      setShowLanding(false);
+    }
+  }, [activeSession]);
 
   const scrollChatToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -108,18 +136,18 @@ const AgentModeTab: React.FC = () => {
 
   useEffect(() => {
     scrollChatToBottom();
-  }, [messages]);
+  }, [activeSession?.messages]);
 
   useEffect(() => {
     scrollConsoleToBottom();
-  }, [consoleOutput]);
+  }, [activeSession?.consoleOutput]);
 
   // Set up event listeners for process output
   useEffect(() => {
     const handleProcessOutput = (data: any) => {
       console.log('Process output received:', data);
       
-      if (currentProcessId && data.id === currentProcessId) {
+      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const lines = Array.isArray(data.data) ? data.data : [data.data];
         lines.forEach((line: string) => {
           // Always add to console output, even if empty
@@ -128,7 +156,7 @@ const AgentModeTab: React.FC = () => {
             content: line || '',
             timestamp: new Date(),
           };
-          setConsoleOutput(prev => [...prev, output]);
+          addConsoleOutput(activeSessionId, output);
           
           // Parse for important messages to add to chat
           if (line && line.trim()) {
@@ -141,7 +169,7 @@ const AgentModeTab: React.FC = () => {
                 content: line,
                 timestamp: new Date(),
               };
-              setMessages(prev => [...prev, assistantMessage]);
+              addMessage(activeSessionId, assistantMessage);
             }
           }
         });
@@ -151,7 +179,7 @@ const AgentModeTab: React.FC = () => {
     const handleProcessExit = (data: any) => {
       console.log('Process exit received:', data);
       
-      if (currentProcessId && data.id === currentProcessId) {
+      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         setIsProcessing(false);
         setCurrentProcessId(null);
         
@@ -161,7 +189,7 @@ const AgentModeTab: React.FC = () => {
           content: `\n=== Process exited with code ${data.code} ===\n`,
           timestamp: new Date(),
         };
-        setConsoleOutput(prev => [...prev, exitOutput]);
+        addConsoleOutput(activeSessionId, exitOutput);
         
         // Add chat message if exit was not successful
         if (data.code !== 0) {
@@ -170,7 +198,7 @@ const AgentModeTab: React.FC = () => {
             content: `Process failed with exit code ${data.code}. Check console output for details.`,
             timestamp: new Date(),
           };
-          setMessages(prev => [...prev, errorMessage]);
+          addMessage(activeSessionId, errorMessage);
         }
       }
     };
@@ -178,13 +206,13 @@ const AgentModeTab: React.FC = () => {
     const handleProcessError = (data: any) => {
       console.log('Process error received:', data);
       
-      if (currentProcessId && data.id === currentProcessId) {
+      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const errorOutput: ConsoleOutput = {
           type: 'stderr',
           content: `Error: ${data.error}`,
           timestamp: new Date(),
         };
-        setConsoleOutput(prev => [...prev, errorOutput]);
+        addConsoleOutput(activeSessionId, errorOutput);
       }
     };
 
@@ -199,11 +227,21 @@ const AgentModeTab: React.FC = () => {
       window.electronAPI.off('process:exit', handleProcessExit);
       window.electronAPI.off('process:error', handleProcessError);
     };
-  }, [currentProcessId]);
+  }, [currentProcessId, activeSessionId, addMessage, addConsoleOutput]);
 
   const handleSend = async (queryText?: string) => {
     const messageText = queryText || input;
     if (!messageText.trim()) return;
+
+    // Create a new session if we don't have one or if we're on the landing page
+    let sessionId = activeSessionId;
+    if (!sessionId || showLanding) {
+      const session = createSession(`Q: ${messageText.substring(0, 50)}...`);
+      sessionId = session.id;
+    }
+
+    // Switch to chat view
+    setShowLanding(false);
 
     const userMessage: Message = {
       role: 'user',
@@ -211,16 +249,17 @@ const AgentModeTab: React.FC = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    addMessage(sessionId, userMessage);
     setInput('');
     setIsProcessing(true);
 
-    // Clear console for new query
-    setConsoleOutput([{
+    // Clear console for new query (within the same session)
+    const startOutput: ConsoleOutput = {
       type: 'info',
       content: `=== Executing: atg agent-mode --question "${messageText}" ===\n`,
       timestamp: new Date(),
-    }]);
+    };
+    addConsoleOutput(sessionId, startOutput);
 
     try {
       // Execute with --question parameter
@@ -231,12 +270,12 @@ const AgentModeTab: React.FC = () => {
         setCurrentProcessId(result.data.id);
         
         // Add console info
-        const startOutput: ConsoleOutput = {
+        const processOutput: ConsoleOutput = {
           type: 'info',
           content: `Process ID: ${result.data.id}\n`,
           timestamp: new Date(),
         };
-        setConsoleOutput(prev => [...prev, startOutput]);
+        addConsoleOutput(sessionId, processOutput);
       } else {
         throw new Error(result.error || 'Failed to start agent mode');
       }
@@ -248,56 +287,265 @@ const AgentModeTab: React.FC = () => {
         content: `Error: ${err.message}`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      addMessage(sessionId, errorMessage);
       
       const errorOutput: ConsoleOutput = {
         type: 'stderr',
         content: `Error: ${err.message}\n`,
         timestamp: new Date(),
       };
-      setConsoleOutput(prev => [...prev, errorOutput]);
+      addConsoleOutput(sessionId, errorOutput);
     }
   };
 
-  const clearAll = () => {
-    setMessages([]);
-    setConsoleOutput([]);
+  const handleNewChat = () => {
+    createSession('New Chat');
+    setShowLanding(true);
   };
 
+  const handleClearCurrentSession = () => {
+    if (activeSessionId) {
+      clearSession(activeSessionId);
+      setShowLanding(true);
+    }
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    deleteSession(sessionId);
+    if (sessions.length <= 1) {
+      setShowLanding(true);
+    }
+  };
+
+  const handleSwitchSession = (sessionId: string) => {
+    switchSession(sessionId);
+    setShowLanding(false);
+    setMenuAnchor(null);
+  };
+
+  // Landing page view with sample queries
+  if (showLanding) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 3 }}>
+        {/* Header with session menu */}
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box />
+            <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AIIcon sx={{ fontSize: 40 }} color="primary" />
+              AI Agent Mode
+            </Typography>
+            {sessions.length > 0 && (
+              <Box>
+                <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
+                  <MoreVertIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={menuAnchor}
+                  open={Boolean(menuAnchor)}
+                  onClose={() => setMenuAnchor(null)}
+                >
+                  <MenuItem onClick={handleNewChat}>
+                    <AddIcon sx={{ mr: 1 }} /> New Chat
+                  </MenuItem>
+                  <Divider />
+                  {sessions.map(session => (
+                    <MenuItem
+                      key={session.id}
+                      onClick={() => handleSwitchSession(session.id)}
+                      selected={session.id === activeSessionId}
+                    >
+                      <ChatIcon sx={{ mr: 1 }} />
+                      {session.title} ({session.messages.length} messages)
+                    </MenuItem>
+                  ))}
+                  {sessions.length > 0 && (
+                    <>
+                      <Divider />
+                      <MenuItem onClick={clearAllSessions}>
+                        <DeleteIcon sx={{ mr: 1 }} /> Clear All Sessions
+                      </MenuItem>
+                    </>
+                  )}
+                </Menu>
+              </Box>
+            )}
+          </Box>
+          
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            Ask questions about your Azure tenant graph using natural language.
+            The agent will analyze your Neo4j database and provide insights.
+          </Typography>
+          
+          {sessions.length > 0 && (
+            <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 2 }}>
+              {sessions.map(session => (
+                <Chip
+                  key={session.id}
+                  label={`${session.title} (${session.messages.length})`}
+                  onClick={() => handleSwitchSession(session.id)}
+                  color={session.id === activeSessionId ? "primary" : "default"}
+                  variant={session.id === activeSessionId ? "filled" : "outlined"}
+                />
+              ))}
+            </Stack>
+          )}
+        </Box>
+
+        {/* Sample Query Cards */}
+        <Grid container spacing={3} sx={{ flex: 1, overflow: 'auto' }}>
+          {sampleQueries.map((sample, index) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+              <Card 
+                sx={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                  }
+                }}
+                onClick={() => handleSend(sample.query)}
+              >
+                <CardContent sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h4" sx={{ mr: 2 }}>
+                      {sample.icon}
+                    </Typography>
+                    <Typography variant="h6" component="div">
+                      {sample.title}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {sample.description}
+                  </Typography>
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      bgcolor: '#000000', 
+                      borderRadius: 1,
+                      fontFamily: 'monospace',
+                      fontSize: '0.875rem',
+                      color: '#90ee90',
+                      border: '1px solid #333'
+                    }}
+                  >
+                    {sample.query}
+                  </Paper>
+                </CardContent>
+                <CardActions>
+                  <Button 
+                    size="small" 
+                    fullWidth 
+                    variant="contained"
+                    disabled={isProcessing}
+                    startIcon={isProcessing ? <CircularProgress size={16} /> : <SendIcon />}
+                  >
+                    Run Query
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Custom Query Input */}
+        <Box sx={{ mt: 3 }}>
+          <Paper elevation={2} sx={{ p: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Or ask your own question:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="e.g., 'Which VMs are not in a availability set?' or 'Show me all public IP addresses'"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                disabled={isProcessing}
+              />
+              <IconButton
+                color="primary"
+                onClick={() => handleSend()}
+                disabled={isProcessing || !input.trim()}
+                sx={{ alignSelf: 'center' }}
+              >
+                {isProcessing ? <CircularProgress size={24} /> : <SendIcon />}
+              </IconButton>
+            </Box>
+          </Paper>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Split-pane view for active chat
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-      {/* Header */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {/* Header with session controls */}
+      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <IconButton onClick={() => setShowLanding(true)} size="small">
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
           <AIIcon color="primary" />
-          AI Agent Mode
+          {activeSession?.title || 'AI Agent Mode'}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Ask questions about your Azure tenant graph using natural language
-        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={handleNewChat}
+          size="small"
+        >
+          New Chat
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<ClearIcon />}
+          onClick={handleClearCurrentSession}
+          disabled={isProcessing}
+          size="small"
+        >
+          Clear
+        </Button>
+        {activeSessionId && (
+          <IconButton
+            size="small"
+            onClick={() => handleDeleteSession(activeSessionId)}
+            disabled={isProcessing}
+          >
+            <DeleteIcon />
+          </IconButton>
+        )}
       </Box>
 
-      {/* Sample Queries - Scrollable */}
-      <Box sx={{ mb: 2, maxHeight: '120px', overflowY: 'auto' }}>
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'nowrap', minWidth: 'min-content' }}>
-          {sampleQueries.map((sample, index) => (
-            <Tooltip key={index} title={sample.description} arrow>
+      {/* Session tabs */}
+      {sessions.length > 1 && (
+        <Box sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} sx={{ overflowX: 'auto' }}>
+            {sessions.map(session => (
               <Chip
-                label={sample.title}
-                onClick={() => !isProcessing && handleSend(sample.query)}
-                disabled={isProcessing}
-                color="primary"
-                variant="outlined"
-                sx={{ 
-                  cursor: isProcessing ? 'not-allowed' : 'pointer',
-                  minWidth: 'fit-content',
-                  whiteSpace: 'nowrap'
-                }}
+                key={session.id}
+                label={session.title}
+                onClick={() => switchSession(session.id)}
+                onDelete={() => handleDeleteSession(session.id)}
+                color={session.id === activeSessionId ? "primary" : "default"}
+                variant={session.id === activeSessionId ? "filled" : "outlined"}
               />
-            </Tooltip>
-          ))}
-        </Stack>
-      </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
 
       {/* Main Content - Split View */}
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
@@ -312,11 +560,8 @@ const AgentModeTab: React.FC = () => {
               bgcolor: 'background.paper'
             }}
           >
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
               <Typography variant="h6">Chat</Typography>
-              <IconButton size="small" onClick={clearAll} disabled={isProcessing}>
-                <ClearIcon />
-              </IconButton>
             </Box>
             
             <List 
@@ -327,48 +572,42 @@ const AgentModeTab: React.FC = () => {
                 bgcolor: 'background.default'
               }}
             >
-              {messages.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <AIIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                  <Typography color="text.secondary">
-                    Start by asking a question about your Azure tenant
-                  </Typography>
-                </Box>
-              ) : (
-                messages.map((message, index) => (
-                  <ListItem
-                    key={index}
-                    sx={{
-                      flexDirection: 'column',
-                      alignItems: 'flex-start',
-                      mb: 2,
-                      bgcolor: message.role === 'user' ? 'primary.light' : 
-                               message.role === 'system' ? 'info.light' : 
-                               'background.paper',
-                      borderRadius: 1,
-                      boxShadow: 1,
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      {message.role === 'user' ? (
-                        <PersonIcon fontSize="small" />
-                      ) : (
-                        <AIIcon fontSize="small" />
-                      )}
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {message.role === 'user' ? 'You' : 
-                         message.role === 'system' ? 'System' : 'Assistant'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {message.timestamp.toLocaleTimeString()}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', width: '100%' }}>
-                      {message.content}
+              {activeSession?.messages.map((message, index) => (
+                <ListItem
+                  key={index}
+                  sx={{
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    mb: 2,
+                    bgcolor: message.role === 'user' ? 'rgba(25, 118, 210, 0.15)' : 
+                             message.role === 'system' ? 'rgba(2, 136, 209, 0.15)' : 
+                             'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: message.role === 'user' ? 'primary.dark' : 
+                                 message.role === 'system' ? 'info.dark' : 
+                                 'divider',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    {message.role === 'user' ? (
+                      <PersonIcon fontSize="small" color="primary" />
+                    ) : (
+                      <AIIcon fontSize="small" color="secondary" />
+                    )}
+                    <Typography variant="subtitle2" fontWeight="bold" color="text.primary">
+                      {message.role === 'user' ? 'You' : 
+                       message.role === 'system' ? 'System' : 'Assistant'}
                     </Typography>
-                  </ListItem>
-                ))
-              )}
+                    <Typography variant="caption" color="text.secondary">
+                      {message.timestamp.toLocaleTimeString()}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', width: '100%', color: 'text.primary' }}>
+                    {message.content}
+                  </Typography>
+                </ListItem>
+              ))}
               <div ref={messagesEndRef} />
             </List>
           </Paper>
@@ -401,27 +640,23 @@ const AgentModeTab: React.FC = () => {
                 fontSize: '0.875rem'
               }}
             >
-              {consoleOutput.length === 0 ? (
-                <Typography sx={{ color: '#888', fontFamily: 'monospace' }}>
-                  Console output will appear here...
-                </Typography>
-              ) : (
-                consoleOutput.map((output, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      color: output.type === 'stderr' ? '#ff6b6b' : 
-                             output.type === 'info' ? '#4fc3f7' : 
-                             '#90ee90',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {output.content}
-                  </Box>
-                ))
-              )}
+              {activeSession?.consoleOutput.map((output, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    color: output.type === 'stderr' ? '#ff6b6b' : 
+                           output.type === 'info' ? '#4fc3f7' : 
+                           '#90ee90',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.4,
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {output.content}
+                </Box>
+              ))}
               <div ref={consoleEndRef} />
             </Box>
           </Paper>
