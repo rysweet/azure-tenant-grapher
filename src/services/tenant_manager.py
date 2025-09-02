@@ -5,15 +5,18 @@ This module provides multi-tenant support for Azure Tenant Grapher,
 managing tenant registration, switching, and configuration persistence.
 
 Following the project's philosophy of ruthless simplicity, this implementation
-uses file-based JSON storage initially, with the ability to enhance later.
+uses Neo4j for tenant storage, leveraging the existing graph database.
 """
 
 import json
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from ..config_manager import Neo4jConfig
+from ..utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
 
@@ -109,106 +112,162 @@ class TenantManager:
     
     This class provides centralized management of multiple Azure tenants,
     including registration, switching, and configuration persistence.
-    Uses file-based storage in .atg/tenants/ directory for simplicity.
+    Uses Neo4j graph database for tenant storage.
     """
     
     _instance: Optional["TenantManager"] = None
     _initialized: bool = False
     
-    def __new__(cls, base_dir: Optional[Path] = None) -> "TenantManager":
-        """Implement singleton pattern with support for base_dir parameter."""
+    def __new__(cls, session_manager: Optional[Neo4jSessionManager] = None) -> "TenantManager":
+        """Implement singleton pattern with support for session_manager parameter."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
     
-    def __init__(self, base_dir: Optional[Path] = None) -> None:
+    def __init__(self, session_manager: Optional[Neo4jSessionManager] = None) -> None:
         """
         Initialize the TenantManager.
         
         Args:
-            base_dir: Base directory for tenant storage. Defaults to .atg/tenants
+            session_manager: Optional Neo4j session manager. If not provided, creates one.
         """
         # Handle singleton initialization
-        if TenantManager._initialized and base_dir is None:
+        if TenantManager._initialized and session_manager is None:
             return
         
-        # Allow re-initialization with a different base_dir for testing
-        if base_dir is not None:
+        # Allow re-initialization with a different session_manager for testing
+        if session_manager is not None:
             TenantManager._initialized = False
             
         if TenantManager._initialized:
             return
             
-        self.base_dir = base_dir or Path.home() / ".atg" / "tenants"
-        self.base_dir.mkdir(parents=True, exist_ok=True)
-        
+        # Initialize Neo4j session manager
+        if session_manager:
+            self.session_manager = session_manager
+        else:
+            # Create default session manager with config from environment
+            neo4j_config = Neo4jConfig()
+            self.session_manager = Neo4jSessionManager(neo4j_config)
+            
         self._current_tenant_id: Optional[str] = None
         self._tenant_cache: Dict[str, Tenant] = {}
+        
+        # Ensure connection to Neo4j
+        self.session_manager.ensure_connection()
         
         # Load existing tenants on initialization
         self._load_tenants()
         
-        # Load current tenant from state file if exists
+        # Load current tenant from Neo4j
         self._load_current_tenant()
         
         TenantManager._initialized = True
-        logger.info(f"TenantManager initialized with base directory: {self.base_dir}")
-    
-    def _get_tenant_file_path(self, tenant_id: str) -> Path:
-        """Get the file path for a specific tenant configuration."""
-        return self.base_dir / f"{tenant_id}.json"
-    
-    def _get_state_file_path(self) -> Path:
-        """Get the file path for the manager state."""
-        return self.base_dir / "_state.json"
+        logger.info("TenantManager initialized with Neo4j backend")
     
     def _load_tenants(self) -> None:
-        """Load all tenant configurations from disk."""
+        """Load all tenant configurations from Neo4j."""
         self._tenant_cache.clear()
         
-        for tenant_file in self.base_dir.glob("*.json"):
-            # Skip the state file
-            if tenant_file.name == "_state.json":
-                continue
-                
-            try:
-                with open(tenant_file, 'r') as f:
-                    data = json.load(f)
-                    tenant = Tenant.from_dict(data)
+        query = """
+        MATCH (t:TenantConfig)
+        RETURN t.tenant_id as tenant_id,
+               t.display_name as display_name,
+               t.subscription_ids as subscription_ids,
+               t.created_at as created_at,
+               t.last_accessed as last_accessed,
+               t.is_active as is_active,
+               t.configuration as configuration
+        """
+        
+        try:
+            with self.session_manager.session() as session:
+                result = session.run(query)
+                for record in result:
+                    tenant_data = {
+                        "tenant_id": record["tenant_id"],
+                        "display_name": record["display_name"],
+                        "subscription_ids": json.loads(record["subscription_ids"]) if record["subscription_ids"] else [],
+                        "created_at": record["created_at"],
+                        "last_accessed": record["last_accessed"],
+                        "is_active": record["is_active"],
+                        "configuration": json.loads(record["configuration"]) if record["configuration"] else {}
+                    }
+                    tenant = Tenant.from_dict(tenant_data)
                     self._tenant_cache[tenant.tenant_id] = tenant
                     logger.debug(f"Loaded tenant: {tenant.tenant_id}")
-            except (json.JSONDecodeError, KeyError) as e:
-                logger.warning(f"Failed to load tenant from {tenant_file}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to load tenants from Neo4j: {e}")
     
     def _load_current_tenant(self) -> None:
-        """Load the current tenant from state file."""
-        state_file = self._get_state_file_path()
-        if state_file.exists():
-            try:
-                with open(state_file, 'r') as f:
-                    state = json.load(f)
-                    self._current_tenant_id = state.get("current_tenant_id")
+        """Load the current tenant from Neo4j."""
+        query = """
+        MATCH (t:TenantConfig {is_current: true})
+        RETURN t.tenant_id as tenant_id
+        LIMIT 1
+        """
+        
+        try:
+            with self.session_manager.session() as session:
+                result = session.run(query)
+                record = result.single()
+                if record:
+                    self._current_tenant_id = record["tenant_id"]
                     logger.debug(f"Loaded current tenant: {self._current_tenant_id}")
-            except (json.JSONDecodeError, KeyError) as e:
-                logger.warning(f"Failed to load state: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to load current tenant from Neo4j: {e}")
     
     def _save_tenant(self, tenant: Tenant) -> None:
-        """Save a tenant configuration to disk."""
-        tenant_file = self._get_tenant_file_path(tenant.tenant_id)
-        with open(tenant_file, 'w') as f:
-            json.dump(tenant.to_dict(), f, indent=2)
-        logger.debug(f"Saved tenant: {tenant.tenant_id}")
+        """Save a tenant configuration to Neo4j."""
+        query = """
+        MERGE (t:TenantConfig {tenant_id: $tenant_id})
+        SET t.display_name = $display_name,
+            t.subscription_ids = $subscription_ids,
+            t.created_at = $created_at,
+            t.last_accessed = $last_accessed,
+            t.is_active = $is_active,
+            t.configuration = $configuration
+        """
+        
+        try:
+            with self.session_manager.session() as session:
+                session.run(query,
+                    tenant_id=tenant.tenant_id,
+                    display_name=tenant.display_name,
+                    subscription_ids=json.dumps(tenant.subscription_ids),
+                    created_at=tenant.created_at,
+                    last_accessed=tenant.last_accessed,
+                    is_active=tenant.is_active,
+                    configuration=json.dumps(tenant.configuration)
+                )
+            logger.debug(f"Saved tenant: {tenant.tenant_id}")
+        except Exception as e:
+            logger.error(f"Failed to save tenant to Neo4j: {e}")
+            raise
     
     def _save_state(self) -> None:
-        """Save the manager state to disk."""
-        state_file = self._get_state_file_path()
-        state = {
-            "current_tenant_id": self._current_tenant_id,
-            "last_updated": datetime.utcnow().isoformat()
-        }
-        with open(state_file, 'w') as f:
-            json.dump(state, f, indent=2)
-        logger.debug(f"Saved state with current tenant: {self._current_tenant_id}")
+        """Save the manager state to Neo4j."""
+        # First, clear any existing current tenant
+        clear_query = """
+        MATCH (t:TenantConfig {is_current: true})
+        SET t.is_current = false
+        """
+        
+        # Then set the new current tenant
+        set_query = """
+        MATCH (t:TenantConfig {tenant_id: $tenant_id})
+        SET t.is_current = true
+        """
+        
+        try:
+            with self.session_manager.session() as session:
+                session.run(clear_query)
+                if self._current_tenant_id:
+                    session.run(set_query, tenant_id=self._current_tenant_id)
+            logger.debug(f"Saved state with current tenant: {self._current_tenant_id}")
+        except Exception as e:
+            logger.error(f"Failed to save state to Neo4j: {e}")
+            raise
     
     def register_tenant(
         self,
@@ -384,10 +443,18 @@ class TenantManager:
         # Remove from cache
         del self._tenant_cache[tenant_id]
         
-        # Remove file
-        tenant_file = self._get_tenant_file_path(tenant_id)
-        if tenant_file.exists():
-            tenant_file.unlink()
+        # Remove from Neo4j
+        query = """
+        MATCH (t:TenantConfig {tenant_id: $tenant_id})
+        DELETE t
+        """
+        
+        try:
+            with self.session_manager.session() as session:
+                session.run(query, tenant_id=tenant_id)
+        except Exception as e:
+            logger.error(f"Failed to remove tenant from Neo4j: {e}")
+            raise
         
         # If this was the current tenant, clear it
         if self._current_tenant_id == tenant_id:
@@ -480,6 +547,10 @@ class TenantManager:
         Returns:
             Dictionary containing all tenant data and current state
         """
+        # Reload from Neo4j to ensure we have the latest data
+        self._load_tenants()
+        self._load_current_tenant()
+        
         return {
             "tenants": {
                 tid: tenant.to_dict() 
@@ -500,7 +571,16 @@ class TenantManager:
             InvalidTenantConfigError: If import data is invalid
         """
         try:
-            # Clear existing cache
+            # Clear existing tenants in Neo4j
+            clear_query = """
+            MATCH (t:TenantConfig)
+            DELETE t
+            """
+            
+            with self.session_manager.session() as session:
+                session.run(clear_query)
+            
+            # Clear cache
             self._tenant_cache.clear()
             
             # Import tenants
@@ -520,9 +600,19 @@ class TenantManager:
 
 
 # Module-level convenience functions
-def get_tenant_manager() -> TenantManager:
-    """Get the singleton TenantManager instance."""
-    return TenantManager()
+def get_tenant_manager(session_manager: Optional[Neo4jSessionManager] = None) -> TenantManager:
+    """
+    Get the singleton TenantManager instance.
+    
+    Args:
+        session_manager: Optional Neo4j session manager. If not provided, creates one.
+    """
+    if session_manager is None:
+        # Create default session manager from environment
+        from ..config_manager import create_neo4j_config_from_env
+        neo4j_config = create_neo4j_config_from_env()
+        session_manager = Neo4jSessionManager(neo4j_config.neo4j)
+    return TenantManager(session_manager)
 
 
 def get_current_tenant() -> Optional[Tenant]:
