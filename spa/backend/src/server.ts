@@ -849,6 +849,89 @@ app.get('/api/test/azure-openai', async (req, res) => {
   }
 });
 
+/**
+ * Check Microsoft Graph API permissions
+ */
+app.get('/api/test/graph-permissions', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execPromise = promisify(exec);
+    
+    logger.debug('Checking Graph API permissions...');
+    
+    // Run the test_graph_api.py script
+    try {
+      const { stdout, stderr } = await execPromise('uv run python test_graph_api.py', {
+        cwd: path.join(__dirname, '../../..'),
+        timeout: 30000
+      });
+      
+      // Combine stdout and stderr (logging goes to stderr)
+      const output = stdout + stderr;
+      
+      // Parse the results
+      const hasUsers = output.includes('✅ Can read users');
+      const hasGroups = output.includes('✅ Can read groups');
+      const hasServicePrincipals = output.includes('✅ Can read service principals');
+      const hasDirectoryRoles = output.includes('✅ Can read directory roles');
+      
+      return res.json({
+        success: hasUsers && hasGroups,
+        permissions: {
+          users: hasUsers,
+          groups: hasGroups,
+          servicePrincipals: hasServicePrincipals,
+          directoryRoles: hasDirectoryRoles
+        },
+        allRequired: hasUsers && hasGroups,
+        message: hasUsers && hasGroups 
+          ? 'All required Graph API permissions are configured'
+          : 'Missing required Graph API permissions'
+      });
+    } catch (error: any) {
+      logger.error('Failed to run Graph API test:', error);
+      
+      // Check if it's because dependencies are missing
+      if (error.message?.includes('uv: command not found')) {
+        return res.json({
+          success: false,
+          error: 'uv package manager not found',
+          permissions: {
+            users: false,
+            groups: false,
+            servicePrincipals: false,
+            directoryRoles: false
+          }
+        });
+      }
+      
+      return res.json({
+        success: false,
+        error: 'Failed to check Graph API permissions',
+        permissions: {
+          users: false,
+          groups: false,
+          servicePrincipals: false,
+          directoryRoles: false
+        }
+      });
+    }
+  } catch (error: any) {
+    logger.error('Graph API permissions check failed:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      permissions: {
+        users: false,
+        groups: false,
+        servicePrincipals: false,
+        directoryRoles: false
+      }
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Internal server error:', err);

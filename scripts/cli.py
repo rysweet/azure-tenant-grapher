@@ -835,40 +835,47 @@ def check_permissions() -> None:
     
     # Run the test script
     import subprocess
-    import sys
     
     try:
         result = subprocess.run(
-            [sys.executable, "test_graph_api.py"],
+            ["uv", "run", "python", "test_graph_api.py"],
             capture_output=True,
             text=True,
             timeout=30
         )
         
+        # Check if the command failed
+        if result.returncode != 0:
+            click.echo(f"❌ Error running test script: {result.stderr}")
+            return
+        
+        # Combine stdout and stderr for parsing (logging might go to stderr)
+        output = result.stdout + result.stderr
+        
         # Parse the output for display
-        if "✅ Can read users" in result.stdout:
+        if "✅ Can read users" in output:
             click.echo("✅ User.Read permission granted")
         else:
             click.echo("❌ User.Read permission missing")
             
-        if "✅ Can read groups" in result.stdout:
+        if "✅ Can read groups" in output:
             click.echo("✅ Group.Read permission granted")
         else:
             click.echo("❌ Group.Read permission missing")
             
-        if "✅ Can read service principals" in result.stdout:
+        if "✅ Can read service principals" in output:
             click.echo("✅ Application.Read permission granted")
         else:
             click.echo("⚠️ Application.Read permission missing (optional)")
             
-        if "✅ Can read directory roles" in result.stdout:
+        if "✅ Can read directory roles" in output:
             click.echo("✅ RoleManagement.Read permission granted")
         else:
             click.echo("⚠️ RoleManagement.Read permission missing (optional)")
         
         # Show setup instructions if permissions are missing
-        has_users = "✅ Can read users" in result.stdout
-        has_groups = "✅ Can read groups" in result.stdout
+        has_users = "✅ Can read users" in output
+        has_groups = "✅ Can read groups" in output
         
         if not has_users or not has_groups:
             click.echo("\n📚 See docs/GRAPH_API_SETUP.md for setup instructions")

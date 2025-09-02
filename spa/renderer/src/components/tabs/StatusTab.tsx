@@ -42,6 +42,11 @@ import {
   Error as ErrorIcon,
   LocalHospital as DoctorIcon,
   Warning as WarningIcon,
+  Person as PersonIcon,
+  Groups as GroupsIcon,
+  Apps as AppsIcon,
+  AdminPanelSettings as AdminIcon,
+  MenuBook as DocsIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -91,6 +96,18 @@ const StatusTab: React.FC = () => {
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean; accountInfo?: any }>({ connected: false, loading: true });
   const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean; endpoint?: string; models?: any }>({ connected: false, loading: true });
+  const [graphPermissions, setGraphPermissions] = useState<{ 
+    loading: boolean; 
+    permissions?: { 
+      users: boolean; 
+      groups: boolean; 
+      servicePrincipals: boolean; 
+      directoryRoles: boolean; 
+    };
+    success?: boolean;
+    error?: string;
+    message?: string;
+  }>({ loading: true });
 
   useEffect(() => {
     // Initial load
@@ -98,6 +115,7 @@ const StatusTab: React.FC = () => {
     checkDependencies();
     checkAzureConnection();
     checkOpenAIConnection();
+    checkGraphPermissions();
     
     // Set up auto-refresh every 5 seconds for Neo4j
     const interval = setInterval(() => {
@@ -171,6 +189,32 @@ const StatusTab: React.FC = () => {
       });
     } catch (err: any) {
       setOpenAIStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
+    }
+  };
+
+  const checkGraphPermissions = async () => {
+    setGraphPermissions(prev => ({ ...prev, loading: true }));
+    try {
+      const response = await axios.get('http://localhost:3001/api/test/graph-permissions');
+      setGraphPermissions({ 
+        loading: false,
+        success: response.data.success,
+        permissions: response.data.permissions,
+        error: response.data.error,
+        message: response.data.message
+      });
+    } catch (err: any) {
+      setGraphPermissions({ 
+        loading: false,
+        success: false,
+        error: err.response?.data?.error || err.message,
+        permissions: {
+          users: false,
+          groups: false,
+          servicePrincipals: false,
+          directoryRoles: false
+        }
+      });
     }
   };
 
@@ -739,6 +783,185 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Graph API Permissions - New Section */}
+        <Divider sx={{ my: 2 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Typography variant="subtitle2" color="textSecondary">
+            Microsoft Graph API Permissions
+          </Typography>
+          <Tooltip title="Check Graph API Permissions">
+            <IconButton 
+              onClick={checkGraphPermissions} 
+              disabled={graphPermissions.loading}
+              size="small"
+            >
+              <RefreshIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        
+        {graphPermissions.loading ? (
+          <LinearProgress />
+        ) : (
+          <Box>
+            <Grid container spacing={1}>
+              {/* User.Read Permission */}
+              <Grid item xs={6} md={3}>
+                <Card variant="outlined" sx={{ 
+                  backgroundColor: graphPermissions.permissions?.users 
+                    ? 'rgba(76, 175, 80, 0.05)' 
+                    : 'rgba(244, 67, 54, 0.05)',
+                  borderColor: graphPermissions.permissions?.users 
+                    ? 'success.main' 
+                    : 'error.main'
+                }}>
+                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" fontWeight="medium">
+                        User.Read.All
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {graphPermissions.permissions?.users ? (
+                        <CheckIcon color="success" sx={{ fontSize: 12 }} />
+                      ) : (
+                        <ErrorIcon color="error" sx={{ fontSize: 12 }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+                        {graphPermissions.permissions?.users ? 'Granted' : 'Missing'}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Group.Read Permission */}
+              <Grid item xs={6} md={3}>
+                <Card variant="outlined" sx={{ 
+                  backgroundColor: graphPermissions.permissions?.groups 
+                    ? 'rgba(76, 175, 80, 0.05)' 
+                    : 'rgba(244, 67, 54, 0.05)',
+                  borderColor: graphPermissions.permissions?.groups 
+                    ? 'success.main' 
+                    : 'error.main'
+                }}>
+                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <GroupsIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" fontWeight="medium">
+                        Group.Read.All
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {graphPermissions.permissions?.groups ? (
+                        <CheckIcon color="success" sx={{ fontSize: 12 }} />
+                      ) : (
+                        <ErrorIcon color="error" sx={{ fontSize: 12 }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+                        {graphPermissions.permissions?.groups ? 'Granted' : 'Missing'}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* ServicePrincipal.Read Permission */}
+              <Grid item xs={6} md={3}>
+                <Card variant="outlined" sx={{ 
+                  backgroundColor: graphPermissions.permissions?.servicePrincipals 
+                    ? 'rgba(76, 175, 80, 0.05)' 
+                    : 'rgba(255, 152, 0, 0.05)',
+                  borderColor: graphPermissions.permissions?.servicePrincipals 
+                    ? 'success.main' 
+                    : 'warning.main'
+                }}>
+                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <AppsIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" fontWeight="medium">
+                        Application.Read
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {graphPermissions.permissions?.servicePrincipals ? (
+                        <CheckIcon color="success" sx={{ fontSize: 12 }} />
+                      ) : (
+                        <WarningIcon color="warning" sx={{ fontSize: 12 }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+                        {graphPermissions.permissions?.servicePrincipals ? 'Granted' : 'Optional'}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* DirectoryRole.Read Permission */}
+              <Grid item xs={6} md={3}>
+                <Card variant="outlined" sx={{ 
+                  backgroundColor: graphPermissions.permissions?.directoryRoles 
+                    ? 'rgba(76, 175, 80, 0.05)' 
+                    : 'rgba(255, 152, 0, 0.05)',
+                  borderColor: graphPermissions.permissions?.directoryRoles 
+                    ? 'success.main' 
+                    : 'warning.main'
+                }}>
+                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <AdminIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" fontWeight="medium">
+                        RoleManagement.Read
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                      {graphPermissions.permissions?.directoryRoles ? (
+                        <CheckIcon color="success" sx={{ fontSize: 12 }} />
+                      ) : (
+                        <WarningIcon color="warning" sx={{ fontSize: 12 }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+                        {graphPermissions.permissions?.directoryRoles ? 'Granted' : 'Optional'}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* Alert if missing required permissions */}
+            {!graphPermissions.success && (
+              <Alert 
+                severity="warning" 
+                sx={{ mt: 2 }}
+                action={
+                  <Button
+                    color="inherit"
+                    size="small"
+                    startIcon={<DocsIcon />}
+                    onClick={() => {
+                      // Open the docs in the CLI tab with a command to view them
+                      navigate('/cli?autoCommand=cat%20docs/GRAPH_API_SETUP.md');
+                    }}
+                  >
+                    View Setup Guide
+                  </Button>
+                }
+              >
+                {graphPermissions.message || 'Missing required Graph API permissions for AAD/Entra ID discovery'}
+              </Alert>
+            )}
+
+            {/* Success message if all required permissions are granted */}
+            {graphPermissions.success && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {graphPermissions.message || 'All required Graph API permissions are configured'}
+              </Alert>
+            )}
+          </Box>
+        )}
       </Paper>
 
       {/* System Dependencies - Compact */}
