@@ -96,13 +96,13 @@ const StatusTab: React.FC = () => {
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean; accountInfo?: any }>({ connected: false, loading: true });
   const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean; endpoint?: string; models?: any }>({ connected: false, loading: true });
-  const [graphPermissions, setGraphPermissions] = useState<{ 
-    loading: boolean; 
-    permissions?: { 
-      users: boolean; 
-      groups: boolean; 
-      servicePrincipals: boolean; 
-      directoryRoles: boolean; 
+  const [graphPermissions, setGraphPermissions] = useState<{
+    loading: boolean;
+    permissions?: {
+      users: boolean;
+      groups: boolean;
+      servicePrincipals: boolean;
+      directoryRoles: boolean;
     };
     success?: boolean;
     error?: string;
@@ -116,12 +116,12 @@ const StatusTab: React.FC = () => {
     checkAzureConnection();
     checkOpenAIConnection();
     checkGraphPermissions();
-    
+
     // Set up auto-refresh every 5 seconds for Neo4j
     const interval = setInterval(() => {
       checkNeo4jStatus();
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -129,7 +129,7 @@ const StatusTab: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:3001/api/neo4j/status');
       setNeo4jStatus(response.data);
-      
+
       // If Neo4j is running, load database stats
       if (response.data.running) {
         await loadDatabaseStats();
@@ -165,9 +165,9 @@ const StatusTab: React.FC = () => {
     setAzureStatus(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.get('http://localhost:3001/api/test/azure');
-      setAzureStatus({ 
-        connected: response.data.success, 
-        error: response.data.error, 
+      setAzureStatus({
+        connected: response.data.success,
+        error: response.data.error,
         loading: false,
         accountInfo: response.data.accountInfo
       });
@@ -180,9 +180,9 @@ const StatusTab: React.FC = () => {
     setOpenAIStatus(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.get('http://localhost:3001/api/test/azure-openai');
-      setOpenAIStatus({ 
-        connected: response.data.success, 
-        error: response.data.error, 
+      setOpenAIStatus({
+        connected: response.data.success,
+        error: response.data.error,
         loading: false,
         endpoint: response.data.endpoint,
         models: response.data.models
@@ -196,7 +196,7 @@ const StatusTab: React.FC = () => {
     setGraphPermissions(prev => ({ ...prev, loading: true }));
     try {
       const response = await axios.get('http://localhost:3001/api/test/graph-permissions');
-      setGraphPermissions({ 
+      setGraphPermissions({
         loading: false,
         success: response.data.success,
         permissions: response.data.permissions,
@@ -204,7 +204,7 @@ const StatusTab: React.FC = () => {
         message: response.data.message
       });
     } catch (err: any) {
-      setGraphPermissions({ 
+      setGraphPermissions({
         loading: false,
         success: false,
         error: err.response?.data?.error || err.message,
@@ -273,11 +273,11 @@ const StatusTab: React.FC = () => {
       setError('Please specify a backup path');
       return;
     }
-    
+
     setOperationInProgress(true);
     setOperationMessage('Creating backup...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/backup', {
         path: backupPath
@@ -298,11 +298,11 @@ const StatusTab: React.FC = () => {
       setError('Please specify a restore path');
       return;
     }
-    
+
     setOperationInProgress(true);
     setOperationMessage('Restoring database...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/restore', {
         path: restorePath
@@ -326,7 +326,7 @@ const StatusTab: React.FC = () => {
     setOperationInProgress(true);
     setOperationMessage('Wiping database...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/wipe');
       setSuccess('Database wiped successfully');
@@ -572,7 +572,7 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
-        
+
         {/* Database Statistics - integrated */}
         {neo4jStatus?.running && (
           <>
@@ -601,7 +601,7 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -619,7 +619,7 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -632,15 +632,15 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography color="textSecondary" variant="caption">
                       State
                     </Typography>
-                    <Chip 
-                      label={dbStats?.isEmpty ? 'Empty' : 'Populated'} 
+                    <Chip
+                      label={dbStats?.isEmpty ? 'Empty' : 'Populated'}
                       color={dbStats?.isEmpty ? 'default' : 'success'}
                       size="small"
                       variant="outlined"
@@ -662,7 +662,7 @@ const StatusTab: React.FC = () => {
         <Grid container spacing={1}>
           {/* Azure Connection */}
           <Grid item xs={6}>
-            <Card variant="outlined" sx={{ 
+            <Card variant="outlined" sx={{
               backgroundColor: azureStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               borderColor: azureStatus.connected ? 'success.main' : 'error.main'
             }}>
@@ -704,8 +704,8 @@ const StatusTab: React.FC = () => {
                     )}
                   </Box>
                   <Tooltip title="Test Azure Connection">
-                    <IconButton 
-                      onClick={checkAzureConnection} 
+                    <IconButton
+                      onClick={checkAzureConnection}
                       disabled={azureStatus.loading}
                       size="small"
                       sx={{ padding: '2px' }}
@@ -717,10 +717,10 @@ const StatusTab: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           {/* Azure OpenAI Connection */}
           <Grid item xs={6}>
-            <Card variant="outlined" sx={{ 
+            <Card variant="outlined" sx={{
               backgroundColor: openAIStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               borderColor: openAIStatus.connected ? 'success.main' : 'warning.main'
             }}>
@@ -769,8 +769,8 @@ const StatusTab: React.FC = () => {
                     )}
                   </Box>
                   <Tooltip title="Test Azure OpenAI Connection">
-                    <IconButton 
-                      onClick={checkOpenAIConnection} 
+                    <IconButton
+                      onClick={checkOpenAIConnection}
                       disabled={openAIStatus.loading}
                       size="small"
                       sx={{ padding: '2px' }}
@@ -791,8 +791,8 @@ const StatusTab: React.FC = () => {
             Microsoft Graph API Permissions
           </Typography>
           <Tooltip title="Check Graph API Permissions">
-            <IconButton 
-              onClick={checkGraphPermissions} 
+            <IconButton
+              onClick={checkGraphPermissions}
               disabled={graphPermissions.loading}
               size="small"
             >
@@ -800,7 +800,7 @@ const StatusTab: React.FC = () => {
             </IconButton>
           </Tooltip>
         </Box>
-        
+
         {graphPermissions.loading ? (
           <LinearProgress />
         ) : (
@@ -808,12 +808,12 @@ const StatusTab: React.FC = () => {
             <Grid container spacing={1}>
               {/* User.Read Permission */}
               <Grid item xs={6} md={3}>
-                <Card variant="outlined" sx={{ 
-                  backgroundColor: graphPermissions.permissions?.users 
-                    ? 'rgba(76, 175, 80, 0.05)' 
+                <Card variant="outlined" sx={{
+                  backgroundColor: graphPermissions.permissions?.users
+                    ? 'rgba(76, 175, 80, 0.05)'
                     : 'rgba(244, 67, 54, 0.05)',
-                  borderColor: graphPermissions.permissions?.users 
-                    ? 'success.main' 
+                  borderColor: graphPermissions.permissions?.users
+                    ? 'success.main'
                     : 'error.main'
                 }}>
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -839,12 +839,12 @@ const StatusTab: React.FC = () => {
 
               {/* Group.Read Permission */}
               <Grid item xs={6} md={3}>
-                <Card variant="outlined" sx={{ 
-                  backgroundColor: graphPermissions.permissions?.groups 
-                    ? 'rgba(76, 175, 80, 0.05)' 
+                <Card variant="outlined" sx={{
+                  backgroundColor: graphPermissions.permissions?.groups
+                    ? 'rgba(76, 175, 80, 0.05)'
                     : 'rgba(244, 67, 54, 0.05)',
-                  borderColor: graphPermissions.permissions?.groups 
-                    ? 'success.main' 
+                  borderColor: graphPermissions.permissions?.groups
+                    ? 'success.main'
                     : 'error.main'
                 }}>
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -870,12 +870,12 @@ const StatusTab: React.FC = () => {
 
               {/* ServicePrincipal.Read Permission */}
               <Grid item xs={6} md={3}>
-                <Card variant="outlined" sx={{ 
-                  backgroundColor: graphPermissions.permissions?.servicePrincipals 
-                    ? 'rgba(76, 175, 80, 0.05)' 
+                <Card variant="outlined" sx={{
+                  backgroundColor: graphPermissions.permissions?.servicePrincipals
+                    ? 'rgba(76, 175, 80, 0.05)'
                     : 'rgba(255, 152, 0, 0.05)',
-                  borderColor: graphPermissions.permissions?.servicePrincipals 
-                    ? 'success.main' 
+                  borderColor: graphPermissions.permissions?.servicePrincipals
+                    ? 'success.main'
                     : 'warning.main'
                 }}>
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -901,12 +901,12 @@ const StatusTab: React.FC = () => {
 
               {/* DirectoryRole.Read Permission */}
               <Grid item xs={6} md={3}>
-                <Card variant="outlined" sx={{ 
-                  backgroundColor: graphPermissions.permissions?.directoryRoles 
-                    ? 'rgba(76, 175, 80, 0.05)' 
+                <Card variant="outlined" sx={{
+                  backgroundColor: graphPermissions.permissions?.directoryRoles
+                    ? 'rgba(76, 175, 80, 0.05)'
                     : 'rgba(255, 152, 0, 0.05)',
-                  borderColor: graphPermissions.permissions?.directoryRoles 
-                    ? 'success.main' 
+                  borderColor: graphPermissions.permissions?.directoryRoles
+                    ? 'success.main'
                     : 'warning.main'
                 }}>
                   <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
@@ -933,8 +933,8 @@ const StatusTab: React.FC = () => {
 
             {/* Alert if missing required permissions */}
             {!graphPermissions.success && (
-              <Alert 
-                severity="warning" 
+              <Alert
+                severity="warning"
                 sx={{ mt: 2 }}
                 action={
                   <Button
@@ -982,7 +982,7 @@ const StatusTab: React.FC = () => {
             <Grid container spacing={1}>
               {dependencies.map((dep) => (
                 <Grid item xs={6} md={3} key={dep.name}>
-                  <Card variant="outlined" sx={{ 
+                  <Card variant="outlined" sx={{
                     backgroundColor: dep.installed ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
                     borderColor: dep.installed ? 'success.main' : 'error.main'
                   }}>
@@ -1009,8 +1009,8 @@ const StatusTab: React.FC = () => {
             </Grid>
 
             {dependencies.some((d) => !d.installed) && (
-              <Alert 
-                severity="warning" 
+              <Alert
+                severity="warning"
                 sx={{ mt: 2 }}
                 action={
                   <Button

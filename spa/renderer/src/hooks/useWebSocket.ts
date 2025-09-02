@@ -56,10 +56,10 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       socketRef.current.on('connect', () => {
         setIsConnected(true);
         reconnectAttempt.current = 0; // Reset reconnect attempts on successful connection
-        
+
         // Log successful connection
         logger.logWebSocketEvent('connected', { url });
-        
+
         // Re-subscribe to any processes we were watching
         subscribedProcesses.current.forEach(processId => {
           socketRef.current?.emit('subscribe', processId);
@@ -68,7 +68,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
       socketRef.current.on('disconnect', () => {
         setIsConnected(false);
-        
+
         // Log disconnection
         logger.logWebSocketEvent('disconnected', { url });
       });
@@ -83,23 +83,23 @@ export function useWebSocket(options: WebSocketOptions = {}) {
             dataLength: Array.isArray(data.data) ? data.data.length : 1,
           });
         }
-        
+
         setOutputs(prev => {
           const newMap = new Map(prev);
           const existing = newMap.get(data.processId) || [];
-          
+
           // Enforce memory limit - keep only the most recent outputs
           let updatedOutputs = [...existing, data];
           const totalLines = updatedOutputs.reduce((sum, output) => sum + output.data.length, 0);
-          
+
           if (totalLines > MAX_OUTPUT_BUFFER_SIZE) {
             // Remove oldest outputs until under limit
-            while (updatedOutputs.length > 1 && 
+            while (updatedOutputs.length > 1 &&
                    updatedOutputs.reduce((sum, output) => sum + output.data.length, 0) > MAX_OUTPUT_BUFFER_SIZE) {
               updatedOutputs.shift();
             }
           }
-          
+
           newMap.set(data.processId, updatedOutputs);
           return newMap;
         });
@@ -120,13 +120,13 @@ export function useWebSocket(options: WebSocketOptions = {}) {
             socketRef.current?.emit('unsubscribe', processId);
           });
           subscribedProcesses.current.clear();
-          
+
           // Remove all listeners to prevent memory leaks
           socketRef.current.removeAllListeners();
           socketRef.current.disconnect();
           socketRef.current = null;
         }
-        
+
         // Clear outputs to free memory
         setOutputs(new Map());
       };

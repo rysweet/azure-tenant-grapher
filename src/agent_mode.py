@@ -338,7 +338,7 @@ async def _process_question_manually(workbench: any, question: str):
         )
         schema_result = await workbench.call_tool(schema_tool_name, {})
         print("✅ Schema retrieved")
-        
+
         # Extract schema from result
         schema_text = ""
         if hasattr(schema_result, "result") and schema_result.result:
@@ -349,14 +349,15 @@ async def _process_question_manually(workbench: any, question: str):
 
         # Step 2: Use LLM to generate Cypher query based on schema and question
         print("🔄 Step 2: Generating Cypher query with LLM...", flush=True)
-        
+
         # Get LLM config
         from src.llm_descriptions import LLMConfig
+
         llm_config = LLMConfig.from_env()
         if not llm_config.is_valid():
             print("❌ Azure OpenAI configuration is invalid")
             return
-            
+
         # Create prompt for query generation
         query_prompt = f"""Given the following Neo4j database schema and user question, generate a Cypher query to answer the question.
 
@@ -379,23 +380,27 @@ Cypher Query:"""
 
         # Call LLM to generate query
         from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+
         model_client = AzureOpenAIChatCompletionClient(
             api_key=llm_config.api_key,
             azure_endpoint=llm_config.endpoint,
             api_version=llm_config.api_version,
             model=llm_config.model_chat,
         )
-        
+
         from autogen_agentchat.messages import TextMessage
-        response = await model_client.create([TextMessage(content=query_prompt, source="system")])
-        
+
+        response = await model_client.create(
+            [TextMessage(content=query_prompt, source="system")]
+        )
+
         # Extract the generated query
         cypher_query = response.content.strip()
         # Remove markdown code blocks if present
         if cypher_query.startswith("```"):
             lines = cypher_query.split("\n")
             cypher_query = "\n".join(lines[1:-1])
-            
+
         print(f"Generated Cypher query:\n{cypher_query}", flush=True)
 
         # Step 3: Execute the generated Cypher query
@@ -412,15 +417,15 @@ Cypher Query:"""
 
         # Step 4: Extract and format the result
         print("🔄 Step 4: Processing results with LLM...", flush=True)
-        
+
         # Parse the query result
         result_list = getattr(query_result, "result", None)
         import json
-        
+
         if result_list and len(result_list) > 0:
             text_content = getattr(result_list[0], "content", None)
             result_data = json.loads(text_content) if text_content else []
-            
+
             # Create prompt for answer generation
             answer_prompt = f"""Based on the following query results, provide a clear, concise answer to the user's question.
 
@@ -443,9 +448,11 @@ Instructions:
 Answer:"""
 
             # Call LLM to generate answer
-            answer_response = await model_client.create([TextMessage(content=answer_prompt, source="system")])
+            answer_response = await model_client.create(
+                [TextMessage(content=answer_prompt, source="system")]
+            )
             final_answer = answer_response.content.strip()
-            
+
             print(f"\n🎯 Final Answer: {final_answer}", flush=True)
             print(f"\n📊 Query used:\n{cypher_query}", flush=True)
         else:

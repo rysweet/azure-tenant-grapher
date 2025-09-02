@@ -33,7 +33,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof VM identity to gain unauthorized access to connected resources.",
                     "severity": "High",
                     "impact": "Unauthorized access to VM and connected resources",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "T",
@@ -41,7 +41,7 @@ class STRIDEThreatEnumerator:
                     "description": "VM configuration, OS, or installed software could be tampered with by malicious actors.",
                     "severity": "High",
                     "impact": "System compromise and data integrity loss",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "R",
@@ -49,7 +49,7 @@ class STRIDEThreatEnumerator:
                     "description": "Insufficient logging may allow repudiation of malicious activities performed on the VM.",
                     "severity": "Medium",
                     "impact": "Inability to trace malicious activities",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "I",
@@ -57,7 +57,7 @@ class STRIDEThreatEnumerator:
                     "description": "Sensitive data on VM disks or in memory could be disclosed through unauthorized access.",
                     "severity": "High",
                     "impact": "Exposure of sensitive data",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "D",
@@ -65,7 +65,7 @@ class STRIDEThreatEnumerator:
                     "description": "VM could be subject to DoS attacks affecting service availability.",
                     "severity": "Medium",
                     "impact": "Service disruption",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "E",
@@ -73,8 +73,8 @@ class STRIDEThreatEnumerator:
                     "description": "Local privilege escalation could allow attackers to gain higher privileges on the VM.",
                     "severity": "High",
                     "impact": "Full system compromise",
-                    "likelihood": "Medium"
-                }
+                    "likelihood": "Medium",
+                },
             ],
             "Microsoft.Storage/storageAccounts": [
                 {
@@ -83,7 +83,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof storage account identity using stolen keys or tokens.",
                     "severity": "High",
                     "impact": "Unauthorized data access",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "T",
@@ -91,7 +91,7 @@ class STRIDEThreatEnumerator:
                     "description": "Stored data could be tampered with if proper access controls are not in place.",
                     "severity": "High",
                     "impact": "Data integrity compromise",
-                    "likelihood": "Low"
+                    "likelihood": "Low",
                 },
                 {
                     "stride": "I",
@@ -99,7 +99,7 @@ class STRIDEThreatEnumerator:
                     "description": "Sensitive data in storage could be disclosed through misconfigured access policies.",
                     "severity": "Critical",
                     "impact": "Massive data breach",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "D",
@@ -107,8 +107,8 @@ class STRIDEThreatEnumerator:
                     "description": "Storage service could be overwhelmed or made unavailable through various attack vectors.",
                     "severity": "Medium",
                     "impact": "Service disruption",
-                    "likelihood": "Medium"
-                }
+                    "likelihood": "Medium",
+                },
             ],
             "Microsoft.Sql/servers": [
                 {
@@ -117,7 +117,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof SQL Server identity using compromised credentials.",
                     "severity": "High",
                     "impact": "Unauthorized database access",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "T",
@@ -125,7 +125,7 @@ class STRIDEThreatEnumerator:
                     "description": "Database data could be tampered with through SQL injection or privilege escalation.",
                     "severity": "Critical",
                     "impact": "Data integrity compromise",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "I",
@@ -133,7 +133,7 @@ class STRIDEThreatEnumerator:
                     "description": "Sensitive database information could be disclosed through various attack vectors.",
                     "severity": "Critical",
                     "impact": "Sensitive data exposure",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "E",
@@ -141,8 +141,8 @@ class STRIDEThreatEnumerator:
                     "description": "Attackers may escalate privileges within the SQL Server environment.",
                     "severity": "High",
                     "impact": "Full database server compromise",
-                    "likelihood": "Medium"
-                }
+                    "likelihood": "Medium",
+                },
             ],
             "Microsoft.Web/sites": [
                 {
@@ -151,7 +151,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof web application identity through session hijacking or credential theft.",
                     "severity": "High",
                     "impact": "Unauthorized application access",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "T",
@@ -159,7 +159,7 @@ class STRIDEThreatEnumerator:
                     "description": "Application code or configuration could be tampered with through various attack vectors.",
                     "severity": "High",
                     "impact": "Application compromise",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "I",
@@ -167,7 +167,7 @@ class STRIDEThreatEnumerator:
                     "description": "Sensitive application data could be disclosed through vulnerabilities or misconfigurations.",
                     "severity": "High",
                     "impact": "Data exposure",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "D",
@@ -175,7 +175,7 @@ class STRIDEThreatEnumerator:
                     "description": "Web application could be subject to DoS attacks affecting availability.",
                     "severity": "Medium",
                     "impact": "Service disruption",
-                    "likelihood": "High"
+                    "likelihood": "High",
                 },
                 {
                     "stride": "E",
@@ -183,8 +183,8 @@ class STRIDEThreatEnumerator:
                     "description": "Attackers may escalate privileges within the web application environment.",
                     "severity": "High",
                     "impact": "Full application compromise",
-                    "likelihood": "Medium"
-                }
+                    "likelihood": "Medium",
+                },
             ],
             "Microsoft.Network/virtualNetworks": [
                 {
@@ -193,7 +193,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof network identities through ARP or DNS spoofing attacks.",
                     "severity": "Medium",
                     "impact": "Network traffic interception",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "T",
@@ -201,7 +201,7 @@ class STRIDEThreatEnumerator:
                     "description": "Network traffic could be tampered with if not properly secured in transit.",
                     "severity": "High",
                     "impact": "Data integrity compromise",
-                    "likelihood": "Low"
+                    "likelihood": "Low",
                 },
                 {
                     "stride": "I",
@@ -209,7 +209,7 @@ class STRIDEThreatEnumerator:
                     "description": "Network traffic could be intercepted and analyzed by unauthorized parties.",
                     "severity": "High",
                     "impact": "Sensitive data exposure",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "D",
@@ -217,8 +217,8 @@ class STRIDEThreatEnumerator:
                     "description": "Network services could be overwhelmed or made unavailable through DoS attacks.",
                     "severity": "Medium",
                     "impact": "Network service disruption",
-                    "likelihood": "Medium"
-                }
+                    "likelihood": "Medium",
+                },
             ],
             "Microsoft.KeyVault/vaults": [
                 {
@@ -227,7 +227,7 @@ class STRIDEThreatEnumerator:
                     "description": "Attacker may spoof Key Vault identity using compromised service principals or managed identities.",
                     "severity": "Critical",
                     "impact": "Unauthorized access to secrets",
-                    "likelihood": "Low"
+                    "likelihood": "Low",
                 },
                 {
                     "stride": "I",
@@ -235,7 +235,7 @@ class STRIDEThreatEnumerator:
                     "description": "Secrets, keys, and certificates could be disclosed through unauthorized access.",
                     "severity": "Critical",
                     "impact": "Exposure of sensitive secrets",
-                    "likelihood": "Medium"
+                    "likelihood": "Medium",
                 },
                 {
                     "stride": "E",
@@ -243,9 +243,9 @@ class STRIDEThreatEnumerator:
                     "description": "Attackers may escalate privileges to gain broader access to Key Vault resources.",
                     "severity": "High",
                     "impact": "Full Key Vault compromise",
-                    "likelihood": "Low"
-                }
-            ]
+                    "likelihood": "Low",
+                },
+            ],
         }
 
     def enumerate_resource_threats(
@@ -253,26 +253,26 @@ class STRIDEThreatEnumerator:
     ) -> List[Dict[str, Any]]:
         """
         Enumerate threats for a specific Azure resource based on its type and configuration.
-        
+
         Args:
             resource: Azure resource dictionary with type, properties, etc.
             logger: Optional logger for error reporting.
-            
+
         Returns:
             List of threat dictionaries.
         """
         if logger is None:
             logger = logging.getLogger("ThreatEnumerator")
-            
+
         resource_type = resource.get("type", "")
         resource_id = resource.get("id", "")
         resource_name = resource.get("name", "Unknown")
-        
+
         threats = []
-        
+
         # Get threat patterns for this resource type
         patterns = self.resource_threat_patterns.get(resource_type, [])
-        
+
         for pattern in patterns:
             threat_id = str(uuid.uuid4())
             threat = {
@@ -287,20 +287,22 @@ class STRIDEThreatEnumerator:
                 "resource_type": resource_type,
                 "impact": pattern.get("impact", "Unknown"),
                 "likelihood": pattern.get("likelihood", "Unknown"),
-                "raw": pattern
+                "raw": pattern,
             }
-            
+
             # Enhance threat based on specific resource configuration
             threat = self._enhance_threat_with_config(threat, resource, logger)
             threats.append(threat)
-            
+
         # Add generic threats that apply to all resources
         generic_threats = self._get_generic_threats(resource, logger)
         threats.extend(generic_threats)
-        
-        logger.info(f"Enumerated {len(threats)} threats for {resource_type} '{resource_name}'")
+
+        logger.info(
+            f"Enumerated {len(threats)} threats for {resource_type} '{resource_name}'"
+        )
         return threats
-        
+
     def _enhance_threat_with_config(
         self, threat: Dict[str, Any], resource: Dict[str, Any], logger: logging.Logger
     ) -> Dict[str, Any]:
@@ -310,21 +312,25 @@ class STRIDEThreatEnumerator:
         try:
             resource_type = resource.get("type", "")
             properties = resource.get("properties", {})
-            
+
             # Enhance VM threats based on configuration
             if resource_type == "Microsoft.Compute/virtualMachines":
                 # Check for encryption
                 if not self._has_disk_encryption(properties):
                     if threat["stride"] == "I":
                         threat["severity"] = "Critical"
-                        threat["description"] += " Disk encryption is not enabled, increasing data exposure risk."
-                        
+                        threat["description"] += (
+                            " Disk encryption is not enabled, increasing data exposure risk."
+                        )
+
                 # Check for security monitoring
                 if not self._has_security_monitoring(properties):
                     if threat["stride"] == "R":
                         threat["severity"] = "High"
-                        threat["description"] += " Security monitoring extensions are not detected."
-            
+                        threat["description"] += (
+                            " Security monitoring extensions are not detected."
+                        )
+
             # Enhance storage account threats
             elif resource_type == "Microsoft.Storage/storageAccounts":
                 # Check for public access
@@ -332,14 +338,18 @@ class STRIDEThreatEnumerator:
                     if threat["stride"] == "I":
                         threat["severity"] = "Critical"
                         threat["likelihood"] = "High"
-                        threat["description"] += " Public access is enabled, significantly increasing exposure risk."
-                        
+                        threat["description"] += (
+                            " Public access is enabled, significantly increasing exposure risk."
+                        )
+
                 # Check for encryption
                 if not self._has_storage_encryption(properties):
                     if threat["stride"] in ["I", "T"]:
                         threat["severity"] = "High"
-                        threat["description"] += " Storage encryption may not be properly configured."
-            
+                        threat["description"] += (
+                            " Storage encryption may not be properly configured."
+                        )
+
             # Enhance SQL server threats
             elif resource_type == "Microsoft.Sql/servers":
                 # Check for firewall rules
@@ -347,13 +357,15 @@ class STRIDEThreatEnumerator:
                     if threat["stride"] in ["S", "I", "T"]:
                         threat["severity"] = "Critical"
                         threat["likelihood"] = "High"
-                        threat["description"] += " Firewall allows broad access, increasing attack surface."
-                        
+                        threat["description"] += (
+                            " Firewall allows broad access, increasing attack surface."
+                        )
+
         except Exception as e:
             logger.warning(f"Failed to enhance threat with config: {e}")
-            
+
         return threat
-    
+
     def _get_generic_threats(
         self, resource: Dict[str, Any], logger: logging.Logger
     ) -> List[Dict[str, Any]]:
@@ -363,7 +375,7 @@ class STRIDEThreatEnumerator:
         resource_id = resource.get("id", "")
         resource_name = resource.get("name", "Unknown")
         resource_type = resource.get("type", "")
-        
+
         generic_threats = [
             {
                 "id": str(uuid.uuid4()),
@@ -377,7 +389,7 @@ class STRIDEThreatEnumerator:
                 "resource_type": resource_type,
                 "impact": "Unauthorized access to resource",
                 "likelihood": "Medium",
-                "raw": {}
+                "raw": {},
             },
             {
                 "id": str(uuid.uuid4()),
@@ -391,12 +403,12 @@ class STRIDEThreatEnumerator:
                 "resource_type": resource_type,
                 "impact": "Inability to detect or investigate security incidents",
                 "likelihood": "High",
-                "raw": {}
-            }
+                "raw": {},
+            },
         ]
-        
+
         return generic_threats
-    
+
     def _has_disk_encryption(self, properties: Dict[str, Any]) -> bool:
         """
         Check if VM has disk encryption enabled.
@@ -405,7 +417,7 @@ class STRIDEThreatEnumerator:
         os_disk = storage_profile.get("osDisk", {})
         encryption_settings = os_disk.get("encryptionSettings", {})
         return encryption_settings.get("enabled", False)
-    
+
     def _has_security_monitoring(self, properties: Dict[str, Any]) -> bool:
         """
         Check if VM has security monitoring extensions.
@@ -413,7 +425,7 @@ class STRIDEThreatEnumerator:
         # This would typically check for extensions like Microsoft Monitoring Agent
         # For now, we'll assume false to encourage security monitoring
         return False
-    
+
     def _allows_public_access(self, properties: Dict[str, Any]) -> bool:
         """
         Check if storage account allows public access.
@@ -421,7 +433,7 @@ class STRIDEThreatEnumerator:
         public_access = properties.get("allowBlobPublicAccess", False)
         network_access = properties.get("networkAcls", {}).get("defaultAction", "Allow")
         return public_access or network_access == "Allow"
-    
+
     def _has_storage_encryption(self, properties: Dict[str, Any]) -> bool:
         """
         Check if storage account has encryption enabled.
@@ -431,7 +443,7 @@ class STRIDEThreatEnumerator:
         blob_encryption = services.get("blob", {}).get("enabled", False)
         file_encryption = services.get("file", {}).get("enabled", False)
         return blob_encryption and file_encryption
-    
+
     def _has_open_firewall(self, properties: Dict[str, Any]) -> bool:
         """
         Check if SQL server has overly permissive firewall rules.
@@ -447,31 +459,33 @@ def enumerate_threats(
 ) -> List[Dict[str, Any]]:
     """
     Enumerate threats for Azure resources using STRIDE methodology.
-    
+
     Args:
         resources_or_tmt_output: List of Azure resources or legacy TMT output
         logger: Optional logger for error reporting
-        
+
     Returns:
         List of structured threat dictionaries
     """
     if logger is None:
         logger = logging.getLogger("ThreatEnumerator")
-        
+
     enumerator = STRIDEThreatEnumerator()
     all_threats = []
-    
+
     try:
         if not resources_or_tmt_output:
             logger.warning("No resources provided for threat enumeration")
             return []
-        
+
         # Handle list of Azure resources
         if isinstance(resources_or_tmt_output, list):
             for resource in resources_or_tmt_output:
                 if isinstance(resource, dict) and "type" in resource:
                     # This is an Azure resource
-                    resource_threats = enumerator.enumerate_resource_threats(resource, logger)
+                    resource_threats = enumerator.enumerate_resource_threats(
+                        resource, logger
+                    )
                     all_threats.extend(resource_threats)
                 else:
                     # This might be legacy TMT output - handle it
@@ -486,22 +500,27 @@ def enumerate_threats(
                         "element": resource.get("element", ""),
                         "resource_id": "",
                         "resource_type": "",
-                        "raw": resource
+                        "raw": resource,
                     }
                     all_threats.append(legacy_threat)
-        
+
         # Deduplicate threats by title and description
         seen = set()
         unique_threats = []
         for threat in all_threats:
-            dedup_key = (threat["title"].lower().strip(), threat["description"].lower().strip())
+            dedup_key = (
+                threat["title"].lower().strip(),
+                threat["description"].lower().strip(),
+            )
             if dedup_key not in seen:
                 seen.add(dedup_key)
                 unique_threats.append(threat)
-                
-        logger.info(f"Enumerated {len(unique_threats)} unique threats from {len(resources_or_tmt_output)} resources")
+
+        logger.info(
+            f"Enumerated {len(unique_threats)} unique threats from {len(resources_or_tmt_output)} resources"
+        )
         return unique_threats
-        
+
     except Exception as e:
         logger.error(f"Threat enumeration failed: {e}")
         return []

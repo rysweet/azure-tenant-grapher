@@ -223,22 +223,22 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
   const theme = useTheme();
   const isExpanded = expandedFolders.has(node.path);
   const isSelected = selectedFile === node.path;
-  const matchesSearch = !searchQuery || 
+  const matchesSearch = !searchQuery ||
     node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     node.path.toLowerCase().includes(searchQuery.toLowerCase());
 
   // For folders, check if any children match the search
   const hasMatchingChildren = useMemo(() => {
     if (!searchQuery || node.type === 'file') return true;
-    
+
     const checkChildren = (children: FileNode[]): boolean => {
-      return children.some(child => 
+      return children.some(child =>
         child.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         child.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (child.children && checkChildren(child.children))
       );
     };
-    
+
     return node.children ? checkChildren(node.children) : false;
   }, [node, searchQuery]);
 
@@ -268,7 +268,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
           </ListItemIcon>
           <ListItemText
             primary={node.name}
-            primaryTypographyProps={{ 
+            primaryTypographyProps={{
               variant: 'body2',
               noWrap: true,
               title: node.name
@@ -294,7 +294,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
           </ListItemIcon>
           <ListItemText
             primary={node.name}
-            primaryTypographyProps={{ 
+            primaryTypographyProps={{
               variant: 'body2',
               fontWeight: 500,
               noWrap: true,
@@ -325,9 +325,9 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
 };
 
 // Table of contents component
-const TableOfContents: React.FC<{ content: string; onItemClick: (id: string) => void }> = ({ 
-  content, 
-  onItemClick 
+const TableOfContents: React.FC<{ content: string; onItemClick: (id: string) => void }> = ({
+  content,
+  onItemClick
 }) => {
   const toc = useMemo(() => {
     const headingRegex = /^(#{1,6})\s+(.+)$/gm;
@@ -338,7 +338,7 @@ const TableOfContents: React.FC<{ content: string; onItemClick: (id: string) => 
       const level = match[1].length;
       const title = match[2].trim();
       const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      
+
       items.push({ title, level, id });
     }
 
@@ -397,11 +397,11 @@ const DocsTab: React.FC = () => {
   const loadFile = useCallback(async (filePath: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const url = `http://localhost:3001/api/docs/${encodeURIComponent(filePath)}`;
       const response = await axios.get(url);
-      
+
       if (typeof response.data === 'string') {
         setFileContent(response.data);
       } else {
@@ -415,12 +415,12 @@ const DocsTab: React.FC = () => {
         const statusCode = err.response?.status;
         const errorMessage = err.response?.data?.error || err.message;
         const errorPath = err.response?.data?.path;
-        
+
         let detailedError = `Failed to load file: ${filePath}`;
         if (statusCode) detailedError += ` (${statusCode})`;
         if (errorMessage) detailedError += `: ${errorMessage}`;
         if (errorPath) detailedError += ` at ${errorPath}`;
-        
+
         setError(detailedError);
       } else {
         setError(`Failed to load file: ${filePath} - ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -463,7 +463,7 @@ const DocsTab: React.FC = () => {
   // Highlight search results in content
   const highlightContent = useMemo(() => {
     if (!contentSearchQuery || !fileContent) return fileContent;
-    
+
     const regex = new RegExp(`(${contentSearchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     return fileContent.replace(regex, '**$1**');
   }, [fileContent, contentSearchQuery]);
@@ -472,7 +472,7 @@ const DocsTab: React.FC = () => {
   const markdownComponents = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
-      
+
       if (!inline && match) {
         return (
           <SyntaxHighlighter
@@ -485,7 +485,7 @@ const DocsTab: React.FC = () => {
           </SyntaxHighlighter>
         );
       }
-      
+
       return (
         <code className={className} {...props} style={{
           backgroundColor: alpha(theme.palette.text.primary, 0.05),
@@ -556,7 +556,7 @@ const DocsTab: React.FC = () => {
           </Box>
         );
       }
-      
+
       return (
         <Box
           component="a"
@@ -583,7 +583,7 @@ const DocsTab: React.FC = () => {
           <DocsIcon />
           Documentation
         </Typography>
-        
+
         <TextField
           fullWidth
           size="small"
@@ -599,7 +599,7 @@ const DocsTab: React.FC = () => {
           }}
           sx={{ mb: 1 }}
         />
-        
+
         {selectedFile && (
           <Chip
             icon={<HomeIcon />}
@@ -610,7 +610,7 @@ const DocsTab: React.FC = () => {
           />
         )}
       </Box>
-      
+
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <List>
           {fileTree.map((node) => (
@@ -678,11 +678,11 @@ const DocsTab: React.FC = () => {
             >
               {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
             </IconButton>
-            
+
             <Typography variant="subtitle1" component="div" sx={{ flexGrow: 1, color: 'text.primary' }}>
               {selectedFile || 'Select a document'}
             </Typography>
-            
+
             <TextField
               size="small"
               placeholder="Search in document..."
@@ -708,7 +708,7 @@ const DocsTab: React.FC = () => {
               <TableOfContents content={fileContent} onItemClick={scrollToHeading} />
             </Box>
           )}
-          
+
           {/* Document content */}
           <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
             {loading && (
@@ -716,13 +716,13 @@ const DocsTab: React.FC = () => {
                 <CircularProgress />
               </Box>
             )}
-            
+
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
-            
+
             {!loading && !error && !selectedFile && (
               <Box textAlign="center" py={8}>
                 <DocsIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
@@ -734,7 +734,7 @@ const DocsTab: React.FC = () => {
                 </Typography>
               </Box>
             )}
-            
+
             {!loading && !error && fileContent && (
               <Paper sx={{ p: 3, backgroundColor: 'background.paper' }}>
                 <ReactMarkdown

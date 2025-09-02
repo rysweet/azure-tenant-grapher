@@ -37,7 +37,7 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
 
   const cleanup = useCallback(() => {
     if (!currentProcessId.current) return;
-    
+
     // Remove all listeners for this process
     window.electronAPI.removeAllListeners('process:output');
     window.electronAPI.removeAllListeners('process:exit');
@@ -48,7 +48,7 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
   const execute = useCallback(async (command: string, args: string[] = []) => {
     // Clean up any previous execution
     cleanup();
-    
+
     // Reset state
     setIsRunning(true);
     setOutput({ stdout: [], stderr: [] });
@@ -58,7 +58,7 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     try {
       // Execute the command
       const result = await window.electronAPI.cli.execute(command, args);
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Command execution failed');
       }
@@ -70,13 +70,13 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
       const handleOutput = (data: any) => {
         if (data.id === processId) {
           const lines = Array.isArray(data.data) ? data.data : [data.data];
-          
+
           if (data.type === 'stdout') {
             setOutput(prev => ({ ...prev, stdout: [...prev.stdout, ...lines] }));
           } else if (data.type === 'stderr') {
             setOutput(prev => ({ ...prev, stderr: [...prev.stderr, ...lines] }));
           }
-          
+
           // Call user callback if provided
           if (options.onOutput) {
             options.onOutput({ type: data.type, lines });
@@ -88,12 +88,12 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
         if (data.id === processId) {
           setIsRunning(false);
           setExitCode(data.code);
-          
+
           // Call user callback if provided
           if (options.onExit) {
             options.onExit(data.code);
           }
-          
+
           // Clean up listeners after exit
           cleanup();
         }
@@ -104,12 +104,12 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
           const errorMsg = data.error || 'Process error occurred';
           setError(errorMsg);
           setIsRunning(false);
-          
+
           // Call user callback if provided
           if (options.onError) {
             options.onError(errorMsg);
           }
-          
+
           // Clean up listeners after error
           cleanup();
         }
@@ -124,18 +124,18 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     } catch (err: any) {
       setIsRunning(false);
       setError(err.message);
-      
+
       if (options.onError) {
         options.onError(err.message);
       }
-      
+
       throw err;
     }
   }, [cleanup, options]);
 
   const cancel = useCallback(async () => {
     if (!currentProcessId.current) return;
-    
+
     try {
       await window.electronAPI.cli.cancel(currentProcessId.current);
     } catch (err: any) {

@@ -61,7 +61,7 @@ const ConfigTab: React.FC = () => {
       console.error('Failed to load config:', err);
     }
   };
-  
+
   const checkAppRegistration = async (clientId: string) => {
     setAppRegStatus({ exists: false, checking: true });
     try {
@@ -70,7 +70,7 @@ const ConfigTab: React.FC = () => {
         '-c',
         `az ad app show --id ${clientId} --query displayName -o tsv 2>/dev/null`
       ]);
-      
+
       // Listen for the result
       window.electronAPI.on('process:exit', (data: any) => {
         if (data.id === result.data.id) {
@@ -89,11 +89,11 @@ const ConfigTab: React.FC = () => {
       setAppRegStatus({ exists: false, checking: false });
     }
   };
-  
+
   useEffect(() => {
     loadConfig();
   }, []);
-  
+
   // Check if app registration exists when client ID changes
   useEffect(() => {
     const clientId = config.find(c => c.key === 'AZURE_CLIENT_ID')?.value;
@@ -120,7 +120,7 @@ const ConfigTab: React.FC = () => {
           await window.electronAPI.config.set(item.key, item.value);
         }
       }
-      
+
       setMessage({ type: 'success', text: 'Configuration saved successfully' });
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
@@ -140,7 +140,7 @@ const ConfigTab: React.FC = () => {
 
   const parseAppRegistrationOutput = (output: string[]): { clientId?: string; clientSecret?: string } => {
     const result: { clientId?: string; clientSecret?: string } = {};
-    
+
     // Look for patterns in the output that indicate client ID and secret
     for (const line of output) {
       // Look for Client ID patterns
@@ -150,7 +150,7 @@ const ConfigTab: React.FC = () => {
           result.clientId = clientIdMatch[0];
         }
       }
-      
+
       // Look for Client Secret patterns
       if (line.includes('Client Secret') || line.includes('client_secret') || line.includes('Secret Value')) {
         // Client secrets are typically base64-like strings or specific patterns
@@ -159,7 +159,7 @@ const ConfigTab: React.FC = () => {
           result.clientSecret = secretMatch[0];
         }
       }
-      
+
       // Alternative patterns for secrets
       if (line.includes('Secret:') || line.includes('secret=')) {
         const secretMatch = line.split(/Secret:?|secret=/).pop()?.trim();
@@ -168,17 +168,17 @@ const ConfigTab: React.FC = () => {
         }
       }
     }
-    
+
     return result;
   };
 
   const handleAppRegistrationComplete = async (output: string[], exitCode: number) => {
     setShowAppRegDialog(false);
-    
+
     if (exitCode === 0) {
       // Parse the output to extract client ID and secret
       const { clientId, clientSecret } = parseAppRegistrationOutput(output);
-      
+
       if (clientId || clientSecret) {
         // Update config state
         setConfig(prev => prev.map(item => {
@@ -199,7 +199,7 @@ const ConfigTab: React.FC = () => {
           if (clientSecret) {
             await window.electronAPI.config.set('AZURE_CLIENT_SECRET', clientSecret);
           }
-          
+
           let message = 'App registration completed successfully';
           if (clientId && clientSecret) {
             message += '. Client ID and Secret have been saved to configuration.';
@@ -208,22 +208,22 @@ const ConfigTab: React.FC = () => {
           } else if (clientSecret) {
             message += '. Client Secret has been saved to configuration.';
           }
-          
+
           setMessage({ type: 'success', text: message });
-          
+
           // Reload config to ensure everything is up to date
           await loadConfig();
-          
+
         } catch (err: any) {
-          setMessage({ 
-            type: 'error', 
-            text: `App registration completed but failed to save configuration: ${err.message}` 
+          setMessage({
+            type: 'error',
+            text: `App registration completed but failed to save configuration: ${err.message}`
           });
         }
       } else {
-        setMessage({ 
-          type: 'success', 
-          text: 'App registration completed successfully. Please manually copy the Client ID and Secret from the output above.' 
+        setMessage({
+          type: 'success',
+          text: 'App registration completed successfully. Please manually copy the Client ID and Secret from the output above.'
         });
       }
     } else {
@@ -277,14 +277,14 @@ const ConfigTab: React.FC = () => {
                 </Button>
               )}
             </Box>
-            
+
             {appRegStatus.exists && config.find(c => c.key === 'AZURE_CLIENT_ID')?.value && (
               <Alert severity="success" sx={{ mt: 2 }}>
                 App registration configured: {appRegStatus.appName}
               </Alert>
             )}
-            
-            {!appRegStatus.exists && (!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value || 
+
+            {!appRegStatus.exists && (!config.find(c => c.key === 'AZURE_CLIENT_ID')?.value ||
               !config.find(c => c.key === 'AZURE_CLIENT_SECRET')?.value) && !appRegStatus.checking && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 Azure AD credentials not configured. Click "Create App Registration" to set up authentication.
@@ -292,13 +292,13 @@ const ConfigTab: React.FC = () => {
             )}
           </Paper>
         </Grid>
-        
+
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Environment Variables
             </Typography>
-            
+
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <FormControlLabel
                 control={
@@ -309,7 +309,7 @@ const ConfigTab: React.FC = () => {
                 }
                 label="Show Secrets"
               />
-              
+
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}

@@ -248,7 +248,7 @@ The application uses a comprehensive tab-based navigation system with 12 tabs in
 
 ### Shared Components
 
-#### Enhanced StatusBar Component  
+#### Enhanced StatusBar Component
 - **Tenant Information**: Displays "Tenant: [name]" extracted from configuration
 - **Background Operations**: Shows running processes with PIDs
 - **Connection Status**: Real-time WebSocket and database status

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Network, DataSet, Node, Edge } from 'vis-network/standalone';
-import { 
-  Box, 
-  Paper, 
-  TextField, 
-  FormGroup, 
-  FormControlLabel, 
+import {
+  Box,
+  Paper,
+  TextField,
+  FormGroup,
+  FormControlLabel,
   Checkbox,
   Chip,
   IconButton,
@@ -84,18 +84,18 @@ const NODE_COLORS: Record<string, string> = {
   ResourceGroup: '#45B7D1',
   Resource: '#96CEB4', // Fallback for generic resources
   Region: '#FFA500', // Orange for regions
-  
+
   // Compute resources
   VirtualMachines: '#FFEAA7',
   VirtualMachine: '#FFEAA7', // Alternative naming
   Disks: '#DDA0DD',
   AvailabilitySets: '#F0E68C',
   VirtualMachineScaleSets: '#FFB347',
-  
+
   // Storage resources
   StorageAccounts: '#74B9FF',
   StorageAccount: '#74B9FF', // Alternative naming
-  
+
   // Network resources
   VirtualNetworks: '#6C5CE7',
   VirtualNetwork: '#6C5CE7', // Alternative naming
@@ -106,36 +106,36 @@ const NODE_COLORS: Record<string, string> = {
   PublicIPAddresses: '#87CEEB',
   LoadBalancers: '#20B2AA',
   ApplicationGateways: '#4682B4',
-  
+
   // Security resources
   KeyVaults: '#DC143C',
   SecurityCenter: '#8B0000',
-  
+
   // Database resources
   SqlServers: '#FF4500',
   CosmosDBAccounts: '#FF6347',
-  
+
   // Web resources
   Websites: '#32CD32',
   AppServicePlans: '#228B22',
   FunctionApps: '#9ACD32',
-  
+
   // Container resources
   ContainerInstances: '#48D1CC',
   ContainerRegistries: '#00CED1',
   KubernetesClusters: '#5F9EA0',
-  
+
   // Identity and access
   User: '#FD79A8',
   ServicePrincipal: '#FDCB6E',
   Application: '#E17055',
   Group: '#00B894',
   Role: '#00CEC9',
-  
+
   // Monitoring and management
   LogAnalytics: '#CD853F',
   ApplicationInsights: '#D2691E',
-  
+
   Default: '#95A5A6'
 };
 
@@ -184,7 +184,7 @@ const getEdgeDescription = (type: string): string => {
 export const GraphVisualization: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
@@ -194,7 +194,7 @@ export const GraphVisualization: React.FC = () => {
   const [legendOpen, setLegendOpen] = useState(false);
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<string>>(new Set());
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(new Set());
-  
+
   // Advanced filtering state
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [nameFilter, setNameFilter] = useState('');
@@ -202,7 +202,7 @@ export const GraphVisualization: React.FC = () => {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedResourceGroups, setSelectedResourceGroups] = useState<string[]>([]);
   const [selectedSubscriptions, setSelectedSubscriptions] = useState<string[]>([]);
-  
+
   // Filter options derived from data
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
@@ -213,23 +213,23 @@ export const GraphVisualization: React.FC = () => {
   const fetchGraphData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await axios.get('http://localhost:3001/api/graph');
       const data = response.data as GraphData;
-      
+
       // Initialize all types as visible except Subscription nodes (hidden by default)
       const allNodeTypes = Object.keys(data.stats.nodeTypes);
       const defaultVisibleNodeTypes = allNodeTypes.filter(type => type !== 'Subscription');
       setVisibleNodeTypes(new Set(defaultVisibleNodeTypes));
       setVisibleEdgeTypes(new Set(Object.keys(data.stats.edgeTypes)));
-      
+
       setGraphData(data);
       extractFilterOptions(data);
       renderGraph(data);
     } catch (err: any) {
       // Handle fetch error
-      
+
       // Provide more detailed error messages
       if (err.code === 'ERR_NETWORK') {
         setError('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
@@ -254,7 +254,7 @@ export const GraphVisualization: React.FC = () => {
 
     data.nodes.forEach(node => {
       const props = node.properties;
-      
+
       // Extract tags
       if (props.tags) {
         if (typeof props.tags === 'object') {
@@ -263,19 +263,19 @@ export const GraphVisualization: React.FC = () => {
           props.tags.split(',').forEach((tag: string) => tags.add(tag.trim()));
         }
       }
-      
+
       // Extract regions/locations
       if (props.location) regions.add(props.location);
       if (props.region) regions.add(props.region);
-      
+
       // Extract resource groups
       if (props.resourceGroup) resourceGroups.add(props.resourceGroup);
       if (props.resourceGroupName) resourceGroups.add(props.resourceGroupName);
-      
+
       // Extract subscriptions
       if (props.subscriptionId) subscriptions.add(props.subscriptionId);
       if (props.subscriptionName) subscriptions.add(props.subscriptionName);
-      
+
       // Special handling for specific node types
       if (node.type === 'ResourceGroup') {
         resourceGroups.add(node.label);
@@ -294,14 +294,14 @@ export const GraphVisualization: React.FC = () => {
   // Check if node matches advanced filters
   const nodeMatchesFilters = useCallback((node: GraphNode) => {
     const props = node.properties;
-    
+
     // Name filter
-    if (nameFilter && !node.label.toLowerCase().includes(nameFilter.toLowerCase()) && 
+    if (nameFilter && !node.label.toLowerCase().includes(nameFilter.toLowerCase()) &&
         !(props.name && props.name.toLowerCase().includes(nameFilter.toLowerCase())) &&
         !(props.displayName && props.displayName.toLowerCase().includes(nameFilter.toLowerCase()))) {
       return false;
     }
-    
+
     // Tags filter
     if (selectedTags.length > 0) {
       let hasMatchingTag = false;
@@ -315,7 +315,7 @@ export const GraphVisualization: React.FC = () => {
       }
       if (!hasMatchingTag) return false;
     }
-    
+
     // Regions filter
     if (selectedRegions.length > 0) {
       const nodeRegion = props.location || props.region;
@@ -323,7 +323,7 @@ export const GraphVisualization: React.FC = () => {
         return false;
       }
     }
-    
+
     // Resource groups filter
     if (selectedResourceGroups.length > 0) {
       const nodeRG = props.resourceGroup || props.resourceGroupName || (node.type === 'ResourceGroup' ? node.label : null);
@@ -331,7 +331,7 @@ export const GraphVisualization: React.FC = () => {
         return false;
       }
     }
-    
+
     // Subscriptions filter
     if (selectedSubscriptions.length > 0) {
       const nodeSub = props.subscriptionId || props.subscriptionName || (node.type === 'Subscription' ? node.label : null);
@@ -339,7 +339,7 @@ export const GraphVisualization: React.FC = () => {
         return false;
       }
     }
-    
+
     return true;
   }, [nameFilter, selectedTags, selectedRegions, selectedResourceGroups, selectedSubscriptions]);
 
@@ -520,12 +520,12 @@ export const GraphVisualization: React.FC = () => {
   // Search functionality
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     try {
       const response = await axios.get(`http://localhost:3001/api/graph/search`, {
         params: { query: searchQuery }
       });
-      
+
       if (response.data.length > 0 && networkRef.current) {
         const nodeIds = response.data.map((n: GraphNode) => n.id);
         networkRef.current.selectNodes(nodeIds);
@@ -573,7 +573,7 @@ export const GraphVisualization: React.FC = () => {
       const viewPosition = networkRef.current.getViewPosition();
       const scale = networkRef.current.getScale();
       const panDistance = 100 / scale; // Adjust pan distance based on zoom level
-      
+
       let newPosition = { ...viewPosition };
       switch (direction) {
         case 'up':
@@ -589,7 +589,7 @@ export const GraphVisualization: React.FC = () => {
           newPosition.x += panDistance;
           break;
       }
-      
+
       networkRef.current.moveTo({
         position: newPosition,
         animation: { duration: 200, easingFunction: 'easeInOutQuad' }
@@ -608,11 +608,11 @@ export const GraphVisualization: React.FC = () => {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'row' }}>
       {/* Control Panel - 25% width on the left */}
-      <Paper sx={{ 
-        width: '25%', 
+      <Paper sx={{
+        width: '25%',
         minWidth: '350px',
         maxWidth: '400px',
-        p: 2, 
+        p: 2,
         mr: 2,
         display: 'flex',
         flexDirection: 'column',
@@ -629,9 +629,9 @@ export const GraphVisualization: React.FC = () => {
         <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
           <ButtonGroup size="small">
             <Tooltip title="Zoom In">
-              <Button onClick={handleZoomIn} sx={{ 
+              <Button onClick={handleZoomIn} sx={{
                 backgroundColor: '#000000',
-                color: '#4caf50', 
+                color: '#4caf50',
                 borderColor: '#4caf50',
                 '&:hover': {
                   backgroundColor: '#000000',
@@ -642,9 +642,9 @@ export const GraphVisualization: React.FC = () => {
               </Button>
             </Tooltip>
             <Tooltip title="Zoom Out">
-              <Button onClick={handleZoomOut} sx={{ 
+              <Button onClick={handleZoomOut} sx={{
                 backgroundColor: '#000000',
-                color: '#4caf50', 
+                color: '#4caf50',
                 borderColor: '#4caf50',
                 '&:hover': {
                   backgroundColor: '#000000',
@@ -655,9 +655,9 @@ export const GraphVisualization: React.FC = () => {
               </Button>
             </Tooltip>
             <Tooltip title="Fit to Screen">
-              <Button onClick={handleFit} sx={{ 
+              <Button onClick={handleFit} sx={{
                 backgroundColor: '#000000',
-                color: '#4caf50', 
+                color: '#4caf50',
                 borderColor: '#4caf50',
                 '&:hover': {
                   backgroundColor: '#000000',
@@ -668,17 +668,17 @@ export const GraphVisualization: React.FC = () => {
               </Button>
             </Tooltip>
           </ButtonGroup>
-          
+
           {/* Pan controls inline */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 24px)', gap: 0 }}>
               <Box />
               <Tooltip title="Pan Up">
-                <IconButton onClick={() => handlePan('up')} size="small" sx={{ 
+                <IconButton onClick={() => handlePan('up')} size="small" sx={{
                   padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
-                  '&:hover': { 
+                  '&:hover': {
                     backgroundColor: '#1a1a1a',
                     borderColor: '#4caf50'
                   }
@@ -688,12 +688,12 @@ export const GraphVisualization: React.FC = () => {
               </Tooltip>
               <Box />
               <Tooltip title="Pan Left">
-                <IconButton onClick={() => handlePan('left')} size="small" sx={{ 
+                <IconButton onClick={() => handlePan('left')} size="small" sx={{
                   padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
-                  '&:hover': { 
+                  '&:hover': {
                     backgroundColor: '#1a1a1a',
                     borderColor: '#4caf50'
                   }
@@ -703,12 +703,12 @@ export const GraphVisualization: React.FC = () => {
               </Tooltip>
               <Box />
               <Tooltip title="Pan Right">
-                <IconButton onClick={() => handlePan('right')} size="small" sx={{ 
+                <IconButton onClick={() => handlePan('right')} size="small" sx={{
                   padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
-                  '&:hover': { 
+                  '&:hover': {
                     backgroundColor: '#1a1a1a',
                     borderColor: '#4caf50'
                   }
@@ -718,12 +718,12 @@ export const GraphVisualization: React.FC = () => {
               </Tooltip>
               <Box />
               <Tooltip title="Pan Down">
-                <IconButton onClick={() => handlePan('down')} size="small" sx={{ 
+                <IconButton onClick={() => handlePan('down')} size="small" sx={{
                   padding: '2px',
                   color: '#4caf50',
                   backgroundColor: '#000000',
                   border: '1px solid #4caf50',
-                  '&:hover': { 
+                  '&:hover': {
                     backgroundColor: '#1a1a1a',
                     borderColor: '#4caf50'
                   }
@@ -733,15 +733,15 @@ export const GraphVisualization: React.FC = () => {
               </Tooltip>
               <Box />
           </Box>
-          
+
           {/* Refresh button */}
           <Tooltip title="Refresh">
-            <IconButton onClick={fetchGraphData} size="small" sx={{ 
+            <IconButton onClick={fetchGraphData} size="small" sx={{
               padding: '2px',
-                color: '#4caf50', 
+                color: '#4caf50',
                 backgroundColor: '#000000',
                 border: '1px solid #4caf50',
-                '&:hover': { 
+                '&:hover': {
                   backgroundColor: '#1a1a1a',
                   borderColor: '#4caf50'
                 }
@@ -765,7 +765,7 @@ export const GraphVisualization: React.FC = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip title="Search">
-                    <IconButton 
+                    <IconButton
                       onClick={handleSearch}
                       size="small"
                       sx={{ color: '#4caf50' }}
@@ -774,7 +774,7 @@ export const GraphVisualization: React.FC = () => {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Clear">
-                    <IconButton 
+                    <IconButton
                       onClick={clearAllFilters}
                       size="small"
                       sx={{ color: '#4caf50' }}
@@ -785,7 +785,7 @@ export const GraphVisualization: React.FC = () => {
                 </InputAdornment>
               ),
             }}
-            sx={{ 
+            sx={{
               '& .MuiOutlinedInput-root': {
                 color: 'white',
                 '& fieldset': {
@@ -807,15 +807,15 @@ export const GraphVisualization: React.FC = () => {
 
         {/* Advanced Filters Toggle */}
         <Box sx={{ mb: 2 }}>
-          <Button 
-            variant="outlined" 
+          <Button
+            variant="outlined"
             onClick={() => setFiltersOpen(!filtersOpen)}
             startIcon={<FilterIcon />}
             size="small"
             fullWidth
-            sx={{ 
+            sx={{
               backgroundColor: '#000000',
-              color: '#4caf50', 
+              color: '#4caf50',
               borderColor: '#4caf50',
               '&:hover': {
                 backgroundColor: '#000000',
@@ -831,7 +831,7 @@ export const GraphVisualization: React.FC = () => {
         <Collapse in={filtersOpen}>
           <Box sx={{ mb: 3, p: 2, border: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: 1 }}>
             <Typography variant="subtitle2" sx={{ color: 'white', mb: 2 }}>Advanced Filters</Typography>
-            
+
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* Name Filter */}
               <TextField
@@ -841,7 +841,7 @@ export const GraphVisualization: React.FC = () => {
                 value={nameFilter}
                 onChange={(e) => setNameFilter(e.target.value)}
                 placeholder="Enter name pattern..."
-                sx={{ 
+                sx={{
                   '& .MuiOutlinedInput-root': {
                     color: 'white',
                     '& fieldset': {
@@ -862,7 +862,7 @@ export const GraphVisualization: React.FC = () => {
                   },
                 }}
               />
-              
+
               {/* Tags Filter */}
               <Autocomplete
                 multiple
@@ -871,11 +871,11 @@ export const GraphVisualization: React.FC = () => {
                 value={selectedTags}
                 onChange={(_, newValue) => setSelectedTags(newValue)}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Filter by Tags" 
-                    placeholder="Select tags..." 
-                    sx={{ 
+                  <TextField
+                    {...params}
+                    label="Filter by Tags"
+                    placeholder="Select tags..."
+                    sx={{
                       '& .MuiOutlinedInput-root': {
                         color: 'white',
                         '& fieldset': {
@@ -905,7 +905,7 @@ export const GraphVisualization: React.FC = () => {
                   ))
                 }
               />
-              
+
               {/* Regions Filter */}
               <Autocomplete
                 multiple
@@ -914,11 +914,11 @@ export const GraphVisualization: React.FC = () => {
                 value={selectedRegions}
                 onChange={(_, newValue) => setSelectedRegions(newValue)}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Filter by Region" 
-                    placeholder="Select regions..." 
-                    sx={{ 
+                  <TextField
+                    {...params}
+                    label="Filter by Region"
+                    placeholder="Select regions..."
+                    sx={{
                       '& .MuiOutlinedInput-root': {
                         color: 'white',
                         '& fieldset': {
@@ -949,7 +949,7 @@ export const GraphVisualization: React.FC = () => {
                   ))
                 }
               />
-              
+
               {/* Resource Groups Filter */}
               <Autocomplete
                 multiple
@@ -958,11 +958,11 @@ export const GraphVisualization: React.FC = () => {
                 value={selectedResourceGroups}
                 onChange={(_, newValue) => setSelectedResourceGroups(newValue)}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Filter by Resource Group" 
-                    placeholder="Select resource groups..." 
-                    sx={{ 
+                  <TextField
+                    {...params}
+                    label="Filter by Resource Group"
+                    placeholder="Select resource groups..."
+                    sx={{
                       '& .MuiOutlinedInput-root': {
                         color: 'white',
                         '& fieldset': {
@@ -993,7 +993,7 @@ export const GraphVisualization: React.FC = () => {
                   ))
                 }
               />
-              
+
               {/* Subscriptions Filter */}
               <Autocomplete
                 multiple
@@ -1002,11 +1002,11 @@ export const GraphVisualization: React.FC = () => {
                 value={selectedSubscriptions}
                 onChange={(_, newValue) => setSelectedSubscriptions(newValue)}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    label="Filter by Subscription" 
-                    placeholder="Select subscriptions..." 
-                    sx={{ 
+                  <TextField
+                    {...params}
+                    label="Filter by Subscription"
+                    placeholder="Select subscriptions..."
+                    sx={{
                       '& .MuiOutlinedInput-root': {
                         color: 'white',
                         '& fieldset': {
@@ -1094,7 +1094,7 @@ export const GraphVisualization: React.FC = () => {
       </Paper>
 
       {/* Legend Panel - Inline Compact */}
-      <Paper sx={{ 
+      <Paper sx={{
         width: '180px',
         p: 1.5,
         mr: 1,
@@ -1103,20 +1103,20 @@ export const GraphVisualization: React.FC = () => {
         overflowY: 'auto'
       }}>
         <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.85rem', color: '#4caf50' }}>Legend</Typography>
-        
+
         {/* Node Types */}
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Nodes</Typography>
         <Box sx={{ mb: 1, mt: 0.5 }}>
           {Object.entries(NODE_COLORS).slice(0, 10).map(([type, color]) => {
             const isVisible = visibleNodeTypes.has(type);
             return (
-              <Box 
-                key={type} 
+              <Box
+                key={type}
                 onClick={() => toggleNodeType(type)}
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5, 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
                   mb: 0.25,
                   cursor: 'pointer',
                   opacity: isVisible ? 1 : 0.4,
@@ -1125,9 +1125,9 @@ export const GraphVisualization: React.FC = () => {
                   }
                 }}
               >
-                <Box sx={{ 
-                  width: 10, 
-                  height: 10, 
+                <Box sx={{
+                  width: 10,
+                  height: 10,
                   borderRadius: '50%',
                   backgroundColor: color,
                   flexShrink: 0,
@@ -1140,20 +1140,20 @@ export const GraphVisualization: React.FC = () => {
             );
           })}
         </Box>
-        
+
         {/* Edge Types */}
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', mt: 1 }}>Edges</Typography>
         <Box sx={{ mt: 0.5 }}>
           {Object.entries(EDGE_STYLES).slice(0, 8).map(([type, style]) => {
             const isVisible = visibleEdgeTypes.has(type);
             return (
-              <Box 
-                key={type} 
+              <Box
+                key={type}
                 onClick={() => toggleEdgeType(type)}
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5, 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
                   mb: 0.25,
                   cursor: 'pointer',
                   opacity: isVisible ? 1 : 0.4,
@@ -1162,9 +1162,9 @@ export const GraphVisualization: React.FC = () => {
                   }
                 }}
               >
-                <Box sx={{ 
-                  width: 16, 
-                  height: 2, 
+                <Box sx={{
+                  width: 16,
+                  height: 2,
                   backgroundColor: style.color || '#888',
                   flexShrink: 0,
                   border: isVisible ? '1px solid #4caf50' : 'none'
@@ -1177,48 +1177,48 @@ export const GraphVisualization: React.FC = () => {
           })}
         </Box>
       </Paper>
-      
+
       {/* Graph container */}
       <Paper sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {loading && (
-          <Box sx={{ 
-            position: 'absolute', 
-            top: '50%', 
-            left: '50%', 
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
             transform: 'translate(-50%, -50%)',
             zIndex: 10
           }}>
             <CircularProgress />
           </Box>
         )}
-        
+
         {error && (
           <Alert severity="error" sx={{ m: 2 }}>
             {error}
           </Alert>
         )}
-        
+
         {/* Floating stats */}
         {graphData && (
-          <Box sx={{ 
-            position: 'absolute', 
-            top: 10, 
-            left: 10, 
+          <Box sx={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
             zIndex: 5,
             display: 'flex',
             gap: 2,
             pointerEvents: 'none'
           }}>
-            <Typography sx={{ 
-              color: '#4caf50', 
+            <Typography sx={{
+              color: '#4caf50',
               fontSize: '0.85rem',
               fontWeight: 'medium',
               textShadow: '0 1px 2px rgba(0,0,0,0.5)'
             }}>
               {graphData.stats.nodeCount.toLocaleString()} nodes
             </Typography>
-            <Typography sx={{ 
-              color: '#4caf50', 
+            <Typography sx={{
+              color: '#4caf50',
               fontSize: '0.85rem',
               fontWeight: 'medium',
               textShadow: '0 1px 2px rgba(0,0,0,0.5)'
@@ -1227,11 +1227,11 @@ export const GraphVisualization: React.FC = () => {
             </Typography>
           </Box>
         )}
-        
+
         <Box
           ref={containerRef}
-          sx={{ 
-            width: '100%', 
+          sx={{
+            width: '100%',
             height: '100%',
             backgroundColor: '#000000'
           }}
@@ -1249,10 +1249,10 @@ export const GraphVisualization: React.FC = () => {
           <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">Node Details</Typography>
-              <IconButton onClick={() => setDetailsOpen(false)} sx={{ 
-                color: '#4caf50', 
+              <IconButton onClick={() => setDetailsOpen(false)} sx={{
+                color: '#4caf50',
                 backgroundColor: '#000000',
-                '&:hover': { 
+                '&:hover': {
                   backgroundColor: '#000000',
                   filter: 'brightness(1.2)'
                 }
@@ -1260,39 +1260,39 @@ export const GraphVisualization: React.FC = () => {
                 <CloseIcon />
               </IconButton>
             </Box>
-            
+
             <List>
               <ListItem>
-                <ListItemText 
-                  primary="ID" 
+                <ListItemText
+                  primary="ID"
                   secondary={selectedNode.id}
                   secondaryTypographyProps={{ style: { wordBreak: 'break-all' } }}
                 />
               </ListItem>
-              
+
               <ListItem>
-                <ListItemText 
-                  primary="Type" 
+                <ListItemText
+                  primary="Type"
                   secondary={selectedNode.labels?.join(', ') || 'Unknown'}
                 />
               </ListItem>
-              
+
               <Divider />
-              
+
               <ListItem>
                 <ListItemText primary="Properties" />
               </ListItem>
-              
+
               {selectedNode.properties && Object.entries(selectedNode.properties).map(([key, value]) => (
                 <ListItem key={key} sx={{ pl: 4 }}>
-                  <ListItemText 
+                  <ListItemText
                     primary={key}
                     secondary={typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
                     secondaryTypographyProps={{ style: { wordBreak: 'break-all' } }}
                   />
                 </ListItem>
               ))}
-              
+
               {selectedNode.connections && selectedNode.connections.length > 0 && (
                 <>
                   <Divider />
@@ -1324,10 +1324,10 @@ export const GraphVisualization: React.FC = () => {
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6">Graph Legend</Typography>
-            <IconButton onClick={() => setLegendOpen(false)} sx={{ 
-              color: '#4caf50', 
+            <IconButton onClick={() => setLegendOpen(false)} sx={{
+              color: '#4caf50',
               backgroundColor: '#000000',
-              '&:hover': { 
+              '&:hover': {
                 backgroundColor: '#000000',
                 filter: 'brightness(1.2)'
               }
@@ -1335,12 +1335,12 @@ export const GraphVisualization: React.FC = () => {
               <CloseIcon />
             </IconButton>
           </Box>
-          
+
           {/* Edge Types Legend */}
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 2, fontWeight: 'bold' }}>
             Edge Types
           </Typography>
-          
+
           <List dense>
             {Object.entries(EDGE_STYLES).filter(([type]) => type !== 'Default').map(([type, style]) => {
               const markerId = `arrowhead-${type.toLowerCase()}`;
@@ -1377,7 +1377,7 @@ export const GraphVisualization: React.FC = () => {
                         />
                       </svg>
                     </Box>
-                    
+
                     {/* Type name and description */}
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2" fontWeight="medium">
@@ -1399,7 +1399,7 @@ export const GraphVisualization: React.FC = () => {
           <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 2, fontWeight: 'bold' }}>
             Node Types
           </Typography>
-          
+
           <List dense>
             {Object.entries(NODE_COLORS).filter(([type]) => type !== 'Default').map(([type, color]) => (
               <ListItem key={type} sx={{ py: 1 }}>

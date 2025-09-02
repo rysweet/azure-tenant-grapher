@@ -17,7 +17,7 @@ The SPA includes a comprehensive graph visualization component that displays the
 
 ### Node and Edge Statistics
 - Display total node count
-- Display total edge count  
+- Display total edge count
 - Show breakdown by node types with counts
 - Show breakdown by edge types with counts
 

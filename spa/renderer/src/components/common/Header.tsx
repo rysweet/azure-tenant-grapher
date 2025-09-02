@@ -28,7 +28,7 @@ const Header: React.FC = () => {
         el.style.backgroundColor = '#000000';
         el.style.backgroundImage = 'none';
       });
-      
+
       const toolbars = document.querySelectorAll('.MuiToolbar-root');
       toolbars.forEach((el: any) => {
         el.style.backgroundColor = '#000000';
@@ -43,9 +43,9 @@ const Header: React.FC = () => {
   }, []);
 
   return (
-    <div 
+    <div
       className="MuiAppBar-root"
-      style={{ 
+      style={{
         backgroundColor: '#000000',
         color: '#ffffff',
         padding: '8px 16px',
@@ -58,13 +58,13 @@ const Header: React.FC = () => {
         boxSizing: 'border-box',
       }}
     >
-      <Typography 
-        variant="h6" 
-        component="div" 
-        style={{ 
-          position: 'absolute', 
-          left: '50%', 
-          transform: 'translateX(-50%)', 
+      <Typography
+        variant="h6"
+        component="div"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
           color: '#ffffff',
           fontSize: '1.25rem',
           fontWeight: 500,
@@ -72,13 +72,13 @@ const Header: React.FC = () => {
       >
         Azure Tenant Grapher
       </Typography>
-      
-      <Box 
-        style={{ 
-          WebkitAppRegion: 'no-drag', 
-          display: 'flex', 
-          gap: '8px', 
-          marginLeft: 'auto' 
+
+      <Box
+        style={{
+          WebkitAppRegion: 'no-drag',
+          display: 'flex',
+          gap: '8px',
+          marginLeft: 'auto'
         }}
       >
         <IconButton size="small" onClick={handleMinimize} sx={{ color: '#ffffff' }}>

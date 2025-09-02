@@ -34,12 +34,12 @@ async function createWindow() {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#1e1e1e',
   };
-  
+
   // Only set icon if it exists
   if (fs.existsSync(iconPath)) {
     windowOptions.icon = iconPath;
   }
-  
+
   mainWindow = new BrowserWindow(windowOptions);
 
   // Set application menu
@@ -75,17 +75,17 @@ async function startMcpServer() {
   const projectRoot = path.join(__dirname, '../../..');
   const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
   const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
-  
+
   console.log('Starting MCP server from:', projectRoot);
-  
+
   // Ensure outputs directory exists
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
   const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
   const outputsDir = path.dirname(pidFile);
-  
+
   try {
     fs.mkdirSync(outputsDir, { recursive: true });
-    
+
     // Clean up any stale PID file
     if (fs.existsSync(pidFile)) {
       try {
@@ -103,7 +103,7 @@ async function startMcpServer() {
       }
       fs.unlinkSync(pidFile);
     }
-    
+
     // Clean up status file
     if (fs.existsSync(statusFile)) {
       fs.unlinkSync(statusFile);
@@ -111,7 +111,7 @@ async function startMcpServer() {
   } catch (err) {
     console.error('Error preparing for MCP server:', err);
   }
-  
+
   // Start MCP server as a persistent service with healthcheck
   // Use the mcp_service module that provides HTTP healthcheck
   mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_service'], {
@@ -133,7 +133,7 @@ async function startMcpServer() {
   }
 
   console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
-  
+
   // Write PID and initial status file
   try {
     fs.writeFileSync(pidFile, mcpServerProcess.pid.toString());
@@ -144,13 +144,13 @@ async function startMcpServer() {
   }
 
   let mcpReady = false;
-  
+
   mcpServerProcess.stdout?.on('data', (data) => {
     const output = data.toString();
     console.log(`MCP Server: ${output}`);
-    
+
     // Check for ready messages - MCP service or healthcheck
-    if (!mcpReady && (output.includes('MCP service is ready') || 
+    if (!mcpReady && (output.includes('MCP service is ready') ||
                       output.includes('Healthcheck available') ||
                       output.includes('healthcheck server running'))) {
       mcpReady = true;
@@ -183,11 +183,11 @@ async function startMcpServer() {
     if (code !== 0) {
       console.error(`MCP server process exited with code ${code}`);
     }
-    
+
     // Clean up PID and status files
     const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
     const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
-    
+
     try {
       if (fs.existsSync(pidFile)) {
         fs.unlinkSync(pidFile);
@@ -198,22 +198,22 @@ async function startMcpServer() {
     } catch (e) {
       console.error('Error cleaning up MCP files:', e);
     }
-    
+
     mcpServerProcess = null;
   });
 }
 
 // Start the backend server
 function startBackendServer() {
-  
+
   const backendPath = path.join(__dirname, '../backend/src/server.js');
   const tsxPath = path.join(__dirname, '../../node_modules/.bin/tsx');
-  
+
   // Check if we're in development mode
   if (process.env.NODE_ENV === 'development' || !require('fs').existsSync(backendPath)) {
     // Use tsx to run TypeScript directly in development
     const backendTsPath = path.join(__dirname, '../backend/src/server.ts');
-    
+
     backendProcess = spawn('npx', ['tsx', backendTsPath], {
       cwd: path.join(__dirname, '..'),
       env: {
@@ -276,15 +276,15 @@ if (process.platform === 'darwin') {
 app.whenReady().then(async () => {
   // Start backend server
   startBackendServer();
-  
+
   // Start MCP server
   await startMcpServer();
-  
+
   // Wait for MCP server to be ready by checking status file
   const projectRoot = path.join(__dirname, '../../..');
   const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
   let mcpAttempts = 0;
-  
+
   console.log('Waiting for MCP server to be ready...');
   while (mcpAttempts < 20) { // Wait up to 10 seconds
     if (fs.existsSync(statusFile)) {
@@ -297,14 +297,14 @@ app.whenReady().then(async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     mcpAttempts++;
   }
-  
+
   if (mcpAttempts >= 20) {
     console.warn('MCP server may not be fully ready yet');
   }
-  
+
   // Initialize process manager
   processManager = new ProcessManager();
-  
+
   // Forward ProcessManager events to renderer
   processManager.on('output', (data) => {
     console.log('[Main] Forwarding output event:', data);
@@ -312,24 +312,24 @@ app.whenReady().then(async () => {
       mainWindow.webContents.send('process:output', data);
     }
   });
-  
+
   processManager.on('process:exit', (data) => {
     console.log('[Main] Forwarding exit event:', data);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('process:exit', data);
     }
   });
-  
+
   processManager.on('process:error', (data) => {
     console.log('[Main] Forwarding error event:', data);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('process:error', data);
     }
   });
-  
+
   // Setup IPC handlers
   setupIPCHandlers(processManager);
-  
+
   // Create the main window after a short delay to ensure backend is starting
   setTimeout(async () => {
     await createWindow();
@@ -345,12 +345,12 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   // Cleanup all processes
   processManager.cleanup();
-  
+
   // Stop backend server
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
   }
-  
+
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
@@ -360,7 +360,7 @@ app.on('window-all-closed', () => {
       fs.unlinkSync(pidFile);
     }
   }
-  
+
   // Always quit the app when the window is closed
   // This is a single-window application, so we want it to fully quit
   app.quit();
@@ -372,12 +372,12 @@ app.on('before-quit', (event) => {
     event.preventDefault();
     processManager.cleanup().then(() => app.quit());
   }
-  
+
   // Stop backend server
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
   }
-  
+
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');

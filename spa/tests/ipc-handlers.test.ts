@@ -38,12 +38,12 @@ describe('IPC Handlers', () => {
   beforeEach(() => {
     handlers = new Map();
     processManager = new ProcessManager();
-    
+
     // Capture IPC handlers
     (ipcMain.handle as jest.Mock).mockImplementation((channel, handler) => {
       handlers.set(channel, handler);
     });
-    
+
     setupIPCHandlers(processManager);
   });
 
@@ -173,9 +173,9 @@ describe('IPC Handlers', () => {
       const Store = require('electron-store');
       const mockStore = new Store();
       mockStore.get.mockReturnValue('test-value');
-      
+
       const result = await handler(null, 'test-key');
-      
+
       // The actual implementation creates its own store instance
       // so we can't directly assert on our mock
       expect(result).toBeDefined();
@@ -184,21 +184,21 @@ describe('IPC Handlers', () => {
     it('should handle config:set', async () => {
       const handler = handlers.get('config:set');
       const result = await handler(null, 'test-key', 'test-value');
-      
+
       expect(result).toEqual({ success: true });
     });
 
     it('should handle config:delete', async () => {
       const handler = handlers.get('config:delete');
       const result = await handler(null, 'test-key');
-      
+
       expect(result).toEqual({ success: true });
     });
 
     it('should handle config:clear', async () => {
       const handler = handlers.get('config:clear');
       const result = await handler(null);
-      
+
       expect(result).toEqual({ success: true });
     });
   });
@@ -206,22 +206,22 @@ describe('IPC Handlers', () => {
   describe('Environment handlers', () => {
     it('should handle env:get', async () => {
       process.env.TEST_VAR = 'test-value';
-      
+
       const handler = handlers.get('env:get');
       const result = await handler(null, 'TEST_VAR');
-      
+
       expect(result).toBe('test-value');
-      
+
       delete process.env.TEST_VAR;
     });
 
     it('should handle env:getAll', async () => {
       process.env.AZURE_TENANT_ID = 'test-tenant';
       process.env.NEO4J_URI = 'bolt://localhost:7687';
-      
+
       const handler = handlers.get('env:getAll');
       const result = await handler(null);
-      
+
       expect(result).toHaveProperty('AZURE_TENANT_ID', 'test-tenant');
       expect(result).toHaveProperty('NEO4J_URI', 'bolt://localhost:7687');
       expect(result).not.toHaveProperty('SECRET_KEY'); // Should not expose arbitrary env vars

@@ -52,7 +52,7 @@ describe('CLITab', () => {
 
   it('renders CLI interface correctly', () => {
     renderWithContext(<CLITab />);
-    
+
     expect(screen.getByText('Command Builder')).toBeInTheDocument();
     expect(screen.getByText('Terminal Output')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /command/i })).toBeInTheDocument();
@@ -61,17 +61,17 @@ describe('CLITab', () => {
 
   it('allows command selection', async () => {
     renderWithContext(<CLITab />);
-    
+
     const commandSelect = screen.getByRole('combobox', { name: /command/i });
     fireEvent.mouseDown(commandSelect);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Build Graph')).toBeInTheDocument();
       expect(screen.getByText('Generate IaC')).toBeInTheDocument();
     });
-    
+
     fireEvent.click(screen.getByText('Generate IaC'));
-    
+
     await waitFor(() => {
       expect(screen.getByText('Generate Infrastructure-as-Code templates from graph data')).toBeInTheDocument();
     });
@@ -79,14 +79,14 @@ describe('CLITab', () => {
 
   it('shows command arguments when command is selected', async () => {
     renderWithContext(<CLITab />);
-    
+
     const commandSelect = screen.getByRole('combobox', { name: /command/i });
     fireEvent.mouseDown(commandSelect);
-    
+
     await waitFor(() => {
       fireEvent.click(screen.getByText('Build Graph'));
     });
-    
+
     await waitFor(() => {
       expect(screen.getByLabelText(/tenant id/i)).toBeInTheDocument();
       expect(screen.getByText(/Max LLM Threads/)).toBeInTheDocument();
@@ -95,10 +95,10 @@ describe('CLITab', () => {
 
   it('displays command line preview', async () => {
     renderWithContext(<CLITab />);
-    
+
     const tenantIdInput = screen.getByLabelText(/tenant id/i);
     fireEvent.change(tenantIdInput, { target: { value: 'test-tenant' } });
-    
+
     await waitFor(() => {
       expect(screen.getByText(/atg build --tenant-id test-tenant/)).toBeInTheDocument();
     });
@@ -106,10 +106,10 @@ describe('CLITab', () => {
 
   it('shows validation errors for required fields', async () => {
     renderWithContext(<CLITab />);
-    
+
     const executeButton = screen.getByRole('button', { name: /execute/i });
     fireEvent.click(executeButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Missing required arguments/)).toBeInTheDocument();
     });
@@ -117,10 +117,10 @@ describe('CLITab', () => {
 
   it('opens command history dialog', async () => {
     renderWithContext(<CLITab />);
-    
+
     const historyButton = screen.getByLabelText(/command history/i);
     fireEvent.click(historyButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Command History')).toBeInTheDocument();
       expect(screen.getByText('No commands executed yet')).toBeInTheDocument();
@@ -129,10 +129,10 @@ describe('CLITab', () => {
 
   it('handles boolean arguments correctly', async () => {
     renderWithContext(<CLITab />);
-    
+
     const rebuildEdgesCheckbox = screen.getByLabelText(/rebuild edges/i);
     fireEvent.click(rebuildEdgesCheckbox);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/--rebuild-edges/)).toBeInTheDocument();
     });
@@ -140,10 +140,10 @@ describe('CLITab', () => {
 
   it('handles slider arguments', async () => {
     renderWithContext(<CLITab />);
-    
+
     const maxLlmThreadsSlider = screen.getByRole('slider', { name: /max llm threads/i });
     fireEvent.change(maxLlmThreadsSlider, { target: { value: 10 } });
-    
+
     await waitFor(() => {
       expect(screen.getByText(/--max-llm-threads 10/)).toBeInTheDocument();
     });
@@ -158,13 +158,13 @@ describe('CLITab', () => {
     });
 
     renderWithContext(<CLITab />);
-    
+
     const tenantIdInput = screen.getByLabelText(/tenant id/i);
     fireEvent.change(tenantIdInput, { target: { value: 'test-tenant' } });
-    
+
     const copyButton = screen.getByLabelText(/copy command/i);
     fireEvent.click(copyButton);
-    
+
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringContaining('atg build --tenant-id test-tenant')
     );
@@ -172,10 +172,10 @@ describe('CLITab', () => {
 
   it('shows examples for selected command', async () => {
     renderWithContext(<CLITab />);
-    
+
     const examplesSection = screen.getByText('Examples');
     fireEvent.click(examplesSection);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/build --tenant-id contoso.onmicrosoft.com/)).toBeInTheDocument();
     });

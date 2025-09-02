@@ -275,6 +275,7 @@ class RichDashboard:
                 elif key and key.lower() == "g":
                     # Launch the GUI (SPA)
                     import subprocess
+
                     with self.lock:
                         self.log_widget.add_line(
                             "Launching GUI...", style="green", level="info"
@@ -283,47 +284,47 @@ class RichDashboard:
                     try:
                         # Use the atg start command which handles all the setup
                         result = subprocess.run(
-                            ["atg", "start"],
-                            capture_output=True,
-                            text=True
+                            ["atg", "start"], capture_output=True, text=True
                         )
-                        
+
                         if result.returncode == 0:
                             with self.lock:
                                 self.log_widget.add_line(
-                                    "GUI launched successfully! The Electron app should open in a new window.", 
-                                    style="green", 
-                                    level="info"
+                                    "GUI launched successfully! The Electron app should open in a new window.",
+                                    style="green",
+                                    level="info",
                                 )
                                 self.layout["logs"].update(self.render_log_panel())
                         else:
                             with self.lock:
                                 # Parse the output for error messages
-                                error_msg = result.stderr or result.stdout or "Unknown error"
+                                error_msg = (
+                                    result.stderr or result.stdout or "Unknown error"
+                                )
                                 if "already running" in error_msg:
                                     self.log_widget.add_line(
-                                        "GUI is already running. Check your desktop for the Electron window.", 
-                                        style="yellow", 
-                                        level="warning"
+                                        "GUI is already running. Check your desktop for the Electron window.",
+                                        style="yellow",
+                                        level="warning",
                                     )
                                 else:
                                     self.log_widget.add_line(
-                                        f"Failed to launch GUI: {error_msg}", 
-                                        style="red", 
-                                        level="error"
+                                        f"Failed to launch GUI: {error_msg}",
+                                        style="red",
+                                        level="error",
                                     )
                                 self.layout["logs"].update(self.render_log_panel())
                     except FileNotFoundError:
                         with self.lock:
                             self.log_widget.add_line(
-                                "Failed to launch GUI: 'atg' command not found in PATH", 
-                                style="red", 
-                                level="error"
+                                "Failed to launch GUI: 'atg' command not found in PATH",
+                                style="red",
+                                level="error",
                             )
                             self.log_widget.add_line(
-                                "Make sure you're running from the project directory or have installed the CLI", 
-                                style="yellow", 
-                                level="warning"
+                                "Make sure you're running from the project directory or have installed the CLI",
+                                style="yellow",
+                                level="warning",
                             )
                             self.layout["logs"].update(self.render_log_panel())
                     except Exception as e:

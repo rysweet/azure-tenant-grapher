@@ -54,13 +54,13 @@ const GenerateSpecTab: React.FC = () => {
   const handleGenerate = async () => {
     setError(null);
     setGeneratedSpec(''); // Clear previous spec
-    
+
     const args = [];
-    
+
     if (limit) {
       args.push('--limit', limit);
     }
-    
+
     args.push('--format', outputFormat);
 
     try {
@@ -74,11 +74,11 @@ const GenerateSpecTab: React.FC = () => {
 
   const handleSave = async () => {
     if (!generatedSpec) return;
-    
+
     try {
       const extension = outputFormat === 'json' ? 'json' : 'md';
       const defaultFileName = `tenant-spec-${Date.now()}.${extension}`;
-      
+
       const filePath = await window.electronAPI.dialog.saveFile({
         defaultPath: defaultFileName,
         filters: [
@@ -86,7 +86,7 @@ const GenerateSpecTab: React.FC = () => {
           { name: 'All Files', extensions: ['*'] },
         ],
       });
-      
+
       if (filePath) {
         await window.electronAPI.file.write(filePath, generatedSpec);
         // You could show a success message here
@@ -102,13 +102,13 @@ const GenerateSpecTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Generate Anonymized Tenant Specification
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-        
+
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
           <TextField
             label="Resource Limit"
@@ -119,7 +119,7 @@ const GenerateSpecTab: React.FC = () => {
             sx={{ width: 200 }}
             type="number"
           />
-          
+
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Output Format</InputLabel>
             <Select
@@ -131,7 +131,7 @@ const GenerateSpecTab: React.FC = () => {
               <MenuItem value="json">JSON</MenuItem>
             </Select>
           </FormControl>
-          
+
           <Button
             variant="contained"
             startIcon={<RunIcon />}
@@ -140,7 +140,7 @@ const GenerateSpecTab: React.FC = () => {
           >
             {isRunning ? 'Generating...' : 'Generate Spec'}
           </Button>
-          
+
           {generatedSpec && (
             <Button
               variant="outlined"
@@ -152,10 +152,10 @@ const GenerateSpecTab: React.FC = () => {
             </Button>
           )}
         </Box>
-        
+
         {isRunning && <LinearProgress />}
       </Paper>
-      
+
       <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h6">
@@ -164,7 +164,7 @@ const GenerateSpecTab: React.FC = () => {
             {isRunning && ' (Generating...)'}
           </Typography>
         </Box>
-        
+
         <Box sx={{ flex: 1 }}>
           <Editor
             value={generatedSpec || '// Specification will appear here after generation'}
@@ -178,7 +178,7 @@ const GenerateSpecTab: React.FC = () => {
             }}
           />
         </Box>
-        
+
         {output.stderr.length > 0 && (
           <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'error.dark', color: 'error.contrastText' }}>
             <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace' }}>

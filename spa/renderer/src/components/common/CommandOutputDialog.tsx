@@ -80,11 +80,11 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
         scrollback: 1000,
         convertEol: true,
       });
-      
+
       term.open(terminalRef.current);
       term.writeln(`Preparing to execute: ${command} ${args.join(' ')}`);
       term.writeln('');
-      
+
       terminalInstance.current = term;
     }
   }, [open, command, args]);
@@ -119,11 +119,11 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
   useEffect(() => {
     if (open && !processSocket) {
       const socket = io('http://localhost:3001');
-      
+
       socket.on('connect', () => {
         console.log('CommandOutputDialog: Process event socket connected');
       });
-      
+
       socket.on('output', (data: any) => {
         if (data.processId === currentProcessId) {
           data.data.forEach((line: string) => {
@@ -132,23 +132,23 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
           });
         }
       });
-      
+
       socket.on('process-exit', (event: any) => {
         if (event.processId === currentProcessId) {
           const exitMessage = `Process exited with code ${event.code}`;
           const color = event.code === 0 ? '32' : '31'; // Green for success, red for error
           writeToTerminal(exitMessage, color);
           writeToTerminal('');
-          
+
           setIsRunning(false);
           setCurrentProcessId(null);
-          
+
           if (onCommandComplete) {
             onCommandComplete(terminalOutput, event.code);
           }
         }
       });
-      
+
       socket.on('process-error', (event: any) => {
         if (event.processId === currentProcessId) {
           const errorMsg = `Process error: ${event.error}`;
@@ -156,16 +156,16 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
           setIsRunning(false);
           setCurrentProcessId(null);
           setError(errorMsg);
-          
+
           if (onError) {
             onError(errorMsg);
           }
         }
       });
-      
+
       setProcessSocket(socket);
     }
-    
+
     return () => {
       if (processSocket && !open) {
         processSocket.disconnect();
@@ -181,27 +181,27 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
         setIsRunning(true);
         setError(null);
         setTerminalOutput([]);
-        
+
         const commandLine = `${command} ${args.join(' ')}`;
         writeToTerminal(`$ atg ${commandLine}`, '32'); // Green color
-        
+
         try {
           const response = await axios.post('http://localhost:3001/api/execute', {
             command,
             args
           });
-          
+
           const processId = response.data.processId;
           setCurrentProcessId(processId);
-          
+
           writeToTerminal(`Process started with ID: ${processId}`, '36'); // Cyan color
-          
+
         } catch (err: any) {
           const errorMessage = err.response?.data?.error || err.message;
           setError(errorMessage);
           setIsRunning(false);
           writeToTerminal(`Error: ${errorMessage}`, '31'); // Red color
-          
+
           if (onError) {
             onError(errorMessage);
           }

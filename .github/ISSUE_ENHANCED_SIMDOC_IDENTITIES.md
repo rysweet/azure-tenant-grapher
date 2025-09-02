@@ -88,7 +88,7 @@ Please include comprehensive identity and access management details:
    - Scope (management group/subscription/resource group/resource)
    - Assignment type (Direct vs Inherited)
    - PIM eligibility and activation requirements
-   
+
 4. SERVICE PRINCIPALS:
    - Display names following naming standards
    - Application IDs
@@ -203,37 +203,37 @@ class EnhancedTenantCreator(TenantCreator):
         """Parse detailed identity tables from enhanced markdown."""
         # Parse Users table
         users = self.extract_table_data(markdown, "### Users")
-        
+
         # Parse Groups table with membership
         groups = self.extract_table_data(markdown, "### Groups")
-        
+
         # Parse Service Principals
         service_principals = self.extract_table_data(markdown, "### Service Principals")
-        
+
         # Parse RBAC Assignments
         rbac_assignments = self.extract_table_data(markdown, "### RBAC Assignments")
-        
+
         return {
             "users": self.process_users(users),
             "groups": self.process_groups(groups),
             "servicePrincipals": self.process_service_principals(service_principals),
             "rbacAssignments": self.process_rbac_assignments(rbac_assignments)
         }
-    
+
     def create_identity_nodes(self, spec: TenantSpec):
         """Create detailed identity nodes in Neo4j."""
         # Create User nodes with properties
         for user in spec.tenant.users:
             self.create_user_node(user, include_properties=[
-                'department', 'jobTitle', 'manager', 
+                'department', 'jobTitle', 'manager',
                 'accountType', 'licenses', 'mfaStatus'
             ])
-        
+
         # Create Group nodes with membership relationships
         for group in spec.tenant.groups:
             self.create_group_node(group)
             self.create_membership_relationships(group)
-        
+
         # Create RBAC assignment relationships with metadata
         for assignment in spec.tenant.rbac_assignments:
             self.create_rbac_relationship(
@@ -277,13 +277,13 @@ class EnhancedServicePrincipal(ServicePrincipal):
     api_permissions: Optional[List[Dict]] = Field(None, description="API permissions", alias="apiPermissions")
     auth_method: Optional[str] = Field(None, description="Certificate or Secret", alias="authMethod")
     owner_id: Optional[str] = Field(None, description="Owner user/group ID", alias="ownerId")
-    
+
 class EnhancedRBACAssignment(RBACAssignment):
     """Extended RBAC assignment with PIM details."""
     assignment_type: Optional[str] = Field(None, description="Direct or Inherited", alias="assignmentType")
     pim_status: Optional[str] = Field(None, description="Active or Eligible", alias="pimStatus")
     activation_requirements: Optional[Dict] = Field(None, description="PIM activation requirements", alias="activationRequirements")
-    
+
 class ConditionalAccessPolicy(BaseModel):
     """Conditional Access Policy configuration."""
     policy_id: str = Field(..., description="Policy ID", alias="policyId")

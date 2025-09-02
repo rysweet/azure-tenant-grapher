@@ -93,23 +93,23 @@ const GenerateIaCTab: React.FC = () => {
     ];
 
     if (dryRun) args.push('--dry-run');
-    
+
     resourceFilters.forEach(filter => {
       args.push('--filter', filter);
     });
 
     try {
       const result = await window.electronAPI.cli.execute('generate-iac', args);
-      
+
       let outputContent = '';
       let foundOutputPath = false;
-      
+
       const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
           const newContent = data.data.join('\n');
           outputContent += newContent + '\n';
           setTerminalOutput(outputContent);
-          
+
           // Look for output path in the terminal output
           if (!foundOutputPath) {
             const pathMatch = newContent.match(/Generated .* files? in: (.+)/);
@@ -126,7 +126,7 @@ const GenerateIaCTab: React.FC = () => {
           }
         }
       };
-      
+
       window.electronAPI.on('process:output', outputHandler);
 
       const exitHandler = (data: ProcessExitData) => {
@@ -140,17 +140,17 @@ const GenerateIaCTab: React.FC = () => {
           } else {
             setError(`Generation failed with exit code ${data.code}`);
           }
-          
+
           // Clean up event listeners
           window.electronAPI.off('process:output', outputHandler);
           window.electronAPI.off('process:exit', exitHandler);
         }
       };
-      
+
       window.electronAPI.on('process:exit', exitHandler);
 
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
-      
+
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
@@ -159,7 +159,7 @@ const GenerateIaCTab: React.FC = () => {
 
   const handleOpenFolder = async () => {
     if (!outputPath) return;
-    
+
     try {
       await window.electronAPI.shell.openPath(outputPath);
     } catch (err: any) {
@@ -184,7 +184,7 @@ const GenerateIaCTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Generate Infrastructure as Code from Graph
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -214,7 +214,7 @@ const GenerateIaCTab: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>Output Format</InputLabel>
@@ -263,7 +263,7 @@ const GenerateIaCTab: React.FC = () => {
                 Add Filter
               </Button>
             </Box>
-            
+
             {resourceFilters.length > 0 && (
               <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {resourceFilters.map(filter => (
@@ -290,7 +290,7 @@ const GenerateIaCTab: React.FC = () => {
               >
                 {isGenerating ? 'Generating...' : 'Generate IaC'}
               </Button>
-              
+
               {outputPath && (
                 <Button
                   variant="outlined"
@@ -309,13 +309,13 @@ const GenerateIaCTab: React.FC = () => {
       <Paper sx={{ flex: 1, minHeight: 0, p: 2 }}>
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {outputPath && (
-            <Alert 
-              severity="success" 
+            <Alert
+              severity="success"
               sx={{ mb: 2 }}
               action={
-                <Button 
-                  color="inherit" 
-                  size="small" 
+                <Button
+                  color="inherit"
+                  size="small"
                   onClick={handleOpenFolder}
                   startIcon={<FolderIcon />}
                 >
@@ -326,9 +326,9 @@ const GenerateIaCTab: React.FC = () => {
               Files generated in: {outputPath}
             </Alert>
           )}
-          <Box sx={{ 
-            flex: 1, 
-            backgroundColor: '#1e1e1e', 
+          <Box sx={{
+            flex: 1,
+            backgroundColor: '#1e1e1e',
             color: '#cccccc',
             fontFamily: 'monospace',
             fontSize: '13px',

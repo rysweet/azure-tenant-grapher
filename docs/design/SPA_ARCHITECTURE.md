@@ -130,17 +130,17 @@ interface IPCChannels {
   // Command execution
   'cli:execute': (command: string, args: string[]) => Promise<ExecutionResult>;
   'cli:cancel': (processId: string) => Promise<void>;
-  
+
   // File operations
   'file:read': (path: string) => Promise<string>;
   'file:write': (path: string, content: string) => Promise<void>;
   'file:dialog': (options: DialogOptions) => Promise<string[]>;
-  
+
   // App lifecycle
   'app:quit': () => void;
   'app:minimize': () => void;
   'app:maximize': () => void;
-  
+
   // Configuration
   'config:get': (key: string) => Promise<any>;
   'config:set': (key: string, value: any) => Promise<void>;
@@ -162,16 +162,16 @@ interface IPCChannels {
 class ProcessPool {
   private processes: Map<string, ChildProcess>;
   private maxConcurrent: number = 5;
-  
+
   async execute(command: CLICommand): Promise<ExecutionResult> {
     const process = spawn('python', ['-m', 'src.cli', ...command.args]);
     this.processes.set(command.id, process);
-    
+
     // Stream output
     process.stdout.on('data', (data) => {
       this.streamToWebSocket(command.id, data);
     });
-    
+
     // Handle completion
     process.on('exit', (code) => {
       this.processes.delete(command.id);
@@ -189,17 +189,17 @@ interface AppState {
   // Current operation
   currentOperation: Operation | null;
   isLoading: boolean;
-  
+
   // Configuration
   config: {
     tenantId: string;
     azureConfig: AzureConfig;
     neo4jConfig: Neo4jConfig;
   };
-  
+
   // Results cache
   results: Map<string, any>;
-  
+
   // UI state
   activeTab: string;
   theme: 'light' | 'dark';

@@ -223,7 +223,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
   const highlightPath = (nodeIds: string[]) => {
     if (!networkRef.current) return;
-    
+
     networkRef.current.selectNodes(nodeIds, false);
     networkRef.current.focus(nodeIds[0], {
       scale: 1,
@@ -269,16 +269,16 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
   return (
     <Paper sx={{ height, position: 'relative', overflow: 'hidden' }}>
-      <div 
+      <div
         ref={containerRef}
         role="img"
         aria-label={`Interactive graph visualization with ${nodes.length} nodes and ${edges.length} edges`}
         tabIndex={0}
-        style={{ 
-          width: '100%', 
+        style={{
+          width: '100%',
           height: '100%',
           backgroundColor: '#1e1e1e',
-        }} 
+        }}
       />
       {!isInitialized && (
         <Box

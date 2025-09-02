@@ -41,16 +41,16 @@ Keep existing Azure SDK implementation but add Azure MCP as an additional data s
 # src/services/azure_mcp_service.py
 class AzureMCPService:
     """Complement existing discovery with Azure MCP tools."""
-    
+
     def __init__(self):
         self.mcp_client = AzureMCPClient()
-        
+
     async def discover_additional_resources(self):
         """Discover resources that are easier to get via MCP."""
         # Use MCP for complex queries that would require multiple SDK calls
         resources = await self.mcp_client.tools.azure_resources.list_all()
         return self.transform_to_atg_format(resources)
-    
+
     async def get_resource_insights(self, resource_id: str):
         """Get AI-powered insights about a resource."""
         return await self.mcp_client.tools.azure_ai.analyze_resource(resource_id)
@@ -75,7 +75,7 @@ async def monitor_resource_changes(self):
 async def secure_credential_storage(self):
     """Use Azure Key Vault via MCP for credential management."""
     keyvault_tool = self.mcp_client.tools.azure_keyvault
-    
+
     # Store tenant credentials securely
     await keyvault_tool.set_secret(
         vault_name="atg-credentials",
@@ -89,10 +89,10 @@ async def secure_credential_storage(self):
 async def analyze_permissions(self):
     """Use Azure RBAC tool for deep permission analysis."""
     rbac_tool = self.mcp_client.tools.azure_rbac
-    
+
     # Get all role assignments
     assignments = await rbac_tool.list_role_assignments()
-    
+
     # Analyze for over-privileged accounts
     return self.find_permission_risks(assignments)
 ```
@@ -106,10 +106,10 @@ async def natural_language_query(self, query: str):
     """Process natural language queries using Azure MCP + Neo4j."""
     # Use Azure MCP to understand Azure context
     azure_context = await self.mcp_client.understand_query(query)
-    
+
     # Convert to Cypher query
     cypher = self.convert_to_cypher(azure_context)
-    
+
     # Execute against Neo4j
     return await self.neo4j_service.execute(cypher)
 ```
@@ -119,13 +119,13 @@ async def natural_language_query(self, query: str):
 async def ai_threat_analysis(self, resources: List[Resource]):
     """Use Azure AI services via MCP for threat analysis."""
     ai_tool = self.mcp_client.tools.azure_ai_search
-    
+
     # Analyze resources against threat intelligence
     threats = await ai_tool.search_threat_patterns(
         resource_configurations=resources,
         index="azure-threat-intelligence"
     )
-    
+
     return self.generate_threat_report(threats)
 ```
 
@@ -139,9 +139,9 @@ mcp_servers:
     type: "Azure MCP Server"
     purpose: "Azure service interactions"
     tools: ["azure_resources", "azure_monitor", "azure_keyvault", ...]
-    
+
   neo4j_mcp:
-    type: "ATG Neo4j MCP Server"  
+    type: "ATG Neo4j MCP Server"
     purpose: "Graph database queries"
     tools: ["cypher_query", "graph_analysis", ...]
 ```
@@ -150,11 +150,11 @@ mcp_servers:
 ```python
 class MCPOrchestrator:
     """Orchestrate between multiple MCP servers."""
-    
+
     def __init__(self):
         self.azure_mcp = AzureMCPClient()
         self.neo4j_mcp = Neo4jMCPClient()
-        
+
     async def execute_cross_mcp_workflow(self, workflow: Dict):
         """Execute workflows that span multiple MCP servers."""
         # Example: Discover resources via Azure MCP, store in Neo4j
@@ -166,7 +166,7 @@ class MCPOrchestrator:
 
 ### 1. Resource Discovery Enhancement
 **Current**: Custom pagination logic in `AzureDiscoveryService`
-**With Azure MCP**: 
+**With Azure MCP**:
 ```python
 # Simpler, more reliable discovery
 resources = await azure_mcp.tools.azure_resources.list_all(
@@ -367,7 +367,7 @@ Given ATG's security focus, the Azure MCP integration is particularly valuable f
 
 **Estimated Effort**: 8 weeks (1-2 developers)
 
-**Dependencies**: 
+**Dependencies**:
 - Azure MCP Server (Public Preview)
 - MCP client libraries
 - Azure subscription for testing

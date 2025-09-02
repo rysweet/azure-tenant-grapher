@@ -67,7 +67,7 @@ const CreateTenantTab: React.FC = () => {
       await window.electronAPI.file.write(tempPath, specContent);
 
       const result = await window.electronAPI.cli.execute('create-tenant', ['--spec', tempPath]);
-      
+
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
           setLogs((prev) => [...prev, ...data.data]);
@@ -84,7 +84,7 @@ const CreateTenantTab: React.FC = () => {
           }
         }
       });
-      
+
     } catch (err: any) {
       setError(err.message);
       setIsCreating(false);
@@ -97,7 +97,7 @@ const CreateTenantTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Create a new Tenant in the Graph
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -121,7 +121,7 @@ const CreateTenantTab: React.FC = () => {
           >
             Upload Spec File
           </Button>
-          
+
           <Button
             variant="contained"
             color="primary"
@@ -155,7 +155,7 @@ const CreateTenantTab: React.FC = () => {
             />
           </Box>
         </Paper>
-        
+
         <Box sx={{ flex: 1 }}>
           <LogViewer
             logs={logs}
@@ -164,7 +164,7 @@ const CreateTenantTab: React.FC = () => {
           />
         </Box>
       </Box>
-      
+
       {/* Generate Tenant Specification Dialog */}
       <Dialog
         open={genSimDialogOpen}
@@ -189,7 +189,7 @@ const CreateTenantTab: React.FC = () => {
                 Target company size (approximate number of employees)
               </Typography>
             </FormControl>
-            
+
             <Box>
               <Button
                 variant="outlined"
@@ -226,20 +226,20 @@ const CreateTenantTab: React.FC = () => {
               setIsGenerating(true);
               setError(null);
               setLogs([]);
-              
+
               try {
                 const args = ['--size', companySize.toString()];
                 if (seedFile) {
                   args.push('--seed', seedFile);
                 }
-                
+
                 const result = await window.electronAPI.cli.execute('gensimdoc', args);
-                
+
                 window.electronAPI.on('process:output', (data: any) => {
                   if (data.id === result.data.id) {
                     const output = data.data.join('\n');
                     setLogs((prev) => [...prev, output]);
-                    
+
                     // Check if output contains the generated file path
                     const pathMatch = output.match(/Generated simulation document: (.+\.md)/);
                     if (pathMatch) {
@@ -252,7 +252,7 @@ const CreateTenantTab: React.FC = () => {
                     }
                   }
                 });
-                
+
                 window.electronAPI.on('process:exit', (data: any) => {
                   if (data.id === result.data.id) {
                     setIsGenerating(false);

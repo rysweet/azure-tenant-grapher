@@ -330,22 +330,22 @@ const CLITab: React.FC = () => {
   const { state } = useApp();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
   const [searchParams] = useSearchParams();
-  
+
   // Terminal state
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminalInstance = useRef<Terminal | null>(null);
-  
+
   // Command state
   const [selectedCommand, setSelectedCommand] = useState<string>('build');
   const [commandArgs, setCommandArgs] = useState<Record<string, any>>({});
   const [isRunning, setIsRunning] = useState(false);
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // History state
   const [commandHistory, setCommandHistory] = useState<CommandHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  
+
   // Output state
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [processSocket, setProcessSocket] = useState<Socket | null>(null);
@@ -418,15 +418,15 @@ const CLITab: React.FC = () => {
         scrollback: 1000,
         convertEol: true,
       });
-      
+
       term.open(terminalRef.current);
       term.writeln('Azure Tenant Grapher CLI Interface');
       term.writeln('Select a command and configure its parameters, then click Execute.');
       term.writeln('');
-      
+
       terminalInstance.current = term;
     }
-    
+
     return () => {
       // Don't dispose terminal on unmount - keep it alive
     };
@@ -436,11 +436,11 @@ const CLITab: React.FC = () => {
   useEffect(() => {
     if (isConnected && !processSocket) {
       const socket = io('http://localhost:3001');
-      
+
       socket.on('connect', () => {
         console.log('CLI tab: Process event socket connected');
       });
-      
+
       socket.on('output', (data: any) => {
         if (data.processId === currentProcessId) {
           data.data.forEach((line: string) => {
@@ -449,52 +449,52 @@ const CLITab: React.FC = () => {
           });
         }
       });
-      
+
       socket.on('process-exit', (event: any) => {
         if (event.processId === currentProcessId) {
           const exitMessage = `Process exited with code ${event.code}`;
           const color = event.code === 0 ? '32' : '31'; // Green for success, red for error
           writeToTerminal(exitMessage, color);
-          
+
           setIsRunning(false);
           setCurrentProcessId(null);
-          
+
           // Update history - find the most recent running item for this process
-          setCommandHistory(prev => 
-            prev.map((item, index) => 
+          setCommandHistory(prev =>
+            prev.map((item, index) =>
               index === 0 && item.status === 'running'
                 ? { ...item, status: event.code === 0 ? 'completed' : 'error' }
                 : item
             )
           );
-          
+
           unsubscribeFromProcess(event.processId);
         }
       });
-      
+
       socket.on('process-error', (event: any) => {
         if (event.processId === currentProcessId) {
           writeToTerminal(`Process error: ${event.error}`, '31'); // Red color
           setIsRunning(false);
           setCurrentProcessId(null);
           setError(`Process error: ${event.error}`);
-          
+
           // Update history - find the most recent running item for this process
-          setCommandHistory(prev => 
-            prev.map((item, index) => 
+          setCommandHistory(prev =>
+            prev.map((item, index) =>
               index === 0 && item.status === 'running'
                 ? { ...item, status: 'error' }
                 : item
             )
           );
-          
+
           unsubscribeFromProcess(event.processId);
         }
       });
-      
+
       setProcessSocket(socket);
     }
-    
+
     return () => {
       if (processSocket) {
         processSocket.disconnect();
@@ -525,7 +525,7 @@ const CLITab: React.FC = () => {
       if (commandExists) {
         // Set the command and execute it automatically
         setSelectedCommand(autoCommand);
-        
+
         // Clear any existing args and set defaults
         const defaults: Record<string, any> = {};
         commandExists.args.forEach(arg => {
@@ -534,11 +534,11 @@ const CLITab: React.FC = () => {
           }
         });
         setCommandArgs(defaults);
-        
+
         // Execute after a short delay to ensure everything is initialized
         const timeoutId = setTimeout(() => {
           writeToTerminal(`Auto-executing command: atg ${autoCommand}`, '36'); // Cyan color
-          
+
           // Execute the command inline to avoid circular dependency
           const args: string[] = [];
           commandExists.args.forEach(argDef => {
@@ -553,10 +553,10 @@ const CLITab: React.FC = () => {
               }
             }
           });
-          
+
           const commandLine = `${commandExists.name} ${args.join(' ')}`;
           writeToTerminal(`$ atg ${commandLine}`, '32'); // Green color
-          
+
           // Add to history
           const historyItem = {
             id: `${Date.now()}-${Math.random()}`,
@@ -567,7 +567,7 @@ const CLITab: React.FC = () => {
           };
           setCommandHistory(prev => [historyItem, ...prev]);
           setIsRunning(true);
-          
+
           // Execute via backend API
           axios.post('http://localhost:3001/api/execute', {
             command: commandExists.name,
@@ -582,8 +582,8 @@ const CLITab: React.FC = () => {
             setError(errorMessage);
             setIsRunning(false);
             writeToTerminal(`Error: ${errorMessage}`, '31'); // Red color
-            setCommandHistory(prev => 
-              prev.map((item, index) => 
+            setCommandHistory(prev =>
+              prev.map((item, index) =>
                 index === 0 && item.status === 'running'
                   ? { ...item, status: 'error' as const }
                   : item
@@ -591,7 +591,7 @@ const CLITab: React.FC = () => {
             );
           });
         }, 500);
-        
+
         return () => clearTimeout(timeoutId);
       }
     }
@@ -608,7 +608,7 @@ const CLITab: React.FC = () => {
     setSelectedCommand(newCommand);
     setCommandArgs({});
     setError(null);
-    
+
     // Set default values for the new command
     const commandDef = CLI_COMMANDS.find(cmd => cmd.name === newCommand);
     if (commandDef) {
@@ -634,12 +634,12 @@ const CLITab: React.FC = () => {
   const buildCommandLine = (): string[] => {
     const commandDef = getSelectedCommandDef();
     if (!commandDef) return [];
-    
+
     const args: string[] = [];
-    
+
     commandDef.args.forEach(argDef => {
       const value = commandArgs[argDef.name];
-      
+
       if (value !== undefined && value !== null && value !== '') {
         if (argDef.type === 'boolean') {
           if (value === true) {
@@ -650,7 +650,7 @@ const CLITab: React.FC = () => {
         }
       }
     });
-    
+
     return args;
   };
 
@@ -679,13 +679,13 @@ const CLITab: React.FC = () => {
 
     setError(null);
     setIsRunning(true);
-    
+
     const args = buildCommandLine();
     const commandLine = `${commandDef.name} ${args.join(' ')}`;
-    
+
     // Write command to terminal
     writeToTerminal(`$ atg ${commandLine}`, '32'); // Green color
-    
+
     // Add to history
     const historyItem: CommandHistoryItem = {
       id: `${Date.now()}-${Math.random()}`,
@@ -702,23 +702,23 @@ const CLITab: React.FC = () => {
         command: commandDef.name,
         args: args
       });
-      
+
       const processId = response.data.processId;
       setCurrentProcessId(processId);
-      
+
       writeToTerminal(`Process started with ID: ${processId}`, '36'); // Cyan color
-      
+
       // Subscribe to process output
       subscribeToProcess(processId);
-      
+
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.message;
       setError(errorMessage);
       setIsRunning(false);
       writeToTerminal(`Error: ${errorMessage}`, '31'); // Red color
-      
-      setCommandHistory(prev => 
-        prev.map((item, index) => 
+
+      setCommandHistory(prev =>
+        prev.map((item, index) =>
           index === 0 && item.status === 'running'
             ? { ...item, status: 'error' }
             : item
@@ -752,17 +752,17 @@ const CLITab: React.FC = () => {
   // Load command from history
   const loadFromHistory = (historyItem: CommandHistoryItem) => {
     setSelectedCommand(historyItem.command);
-    
+
     // Reconstruct args object from command line args
     const newArgs: Record<string, any> = {};
     const commandDef = CLI_COMMANDS.find(cmd => cmd.name === historyItem.command);
-    
+
     if (commandDef) {
       for (let i = 0; i < historyItem.args.length; i += 2) {
         const argName = historyItem.args[i].replace('--', '');
         const argValue = historyItem.args[i + 1];
         const argDef = commandDef.args.find(a => a.name === argName);
-        
+
         if (argDef) {
           if (argDef.type === 'boolean') {
             newArgs[argName] = true;
@@ -774,7 +774,7 @@ const CLITab: React.FC = () => {
         }
       }
     }
-    
+
     setCommandArgs(newArgs);
     setShowHistory(false);
   };
@@ -921,7 +921,7 @@ const CLITab: React.FC = () => {
                         size="small"
                         label={arg.label}
                         value={commandArgs[arg.name] || ''}
-                        onChange={(e) => handleArgChange(arg.name, 
+                        onChange={(e) => handleArgChange(arg.name,
                           arg.type === 'number' ? parseInt(e.target.value, 10) || '' : e.target.value
                         )}
                         type={arg.type === 'number' ? 'number' : 'text'}

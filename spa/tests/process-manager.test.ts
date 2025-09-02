@@ -11,7 +11,7 @@ describe('ProcessManager', () => {
 
   beforeEach(() => {
     processManager = new ProcessManager();
-    
+
     // Create mock process
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
@@ -19,7 +19,7 @@ describe('ProcessManager', () => {
     mockProcess.kill = jest.fn();
     mockProcess.killed = false;
     mockProcess.pid = 12345;
-    
+
     // Mock spawn
     (spawn as jest.Mock).mockReturnValue(mockProcess);
   });
@@ -31,15 +31,15 @@ describe('ProcessManager', () => {
   describe('execute', () => {
     it('should execute a command successfully', async () => {
       const executePromise = processManager.execute('build', ['--tenant-id', 'test']);
-      
+
       // Simulate successful execution
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('Building graph...\n'));
         mockProcess.emit('exit', 0);
       }, 10);
-      
+
       const result = await executePromise;
-      
+
       expect(result).toHaveProperty('id');
       expect(result.output).toContain('Building graph...');
       expect(result.exitCode).toBe(0);
@@ -57,22 +57,22 @@ describe('ProcessManager', () => {
 
     it('should handle command failure', async () => {
       const executePromise = processManager.execute('build', ['--invalid']);
-      
+
       // Simulate failure
       setTimeout(() => {
         mockProcess.stderr.emit('data', Buffer.from('Error: Invalid argument\n'));
         mockProcess.emit('exit', 1);
       }, 10);
-      
+
       await expect(executePromise).rejects.toThrow('Process failed with exit code 1');
     });
 
     it('should emit output events', (done) => {
       const outputData: any[] = [];
-      
+
       processManager.on('output', (data) => {
         outputData.push(data);
-        
+
         if (outputData.length === 2) {
           expect(outputData[0]).toMatchObject({
             type: 'stdout',
@@ -85,9 +85,9 @@ describe('ProcessManager', () => {
           done();
         }
       });
-      
+
       processManager.execute('test', []);
-      
+
       // Emit test data
       mockProcess.stdout.emit('data', Buffer.from('stdout line\n'));
       mockProcess.stderr.emit('data', Buffer.from('stderr line\n'));
@@ -97,21 +97,21 @@ describe('ProcessManager', () => {
   describe('cancel', () => {
     it('should cancel a running process', async () => {
       const executePromise = processManager.execute('build', []);
-      
+
       // Get process ID from the execute call
       setTimeout(async () => {
         const processes = processManager.listProcesses();
         expect(processes).toHaveLength(1);
-        
+
         await processManager.cancel(processes[0].id);
         expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
       }, 10);
-      
+
       // Simulate process termination after cancel
       setTimeout(() => {
         mockProcess.emit('exit', -1);
       }, 20);
-      
+
       await expect(executePromise).rejects.toThrow();
     });
 
@@ -121,14 +121,14 @@ describe('ProcessManager', () => {
 
     it('should throw error for non-running process', async () => {
       const executePromise = processManager.execute('test', []);
-      
+
       // Complete the process
       setTimeout(() => {
         mockProcess.emit('exit', 0);
       }, 10);
-      
+
       await executePromise;
-      
+
       const processes = processManager.listProcesses();
       await expect(processManager.cancel(processes[0].id)).rejects.toThrow('is not running');
     });
@@ -139,14 +139,14 @@ describe('ProcessManager', () => {
       // Start multiple processes
       processManager.execute('test1', []);
       processManager.execute('test2', []);
-      
+
       // Allow processes to start
       await new Promise(resolve => setTimeout(resolve, 10));
-      
+
       expect(processManager.listProcesses()).toHaveLength(2);
-      
+
       await processManager.cleanup();
-      
+
       expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
       expect(processManager.isCleanedUp()).toBe(true);
       expect(processManager.listProcesses()).toHaveLength(0);
@@ -154,12 +154,12 @@ describe('ProcessManager', () => {
 
     it('should force kill stubborn processes', async () => {
       processManager.execute('test', []);
-      
+
       // Mock process that doesn't die
       mockProcess.killed = false;
-      
+
       await processManager.cleanup();
-      
+
       expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
       // Should attempt SIGKILL after timeout
       expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
@@ -170,19 +170,19 @@ describe('ProcessManager', () => {
     it('should stream output for specific process', (done) => {
       processManager.execute('test', []).then(id => {
         const processId = id.id;
-        
+
         let callCount = 0;
         const unsubscribe = processManager.streamOutput(processId, (data) => {
           callCount++;
           expect(data.id).toBe(processId);
-          
+
           if (callCount === 2) {
             unsubscribe();
             done();
           }
         });
       });
-      
+
       // Emit output events
       setTimeout(() => {
         mockProcess.stdout.emit('data', Buffer.from('line1\n'));
@@ -195,23 +195,23 @@ describe('ProcessManager', () => {
   describe('getStatus', () => {
     it('should return process status', async () => {
       const executePromise = processManager.execute('test', ['--arg']);
-      
+
       // Allow process to start
       await new Promise(resolve => setTimeout(resolve, 10));
-      
+
       const processes = processManager.listProcesses();
       const status = processManager.getStatus(processes[0].id);
-      
+
       expect(status).toMatchObject({
         command: 'test',
         args: ['--arg'],
         status: 'running',
       });
-      
+
       // Complete the process
       mockProcess.emit('exit', 0);
       await executePromise;
-      
+
       const finalStatus = processManager.getStatus(processes[0].id);
       expect(finalStatus?.status).toBe('completed');
       expect(finalStatus?.exitCode).toBe(0);
