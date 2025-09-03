@@ -14,6 +14,7 @@ import click
 from neo4j import Driver  # type: ignore
 
 from ..config_manager import create_neo4j_config_from_env
+from ..deployment_registry import DeploymentRegistry
 from ..utils.session_manager import create_session_manager
 from .emitters import get_emitter
 from .engine import TransformationEngine
@@ -152,6 +153,29 @@ async def generate_iac_command_handler(
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
             click.echo(f"  📄 {path}")
+        
+        # Register deployment if not a dry run
+        if not dry_run:
+            registry = DeploymentRegistry()
+            
+            # Count resources by type
+            resource_counts = {}
+            for resource in graph.resources:
+                rtype = resource.get("type", "unknown")
+                resource_counts[rtype] = resource_counts.get(rtype, 0) + 1
+            
+            # Determine tenant from environment
+            tenant_name = "tenant-1"  # Default, could be enhanced with --tenant flag
+            
+            deployment_id = registry.register_deployment(
+                directory=str(out_dir),
+                tenant=tenant_name,
+                resources=resource_counts,
+                terraform_version=None  # Could detect this
+            )
+            
+            click.echo(f"📝 Registered deployment: {deployment_id}")
+            click.echo("   Use 'atg undeploy' to destroy these resources")
 
         return 0
 

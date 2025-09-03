@@ -694,6 +694,12 @@ cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
 
+# Import and add undeploy command
+from src.commands.undeploy import undeploy
+from src.commands.list_deployments import list_deployments
+cli.add_command(undeploy, "undeploy")
+cli.add_command(list_deployments, "list-deployments")
+
 
 @cli.command()
 @click.option(

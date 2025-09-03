@@ -589,3 +589,35 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
         logger.exception(f"❌ Neo4j-only configuration validation failed: {e}")
         raise
     return config
+
+
+def get_config_for_tenant(tenant_num: int) -> dict:
+    """Get configuration for a specific tenant.
+    
+    Args:
+        tenant_num: Tenant number (1 or 2)
+        
+    Returns:
+        Dictionary with tenant configuration
+    """
+    if tenant_num not in [1, 2]:
+        raise ValueError(f"Invalid tenant number: {tenant_num}")
+    
+    prefix = f"AZURE_TENANT_{tenant_num}_"
+    
+    config = {
+        "tenant_id": os.getenv(f"{prefix}ID", ""),
+        "client_id": os.getenv(f"{prefix}CLIENT_ID", ""),
+        "client_secret": os.getenv(f"{prefix}CLIENT_SECRET", ""),
+        "subscription_id": os.getenv(f"{prefix}SUBSCRIPTION_ID", os.getenv("AZURE_SUBSCRIPTION_ID", ""))
+    }
+    
+    # Validate required fields
+    if not config["tenant_id"]:
+        raise ValueError(f"Missing {prefix}ID environment variable")
+    if not config["client_id"]:
+        raise ValueError(f"Missing {prefix}CLIENT_ID environment variable")
+    if not config["client_secret"]:
+        raise ValueError(f"Missing {prefix}CLIENT_SECRET environment variable")
+    
+    return config
