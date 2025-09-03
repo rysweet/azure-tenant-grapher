@@ -1697,13 +1697,13 @@ async def mcp_query_command(
     """
     Execute natural language queries using MCP (Model Context Protocol).
     
-    This command allows natural language interaction with Azure resources
-    via MCP, with automatic fallback to traditional API methods when MCP
-    is unavailable.
+    This command ensures MCP server is running and executes natural language
+    queries against Azure resources.
     """
     from src.config_manager import MCPConfig, create_config_from_env
     from src.services.mcp_integration import MCPIntegrationService
     from src.services.azure_discovery_service import AzureDiscoveryService
+    from src.utils.mcp_startup import ensure_mcp_running_async
     
     # Set up logging
     log_level = ctx.obj.get("log_level", "INFO")
@@ -1726,9 +1726,17 @@ async def mcp_query_command(
     # Check if MCP is configured
     if not config.mcp.enabled:
         click.echo("ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable.")
-        if not use_fallback:
-            click.echo("❌ MCP required but not enabled. Exiting.")
-            sys.exit(1)
+        click.echo("❌ MCP is required for natural language queries. Please enable it first.")
+        sys.exit(1)
+    
+    # Ensure MCP server is running
+    click.echo("🚀 Ensuring MCP server is running...")
+    try:
+        await ensure_mcp_running_async(debug=debug)
+        click.echo("✅ MCP server is ready")
+    except RuntimeError as e:
+        click.echo(f"❌ Failed to start MCP server: {e}", err=True)
+        sys.exit(1)
     
     # Initialize services
     discovery_service = None
@@ -1737,19 +1745,21 @@ async def mcp_query_command(
             discovery_service = AzureDiscoveryService(config)
             click.echo("✅ Traditional discovery service initialized as fallback")
         except Exception as e:
-            click.echo(f"⚠️  Warning: Could not initialize fallback discovery: {e}")
+            click.echo(f"⚠️  Warning: Could not initialize discovery service: {e}")
     
     mcp_service = MCPIntegrationService(config.mcp, discovery_service)
     
     try:
-        # Initialize MCP connection
+        # Connect to MCP
         click.echo(f"🔌 Connecting to MCP at {config.mcp.endpoint}...")
         connected = await mcp_service.initialize()
         
-        if connected:
-            click.echo("✅ MCP connection established")
-        else:
-            click.echo("⚠️  MCP connection failed, using fallback methods")
+        if not connected:
+            click.echo("❌ MCP connection failed after server startup", err=True)
+            click.echo("Please check the MCP server logs for errors.")
+            sys.exit(1)
+        
+        click.echo("✅ MCP connection established")
         
         # Execute the query
         click.echo(f"\n📝 Executing query: {query}")
