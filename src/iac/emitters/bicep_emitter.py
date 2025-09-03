@@ -5,6 +5,7 @@ tenant graph data, supporting resource group homing and module pattern.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +16,15 @@ from .base import IaCEmitter
 
 class BicepEmitter(IaCEmitter):
     """Emitter for generating Azure Bicep templates."""
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+        """Initialize BicepEmitter with optional configuration.
+
+        Args:
+            config: Optional emitter-specific configuration
+        """
+        super().__init__(config)
+        self.logger = logging.getLogger(__name__)
 
     def emit(
         self,
@@ -437,7 +447,33 @@ class BicepEmitter(IaCEmitter):
         return "\n".join(lines)
 
     def validate_template(self, template_data: Dict[str, Any]) -> bool:
-        raise NotImplementedError("Bicep template validation not yet implemented")
+        """Validate the Bicep template structure."""
+        # Basic validation for Bicep templates
+        required_fields = ["targetScope", "metadata", "resources"]
+
+        for field in required_fields:
+            if field not in template_data:
+                self.logger.error(f"Missing required field in Bicep template: {field}")
+                return False
+
+        # Validate resources structure
+        if not isinstance(template_data.get("resources"), list):
+            self.logger.error("Resources must be a list in Bicep template")
+            return False
+
+        # Validate each resource has required fields
+        for idx, resource in enumerate(template_data.get("resources", [])):
+            if not isinstance(resource, dict):
+                self.logger.error(f"Resource {idx} is not a dictionary")
+                return False
+
+            if "type" not in resource or "name" not in resource:
+                self.logger.error(
+                    f"Resource {idx} missing required 'type' or 'name' field"
+                )
+                return False
+
+        return True
 
 
 register_emitter("bicep", BicepEmitter)

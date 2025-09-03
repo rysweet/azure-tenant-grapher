@@ -37,7 +37,7 @@ def create_icon():
     try:
         # Try to use a system font
         font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", size=140)
-    except:
+    except OSError:
         # Fallback to default font
         font = ImageFont.load_default()
 

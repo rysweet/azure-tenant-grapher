@@ -389,9 +389,56 @@ app.post('/api/neo4j/stop', async (req, res) => {
  */
 app.get('/api/mcp/status', async (req, res) => {
   try {
-    // Check if MCP pidfile exists
-    const mcpPidfile = path.join(process.cwd(), 'outputs', 'mcp_server.pid');
+    // Check if MCP pidfile exists - use the project root path
+    const projectRoot = path.join(__dirname, '../../..');
+    const mcpPidfile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+    const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
 
+    // First try to check the healthcheck endpoint
+    try {
+      const healthResponse = await fetch('http://localhost:8080/health', {
+        signal: AbortSignal.timeout(1000) // 1 second timeout
+      });
+      if (healthResponse.ok) {
+        // MCP server is running with healthcheck
+        let pid: number | undefined;
+        if (fs.existsSync(mcpPidfile)) {
+          pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
+        }
+        res.json({ running: true, pid, status: 'ready', healthcheck: true });
+        return;
+      }
+    } catch (e) {
+      // Healthcheck failed, fall back to file checks
+    }
+
+    // Check the status file for readiness state
+    if (fs.existsSync(statusFile)) {
+      const status = fs.readFileSync(statusFile, 'utf-8').trim();
+      if (status === 'ready') {
+        // Double-check the PID is still valid
+        if (fs.existsSync(mcpPidfile)) {
+          const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
+          try {
+            process.kill(pid, 0); // Signal 0 checks if process exists
+            res.json({ running: true, pid, status: 'ready' });
+            return;
+          } catch {
+            // Process doesn't exist, clean up files
+            fs.unlinkSync(mcpPidfile);
+            fs.unlinkSync(statusFile);
+            res.json({ running: false });
+            return;
+          }
+        }
+      } else if (status === 'starting') {
+        // MCP is still starting up
+        res.json({ running: false, status: 'starting' });
+        return;
+      }
+    }
+
+    // Fallback to just PID check
     if (fs.existsSync(mcpPidfile)) {
       const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
 
@@ -445,9 +492,16 @@ app.get('/api/config/env', (req, res) => {
     AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || envConfig.AZURE_TENANT_ID || '',
     AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || envConfig.AZURE_CLIENT_ID || '',
     AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || envConfig.AZURE_CLIENT_SECRET || '',
+    NEO4J_PORT: process.env.NEO4J_PORT || envConfig.NEO4J_PORT || '7687',
     NEO4J_URI: process.env.NEO4J_URI || envConfig.NEO4J_URI || 'bolt://localhost:7687',
+    NEO4J_USER: process.env.NEO4J_USER || envConfig.NEO4J_USER || 'neo4j',
     NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || envConfig.NEO4J_PASSWORD || '',
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY || '',
+    LOG_LEVEL: process.env.LOG_LEVEL || envConfig.LOG_LEVEL || 'INFO',
+    AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT || envConfig.AZURE_OPENAI_ENDPOINT || '',
+    AZURE_OPENAI_KEY: process.env.AZURE_OPENAI_KEY || envConfig.AZURE_OPENAI_KEY || '',
+    AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION || envConfig.AZURE_OPENAI_API_VERSION || '2024-02-01',
+    AZURE_OPENAI_MODEL_CHAT: process.env.AZURE_OPENAI_MODEL_CHAT || envConfig.AZURE_OPENAI_MODEL_CHAT || '',
+    AZURE_OPENAI_MODEL_REASONING: process.env.AZURE_OPENAI_MODEL_REASONING || envConfig.AZURE_OPENAI_MODEL_REASONING || '',
     RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || envConfig.RESOURCE_LIMIT || '',
   };
 
@@ -640,22 +694,48 @@ app.get('/api/test/azure', async (req, res) => {
       return res.json({ success: false, error: 'Azure CLI not installed' });
     }
 
-    // Check if we have Azure credentials configured
-    const tenantId = process.env.AZURE_TENANT_ID;
-    const clientId = process.env.AZURE_CLIENT_ID;
-    const clientSecret = process.env.AZURE_CLIENT_SECRET;
-
-    if (!tenantId || !clientId || !clientSecret) {
-      return res.json({ success: false, error: 'Azure credentials not configured' });
-    }
-
-    // Try to authenticate with Azure
+    // Check current Azure authentication status
     try {
-      await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
-      await execPromise('az account show --only-show-errors 2>&1');
-      return res.json({ success: true });
+      const { stdout } = await execPromise('az account show --only-show-errors 2>&1');
+      const account = JSON.parse(stdout);
+
+      // Successfully got account info, we're authenticated
+      return res.json({
+        success: true,
+        accountInfo: {
+          name: account.name,
+          id: account.id,
+          tenantId: account.tenantId,
+          user: account.user?.name || account.user?.type || 'Service Principal'
+        }
+      });
     } catch (error: any) {
-      return res.json({ success: false, error: 'Failed to authenticate with Azure' });
+      // Not authenticated, check if we have service principal credentials to try
+      const tenantId = process.env.AZURE_TENANT_ID;
+      const clientId = process.env.AZURE_CLIENT_ID;
+      const clientSecret = process.env.AZURE_CLIENT_SECRET;
+
+      if (tenantId && clientId && clientSecret) {
+        // Try to authenticate with service principal
+        try {
+          await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
+          const { stdout } = await execPromise('az account show --only-show-errors 2>&1');
+          const account = JSON.parse(stdout);
+          return res.json({
+            success: true,
+            accountInfo: {
+              name: account.name,
+              id: account.id,
+              tenantId: account.tenantId,
+              user: 'Service Principal'
+            }
+          });
+        } catch (loginError: any) {
+          return res.json({ success: false, error: 'Failed to authenticate with service principal' });
+        }
+      } else {
+        return res.json({ success: false, error: 'Not authenticated with Azure CLI' });
+      }
     }
   } catch (error: any) {
     logger.error('Azure connection test failed:', error);
@@ -664,38 +744,191 @@ app.get('/api/test/azure', async (req, res) => {
 });
 
 /**
- * Test OpenAI connection
+ * Test Azure OpenAI connection
  */
-app.get('/api/test/openai', async (req, res) => {
+app.get('/api/test/azure-openai', async (req, res) => {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+    const apiKey = process.env.AZURE_OPENAI_KEY;
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-01';
+    const modelChat = process.env.AZURE_OPENAI_MODEL_CHAT;
+    const modelReasoning = process.env.AZURE_OPENAI_MODEL_REASONING;
 
-    if (!apiKey) {
-      return res.json({ success: false, error: 'OpenAI API key not configured' });
+    logger.debug('Azure OpenAI config check:', {
+      endpoint: endpoint ? 'SET' : 'NOT SET',
+      apiKey: apiKey ? 'SET' : 'NOT SET',
+      apiVersion,
+      modelChat: modelChat || 'NOT SET',
+      modelReasoning: modelReasoning || 'NOT SET'
+    });
+
+    if (!endpoint || !apiKey) {
+      const missing = [];
+      if (!endpoint) missing.push('AZURE_OPENAI_ENDPOINT');
+      if (!apiKey) missing.push('AZURE_OPENAI_KEY');
+      return res.json({
+        success: false,
+        error: `Azure OpenAI not configured. Missing: ${missing.join(', ')}`
+      });
     }
 
-    // Test the API key by making a simple request to OpenAI
+    // Test the API key by making a minimal inference request
     try {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-      });
+      // If we have a chat model configured, test with actual inference
+      if (modelChat) {
+        const url = `${endpoint}/openai/deployments/${modelChat}/chat/completions?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: [{role: 'user', content: 'test'}],
+            max_tokens: 1,
+            temperature: 0
+          })
+        });
 
-      if (response.ok) {
-        return res.json({ success: true });
-      } else if (response.status === 401) {
-        return res.json({ success: false, error: 'Invalid OpenAI API key' });
+        if (response.ok) {
+          const data: any = await response.json();
+          const endpointHost = new URL(endpoint).host;
+          return res.json({
+            success: true,
+            message: 'Inference test successful',
+            endpoint: endpointHost,
+            model: data.model || modelChat,
+            models: {
+              chat: modelChat,
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        } else if (response.status === 404) {
+          return res.json({ success: false, error: `Deployment '${modelChat}' not found` });
+        } else {
+          const errorText = await response.text();
+          logger.error('Azure OpenAI inference failed:', response.status, errorText);
+          return res.json({ success: false, error: `Inference test failed: ${response.status}` });
+        }
       } else {
-        return res.json({ success: false, error: `OpenAI API returned status ${response.status}` });
+        // Fallback to listing deployments if no model configured
+        const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'api-key': apiKey,
+          },
+        });
+
+        if (response.ok) {
+          const endpointHost = new URL(endpoint).host;
+          return res.json({
+            success: true,
+            message: 'API key valid (configure chat model for full test)',
+            endpoint: endpointHost,
+            models: {
+              chat: 'Not configured',
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        } else {
+          return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
+        }
       }
     } catch (error: any) {
-      return res.json({ success: false, error: 'Failed to connect to OpenAI API' });
+      logger.error('Azure OpenAI API call failed:', error);
+      return res.json({ success: false, error: `Failed to connect to Azure OpenAI: ${error.message}` });
     }
   } catch (error: any) {
-    logger.error('OpenAI connection test failed:', error);
+    logger.error('Azure OpenAI connection test failed:', error);
     res.json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Check Microsoft Graph API permissions
+ */
+app.get('/api/test/graph-permissions', async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execPromise = promisify(exec);
+
+    logger.debug('Checking Graph API permissions...');
+
+    // Run the test_graph_api.py script
+    try {
+      const { stdout, stderr } = await execPromise('uv run python test_graph_api.py', {
+        cwd: path.join(__dirname, '../../..'),
+        timeout: 30000
+      });
+
+      // Combine stdout and stderr (logging goes to stderr)
+      const output = stdout + stderr;
+
+      // Parse the results
+      const hasUsers = output.includes('✅ Can read users');
+      const hasGroups = output.includes('✅ Can read groups');
+      const hasServicePrincipals = output.includes('✅ Can read service principals');
+      const hasDirectoryRoles = output.includes('✅ Can read directory roles');
+
+      return res.json({
+        success: hasUsers && hasGroups,
+        permissions: {
+          users: hasUsers,
+          groups: hasGroups,
+          servicePrincipals: hasServicePrincipals,
+          directoryRoles: hasDirectoryRoles
+        },
+        allRequired: hasUsers && hasGroups,
+        message: hasUsers && hasGroups
+          ? 'All required Graph API permissions are configured'
+          : 'Missing required Graph API permissions'
+      });
+    } catch (error: any) {
+      logger.error('Failed to run Graph API test:', error);
+
+      // Check if it's because dependencies are missing
+      if (error.message?.includes('uv: command not found')) {
+        return res.json({
+          success: false,
+          error: 'uv package manager not found',
+          permissions: {
+            users: false,
+            groups: false,
+            servicePrincipals: false,
+            directoryRoles: false
+          }
+        });
+      }
+
+      return res.json({
+        success: false,
+        error: 'Failed to check Graph API permissions',
+        permissions: {
+          users: false,
+          groups: false,
+          servicePrincipals: false,
+          directoryRoles: false
+        }
+      });
+    }
+  } catch (error: any) {
+    logger.error('Graph API permissions check failed:', error);
+    res.json({
+      success: false,
+      error: error.message,
+      permissions: {
+        users: false,
+        groups: false,
+        servicePrincipals: false,
+        directoryRoles: false
+      }
+    });
   }
 });
 

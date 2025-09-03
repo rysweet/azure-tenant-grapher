@@ -16,10 +16,14 @@ import sys
 from typing import Any, Callable, Coroutine, Optional
 
 from dotenv import load_dotenv
+from rich.console import Console
 from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+
+# Initialize console for rich output
+console = Console()
 
 
 def print_cli_env_block(context: str = "", debug: bool = False):
@@ -193,6 +197,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "spec": "📋 Generate tenant specification document from existing graph",
         "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
         "generate-iac": "🏗️ Generate Infrastructure-as-Code templates from graph data",
+        "mcp-query": "🤖 Execute natural language queries via MCP (experimental)",
         "config": "⚙️  Show current configuration template",
         "container": "🐳 Manage Neo4j Docker container",
         "backup-db": "💾 Backup Neo4j database to a local file",
@@ -704,6 +709,55 @@ async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     await agent_mode_command_handler(ctx, question)
 
 
+@cli.command("mcp-query")
+@click.argument("query")
+@click.option(
+    "--tenant-id",
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
+@click.option(
+    "--no-fallback",
+    is_flag=True,
+    help="Disable fallback to traditional API methods",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["json", "table", "text"]),
+    default="json",
+    help="Output format for query results",
+)
+@click.pass_context
+@async_command
+async def mcp_query(
+    ctx: click.Context,
+    query: str,
+    tenant_id: Optional[str],
+    no_fallback: bool,
+    format: str,
+) -> None:
+    """Execute natural language queries for Azure resources via MCP.
+    
+    Examples:
+        atg mcp-query "list all virtual machines"
+        atg mcp-query "show storage accounts in westus2"
+        atg mcp-query "find resources with public IP addresses"
+        atg mcp-query "analyze security posture of my key vaults"
+    
+    This is an experimental feature that requires MCP_ENABLED=true in your .env file.
+    """
+    from src.cli_commands import mcp_query_command
+
+    debug = ctx.obj.get("debug", False)
+    await mcp_query_command(
+        ctx,
+        query,
+        tenant_id=tenant_id,
+        use_fallback=not no_fallback,
+        output_format=format,
+        debug=debug,
+    )
+
+
 @cli.command("backup")
 @click.option(
     "--path",
@@ -793,9 +847,22 @@ def wipe_database(force: bool) -> None:
 
     try:
         # Connect to Neo4j
-        uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        uri = os.getenv("NEO4J_URI")
+        if not uri:
+            port = os.getenv("NEO4J_PORT")
+            if not port:
+                console.print(
+                    "[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]"
+                )
+                return False
+            uri = f"bolt://localhost:{port}"
         user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD", "azure-grapher-2024")
+        password = os.getenv("NEO4J_PASSWORD")
+        if not password:
+            console.print(
+                "[red]❌ NEO4J_PASSWORD environment variable is required[/red]"
+            )
+            return False
 
         driver = GraphDatabase.driver(uri, auth=(user, password))
 
@@ -817,6 +884,69 @@ def wipe_database(force: bool) -> None:
 
     except Exception as e:
         click.echo(f"❌ Failed to wipe database: {e}")
+
+
+@cli.command()
+def check_permissions() -> None:
+    """Check Microsoft Graph API permissions for AAD/Entra ID discovery."""
+    click.echo("🔍 Checking Microsoft Graph API Permissions")
+
+    # Run the test script
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["uv", "run", "python", "test_graph_api.py"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        # Check if the command failed
+        if result.returncode != 0:
+            click.echo(f"❌ Error running test script: {result.stderr}")
+            return
+
+        # Combine stdout and stderr for parsing (logging might go to stderr)
+        output = result.stdout + result.stderr
+
+        # Parse the output for display
+        if "✅ Can read users" in output:
+            click.echo("✅ User.Read permission granted")
+        else:
+            click.echo("❌ User.Read permission missing")
+
+        if "✅ Can read groups" in output:
+            click.echo("✅ Group.Read permission granted")
+        else:
+            click.echo("❌ Group.Read permission missing")
+
+        if "✅ Can read service principals" in output:
+            click.echo("✅ Application.Read permission granted")
+        else:
+            click.echo("⚠️ Application.Read permission missing (optional)")
+
+        if "✅ Can read directory roles" in output:
+            click.echo("✅ RoleManagement.Read permission granted")
+        else:
+            click.echo("⚠️ RoleManagement.Read permission missing (optional)")
+
+        # Show setup instructions if permissions are missing
+        has_users = "✅ Can read users" in output
+        has_groups = "✅ Can read groups" in output
+
+        if not has_users or not has_groups:
+            click.echo("\n📚 See docs/GRAPH_API_SETUP.md for setup instructions")
+            click.echo(
+                "Or run: uv run python test_graph_api.py for detailed diagnostics"
+            )
+        else:
+            click.echo("\n✅ All required Graph API permissions are configured!")
+
+    except subprocess.TimeoutExpired:
+        click.echo("❌ Permission check timed out")
+    except Exception as e:
+        click.echo(f"❌ Error checking permissions: {e}")
 
 
 @cli.command()

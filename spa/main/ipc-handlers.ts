@@ -117,9 +117,16 @@ export function setupIPCHandlers(processManager: ProcessManager) {
         AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || '',
         AZURE_CLIENT_ID: process.env.AZURE_CLIENT_ID || '',
         AZURE_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || '',
-        NEO4J_URI: process.env.NEO4J_URI || '',
+        NEO4J_PORT: process.env.NEO4J_PORT || '7687',
+        NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
+        NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
         NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || '',
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+        LOG_LEVEL: process.env.LOG_LEVEL || 'INFO',
+        AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT || '',
+        AZURE_OPENAI_KEY: process.env.AZURE_OPENAI_KEY || '',
+        AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION || '2024-02-01',
+        AZURE_OPENAI_MODEL_CHAT: process.env.AZURE_OPENAI_MODEL_CHAT || '',
+        AZURE_OPENAI_MODEL_REASONING: process.env.AZURE_OPENAI_MODEL_REASONING || '',
         RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || '',
       };
     }

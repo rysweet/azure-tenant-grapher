@@ -15,7 +15,7 @@ class AzureThreatAnalysisRunner:
     Replaces Microsoft Threat Modeling Tool (TMT) with STRIDE-based analysis.
     """
 
-    def __init__(self, neo4j_session_manager=None):
+    def __init__(self, neo4j_session_manager: Optional[Any] = None):
         """
         Initialize the threat analysis runner.
 

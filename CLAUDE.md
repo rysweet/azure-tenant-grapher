@@ -169,8 +169,9 @@ Required environment variables (see .env.example):
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
 - `AZURE_CLIENT_SECRET`
-- `NEO4J_PASSWORD`
-- `NEO4J_URI` (default: bolt://localhost:7687)
+- `NEO4J_PASSWORD` (required)
+- `NEO4J_PORT` (required, configures the Neo4j port)
+- `NEO4J_URI` (optional, defaults to bolt://localhost:${NEO4J_PORT})
 - `OPENAI_API_KEY` (for LLM descriptions)
 
 Optional debugging command-line flag:

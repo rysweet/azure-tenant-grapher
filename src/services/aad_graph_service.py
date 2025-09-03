@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from azure.identity import ClientSecretCredential
 from kiota_abstractions.base_request_configuration import RequestConfiguration
@@ -51,7 +51,9 @@ class AADGraphService:
         scopes = ["https://graph.microsoft.com/.default"]
         self.client = GraphServiceClient(credentials=credential, scopes=scopes)
 
-    async def _retry_with_backoff(self, operation, max_retries: int = 5):
+    async def _retry_with_backoff(
+        self, operation: Callable[[], Awaitable[Any]], max_retries: int = 5
+    ) -> Any:
         """Execute operation with exponential backoff retry logic."""
         for attempt in range(max_retries):
             try:
@@ -150,7 +152,8 @@ class AADGraphService:
             logger.info(f"Fetched {len(users)} users from Microsoft Graph")
             return users
 
-        return await self._retry_with_backoff(fetch_users)
+        result = await self._retry_with_backoff(fetch_users)
+        return result if result is not None else []
 
     async def get_groups(self) -> List[Dict[str, Any]]:
         """
@@ -214,7 +217,8 @@ class AADGraphService:
             logger.info(f"Fetched {len(groups)} groups from Microsoft Graph")
             return groups
 
-        return await self._retry_with_backoff(fetch_groups)
+        result = await self._retry_with_backoff(fetch_groups)
+        return result if result is not None else []
 
     async def get_group_memberships(self, group_id: str) -> List[Dict[str, Any]]:
         """
@@ -270,7 +274,8 @@ class AADGraphService:
             logger.info(f"Fetched {len(members)} members for group {group_id}")
             return members
 
-        return await self._retry_with_backoff(fetch_group_members)
+        result = await self._retry_with_backoff(fetch_group_members)
+        return result if result is not None else []
 
     async def ingest_into_graph(self, db_ops: Any, dry_run: bool = False) -> None:
         """

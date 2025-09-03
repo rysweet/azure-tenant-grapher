@@ -968,7 +968,7 @@ const CLITab: React.FC = () => {
                 <AccordionDetails>
                   {commandDef.examples.map((example, index) => (
                     <Box key={index} sx={{ mb: 1 }}>
-                      <Typography variant="body2" fontFamily="monospace" sx={{ bgcolor: 'grey.100', p: 1, borderRadius: 1 }}>
+                      <Typography variant="body2" fontFamily="monospace" sx={{ bgcolor: '#000000', color: '#4caf50', p: 1, borderRadius: 1 }}>
                         atg {example}
                       </Typography>
                     </Box>

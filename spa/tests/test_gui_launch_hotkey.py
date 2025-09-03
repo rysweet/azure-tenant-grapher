@@ -20,15 +20,13 @@ class TestGUILaunchHotkey:
 
     def test_g_hotkey_triggers_spa_start_command(self):
         """Test that pressing 'g' triggers the correct subprocess command."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             # Mock successful subprocess execution
             mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
 
             # Create a mock key event for 'g'
-            with patch("threading.Thread") as mock_thread:
+            with patch("threading.Thread"):
                 # Mock the key handler to simulate 'g' keypress
                 def mock_key_handler():
                     # Simulate the key processing logic from the dashboard
@@ -44,7 +42,7 @@ class TestGUILaunchHotkey:
                             raise e
 
                 # Execute the mock key handler
-                result = mock_key_handler()
+                mock_key_handler()
 
                 # Verify subprocess.run was called with correct arguments
                 mock_run.assert_called_once_with(
@@ -53,8 +51,6 @@ class TestGUILaunchHotkey:
 
     def test_g_hotkey_handles_gui_already_running_error(self):
         """Test proper handling when GUI is already running."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             # Mock subprocess execution with "already running" error
@@ -93,8 +89,6 @@ class TestGUILaunchHotkey:
 
     def test_g_hotkey_handles_command_not_found_error(self):
         """Test handling when 'atg' command is not found in PATH."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             # Mock FileNotFoundError when command is not in PATH
@@ -105,9 +99,7 @@ class TestGUILaunchHotkey:
                 key = "g"
                 if key and key.lower() == "g":
                     try:
-                        result = subprocess.run(
-                            ["atg", "start"], capture_output=True, text=True
-                        )
+                        subprocess.run(["atg", "start"], capture_output=True, text=True)
                         return "GUI launched successfully"
                     except FileNotFoundError:
                         return "Failed to launch GUI: 'atg' command not found in PATH"
@@ -124,8 +116,6 @@ class TestGUILaunchHotkey:
 
     def test_g_hotkey_handles_generic_subprocess_error(self):
         """Test handling of generic subprocess errors."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             # Mock generic exception
@@ -136,9 +126,7 @@ class TestGUILaunchHotkey:
                 key = "g"
                 if key and key.lower() == "g":
                     try:
-                        result = subprocess.run(
-                            ["atg", "start"], capture_output=True, text=True
-                        )
+                        subprocess.run(["atg", "start"], capture_output=True, text=True)
                         return "GUI launched successfully"
                     except FileNotFoundError:
                         return "Failed to launch GUI: 'atg' command not found in PATH"
@@ -155,8 +143,6 @@ class TestGUILaunchHotkey:
 
     def test_g_hotkey_success_case(self):
         """Test successful GUI launch via 'g' hotkey."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             # Mock successful subprocess execution
@@ -218,8 +204,6 @@ class TestGUILaunchHotkey:
     @patch("subprocess.run")
     def test_hotkey_integration_with_dashboard_context(self, mock_run, mock_thread):
         """Test hotkey functionality within the dashboard live context."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         # Mock successful subprocess execution
         mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
@@ -256,8 +240,6 @@ class TestGUILaunchHotkey:
 
     def test_case_insensitive_hotkey_handling(self):
         """Test that both 'g' and 'G' trigger the GUI launch."""
-        config = {"tenant_id": "test-tenant", "resource_limit": 100}
-        dashboard = RichDashboard(config)
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0, stderr="", stdout="")

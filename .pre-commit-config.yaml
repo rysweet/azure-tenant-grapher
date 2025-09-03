@@ -28,6 +28,12 @@ repos:
         additional_dependencies: [pyright==1.1.350]
         entry: pyright
         pass_filenames: false
+      - id: spa-test
+        name: SPA Tests
+        language: system
+        entry: bash -c "cd spa && npm test -- --no-coverage --watchAll=false"
+        pass_filenames: false
+        files: '^spa/.*\.(ts|tsx|js|jsx|css)$'
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.5

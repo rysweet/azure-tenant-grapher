@@ -14,7 +14,6 @@ def create_icon(size):
 
     # Draw a gradient background (Azure blue theme)
     for i in range(size):
-        color_intensity = int(255 * (i / size))
         color = (0, 120 - int(60 * (i / size)), 215 - int(50 * (i / size)), 255)
         draw.rectangle([(0, i), (size, i + 1)], fill=color)
 
@@ -30,7 +29,6 @@ def create_icon(size):
     text = "ATG"
     # Try to use a system font, fallback to default if not available
     try:
-        font_size = size // 3
         # Use default font since we can't guarantee specific fonts exist
         font = ImageFont.load_default()
         # Calculate text size and position
@@ -55,7 +53,6 @@ def create_icon(size):
 
         # Clear previous small text
         for i in range(size):
-            color_intensity = int(255 * (i / size))
             color = (0, 120 - int(60 * (i / size)), 215 - int(50 * (i / size)), 255)
             if start_y <= i <= start_y + letter_height:
                 draw.rectangle(
@@ -98,7 +95,6 @@ def create_icon(size):
 
         # Draw G
         g_x = start_x + 2 * letter_width
-        g_center = (g_x + letter_width // 2, start_y + letter_height // 2)
         draw.arc(
             [(g_x, start_y), (g_x + letter_width, start_y + letter_height)],
             start=315,
