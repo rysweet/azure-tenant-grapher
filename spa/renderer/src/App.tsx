@@ -15,6 +15,7 @@ const ScanTab = lazy(() => import('./components/tabs/ScanTab'));
 const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
 const GenerateIaCTab = lazy(() => import('./components/tabs/GenerateIaCTab'));
+const UndeployTab = lazy(() => import('./components/tabs/UndeployTab'));
 const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
 const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
 const AgentModeTab = lazy(() => import('./components/tabs/AgentModeTab'));
@@ -127,6 +128,7 @@ const App: React.FC = () => {
                 <Route path="/visualize" element={<VisualizeTab />} />
                 <Route path="/generate-spec" element={<GenerateSpecTab />} />
                 <Route path="/generate-iac" element={<GenerateIaCTab />} />
+                <Route path="/undeploy" element={<UndeployTab />} />
                 <Route path="/create-tenant" element={<CreateTenantTab />} />
                 <Route path="/agent-mode" element={<AgentModeTab />} />
                 <Route path="/threat-model" element={<ThreatModelTab />} />
