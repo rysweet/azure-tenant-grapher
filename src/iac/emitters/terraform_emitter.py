@@ -31,10 +31,14 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
-        # Azure AD / Entra ID resource mappings
+        # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
         "Microsoft.AAD/ServicePrincipal": "azuread_service_principal",
+        "Microsoft.Graph/users": "azuread_user",
+        "Microsoft.Graph/groups": "azuread_group",
+        "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
+        "Microsoft.ManagedIdentity/managedIdentities": "azurerm_user_assigned_identity",
     }
 
     def emit(
@@ -62,6 +66,7 @@ class TerraformEmitter(IaCEmitter):
         # Check if we have any Azure AD resources
         has_azuread_resources = any(
             resource.get("type", "").startswith("Microsoft.AAD/") or
+            resource.get("type", "").startswith("Microsoft.Graph/") or
             resource.get("type", "").lower() in ("user", "aaduser", "group", "aadgroup", "serviceprincipal")
             for resource in graph.resources
         )
@@ -162,11 +167,13 @@ class TerraformEmitter(IaCEmitter):
         
         # Handle simple type names for Azure AD resources
         if azure_type.lower() in ("user", "aaduser"):
-            azure_type = "Microsoft.AAD/User"
-        elif azure_type.lower() in ("group", "aadgroup"):
-            azure_type = "Microsoft.AAD/Group"
+            azure_type = "Microsoft.Graph/users"
+        elif azure_type.lower() in ("group", "aadgroup", "identitygroup"):
+            azure_type = "Microsoft.Graph/groups"
         elif azure_type.lower() == "serviceprincipal":
-            azure_type = "Microsoft.AAD/ServicePrincipal"
+            azure_type = "Microsoft.Graph/servicePrincipals"
+        elif azure_type.lower() == "managedidentity":
+            azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
         # Get Terraform resource type
         terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
@@ -283,7 +290,7 @@ class TerraformEmitter(IaCEmitter):
                     "sku_name": resource.get("sku_name", "standard")
                 }
             )
-        elif azure_type == "Microsoft.AAD/User":
+        elif azure_type in ("Microsoft.AAD/User", "Microsoft.Graph/users"):
             # Azure AD User specific properties
             resource_config = {
                 "display_name": resource.get("displayName", resource_name),
@@ -292,7 +299,7 @@ class TerraformEmitter(IaCEmitter):
             }
             if "password" in resource:
                 resource_config["password"] = resource["password"]
-        elif azure_type == "Microsoft.AAD/Group":
+        elif azure_type in ("Microsoft.AAD/Group", "Microsoft.Graph/groups"):
             # Azure AD Group specific properties
             resource_config = {
                 "display_name": resource.get("displayName", resource_name),
@@ -300,13 +307,20 @@ class TerraformEmitter(IaCEmitter):
             }
             if "description" in resource:
                 resource_config["description"] = resource["description"]
-        elif azure_type == "Microsoft.AAD/ServicePrincipal":
+        elif azure_type in ("Microsoft.AAD/ServicePrincipal", "Microsoft.Graph/servicePrincipals"):
             # Azure AD Service Principal specific properties
             resource_config = {
                 "application_id": resource.get("applicationId", ""),
             }
             if "displayName" in resource:
                 resource_config["display_name"] = resource["displayName"]
+        elif azure_type == "Microsoft.ManagedIdentity/managedIdentities":
+            # Managed Identity specific properties
+            resource_config = {
+                "name": resource_name,
+                "location": location,
+                "resource_group_name": resource.get("resourceGroup", "default-rg"),
+            }
 
         return terraform_type, safe_name, resource_config
 

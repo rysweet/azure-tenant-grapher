@@ -290,8 +290,12 @@ Instructions:
                         for rel in relationships:
                             if isinstance(rel, dict):
                                 # Handle field name mapping
+                                if "from_id" in rel and "sourceId" not in rel:
+                                    rel["sourceId"] = rel.pop("from_id")
                                 if "from_resource" in rel and "sourceId" not in rel:
                                     rel["sourceId"] = rel.pop("from_resource")
+                                if "to_id" in rel and "targetId" not in rel:
+                                    rel["targetId"] = rel.pop("to_id")
                                 if "to_resource" in rel and "targetId" not in rel:
                                     rel["targetId"] = rel.pop("to_resource")
                                 if "type" in rel and "relationshipType" not in rel:
@@ -393,8 +397,9 @@ Instructions:
         with session_manager.session() as session:
             session.run(
                 """
-                MERGE (t:Tenant {id: $id})
-                SET t.displayName = $displayName
+                MERGE (t:Tenant:Resource {id: $id})
+                SET t.displayName = $displayName,
+                    t.type = 'Microsoft.Graph/tenants'
                 """,
                 {
                     "id": tenant.id,
@@ -409,10 +414,11 @@ Instructions:
                 with session_manager.session() as session:
                     session.run(
                         """
-                        MERGE (s:Subscription {id: $id})
-                        SET s.name = $name
+                        MERGE (s:Subscription:Resource {id: $id})
+                        SET s.name = $name,
+                            s.type = 'Microsoft.Resources/subscriptions'
                         WITH s
-                        MATCH (t:Tenant {id: $tenant_id})
+                        MATCH (t:Tenant:Resource {id: $tenant_id})
                         MERGE (t)-[:HAS_SUBSCRIPTION]->(s)
                         """,
                         {
@@ -439,10 +445,12 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (rg:ResourceGroup {id: $id})
-                                SET rg.name = $name, rg.location = $location
+                                MERGE (rg:ResourceGroup:Resource {id: $id})
+                                SET rg.name = $name, 
+                                    rg.location = $location,
+                                    rg.type = 'Microsoft.Resources/resourceGroups'
                                 WITH rg
-                                MATCH (s:Subscription {id: $subscription_id})
+                                MATCH (s:Subscription:Resource {id: $subscription_id})
                                 MERGE (s)-[:CONTAINS]->(rg)
                                 """,
                                 {
@@ -519,11 +527,12 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (u:User {id: $id})
+                                MERGE (u:User:Resource {id: $id})
                                 SET u.displayName = $displayName,
                                     u.userPrincipalName = $userPrincipalName,
                                     u.jobTitle = $jobTitle,
-                                    u.mailNickname = $mailNickname
+                                    u.mailNickname = $mailNickname,
+                                    u.type = 'Microsoft.Graph/users'
                                 """,
                                 {
                                     "id": user.id,
@@ -547,8 +556,9 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (g:IdentityGroup {id: $id})
-                                SET g.displayName = $displayName
+                                MERGE (g:Group:Resource {id: $id})
+                                SET g.displayName = $displayName,
+                                    g.type = 'Microsoft.Graph/groups'
                                 """,
                                 {
                                     "id": group.id,
@@ -569,8 +579,9 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (sp:ServicePrincipal {id: $id})
-                                SET sp.displayName = $displayName
+                                MERGE (sp:ServicePrincipal:Resource {id: $id})
+                                SET sp.displayName = $displayName,
+                                    sp.type = 'Microsoft.Graph/servicePrincipals'
                                 """,
                                 {
                                     "id": sp.id,
@@ -591,8 +602,9 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (mi:ManagedIdentity {id: $id})
-                                SET mi.displayName = $displayName
+                                MERGE (mi:ManagedIdentity:Resource {id: $id})
+                                SET mi.displayName = $displayName,
+                                    mi.type = 'Microsoft.ManagedIdentity/managedIdentities'
                                 """,
                                 {
                                     "id": mi.id,
@@ -613,8 +625,9 @@ Instructions:
                         with session_manager.session() as session:
                             session.run(
                                 """
-                                MERGE (au:AdminUnit {id: $id})
-                                SET au.displayName = $displayName
+                                MERGE (au:AdminUnit:Resource {id: $id})
+                                SET au.displayName = $displayName,
+                                    au.type = 'Microsoft.Graph/administrativeUnits'
                                 """,
                                 {
                                     "id": au.id,
@@ -686,11 +699,15 @@ Instructions:
 
             if relationships:
                 for rel in relationships:
+                    # Handle both field naming conventions
+                    source_id = getattr(rel, 'sourceId', getattr(rel, 'source_id', None))
+                    target_id = getattr(rel, 'targetId', getattr(rel, 'target_id', None))
+                    rel_type = getattr(rel, 'relationshipType', getattr(rel, 'type', None))
+                    
                     print(
-                        f"DEBUG: Processing relationship: {rel.source_id} -> {rel.target_id} ({rel.type})"
+                        f"DEBUG: Processing relationship: {source_id} -> {target_id} ({rel_type})"
                     )
                     with session_manager.session() as session:
-                        rel_type = rel.type
 
                         # Core canonical relationship types that downstream systems understand
                         canonical_types = {
@@ -816,8 +833,8 @@ Instructions:
                                 SET {props_cypher}
                                 """
                             params = {
-                                "source_id": rel.source_id,
-                                "target_id": rel.target_id,
+                                "source_id": source_id,
+                                "target_id": target_id,
                                 **rel_properties,
                             }
                         else:
@@ -827,8 +844,8 @@ Instructions:
                                 MERGE (src)-[r:{neo4j_rel_type}]->(tgt)
                                 """
                             params = {
-                                "source_id": rel.source_id,
-                                "target_id": rel.target_id,
+                                "source_id": source_id,
+                                "target_id": target_id,
                             }
 
                         session.run(cypher, params)  # type: ignore
