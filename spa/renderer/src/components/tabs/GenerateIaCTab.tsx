@@ -53,6 +53,8 @@ const GenerateIaCTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(false);
+  const [domainName, setDomainName] = useState('');
+  const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
 
   // Fetch tenants from Neo4j on mount
   useEffect(() => {
@@ -90,7 +92,12 @@ const GenerateIaCTab: React.FC = () => {
     const args = [
       '--tenant-id', tenantId,
       '--format', outputFormat,
+      '--tenant', selectedTenant,
     ];
+
+    if (domainName) {
+      args.push('--domain-name', domainName);
+    }
 
     if (dryRun) args.push('--dry-run');
 
@@ -232,6 +239,33 @@ const GenerateIaCTab: React.FC = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Target Tenant</InputLabel>
+              <Select
+                value={selectedTenant}
+                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
+                disabled={isGenerating}
+                label="Target Tenant"
+              >
+                <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
+                <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Domain Name (for Azure AD users)"
+              value={domainName}
+              onChange={(e) => setDomainName(e.target.value)}
+              disabled={isGenerating}
+              fullWidth
+              placeholder="e.g., contoso.onmicrosoft.com"
+              helperText="Required for Azure AD user creation"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
             <FormControlLabel
               control={
                 <Checkbox
