@@ -664,10 +664,10 @@ async def threat_model(ctx: click.Context) -> None:
     help="Path to a markdown file with seed/suggestions for the profile",
 )
 @click.option(
-    "--out",
+    "--output",
     type=click.Path(dir_okay=False, writable=True),
     required=False,
-    help="Output markdown file (default: simdocs/simdoc-<timestamp>.md)",
+    help="Output markdown file (default: outputs/simdoc-<timestamp>.md)",
 )
 @click.pass_context
 @async_command
@@ -675,14 +675,14 @@ async def generate_sim_doc(
     ctx: click.Context,
     size: Optional[int],
     seed: Optional[str],
-    out: Optional[str],
+    output: Optional[str],
 ) -> None:
     """
     Generate a simulated Azure customer profile as a Markdown narrative.
     """
     from src.cli_commands import generate_sim_doc_command_handler
 
-    await generate_sim_doc_command_handler(ctx, size=size, seed_path=seed, out_path=out)
+    await generate_sim_doc_command_handler(ctx, size=size, seed_path=seed, out_path=output)
 
 
 # Alias: gensimdoc

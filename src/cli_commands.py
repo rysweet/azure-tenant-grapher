@@ -1082,7 +1082,7 @@ def create_tenant_from_markdown(text: str):
         import nest_asyncio
 
         nest_asyncio.apply()
-        loop.run_until_complete(task)
+        result = loop.run_until_complete(task)
     else:
         asyncio.run(_run())
     
