@@ -394,11 +394,11 @@ Instructions:
             session.run(
                 """
                 MERGE (t:Tenant {id: $id})
-                SET t.display_name = $display_name
+                SET t.displayName = $displayName
                 """,
                 {
                     "id": tenant.id,
-                    "display_name": getattr(tenant, "display_name", None),
+                    "displayName": getattr(tenant, "display_name", None),
                 },
             )
             stats["tenant"] = 1
@@ -520,17 +520,19 @@ Instructions:
                             session.run(
                                 """
                                 MERGE (u:User {id: $id})
-                                SET u.display_name = $display_name,
-                                    u.user_principal_name = $user_principal_name,
-                                    u.job_title = $job_title
+                                SET u.displayName = $displayName,
+                                    u.userPrincipalName = $userPrincipalName,
+                                    u.jobTitle = $jobTitle,
+                                    u.mailNickname = $mailNickname
                                 """,
                                 {
                                     "id": user.id,
-                                    "display_name": user.display_name,
-                                    "user_principal_name": getattr(
+                                    "displayName": user.display_name,
+                                    "userPrincipalName": getattr(
                                         user, "user_principal_name", None
                                     ),
-                                    "job_title": getattr(user, "job_title", None),
+                                    "jobTitle": getattr(user, "job_title", None),
+                                    "mailNickname": getattr(user, "mail_nickname", None),
                                 },
                             )
                         stats["users"] += 1
@@ -546,11 +548,11 @@ Instructions:
                             session.run(
                                 """
                                 MERGE (g:IdentityGroup {id: $id})
-                                SET g.display_name = $display_name
+                                SET g.displayName = $displayName
                                 """,
                                 {
                                     "id": group.id,
-                                    "display_name": group.display_name,
+                                    "displayName": group.display_name,
                                 },
                             )
                         stats["groups"] += 1
@@ -568,11 +570,11 @@ Instructions:
                             session.run(
                                 """
                                 MERGE (sp:ServicePrincipal {id: $id})
-                                SET sp.display_name = $display_name
+                                SET sp.displayName = $displayName
                                 """,
                                 {
                                     "id": sp.id,
-                                    "display_name": sp.display_name,
+                                    "displayName": sp.display_name,
                                 },
                             )
                         stats["service_principals"] += 1
@@ -590,11 +592,11 @@ Instructions:
                             session.run(
                                 """
                                 MERGE (mi:ManagedIdentity {id: $id})
-                                SET mi.display_name = $display_name
+                                SET mi.displayName = $displayName
                                 """,
                                 {
                                     "id": mi.id,
-                                    "display_name": mi.display_name,
+                                    "displayName": mi.display_name,
                                 },
                             )
                         stats["managed_identities"] += 1
@@ -612,11 +614,11 @@ Instructions:
                             session.run(
                                 """
                                 MERGE (au:AdminUnit {id: $id})
-                                SET au.display_name = $display_name
+                                SET au.displayName = $displayName
                                 """,
                                 {
                                     "id": au.id,
-                                    "display_name": au.display_name,
+                                    "displayName": au.display_name,
                                 },
                             )
                         stats["admin_units"] += 1
