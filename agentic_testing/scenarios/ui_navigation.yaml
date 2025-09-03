@@ -1,0 +1,145 @@
+# UI navigation test scenarios
+scenarios:
+  - id: ui_app_launch
+    feature: UI Application Launch
+    name: Launch Electron application
+    description: Verify that the Electron app launches successfully
+    interface: gui
+    steps:
+      - action: wait
+        value: "2"
+        description: Wait for app to initialize
+      - action: screenshot
+        description: Capture initial state
+    expected_outcome: Application launches with main window
+    verification:
+      - type: element
+        target: body
+        expected:
+          is_visible: true
+    tags:
+      - smoke-test
+      - ui-basic
+    priority: critical
+    timeout: 30
+
+  - id: ui_tab_navigation
+    feature: UI Tab Navigation
+    name: Navigate through all tabs
+    description: Verify that all tabs are accessible and clickable
+    interface: gui
+    steps:
+      - action: click
+        target: "button:has-text('Build')"
+        description: Click Build tab
+      - action: wait
+        value: "1"
+      - action: click
+        target: "button:has-text('Generate Spec')"
+        description: Click Generate Spec tab
+      - action: wait
+        value: "1"
+      - action: click
+        target: "button:has-text('Generate IaC')"
+        description: Click Generate IaC tab
+      - action: wait
+        value: "1"
+      - action: click
+        target: "button:has-text('Config')"
+        description: Click Config tab
+      - action: wait
+        value: "1"
+    expected_outcome: All tabs are navigable
+    verification:
+      - type: element
+        target: ".tab-content"
+        expected:
+          is_visible: true
+    tags:
+      - smoke-test
+      - ui-navigation
+    priority: high
+    timeout: 60
+
+  - id: ui_build_tab_elements
+    feature: UI Build Tab
+    name: Verify Build tab elements
+    description: Check that Build tab contains expected elements
+    interface: gui
+    steps:
+      - action: click
+        target: "button:has-text('Build')"
+        description: Navigate to Build tab
+      - action: wait
+        wait_for: "selector:input[placeholder*='tenant']"
+        timeout: 5000
+    expected_outcome: Build tab shows tenant ID input and build button
+    verification:
+      - type: element
+        target: "input[placeholder*='tenant']"
+        expected:
+          is_visible: true
+      - type: element
+        target: "button:has-text('Build')"
+        expected:
+          is_visible: true
+    tags:
+      - ui-build
+      - ui-elements
+    priority: high
+    timeout: 30
+
+  - id: ui_config_tab_fields
+    feature: UI Config Tab
+    name: Verify Config tab has configuration fields
+    description: Check that Config tab contains configuration inputs
+    interface: gui
+    steps:
+      - action: click
+        target: "button:has-text('Config')"
+        description: Navigate to Config tab
+      - action: wait
+        value: "2"
+    expected_outcome: Config tab shows configuration fields
+    verification:
+      - type: element
+        target: ".config-section"
+        expected:
+          is_visible: true
+      - type: text
+        target: body
+        expected: "Azure"
+        operator: contains
+    tags:
+      - ui-config
+      - ui-elements
+    priority: medium
+    timeout: 30
+
+  - id: ui_error_display
+    feature: UI Error Handling
+    name: Verify error message display
+    description: Check that errors are displayed properly
+    interface: gui
+    steps:
+      - action: click
+        target: "button:has-text('Build')"
+        description: Navigate to Build tab
+      - action: wait
+        value: "1"
+      - action: click
+        target: "button:contains('Build')"
+        description: Click Build without tenant ID
+      - action: wait
+        value: "2"
+    expected_outcome: Error message is displayed
+    verification:
+      - type: element
+        target: ".error, .alert-danger, [role='alert']"
+        expected:
+          is_visible: true
+    tags:
+      - error-handling
+      - ui-validation
+    priority: medium
+    timeout: 30

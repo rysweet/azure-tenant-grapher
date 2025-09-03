@@ -1,0 +1,78 @@
+# Agentic Testing System Configuration
+
+# CLI Testing Configuration
+cli:
+  base_command: ["uv", "run", "atg"]
+  timeout: 300
+  capture_ansi: true
+  working_dir: "."
+  env_vars: {}
+
+# UI Testing Configuration
+ui:
+  app_path: "spa/main/index.js"
+  screenshot_dir: "outputs/screenshots"
+  video_dir: "outputs/videos"
+  viewport:
+    width: 1920
+    height: 1080
+  headless: false
+  slow_mo: 100
+  timeout: 30000
+
+# LLM Configuration
+llm:
+  provider: "azure"  # or "openai"
+  temperature: 0.1
+  max_tokens: 4000
+  model: "gpt-4"
+  # API credentials loaded from environment
+
+# GitHub Integration
+github:
+  repository: "rysweet/azure-tenant-grapher"
+  create_issues: false  # Set to true to enable issue creation
+  issue_labels:
+    - "bug"
+    - "agentic-test"
+  use_gh_cli: true
+
+# Priority Configuration
+priority:
+  auto_prioritize: true
+  impact_weights:
+    critical_path: 1.0
+    security: 0.9
+    data_loss: 0.9
+    frequency: 0.5
+    ux: 0.3
+
+# Execution Configuration
+execution:
+  parallel_workers: 4
+  retry_count: 2
+  retry_backoff: 2.0
+  fail_fast: false
+  cache_ttl: 3600
+  test_suites:
+    smoke:
+      - "cli_basic"
+      - "ui_navigation"
+    full:
+      - "*"
+    regression:
+      - "cli_*"
+      - "ui_*"
+      - "integration_*"
+
+# Logging
+log_level: "INFO"
+log_file: "outputs/logs/agentic_testing.log"
+
+# Test Environment (loaded from environment variables)
+# azure_tenant_id: ${AZURE_TENANT_ID}
+# azure_client_id: ${AZURE_CLIENT_ID}
+# azure_client_secret: ${AZURE_CLIENT_SECRET}
+neo4j_uri: "bolt://localhost:7687"
+neo4j_user: "neo4j"
+# neo4j_password: ${NEO4J_PASSWORD}
