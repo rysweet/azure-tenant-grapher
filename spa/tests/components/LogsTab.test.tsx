@@ -22,7 +22,7 @@ jest.mock('@monaco-editor/react', () => {
           onMount(mockEditor);
         }
       }, [onMount]);
-      
+
       return (
         <textarea
           data-testid="monaco-editor"
@@ -53,20 +53,20 @@ describe('LogsTab', () => {
 
   it('renders with no logs message when empty', () => {
     renderWithProviders(<LogsTab />);
-    
+
     expect(screen.getByText(/System Logs/i)).toBeInTheDocument();
     expect(screen.getByText(/No logs available/i)).toBeInTheDocument();
   });
 
   it('shows log count badge', () => {
     renderWithProviders(<LogsTab />);
-    
+
     expect(screen.getByText(/0 \/ 0 logs/i)).toBeInTheDocument();
   });
 
   it('has auto-scroll toggle', () => {
     renderWithProviders(<LogsTab />);
-    
+
     const autoScrollToggle = screen.getByLabelText(/auto-scroll/i);
     expect(autoScrollToggle).toBeInTheDocument();
     expect(autoScrollToggle).toBeChecked();
@@ -74,7 +74,7 @@ describe('LogsTab', () => {
 
   it('has filter controls', () => {
     renderWithProviders(<LogsTab />);
-    
+
     // Expand filters
     const filtersButton = screen.getByText(/Filters & Settings/i);
     fireEvent.click(filtersButton);
@@ -86,7 +86,7 @@ describe('LogsTab', () => {
 
   it('has action buttons', () => {
     renderWithProviders(<LogsTab />);
-    
+
     expect(screen.getByTitle(/Scroll to bottom/i)).toBeInTheDocument();
     expect(screen.getByTitle(/Export logs/i)).toBeInTheDocument();
     expect(screen.getByTitle(/Add test logs/i)).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('LogsTab', () => {
 
   it('can add test logs', async () => {
     renderWithProviders(<LogsTab />);
-    
+
     const addTestLogsButton = screen.getByTitle(/Add test logs/i);
     fireEvent.click(addTestLogsButton);
 
@@ -110,7 +110,7 @@ describe('LogsTab', () => {
 
   it('can clear logs', async () => {
     renderWithProviders(<LogsTab />);
-    
+
     // Add test logs first
     const addTestLogsButton = screen.getByTitle(/Add test logs/i);
     fireEvent.click(addTestLogsButton);
@@ -129,30 +129,30 @@ describe('LogsTab', () => {
 
   it('can toggle auto-scroll', () => {
     renderWithProviders(<LogsTab />);
-    
+
     const autoScrollToggle = screen.getByLabelText(/auto-scroll/i);
-    
+
     expect(autoScrollToggle).toBeChecked();
-    
+
     fireEvent.click(autoScrollToggle);
     expect(autoScrollToggle).not.toBeChecked();
-    
+
     fireEvent.click(autoScrollToggle);
     expect(autoScrollToggle).toBeChecked();
   });
 
   it('can expand and collapse filters', () => {
     renderWithProviders(<LogsTab />);
-    
+
     const filtersButton = screen.getByText(/Filters & Settings/i);
-    
+
     // Should not show filter controls initially
     expect(screen.queryByLabelText(/Search logs/i)).not.toBeInTheDocument();
-    
+
     // Expand filters
     fireEvent.click(filtersButton);
     expect(screen.getByLabelText(/Search logs/i)).toBeInTheDocument();
-    
+
     // Collapse filters
     fireEvent.click(filtersButton);
     expect(screen.queryByLabelText(/Search logs/i)).not.toBeInTheDocument();

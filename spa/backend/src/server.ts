@@ -11,7 +11,7 @@ import { Neo4jService } from './neo4j-service';
 import { Neo4jContainer } from './neo4j-container';
 import { logger } from './logger';
 
-// Load .env file from the project root  
+// Load .env file from the project root
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
 logger.info('Backend starting with environment');
 logger.debug('Environment variables:', {
@@ -69,7 +69,7 @@ app.get('/api/tenant-name', async (req, res) => {
     const { exec } = require('child_process');
     const util = require('util');
     const execPromise = util.promisify(exec);
-    
+
     try {
       // Try to get subscription name from Azure CLI (this is the human-readable name)
       const { stdout } = await execPromise('az account show --query "name" --output tsv');
@@ -82,7 +82,7 @@ app.get('/api/tenant-name', async (req, res) => {
     } catch (azError: any) {
       logger.debug('Azure CLI not available or not logged in:', azError?.message || azError);
     }
-    
+
     // Fallback to tenant ID from env
     const tenantId = process.env.AZURE_TENANT_ID || 'Unknown';
     res.json({ name: tenantId });
@@ -98,7 +98,7 @@ app.get('/api/tenant-name', async (req, res) => {
 app.post('/api/execute', (req, res) => {
   const { command, args = [] } = req.body;
   const processId = uuidv4();
-  
+
   if (!command) {
     return res.status(400).json({ error: 'Command is required' });
   }
@@ -106,15 +106,15 @@ app.post('/api/execute', (req, res) => {
   // Use uv to run the atg CLI command
   const uvPath = process.env.UV_PATH || 'uv';
   const projectRoot = path.resolve(__dirname, '../../..');
-  
+
   const fullArgs = ['run', 'atg', command, ...args];
-  
-  logger.info('Executing CLI command:', { 
+
+  logger.info('Executing CLI command:', {
     command: `${uvPath} ${fullArgs.join(' ')}`,
     cwd: projectRoot,
-    processId 
+    processId
   });
-  
+
   const childProcess = spawn(uvPath, fullArgs, {
     cwd: projectRoot,
     env: {
@@ -177,14 +177,14 @@ app.post('/api/execute', (req, res) => {
 app.post('/api/cancel/:processId', (req, res) => {
   const { processId } = req.params;
   const process = activeProcesses.get(processId);
-  
+
   if (!process) {
     return res.status(404).json({ error: 'Process not found' });
   }
 
   process.kill('SIGTERM');
   activeProcesses.delete(processId);
-  
+
   res.json({ status: 'cancelled' });
 });
 
@@ -194,7 +194,7 @@ app.post('/api/cancel/:processId', (req, res) => {
 app.get('/api/status/:processId', (req, res) => {
   const { processId } = req.params;
   const process = activeProcesses.get(processId);
-  
+
   if (!process) {
     return res.status(404).json({ error: 'Process not found' });
   }
@@ -215,7 +215,7 @@ app.get('/api/processes', (req, res) => {
     pid: process.pid,
     status: 'running',
   }));
-  
+
   res.json(processes);
 });
 
@@ -226,14 +226,14 @@ app.get('/api/graph/status', async (req, res) => {
   try {
     const isPopulated = await neo4jService.isDatabasePopulated();
     const stats = isPopulated ? await neo4jService.getDatabaseStats() : null;
-    res.json({ 
-      isPopulated, 
-      stats 
+    res.json({
+      isPopulated,
+      stats
     });
   } catch (error) {
     logger.error('Error checking database status:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to check database status' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to check database status'
     });
   }
 });
@@ -247,8 +247,8 @@ app.get('/api/graph/stats', async (req, res) => {
     res.json(stats);
   } catch (error) {
     logger.error('Error fetching database stats:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to fetch database statistics' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch database statistics'
     });
   }
 });
@@ -262,8 +262,8 @@ app.get('/api/graph', async (req, res) => {
     res.json(graphData);
   } catch (error) {
     logger.error('Error fetching graph:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to fetch graph data' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch graph data'
     });
   }
 });
@@ -273,18 +273,18 @@ app.get('/api/graph', async (req, res) => {
  */
 app.get('/api/graph/search', async (req, res) => {
   const { query } = req.query;
-  
+
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Query parameter is required' });
   }
-  
+
   try {
     const nodes = await neo4jService.searchNodes(query);
     res.json(nodes);
   } catch (error) {
     logger.error('Error searching nodes:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to search nodes' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to search nodes'
     });
   }
 });
@@ -294,7 +294,7 @@ app.get('/api/graph/search', async (req, res) => {
  */
 app.get('/api/graph/node/:nodeId', async (req, res) => {
   const { nodeId } = req.params;
-  
+
   try {
     const details = await neo4jService.getNodeDetails(nodeId);
     if (!details) {
@@ -303,8 +303,8 @@ app.get('/api/graph/node/:nodeId', async (req, res) => {
     res.json(details);
   } catch (error) {
     logger.error('Error fetching node details:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to fetch node details' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch node details'
     });
   }
 });
@@ -319,18 +319,18 @@ app.get('/api/neo4j/tenants', async (req, res) => {
       process.env.NEO4J_URI || 'bolt://localhost:7687',
       neo4j.auth.basic('neo4j', process.env.NEO4J_PASSWORD || 'password')
     );
-    
+
     const session = driver.session();
     try {
       const result = await session.run(
         'MATCH (t:Tenant) RETURN t.id as id, t.name as name ORDER BY t.name'
       );
-      
+
       const tenants = result.records.map((record: any) => ({
         id: record.get('id'),
         name: record.get('name') || record.get('id')
       }));
-      
+
       res.json({ tenants });
     } finally {
       await session.close();
@@ -350,8 +350,8 @@ app.get('/api/neo4j/status', async (req, res) => {
     const status = await neo4jContainer.getStatus();
     res.json(status);
   } catch (error) {
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to get Neo4j status' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to get Neo4j status'
     });
   }
 });
@@ -364,8 +364,8 @@ app.post('/api/neo4j/start', async (req, res) => {
     await neo4jContainer.start();
     res.json({ success: true, message: 'Neo4j container started' });
   } catch (error) {
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to start Neo4j' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to start Neo4j'
     });
   }
 });
@@ -378,8 +378,8 @@ app.post('/api/neo4j/stop', async (req, res) => {
     await neo4jContainer.stop();
     res.json({ success: true, message: 'Neo4j container stopped' });
   } catch (error) {
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to stop Neo4j' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to stop Neo4j'
     });
   }
 });
@@ -391,10 +391,10 @@ app.get('/api/mcp/status', async (req, res) => {
   try {
     // Check if MCP pidfile exists
     const mcpPidfile = path.join(process.cwd(), 'outputs', 'mcp_server.pid');
-    
+
     if (fs.existsSync(mcpPidfile)) {
       const pid = parseInt(fs.readFileSync(mcpPidfile, 'utf-8').trim());
-      
+
       // Check if process is actually running
       try {
         process.kill(pid, 0); // Signal 0 checks if process exists
@@ -418,11 +418,11 @@ app.get('/api/mcp/status', async (req, res) => {
  */
 app.get('/api/config/env', (req, res) => {
   logger.debug('Config endpoint accessed');
-  
+
   // Read from .env file if it exists
   const envPath = path.join(process.cwd(), '.env');
   let envConfig: Record<string, string> = {};
-  
+
   if (fs.existsSync(envPath)) {
     try {
       const envContent = fs.readFileSync(envPath, 'utf8');
@@ -439,7 +439,7 @@ app.get('/api/config/env', (req, res) => {
       logger.error('Failed to read .env file:', error);
     }
   }
-  
+
   // Merge with process.env (process.env takes precedence)
   const config = {
     AZURE_TENANT_ID: process.env.AZURE_TENANT_ID || envConfig.AZURE_TENANT_ID || '',
@@ -450,7 +450,7 @@ app.get('/api/config/env', (req, res) => {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY || '',
     RESOURCE_LIMIT: process.env.RESOURCE_LIMIT || envConfig.RESOURCE_LIMIT || '',
   };
-  
+
   res.json(config);
 });
 
@@ -460,35 +460,35 @@ app.get('/api/config/env', (req, res) => {
 app.get('/api/docs/:filePath(*)', async (req, res) => {
   try {
     const filePath = decodeURIComponent(req.params.filePath);
-    
+
     // Security: ensure the file is within the project directory
     // From spa/backend/src, we need to go up 3 levels to reach azure-tenant-grapher root
     const projectRoot = path.resolve(__dirname, '../../..');
     const fullFilePath = path.resolve(projectRoot, filePath);
-    
+
     // Check if the resolved path is within the project directory
     if (!fullFilePath.startsWith(projectRoot)) {
       logger.warn('Docs API: Access denied - path outside project root:', filePath);
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // Check if file exists and is a markdown file
     if (!fs.existsSync(fullFilePath)) {
       return res.status(404).json({ error: 'File not found', path: fullFilePath });
     }
-    
+
     if (!fullFilePath.endsWith('.md')) {
       return res.status(400).json({ error: 'Only markdown files are supported' });
     }
-    
+
     // Read file content
     const content = fs.readFileSync(fullFilePath, 'utf8');
     res.json(content);
-    
+
   } catch (error) {
     logger.error('Error serving markdown file:', error);
-    res.status(500).json({ 
-      error: error instanceof Error ? error.message : 'Failed to read file' 
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to read file'
     });
   }
 });
@@ -500,9 +500,9 @@ app.get('/api/dependencies', async (req, res) => {
   const { exec } = require('child_process');
   const util = require('util');
   const execPromise = util.promisify(exec);
-  
+
   const dependencies = [];
-  
+
   // Check Python
   try {
     const { stdout } = await execPromise('python3 --version');
@@ -511,7 +511,7 @@ app.get('/api/dependencies', async (req, res) => {
   } catch {
     dependencies.push({ name: 'Python', installed: false, required: '>=3.9' });
   }
-  
+
   // Check Docker
   try {
     const { stdout } = await execPromise('docker --version');
@@ -520,11 +520,11 @@ app.get('/api/dependencies', async (req, res) => {
   } catch {
     dependencies.push({ name: 'Docker', installed: false, required: 'any' });
   }
-  
+
   // Check Azure CLI - try multiple approaches
   let azInstalled = false;
   let azVersion = 'unknown';
-  
+
   // Method 1: Try 'which az' command
   try {
     const { stdout: whichOutput } = await execPromise('which az');
@@ -545,7 +545,7 @@ app.get('/api/dependencies', async (req, res) => {
   } catch (error) {
     // Method 2: Try common installation paths
     const commonPaths = ['/usr/local/bin/az', '/opt/homebrew/bin/az', '/usr/bin/az'];
-    
+
     for (const azPath of commonPaths) {
       try {
         // Check if file exists and is executable
@@ -567,7 +567,7 @@ app.get('/api/dependencies', async (req, res) => {
         continue;
       }
     }
-    
+
     // Method 3: Last resort - try direct az command (might work even if which fails)
     if (!azInstalled) {
       try {
@@ -581,24 +581,24 @@ app.get('/api/dependencies', async (req, res) => {
       }
     }
   }
-  
-  dependencies.push({ 
-    name: 'Azure CLI', 
-    installed: azInstalled, 
+
+  dependencies.push({
+    name: 'Azure CLI',
+    installed: azInstalled,
     version: azInstalled ? azVersion : undefined,
-    required: '>=2.0' 
+    required: '>=2.0'
   });
-  
+
   // Check Neo4j - check if Docker container is running
   const neo4jStatus = await neo4jContainer.getStatus();
-  dependencies.push({ 
-    name: 'Neo4j', 
-    installed: neo4jStatus.running && (neo4jStatus.health === 'healthy' || neo4jStatus.health === 'starting'), 
+  dependencies.push({
+    name: 'Neo4j',
+    installed: neo4jStatus.running && (neo4jStatus.health === 'healthy' || neo4jStatus.health === 'starting'),
     version: neo4jStatus.version || '5.25.1', // Use actual version from container if available
     required: '>=5.0',
     status: neo4jStatus.health
   });
-  
+
   // Check Terraform
   try {
     const { stdout } = await execPromise('terraform --version');
@@ -607,7 +607,7 @@ app.get('/api/dependencies', async (req, res) => {
   } catch {
     dependencies.push({ name: 'Terraform', installed: false, required: '>=1.0' });
   }
-  
+
   res.json(dependencies);
 });
 
@@ -632,23 +632,23 @@ app.get('/api/test/azure', async (req, res) => {
     const { exec } = require('child_process');
     const { promisify } = require('util');
     const execPromise = promisify(exec);
-    
+
     // Check if Azure CLI is installed
     try {
       await execPromise('which az');
     } catch {
       return res.json({ success: false, error: 'Azure CLI not installed' });
     }
-    
+
     // Check if we have Azure credentials configured
     const tenantId = process.env.AZURE_TENANT_ID;
     const clientId = process.env.AZURE_CLIENT_ID;
     const clientSecret = process.env.AZURE_CLIENT_SECRET;
-    
+
     if (!tenantId || !clientId || !clientSecret) {
       return res.json({ success: false, error: 'Azure credentials not configured' });
     }
-    
+
     // Try to authenticate with Azure
     try {
       await execPromise(`az login --service-principal -u ${clientId} -p ${clientSecret} --tenant ${tenantId} --only-show-errors 2>&1`);
@@ -669,11 +669,11 @@ app.get('/api/test/azure', async (req, res) => {
 app.get('/api/test/openai', async (req, res) => {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    
+
     if (!apiKey) {
       return res.json({ success: false, error: 'OpenAI API key not configured' });
     }
-    
+
     // Test the API key by making a simple request to OpenAI
     try {
       const response = await fetch('https://api.openai.com/v1/models', {
@@ -682,7 +682,7 @@ app.get('/api/test/openai', async (req, res) => {
           'Authorization': `Bearer ${apiKey}`,
         },
       });
-      
+
       if (response.ok) {
         return res.json({ success: true });
       } else if (response.status === 401) {
@@ -724,18 +724,18 @@ async function startServer() {
     logger.info('Starting Neo4j container...');
     await neo4jContainer.start();
     logger.info('Neo4j container is ready');
-    
+
     // Re-initialize Neo4j service connection after container is ready
     setTimeout(() => {
       // Give Neo4j service a moment to reconnect
       logger.debug('Neo4j service should now be connected');
     }, 2000);
-    
+
   } catch (error) {
     logger.error('Failed to start Neo4j container:', error);
     logger.warn('Continuing without Neo4j - some features may not work');
   }
-  
+
   // Start the HTTP server
   httpServer.listen(PORT, () => {
     logger.info(`Backend server running on http://localhost:${PORT}`);

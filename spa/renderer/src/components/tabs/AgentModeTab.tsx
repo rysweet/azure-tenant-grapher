@@ -15,8 +15,8 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import { 
-  Send as SendIcon, 
+import {
+  Send as SendIcon,
   Clear as ClearIcon,
   Storage as StorageIcon,
   Security as SecurityIcon,
@@ -115,7 +115,7 @@ const AgentModeTab: React.FC = () => {
 
     try {
       const result = await window.electronAPI.cli.execute('agent-mode', ['--prompt', messageText]);
-      
+
       let response = '';
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
@@ -126,17 +126,17 @@ const AgentModeTab: React.FC = () => {
       window.electronAPI.on('process:exit', (data: any) => {
         if (data.id === result.data.id) {
           setIsProcessing(false);
-          
+
           const assistantMessage: Message = {
             role: 'assistant',
             content: response || 'No response received',
             timestamp: new Date(),
           };
-          
+
           setMessages((prev) => [...prev, assistantMessage]);
         }
       });
-      
+
     } catch (err: any) {
       setIsProcessing(false);
       const errorMessage: Message = {
@@ -180,12 +180,12 @@ const AgentModeTab: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Click on any question below to get started, or type your own question in the text field.
             </Typography>
-            
+
             <Grid container spacing={2}>
               {sampleQueries.map((sample, index) => (
                 <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Card 
-                    sx={{ 
+                  <Card
+                    sx={{
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
                         transform: 'translateY(-2px)',
@@ -196,9 +196,9 @@ const AgentModeTab: React.FC = () => {
                     <CardContent sx={{ p: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <sample.icon sx={{ mr: 1, color: 'primary.main' }} />
-                        <Chip 
-                          label={sample.category} 
-                          size="small" 
+                        <Chip
+                          label={sample.category}
+                          size="small"
                           variant="outlined"
                           sx={{ ml: 'auto' }}
                         />
@@ -209,9 +209,9 @@ const AgentModeTab: React.FC = () => {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         {sample.description}
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           fontStyle: 'italic',
                           color: 'text.secondary',
                           display: 'block',

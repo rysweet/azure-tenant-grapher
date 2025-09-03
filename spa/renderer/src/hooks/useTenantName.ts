@@ -25,10 +25,10 @@ export const useTenantName = (): string => {
         } catch (error) {
           console.log('Could not get tenant name from backend');
         }
-        
+
         // Fallback to getting from config/env and formatting
         const tenantId = state.config.tenantId || await window.electronAPI.env.get('AZURE_TENANT_ID');
-        
+
         if (!tenantId) {
           setTenantName('No Tenant');
           return;
@@ -50,7 +50,7 @@ export const useTenantName = (): string => {
 
 function formatTenantName(tenantId: string): string {
   if (!tenantId) return 'No Tenant';
-  
+
   // If it's a domain (contains dots), extract the domain name
   if (tenantId.includes('.')) {
     const parts = tenantId.split('.');
@@ -59,11 +59,11 @@ function formatTenantName(tenantId: string): string {
       return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
     }
   }
-  
+
   // If it's a UUID or other format, show truncated version
   if (tenantId.length > 20) {
     return `${tenantId.substring(0, 8)}...${tenantId.substring(tenantId.length - 4)}`;
   }
-  
+
   return tenantId;
 }

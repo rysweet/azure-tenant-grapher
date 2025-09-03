@@ -12,7 +12,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import time
 from typing import TYPE_CHECKING, Optional
 
 import click
@@ -1151,7 +1150,7 @@ def spa_stop():
             click.echo(f"❌ Failed to stop SPA: {e}", err=True)
     else:
         click.echo("ℹ️  No SPA process running.")
-    
+
     # Stop MCP server
     if os.path.exists(MCP_PIDFILE):
         try:
@@ -1168,39 +1167,41 @@ def spa_stop():
             click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
     else:
         click.echo("ℹ️  No MCP server running.")
-    
+
     if spa_stopped or mcp_stopped:
         click.echo("✅ Services stopped successfully.")
     else:
         click.echo("ℹ️  No services were running.")
 
 
-def _save_to_env(tenant_id: str, app_id: str, client_secret: Optional[str] = None) -> None:
+def _save_to_env(
+    tenant_id: str, app_id: str, client_secret: Optional[str] = None
+) -> None:
     """Helper function to save configuration to .env file."""
     env_file_path = os.path.join(os.getcwd(), ".env")
     click.echo(f"\n💾 Saving configuration to {env_file_path}...")
-    
+
     # Read existing .env file if it exists
     env_vars = {}
     if os.path.exists(env_file_path):
-        with open(env_file_path, 'r') as f:
+        with open(env_file_path) as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
                     env_vars[key.strip()] = value.strip()
-    
+
     # Update with new values
-    env_vars['AZURE_TENANT_ID'] = tenant_id
-    env_vars['AZURE_CLIENT_ID'] = app_id
+    env_vars["AZURE_TENANT_ID"] = tenant_id
+    env_vars["AZURE_CLIENT_ID"] = app_id
     if client_secret:
-        env_vars['AZURE_CLIENT_SECRET'] = client_secret
-    
+        env_vars["AZURE_CLIENT_SECRET"] = client_secret
+
     # Write back to file
-    with open(env_file_path, 'w') as f:
+    with open(env_file_path, "w") as f:
         for key, value in env_vars.items():
             f.write(f"{key}={value}\n")
-    
+
     click.echo("✅ Configuration saved to .env file!")
 
 
@@ -1232,28 +1233,32 @@ def _save_to_env(tenant_id: str, app_id: str, client_secret: Optional[str] = Non
     default=False,
     help="Automatically save configuration to .env file",
 )
-def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: str, create_secret: bool, save_to_env: bool):
+def app_registration_command(
+    tenant_id: Optional[str],
+    name: str,
+    redirect_uri: str,
+    create_secret: bool,
+    save_to_env: bool,
+):
     """Create an Azure AD app registration for Azure Tenant Grapher.
-    
+
     This command guides you through creating an Azure AD application registration
     with the necessary permissions for Azure Tenant Grapher to function properly.
-    
+
     The app registration will be configured with:
     - Microsoft Graph API permissions (User.Read, Directory.Read.All)
     - Azure Management API permissions (user_impersonation)
     - Optional client secret for authentication
-    
+
     You can either:
     1. Run this command with Azure CLI installed to automatically create the registration
     2. Follow the manual instructions provided to create it through the Azure Portal
     """
-    import json
     import subprocess
-    from typing import Dict, Any
-    
+
     click.echo("🔐 Azure AD App Registration Setup")
     click.echo("=" * 50)
-    
+
     # Check if Azure CLI is installed
     try:
         result = subprocess.run(
@@ -1265,12 +1270,14 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
         has_azure_cli = result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         has_azure_cli = False
-    
+
     if not has_azure_cli:
         click.echo("⚠️  Azure CLI not detected. Showing manual instructions...")
         click.echo("\n📋 Manual App Registration Steps:")
         click.echo("\n1. Navigate to Azure Portal (https://portal.azure.com)")
-        click.echo("2. Go to Azure Active Directory → App registrations → New registration")
+        click.echo(
+            "2. Go to Azure Active Directory → App registrations → New registration"
+        )
         click.echo(f"3. Name: {name}")
         click.echo("4. Supported account types: Single tenant")
         click.echo(f"5. Redirect URI: Web - {redirect_uri}")
@@ -1290,56 +1297,94 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             click.echo("   - AZURE_CLIENT_SECRET = <Client secret value>")
             click.echo("   - AZURE_TENANT_ID = <Directory (tenant) ID>")
         return
-    
+
     # Azure CLI is available, proceed with automated creation
     click.echo("✅ Azure CLI detected. Proceeding with automated setup...")
-    
+
     # Check current user's permissions
     click.echo("\n🔍 Checking your permissions...")
-    
+
     # Get current user info
     user_result = subprocess.run(
-        ["az", "ad", "signed-in-user", "show", "--query", "{id:id,displayName:displayName,userPrincipalName:userPrincipalName}", "-o", "json"],
+        [
+            "az",
+            "ad",
+            "signed-in-user",
+            "show",
+            "--query",
+            "{id:id,displayName:displayName,userPrincipalName:userPrincipalName}",
+            "-o",
+            "json",
+        ],
         capture_output=True,
         text=True,
     )
-    
+
     if user_result.returncode == 0:
         user_info = json.loads(user_result.stdout)
-        click.echo(f"   Signed in as: {user_info.get('displayName', 'Unknown')} ({user_info.get('userPrincipalName', 'Unknown')})")
-        
+        click.echo(
+            f"   Signed in as: {user_info.get('displayName', 'Unknown')} ({user_info.get('userPrincipalName', 'Unknown')})"
+        )
+
         # Check if user has admin roles
         roles_result = subprocess.run(
-            ["az", "role", "assignment", "list", "--assignee", user_info['id'], "--query", "[].roleDefinitionName", "-o", "json"],
+            [
+                "az",
+                "role",
+                "assignment",
+                "list",
+                "--assignee",
+                user_info["id"],
+                "--query",
+                "[].roleDefinitionName",
+                "-o",
+                "json",
+            ],
             capture_output=True,
             text=True,
         )
-        
+
         if roles_result.returncode == 0:
             roles = json.loads(roles_result.stdout)
-            admin_roles = [r for r in roles if any(admin in r.lower() for admin in ['administrator', 'owner', 'contributor'])]
-            
+            admin_roles = [
+                r
+                for r in roles
+                if any(
+                    admin in r.lower()
+                    for admin in ["administrator", "owner", "contributor"]
+                )
+            ]
+
             if admin_roles:
                 click.echo(f"   Your roles: {', '.join(admin_roles[:3])}")
-                if 'Global Administrator' in roles or 'Application Administrator' in roles:
-                    click.echo("   ✅ You have sufficient permissions to grant admin consent")
+                if (
+                    "Global Administrator" in roles
+                    or "Application Administrator" in roles
+                ):
+                    click.echo(
+                        "   ✅ You have sufficient permissions to grant admin consent"
+                    )
                 else:
-                    click.echo("   ⚠️  You can create apps but may need a Global Admin to grant consent")
+                    click.echo(
+                        "   ⚠️  You can create apps but may need a Global Admin to grant consent"
+                    )
             else:
-                click.echo("   ⚠️  Limited permissions detected - some operations may fail")
-        
+                click.echo(
+                    "   ⚠️  Limited permissions detected - some operations may fail"
+                )
+
         # Check if user can create applications
         can_create_apps = subprocess.run(
             ["az", "ad", "app", "list", "--query", "[0].id", "-o", "tsv"],
             capture_output=True,
             text=True,
         )
-        
+
         if can_create_apps.returncode != 0:
             click.echo("   ❌ You don't have permission to create app registrations")
             click.echo("   Please contact your Azure AD administrator")
             return
-    
+
     # Get or use provided tenant ID
     if not tenant_id:
         try:
@@ -1352,15 +1397,18 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
                 tenant_id = result.stdout.strip()
                 click.echo(f"📍 Using current tenant: {tenant_id}")
             else:
-                click.echo("❌ Could not determine tenant ID. Please provide --tenant-id", err=True)
+                click.echo(
+                    "❌ Could not determine tenant ID. Please provide --tenant-id",
+                    err=True,
+                )
                 return
         except subprocess.SubprocessError as e:
             click.echo(f"❌ Failed to get tenant ID: {e}", err=True)
             return
-    
+
     # Create the app registration
     click.echo(f"\n📝 Creating app registration '{name}'...")
-    
+
     manifest = {
         "requiredResourceAccess": [
             {
@@ -1368,62 +1416,71 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
                 "resourceAccess": [
                     {
                         "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",  # User.Read
-                        "type": "Scope"
+                        "type": "Scope",
                     },
                     {
                         "id": "7ab1d382-f21e-4acd-a863-ba3e13f7da61",  # Directory.Read.All
-                        "type": "Role"
-                    }
-                ]
+                        "type": "Role",
+                    },
+                ],
             },
             {
                 "resourceAppId": "797f4846-ba00-4fd7-ba43-dac1f8f63013",  # Azure Service Management
                 "resourceAccess": [
                     {
                         "id": "41094075-9dad-400e-a0bd-54e686782033",  # user_impersonation
-                        "type": "Scope"
+                        "type": "Scope",
                     }
-                ]
-            }
+                ],
+            },
         ],
-        "web": {
-            "redirectUris": [redirect_uri]
-        }
+        "web": {"redirectUris": [redirect_uri]},
     }
-    
+
     # Save manifest to temp file
     import tempfile
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(manifest, f)
         manifest_path = f.name
-    
+
     try:
         # Create the app
         result = subprocess.run(
             [
-                "az", "ad", "app", "create",
-                "--display-name", name,
-                "--sign-in-audience", "AzureADMyOrg",
-                "--required-resource-accesses", f"@{manifest_path}",
-                "--query", "{appId:appId, objectId:id}",
-                "-o", "json"
+                "az",
+                "ad",
+                "app",
+                "create",
+                "--display-name",
+                name,
+                "--sign-in-audience",
+                "AzureADMyOrg",
+                "--required-resource-accesses",
+                f"@{manifest_path}",
+                "--query",
+                "{appId:appId, objectId:id}",
+                "-o",
+                "json",
             ],
             capture_output=True,
             text=True,
         )
-        
+
         if result.returncode != 0:
-            click.echo(f"❌ Failed to create app registration: {result.stderr}", err=True)
+            click.echo(
+                f"❌ Failed to create app registration: {result.stderr}", err=True
+            )
             return
-        
+
         app_info = json.loads(result.stdout)
         app_id = app_info["appId"]
         object_id = app_info["objectId"]
-        
-        click.echo(f"✅ App registration created successfully!")
+
+        click.echo("✅ App registration created successfully!")
         click.echo(f"   Client ID: {app_id}")
         click.echo(f"   Object ID: {object_id}")
-        
+
         # Create service principal
         click.echo("\n📝 Creating service principal...")
         result = subprocess.run(
@@ -1431,35 +1488,48 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             capture_output=True,
             text=True,
         )
-        
+
         if result.returncode != 0:
-            click.echo(f"⚠️  Failed to create service principal: {result.stderr}", err=True)
+            click.echo(
+                f"⚠️  Failed to create service principal: {result.stderr}", err=True
+            )
         else:
             click.echo("✅ Service principal created")
-        
+
         # Create client secret if requested
         client_secret = None
         if create_secret:
             click.echo("\n🔑 Creating client secret...")
             result = subprocess.run(
                 [
-                    "az", "ad", "app", "credential", "reset",
-                    "--id", app_id,
-                    "--display-name", "Azure Tenant Grapher Secret",
-                    "--years", "2",  # Valid for 2 years
-                    "--query", "password",
-                    "-o", "tsv"
+                    "az",
+                    "ad",
+                    "app",
+                    "credential",
+                    "reset",
+                    "--id",
+                    app_id,
+                    "--display-name",
+                    "Azure Tenant Grapher Secret",
+                    "--years",
+                    "2",  # Valid for 2 years
+                    "--query",
+                    "password",
+                    "-o",
+                    "tsv",
                 ],
                 capture_output=True,
                 text=True,
             )
-            
+
             if result.returncode != 0:
-                click.echo(f"❌ Failed to create client secret: {result.stderr}", err=True)
+                click.echo(
+                    f"❌ Failed to create client secret: {result.stderr}", err=True
+                )
             else:
                 client_secret = result.stdout.strip()
                 click.echo("✅ Client secret created successfully!")
-        
+
         # Try to grant admin consent automatically
         click.echo("\n🔐 Attempting to grant admin consent...")
         consent_result = subprocess.run(
@@ -1467,45 +1537,50 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
             capture_output=True,
             text=True,
         )
-        
+
         consent_granted = False
         if consent_result.returncode == 0:
             click.echo("✅ Admin consent granted successfully!")
             consent_granted = True
         else:
-            if "AADSTS50058" in consent_result.stderr or "signed in" in consent_result.stderr.lower():
-                click.echo("⚠️  Cannot grant admin consent automatically - requires interactive login as Global Administrator")
+            if (
+                "AADSTS50058" in consent_result.stderr
+                or "signed in" in consent_result.stderr.lower()
+            ):
+                click.echo(
+                    "⚠️  Cannot grant admin consent automatically - requires interactive login as Global Administrator"
+                )
             else:
                 click.echo(f"⚠️  Admin consent failed: {consent_result.stderr}")
-        
+
         # Save to .env file if requested
         if save_to_env:
             env_file_path = os.path.join(os.getcwd(), ".env")
             click.echo(f"\n💾 Saving configuration to {env_file_path}...")
-            
+
             # Read existing .env file if it exists
             env_vars = {}
             if os.path.exists(env_file_path):
-                with open(env_file_path, 'r') as f:
+                with open(env_file_path) as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            key, value = line.split('=', 1)
+                        if line and not line.startswith("#") and "=" in line:
+                            key, value = line.split("=", 1)
                             env_vars[key.strip()] = value.strip()
-            
+
             # Update with new values
-            env_vars['AZURE_TENANT_ID'] = tenant_id
-            env_vars['AZURE_CLIENT_ID'] = app_id
+            env_vars["AZURE_TENANT_ID"] = tenant_id
+            env_vars["AZURE_CLIENT_ID"] = app_id
             if client_secret:
-                env_vars['AZURE_CLIENT_SECRET'] = client_secret
-            
+                env_vars["AZURE_CLIENT_SECRET"] = client_secret
+
             # Write back to file
-            with open(env_file_path, 'w') as f:
+            with open(env_file_path, "w") as f:
                 for key, value in env_vars.items():
                     f.write(f"{key}={value}\n")
-            
+
             click.echo("✅ Configuration saved to .env file!")
-        
+
         # Display configuration
         click.echo("\n" + "=" * 50)
         click.echo("📋 Configuration for .env file:")
@@ -1515,28 +1590,36 @@ def app_registration_command(tenant_id: Optional[str], name: str, redirect_uri: 
         if client_secret:
             click.echo(f"AZURE_CLIENT_SECRET={client_secret}")
         click.echo("=" * 50)
-        
+
         # Display next steps with proper numbering
         click.echo("\n✅ Next steps:")
         step_num = 1
-        
+
         if not save_to_env:
             click.echo(f"{step_num}. Copy the above configuration to your .env file")
             step_num += 1
-        
+
         if client_secret:
-            click.echo(f"{step_num}. Store the client secret securely - it won't be shown again")
+            click.echo(
+                f"{step_num}. Store the client secret securely - it won't be shown again"
+            )
             step_num += 1
-        
+
         if not consent_granted:
             click.echo(f"{step_num}. Grant admin consent for the API permissions:")
-            click.echo(f"   Option A: Run as Global Admin: az ad app permission admin-consent --id {app_id}")
-            click.echo(f"   Option B: Use Azure Portal: Azure AD → App registrations → {name} → API permissions → Grant admin consent")
-            click.echo(f"   Option C: Use consent URL: https://login.microsoftonline.com/{tenant_id}/adminconsent?client_id={app_id}")
+            click.echo(
+                f"   Option A: Run as Global Admin: az ad app permission admin-consent --id {app_id}"
+            )
+            click.echo(
+                f"   Option B: Use Azure Portal: Azure AD → App registrations → {name} → API permissions → Grant admin consent"
+            )
+            click.echo(
+                f"   Option C: Use consent URL: https://login.microsoftonline.com/{tenant_id}/adminconsent?client_id={app_id}"
+            )
             step_num += 1
-        
-        click.echo(f"\n✨ App registration setup complete!")
-        
+
+        click.echo("\n✨ App registration setup complete!")
+
     finally:
         # Clean up temp file
         if os.path.exists(manifest_path):

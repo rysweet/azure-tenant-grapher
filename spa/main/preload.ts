@@ -5,69 +5,69 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
   // CLI operations
   cli: {
-    execute: (command: string, args: string[]) => 
+    execute: (command: string, args: string[]) =>
       ipcRenderer.invoke('cli:execute', command, args),
-    cancel: (processId: string) => 
+    cancel: (processId: string) =>
       ipcRenderer.invoke('cli:cancel', processId),
-    status: (processId: string) => 
+    status: (processId: string) =>
       ipcRenderer.invoke('cli:status', processId),
   },
 
   // File operations
   file: {
-    read: (filePath: string) => 
+    read: (filePath: string) =>
       ipcRenderer.invoke('file:read', filePath),
-    write: (filePath: string, content: string) => 
+    write: (filePath: string, content: string) =>
       ipcRenderer.invoke('file:write', filePath, content),
-    exists: (filePath: string) => 
+    exists: (filePath: string) =>
       ipcRenderer.invoke('file:exists', filePath),
   },
 
   // Dialog operations
   dialog: {
-    openFile: (options?: any) => 
+    openFile: (options?: any) =>
       ipcRenderer.invoke('dialog:openFile', options),
-    saveFile: (options?: any) => 
+    saveFile: (options?: any) =>
       ipcRenderer.invoke('dialog:saveFile', options),
-    openDirectory: (options?: any) => 
+    openDirectory: (options?: any) =>
       ipcRenderer.invoke('dialog:openDirectory', options),
   },
 
   // Configuration
   config: {
-    get: (key: string) => 
+    get: (key: string) =>
       ipcRenderer.invoke('config:get', key),
-    set: (key: string, value: any) => 
+    set: (key: string, value: any) =>
       ipcRenderer.invoke('config:set', key, value),
-    delete: (key: string) => 
+    delete: (key: string) =>
       ipcRenderer.invoke('config:delete', key),
-    clear: () => 
+    clear: () =>
       ipcRenderer.invoke('config:clear'),
   },
 
   // Environment
   env: {
-    get: (key: string) => 
+    get: (key: string) =>
       ipcRenderer.invoke('env:get', key),
-    getAll: () => 
+    getAll: () =>
       ipcRenderer.invoke('env:getAll'),
   },
 
   // System operations
   system: {
-    openExternal: (url: string) => 
+    openExternal: (url: string) =>
       ipcRenderer.invoke('system:openExternal', url),
-    showItemInFolder: (filePath: string) => 
+    showItemInFolder: (filePath: string) =>
       ipcRenderer.invoke('system:showItemInFolder', filePath),
-    platform: () => 
+    platform: () =>
       ipcRenderer.invoke('system:platform'),
   },
 
   // Process management
   process: {
-    list: () => 
+    list: () =>
       ipcRenderer.invoke('process:list'),
-    cleanup: () => 
+    cleanup: () =>
       ipcRenderer.invoke('process:cleanup'),
   },
 
@@ -76,7 +76,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),
     close: () => ipcRenderer.send('window:close'),
-    resize: (width: number, height: number) => 
+    resize: (width: number, height: number) =>
       ipcRenderer.invoke('window:resize', width, height),
   },
 
@@ -93,7 +93,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       'process:exit',
       'process:error',
     ];
-    
+
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args));
     }

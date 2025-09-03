@@ -40,7 +40,7 @@ const ThreatModelTab: React.FC = () => {
       try {
         const response = await axios.get('http://localhost:3001/api/config/env');
         const envData = response.data;
-        
+
         // Set tenant ID from .env if available and current value is empty
         if (envData.AZURE_TENANT_ID && !tenantId) {
           setTenantId(envData.AZURE_TENANT_ID);
@@ -50,7 +50,7 @@ const ThreatModelTab: React.FC = () => {
         // Silently fail - user can still manually enter tenant ID
       }
     };
-    
+
     loadEnvConfig();
   }, [tenantId]);
 
@@ -67,12 +67,12 @@ const ThreatModelTab: React.FC = () => {
 
     try {
       const result = await window.electronAPI.cli.execute('threat-model', ['--tenant-id', tenantId]);
-      
+
       let outputBuffer = '';
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
           outputBuffer += data.data.join('\n');
-          
+
           // Update progress based on output
           if (outputBuffer.includes('Analyzing')) setProgress(25);
           if (outputBuffer.includes('Identifying')) setProgress(50);
@@ -104,7 +104,7 @@ const ThreatModelTab: React.FC = () => {
           }
         }
       });
-      
+
     } catch (err: any) {
       setError(err.message);
       setIsAnalyzing(false);
@@ -147,7 +147,7 @@ const ThreatModelTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Threat Model Analysis
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -166,7 +166,7 @@ const ThreatModelTab: React.FC = () => {
               required
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Button
@@ -179,7 +179,7 @@ const ThreatModelTab: React.FC = () => {
               >
                 {isAnalyzing ? 'Analyzing...' : 'Analyze Threats'}
               </Button>
-              
+
               {results && (
                 <Button
                   variant="outlined"

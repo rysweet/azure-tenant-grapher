@@ -18,7 +18,7 @@ export const isValidTenantId = (id: string): boolean => {
   if (isValidUUID(id)) {
     return true;
   }
-  
+
   // Check if it's a valid domain format (e.g., contoso.onmicrosoft.com)
   const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\.[a-zA-Z]{2,}$/;
   return domainRegex.test(id);

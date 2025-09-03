@@ -71,7 +71,7 @@ const GenerateSpecTab: React.FC = () => {
 
     try {
       const result = await window.electronAPI.cli.execute('generate-spec', args);
-      
+
       // Listen for output and stream content
       let specContent = '';
       window.electronAPI.on('process:output', (data: any) => {
@@ -96,7 +96,7 @@ const GenerateSpecTab: React.FC = () => {
       });
 
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
-      
+
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
@@ -134,7 +134,7 @@ const GenerateSpecTab: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Generate Tenant Specification From Graph
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
@@ -164,7 +164,7 @@ const GenerateSpecTab: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Output Format</InputLabel>
@@ -192,7 +192,7 @@ const GenerateSpecTab: React.FC = () => {
               >
                 {isGenerating ? 'Generating...' : 'Generate Spec'}
               </Button>
-              
+
               {generatedSpec && (
                 <Button
                   variant="outlined"

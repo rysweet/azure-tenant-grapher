@@ -3,17 +3,18 @@
 import ast
 import sys
 from pathlib import Path
+
 import pytest
 
 
 def test_cli_commands_syntax():
     """Test that cli_commands.py has valid Python syntax."""
     cli_commands_path = Path(__file__).parent.parent / "src" / "cli_commands.py"
-    
+
     # Read the file content
-    with open(cli_commands_path, 'r', encoding='utf-8') as f:
+    with open(cli_commands_path, encoding="utf-8") as f:
         source_code = f.read()
-    
+
     # Try to parse it as valid Python
     try:
         ast.parse(source_code)
@@ -24,11 +25,11 @@ def test_cli_commands_syntax():
 def test_cli_script_syntax():
     """Test that cli.py has valid Python syntax."""
     cli_script_path = Path(__file__).parent.parent / "scripts" / "cli.py"
-    
-    # Read the file content  
-    with open(cli_script_path, 'r', encoding='utf-8') as f:
+
+    # Read the file content
+    with open(cli_script_path, encoding="utf-8") as f:
         source_code = f.read()
-    
+
     # Try to parse it as valid Python
     try:
         ast.parse(source_code)
@@ -41,13 +42,13 @@ def test_can_import_cli():
     try:
         # Add parent directory to path
         sys.path.insert(0, str(Path(__file__).parent.parent))
-        
+
         # Try to import cli_commands
-        import src.cli_commands
-        
         # Try to import the main CLI
         from scripts.cli import cli
-        
+
+        import src.cli_commands
+
     except SyntaxError as e:
         pytest.fail(f"Cannot import CLI due to syntax error: {e}")
     except ImportError as e:
@@ -64,4 +65,5 @@ def test_can_import_cli():
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

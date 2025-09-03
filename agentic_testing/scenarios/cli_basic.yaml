@@ -1,0 +1,114 @@
+# Basic CLI test scenarios
+scenarios:
+  - id: cli_version_check
+    feature: CLI Version
+    name: Check CLI version output
+    description: Verify that the CLI returns version information
+    interface: cli
+    steps:
+      - action: execute
+        target: "--version"
+        description: Run version command
+    expected_outcome: Version information is displayed
+    verification:
+      - type: text
+        target: output
+        expected: "azure-tenant-grapher"
+        operator: contains
+    tags:
+      - smoke-test
+      - cli-basic
+    priority: high
+    timeout: 10
+
+  - id: cli_help_command
+    feature: CLI Help
+    name: Check help command output
+    description: Verify that help command provides usage information
+    interface: cli
+    steps:
+      - action: execute
+        target: "--help"
+        description: Run help command
+    expected_outcome: Help text is displayed with available commands
+    verification:
+      - type: text
+        target: output
+        expected: "Usage"
+        operator: contains
+      - type: text
+        target: output
+        expected: "Commands"
+        operator: contains
+    tags:
+      - smoke-test
+      - cli-basic
+    priority: high
+    timeout: 10
+
+  - id: cli_doctor_command
+    feature: CLI Doctor
+    name: Run doctor command to check dependencies
+    description: Verify that doctor command checks system dependencies
+    interface: cli
+    steps:
+      - action: execute
+        target: "doctor"
+        description: Run doctor command
+    expected_outcome: Doctor checks dependencies and reports status
+    verification:
+      - type: text
+        target: output
+        expected: "Checking"
+        operator: contains
+    tags:
+      - smoke-test
+      - cli-diagnostics
+    priority: medium
+    timeout: 30
+
+  - id: cli_invalid_command
+    feature: CLI Error Handling
+    name: Handle invalid command gracefully
+    description: Verify that CLI handles invalid commands properly
+    interface: cli
+    steps:
+      - action: execute
+        target: "invalid-command-xyz"
+        description: Run invalid command
+        expected:
+          returncode: 2  # Click typically returns 2 for invalid commands
+    expected_outcome: Error message is displayed for invalid command
+    verification:
+      - type: text
+        target: stderr
+        expected: "Error"
+        operator: contains
+    tags:
+      - error-handling
+      - cli-basic
+    priority: low
+    timeout: 10
+
+  - id: cli_build_missing_tenant
+    feature: CLI Build Command
+    name: Build command without tenant ID
+    description: Verify that build command requires tenant ID
+    interface: cli
+    steps:
+      - action: execute
+        target: "build"
+        description: Run build without tenant ID
+        expected:
+          returncode: 2
+    expected_outcome: Error message about missing tenant ID
+    verification:
+      - type: text
+        target: stderr
+        expected: "tenant"
+        operator: contains
+    tags:
+      - error-handling
+      - cli-build
+    priority: medium
+    timeout: 10

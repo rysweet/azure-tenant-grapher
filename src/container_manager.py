@@ -67,7 +67,9 @@ class Neo4jContainerManager:
     - If not set, a unique name is generated per test run (e.g., azure-tenant-grapher-neo4j-<random>).
     """
 
-    def __init__(self, compose_file: str = "docker-compose.yml", debug: bool = False) -> None:
+    def __init__(
+        self, compose_file: str = "docker-compose.yml", debug: bool = False
+    ) -> None:
         """
         Initialize the container manager.
 

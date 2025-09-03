@@ -262,7 +262,7 @@ class AzureTenantGrapherConfig:
             config.processing.max_retries = max_retries
         if max_build_threads is not None:
             config.processing.max_build_threads = max_build_threads
-            
+
         # Debug output after Neo4j config is initialized
         if debug:
             print(

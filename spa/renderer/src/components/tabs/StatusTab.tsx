@@ -97,12 +97,12 @@ const StatusTab: React.FC = () => {
     checkDependencies();
     checkAzureConnection();
     checkOpenAIConnection();
-    
+
     // Set up auto-refresh every 5 seconds for Neo4j
     const interval = setInterval(() => {
       checkNeo4jStatus();
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -110,7 +110,7 @@ const StatusTab: React.FC = () => {
     try {
       const response = await axios.get('http://localhost:3001/api/neo4j/status');
       setNeo4jStatus(response.data);
-      
+
       // If Neo4j is running, load database stats
       if (response.data.running) {
         await loadDatabaseStats();
@@ -217,11 +217,11 @@ const StatusTab: React.FC = () => {
       setError('Please specify a backup path');
       return;
     }
-    
+
     setOperationInProgress(true);
     setOperationMessage('Creating backup...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/backup', {
         path: backupPath
@@ -242,11 +242,11 @@ const StatusTab: React.FC = () => {
       setError('Please specify a restore path');
       return;
     }
-    
+
     setOperationInProgress(true);
     setOperationMessage('Restoring database...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/restore', {
         path: restorePath
@@ -270,7 +270,7 @@ const StatusTab: React.FC = () => {
     setOperationInProgress(true);
     setOperationMessage('Wiping database...');
     setError(null);
-    
+
     try {
       const response = await axios.post('http://localhost:3001/api/database/wipe');
       setSuccess('Database wiped successfully');
@@ -516,7 +516,7 @@ const StatusTab: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
-        
+
         {/* Database Statistics - integrated */}
         {neo4jStatus?.running && (
           <>
@@ -545,7 +545,7 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -563,7 +563,7 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -576,15 +576,15 @@ const StatusTab: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               <Grid item xs={6} md={3}>
                 <Card variant="outlined">
                   <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography color="textSecondary" variant="caption">
                       State
                     </Typography>
-                    <Chip 
-                      label={dbStats?.isEmpty ? 'Empty' : 'Populated'} 
+                    <Chip
+                      label={dbStats?.isEmpty ? 'Empty' : 'Populated'}
                       color={dbStats?.isEmpty ? 'default' : 'success'}
                       size="small"
                       variant="outlined"
@@ -606,7 +606,7 @@ const StatusTab: React.FC = () => {
         <Grid container spacing={1}>
           {/* Azure Connection */}
           <Grid item xs={6}>
-            <Card variant="outlined" sx={{ 
+            <Card variant="outlined" sx={{
               backgroundColor: azureStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               borderColor: azureStatus.connected ? 'success.main' : 'error.main'
             }}>
@@ -638,8 +638,8 @@ const StatusTab: React.FC = () => {
                     )}
                   </Box>
                   <Tooltip title="Test Azure Connection">
-                    <IconButton 
-                      onClick={checkAzureConnection} 
+                    <IconButton
+                      onClick={checkAzureConnection}
                       disabled={azureStatus.loading}
                       size="small"
                       sx={{ padding: '2px' }}
@@ -651,10 +651,10 @@ const StatusTab: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           {/* OpenAI Connection */}
           <Grid item xs={6}>
-            <Card variant="outlined" sx={{ 
+            <Card variant="outlined" sx={{
               backgroundColor: openAIStatus.connected ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
               borderColor: openAIStatus.connected ? 'success.main' : 'warning.main'
             }}>
@@ -686,8 +686,8 @@ const StatusTab: React.FC = () => {
                     )}
                   </Box>
                   <Tooltip title="Test OpenAI Connection">
-                    <IconButton 
-                      onClick={checkOpenAIConnection} 
+                    <IconButton
+                      onClick={checkOpenAIConnection}
                       disabled={openAIStatus.loading}
                       size="small"
                       sx={{ padding: '2px' }}
@@ -720,7 +720,7 @@ const StatusTab: React.FC = () => {
             <Grid container spacing={1}>
               {dependencies.map((dep) => (
                 <Grid item xs={6} md={3} key={dep.name}>
-                  <Card variant="outlined" sx={{ 
+                  <Card variant="outlined" sx={{
                     backgroundColor: dep.installed ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)',
                     borderColor: dep.installed ? 'success.main' : 'error.main'
                   }}>
@@ -747,8 +747,8 @@ const StatusTab: React.FC = () => {
             </Grid>
 
             {dependencies.some((d) => !d.installed) && (
-              <Alert 
-                severity="warning" 
+              <Alert
+                severity="warning"
                 sx={{ mt: 2 }}
                 action={
                   <Button

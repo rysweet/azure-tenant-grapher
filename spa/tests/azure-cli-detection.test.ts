@@ -1,6 +1,6 @@
 /**
  * Test for Azure CLI detection functionality
- * 
+ *
  * This test verifies that the /api/dependencies endpoint correctly detects
  * Azure CLI when `which az` returns /opt/homebrew/bin/az
  */
@@ -24,7 +24,7 @@ describe('Azure CLI Detection', () => {
   beforeAll(async () => {
     // Start the backend server for testing
     const serverPath = path.join(__dirname, '../backend/src/server.ts');
-    
+
     return new Promise<void>((resolve, reject) => {
       serverProcess = spawn('npx', ['tsx', serverPath], {
         stdio: 'pipe',
@@ -34,7 +34,7 @@ describe('Azure CLI Detection', () => {
       serverProcess.stdout?.on('data', (data) => {
         const output = data.toString();
         console.log('Server output:', output);
-        
+
         // Look for server start message
         const portMatch = output.match(/Backend server running on http:\/\/localhost:(\d+)/);
         if (portMatch) {
@@ -69,7 +69,7 @@ describe('Azure CLI Detection', () => {
   test('should detect Azure CLI when az command is available', async () => {
     // This test assumes Azure CLI is installed at /opt/homebrew/bin/az
     // which is the common path on macOS with Homebrew
-    
+
     const response = await request(serverUrl)
       .get('/api/dependencies')
       .expect(200);
@@ -81,7 +81,7 @@ describe('Azure CLI Detection', () => {
 
     // Find Azure CLI dependency
     const azureCLI = dependencies.find((dep: Dependency) => dep.name === 'Azure CLI');
-    
+
     expect(azureCLI).toBeDefined();
     expect(azureCLI).toHaveProperty('installed');
     expect(azureCLI).toHaveProperty('version');
@@ -91,14 +91,14 @@ describe('Azure CLI Detection', () => {
     if (azureCLI && azureCLI.installed) {
       expect(azureCLI.version).toBeTruthy();
       expect(azureCLI.path).toBeTruthy();
-      
+
       // Common installation paths
       const validPaths = [
         '/opt/homebrew/bin/az',
         '/usr/local/bin/az',
         '/usr/bin/az'
       ];
-      
+
       expect(validPaths.some(validPath => azureCLI.path && azureCLI.path.includes('az'))).toBe(true);
     }
 
@@ -112,13 +112,13 @@ describe('Azure CLI Detection', () => {
       .expect(200);
 
     expect(response.body).toHaveProperty('dependencies');
-    
+
     const dependencies: Dependency[] = response.body.dependencies;
     const azureCLI = dependencies.find((dep: Dependency) => dep.name === 'Azure CLI');
-    
+
     expect(azureCLI).toBeDefined();
     expect(azureCLI).toHaveProperty('installed');
-    
+
     if (azureCLI && !azureCLI.installed) {
       expect(azureCLI.version).toBeFalsy();
       expect(azureCLI.path).toBeFalsy();
@@ -139,7 +139,7 @@ describe('Azure CLI Detection', () => {
       expect(dep).toHaveProperty('installed');
       expect(dep).toHaveProperty('version');
       expect(dep).toHaveProperty('path');
-      
+
       expect(typeof dep.name).toBe('string');
       expect(typeof dep.installed).toBe('boolean');
     });

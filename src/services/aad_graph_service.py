@@ -4,12 +4,11 @@ import time
 from typing import Any, Dict, List, Optional
 
 from azure.identity import ClientSecretCredential
-from msgraph import GraphServiceClient
-from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 from kiota_abstractions.base_request_configuration import RequestConfiguration
-from msgraph.generated.users.users_request_builder import UsersRequestBuilder
+from msgraph import GraphServiceClient
 from msgraph.generated.groups.groups_request_builder import GroupsRequestBuilder
-
+from msgraph.generated.models.o_data_errors.o_data_error import ODataError
+from msgraph.generated.users.users_request_builder import UsersRequestBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class AADGraphService:
     def __init__(self, use_mock: bool = False):
         self.use_mock = use_mock
         self.client: Optional[GraphServiceClient] = None
-        
+
         if not use_mock:
             self._initialize_graph_client()
 
@@ -36,22 +35,20 @@ class AADGraphService:
         tenant_id = os.environ.get("AZURE_TENANT_ID")
         client_id = os.environ.get("AZURE_CLIENT_ID")
         client_secret = os.environ.get("AZURE_CLIENT_SECRET")
-        
+
         if not all([tenant_id, client_id, client_secret]):
             raise RuntimeError(
                 "Missing one or more required Azure AD credentials in environment variables: "
                 "AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET"
             )
-        
+
         # Create credential using MSAL
         credential = ClientSecretCredential(
-            tenant_id=tenant_id,
-            client_id=client_id,
-            client_secret=client_secret
+            tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
         )
-        
+
         # Initialize Graph client with credential
-        scopes = ['https://graph.microsoft.com/.default']
+        scopes = ["https://graph.microsoft.com/.default"]
         self.client = GraphServiceClient(credentials=credential, scopes=scopes)
 
     async def _retry_with_backoff(self, operation, max_retries: int = 5):
@@ -64,13 +61,17 @@ class AADGraphService:
                     # Rate limited - check for Retry-After header
                     retry_after = e.response.headers.get("Retry-After", "2")
                     sleep_time = int(retry_after)
-                    logger.warning(f"Rate limited, retrying after {sleep_time} seconds (attempt {attempt + 1})")
+                    logger.warning(
+                        f"Rate limited, retrying after {sleep_time} seconds (attempt {attempt + 1})"
+                    )
                     time.sleep(sleep_time)
                     continue
                 elif 500 <= e.response_status_code < 600:
                     # Server error - exponential backoff
-                    sleep_time = 2 ** attempt
-                    logger.warning(f"Server error {e.response_status_code}, retrying after {sleep_time} seconds (attempt {attempt + 1})")
+                    sleep_time = 2**attempt
+                    logger.warning(
+                        f"Server error {e.response_status_code}, retrying after {sleep_time} seconds (attempt {attempt + 1})"
+                    )
                     time.sleep(sleep_time)
                     continue
                 else:
@@ -81,8 +82,10 @@ class AADGraphService:
                 if attempt == max_retries - 1:
                     logger.error(f"Operation failed after {max_retries} attempts: {e}")
                     raise
-                sleep_time = 2 ** attempt
-                logger.warning(f"Unexpected error, retrying after {sleep_time} seconds (attempt {attempt + 1}): {e}")
+                sleep_time = 2**attempt
+                logger.warning(
+                    f"Unexpected error, retrying after {sleep_time} seconds (attempt {attempt + 1}): {e}"
+                )
                 time.sleep(sleep_time)
 
     async def get_users(self) -> List[Dict[str, Any]]:
@@ -95,45 +98,55 @@ class AADGraphService:
                 {"id": "mock-user-1", "displayName": "Mock User One"},
                 {"id": "mock-user-2", "displayName": "Mock User Two"},
             ]
-        
+
         if not self.client:
             raise RuntimeError("Graph client not initialized")
 
         async def fetch_users():
             users = []
-            
+
             # Configure request to get all pages
             query_params = UsersRequestBuilder.UsersRequestBuilderGetQueryParameters(
                 select=["id", "displayName", "userPrincipalName", "mail"]
             )
             request_config = RequestConfiguration(query_parameters=query_params)
-            
+
             # Get first page
-            users_page = await self.client.users.get(request_configuration=request_config)
-            
+            users_page = await self.client.users.get(
+                request_configuration=request_config
+            )
+
             if users_page and users_page.value:
                 for user in users_page.value:
-                    users.append({
-                        "id": user.id,
-                        "displayName": user.display_name,
-                        "userPrincipalName": user.user_principal_name,
-                        "mail": user.mail
-                    })
-
-            # Handle pagination
-            while users_page and users_page.odata_next_link:
-                logger.info(f"Fetching next page of users (current count: {len(users)})")
-                users_page = await self.client.users.with_url(users_page.odata_next_link).get()
-                
-                if users_page and users_page.value:
-                    for user in users_page.value:
-                        users.append({
+                    users.append(
+                        {
                             "id": user.id,
                             "displayName": user.display_name,
                             "userPrincipalName": user.user_principal_name,
-                            "mail": user.mail
-                        })
-            
+                            "mail": user.mail,
+                        }
+                    )
+
+            # Handle pagination
+            while users_page and users_page.odata_next_link:
+                logger.info(
+                    f"Fetching next page of users (current count: {len(users)})"
+                )
+                users_page = await self.client.users.with_url(
+                    users_page.odata_next_link
+                ).get()
+
+                if users_page and users_page.value:
+                    for user in users_page.value:
+                        users.append(
+                            {
+                                "id": user.id,
+                                "displayName": user.display_name,
+                                "userPrincipalName": user.user_principal_name,
+                                "mail": user.mail,
+                            }
+                        )
+
             logger.info(f"Fetched {len(users)} users from Microsoft Graph")
             return users
 
@@ -149,45 +162,55 @@ class AADGraphService:
                 {"id": "mock-group-1", "displayName": "Mock Group One"},
                 {"id": "mock-group-2", "displayName": "Mock Group Two"},
             ]
-        
+
         if not self.client:
             raise RuntimeError("Graph client not initialized")
 
         async def fetch_groups():
             groups = []
-            
+
             # Configure request to get all pages
             query_params = GroupsRequestBuilder.GroupsRequestBuilderGetQueryParameters(
                 select=["id", "displayName", "mail", "description"]
             )
             request_config = RequestConfiguration(query_parameters=query_params)
-            
+
             # Get first page
-            groups_page = await self.client.groups.get(request_configuration=request_config)
-            
+            groups_page = await self.client.groups.get(
+                request_configuration=request_config
+            )
+
             if groups_page and groups_page.value:
                 for group in groups_page.value:
-                    groups.append({
-                        "id": group.id,
-                        "displayName": group.display_name,
-                        "mail": group.mail,
-                        "description": group.description
-                    })
-
-            # Handle pagination
-            while groups_page and groups_page.odata_next_link:
-                logger.info(f"Fetching next page of groups (current count: {len(groups)})")
-                groups_page = await self.client.groups.with_url(groups_page.odata_next_link).get()
-                
-                if groups_page and groups_page.value:
-                    for group in groups_page.value:
-                        groups.append({
+                    groups.append(
+                        {
                             "id": group.id,
                             "displayName": group.display_name,
                             "mail": group.mail,
-                            "description": group.description
-                        })
-            
+                            "description": group.description,
+                        }
+                    )
+
+            # Handle pagination
+            while groups_page and groups_page.odata_next_link:
+                logger.info(
+                    f"Fetching next page of groups (current count: {len(groups)})"
+                )
+                groups_page = await self.client.groups.with_url(
+                    groups_page.odata_next_link
+                ).get()
+
+                if groups_page and groups_page.value:
+                    for group in groups_page.value:
+                        groups.append(
+                            {
+                                "id": group.id,
+                                "displayName": group.display_name,
+                                "mail": group.mail,
+                                "description": group.description,
+                            }
+                        )
+
             logger.info(f"Fetched {len(groups)} groups from Microsoft Graph")
             return groups
 
@@ -205,39 +228,45 @@ class AADGraphService:
             if group_id == "mock-group-2":
                 return [{"id": "mock-user-2", "@odata.type": "#microsoft.graph.user"}]
             return []
-        
+
         if not self.client:
             raise RuntimeError("Graph client not initialized")
 
         async def fetch_group_members():
             members = []
-            
+
             # Get first page of group members
             members_page = await self.client.groups.by_group_id(group_id).members.get()
-            
+
             if members_page and members_page.value:
                 for member in members_page.value:
                     member_dict = {
                         "id": member.id,
                         "displayName": getattr(member, "display_name", None),
-                        "@odata.type": member.odata_type
+                        "@odata.type": member.odata_type,
                     }
                     members.append(member_dict)
 
             # Handle pagination
             while members_page and members_page.odata_next_link:
-                logger.info(f"Fetching next page of group members for group {group_id} (current count: {len(members)})")
-                members_page = await self.client.groups.by_group_id(group_id).members.with_url(members_page.odata_next_link).get()
-                
+                logger.info(
+                    f"Fetching next page of group members for group {group_id} (current count: {len(members)})"
+                )
+                members_page = (
+                    await self.client.groups.by_group_id(group_id)
+                    .members.with_url(members_page.odata_next_link)
+                    .get()
+                )
+
                 if members_page and members_page.value:
                     for member in members_page.value:
                         member_dict = {
                             "id": member.id,
                             "displayName": getattr(member, "display_name", None),
-                            "@odata.type": member.odata_type
+                            "@odata.type": member.odata_type,
                         }
                         members.append(member_dict)
-            
+
             logger.info(f"Fetched {len(members)} members for group {group_id}")
             return members
 
@@ -252,17 +281,15 @@ class AADGraphService:
         - dry_run: If True, skips DB operations (for tests).
         """
         logger.info("Starting AAD graph ingestion")
-        
+
         # Fetch users and groups concurrently if not using mock
         if self.use_mock:
             users = await self.get_users()
             groups = await self.get_groups()
         else:
             import asyncio
-            users, groups = await asyncio.gather(
-                self.get_users(),
-                self.get_groups()
-            )
+
+            users, groups = await asyncio.gather(self.get_users(), self.get_groups())
 
         logger.info(f"Ingesting {len(users)} users and {len(groups)} groups")
 
@@ -301,10 +328,12 @@ class AADGraphService:
             group_id = group.get("id")
             if not group_id:
                 continue
-            
-            logger.info(f"Fetching memberships for group {group_id} ({group.get('displayName', 'Unknown')})")
+
+            logger.info(
+                f"Fetching memberships for group {group_id} ({group.get('displayName', 'Unknown')})"
+            )
             members = await self.get_group_memberships(str(group_id))
-            
+
             for member in members:
                 member_id = member.get("id")
                 if not member_id:
@@ -321,5 +350,5 @@ class AADGraphService:
                             tgt_label="IdentityGroup",
                             tgt_key_prop="id",
                         )
-        
+
         logger.info("Completed AAD graph ingestion")

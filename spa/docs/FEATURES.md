@@ -15,7 +15,7 @@ The SPA is built using:
 The application features a comprehensive tab-based navigation system with 12 specialized tabs:
 
 ### 1. Status Tab
-**Icon**: Dashboard  
+**Icon**: Dashboard
 **Purpose**: Central hub for database and system monitoring
 
 **Features**:
@@ -29,7 +29,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Last update timestamps
 
 ### 2. Build Tab
-**Icon**: Build  
+**Icon**: Build
 **Purpose**: Azure tenant discovery and graph building
 
 **Features**:
@@ -41,7 +41,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Integration with Azure Discovery Service
 
 ### 3. Visualize Tab
-**Icon**: Visibility  
+**Icon**: Visibility
 **Purpose**: Graph visualization and exploration
 
 **Features**:
@@ -53,7 +53,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Real-time graph updates
 
 ### 4. Docs Tab
-**Icon**: MenuBook  
+**Icon**: MenuBook
 **Purpose**: Documentation browser and help system
 
 **Features**:
@@ -64,7 +64,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - API documentation browsing
 
 ### 5. Generate Spec Tab
-**Icon**: Description  
+**Icon**: Description
 **Purpose**: Infrastructure specification generation
 
 **Features**:
@@ -75,7 +75,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Validation and preview capabilities
 
 ### 6. Generate IaC Tab
-**Icon**: Code  
+**Icon**: Code
 **Purpose**: Infrastructure-as-Code generation
 
 **Features**:
@@ -86,7 +86,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Export functionality
 
 ### 7. Create Tenant Tab
-**Icon**: AddCircle  
+**Icon**: AddCircle
 **Purpose**: Tenant creation and configuration
 
 **Features**:
@@ -97,7 +97,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Environment configuration
 
 ### 8. Agent Mode Tab
-**Icon**: Psychology  
+**Icon**: Psychology
 **Purpose**: AI agent integration and automation
 
 **Features**:
@@ -108,7 +108,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Context-aware assistance
 
 ### 9. Threat Model Tab
-**Icon**: Security  
+**Icon**: Security
 **Purpose**: Security analysis and threat modeling
 
 **Features**:
@@ -119,7 +119,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Remediation suggestions
 
 ### 10. Logs Tab
-**Icon**: BugReport  
+**Icon**: BugReport
 **Purpose**: System logging and debugging
 
 **Features**:
@@ -132,7 +132,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Color-coded log levels
 
 ### 11. CLI Tab
-**Icon**: Terminal  
+**Icon**: Terminal
 **Purpose**: Command-line interface integration
 
 **Features**:
@@ -144,7 +144,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - Integration with Python CLI
 
 ### 12. Config Tab
-**Icon**: Settings  
+**Icon**: Settings
 **Purpose**: Application configuration and settings
 
 **Features**:
@@ -187,7 +187,7 @@ The application features a comprehensive tab-based navigation system with 12 spe
 - **Error Handling**: Comprehensive error reporting and recovery
 
 ### Database Operations
-- **Backup Operations**: 
+- **Backup Operations**:
   - Full database backup with user-specified paths
   - Temporary container shutdown during backup
   - Progress tracking and status reporting

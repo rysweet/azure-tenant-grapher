@@ -34,12 +34,12 @@ async function createWindow() {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#1e1e1e',
   };
-  
+
   // Only set icon if it exists
   if (fs.existsSync(iconPath)) {
     windowOptions.icon = iconPath;
   }
-  
+
   mainWindow = new BrowserWindow(windowOptions);
 
   // Set application menu
@@ -74,7 +74,7 @@ async function createWindow() {
 function startMcpServer() {
   const pythonPath = process.env.PYTHON_PATH || 'python3';
   const projectRoot = path.join(__dirname, '../../..');
-  
+
   // Start MCP server using python -m src.mcp_server
   mcpServerProcess = spawn(pythonPath, ['-m', 'src.mcp_server', '--foreground'], {
     cwd: projectRoot,
@@ -90,7 +90,7 @@ function startMcpServer() {
   }
 
   console.log(`MCP server started with PID: ${mcpServerProcess.pid}`);
-  
+
   // Write PID file for status tracking
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
   fs.mkdirSync(path.dirname(pidFile), { recursive: true });
@@ -123,15 +123,15 @@ function startMcpServer() {
 
 // Start the backend server
 function startBackendServer() {
-  
+
   const backendPath = path.join(__dirname, '../backend/src/server.js');
   const tsxPath = path.join(__dirname, '../../node_modules/.bin/tsx');
-  
+
   // Check if we're in development mode
   if (process.env.NODE_ENV === 'development' || !require('fs').existsSync(backendPath)) {
     // Use tsx to run TypeScript directly in development
     const backendTsPath = path.join(__dirname, '../backend/src/server.ts');
-    
+
     backendProcess = spawn('npx', ['tsx', backendTsPath], {
       cwd: path.join(__dirname, '..'),
       env: {
@@ -194,16 +194,16 @@ if (process.platform === 'darwin') {
 app.whenReady().then(async () => {
   // Start backend server
   startBackendServer();
-  
+
   // Start MCP server
   startMcpServer();
-  
+
   // Initialize process manager
   processManager = new ProcessManager();
-  
+
   // Setup IPC handlers
   setupIPCHandlers(processManager);
-  
+
   // Create the main window after a short delay to ensure backend is starting
   setTimeout(async () => {
     await createWindow();
@@ -219,12 +219,12 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   // Cleanup all processes
   processManager.cleanup();
-  
+
   // Stop backend server
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
   }
-  
+
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
@@ -234,7 +234,7 @@ app.on('window-all-closed', () => {
       fs.unlinkSync(pidFile);
     }
   }
-  
+
   // Always quit the app when the window is closed
   // This is a single-window application, so we want it to fully quit
   app.quit();
@@ -246,12 +246,12 @@ app.on('before-quit', (event) => {
     event.preventDefault();
     processManager.cleanup().then(() => app.quit());
   }
-  
+
   // Stop backend server
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
   }
-  
+
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');

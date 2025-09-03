@@ -31,7 +31,7 @@ tsc.on('close', (code) => {
   } else {
     console.log('  ✅ TypeScript compilation successful');
   }
-  
+
   // Check 3: Test basic module imports
   console.log('\n✓ Checking module imports...');
   try {
@@ -40,7 +40,7 @@ tsc.on('close', (code) => {
   } catch (error) {
     console.log('  ⚠️ Some modules may need transpilation');
   }
-  
+
   // Check 4: Verify critical files exist
   console.log('\n✓ Checking critical files...');
   const fs = require('fs');
@@ -50,7 +50,7 @@ tsc.on('close', (code) => {
     'backend/src/server.ts',
     'renderer/src/components/widgets/GraphViewer.tsx',
   ];
-  
+
   let allFilesExist = true;
   criticalFiles.forEach(file => {
     const fullPath = path.join(__dirname, '..', file);
@@ -61,7 +61,7 @@ tsc.on('close', (code) => {
       allFilesExist = false;
     }
   });
-  
+
   // Summary
   console.log('\n' + '='.repeat(50));
   if (allFilesExist) {
