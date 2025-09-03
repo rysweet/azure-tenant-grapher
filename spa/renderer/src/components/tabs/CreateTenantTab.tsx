@@ -14,6 +14,9 @@ import {
   InputLabel,
   OutlinedInput,
   InputAdornment,
+  Select,
+  MenuItem,
+  Grid,
 } from '@mui/material';
 import { Upload as UploadIcon, Create as CreateIcon, AutoAwesome as GenerateIcon } from '@mui/icons-material';
 import MonacoEditor from '@monaco-editor/react';
@@ -28,6 +31,7 @@ const CreateTenantTab: React.FC = () => {
   const [companySize, setCompanySize] = useState<number>(100);
   const [seedFile, setSeedFile] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
 
   const handleFileUpload = async () => {
     try {
@@ -66,7 +70,7 @@ const CreateTenantTab: React.FC = () => {
       const tempPath = `/tmp/tenant-spec-${Date.now()}.json`;
       await window.electronAPI.file.write(tempPath, specContent);
 
-      const result = await window.electronAPI.cli.execute('create-tenant', ['--spec', tempPath]);
+      const result = await window.electronAPI.cli.execute('create-tenant', ['--spec', tempPath, '--tenant', selectedTenant]);
 
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {
@@ -103,6 +107,23 @@ const CreateTenantTab: React.FC = () => {
             {error}
           </Alert>
         )}
+
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Target Tenant</InputLabel>
+              <Select
+                value={selectedTenant}
+                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
+                disabled={isCreating}
+                label="Target Tenant"
+              >
+                <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
+                <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
 
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <Button

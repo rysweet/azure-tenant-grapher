@@ -21,6 +21,9 @@ import {
   ListItemText,
   IconButton,
   Tooltip,
+  Select,
+  InputLabel,
+  MenuItem,
 } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
@@ -60,6 +63,7 @@ const ScanTab: React.FC = () => {
 
   // State declarations
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
+  const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
   const [hasResourceLimit, setHasResourceLimit] = useState(false);
   const [resourceLimit, setResourceLimit] = useState<number>(100);
   const [maxLlmThreads, setMaxLlmThreads] = useState<number>(20);
@@ -430,6 +434,7 @@ const ScanTab: React.FC = () => {
 
     const args = [
       '--tenant-id', tenantId,
+      '--tenant', selectedTenant,
       '--max-llm-threads', maxLlmThreads.toString(),
       '--max-build-threads', maxBuildThreads.toString(),
     ];
@@ -669,7 +674,7 @@ const ScanTab: React.FC = () => {
           )}
 
           <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <TextField
               fullWidth
               label="Tenant ID"
@@ -681,7 +686,22 @@ const ScanTab: React.FC = () => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Azure Tenant</InputLabel>
+              <Select
+                value={selectedTenant}
+                onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
+                disabled={isRunning}
+                label="Azure Tenant"
+              >
+                <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
+                <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <FormControlLabel
                 control={

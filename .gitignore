@@ -177,6 +177,9 @@ iac-out-*/
 outputs/
 !outputs/.gitkeep
 
+# Terraform output directory
+terraform-output/
+
 # .NET build and Visual Studio artifacts
 [Bb]in/
 [Oo]bj/
