@@ -1,0 +1,171 @@
+# Sample UI Workflow Test Scenario
+# This demonstrates the YAML structure for defining test scenarios
+
+name: "Sample UI Workflow"
+description: "Demonstrates basic UI testing workflow for Azure Tenant Grapher SPA"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 60000
+  retries: 2
+  parallel: false
+  
+# Environment requirements
+environment:
+  requires:
+    - AZURE_TENANT_ID
+    - ELECTRON_APP_PATH
+  optional:
+    - GITHUB_TOKEN
+    - OPENAI_API_KEY
+
+# Agents involved in this scenario
+agents:
+  - name: "ui-agent"
+    type: "ui"
+    config:
+      browser: "chromium"
+      headless: false
+      viewport:
+        width: 1280
+        height: 720
+      timeout: 30000
+      
+  - name: "websocket-agent"
+    type: "websocket"
+    config:
+      url: "ws://localhost:3001"
+      reconnect: true
+      timeout: 10000
+
+# Test steps
+steps:
+  # Initialize the application
+  - name: "Launch Electron App"
+    agent: "ui-agent"
+    action: "launch_electron"
+    params:
+      executablePath: "${ELECTRON_APP_PATH}"
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
+    timeout: 15000
+    
+  # Connect to WebSocket for real-time updates
+  - name: "Connect WebSocket"
+    agent: "websocket-agent"
+    action: "connect"
+    params:
+      events: ["log", "progress", "status"]
+    
+  # Navigate to Build tab
+  - name: "Navigate to Build Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-build']"
+    wait_for:
+      selector: "[data-testid='build-form']"
+      state: "visible"
+      
+  # Fill in tenant ID
+  - name: "Fill Tenant ID"
+    agent: "ui-agent"
+    action: "fill"
+    params:
+      selector: "[data-testid='tenant-id-input']"
+      value: "${AZURE_TENANT_ID}"
+      
+  # Configure build options
+  - name: "Configure Build Options"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "check"
+          selector: "[data-testid='include-users-checkbox']"
+        - action: "check"
+          selector: "[data-testid='include-groups-checkbox']"
+        - action: "select"
+          selector: "[data-testid='resource-limit-select']"
+          value: "100"
+          
+  # Start the build process
+  - name: "Start Build"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='start-build-button']"
+    wait_for:
+      selector: "[data-testid='build-progress']"
+      state: "visible"
+      timeout: 5000
+      
+  # Monitor build progress via WebSocket
+  - name: "Monitor Build Progress"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "progress"
+      timeout: 300000  # 5 minutes max
+    until:
+      condition: "contains"
+      value: "Build completed"
+      
+  # Verify build completion
+  - name: "Verify Build Success"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='build-success-message']"
+      timeout: 10000
+
+# Assertions to validate test success
+assertions:
+  - name: "Build Status is Success"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='build-success-message']"
+      
+  - name: "Progress Shows Completion"
+    type: "element_text_contains"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='progress-status']"
+      text: "completed"
+      
+  - name: "WebSocket Received Success Event"
+    type: "websocket_event_received"
+    agent: "websocket-agent"
+    params:
+      event: "status"
+      data:
+        status: "success"
+        
+  - name: "No Error Messages Present"
+    type: "element_not_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='error-message']"
+
+# Cleanup actions
+cleanup:
+  - name: "Close Application"
+    agent: "ui-agent"
+    action: "close_app"
+    
+  - name: "Disconnect WebSocket"
+    agent: "websocket-agent"
+    action: "disconnect"
+
+# Test metadata
+metadata:
+  tags:
+    - "ui"
+    - "build"
+    - "integration"
+    - "smoke-test"
+  priority: "high"
+  author: "agentic-testing-system"
+  created: "2024-01-01T00:00:00Z"
+  updated: "2024-01-01T00:00:00Z"

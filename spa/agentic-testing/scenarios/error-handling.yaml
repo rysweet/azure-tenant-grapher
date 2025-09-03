@@ -1,0 +1,398 @@
+# Error Handling Test Scenarios
+# Comprehensive testing of error conditions and failure scenarios
+
+name: "Error Handling Tests"
+description: "Tests application behavior under various error conditions including missing credentials, network failures, and invalid inputs"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 120000  # 2 minutes for error scenarios
+  retries: 1  # Don't retry error scenarios
+  parallel: false
+  
+# Environment requirements
+environment:
+  requires:
+    - ELECTRON_APP_PATH
+  optional:
+    - AZURE_TENANT_ID
+    - NEO4J_PASSWORD
+    - NEO4J_PORT
+
+# Agents involved in this scenario
+agents:
+  - name: "ui-agent"
+    type: "ui"
+    config:
+      browser: "chromium"
+      headless: false
+      viewport:
+        width: 1280
+        height: 720
+      timeout: 30000
+      slowMo: 300
+      
+  - name: "websocket-agent"
+    type: "websocket"
+    config:
+      url: "ws://localhost:3001"
+      reconnect: true
+      timeout: 5000
+      
+  - name: "network-agent"
+    type: "network"
+    config:
+      can_simulate_failures: true
+      timeout: 10000
+
+# Test steps
+steps:
+  # Initialize the application
+  - name: "Launch Electron App"
+    agent: "ui-agent"
+    action: "launch_electron"
+    params:
+      executablePath: "${ELECTRON_APP_PATH}"
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
+    timeout: 20000
+    
+  # Wait for app initialization
+  - name: "Wait for App Ready"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='app-container']"
+      state: "visible"
+      timeout: 15000
+
+  # ===== MISSING CREDENTIALS TESTS =====
+  - name: "Test Build with Missing Tenant ID"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-build']"
+        - action: "wait_for_element"
+          selector: "[data-testid='build-form']"
+          state: "visible"
+        - action: "clear"
+          selector: "[data-testid='tenant-id-input']"
+        - action: "click"
+          selector: "[data-testid='start-build-button']"
+    wait_for:
+      selector: "[data-testid='tenant-id-error'], [data-testid='validation-error']"
+      state: "visible"
+      timeout: 5000
+      
+  - name: "Test Build with Invalid Tenant ID Format"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "invalid-tenant-id-123"
+        - action: "click"
+          selector: "[data-testid='start-build-button']"
+    wait_for:
+      selector: "[data-testid='tenant-id-format-error'], [data-testid='validation-error']"
+      state: "visible"
+      timeout: 5000
+      
+  - name: "Test Configuration with Missing Neo4j Password"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-config']"
+        - action: "wait_for_element"
+          selector: "[data-testid='config-form']"
+          state: "visible"
+        - action: "clear"
+          selector: "[data-testid='neo4j-password-input']"
+        - action: "click"
+          selector: "[data-testid='save-config-button']"
+    wait_for:
+      selector: "[data-testid='neo4j-password-error'], [data-testid='config-validation-error']"
+      state: "visible"
+      timeout: 5000
+
+  # ===== INVALID INPUT TESTS =====
+  - name: "Test Generate IaC with Invalid Output Directory"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-generate-iac']"
+        - action: "wait_for_element"
+          selector: "[data-testid='generate-iac-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='output-directory-input']"
+          value: "/invalid/path/\0/that/should/fail"
+        - action: "click"
+          selector: "[data-testid='generate-iac-button']"
+    wait_for:
+      selector: "[data-testid='path-error'], [data-testid='directory-error']"
+      state: "visible"
+      timeout: 5000
+      
+  - name: "Test Generate Spec with Invalid File Extension"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-generate-spec']"
+        - action: "wait_for_element"
+          selector: "[data-testid='generate-spec-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='spec-output-path-input']"
+          value: "/tmp/test-spec.invalid"
+        - action: "click"
+          selector: "[data-testid='generate-spec-button']"
+    wait_for:
+      selector: "[data-testid='file-extension-error'], [data-testid='validation-error']"
+      state: "visible"
+      timeout: 5000
+
+  # ===== NETWORK FAILURE TESTS =====
+  - name: "Test WebSocket Connection Failure"
+    agent: "network-agent"
+    action: "block_port"
+    params:
+      port: 3001
+      duration: 30000  # 30 seconds
+      
+  - name: "Attempt WebSocket Connection During Block"
+    agent: "websocket-agent"
+    action: "connect"
+    params:
+      events: ["log", "progress"]
+      expect_failure: true
+    timeout: 10000
+    
+  - name: "Verify WebSocket Error Handling"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='websocket-connection-error'], [data-testid='connection-status-error']"
+      state: "visible"
+      timeout: 15000
+      
+  - name: "Restore Network Connection"
+    agent: "network-agent"
+    action: "unblock_port"
+    params:
+      port: 3001
+
+  # ===== TIMEOUT SCENARIOS =====
+  - name: "Test Operation Timeout Handling"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-build']"
+        - action: "wait_for_element"
+          selector: "[data-testid='build-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "00000000-0000-0000-0000-000000000000"  # Non-existent tenant
+        - action: "select"
+          selector: "[data-testid='timeout-select']"
+          value: "5"  # Very short timeout for testing
+        - action: "click"
+          selector: "[data-testid='start-build-button']"
+          
+  - name: "Wait for Timeout Error"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='timeout-error'], [data-testid='operation-timeout-error']"
+      state: "visible"
+      timeout: 30000
+
+  # ===== FILE SYSTEM ERROR TESTS =====
+  - name: "Test Read-Only Directory Error"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-generate-iac']"
+        - action: "wait_for_element"
+          selector: "[data-testid='generate-iac-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='output-directory-input']"
+          value: "/root"  # Should be read-only for non-root user
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "00000000-0000-0000-0000-000000000001"
+        - action: "click"
+          selector: "[data-testid='generate-iac-button']"
+    wait_for:
+      selector: "[data-testid='permission-error'], [data-testid='filesystem-error']"
+      state: "visible"
+      timeout: 10000
+
+  # ===== MEMORY/RESOURCE EXHAUSTION TESTS =====
+  - name: "Test Large Resource Limit Handling"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-build']"
+        - action: "wait_for_element"
+          selector: "[data-testid='build-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "00000000-0000-0000-0000-000000000002"
+        - action: "select"
+          selector: "[data-testid='resource-limit-select']"
+          value: "999999"  # Unrealistically large limit
+        - action: "click"
+          selector: "[data-testid='start-build-button']"
+    wait_for:
+      selector: "[data-testid='resource-limit-error'], [data-testid='validation-error']"
+      state: "visible"
+      timeout: 5000
+
+  # ===== RECOVERY TESTS =====
+  - name: "Test Error Recovery - Clear Errors"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='clear-errors-button'], [data-testid='dismiss-error-button']"
+          optional: true
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "${AZURE_TENANT_ID:-00000000-0000-0000-0000-000000000000}"
+        - action: "select"
+          selector: "[data-testid='resource-limit-select']"
+          value: "10"  # Small valid limit
+          
+  - name: "Verify Error Recovery"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='start-build-button']:not([disabled])"
+      state: "visible"
+      timeout: 5000
+
+# Assertions to validate test success
+assertions:
+  - name: "Missing Tenant ID Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='tenant-id-error'], [data-testid='validation-error']"
+      
+  - name: "Invalid Tenant ID Format Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='tenant-id-format-error'], [data-testid='validation-error']"
+      
+  - name: "Missing Neo4j Password Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='neo4j-password-error'], [data-testid='config-validation-error']"
+      
+  - name: "Invalid Path Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='path-error'], [data-testid='directory-error']"
+      
+  - name: "File Extension Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='file-extension-error'], [data-testid='validation-error']"
+      
+  - name: "WebSocket Connection Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='websocket-connection-error'], [data-testid='connection-status-error']"
+      
+  - name: "Timeout Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='timeout-error'], [data-testid='operation-timeout-error']"
+      
+  - name: "Permission Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='permission-error'], [data-testid='filesystem-error']"
+      
+  - name: "Resource Limit Error Displayed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='resource-limit-error'], [data-testid='validation-error']"
+      
+  - name: "Error Recovery Successful"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='start-build-button']:not([disabled])"
+      
+  - name: "Application Remains Stable"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='app-container']"
+      
+  - name: "No Unhandled JavaScript Errors"
+    type: "no_console_errors"
+    agent: "ui-agent"
+    params:
+      severity: "error"
+      exclude_patterns:
+        - "Network request failed"  # Expected during network tests
+        - "WebSocket connection failed"  # Expected during WebSocket tests
+
+# Cleanup actions
+cleanup:
+  - name: "Restore Network State"
+    agent: "network-agent"
+    action: "reset_all_blocks"
+    
+  - name: "Disconnect WebSocket"
+    agent: "websocket-agent"
+    action: "disconnect"
+    ignore_errors: true
+    
+  - name: "Close Application"
+    agent: "ui-agent"
+    action: "close_app"
+
+# Test metadata
+metadata:
+  tags:
+    - "error-handling"
+    - "validation"
+    - "network"
+    - "filesystem"
+    - "recovery"
+    - "negative-testing"
+  priority: "high"
+  author: "agentic-testing-system"
+  created: "2024-09-03T00:00:00Z"
+  updated: "2024-09-03T00:00:00Z"

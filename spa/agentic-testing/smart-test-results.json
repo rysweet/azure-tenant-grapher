@@ -1,0 +1,136 @@
+{
+  "currentTab": null,
+  "testedFeatures": [
+    "Neo4j connection active",
+    "Docker monitoring",
+    "Tenant ID input functional",
+    "Scan button ready",
+    "Graph visualization functional",
+    "Graph zoom controls",
+    "terraform IaC generation",
+    "IaC generation ready",
+    "13 configuration options",
+    "Configuration persistence",
+    "Keyboard navigation"
+  ],
+  "interactions": [
+    {
+      "tab": "Status",
+      "elementsFound": 37,
+      "headings": []
+    },
+    {
+      "tab": "Scan",
+      "elementsFound": 34,
+      "headings": []
+    },
+    {
+      "tab": "Visualize",
+      "elementsFound": 127,
+      "headings": []
+    },
+    {
+      "tab": "Export Spec",
+      "elementsFound": 30,
+      "headings": []
+    },
+    {
+      "tab": "Generate IaC",
+      "elementsFound": 33,
+      "headings": []
+    },
+    {
+      "tab": "Create Tenant",
+      "elementsFound": 32,
+      "headings": []
+    },
+    {
+      "tab": "Agent Mode",
+      "elementsFound": 37,
+      "headings": []
+    },
+    {
+      "tab": "Threat Model",
+      "elementsFound": 29,
+      "headings": []
+    },
+    {
+      "tab": "Docs",
+      "elementsFound": 148,
+      "headings": [
+        "Azure Tenant Grapher SPA",
+        "Overview",
+        "Features",
+        "12 Comprehensive Tabs",
+        "Core Capabilities",
+        "Prerequisites",
+        "Required Software",
+        "Environment Setup",
+        "Installation",
+        "Quick Start (Recommended)",
+        "Alternative Launch Methods",
+        "Manual Installation",
+        "Development",
+        "Project Structure",
+        "Development Scripts",
+        "Development Workflow",
+        "Architecture",
+        "Multi-Process Design",
+        "Technology Stack",
+        "Key Components",
+        "Custom React Hooks",
+        "Enhanced UI Components",
+        "Core Services",
+        "Keyboard Shortcuts",
+        "Global Shortcuts",
+        "CLI Integration",
+        "Tab Navigation",
+        "Editor Shortcuts (Logs Tab)",
+        "Terminal Shortcuts (CLI Tab)",
+        "Troubleshooting",
+        "Common Issues",
+        "Debug Mode",
+        "Log Locations",
+        "Recent Updates",
+        "Version 1.1 Enhancements",
+        "Performance Tips",
+        "Optimization Guidelines",
+        "System Requirements",
+        "Contributing",
+        "Development Standards",
+        "Support & Resources",
+        "License"
+      ]
+    },
+    {
+      "tab": "Logs",
+      "elementsFound": 38,
+      "headings": []
+    },
+    {
+      "tab": "CLI",
+      "elementsFound": 45,
+      "headings": []
+    },
+    {
+      "tab": "Config",
+      "elementsFound": 48,
+      "headings": []
+    }
+  ],
+  "issues": [],
+  "screenshots": [
+    "status-tested.png",
+    "scan-tested.png",
+    "visualize-tested.png",
+    "export-spec-tested.png",
+    "generate-iac-tested.png",
+    "create-tenant-tested.png",
+    "agent-mode-tested.png",
+    "threat-model-tested.png",
+    "docs-tested.png",
+    "logs-tested.png",
+    "cli-tested.png",
+    "config-tested.png"
+  ]
+}

@@ -1,5 +1,7 @@
 # Agentic Testing System - Design Document
 
+> **⚠️ MIGRATION NOTICE**: This design document describes the original Python implementation. The system has been migrated to TypeScript and is now located at `spa/agentic-testing/`. See `../agentic_testing/MIGRATION_NOTICE.md` for migration details.
+
 ## 1. System Architecture
 
 ### 1.1 High-Level Architecture

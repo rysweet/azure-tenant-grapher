@@ -1,0 +1,469 @@
+# Integration Test Scenarios
+# Tests for CLI-UI synchronization, WebSocket communication, Neo4j connectivity, and Azure API interactions
+
+name: "Integration Tests"
+description: "Comprehensive integration tests covering CLI-UI sync, WebSocket communication, database connectivity, and external API interactions"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 240000  # 4 minutes for integration tests
+  retries: 2
+  parallel: false
+  
+# Environment requirements
+environment:
+  requires:
+    - ELECTRON_APP_PATH
+    - NEO4J_PASSWORD
+    - NEO4J_PORT
+  optional:
+    - AZURE_TENANT_ID
+    - AZURE_CLIENT_ID
+    - AZURE_CLIENT_SECRET
+    - OPENAI_API_KEY
+
+# Agents involved in this scenario
+agents:
+  - name: "ui-agent"
+    type: "ui"
+    config:
+      browser: "chromium"
+      headless: false
+      viewport:
+        width: 1280
+        height: 720
+      timeout: 45000
+      slowMo: 200
+      
+  - name: "websocket-agent"
+    type: "websocket"
+    config:
+      url: "ws://localhost:3001"
+      reconnect: true
+      timeout: 10000
+      
+  - name: "cli-agent"
+    type: "system"
+    config:
+      shell: "bash"
+      cwd: "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+      timeout: 90000
+      capture_output: true
+      
+  - name: "database-agent"
+    type: "database"
+    config:
+      type: "neo4j"
+      host: "localhost"
+      port: "${NEO4J_PORT}"
+      auth: 
+        username: "neo4j"
+        password: "${NEO4J_PASSWORD}"
+      timeout: 15000
+      
+  - name: "api-agent"
+    type: "api"
+    config:
+      timeout: 30000
+      retry_count: 3
+
+# Test steps
+steps:
+  # ===== SETUP AND INITIALIZATION =====
+  - name: "Check Neo4j Container Status"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "docker ps --filter name=neo4j --format 'table {{.Names}}\t{{.Status}}'"
+    expect:
+      exit_code: 0
+      stdout_contains: ["neo4j", "Up"]
+    timeout: 30000
+    
+  - name: "Test Neo4j Database Connection"
+    agent: "database-agent"
+    action: "connect"
+    params:
+      test_query: "RETURN 1 as test"
+    timeout: 15000
+    
+  - name: "Launch Electron App"
+    agent: "ui-agent"
+    action: "launch_electron"
+    params:
+      executablePath: "${ELECTRON_APP_PATH}"
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
+    timeout: 25000
+    
+  - name: "Wait for App Initialization"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='app-container']"
+      state: "visible"
+      timeout: 20000
+
+  # ===== WEBSOCKET COMMUNICATION TESTS =====
+  - name: "Establish WebSocket Connection"
+    agent: "websocket-agent"
+    action: "connect"
+    params:
+      events: ["log", "progress", "status", "error", "cli-output"]
+    timeout: 15000
+    
+  - name: "Test WebSocket Ping-Pong"
+    agent: "websocket-agent"
+    action: "send_message"
+    params:
+      type: "ping"
+      data: { "timestamp": "${CURRENT_TIMESTAMP}" }
+    expect:
+      response_type: "pong"
+      response_timeout: 5000
+      
+  - name: "Test WebSocket Event Broadcasting"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-config']"
+        - action: "wait_for_element"
+          selector: "[data-testid='config-form']"
+          state: "visible"
+        - action: "click"
+          selector: "[data-testid='test-connection-button']"
+          
+  - name: "Verify WebSocket Receives Connection Test Events"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "log"
+      timeout: 30000
+    until:
+      condition: "contains"
+      value: "connection test"
+      case_insensitive: true
+
+  # ===== CLI-UI SYNCHRONIZATION TESTS =====
+  - name: "Trigger CLI Command via UI"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-build']"
+        - action: "wait_for_element"
+          selector: "[data-testid='build-form']"
+          state: "visible"
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "${AZURE_TENANT_ID:-00000000-0000-0000-0000-000000000000}"
+        - action: "check"
+          selector: "[data-testid='dry-run-checkbox']"
+        - action: "select"
+          selector: "[data-testid='resource-limit-select']"
+          value: "5"
+        - action: "click"
+          selector: "[data-testid='start-build-button']"
+          
+  - name: "Monitor CLI Process Start via WebSocket"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "status"
+      timeout: 30000
+    until:
+      condition: "equals"
+      value: "started"
+      
+  - name: "Verify CLI Process in System"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "ps aux | grep -E '(atg|azure-tenant-grapher)' | grep -v grep"
+    expect:
+      exit_code: 0
+      stdout_contains: ["python", "atg"]
+    timeout: 10000
+    
+  - name: "Monitor Build Progress Synchronization"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "progress"
+      timeout: 120000  # 2 minutes for dry run
+    until:
+      condition: "contains"
+      value: "completed"
+      
+  - name: "Verify UI Reflects CLI Status"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='build-complete-message'], [data-testid='build-success-message']"
+      state: "visible"
+      timeout: 30000
+
+  # ===== NEO4J INTEGRATION TESTS =====
+  - name: "Test Database Schema Creation"
+    agent: "database-agent"
+    action: "execute_query"
+    params:
+      query: "SHOW INDEXES"
+    expect:
+      row_count: ">= 0"  # Should have some indexes
+    timeout: 15000
+    
+  - name: "Test Database Write Operations"
+    agent: "database-agent"
+    action: "execute_query"
+    params:
+      query: |
+        MERGE (t:TestNode {id: 'integration-test-' + toString(timestamp())})
+        SET t.created = datetime()
+        RETURN t.id as test_id
+    expect:
+      row_count: 1
+    timeout: 10000
+    
+  - name: "Test Database Read Operations"
+    agent: "database-agent"
+    action: "execute_query"
+    params:
+      query: "MATCH (t:TestNode) WHERE t.id STARTS WITH 'integration-test-' RETURN count(t) as test_count"
+    expect:
+      row_count: 1
+    timeout: 10000
+    
+  - name: "Test Database Relationship Creation"
+    agent: "database-agent"
+    action: "execute_query"
+    params:
+      query: |
+        MATCH (t1:TestNode), (t2:TestNode)
+        WHERE t1.id STARTS WITH 'integration-test-' AND t2.id STARTS WITH 'integration-test-'
+        AND t1 <> t2
+        MERGE (t1)-[:TEST_RELATIONSHIP]->(t2)
+        RETURN count(*) as relationships
+    timeout: 15000
+
+  # ===== AZURE API INTEGRATION TESTS =====
+  - name: "Test Azure API Authentication (if credentials available)"
+    agent: "api-agent"
+    action: "authenticate_azure"
+    params:
+      tenant_id: "${AZURE_TENANT_ID}"
+      client_id: "${AZURE_CLIENT_ID}"
+      client_secret: "${AZURE_CLIENT_SECRET}"
+      skip_if_missing_credentials: true
+    timeout: 30000
+    
+  - name: "Test Azure Graph API Call (if authenticated)"
+    agent: "api-agent"
+    action: "call_api"
+    params:
+      method: "GET"
+      url: "https://graph.microsoft.com/v1.0/me"
+      headers:
+        Authorization: "Bearer ${AZURE_ACCESS_TOKEN}"
+      skip_if_no_auth: true
+    timeout: 30000
+    
+  - name: "Test Azure Resource Manager API (if authenticated)"
+    agent: "api-agent"
+    action: "call_api"
+    params:
+      method: "GET"
+      url: "https://management.azure.com/subscriptions?api-version=2020-01-01"
+      headers:
+        Authorization: "Bearer ${AZURE_ACCESS_TOKEN}"
+      skip_if_no_auth: true
+    timeout: 30000
+
+  # ===== CROSS-COMPONENT INTEGRATION =====
+  - name: "Test CLI Command Triggers UI Update"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg doctor"
+    expect:
+      exit_code: 0
+    timeout: 60000
+    
+  - name: "Verify UI Shows CLI Output"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='cli-output-log']"
+      state: "visible"
+      timeout: 10000
+    
+  - name: "Test Database Query via UI"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='tab-visualize']"
+        - action: "wait_for_element"
+          selector: "[data-testid='visualize-container']"
+          state: "visible"
+        - action: "click"
+          selector: "[data-testid='refresh-graph-button']"
+          optional: true
+          
+  - name: "Monitor Database Query Execution"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "log"
+      timeout: 30000
+    until:
+      condition: "contains"
+      value: "database"
+      case_insensitive: true
+
+  # ===== PERFORMANCE AND LOAD TESTS =====
+  - name: "Test Multiple Concurrent WebSocket Connections"
+    agent: "websocket-agent"
+    action: "create_multiple_connections"
+    params:
+      count: 5
+      events: ["log", "progress"]
+      timeout: 15000
+      
+  - name: "Test WebSocket Message Broadcasting"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='broadcast-test-button']"
+      optional: true
+      
+  - name: "Verify All WebSocket Connections Receive Message"
+    agent: "websocket-agent"
+    action: "verify_all_connections_received"
+    params:
+      event_type: "broadcast"
+      timeout: 10000
+      
+  - name: "Test Database Connection Pool"
+    agent: "database-agent"
+    action: "stress_test"
+    params:
+      concurrent_connections: 10
+      queries_per_connection: 5
+      timeout: 30000
+
+# Assertions to validate test success
+assertions:
+  - name: "Neo4j Container is Running"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Check Neo4j Container Status"
+      
+  - name: "Database Connection Successful"
+    type: "database_connected"
+    agent: "database-agent"
+    params:
+      connection_test: true
+      
+  - name: "WebSocket Connection Established"
+    type: "websocket_connected"
+    agent: "websocket-agent"
+    params:
+      expected_events: ["log", "progress", "status"]
+      
+  - name: "WebSocket Ping-Pong Successful"
+    type: "websocket_ping_success"
+    agent: "websocket-agent"
+    params:
+      response_time: "< 5000"
+      
+  - name: "CLI Process Started via UI"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Verify CLI Process in System"
+      
+  - name: "CLI-UI Synchronization Working"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='build-complete-message'], [data-testid='build-success-message']"
+      
+  - name: "Database Operations Successful"
+    type: "database_query_success"
+    agent: "database-agent"
+    params:
+      step: "Test Database Write Operations"
+      
+  - name: "Azure API Integration (if available)"
+    type: "api_call_success"
+    agent: "api-agent"
+    params:
+      step: "Test Azure Graph API Call (if authenticated)"
+      optional: true
+      
+  - name: "Cross-Component Communication Working"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='cli-output-log']"
+      
+  - name: "Multiple WebSocket Connections Stable"
+    type: "websocket_connections_stable"
+    agent: "websocket-agent"
+    params:
+      expected_count: 5
+      
+  - name: "Database Connection Pool Stable"
+    type: "database_stress_test_success"
+    agent: "database-agent"
+    params:
+      step: "Test Database Connection Pool"
+
+# Cleanup actions
+cleanup:
+  - name: "Clean Test Data from Database"
+    agent: "database-agent"
+    action: "execute_query"
+    params:
+      query: "MATCH (t:TestNode) WHERE t.id STARTS WITH 'integration-test-' DETACH DELETE t"
+    ignore_errors: true
+    
+  - name: "Close All WebSocket Connections"
+    agent: "websocket-agent"
+    action: "disconnect_all"
+    
+  - name: "Stop CLI Processes"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "pkill -f 'atg|azure-tenant-grapher' || true"
+    ignore_errors: true
+    
+  - name: "Close Database Connections"
+    agent: "database-agent"
+    action: "disconnect"
+    
+  - name: "Close Application"
+    agent: "ui-agent"
+    action: "close_app"
+
+# Test metadata
+metadata:
+  tags:
+    - "integration"
+    - "cli-ui-sync"
+    - "websocket"
+    - "database"
+    - "azure-api"
+    - "cross-component"
+    - "performance"
+  priority: "high"
+  author: "agentic-testing-system"
+  created: "2024-09-03T00:00:00Z"
+  updated: "2024-09-03T00:00:00Z"

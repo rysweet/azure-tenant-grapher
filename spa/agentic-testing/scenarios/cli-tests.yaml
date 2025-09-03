@@ -1,0 +1,218 @@
+# CLI Testing Scenarios
+# Comprehensive test scenarios for Azure Tenant Grapher CLI commands
+
+name: "CLI Command Tests"
+description: "Tests all core CLI commands including version, help, build, doctor, and error handling"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 120000  # 2 minutes for CLI operations
+  retries: 3
+  parallel: false
+  
+# Environment requirements
+environment:
+  requires:
+    - AZURE_TENANT_ID
+    - NEO4J_PASSWORD
+    - NEO4J_PORT
+  optional:
+    - AZURE_CLIENT_ID
+    - AZURE_CLIENT_SECRET
+    - OPENAI_API_KEY
+
+# Agents involved in this scenario
+agents:
+  - name: "cli-agent"
+    type: "system"
+    config:
+      shell: "bash"
+      cwd: "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+      timeout: 60000
+      capture_output: true
+
+# Test steps
+steps:
+  # Test basic version command
+  - name: "Test atg --version"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg --version"
+    expect:
+      exit_code: 0
+      stdout_contains: 
+        - "Azure Tenant Grapher"
+        - "version"
+    timeout: 30000
+    
+  # Test help command
+  - name: "Test atg --help"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg --help"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Azure Tenant Grapher"
+        - "Commands:"
+        - "build"
+        - "generate-spec"
+        - "generate-iac"
+        - "create-tenant"
+        - "visualize"
+        - "agent-mode"
+        - "threat-model"
+        - "doctor"
+    timeout: 30000
+    
+  # Test doctor command
+  - name: "Test atg doctor"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg doctor"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Checking CLI dependencies"
+    timeout: 60000
+    
+  # Test build command with missing tenant (should fail gracefully)
+  - name: "Test atg build without tenant ID"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg build"
+      environment:
+        AZURE_TENANT_ID: ""  # Clear tenant ID
+    expect:
+      exit_code: 1
+      stderr_contains:
+        - "tenant"
+    timeout: 30000
+    
+  # Test build command with valid tenant ID
+  - name: "Test atg build with tenant ID"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg build --tenant-id ${AZURE_TENANT_ID} --dry-run"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Starting Azure resource discovery"
+    timeout: 90000
+    
+  # Test generate-spec command
+  - name: "Test atg generate-spec"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg generate-spec --help"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "generate-spec"
+    timeout: 30000
+    
+  # Test generate-iac help
+  - name: "Test atg generate-iac help"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg generate-iac --help"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "generate-iac"
+        - "format"
+        - "terraform"
+        - "arm"
+        - "bicep"
+    timeout: 30000
+    
+  # Test invalid command
+  - name: "Test invalid command"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg invalid-command"
+    expect:
+      exit_code: 2
+      stderr_contains:
+        - "No such command"
+    timeout: 30000
+    
+  # Test start command (Electron GUI)
+  - name: "Test atg start --help"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg start --help"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "start"
+        - "Launch Electron GUI"
+    timeout: 30000
+
+# Assertions to validate test success
+assertions:
+  - name: "Version Command Successful"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test atg --version"
+      
+  - name: "Help Command Shows All Commands"
+    type: "output_contains_all"
+    agent: "cli-agent"
+    params:
+      step: "Test atg --help"
+      required_strings:
+        - "build"
+        - "generate-spec"
+        - "generate-iac"
+        - "doctor"
+        
+  - name: "Doctor Command Runs Successfully"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test atg doctor"
+      
+  - name: "Missing Tenant ID Handled Gracefully"
+    type: "command_failure_expected"
+    agent: "cli-agent"
+    params:
+      step: "Test atg build without tenant ID"
+      expected_exit_code: 1
+      
+  - name: "Valid Build Command Starts Successfully"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test atg build with tenant ID"
+
+# Cleanup actions
+cleanup:
+  - name: "Clean up test artifacts"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "rm -f /tmp/atg-test-*"
+
+# Test metadata
+metadata:
+  tags:
+    - "cli"
+    - "smoke-test"
+    - "commands"
+    - "validation"
+  priority: "high"
+  author: "agentic-testing-system"
+  created: "2024-09-03T00:00:00Z"
+  updated: "2024-09-03T00:00:00Z"
