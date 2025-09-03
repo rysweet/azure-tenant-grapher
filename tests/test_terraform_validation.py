@@ -190,8 +190,16 @@ class TestTerraformValidation:
         assert "resource_group_name" in vm
         assert "size" in vm
         assert "admin_username" in vm
+        assert "admin_ssh_key" in vm  # SSH key instead of password
         assert "os_disk" in vm
         assert "source_image_reference" in vm
+        
+        # Verify SSH key is generated via TLS provider
+        assert "tls_private_key" in template["resource"]
+        assert "test_vm_ssh_key" in template["resource"]["tls_private_key"]
+        ssh_key = template["resource"]["tls_private_key"]["test_vm_ssh_key"]
+        assert ssh_key["algorithm"] == "RSA"
+        assert ssh_key["rsa_bits"] == 4096
         
         # Verify Public IP has required properties
         pip = template["resource"]["azurerm_public_ip"]["test_pip"]
@@ -216,6 +224,20 @@ class TestTerraformValidation:
         assert "administrator_login" in sql
         assert "administrator_login_password" in sql
         
+        # Verify password is generated via random_password resource, not hardcoded
+        assert "random_password" in template["resource"]
+        assert "test_sql_password" in template["resource"]["random_password"]
+        password_resource = template["resource"]["random_password"]["test_sql_password"]
+        assert password_resource["length"] == 20
+        assert password_resource["special"] == True
+        assert password_resource["min_lower"] == 1
+        assert password_resource["min_upper"] == 1
+        assert password_resource["min_numeric"] == 1
+        assert password_resource["min_special"] == 1
+        
+        # Verify SQL Server references the random password
+        assert "${random_password.test_sql_password.result}" in sql["administrator_login_password"]
+        
         # Verify Key Vault has required properties
         kv = template["resource"]["azurerm_key_vault"]["test_kv"]
         assert "name" in kv
@@ -223,6 +245,66 @@ class TestTerraformValidation:
         assert "resource_group_name" in kv
         assert "tenant_id" in kv
         assert "sku_name" in kv
+
+    def test_no_hardcoded_passwords(self):
+        """Test that no hardcoded passwords are present in the generated Terraform."""
+        resources = [
+            {
+                "type": "Microsoft.Sql/servers",
+                "name": "test-sql-server",
+                "location": "eastus"
+            },
+            {
+                "type": "Microsoft.Compute/virtualMachines",
+                "name": "test-vm",
+                "location": "eastus"
+            }
+        ]
+        
+        graph = TenantGraph()
+        graph.resources = resources
+        
+        # Generate the template
+        output_files = self.emitter.emit(graph, self.test_output_dir)
+        
+        # Read the generated template as text to check for hardcoded passwords
+        with open(output_files[0], 'r') as f:
+            template_text = f.read()
+        
+        # Parse the JSON to check for actual password values
+        template = json.loads(template_text)
+        
+        # Check for hardcoded passwords in resource configurations
+        def check_for_hardcoded_passwords(obj, path=""):
+            """Recursively check for hardcoded password values in the configuration."""
+            if isinstance(obj, dict):
+                for key, value in obj.items():
+                    # Skip checking the keys themselves or Terraform references
+                    if isinstance(value, str):
+                        # Skip Terraform interpolations (they reference generated passwords)
+                        if value.startswith("${") and value.endswith("}"):
+                            continue
+                        # Check if this is a password field with a hardcoded value
+                        if "password" in key.lower() or key == "administrator_login_password":
+                            # These are known bad passwords that should never be hardcoded
+                            forbidden_passwords = [
+                                "P@ssw0rd", "Password123", "Admin123", "password123",
+                                "admin", "administrator", "root", "test", "demo"
+                            ]
+                            for forbidden in forbidden_passwords:
+                                assert forbidden.lower() not in value.lower(), \
+                                    f"Found hardcoded password containing '{forbidden}' at {path}.{key}: {value}"
+                    else:
+                        check_for_hardcoded_passwords(value, f"{path}.{key}")
+            elif isinstance(obj, list):
+                for i, item in enumerate(obj):
+                    check_for_hardcoded_passwords(item, f"{path}[{i}]")
+        
+        check_for_hardcoded_passwords(template)
+        
+        # Verify proper password/key generation resources are used instead
+        assert "random_password" in template["resource"], "Should use random_password for SQL Server"
+        assert "tls_private_key" in template["resource"], "Should use tls_private_key for VM SSH"
 
     def test_terraform_template_structure(self):
         """Test that the generated Terraform template has the correct structure."""

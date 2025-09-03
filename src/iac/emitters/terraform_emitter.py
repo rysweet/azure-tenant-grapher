@@ -59,7 +59,9 @@ class TerraformEmitter(IaCEmitter):
         terraform_config = {
             "terraform": {
                 "required_providers": {
-                    "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"}
+                    "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"},
+                    "random": {"source": "hashicorp/random", "version": ">=3.1"},
+                    "tls": {"source": "hashicorp/tls", "version": ">=4.0"}
                 }
             },
             "provider": {
@@ -73,7 +75,7 @@ class TerraformEmitter(IaCEmitter):
 
         # Process resources
         for resource in graph.resources:
-            terraform_resource = self._convert_resource(resource)
+            terraform_resource = self._convert_resource(resource, terraform_config)
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
 
@@ -120,12 +122,13 @@ class TerraformEmitter(IaCEmitter):
         }
 
     def _convert_resource(
-        self, resource: Dict[str, Any]
+        self, resource: Dict[str, Any], terraform_config: Dict[str, Any]
     ) -> Optional[tuple[str, str, Dict[str, Any]]]:
         """Convert Azure resource to Terraform resource.
 
         Args:
             resource: Azure resource data
+            terraform_config: The main Terraform configuration dict to add helper resources to
 
         Returns:
             Tuple of (terraform_type, resource_name, resource_config) or None
@@ -168,11 +171,29 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.Network/virtualNetworks":
             resource_config["address_space"] = resource.get("address_space", ["10.0.0.0/16"])
         elif azure_type == "Microsoft.Compute/virtualMachines":
-            # Ensure required VM properties
+            # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
+            ssh_key_resource_name = f"{safe_name}_ssh_key"
+            
+            # Add the tls_private_key resource to terraform config
+            if "resource" not in terraform_config:
+                terraform_config["resource"] = {}
+            if "tls_private_key" not in terraform_config["resource"]:
+                terraform_config["resource"]["tls_private_key"] = {}
+            
+            terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
+                "algorithm": "RSA",
+                "rsa_bits": 4096
+            }
+            
+            # Ensure required VM properties with SSH key authentication
             resource_config.update(
                 {
                     "size": resource.get("size", "Standard_B2s"),
                     "admin_username": resource.get("admin_username", "azureuser"),
+                    "admin_ssh_key": {
+                        "username": resource.get("admin_username", "azureuser"),
+                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}"
+                    },
                     "os_disk": {
                         "caching": "ReadWrite",
                         "storage_account_type": "Standard_LRS"
@@ -197,11 +218,30 @@ class TerraformEmitter(IaCEmitter):
                 }
             )
         elif azure_type == "Microsoft.Sql/servers":
+            # Generate a unique password for each SQL server using Terraform's random_password resource
+            password_resource_name = f"{safe_name}_password"
+            
+            # Add the random_password resource to terraform config
+            if "resource" not in terraform_config:
+                terraform_config["resource"] = {}
+            if "random_password" not in terraform_config["resource"]:
+                terraform_config["resource"]["random_password"] = {}
+            
+            terraform_config["resource"]["random_password"][password_resource_name] = {
+                "length": 20,
+                "special": True,
+                "override_special": "!@#$%&*()-_=+[]{}<>:?",
+                "min_lower": 1,
+                "min_upper": 1,
+                "min_numeric": 1,
+                "min_special": 1
+            }
+            
             resource_config.update(
                 {
                     "version": resource.get("version", "12.0"),
                     "administrator_login": resource.get("administrator_login", "sqladmin"),
-                    "administrator_login_password": resource.get("administrator_login_password", "P@ssw0rd123!")
+                    "administrator_login_password": f"${{random_password.{password_resource_name}.result}}"
                 }
             )
         elif azure_type == "Microsoft.KeyVault/vaults":
