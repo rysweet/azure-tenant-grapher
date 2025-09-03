@@ -290,7 +290,7 @@ class MCPIntegrationService:
         self, command: str
     ) -> Tuple[bool, Dict[str, Any]]:
         """
-        Execute a natural language command via MCP.
+        Execute a natural language command via MCP or fallback methods.
 
         Args:
             command: Natural language command to execute
@@ -299,10 +299,14 @@ class MCPIntegrationService:
             Tuple of (success: bool, result: Dict)
         """
         if not self.is_available:
-            return False, {
-                "error": "MCP not available",
-                "suggestion": "Use traditional CLI commands",
-            }
+            # Try to use fallback if available
+            if self.discovery_service:
+                return await self._fallback_natural_language(command)
+            else:
+                return False, {
+                    "error": "MCP not available and no fallback configured",
+                    "suggestion": "Enable MCP (MCP_ENABLED=true) or use traditional CLI commands",
+                }
 
         try:
             logger.info(f"Executing natural language command: {command}")
