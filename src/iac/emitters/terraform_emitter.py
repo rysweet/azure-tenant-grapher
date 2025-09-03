@@ -31,6 +31,10 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
+        # Azure AD / Entra ID resource mappings
+        "Microsoft.AAD/User": "azuread_user",
+        "Microsoft.AAD/Group": "azuread_group",
+        "Microsoft.AAD/ServicePrincipal": "azuread_service_principal",
     }
 
     def emit(
@@ -55,6 +59,13 @@ class TerraformEmitter(IaCEmitter):
         # Ensure output directory exists
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        # Check if we have any Azure AD resources
+        has_azuread_resources = any(
+            resource.get("type", "").startswith("Microsoft.AAD/") or
+            resource.get("type", "").lower() in ("user", "aaduser", "group", "aadgroup", "serviceprincipal")
+            for resource in graph.resources
+        )
+
         # Build Terraform JSON structure
         terraform_config = {
             "terraform": {
@@ -72,6 +83,19 @@ class TerraformEmitter(IaCEmitter):
             },
             "resource": {},
         }
+        
+        # Add Azure AD provider if needed
+        if has_azuread_resources:
+            # Add azuread to required providers
+            terraform_config["terraform"]["required_providers"]["azuread"] = {
+                "source": "hashicorp/azuread",
+                "version": ">=2.0"
+            }
+            # Convert provider to list format for multiple providers
+            terraform_config["provider"] = [
+                {"azurerm": {"features": {}}},
+                {"azuread": {}}
+            ]
 
         # Process resources
         for resource in graph.resources:
@@ -135,6 +159,14 @@ class TerraformEmitter(IaCEmitter):
         """
         azure_type = resource.get("type", "")
         resource_name = resource.get("name", "unknown")
+        
+        # Handle simple type names for Azure AD resources
+        if azure_type.lower() in ("user", "aaduser"):
+            azure_type = "Microsoft.AAD/User"
+        elif azure_type.lower() in ("group", "aadgroup"):
+            azure_type = "Microsoft.AAD/Group"
+        elif azure_type.lower() == "serviceprincipal":
+            azure_type = "Microsoft.AAD/ServicePrincipal"
 
         # Get Terraform resource type
         terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
@@ -251,6 +283,30 @@ class TerraformEmitter(IaCEmitter):
                     "sku_name": resource.get("sku_name", "standard")
                 }
             )
+        elif azure_type == "Microsoft.AAD/User":
+            # Azure AD User specific properties
+            resource_config = {
+                "display_name": resource.get("displayName", resource_name),
+                "user_principal_name": resource.get("userPrincipalName", f"{resource_name}@example.com"),
+                "mail_nickname": resource.get("mailNickname", resource_name),
+            }
+            if "password" in resource:
+                resource_config["password"] = resource["password"]
+        elif azure_type == "Microsoft.AAD/Group":
+            # Azure AD Group specific properties
+            resource_config = {
+                "display_name": resource.get("displayName", resource_name),
+                "security_enabled": resource.get("securityEnabled", True),
+            }
+            if "description" in resource:
+                resource_config["description"] = resource["description"]
+        elif azure_type == "Microsoft.AAD/ServicePrincipal":
+            # Azure AD Service Principal specific properties
+            resource_config = {
+                "application_id": resource.get("applicationId", ""),
+            }
+            if "displayName" in resource:
+                resource_config["display_name"] = resource["displayName"]
 
         return terraform_type, safe_name, resource_config
 
