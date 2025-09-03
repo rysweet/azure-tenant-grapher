@@ -62,7 +62,12 @@ class TerraformEmitter(IaCEmitter):
                     "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"}
                 }
             },
-            "provider": {"azurerm": {"features": {}}},
+            "provider": {
+                "azurerm": {
+                    "features": {},
+                    "resource_provider_registrations": "none"
+                }
+            },
             "resource": {},
         }
 
@@ -137,9 +142,14 @@ class TerraformEmitter(IaCEmitter):
         safe_name = self._sanitize_terraform_name(resource_name)
 
         # Build basic resource configuration
+        # Ensure location is never null - default to eastus if missing
+        location = resource.get("location")
+        if not location or location.lower() == "none" or location.lower() == "null":
+            location = "eastus"
+        
         resource_config = {
             "name": resource_name,
-            "location": resource.get("location", "East US"),
+            "location": location,
             "resource_group_name": resource.get("resourceGroup", "default-rg"),
         }
 
@@ -147,13 +157,60 @@ class TerraformEmitter(IaCEmitter):
         if "tags" in resource:
             resource_config["tags"] = resource["tags"]
 
-        # Add type-specific properties
+        # Add type-specific properties to ensure all required fields are present
         if azure_type == "Microsoft.Storage/storageAccounts":
             resource_config.update(
-                {"account_tier": "Standard", "account_replication_type": "LRS"}
+                {
+                    "account_tier": resource.get("account_tier", "Standard"),
+                    "account_replication_type": resource.get("account_replication_type", "LRS")
+                }
             )
         elif azure_type == "Microsoft.Network/virtualNetworks":
-            resource_config["address_space"] = ["10.0.0.0/16"]
+            resource_config["address_space"] = resource.get("address_space", ["10.0.0.0/16"])
+        elif azure_type == "Microsoft.Compute/virtualMachines":
+            # Ensure required VM properties
+            resource_config.update(
+                {
+                    "size": resource.get("size", "Standard_B2s"),
+                    "admin_username": resource.get("admin_username", "azureuser"),
+                    "os_disk": {
+                        "caching": "ReadWrite",
+                        "storage_account_type": "Standard_LRS"
+                    },
+                    "source_image_reference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts",
+                        "version": "latest"
+                    }
+                }
+            )
+        elif azure_type == "Microsoft.Network/publicIPAddresses":
+            resource_config["allocation_method"] = resource.get("allocation_method", "Static")
+        elif azure_type == "Microsoft.Network/networkSecurityGroups":
+            # NSGs don't need additional required properties beyond name, location, and resource_group
+            pass
+        elif azure_type == "Microsoft.Web/sites":
+            resource_config.update(
+                {
+                    "app_service_plan_id": resource.get("app_service_plan_id", "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan")
+                }
+            )
+        elif azure_type == "Microsoft.Sql/servers":
+            resource_config.update(
+                {
+                    "version": resource.get("version", "12.0"),
+                    "administrator_login": resource.get("administrator_login", "sqladmin"),
+                    "administrator_login_password": resource.get("administrator_login_password", "P@ssw0rd123!")
+                }
+            )
+        elif azure_type == "Microsoft.KeyVault/vaults":
+            resource_config.update(
+                {
+                    "tenant_id": resource.get("tenant_id", "00000000-0000-0000-0000-000000000000"),
+                    "sku_name": resource.get("sku_name", "standard")
+                }
+            )
 
         return terraform_type, safe_name, resource_config
 
