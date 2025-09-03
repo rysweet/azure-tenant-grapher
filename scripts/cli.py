@@ -197,6 +197,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
         "spec": "📋 Generate tenant specification document from existing graph",
         "generate-spec": "📄 Generate anonymized tenant specification (standalone)",
         "generate-iac": "🏗️ Generate Infrastructure-as-Code templates from graph data",
+        "mcp-query": "🤖 Execute natural language queries via MCP (experimental)",
         "config": "⚙️  Show current configuration template",
         "container": "🐳 Manage Neo4j Docker container",
         "backup-db": "💾 Backup Neo4j database to a local file",
@@ -706,6 +707,55 @@ async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     from src.cli_commands import agent_mode_command_handler
 
     await agent_mode_command_handler(ctx, question)
+
+
+@cli.command("mcp-query")
+@click.argument("query")
+@click.option(
+    "--tenant-id",
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
+@click.option(
+    "--no-fallback",
+    is_flag=True,
+    help="Disable fallback to traditional API methods",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["json", "table", "text"]),
+    default="json",
+    help="Output format for query results",
+)
+@click.pass_context
+@async_command
+async def mcp_query(
+    ctx: click.Context,
+    query: str,
+    tenant_id: Optional[str],
+    no_fallback: bool,
+    format: str,
+) -> None:
+    """Execute natural language queries for Azure resources via MCP.
+    
+    Examples:
+        atg mcp-query "list all virtual machines"
+        atg mcp-query "show storage accounts in westus2"
+        atg mcp-query "find resources with public IP addresses"
+        atg mcp-query "analyze security posture of my key vaults"
+    
+    This is an experimental feature that requires MCP_ENABLED=true in your .env file.
+    """
+    from src.cli_commands import mcp_query_command
+
+    debug = ctx.obj.get("debug", False)
+    await mcp_query_command(
+        ctx,
+        query,
+        tenant_id=tenant_id,
+        use_fallback=not no_fallback,
+        output_format=format,
+        debug=debug,
+    )
 
 
 @cli.command("backup")

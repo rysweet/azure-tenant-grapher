@@ -828,6 +828,44 @@ async def generate_sim_doc_command_handler(
         )
         sys.exit(1)
 
+    # Determine identity count ranges based on company size
+    if size:
+        if size < 100:
+            # Small company
+            user_range = "5-15"
+            group_range = "2-5"
+            sp_range = "2-3"
+            mi_range = "1-2"
+            ca_range = "1-2"
+        elif size < 1000:
+            # Medium company (default)
+            user_range = "15-50"
+            group_range = "5-10"
+            sp_range = "5-10"
+            mi_range = "3-5"
+            ca_range = "3-5"
+        elif size < 10000:
+            # Large company
+            user_range = "50-200"
+            group_range = "10-30"
+            sp_range = "10-20"
+            mi_range = "5-10"
+            ca_range = "5-10"
+        else:
+            # Enterprise
+            user_range = "200-500"
+            group_range = "30-50"
+            sp_range = "20-50"
+            mi_range = "10-20"
+            ca_range = "10-15"
+    else:
+        # Default to medium company ranges
+        user_range = "15-50"
+        group_range = "5-10"
+        sp_range = "5-10"
+        mi_range = "3-5"
+        ca_range = "3-5"
+
     # Build the prompt as in generate_sim_customer_profile
     prompt = (
         "I'm a research scientist planning on building accurate simulations of Microsoft Azure customer environments so that security professionals can run realistic security scenarios in those environments. "
@@ -839,7 +877,7 @@ async def generate_sim_doc_command_handler(
         "Please use that background information and produce for me a distinct fake customer profile that describes the customer company, its goals, its personnel, and the solutions that they are leveraging on Azure, "
         "with enough detail that we could begin to go model that customer environment. The fake profiles must be somewhat realistic in terms of storytelling, application, and personnel, but MAY NOT use any of the content from the Customer Stories site verbatim and MAY NOT use the names of real companies or customers.\n\n"
         "IMPORTANT: Generate comprehensive identity and access management details including:\n\n"
-        "1. USERS (15-50 total):\n"
+        f"1. USERS ({user_range} total):\n"
         "   - Full realistic names, job titles, and departments\n"
         "   - Manager relationships forming an organizational hierarchy\n"
         "   - Mix of authentication methods (password, password+MFA, passwordless, FIDO2, Windows Hello)\n"
@@ -849,19 +887,19 @@ async def generate_sim_doc_command_handler(
         "   - Include various user types: regular employees, executives, IT admins, contractors, external guests, service accounts\n"
         "   - Account statuses (active, disabled, locked)\n"
         "   - License assignments (E3, E5, F1, etc.)\n\n"
-        "2. GROUPS (5-10 total):\n"
+        f"2. GROUPS ({group_range} total):\n"
         "   - Different types: Security groups, Microsoft 365 groups, Distribution lists, Mail-enabled security groups\n"
         "   - Some with dynamic membership rules (e.g., department eq 'Sales', jobTitle contains 'Manager')\n"
         "   - Nested group structures showing inheritance\n"
         "   - Clear owners and members for each group\n"
         "   - Groups for different purposes: department teams, project groups, role-based access groups\n\n"
-        "3. SERVICE PRINCIPALS (5-10 total):\n"
+        f"3. SERVICE PRINCIPALS ({sp_range} total):\n"
         "   - Mix of first-party Microsoft apps and third-party integrations\n"
         "   - Various API permissions (Microsoft Graph, Azure AD Graph, SharePoint, etc.)\n"
         "   - Different authentication methods (certificates, client secrets, managed identities)\n"
         "   - Mix of application permissions and delegated permissions\n"
         "   - Include common scenarios: backup solutions, monitoring tools, CI/CD pipelines, SaaS integrations\n\n"
-        "4. MANAGED IDENTITIES (3-5 total):\n"
+        f"4. MANAGED IDENTITIES ({mi_range} total):\n"
         "   - Both system-assigned and user-assigned identities\n"
         "   - Associated with specific Azure resources (VMs, App Services, Functions, AKS)\n"
         "   - Clear resource associations and permission scopes\n\n"
@@ -873,7 +911,7 @@ async def generate_sim_doc_command_handler(
         "   - Various Azure RBAC roles (Owner, Contributor, Reader, custom roles)\n"
         "   - Azure AD roles (Global Admin, User Admin, Application Admin, etc.)\n"
         "   - Include role assignment conditions and justifications\n\n"
-        "6. CONDITIONAL ACCESS POLICIES (3-5 total):\n"
+        f"6. CONDITIONAL ACCESS POLICIES ({ca_range} total):\n"
         "   - MFA requirements for specific apps or user groups\n"
         "   - Device compliance requirements (Intune enrolled, compliant, hybrid joined)\n"
         "   - Location-based access controls (trusted locations, country restrictions)\n"
@@ -1055,7 +1093,7 @@ def create_tenant_command(markdown_file: str):
             text = f.read()
         print("DEBUG: Raw markdown file contents:\n", text)
         create_tenant_from_markdown(text)
-        click.echo("✅ Tenant creation (stub) succeeded.")
+        click.echo("✅ Tenant successfully created in Neo4j.")
     except Exception as e:
         click.echo(
             f"❌ Failed to create tenant: {e}\n"
@@ -1646,3 +1684,143 @@ def app_registration_command(
         # Clean up temp file
         if os.path.exists(manifest_path):
             os.remove(manifest_path)
+
+
+async def mcp_query_command(
+    ctx: click.Context,
+    query: str,
+    tenant_id: Optional[str] = None,
+    use_fallback: bool = True,
+    output_format: str = "json",
+    debug: bool = False,
+) -> None:
+    """
+    Execute natural language queries using MCP (Model Context Protocol).
+    
+    This command ensures MCP server is running and executes natural language
+    queries against Azure resources.
+    """
+    from src.config_manager import MCPConfig, create_config_from_env
+    from src.services.mcp_integration import MCPIntegrationService
+    from src.services.azure_discovery_service import AzureDiscoveryService
+    from src.utils.mcp_startup import ensure_mcp_running_async
+    
+    # Set up logging
+    log_level = ctx.obj.get("log_level", "INFO")
+    if debug:
+        log_level = "DEBUG"
+    
+    # Get tenant ID
+    effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
+    if not effective_tenant_id:
+        click.echo(
+            "❌ No tenant ID provided and AZURE_TENANT_ID not set in environment.",
+            err=True,
+        )
+        sys.exit(1)
+    
+    # Create configuration
+    config = create_config_from_env(effective_tenant_id, debug=debug)
+    setup_logging(config.logging)
+    
+    # Check if MCP is configured
+    if not config.mcp.enabled:
+        click.echo("ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable.")
+        click.echo("❌ MCP is required for natural language queries. Please enable it first.")
+        sys.exit(1)
+    
+    # Ensure MCP server is running
+    click.echo("🚀 Ensuring MCP server is running...")
+    try:
+        await ensure_mcp_running_async(debug=debug)
+        click.echo("✅ MCP server is ready")
+    except RuntimeError as e:
+        click.echo(f"❌ Failed to start MCP server: {e}", err=True)
+        sys.exit(1)
+    
+    # Initialize services
+    discovery_service = None
+    if use_fallback:
+        try:
+            discovery_service = AzureDiscoveryService(config)
+            click.echo("✅ Traditional discovery service initialized as fallback")
+        except Exception as e:
+            click.echo(f"⚠️  Warning: Could not initialize discovery service: {e}")
+    
+    mcp_service = MCPIntegrationService(config.mcp, discovery_service)
+    
+    try:
+        # Connect to MCP
+        click.echo(f"🔌 Connecting to MCP at {config.mcp.endpoint}...")
+        connected = await mcp_service.initialize()
+        
+        if not connected:
+            click.echo("❌ MCP connection failed after server startup", err=True)
+            click.echo("Please check the MCP server logs for errors.")
+            sys.exit(1)
+        
+        click.echo("✅ MCP connection established")
+        
+        # Execute the query
+        click.echo(f"\n📝 Executing query: {query}")
+        click.echo("-" * 60)
+        
+        success, result = await mcp_service.natural_language_command(query)
+        
+        if success:
+            click.echo("✅ Query executed successfully\n")
+            
+            # Format and display results
+            if output_format == "json":
+                formatted_result = json.dumps(result, indent=2)
+                click.echo(formatted_result)
+            elif output_format == "table":
+                # Simple table formatting for resource lists
+                if isinstance(result, dict) and "response" in result:
+                    response = result["response"]
+                    if isinstance(response, list):
+                        click.echo("Resources found:")
+                        click.echo("-" * 60)
+                        for item in response:
+                            if isinstance(item, dict):
+                                name = item.get("name", "Unknown")
+                                res_type = item.get("type", "Unknown")
+                                location = item.get("location", "Unknown")
+                                click.echo(f"  • {name} ({res_type}) - {location}")
+                    else:
+                        click.echo(str(response))
+                else:
+                    click.echo(str(result))
+            else:
+                # Plain text output
+                if isinstance(result, dict):
+                    if "response" in result:
+                        click.echo(str(result["response"]))
+                    else:
+                        for key, value in result.items():
+                            click.echo(f"{key}: {value}")
+                else:
+                    click.echo(str(result))
+        else:
+            click.echo("❌ Query failed\n")
+            if isinstance(result, dict):
+                if "error" in result:
+                    click.echo(f"Error: {result['error']}")
+                if "suggestion" in result:
+                    click.echo(f"💡 Suggestion: {result['suggestion']}")
+            else:
+                click.echo(f"Error: {result}")
+    
+    except KeyboardInterrupt:
+        click.echo("\n⚠️  Query interrupted by user")
+        sys.exit(130)
+    except Exception as e:
+        click.echo(f"❌ Unexpected error: {e}", err=True)
+        if debug:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+    finally:
+        # Clean up
+        await mcp_service.close()
+        click.echo("\n✅ MCP session closed")

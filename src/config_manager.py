@@ -251,6 +251,31 @@ class TenantConfig:
 
 
 @dataclass
+class MCPConfig:
+    """Configuration for MCP (Model Context Protocol) integration."""
+
+    endpoint: str = field(
+        default_factory=lambda: os.getenv("MCP_ENDPOINT", "http://localhost:8080")
+    )
+    enabled: bool = field(
+        default_factory=lambda: os.getenv("MCP_ENABLED", "false").lower() == "true"
+    )
+    timeout: int = field(
+        default_factory=lambda: int(os.getenv("MCP_TIMEOUT", "30"))
+    )
+    api_key: Optional[str] = field(
+        default_factory=lambda: os.getenv("MCP_API_KEY")
+    )
+
+    def __post_init__(self) -> None:
+        """Validate MCP configuration."""
+        if self.timeout < 1:
+            raise ValueError("MCP timeout must be at least 1 second")
+        if self.enabled and not self.endpoint:
+            raise ValueError("MCP endpoint is required when MCP is enabled")
+
+
+@dataclass
 class SpecificationConfig:
     """Configuration for specification generation."""
 
@@ -282,6 +307,7 @@ class AzureTenantGrapherConfig:
     azure_openai: AzureOpenAIConfig = field(default_factory=AzureOpenAIConfig)
     processing: ProcessingConfig = field(default_factory=ProcessingConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    mcp: MCPConfig = field(default_factory=MCPConfig)
     specification: SpecificationConfig = field(default_factory=SpecificationConfig)
     tenant_id: Optional[str] = None
     tenant: Optional[TenantConfig] = None
@@ -348,6 +374,7 @@ class AzureTenantGrapherConfig:
             self.neo4j.__post_init__()
             self.processing.__post_init__()
             self.logging.__post_init__()
+            self.mcp.__post_init__()
             # No __post_init__ for specification, but could add validation if needed
 
             # Validate Azure OpenAI if enabled
@@ -394,6 +421,11 @@ class AzureTenantGrapherConfig:
             f"   - Include Config Details: {self.specification.include_configuration_details}"
         )
         logger.info(f"   - Template Style: {self.specification.template_style}")
+        logger.info("🔌 MCP Integration:")
+        logger.info(f"   - Enabled: {self.mcp.enabled}")
+        if self.mcp.enabled:
+            logger.info(f"   - Endpoint: {self.mcp.endpoint}")
+            logger.info(f"   - Timeout: {self.mcp.timeout}s")
         logger.info(f"📝 Logging Level: {self.logging.level}")
         if self.logging.file_output:
             logger.info(f"📄 Log File: {self.logging.file_output}")
@@ -427,6 +459,12 @@ class AzureTenantGrapherConfig:
             "logging": {
                 "level": self.logging.level,
                 "file_output": self.logging.file_output,
+            },
+            "mcp": {
+                "enabled": self.mcp.enabled,
+                "endpoint": self.mcp.endpoint,
+                "timeout": self.mcp.timeout,
+                # Don't include API key in serialization for security
             },
             "specification": {
                 "resource_limit": self.specification.resource_limit,
