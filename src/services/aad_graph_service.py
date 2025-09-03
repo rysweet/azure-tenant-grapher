@@ -298,29 +298,29 @@ class AADGraphService:
 
         logger.info(f"Ingesting {len(users)} users and {len(groups)} groups")
 
-        # Upsert User nodes
+        # Upsert User nodes - Convert camelCase to snake_case for consistency
         for user in users:
             user_id = user.get("id")
             if not user_id:
                 continue
             props = {
                 "id": user_id,
-                "displayName": user.get("displayName"),
-                "userPrincipalName": user.get("userPrincipalName"),
+                "display_name": user.get("displayName"),  # Convert to snake_case
+                "user_principal_name": user.get("userPrincipalName"),  # Convert to snake_case
                 "mail": user.get("mail"),
                 "type": "User",
             }
             if not dry_run:
                 db_ops.upsert_generic("User", "id", user_id, props)
 
-        # Upsert Group nodes
+        # Upsert Group nodes - Convert camelCase to snake_case for consistency
         for group in groups:
             group_id = group.get("id")
             if not group_id:
                 continue
             props = {
                 "id": group_id,
-                "displayName": group.get("displayName"),
+                "display_name": group.get("displayName"),  # Convert to snake_case
                 "mail": group.get("mail"),
                 "description": group.get("description"),
                 "type": "IdentityGroup",

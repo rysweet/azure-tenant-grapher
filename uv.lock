@@ -414,7 +414,7 @@ dev = [
     { name = "pytest-mock" },
     { name = "pytest-timeout" },
     { name = "ruff" },
-    { name = "testcontainers" },
+    { name = "testcontainers", extra = ["neo4j"] },
 ]
 
 [package.metadata]
@@ -465,7 +465,7 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.10.0" },
     { name = "pytest-timeout", specifier = ">=2.1.0" },
     { name = "ruff", specifier = ">=0.6.0" },
-    { name = "testcontainers", specifier = ">=4.0.0" },
+    { name = "testcontainers", extras = ["neo4j"], specifier = ">=4.0.0" },
 ]
 
 [[package]]
@@ -2155,6 +2155,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a1/49/9c618aff1c50121d183cdfbc3a4a5cf2727a2cde1893efe6ca55c7009196/testcontainers-4.10.0.tar.gz", hash = "sha256:03f85c3e505d8b4edeb192c72a961cebbcba0dd94344ae778b4a159cb6dcf8d3", size = 63327 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/0a/824b0c1ecf224802125279c3effff2e25ed785ed046e67da6e53d928de4c/testcontainers-4.10.0-py3-none-any.whl", hash = "sha256:31ed1a81238c7e131a2a29df6db8f23717d892b592fa5a1977fd0dcd0c23fc23", size = 107414 },
+]
+
+[package.optional-dependencies]
+neo4j = [
+    { name = "neo4j" },
 ]
 
 [[package]]
