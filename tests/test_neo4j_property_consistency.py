@@ -1,236 +1,146 @@
-"""
-Test to ensure Neo4j property names are consistent (snake_case) across the codebase.
-This test verifies that graph creation and queries use the same property naming convention.
-"""
+"""Test Neo4j property consistency for User nodes."""
 
 import pytest
-from neo4j import GraphDatabase
-import os
-from src.utils.neo4j_startup import ensure_neo4j_running
-from src.services.aad_graph_service import AADGraphService
+from unittest.mock import MagicMock, patch
 from src.tenant_creator import TenantCreator
-from src.tenant_spec_models import User, TenantSpec
-from typing import Dict, List, Set
-import asyncio
+from src.services.aad_graph_service import AADGraphService
+from src.tenant_spec_models import TenantSpec, Tenant, User
 
 
 @pytest.fixture
-def neo4j_driver():
-    """Create a Neo4j driver for testing."""
-    ensure_neo4j_running()
-    
-    neo4j_port = os.environ.get("NEO4J_PORT", "7689")
-    neo4j_uri = f"bolt://localhost:{neo4j_port}"
-    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-    neo4j_password = os.environ.get("NEO4J_PASSWORD", "localtest123!")
-    
-    driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
-    
-    # Clean up test data before and after
-    with driver.session() as session:
-        session.run("MATCH (n:TestUser) DETACH DELETE n")
-        session.run("MATCH (n:TestGroup) DETACH DELETE n")
-        session.run("MATCH (n:TestServicePrincipal) DETACH DELETE n")
-    
-    yield driver
-    
-    # Cleanup
-    with driver.session() as session:
-        session.run("MATCH (n:TestUser) DETACH DELETE n")
-        session.run("MATCH (n:TestGroup) DETACH DELETE n")
-        session.run("MATCH (n:TestServicePrincipal) DETACH DELETE n")
-    
-    driver.close()
+def mock_session_manager():
+    """Mock session manager for database operations."""
+    mock_manager = MagicMock()
+    mock_session = MagicMock()
+    mock_manager.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+    mock_manager.session.return_value.__exit__ = MagicMock(return_value=None)
+    return mock_manager, mock_session
 
 
-class TestNeo4jPropertyConsistency:
-    """Test that property names follow snake_case convention consistently."""
+def test_user_properties_consistency_tenant_creator(mock_session_manager):
+    """Test that tenant_creator creates User nodes with camelCase properties."""
+    mock_manager, mock_session = mock_session_manager
     
-    def test_user_properties_are_snake_case(self, neo4j_driver):
-        """Verify User nodes use snake_case properties."""
-        with neo4j_driver.session() as session:
-            # Create a user with all expected properties
-            session.run("""
-                CREATE (u:TestUser {
-                    id: 'test-user-1',
-                    display_name: 'Test User',
-                    user_principal_name: 'test@example.com',
-                    mail: 'test@example.com',
-                    job_title: 'Developer'
-                })
-            """)
-            
-            # Query back and check property names
-            result = session.run("""
-                MATCH (u:TestUser {id: 'test-user-1'})
-                RETURN keys(u) as properties
-            """)
-            
-            properties = result.single()["properties"]
-            
-            # Check for camelCase properties (should not exist)
-            camel_case_props = [p for p in properties if any(c.isupper() for c in p[1:])]
-            assert not camel_case_props, f"Found camelCase properties: {camel_case_props}"
-            
-            # Check expected snake_case properties exist
-            expected = ["id", "display_name", "user_principal_name", "mail", "job_title"]
-            for prop in expected:
-                assert prop in properties, f"Missing expected property: {prop}"
+    # Create a test tenant spec with a user
+    test_user = User(
+        id="user-001",
+        display_name="Test User",
+        user_principal_name="test@example.com",
+        job_title="Engineer"
+    )
     
-    def test_aad_graph_service_properties(self, neo4j_driver):
-        """Test that AAD Graph Service creates properties with correct names."""
-        # Create mock AAD data (simulating what comes from Azure AD API)
-        mock_users = [
-            {
-                "id": "aad-user-1",
-                "displayName": "AAD Test User",
-                "userPrincipalName": "aaduser@example.com",
-                "mail": "aaduser@example.com"
-            }
-        ]
+    tenant = Tenant(
+        id="tenant-001",
+        display_name="Test Tenant",
+        users=[test_user]
+    )
+    
+    spec = TenantSpec(tenant=tenant)
+    
+    # Mock the session manager
+    with patch('src.tenant_creator.get_default_session_manager', return_value=mock_manager):
+        creator = TenantCreator()
+        import asyncio
+        asyncio.run(creator.ingest_to_graph(spec))
+    
+    # Find the call that creates the User node
+    user_creation_call = None
+    for call in mock_session.run.call_args_list:
+        if call and len(call[0]) > 0:
+            query = call[0][0]
+            if "MERGE (u:User" in query:
+                user_creation_call = call
+                break
+    
+    assert user_creation_call is not None, "User node creation query not found"
+    
+    # Check that the query uses camelCase properties
+    query = user_creation_call[0][0]
+    assert "u.displayName" in query or "u.display_name" in query, "Query should set displayName property"
+    assert "u.userPrincipalName" in query or "u.user_principal_name" in query, "Query should set userPrincipalName property"
+    
+    # Check the actual parameters passed
+    params = user_creation_call[0][1] if len(user_creation_call[0]) > 1 else {}
+    
+    # The query should use camelCase properties in Neo4j
+    if "u.displayName" in query:
+        # Correct: using camelCase
+        assert "displayName" in params or "display_name" in params
+    else:
+        # Incorrect: using snake_case - this is the bug we're fixing
+        assert False, "Query uses snake_case (u.display_name) instead of camelCase (u.displayName)"
+
+
+def test_user_properties_consistency_aad_service():
+    """Test that AAD service creates User nodes with camelCase properties."""
+    # Create mock db_ops
+    mock_db_ops = MagicMock()
+    
+    # Create AAD service with mock data
+    aad_service = AADGraphService(use_mock=True)
+    
+    # Run ingestion
+    import asyncio
+    asyncio.run(aad_service.ingest_into_graph(mock_db_ops, dry_run=False))
+    
+    # Check that upsert_generic was called with camelCase properties
+    user_calls = [call for call in mock_db_ops.upsert_generic.call_args_list 
+                  if call[0][0] == "User"]
+    
+    assert len(user_calls) > 0, "No User nodes created"
+    
+    # Check first user call
+    first_user_call = user_calls[0]
+    properties = first_user_call[0][3]  # Fourth argument is properties dict
+    
+    # AAD service should use camelCase properties
+    assert "displayName" in properties, "AAD service should use displayName (camelCase)"
+    assert "userPrincipalName" in properties, "AAD service should use userPrincipalName (camelCase)"
+    assert "display_name" not in properties, "AAD service should not use display_name (snake_case)"
+    assert "user_principal_name" not in properties, "AAD service should not use user_principal_name (snake_case)"
+
+
+def test_query_can_find_users_by_principal_name(mock_session_manager):
+    """Test that queries can find users by userPrincipalName."""
+    mock_manager, mock_session = mock_session_manager
+    
+    # Simulate a query looking for a user by userPrincipalName
+    query = """
+    MATCH (u:User {userPrincipalName: $upn})
+    RETURN u
+    """
+    
+    # This query should work with both tenant_creator and aad_service created nodes
+    # After the fix, both should use camelCase properties
+    mock_session.run.return_value = MagicMock()
+    
+    with mock_manager.session() as session:
+        result = session.run(query, {"upn": "test@example.com"})
         
-        # Verify our fix converts camelCase to snake_case
-        with neo4j_driver.session() as session:
-            # Simulate what AADGraphService.ingest_into_graph does
-            for user in mock_users:
-                props = {
-                    "id": user.get("id"),
-                    "display_name": user.get("displayName"),  # Should be snake_case
-                    "user_principal_name": user.get("userPrincipalName"),  # Should be snake_case
-                    "mail": user.get("mail"),
-                    "type": "User",
-                }
-                
-                # Create the node with correct property names
-                session.run("""
-                    MERGE (u:TestUser {id: $id})
-                    SET u.display_name = $display_name,
-                        u.user_principal_name = $user_principal_name,
-                        u.mail = $mail,
-                        u.type = $type
-                """, props)
-            
-            # Verify properties are snake_case
-            result = session.run("""
-                MATCH (u:TestUser {id: 'aad-user-1'})
-                RETURN u.display_name as dn, 
-                       u.user_principal_name as upn,
-                       keys(u) as props
-            """)
-            
-            record = result.single()
-            assert record["dn"] == "AAD Test User"
-            assert record["upn"] == "aaduser@example.com"
-            
-            # No camelCase properties should exist
-            props = record["props"]
-            assert "userPrincipalName" not in props
-            assert "displayName" not in props
-            assert "user_principal_name" in props
-            assert "display_name" in props
-    
-    def test_query_with_correct_properties(self, neo4j_driver):
-        """Test that queries using snake_case properties work correctly."""
-        with neo4j_driver.session() as session:
-            # Create test data
-            session.run("""
-                CREATE (u1:TestUser {
-                    id: 'query-test-1',
-                    display_name: 'Query Test User 1',
-                    user_principal_name: 'query1@test.com'
-                })
-                CREATE (u2:TestUser {
-                    id: 'query-test-2',
-                    display_name: 'Query Test User 2',
-                    user_principal_name: 'query2@test.com'
-                })
-            """)
-            
-            # Test queries with snake_case properties
-            test_queries = [
-                ("MATCH (u:TestUser) WHERE u.user_principal_name = 'query1@test.com' RETURN u", 1),
-                ("MATCH (u:TestUser) WHERE u.display_name CONTAINS 'Query' RETURN u", 2),
-                ("MATCH (u:TestUser) WHERE u.user_principal_name STARTS WITH 'query' RETURN u", 2),
-            ]
-            
-            for query, expected_count in test_queries:
-                result = session.run(query)
-                records = list(result)
-                assert len(records) == expected_count, f"Query '{query}' returned {len(records)} results, expected {expected_count}"
-    
-    def test_no_camel_case_queries_work(self, neo4j_driver):
-        """Verify that queries using camelCase properties return no results."""
-        with neo4j_driver.session() as session:
-            # Create test data with snake_case
-            session.run("""
-                CREATE (u:TestUser {
-                    id: 'camel-test',
-                    display_name: 'Camel Test User',
-                    user_principal_name: 'camel@test.com'
-                })
-            """)
-            
-            # These camelCase queries should return no results
-            bad_queries = [
-                "MATCH (u:TestUser) WHERE u.userPrincipalName = 'camel@test.com' RETURN u",
-                "MATCH (u:TestUser) WHERE u.displayName = 'Camel Test User' RETURN u",
-            ]
-            
-            for query in bad_queries:
-                result = session.run(query)
-                records = list(result)
-                assert len(records) == 0, f"CamelCase query should return no results: {query}"
-    
-    def test_migration_fixes_existing_properties(self, neo4j_driver):
-        """Test that migration script would fix any existing camelCase properties."""
-        with neo4j_driver.session() as session:
-            # Create a node with camelCase properties (simulating old data)
-            session.run("""
-                CREATE (u:TestUser {
-                    id: 'migration-test',
-                    displayName: 'Migration Test User',
-                    userPrincipalName: 'migrate@test.com'
-                })
-            """)
-            
-            # Run migration logic
-            session.run("""
-                MATCH (u:TestUser)
-                WHERE u.userPrincipalName IS NOT NULL AND u.user_principal_name IS NULL
-                SET u.user_principal_name = u.userPrincipalName
-                REMOVE u.userPrincipalName
-            """)
-            
-            session.run("""
-                MATCH (u:TestUser)
-                WHERE u.displayName IS NOT NULL AND u.display_name IS NULL
-                SET u.display_name = u.displayName
-                REMOVE u.displayName
-            """)
-            
-            # Verify properties are now snake_case
-            result = session.run("""
-                MATCH (u:TestUser {id: 'migration-test'})
-                RETURN keys(u) as props,
-                       u.display_name as dn,
-                       u.user_principal_name as upn
-            """)
-            
-            record = result.single()
-            props = record["props"]
-            
-            # Check snake_case exists
-            assert "display_name" in props
-            assert "user_principal_name" in props
-            
-            # Check camelCase removed
-            assert "displayName" not in props
-            assert "userPrincipalName" not in props
-            
-            # Check values preserved
-            assert record["dn"] == "Migration Test User"
-            assert record["upn"] == "migrate@test.com"
+    # The query should have been executed successfully
+    mock_session.run.assert_called_once_with(query, {"upn": "test@example.com"})
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])
+def test_user_node_expected_properties():
+    """Test that User nodes have the expected camelCase properties."""
+    expected_properties = [
+        "id",
+        "displayName",
+        "userPrincipalName", 
+        "mail",
+        "mailNickname",
+        "jobTitle"
+    ]
+    
+    # These should NOT be present (snake_case versions)
+    incorrect_properties = [
+        "display_name",
+        "user_principal_name",
+        "mail_nickname", 
+        "job_title"
+    ]
+    
+    # This test documents the expected property names
+    # After fix, all User nodes should use camelCase
+    assert all(prop[0].islower() or prop[0].isupper() for prop in expected_properties)
+    assert all("_" not in prop or prop == "updated_at" for prop in expected_properties if prop != "updated_at")

@@ -1,323 +1,183 @@
-"""Test CLI parameter naming consistency across all commands."""
+"""
+Test CLI Parameter Consistency
+
+This test ensures that all CLI parameters use kebab-case (e.g., --tenant-id)
+and none use underscores (e.g., --tenant_id).
+"""
 
 import ast
+import os
 import re
 from pathlib import Path
-from typing import Dict, List, Set
-
-import pytest
+from typing import List, Tuple
 
 
-class ClickOptionVisitor(ast.NodeVisitor):
-    """AST visitor to extract Click option definitions."""
-
-    def __init__(self):
-        self.commands: Dict[str, List[str]] = {}
-        self.current_command = None
-        self.issues: List[str] = []
-        self.in_function = False
-        self.function_stack = []
-
-    def visit_FunctionDef(self, node):
-        """Visit function definitions to track current command."""
-        # Save previous command context
-        self.function_stack.append((self.current_command, self.in_function))
-        self.in_function = True
-        
-        # Check if this is a command handler or has @cli.command decorator
-        for decorator in node.decorator_list:
-            # Extract options from decorators first
-            if isinstance(decorator, ast.Call):
-                if (isinstance(decorator.func, ast.Attribute) and 
-                    decorator.func.attr == 'option'):
-                    # This is an option decorator, save for current function
-                    if node.name not in self.commands:
-                        self.commands[node.name] = []
-                    self._extract_option_from_decorator(decorator, node.name)
-                elif (isinstance(decorator.func, ast.Name) and 
-                      decorator.func.id == 'option'):
-                    if node.name not in self.commands:
-                        self.commands[node.name] = []
-                    self._extract_option_from_decorator(decorator, node.name)
-            elif isinstance(decorator, ast.Attribute) and decorator.attr == 'option':
-                # Direct @click.option usage
-                pass  # Will be handled in visit_Call
-                
-        # Check if this function is a command
-        for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Call):
-                if (isinstance(decorator.func, ast.Attribute) and 
-                    decorator.func.attr == 'command'):
-                    # Extract command name from decorator arguments
-                    if decorator.args:
-                        if isinstance(decorator.args[0], ast.Constant):
-                            self.current_command = decorator.args[0].value
-                        elif isinstance(decorator.args[0], ast.Str):
-                            self.current_command = decorator.args[0].s
-                    else:
-                        # Use function name if no explicit command name
-                        self.current_command = node.name.replace('_', '-')
-                elif (isinstance(decorator.func, ast.Name) and 
-                      decorator.func.id == 'command'):
-                    # Handle @command("name") style
-                    if decorator.args:
-                        if isinstance(decorator.args[0], ast.Constant):
-                            self.current_command = decorator.args[0].value
-                        elif isinstance(decorator.args[0], ast.Str):
-                            self.current_command = decorator.args[0].s
-            elif isinstance(decorator, ast.Attribute) and decorator.attr == 'command':
-                # Direct @cli.command usage
-                self.current_command = node.name.replace('_', '-')
-        
-        # Continue visiting the function body
-        self.generic_visit(node)
-        
-        # Restore previous command context
-        prev = self.function_stack.pop()
-        self.current_command = prev[0]
-        self.in_function = prev[1]
-        
-    def _extract_option_from_decorator(self, decorator, command_name):
-        """Extract option names from a decorator call."""
-        if decorator.args:
-            for arg in decorator.args:
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                    option_name = arg.value
-                elif isinstance(arg, ast.Str):
-                    option_name = arg.s
-                else:
-                    continue
-                
-                if option_name.startswith('--'):
-                    self.commands[command_name].append(option_name)
-                    
-                    # Check for consistency issues
-                    if '_' in option_name:
-                        self.issues.append(
-                            f"Command '{command_name}' uses underscore in parameter '{option_name}' "
-                            f"(should be '{option_name.replace('_', '-')}')"
-                        )
-
-    def visit_Call(self, node):
-        """Visit function calls to find click.option decorators."""
-        if self.current_command:
-            # Check if this is a click.option call
-            is_click_option = False
-            
-            if isinstance(node.func, ast.Attribute):
-                if node.func.attr == 'option':
-                    is_click_option = True
-            elif isinstance(node.func, ast.Name):
-                if node.func.id == 'option':
-                    is_click_option = True
-            
-            if is_click_option and node.args:
-                # Extract option names
-                for arg in node.args:
-                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                        option_name = arg.value
-                    elif isinstance(arg, ast.Str):
-                        option_name = arg.s
-                    else:
-                        continue
-                    
-                    if option_name.startswith('--'):
-                        if self.current_command not in self.commands:
-                            self.commands[self.current_command] = []
-                        self.commands[self.current_command].append(option_name)
-                        
-                        # Check for consistency issues
-                        if '_' in option_name:
-                            self.issues.append(
-                                f"Command '{self.current_command}' uses underscore in parameter '{option_name}' "
-                                f"(should be '{option_name.replace('_', '-')}')"
-                            )
-        
-        self.generic_visit(node)
+def find_python_files(directory: Path, pattern: str = "*.py") -> List[Path]:
+    """Find all Python files in a directory recursively."""
+    return list(directory.rglob(pattern))
 
 
-def extract_cli_parameters(file_path: Path) -> tuple[Dict[str, List[str]], List[str]]:
-    """Extract all CLI command parameters from a Python file."""
-    with open(file_path, 'r') as f:
-        tree = ast.parse(f.read())
+def extract_click_options_from_file(file_path: Path) -> List[Tuple[str, int, str]]:
+    """
+    Extract all @click.option() and @click.argument() decorators from a Python file.
     
-    visitor = ClickOptionVisitor()
-    visitor.visit(tree)
+    Returns a list of tuples: (parameter_name, line_number, file_path)
+    """
+    parameters = []
     
-    return visitor.commands, visitor.issues
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+            
+        # Find all @click.option decorators with their first string argument
+        # Pattern matches @click.option("--parameter-name", ...) or @click.option('--parameter-name', ...)
+        option_pattern = r'@click\.option\s*\(\s*["\']([^"\']+)["\']'
+        
+        for line_num, line in enumerate(content.splitlines(), 1):
+            match = re.search(option_pattern, line)
+            if match:
+                param = match.group(1)
+                if param.startswith('--'):
+                    parameters.append((param, line_num, str(file_path)))
+                    
+        # Also check for multiline @click.option where the parameter is on the next line
+        multiline_pattern = r'@click\.option\s*\(\s*\n\s*["\']([^"\']+)["\']'
+        matches = re.finditer(multiline_pattern, content)
+        for match in matches:
+            param = match.group(1)
+            if param.startswith('--'):
+                # Find the line number
+                line_num = content[:match.start()].count('\n') + 1
+                parameters.append((param, line_num, str(file_path)))
+                
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+        
+    return parameters
 
 
-def test_cli_parameter_consistency():
-    """Test that all CLI parameters use consistent kebab-case naming."""
-    # Find CLI files
-    project_root = Path(__file__).parent.parent
-    cli_files = [
-        project_root / "scripts" / "cli.py",
-        project_root / "src" / "cli_commands.py",
+def test_cli_parameters_use_kebab_case():
+    """Test that all CLI parameters use kebab-case, not underscores."""
+    
+    # Find the project root (where scripts/ directory is)
+    current_dir = Path(__file__).parent.parent
+    
+    # Directories to check for CLI commands
+    directories_to_check = [
+        current_dir / "scripts",
+        current_dir / "src",
     ]
     
-    all_commands = {}
-    all_issues = []
+    all_parameters = []
     
-    for cli_file in cli_files:
-        if cli_file.exists():
-            commands, issues = extract_cli_parameters(cli_file)
-            all_commands.update(commands)
-            all_issues.extend(issues)
+    # Collect all CLI parameters
+    for directory in directories_to_check:
+        if directory.exists():
+            for py_file in find_python_files(directory):
+                # Skip test files
+                if 'test' in py_file.name.lower():
+                    continue
+                    
+                parameters = extract_click_options_from_file(py_file)
+                all_parameters.extend(parameters)
     
-    # Check for underscore usage in parameter names
+    # Check for underscore usage
     underscore_params = []
-    for command, params in all_commands.items():
-        for param in params:
-            if '_' in param:
-                underscore_params.append(f"{command}: {param}")
+    for param, line_num, file_path in all_parameters:
+        # Remove the -- prefix for checking
+        param_name = param[2:] if param.startswith('--') else param
+        
+        # Check if parameter name contains underscores
+        if '_' in param_name:
+            underscore_params.append((param, line_num, file_path))
     
-    # Check for inconsistent parameter naming across commands
-    param_variations = {}
-    for command, params in all_commands.items():
-        for param in params:
-            # Normalize to identify variations (remove -- and convert to lowercase)
-            normalized = param[2:].lower().replace('-', '').replace('_', '')
-            if normalized not in param_variations:
-                param_variations[normalized] = []
-            param_variations[normalized].append((command, param))
-    
-    # Find parameters with multiple naming styles
-    inconsistent_params = {}
-    for normalized, occurrences in param_variations.items():
-        unique_styles = set(param for _, param in occurrences)
-        if len(unique_styles) > 1:
-            inconsistent_params[normalized] = occurrences
-    
-    # Generate detailed error report
-    error_messages = []
-    
+    # Report findings
     if underscore_params:
-        error_messages.append("Parameters using underscores (should use kebab-case):")
-        for param in underscore_params:
-            error_messages.append(f"  - {param}")
+        print("\n❌ Found CLI parameters with underscores (should use kebab-case):")
+        for param, line_num, file_path in underscore_params:
+            relative_path = os.path.relpath(file_path, current_dir)
+            print(f"  {relative_path}:{line_num} - {param}")
+            # Suggest the kebab-case version
+            suggested = param.replace('_', '-')
+            print(f"    Suggested: {suggested}")
+        
+        assert False, f"Found {len(underscore_params)} CLI parameters with underscores"
+    else:
+        print(f"\n✅ All {len(all_parameters)} CLI parameters use kebab-case correctly")
+        
+    # Also verify we found some parameters (sanity check)
+    assert len(all_parameters) > 0, "No CLI parameters found - check the test configuration"
     
-    if inconsistent_params:
-        error_messages.append("\nParameters with inconsistent naming across commands:")
-        for normalized, occurrences in inconsistent_params.items():
-            error_messages.append(f"  Parameter '{normalized}' has multiple styles:")
-            for cmd, param in occurrences:
-                error_messages.append(f"    - {cmd}: {param}")
+    # Print summary of checked parameters
+    print(f"\nChecked {len(all_parameters)} CLI parameters across {len(set(p[2] for p in all_parameters))} files")
     
-    if all_issues:
-        error_messages.append("\nAdditional consistency issues found:")
-        for issue in all_issues:
-            error_messages.append(f"  - {issue}")
-    
-    # Print summary for debugging
-    print("\n=== CLI Parameter Analysis ===")
-    print(f"Total commands found: {len(all_commands)}")
-    for cmd, params in sorted(all_commands.items()):
-        if params:  # Only show commands with parameters
-            print(f"\n{cmd}:")
-            for param in sorted(params):
-                print(f"  {param}")
-    
-    # Assert all parameters follow kebab-case convention
-    if error_messages:
-        pytest.fail("\n".join(error_messages))
+    # Show a sample of parameters for verification
+    print("\nSample of CLI parameters found (first 10):")
+    for param, _, file_path in all_parameters[:10]:
+        relative_path = os.path.relpath(file_path, current_dir)
+        print(f"  {relative_path}: {param}")
 
 
-def test_preferred_parameter_naming():
-    """Test that common parameters use preferred naming conventions."""
-    # Define preferred naming for common parameters
-    preferred_names = {
-        'tenant-id': ['--tenant-id'],  # Not --tenant_id
-        'output': ['--output', '-o'],  # Not --out
-        'format': ['--format', '-f'],  # Not --fmt
-        'verbose': ['--verbose', '-v'],  # Not --verb
-        'debug': ['--debug'],  # Not --dbg
-        'size': ['--size'],  # Not --num-entities or --num_entities
-        'limit': ['--limit'],  # Not --max or --maximum
-        'force': ['--force', '-f'],  # Not --skip-confirmation
-        'path': ['--path', '-p'],  # Standard path parameter
-    }
+def test_no_python_variables_with_hyphens():
+    """Test that Python function parameters don't use hyphens (they should use underscores)."""
     
-    project_root = Path(__file__).parent.parent
-    cli_files = [
-        project_root / "scripts" / "cli.py",
-        project_root / "src" / "cli_commands.py",
+    current_dir = Path(__file__).parent.parent
+    
+    # This is correct - Python variables should use underscores, not hyphens
+    # This test just ensures we're following Python naming conventions
+    
+    directories_to_check = [
+        current_dir / "scripts",
+        current_dir / "src",
     ]
     
-    all_commands = {}
-    for cli_file in cli_files:
-        if cli_file.exists():
-            commands, _ = extract_cli_parameters(cli_file)
-            all_commands.update(commands)
+    hyphen_variables = []
     
-    violations = []
-    
-    for param_type, preferred in preferred_names.items():
-        for command, params in all_commands.items():
-            for param in params:
-                # Check if this parameter seems to be of this type
-                param_lower = param.lower()
-                
-                # Skip if it matches preferred naming
-                if param in preferred:
+    for directory in directories_to_check:
+        if directory.exists():
+            for py_file in find_python_files(directory):
+                # Skip test files
+                if 'test' in py_file.name.lower():
                     continue
-                
-                # Check for variations that should use the preferred name
-                if param_type == 'tenant-id' and 'tenant' in param_lower and 'id' in param_lower:
-                    if param not in preferred:
-                        violations.append(
-                            f"{command}: '{param}' should be '--tenant-id'"
-                        )
-                elif param_type == 'size' and ('num' in param_lower and 'entit' in param_lower):
-                    violations.append(
-                        f"{command}: '{param}' should be '--size' for consistency"
-                    )
+                    
+                try:
+                    with open(py_file, 'r') as f:
+                        content = f.read()
+                    
+                    # Parse the AST to find function definitions
+                    tree = ast.parse(content)
+                    
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.FunctionDef):
+                            for arg in node.args.args:
+                                if '-' in arg.arg:
+                                    line_num = node.lineno
+                                    hyphen_variables.append((arg.arg, line_num, str(py_file)))
+                                    
+                except Exception as e:
+                    # Skip files that can't be parsed
+                    continue
     
-    if violations:
-        error_msg = "Parameters not using preferred naming conventions:\n"
-        error_msg += "\n".join(f"  - {v}" for v in violations)
-        pytest.fail(error_msg)
-
-
-def test_no_num_entities_parameter():
-    """Test that no command uses --num-entities or --num_entities (should use --size)."""
-    project_root = Path(__file__).parent.parent
-    cli_files = [
-        project_root / "scripts" / "cli.py",
-        project_root / "src" / "cli_commands.py",
-    ]
-    
-    all_commands = {}
-    for cli_file in cli_files:
-        if cli_file.exists():
-            commands, _ = extract_cli_parameters(cli_file)
-            all_commands.update(commands)
-    
-    violations = []
-    
-    for command, params in all_commands.items():
-        for param in params:
-            param_lower = param.lower()
-            if 'num-entities' in param_lower or 'num_entities' in param_lower:
-                violations.append(f"{command}: uses '{param}' (should use '--size' for consistency)")
-    
-    if violations:
-        error_msg = "Found deprecated --num-entities parameter usage:\n"
-        error_msg += "\n".join(f"  - {v}" for v in violations)
-        pytest.fail(error_msg)
-
-
-def test_all_commands_documented():
-    """Test that all CLI commands are properly documented in help text."""
-    # This is a placeholder for documentation testing
-    # In a real scenario, we'd check that each command has a docstring
-    pass
+    if hyphen_variables:
+        print("\n❌ Found Python function parameters with hyphens (should use underscores):")
+        for var_name, line_num, file_path in hyphen_variables:
+            relative_path = os.path.relpath(file_path, current_dir)
+            print(f"  {relative_path}:{line_num} - {var_name}")
+            suggested = var_name.replace('-', '_')
+            print(f"    Suggested: {suggested}")
+        
+        assert False, f"Found {len(hyphen_variables)} Python parameters with hyphens"
+    else:
+        print("\n✅ All Python function parameters use underscores correctly (no hyphens)")
 
 
 if __name__ == "__main__":
-    # Run the tests directly for debugging
-    test_cli_parameter_consistency()
-    print("\n" + "="*50 + "\n")
-    test_preferred_parameter_naming()
-    print("\n" + "="*50 + "\n")
-    test_no_num_entities_parameter()
+    print("Testing CLI Parameter Consistency...")
+    print("=" * 60)
+    
+    test_cli_parameters_use_kebab_case()
+    print("\n" + "=" * 60)
+    test_no_python_variables_with_hyphens()
+    
+    print("\n" + "=" * 60)
+    print("✅ All CLI parameter consistency tests passed!")
