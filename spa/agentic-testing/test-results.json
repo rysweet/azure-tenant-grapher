@@ -1,0 +1,18 @@
+{
+  "passed": 23,
+  "failed": 3,
+  "errors": [
+    {
+      "test": "Failed to test Build tab",
+      "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=\"Build\"')\u001b[22m\n"
+    },
+    {
+      "test": "Failed to test Generate Spec tab",
+      "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=\"Generate Spec\"')\u001b[22m\n"
+    },
+    {
+      "test": "Failed to test Help tab",
+      "error": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=\"Help\"')\u001b[22m\n"
+    }
+  ]
+}

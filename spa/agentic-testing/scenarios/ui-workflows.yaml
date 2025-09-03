@@ -1,0 +1,421 @@
+# UI Workflow Test Scenarios
+# Complete end-to-end workflow tests for all major UI operations
+
+name: "UI Complete Workflows"
+description: "End-to-end workflow tests for build, generate spec, generate IaC, and configuration operations"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 300000  # 5 minutes for complete workflows
+  retries: 2
+  parallel: false
+  
+# Environment requirements
+environment:
+  requires:
+    - ELECTRON_APP_PATH
+    - AZURE_TENANT_ID
+    - NEO4J_PASSWORD
+    - NEO4J_PORT
+  optional:
+    - AZURE_CLIENT_ID
+    - AZURE_CLIENT_SECRET
+    - OPENAI_API_KEY
+
+# Agents involved in this scenario
+agents:
+  - name: "ui-agent"
+    type: "ui"
+    config:
+      browser: "chromium"
+      headless: false
+      viewport:
+        width: 1280
+        height: 720
+      timeout: 45000
+      slowMo: 300
+      
+  - name: "websocket-agent"
+    type: "websocket"
+    config:
+      url: "ws://localhost:3001"
+      reconnect: true
+      timeout: 10000
+
+# Test steps
+steps:
+  # Initialize the application
+  - name: "Launch Electron App"
+    agent: "ui-agent"
+    action: "launch_electron"
+    params:
+      executablePath: "${ELECTRON_APP_PATH}"
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
+    timeout: 20000
+    
+  # Connect to WebSocket for real-time updates
+  - name: "Connect WebSocket"
+    agent: "websocket-agent"
+    action: "connect"
+    params:
+      events: ["log", "progress", "status", "error"]
+    timeout: 10000
+    
+  # Wait for app initialization
+  - name: "Wait for App Ready"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='app-container']"
+      state: "visible"
+      timeout: 15000
+
+  # ===== CONFIGURATION WORKFLOW =====
+  - name: "Navigate to Configuration Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-config']"
+    wait_for:
+      selector: "[data-testid='config-form']"
+      state: "visible"
+      
+  - name: "Update Azure Configuration"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "fill"
+          selector: "[data-testid='azure-tenant-id-input']"
+          value: "${AZURE_TENANT_ID}"
+        - action: "fill"
+          selector: "[data-testid='neo4j-password-input']"
+          value: "${NEO4J_PASSWORD}"
+        - action: "fill"
+          selector: "[data-testid='neo4j-port-input']"
+          value: "${NEO4J_PORT}"
+          
+  - name: "Save Configuration"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='save-config-button']"
+    wait_for:
+      selector: "[data-testid='config-saved-message']"
+      state: "visible"
+      timeout: 10000
+
+  # ===== BUILD WORKFLOW =====
+  - name: "Navigate to Build Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-build']"
+    wait_for:
+      selector: "[data-testid='build-form']"
+      state: "visible"
+      
+  - name: "Configure Build Parameters"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "${AZURE_TENANT_ID}"
+        - action: "check"
+          selector: "[data-testid='include-users-checkbox']"
+        - action: "check"
+          selector: "[data-testid='include-groups-checkbox']"
+        - action: "select"
+          selector: "[data-testid='resource-limit-select']"
+          value: "50"  # Small limit for testing
+        - action: "check"
+          selector: "[data-testid='dry-run-checkbox']"  # Use dry run for safety
+          
+  - name: "Start Build Process"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='start-build-button']"
+    wait_for:
+      selector: "[data-testid='build-progress']"
+      state: "visible"
+      timeout: 10000
+      
+  - name: "Monitor Build Progress"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "progress"
+      timeout: 120000  # 2 minutes for dry run build
+    until:
+      condition: "contains"
+      value: "completed"
+      
+  - name: "Verify Build Completion"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='build-success-message'], [data-testid='build-complete-message']"
+      timeout: 30000
+
+  # ===== GENERATE SPEC WORKFLOW =====
+  - name: "Navigate to Generate Spec Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-generate-spec']"
+    wait_for:
+      selector: "[data-testid='generate-spec-form']"
+      state: "visible"
+      
+  - name: "Configure Spec Generation"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "select"
+          selector: "[data-testid='spec-template-select']"
+          value: "comprehensive"
+        - action: "fill"
+          selector: "[data-testid='spec-output-path-input']"
+          value: "/tmp/test-spec.md"
+        - action: "check"
+          selector: "[data-testid='include-diagrams-checkbox']"
+          
+  - name: "Generate Specification"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='generate-spec-button']"
+    wait_for:
+      selector: "[data-testid='spec-generation-progress']"
+      state: "visible"
+      timeout: 10000
+      
+  - name: "Wait for Spec Generation Complete"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='spec-generation-complete']"
+      timeout: 60000
+
+  # ===== GENERATE IAC WORKFLOW =====
+  - name: "Navigate to Generate IaC Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-generate-iac']"
+    wait_for:
+      selector: "[data-testid='generate-iac-form']"
+      state: "visible"
+      
+  - name: "Configure IaC Generation"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "fill"
+          selector: "[data-testid='tenant-id-input']"
+          value: "${AZURE_TENANT_ID}"
+        - action: "select"
+          selector: "[data-testid='iac-format-select']"
+          value: "terraform"
+        - action: "fill"
+          selector: "[data-testid='output-directory-input']"
+          value: "/tmp/test-iac"
+        - action: "check"
+          selector: "[data-testid='include-variables-checkbox']"
+        - action: "check"
+          selector: "[data-testid='dry-run-iac-checkbox']"
+          
+  - name: "Generate IaC"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='generate-iac-button']"
+    wait_for:
+      selector: "[data-testid='iac-generation-progress']"
+      state: "visible"
+      timeout: 10000
+      
+  - name: "Monitor IaC Generation"
+    agent: "websocket-agent"
+    action: "listen"
+    params:
+      event: "progress"
+      timeout: 120000
+    until:
+      condition: "contains"
+      value: "IaC generation completed"
+      
+  - name: "Verify IaC Generation Complete"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='iac-generation-complete']"
+      timeout: 30000
+
+  # ===== VISUALIZE WORKFLOW =====
+  - name: "Navigate to Visualize Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-visualize']"
+    wait_for:
+      selector: "[data-testid='visualize-container']"
+      state: "visible"
+      
+  - name: "Load Visualization"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='load-graph-button']"
+    wait_for:
+      selector: "[data-testid='graph-canvas'], [data-testid='no-data-message']"
+      state: "visible"
+      timeout: 30000
+      
+  - name: "Test Graph Interactions"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "click"
+          selector: "[data-testid='zoom-in-button']"
+          wait: 1000
+        - action: "click"
+          selector: "[data-testid='zoom-out-button']"
+          wait: 1000
+        - action: "click"
+          selector: "[data-testid='reset-view-button']"
+          wait: 1000
+
+  # ===== THREAT MODEL WORKFLOW =====
+  - name: "Navigate to Threat Model Tab"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='tab-threat-model']"
+    wait_for:
+      selector: "[data-testid='threat-model-container']"
+      state: "visible"
+      
+  - name: "Configure Threat Analysis"
+    agent: "ui-agent"
+    action: "multi_action"
+    params:
+      actions:
+        - action: "fill"
+          selector: "[data-testid='threat-scope-input']"
+          value: "test-scope"
+        - action: "select"
+          selector: "[data-testid='threat-level-select']"
+          value: "medium"
+        - action: "check"
+          selector: "[data-testid='include-mitigations-checkbox']"
+          
+  - name: "Run Threat Analysis"
+    agent: "ui-agent"
+    action: "click"
+    params:
+      selector: "[data-testid='run-threat-analysis-button']"
+    wait_for:
+      selector: "[data-testid='threat-analysis-progress']"
+      state: "visible"
+      timeout: 10000
+      
+  - name: "Wait for Threat Analysis Complete"
+    agent: "ui-agent"
+    action: "wait_for_element"
+    params:
+      selector: "[data-testid='threat-analysis-complete'], [data-testid='threat-analysis-results']"
+      timeout: 90000
+
+# Assertions to validate test success
+assertions:
+  - name: "Configuration Saved Successfully"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='config-saved-message']"
+      
+  - name: "Build Completed Successfully"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='build-success-message'], [data-testid='build-complete-message']"
+      
+  - name: "Spec Generation Completed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='spec-generation-complete']"
+      
+  - name: "IaC Generation Completed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='iac-generation-complete']"
+      
+  - name: "Visualization Loaded"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='graph-canvas'], [data-testid='no-data-message']"
+      
+  - name: "Threat Analysis Completed"
+    type: "element_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='threat-analysis-complete'], [data-testid='threat-analysis-results']"
+      
+  - name: "WebSocket Communication Active"
+    type: "websocket_connected"
+    agent: "websocket-agent"
+    params:
+      expected_events: ["log", "progress", "status"]
+      
+  - name: "No Critical Errors Occurred"
+    type: "element_not_visible"
+    agent: "ui-agent"
+    params:
+      selector: "[data-testid='critical-error-message']"
+
+# Cleanup actions
+cleanup:
+  - name: "Clean up test files"
+    agent: "ui-agent"
+    action: "execute_script"
+    params:
+      script: |
+        const fs = require('fs');
+        try {
+          if (fs.existsSync('/tmp/test-spec.md')) fs.unlinkSync('/tmp/test-spec.md');
+          if (fs.existsSync('/tmp/test-iac')) fs.rmSync('/tmp/test-iac', { recursive: true, force: true });
+        } catch (e) {
+          console.log('Cleanup completed with minor issues:', e.message);
+        }
+        
+  - name: "Disconnect WebSocket"
+    agent: "websocket-agent"
+    action: "disconnect"
+    
+  - name: "Close Application"
+    agent: "ui-agent"
+    action: "close_app"
+
+# Test metadata
+metadata:
+  tags:
+    - "ui"
+    - "workflow"
+    - "end-to-end"
+    - "integration"
+    - "comprehensive"
+  priority: "high"
+  author: "agentic-testing-system"
+  created: "2024-09-03T00:00:00Z"
+  updated: "2024-09-03T00:00:00Z"
