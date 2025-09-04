@@ -201,25 +201,6 @@ async def _run_no_dashboard_mode(
         event="Log file path for no-dashboard mode", log_file_path=log_file_path
     )
 
-    from rich.logging import RichHandler
-    from rich.style import Style
-
-    class GreenInfoRichHandler(RichHandler):  # type: ignore[misc]
-        def get_level_style(self, level_name: str) -> Style:
-            """Override log level colors for better readability."""
-            if level_name == "INFO":
-                return Style(color="blue", bold=True)
-            if level_name == "DEBUG":
-                return Style(color="white", dim=True)
-            if level_name == "WARNING":
-                return Style(color="yellow", bold=True)
-            if level_name == "ERROR":
-                return Style(color="red", bold=True)
-            if level_name == "CRITICAL":
-                return Style(color="red", bold=True, reverse=True)
-            # Fallback for other levels
-            return Style(color="cyan")
-
     root_logger = logging.getLogger()
     cli_log_level = ctx.obj.get("log_level", "INFO").upper()
     level_map = {
@@ -230,11 +211,48 @@ async def _run_no_dashboard_mode(
     }
     root_logger.setLevel(level_map.get(cli_log_level, logging.INFO))
     root_logger.handlers.clear()
-    handler = GreenInfoRichHandler(
-        rich_tracebacks=True, show_time=True, show_level=True, show_path=False
-    )
-    handler.setLevel(level_map.get(cli_log_level, logging.INFO))
-    root_logger.addHandler(handler)
+    
+    # Check if we're running from Electron app (SPA)
+    is_electron = os.environ.get('ELECTRON_RUN_AS_NODE') == '1' or os.environ.get('IS_ELECTRON_APP') == 'true' or os.environ.get('PYTHONUNBUFFERED') == '1'
+    
+    if is_electron:
+        # Use simple StreamHandler for Electron to capture all output
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        ))
+        handler.setLevel(level_map.get(cli_log_level, logging.INFO))
+        root_logger.addHandler(handler)
+        # Force flush for immediate output
+        sys.stdout = sys.stdout
+        sys.stderr = sys.stderr
+    else:
+        # Use RichHandler for terminal output
+        from rich.logging import RichHandler
+        from rich.style import Style
+
+        class GreenInfoRichHandler(RichHandler):  # type: ignore[misc]
+            def get_level_style(self, level_name: str) -> Style:
+                """Override log level colors for better readability."""
+                if level_name == "INFO":
+                    return Style(color="blue", bold=True)
+                if level_name == "DEBUG":
+                    return Style(color="white", dim=True)
+                if level_name == "WARNING":
+                    return Style(color="yellow", bold=True)
+                if level_name == "ERROR":
+                    return Style(color="red", bold=True)
+                if level_name == "CRITICAL":
+                    return Style(color="red", bold=True, reverse=True)
+                # Fallback for other levels
+                return Style(color="cyan")
+        
+        handler = GreenInfoRichHandler(
+            rich_tracebacks=True, show_time=True, show_level=True, show_path=False
+        )
+        handler.setLevel(level_map.get(cli_log_level, logging.INFO))
+        root_logger.addHandler(handler)
     for name in logging.root.manager.loggerDict:
         if name in ["httpx", "azure", "openai"]:
             continue
