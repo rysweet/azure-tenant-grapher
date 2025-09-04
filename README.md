@@ -77,8 +77,8 @@ azure-tenant-grapher build --tenant-id <your-tenant-id>
 # 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
 
-# Or use the desktop GUI (Electron app)
-cd spa && npm install && npm run start
+# Or launch the desktop GUI (Electron app)
+azure-tenant-grapher start
 ```
 
 ## Installation
@@ -241,15 +241,27 @@ The project includes a full-featured desktop application built with Electron and
 ### GUI Quick Start
 
 ```bash
-# Install dependencies
+# Start the desktop app (user mode)
+azure-tenant-grapher start
+
+# Stop the desktop app
+azure-tenant-grapher stop
+```
+
+### GUI Development
+
+For developers working on the GUI itself:
+
+```bash
+# Install development dependencies
 cd spa
 npm install
 
-# Start the desktop app
-npm run start
-
-# Or for development with hot reload
+# Start in development mode with hot reload
 npm run dev
+
+# Build for production
+npm run build
 ```
 
 ### GUI Features
