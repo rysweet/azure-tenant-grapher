@@ -70,7 +70,7 @@ const CreateTenantTab: React.FC = () => {
       const tempPath = `/tmp/tenant-spec-${Date.now()}.json`;
       await window.electronAPI.file.write(tempPath, specContent);
 
-      const result = await window.electronAPI.cli.execute('create-tenant', ['--spec', tempPath, '--tenant', selectedTenant]);
+      const result = await window.electronAPI.cli.execute('create-tenant', [tempPath]);
 
       window.electronAPI.on('process:output', (data: any) => {
         if (data.id === result.data.id) {

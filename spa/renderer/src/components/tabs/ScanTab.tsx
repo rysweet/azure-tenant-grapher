@@ -434,7 +434,6 @@ const ScanTab: React.FC = () => {
 
     const args = [
       '--tenant-id', tenantId,
-      '--tenant', selectedTenant,
       '--max-llm-threads', maxLlmThreads.toString(),
       '--max-build-threads', maxBuildThreads.toString(),
     ];

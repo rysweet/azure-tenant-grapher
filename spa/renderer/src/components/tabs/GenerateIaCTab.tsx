@@ -92,7 +92,6 @@ const GenerateIaCTab: React.FC = () => {
     const args = [
       '--tenant-id', tenantId,
       '--format', outputFormat,
-      '--tenant', selectedTenant,
     ];
 
     if (domainName) {
