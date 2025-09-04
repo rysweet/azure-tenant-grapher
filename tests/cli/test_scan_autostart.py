@@ -22,9 +22,9 @@ except Exception:
 
 
 @pytest.mark.integration
-def test_build_no_dashboard_autostarts_neo4j(tmp_path, neo4j_container):
+def test_scan_no_dashboard_autostarts_neo4j(tmp_path, neo4j_container):
     """
-    Integration test: verifies that running the build command with --no-dashboard
+    Integration test: verifies that running the scan command with --no-dashboard
     autostarts a Neo4j container and connects to it, using an isolated ephemeral container.
     This test is self-contained and does not interfere with dev containers or persistent data.
     """
@@ -49,7 +49,7 @@ def test_build_no_dashboard_autostarts_neo4j(tmp_path, neo4j_container):
                 "uv",
                 "run",
                 "azure-tenant-grapher",
-                "build",
+                "scan",
                 "--no-dashboard",
                 "--resource-limit=1",
             ],

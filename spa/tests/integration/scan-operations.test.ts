@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-describe('Build Operations Integration', () => {
+describe('Scan Operations Integration', () => {
   const CLI_PATH = path.join(__dirname, '../../../../scripts/cli.py');
   const TEST_TENANT_ID = '12345678-1234-1234-1234-123456789012';
 
@@ -35,20 +35,20 @@ describe('Build Operations Integration', () => {
     const result = await runCLI(['--help']);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('Azure Tenant Grapher');
-    expect(result.stdout).toContain('build');
+    expect(result.stdout).toContain('scan');
     expect(result.stdout).toContain('generate-spec');
     expect(result.stdout).toContain('generate-iac');
   });
 
   test('CLI should validate tenant ID format', async () => {
-    const result = await runCLI(['build', '--tenant-id', 'invalid-id']);
+    const result = await runCLI(['scan', '--tenant-id', 'invalid-id']);
     expect(result.code).not.toBe(0);
     expect(result.stderr).toContain('Invalid tenant ID');
   });
 
-  test('CLI should accept valid build parameters', async () => {
+  test('CLI should accept valid scan parameters', async () => {
     const result = await runCLI([
-      'build',
+      'scan',
       '--tenant-id', TEST_TENANT_ID,
       '--resource-limit', '100',
       '--dry-run'
@@ -63,7 +63,7 @@ describe('Build Operations Integration', () => {
 
   test('CLI should handle resource limits', async () => {
     const result = await runCLI([
-      'build',
+      'scan',
       '--tenant-id', TEST_TENANT_ID,
       '--resource-limit', '10000'
     ]);
@@ -73,7 +73,7 @@ describe('Build Operations Integration', () => {
 
     // Check for negative resource limit
     const negativeResult = await runCLI([
-      'build',
+      'scan',
       '--tenant-id', TEST_TENANT_ID,
       '--resource-limit', '-1'
     ]);
