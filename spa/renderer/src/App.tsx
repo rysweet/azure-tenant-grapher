@@ -63,8 +63,8 @@ const App: React.FC = () => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
     });
 
-    window.electronAPI.on('menu:new-build', () => {
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+    window.electronAPI.on('menu:new-scan', () => {
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
     });
 
     return () => {
@@ -80,8 +80,8 @@ const App: React.FC = () => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'visualize' });
     } else if (!initialCheckDone && dbPopulated === false) {
       setInitialCheckDone(true);
-      navigate('/build');
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+      navigate('/scan');
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
     }
   }, [dbPopulated, navigate, dispatch, initialCheckDone]);
 
@@ -124,6 +124,7 @@ const App: React.FC = () => {
                 <Route path="/status" element={<StatusTab />} />
                 <Route path="/logs" element={<LogsTab />} />
                 <Route path="/scan" element={<ScanTab />} />
+                <Route path="/build" element={<Navigate to="/scan" replace />} />
                 <Route path="/cli" element={<CLITab />} />
                 <Route path="/visualize" element={<VisualizeTab />} />
                 <Route path="/generate-spec" element={<GenerateSpecTab />} />

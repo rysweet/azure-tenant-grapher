@@ -36,7 +36,7 @@ def test_cli_dashboard_log_level_and_exit(tmp_path: Path):
     cmd = [
         sys.executable,
         "scripts/cli.py",
-        "build",
+        "scan",
         "--tenant-id",
         "test",
         "--no-container",
@@ -83,7 +83,7 @@ def test_dashboard_config_panel_displays_log_file(tmp_path: Path, neo4j_containe
     cmd = [
         sys.executable,
         "scripts/cli.py",
-        "build",
+        "scan",
         "--tenant-id",
         "test",
         "--no-container",

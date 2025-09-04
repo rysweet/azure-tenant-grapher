@@ -47,7 +47,7 @@ uv run pre-commit run --all-files
 ### Running the CLI
 ```bash
 # Main CLI commands (all aliases work: azure-tenant-grapher, azure-graph, atg)
-uv run atg build --tenant-id <TENANT_ID>
+uv run atg scan --tenant-id <TENANT_ID>
 uv run atg generate-spec
 uv run atg generate-iac --tenant-id <TENANT_ID> --format terraform
 uv run atg create-tenant --spec path/to/spec.md
@@ -123,7 +123,7 @@ The Electron-based desktop GUI provides a full-featured interface for all CLI fu
 - `spa/tests/`: Comprehensive test suites (unit, integration, e2e)
 
 **Core Features:**
-- **Tabbed Interface**: Build, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, Threat Model, Config
+- **Tabbed Interface**: Scan, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, Threat Model, Config
 - **Real-time Communication**: WebSocket for live logs and progress updates
 - **Process Management**: Spawns and manages CLI subprocesses
 - **Cross-Platform**: Windows, macOS, and Linux support
@@ -194,7 +194,7 @@ Check CI status: `./scripts/check_ci_status.sh`
 
 ## CLI Dashboard Shortcuts
 
-When using the CLI dashboard (during `atg build` operations):
+When using the CLI dashboard (during `atg scan` operations):
 - **Press 'x'** to exit the dashboard
 - **Press 'g'** to launch the GUI (SPA) - provides quick access to the desktop interface
 - **Press 'i', 'd', 'w'** to change log levels (INFO, DEBUG, WARNING)
