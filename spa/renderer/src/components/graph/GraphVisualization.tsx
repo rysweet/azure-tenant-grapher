@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Network, DataSet, Node, Edge } from 'vis-network/standalone';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 import {
   Box,
   Paper,
@@ -187,6 +189,8 @@ const getEdgeDescription = (type: string): string => {
 export const GraphVisualization: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
+  const navigate = useNavigate();
+  const { dispatch } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -862,12 +866,15 @@ export const GraphVisualization: React.FC = () => {
                   // Get selected node IDs
                   const nodeIds = Array.from(selectedNodesForExport);
                   
-                  // Navigate to Generate IaC tab with selected nodes
-                  // We'll pass the selected nodes through a callback or state
+                  // Dispatch event for GenerateIaCTab to pick up
                   const event = new CustomEvent('generateIaCForNodes', { 
                     detail: { nodeIds } 
                   });
                   window.dispatchEvent(event);
+                  
+                  // Navigate to Generate IaC tab
+                  navigate('/generate-iac');
+                  dispatch({ type: 'SET_ACTIVE_TAB', payload: 'generate-iac' });
                   
                   // Exit selection mode
                   setSelectionMode(false);
