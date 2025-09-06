@@ -501,6 +501,12 @@ def generate_spec(
     help="Subset filter string (e.g., 'types=Microsoft.Storage/*;nodeIds=abc123')",
 )
 @click.option(
+    "--node-id",
+    "node_ids",
+    multiple=True,
+    help="Specific node IDs to generate IaC for (can be specified multiple times)",
+)
+@click.option(
     "--dest-rg",
     help="Target resource group name for Bicep module deployment",
 )
@@ -525,6 +531,7 @@ async def generate_iac(
     dry_run: bool,
     resource_filters: Optional[str],
     subset_filter: Optional[str],
+    node_ids: tuple,
     dest_rg: Optional[str],
     location: Optional[str],
     domain_name: Optional[str] = None,
@@ -568,6 +575,7 @@ async def generate_iac(
         dry_run=dry_run,
         resource_filters=resource_filters,
         subset_filter=subset_filter,
+        node_ids=list(node_ids) if node_ids else None,
         dest_rg=dest_rg,
         location=location,
         # aad_mode removed, now always manual by default
