@@ -55,6 +55,22 @@ const GenerateIaCTab: React.FC = () => {
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [domainName, setDomainName] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+
+  // Listen for selected nodes from visualization
+  useEffect(() => {
+    const handleGenerateIaCForNodes = (event: CustomEvent) => {
+      const nodeIds = event.detail?.nodeIds || [];
+      setSelectedNodeIds(nodeIds);
+      // Switch to this tab (the parent component should handle tab switching)
+    };
+
+    window.addEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
+    
+    return () => {
+      window.removeEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
+    };
+  }, []);
 
   // Fetch tenants from Neo4j on mount
   useEffect(() => {
@@ -99,6 +115,13 @@ const GenerateIaCTab: React.FC = () => {
     }
 
     if (dryRun) args.push('--dry-run');
+
+    // Add selected node IDs if any
+    if (selectedNodeIds.length > 0) {
+      selectedNodeIds.forEach(nodeId => {
+        args.push('--node-id', nodeId);
+      });
+    }
 
     resourceFilters.forEach(filter => {
       args.push('--filter', filter);
@@ -194,6 +217,22 @@ const GenerateIaCTab: React.FC = () => {
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
+          </Alert>
+        )}
+
+        {selectedNodeIds.length > 0 && (
+          <Alert severity="info" sx={{ mb: 2 }} onClose={() => setSelectedNodeIds([])}>
+            <Typography variant="body2">
+              Generating IaC for {selectedNodeIds.length} selected nodes and their connections
+            </Typography>
+            <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {selectedNodeIds.slice(0, 5).map(id => (
+                <Chip key={id} label={id} size="small" />
+              ))}
+              {selectedNodeIds.length > 5 && (
+                <Chip label={`+${selectedNodeIds.length - 5} more`} size="small" />
+              )}
+            </Box>
           </Alert>
         )}
 
