@@ -69,31 +69,36 @@ class TestTerraformAzureADProvider:
             # Check terraform block includes azuread provider
             assert "required_providers" in terraform_config["terraform"]
             assert "azurerm" in terraform_config["terraform"]["required_providers"]
-            assert "azuread" in terraform_config["terraform"]["required_providers"], \
+            assert "azuread" in terraform_config["terraform"]["required_providers"], (
                 "Azure AD provider is missing from required_providers"
+            )
 
             # Check provider block includes both azurerm and azuread
             # Provider block should be a list containing both providers
             providers = terraform_config["provider"]
-            assert isinstance(providers, list), \
+            assert isinstance(providers, list), (
                 "Provider block should be a list when multiple providers are present"
-            
+            )
+
             # Check that both providers are present
             provider_types = []
             for provider in providers:
                 provider_types.extend(provider.keys())
-            
+
             assert "azurerm" in provider_types, "azurerm provider missing"
             assert "azuread" in provider_types, "azuread provider missing"
 
             # Check resources were converted
             assert "azurerm_storage_account" in terraform_config["resource"]
-            assert "azuread_user" in terraform_config["resource"], \
+            assert "azuread_user" in terraform_config["resource"], (
                 "Azure AD user resource was not converted"
-            assert "azuread_group" in terraform_config["resource"], \
+            )
+            assert "azuread_group" in terraform_config["resource"], (
                 "Azure AD group resource was not converted"
-            assert "azuread_service_principal" in terraform_config["resource"], \
+            )
+            assert "azuread_service_principal" in terraform_config["resource"], (
                 "Azure AD service principal resource was not converted"
+            )
 
     def test_azuread_provider_not_included_without_ad_resources(self) -> None:
         """Test that Azure AD provider is not included when no Azure AD resources are present."""
@@ -147,14 +152,24 @@ class TestTerraformAzureADProvider:
         emitter = TerraformEmitter()
 
         # Check that Azure AD mappings exist
-        assert "Microsoft.AAD/User" in emitter.AZURE_TO_TERRAFORM_MAPPING, \
+        assert "Microsoft.AAD/User" in emitter.AZURE_TO_TERRAFORM_MAPPING, (
             "Microsoft.AAD/User mapping is missing"
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/User"] == "azuread_user"
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/User"] == "azuread_user"
+        )
 
-        assert "Microsoft.AAD/Group" in emitter.AZURE_TO_TERRAFORM_MAPPING, \
+        assert "Microsoft.AAD/Group" in emitter.AZURE_TO_TERRAFORM_MAPPING, (
             "Microsoft.AAD/Group mapping is missing"
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/Group"] == "azuread_group"
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/Group"] == "azuread_group"
+        )
 
-        assert "Microsoft.AAD/ServicePrincipal" in emitter.AZURE_TO_TERRAFORM_MAPPING, \
+        assert "Microsoft.AAD/ServicePrincipal" in emitter.AZURE_TO_TERRAFORM_MAPPING, (
             "Microsoft.AAD/ServicePrincipal mapping is missing"
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/ServicePrincipal"] == "azuread_service_principal"
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/ServicePrincipal"]
+            == "azuread_service_principal"
+        )

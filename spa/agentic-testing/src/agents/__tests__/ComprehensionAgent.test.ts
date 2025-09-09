@@ -62,7 +62,7 @@ Use \`uv run atg generate-iac\` to generate infrastructure code.
       `;
 
       const features = docLoader.extractFeatures(content);
-      
+
       expect(features).toHaveLength(2);
       expect(features[0]).toMatchObject({
         type: 'cli',
@@ -87,7 +87,7 @@ Navigate through the application.
       `;
 
       const features = docLoader.extractFeatures(content);
-      
+
       expect(features).toHaveLength(3);
       expect(features.every(f => f.type === 'ui')).toBe(true);
     });
@@ -101,7 +101,7 @@ API endpoints:
       `;
 
       const features = docLoader.extractFeatures(content);
-      
+
       expect(features).toHaveLength(3);
       expect(features.every(f => f.type === 'api')).toBe(true);
     });
@@ -110,7 +110,7 @@ API endpoints:
   describe('loadMarkdownFiles', () => {
     it('should load markdown files successfully', async () => {
       const docs = await docLoader.loadMarkdownFiles();
-      
+
       expect(docs).toBeDefined();
       expect(typeof docs).toBe('object');
     });
@@ -205,7 +205,7 @@ Usage: atg build --tenant-id <id>
 
       expect(result.name).toBe('Unknown Feature');
       expect(result.purpose).toBe('Feature purpose not determined');
-      
+
       await newAgent.cleanup();
     });
   });
@@ -228,7 +228,7 @@ Usage: atg build --tenant-id <id>
       const scenarios = await agent.generateTestScenarios(featureSpec);
 
       expect(scenarios).toHaveLength(4); // 1 success + 2 failures + 1 edge case
-      
+
       // Check success scenario
       const successScenario = scenarios.find(s => s.name.includes('Success'));
       expect(successScenario).toBeDefined();
@@ -303,7 +303,7 @@ Usage: atg build --tenant-id <id>
       await agent.initialize();
 
       const features = await agent.discoverFeatures();
-      
+
       expect(Array.isArray(features)).toBe(true);
       // Additional assertions would depend on mocked file content
     });
@@ -312,7 +312,7 @@ Usage: atg build --tenant-id <id>
   describe('execute method', () => {
     it('should skip execution with appropriate message', async () => {
       const result = await agent.execute({});
-      
+
       expect(result).toMatchObject({
         status: 'skipped',
         reason: 'ComprehensionAgent does not execute scenarios'
@@ -324,7 +324,7 @@ Usage: atg build --tenant-id <id>
 describe('createComprehensionAgent', () => {
   it('should create agent with default configuration', () => {
     const agent = createComprehensionAgent({});
-    
+
     expect(agent).toBeInstanceOf(ComprehensionAgent);
     expect(agent.name).toBe('ComprehensionAgent');
     expect(agent.type).toBe('comprehension');
@@ -346,7 +346,7 @@ describe('createComprehensionAgent', () => {
     };
 
     const agent = createComprehensionAgent(config);
-    
+
     expect(agent).toBeInstanceOf(ComprehensionAgent);
   });
 

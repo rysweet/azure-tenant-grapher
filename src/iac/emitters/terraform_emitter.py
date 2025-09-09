@@ -65,9 +65,10 @@ class TerraformEmitter(IaCEmitter):
 
         # Check if we have any Azure AD resources
         has_azuread_resources = any(
-            resource.get("type", "").startswith("Microsoft.AAD/") or
-            resource.get("type", "").startswith("Microsoft.Graph/") or
-            resource.get("type", "").lower() in ("user", "aaduser", "group", "aadgroup", "serviceprincipal")
+            resource.get("type", "").startswith("Microsoft.AAD/")
+            or resource.get("type", "").startswith("Microsoft.Graph/")
+            or resource.get("type", "").lower()
+            in ("user", "aaduser", "group", "aadgroup", "serviceprincipal")
             for resource in graph.resources
         )
 
@@ -77,29 +78,26 @@ class TerraformEmitter(IaCEmitter):
                 "required_providers": {
                     "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"},
                     "random": {"source": "hashicorp/random", "version": ">=3.1"},
-                    "tls": {"source": "hashicorp/tls", "version": ">=4.0"}
+                    "tls": {"source": "hashicorp/tls", "version": ">=4.0"},
                 }
             },
             "provider": {
-                "azurerm": {
-                    "features": {},
-                    "resource_provider_registrations": "none"
-                }
+                "azurerm": {"features": {}, "resource_provider_registrations": "none"}
             },
             "resource": {},
         }
-        
+
         # Add Azure AD provider if needed
         if has_azuread_resources:
             # Add azuread to required providers
             terraform_config["terraform"]["required_providers"]["azuread"] = {
                 "source": "hashicorp/azuread",
-                "version": ">=2.0"
+                "version": ">=2.0",
             }
             # Convert provider to list format for multiple providers
             terraform_config["provider"] = [
                 {"azurerm": {"features": {}}},
-                {"azuread": {}}
+                {"azuread": {}},
             ]
 
         # Process resources
@@ -164,7 +162,7 @@ class TerraformEmitter(IaCEmitter):
         """
         azure_type = resource.get("type", "")
         resource_name = resource.get("name", "unknown")
-        
+
         # Handle simple type names for Azure AD resources
         if azure_type.lower() in ("user", "aaduser"):
             azure_type = "Microsoft.Graph/users"
@@ -188,7 +186,7 @@ class TerraformEmitter(IaCEmitter):
         location = resource.get("location")
         if not location or location.lower() == "none" or location.lower() == "null":
             location = "eastus"
-        
+
         resource_config = {
             "name": resource_name,
             "location": location,
@@ -204,26 +202,30 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update(
                 {
                     "account_tier": resource.get("account_tier", "Standard"),
-                    "account_replication_type": resource.get("account_replication_type", "LRS")
+                    "account_replication_type": resource.get(
+                        "account_replication_type", "LRS"
+                    ),
                 }
             )
         elif azure_type == "Microsoft.Network/virtualNetworks":
-            resource_config["address_space"] = resource.get("address_space", ["10.0.0.0/16"])
+            resource_config["address_space"] = resource.get(
+                "address_space", ["10.0.0.0/16"]
+            )
         elif azure_type == "Microsoft.Compute/virtualMachines":
             # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
             ssh_key_resource_name = f"{safe_name}_ssh_key"
-            
+
             # Add the tls_private_key resource to terraform config
             if "resource" not in terraform_config:
                 terraform_config["resource"] = {}
             if "tls_private_key" not in terraform_config["resource"]:
                 terraform_config["resource"]["tls_private_key"] = {}
-            
+
             terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
                 "algorithm": "RSA",
-                "rsa_bits": 4096
+                "rsa_bits": 4096,
             }
-            
+
             # Ensure required VM properties with SSH key authentication
             resource_config.update(
                 {
@@ -231,41 +233,46 @@ class TerraformEmitter(IaCEmitter):
                     "admin_username": resource.get("admin_username", "azureuser"),
                     "admin_ssh_key": {
                         "username": resource.get("admin_username", "azureuser"),
-                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}"
+                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
                     },
                     "os_disk": {
                         "caching": "ReadWrite",
-                        "storage_account_type": "Standard_LRS"
+                        "storage_account_type": "Standard_LRS",
                     },
                     "source_image_reference": {
                         "publisher": "Canonical",
                         "offer": "0001-com-ubuntu-server-jammy",
                         "sku": "22_04-lts",
-                        "version": "latest"
-                    }
+                        "version": "latest",
+                    },
                 }
             )
         elif azure_type == "Microsoft.Network/publicIPAddresses":
-            resource_config["allocation_method"] = resource.get("allocation_method", "Static")
+            resource_config["allocation_method"] = resource.get(
+                "allocation_method", "Static"
+            )
         elif azure_type == "Microsoft.Network/networkSecurityGroups":
             # NSGs don't need additional required properties beyond name, location, and resource_group
             pass
         elif azure_type == "Microsoft.Web/sites":
             resource_config.update(
                 {
-                    "app_service_plan_id": resource.get("app_service_plan_id", "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan")
+                    "app_service_plan_id": resource.get(
+                        "app_service_plan_id",
+                        "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan",
+                    )
                 }
             )
         elif azure_type == "Microsoft.Sql/servers":
             # Generate a unique password for each SQL server using Terraform's random_password resource
             password_resource_name = f"{safe_name}_password"
-            
+
             # Add the random_password resource to terraform config
             if "resource" not in terraform_config:
                 terraform_config["resource"] = {}
             if "random_password" not in terraform_config["resource"]:
                 terraform_config["resource"]["random_password"] = {}
-            
+
             terraform_config["resource"]["random_password"][password_resource_name] = {
                 "length": 20,
                 "special": True,
@@ -273,28 +280,34 @@ class TerraformEmitter(IaCEmitter):
                 "min_lower": 1,
                 "min_upper": 1,
                 "min_numeric": 1,
-                "min_special": 1
+                "min_special": 1,
             }
-            
+
             resource_config.update(
                 {
                     "version": resource.get("version", "12.0"),
-                    "administrator_login": resource.get("administrator_login", "sqladmin"),
-                    "administrator_login_password": f"${{random_password.{password_resource_name}.result}}"
+                    "administrator_login": resource.get(
+                        "administrator_login", "sqladmin"
+                    ),
+                    "administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
         elif azure_type == "Microsoft.KeyVault/vaults":
             resource_config.update(
                 {
-                    "tenant_id": resource.get("tenant_id", "00000000-0000-0000-0000-000000000000"),
-                    "sku_name": resource.get("sku_name", "standard")
+                    "tenant_id": resource.get(
+                        "tenant_id", "00000000-0000-0000-0000-000000000000"
+                    ),
+                    "sku_name": resource.get("sku_name", "standard"),
                 }
             )
         elif azure_type in ("Microsoft.AAD/User", "Microsoft.Graph/users"):
             # Azure AD User specific properties
             resource_config = {
                 "display_name": resource.get("displayName", resource_name),
-                "user_principal_name": resource.get("userPrincipalName", f"{resource_name}@example.com"),
+                "user_principal_name": resource.get(
+                    "userPrincipalName", f"{resource_name}@example.com"
+                ),
                 "mail_nickname": resource.get("mailNickname", resource_name),
             }
             if "password" in resource:
@@ -307,7 +320,10 @@ class TerraformEmitter(IaCEmitter):
             }
             if "description" in resource:
                 resource_config["description"] = resource["description"]
-        elif azure_type in ("Microsoft.AAD/ServicePrincipal", "Microsoft.Graph/servicePrincipals"):
+        elif azure_type in (
+            "Microsoft.AAD/ServicePrincipal",
+            "Microsoft.Graph/servicePrincipals",
+        ):
             # Azure AD Service Principal specific properties
             resource_config = {
                 "application_id": resource.get("applicationId", ""),

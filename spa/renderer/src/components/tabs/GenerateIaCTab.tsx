@@ -66,7 +66,7 @@ const GenerateIaCTab: React.FC = () => {
     };
 
     window.addEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
-    
+
     return () => {
       window.removeEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
     };

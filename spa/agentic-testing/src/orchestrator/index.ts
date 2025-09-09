@@ -3,17 +3,17 @@
  */
 
 // Re-export the main orchestrator implementation
-export { 
-  TestOrchestrator, 
+export {
+  TestOrchestrator,
   createTestOrchestrator,
   TestSuite,
-  OrchestratorEvents 
+  OrchestratorEvents
 } from './TestOrchestrator';
 
 // Re-export test models for convenience
-export type { 
+export type {
   TestSession,
   TestResult,
   TestFailure,
-  TestScenario 
+  TestScenario
 } from '../models/TestModels';

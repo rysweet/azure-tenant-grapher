@@ -26,6 +26,7 @@ from src.config_manager import (
 )
 from src.graph_visualizer import GraphVisualizer
 from src.logging_config import configure_logging
+from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
 from src.utils.neo4j_startup import ensure_neo4j_running
 
@@ -75,6 +76,8 @@ async def build_command_handler(
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
     debug: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
@@ -113,9 +116,32 @@ async def build_command_handler(
         grapher = AzureTenantGrapher(config)
         print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
 
+        # Create FilterConfig from CLI parameters
+        filter_config = None
+        if filter_by_subscriptions or filter_by_rgs:
+            subscription_ids = []
+            resource_group_names = []
+
+            if filter_by_subscriptions:
+                subscription_ids = [
+                    s.strip() for s in filter_by_subscriptions.split(",")
+                ]
+                logger.info(f"📋 Filtering by subscriptions: {subscription_ids}")
+
+            if filter_by_rgs:
+                resource_group_names = [rg.strip() for rg in filter_by_rgs.split(",")]
+                logger.info(f"📋 Filtering by resource groups: {resource_group_names}")
+
+            filter_config = FilterConfig(
+                subscription_ids=subscription_ids,
+                resource_group_names=resource_group_names,
+            )
+
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
-            await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
+            await _run_no_dashboard_mode(
+                ctx, grapher, logger, rebuild_edges, filter_config
+            )
             print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
             import asyncio
             import threading
@@ -161,6 +187,7 @@ async def build_command_handler(
                 visualize,
                 logger,
                 rebuild_edges,
+                filter_config,
             )
             print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
             structlog.get_logger(__name__).info(
@@ -189,6 +216,7 @@ async def _run_no_dashboard_mode(
     grapher: "AzureTenantGrapher",
     logger: logging.Logger,
     rebuild_edges: bool = False,
+    filter_config: Optional[FilterConfig] = None,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
     print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
@@ -253,13 +281,15 @@ async def _run_no_dashboard_mode(
                 click.echo(
                     "🔄 Forcing re-evaluation of all relationships/edges for all resources."
                 )
-                result = await grapher.build_graph(force_rebuild_edges=True)
+                result = await grapher.build_graph(
+                    force_rebuild_edges=True, filter_config=filter_config
+                )
                 print(
                     "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
                     flush=True,
                 )
             else:
-                result = await grapher.build_graph()
+                result = await grapher.build_graph(filter_config=filter_config)
                 print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
@@ -319,16 +349,18 @@ async def _run_dashboard_mode(
     visualize: bool,
     logger: logging.Logger,
     rebuild_edges: bool = False,
+    filter_config: Optional[FilterConfig] = None,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
     print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
-    # Setup RichDashboard with both thread parameters
+    # Setup RichDashboard with both thread parameters and filter config
     dashboard = RichDashboard(
         config=config.to_dict(),
         max_llm_threads=max_llm_threads,
         max_build_threads=getattr(config.processing, "max_build_threads", 20),
+        filter_config=filter_config,
     )
     # Print log file path for test discoverability
     structlog.get_logger(__name__).info(
@@ -395,8 +427,8 @@ async def _run_dashboard_mode(
 
     dashboard.log_info(f"📄 Logs are being written to: {dashboard.log_file_path}")
 
-    # Create dashboard manager first
-    dashboard_manager = CLIDashboardManager(dashboard)
+    # Create dashboard manager with filter config
+    dashboard_manager = CLIDashboardManager(dashboard, filter_config=filter_config)
 
     # Start the exit file checker immediately if using file-based testing
     exit_checker_task = None
@@ -437,12 +469,16 @@ async def _run_dashboard_mode(
         if rebuild_edges:
             build_task = asyncio.create_task(
                 grapher.build_graph(
-                    progress_callback=progress_callback, force_rebuild_edges=True
+                    progress_callback=progress_callback,
+                    force_rebuild_edges=True,
+                    filter_config=filter_config,
                 )
             )
         else:
             build_task = asyncio.create_task(
-                grapher.build_graph(progress_callback=progress_callback)
+                grapher.build_graph(
+                    progress_callback=progress_callback, filter_config=filter_config
+                )
             )
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
@@ -1034,19 +1070,22 @@ def create_tenant_from_markdown(text: str):
 
     llm_generator = create_llm_generator()
     creator = TenantCreator(llm_generator=llm_generator)
-    
+
     # Store stats for return
     creation_stats = None
 
     async def _run():
         from src.exceptions import LLMGenerationError
+
         nonlocal creation_stats
 
         try:
             spec = await creator.create_from_markdown(text)
             # Check if spec was generated by LLM for permissive validation
             is_llm_generated = getattr(spec, "_is_llm_generated", False)
-            creation_stats = await creator.ingest_to_graph(spec, is_llm_generated=is_llm_generated)
+            creation_stats = await creator.ingest_to_graph(
+                spec, is_llm_generated=is_llm_generated
+            )
         except LLMGenerationError as e:
             import click
 
@@ -1085,7 +1124,7 @@ def create_tenant_from_markdown(text: str):
         result = loop.run_until_complete(task)
     else:
         asyncio.run(_run())
-    
+
     return creation_stats
 
 
@@ -1098,20 +1137,20 @@ def create_tenant_command(markdown_file: str):
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
         print("DEBUG: Raw markdown file contents:\n", text)
-        
+
         # Get creation statistics
         stats = create_tenant_from_markdown(text)
-        
+
         # Display success with detailed feedback
         click.echo("")
         click.echo("✅ Tenant successfully created in Neo4j!")
         click.echo("")
-        
+
         # Display resource counts
         if stats:
             click.echo("📊 Resources created:")
             click.echo("-" * 40)
-            
+
             # Display non-zero counts in a logical order
             display_order = [
                 ("tenant", "Tenant"),
@@ -1124,13 +1163,13 @@ def create_tenant_command(markdown_file: str):
                 ("managed_identities", "Managed Identities"),
                 ("admin_units", "Admin Units"),
                 ("rbac_assignments", "RBAC Assignments"),
-                ("relationships", "Relationships")
+                ("relationships", "Relationships"),
             ]
-            
+
             for key, label in display_order:
                 if key in stats and stats[key] > 0:
                     click.echo(f"  • {label}: {stats[key]}")
-            
+
             click.echo("-" * 40)
             click.echo(f"  Total entities: {stats.get('total', 0)}")
             click.echo("")
@@ -1139,7 +1178,7 @@ def create_tenant_command(markdown_file: str):
             click.echo("  • Run 'atg build' to enrich with more data")
         else:
             click.echo("⚠️  No statistics available")
-            
+
     except Exception as e:
         click.echo(
             f"❌ Failed to create tenant: {e}\n"
@@ -1742,20 +1781,20 @@ async def mcp_query_command(
 ) -> None:
     """
     Execute natural language queries using MCP (Model Context Protocol).
-    
+
     This command ensures MCP server is running and executes natural language
     queries against Azure resources.
     """
-    from src.config_manager import MCPConfig, create_config_from_env
-    from src.services.mcp_integration import MCPIntegrationService
+    from src.config_manager import create_config_from_env
     from src.services.azure_discovery_service import AzureDiscoveryService
+    from src.services.mcp_integration import MCPIntegrationService
     from src.utils.mcp_startup import ensure_mcp_running_async
-    
+
     # Set up logging
     log_level = ctx.obj.get("log_level", "INFO")
     if debug:
         log_level = "DEBUG"
-    
+
     # Get tenant ID
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
     if not effective_tenant_id:
@@ -1764,17 +1803,21 @@ async def mcp_query_command(
             err=True,
         )
         sys.exit(1)
-    
+
     # Create configuration
     config = create_config_from_env(effective_tenant_id, debug=debug)
     setup_logging(config.logging)
-    
+
     # Check if MCP is configured
     if not config.mcp.enabled:
-        click.echo("ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable.")
-        click.echo("❌ MCP is required for natural language queries. Please enable it first.")
+        click.echo(
+            "ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable."
+        )
+        click.echo(
+            "❌ MCP is required for natural language queries. Please enable it first."
+        )
         sys.exit(1)
-    
+
     # Ensure MCP server is running
     click.echo("🚀 Ensuring MCP server is running...")
     try:
@@ -1783,7 +1826,7 @@ async def mcp_query_command(
     except RuntimeError as e:
         click.echo(f"❌ Failed to start MCP server: {e}", err=True)
         sys.exit(1)
-    
+
     # Initialize services
     discovery_service = None
     if use_fallback:
@@ -1792,30 +1835,30 @@ async def mcp_query_command(
             click.echo("✅ Traditional discovery service initialized as fallback")
         except Exception as e:
             click.echo(f"⚠️  Warning: Could not initialize discovery service: {e}")
-    
+
     mcp_service = MCPIntegrationService(config.mcp, discovery_service)
-    
+
     try:
         # Connect to MCP
         click.echo(f"🔌 Connecting to MCP at {config.mcp.endpoint}...")
         connected = await mcp_service.initialize()
-        
+
         if not connected:
             click.echo("❌ MCP connection failed after server startup", err=True)
             click.echo("Please check the MCP server logs for errors.")
             sys.exit(1)
-        
+
         click.echo("✅ MCP connection established")
-        
+
         # Execute the query
         click.echo(f"\n📝 Executing query: {query}")
         click.echo("-" * 60)
-        
+
         success, result = await mcp_service.natural_language_command(query)
-        
+
         if success:
             click.echo("✅ Query executed successfully\n")
-            
+
             # Format and display results
             if output_format == "json":
                 formatted_result = json.dumps(result, indent=2)
@@ -1856,7 +1899,7 @@ async def mcp_query_command(
                     click.echo(f"💡 Suggestion: {result['suggestion']}")
             else:
                 click.echo(f"Error: {result}")
-    
+
     except KeyboardInterrupt:
         click.echo("\n⚠️  Query interrupted by user")
         sys.exit(130)
@@ -1864,6 +1907,7 @@ async def mcp_query_command(
         click.echo(f"❌ Unexpected error: {e}", err=True)
         if debug:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
     finally:

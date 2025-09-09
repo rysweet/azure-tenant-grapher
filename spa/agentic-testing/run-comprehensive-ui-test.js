@@ -48,20 +48,20 @@ function logSection(msg) {
 
 async function testTab(page, tabName, tests) {
   logSection(`Testing ${tabName} Tab`);
-  
+
   try {
     // Navigate to tab
     await page.click(`text="${tabName}"`);
     await page.waitForTimeout(1000);
     logSuccess(`Navigated to ${tabName} tab`);
-    
+
     // Take screenshot
-    await page.screenshot({ 
+    await page.screenshot({
       path: path.join(__dirname, 'screenshots', `${tabName.toLowerCase()}-tab.png`),
-      fullPage: true 
+      fullPage: true
     });
     logSuccess(`Screenshot captured for ${tabName} tab`);
-    
+
     // Run specific tests for this tab
     for (const test of tests) {
       try {
@@ -77,18 +77,18 @@ async function testTab(page, tabName, tests) {
 
 async function runComprehensiveUITests() {
   logSection('Azure Tenant Grapher - Comprehensive UI Testing');
-  
+
   // Create screenshots directory
   await fs.mkdir(path.join(__dirname, 'screenshots'), { recursive: true });
-  
+
   let electronApp;
-  
+
   try {
     // Launch Electron app
     logInfo('Launching Electron application...');
     const electronPath = require('electron');
     const appPath = path.resolve(__dirname, '..');
-    
+
     electronApp = await _electron.launch({
       executablePath: electronPath,
       args: [appPath],
@@ -98,12 +98,12 @@ async function runComprehensiveUITests() {
         TESTING: 'true'
       }
     });
-    
+
     // Get main window
     const page = await electronApp.firstWindow();
     await page.waitForLoadState('domcontentloaded');
     logSuccess('Electron app launched and ready');
-    
+
     // Test Build Tab
     await testTab(page, 'Build', [
       async function testTenantIdInput(page) {
@@ -125,7 +125,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Generate Spec Tab
     await testTab(page, 'Generate Spec', [
       async function testSpecGeneration(page) {
@@ -137,7 +137,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Generate IaC Tab
     await testTab(page, 'Generate IaC', [
       async function testFormatSelector(page) {
@@ -150,7 +150,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Create Tenant Tab
     await testTab(page, 'Create Tenant', [
       async function testSpecUpload(page) {
@@ -162,7 +162,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Visualize Tab
     await testTab(page, 'Visualize', [
       async function testGraphVisualization(page) {
@@ -175,7 +175,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Agent Mode Tab
     await testTab(page, 'Agent Mode', [
       async function testAgentInterface(page) {
@@ -188,7 +188,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Threat Model Tab
     await testTab(page, 'Threat Model', [
       async function testThreatModelGeneration(page) {
@@ -200,7 +200,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Config Tab
     await testTab(page, 'Config', [
       async function testConfigFields(page) {
@@ -221,7 +221,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Status Tab
     await testTab(page, 'Status', [
       async function testSystemStatus(page) {
@@ -242,7 +242,7 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Test Help Tab
     await testTab(page, 'Help', [
       async function testHelpContent(page) {
@@ -254,24 +254,24 @@ async function runComprehensiveUITests() {
         }
       }
     ]);
-    
+
     // Additional UI responsiveness tests
     logSection('UI Responsiveness Tests');
-    
+
     // Test window resizing
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.waitForTimeout(500);
     logSuccess('Window resized to 1920x1080');
-    
+
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(500);
     logSuccess('Window resized to 1024x768');
-    
+
     // Test keyboard navigation
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     logSuccess('Keyboard navigation working');
-    
+
     // Test dark mode toggle (if available)
     const darkModeToggle = await page.$('[aria-label*="theme"], [aria-label*="dark"], button:has-text("Dark")');
     if (darkModeToggle) {
@@ -281,7 +281,7 @@ async function runComprehensiveUITests() {
     } else {
       logInfo('Dark mode toggle not found');
     }
-    
+
   } catch (error) {
     logError('Test suite failed', error);
   } finally {
@@ -290,24 +290,24 @@ async function runComprehensiveUITests() {
       await electronApp.close();
       logInfo('Electron app closed');
     }
-    
+
     // Print summary
     logSection('Test Results Summary');
     console.log(`${colors.green}Passed: ${results.passed}${colors.reset}`);
     console.log(`${colors.red}Failed: ${results.failed}${colors.reset}`);
-    
+
     if (results.errors.length > 0) {
       console.log(`\n${colors.red}Errors:${colors.reset}`);
       results.errors.forEach((err, idx) => {
         console.log(`  ${idx + 1}. ${err.test}: ${err.error}`);
       });
     }
-    
+
     // Save results to file
     const resultsPath = path.join(__dirname, 'test-results.json');
     await fs.writeFile(resultsPath, JSON.stringify(results, null, 2));
     logInfo(`Results saved to ${resultsPath}`);
-    
+
     // Exit with appropriate code
     process.exit(results.failed > 0 ? 1 : 0);
   }

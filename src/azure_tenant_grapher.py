@@ -160,7 +160,10 @@ class AzureTenantGrapher:
     # Legacy async LLM pool processing removed; handled by services.
 
     async def build_graph(
-        self, progress_callback: Optional[Any] = None, force_rebuild_edges: bool = False
+        self,
+        progress_callback: Optional[Any] = None,
+        force_rebuild_edges: bool = False,
+        filter_config: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Orchestrate Azure tenant graph building using composed services.
@@ -174,7 +177,9 @@ class AzureTenantGrapher:
 
         try:
             # 1. Discover subscriptions
-            subscriptions = await self.discovery_service.discover_subscriptions()
+            subscriptions = await self.discovery_service.discover_subscriptions(
+                filter_config=filter_config
+            )
             if not subscriptions:
                 logger.warning("⚠️ No subscriptions found in tenant")
                 return {"subscriptions": 0, "resources": 0, "success": False}
@@ -185,7 +190,7 @@ class AzureTenantGrapher:
                 try:
                     resources = (
                         await self.discovery_service.discover_resources_in_subscription(
-                            subscription["id"]
+                            subscription["id"], filter_config=filter_config
                         )
                     )
                     all_resources.extend(resources)

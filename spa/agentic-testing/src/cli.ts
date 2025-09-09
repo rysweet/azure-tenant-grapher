@@ -76,9 +76,9 @@ program
   .action(async (options) => {
     try {
       logger.info('Starting Agentic Testing System');
-      
+
       let config = null;
-      
+
       // Load configuration if provided
       if (options.config) {
         try {
@@ -93,13 +93,13 @@ program
         // Try loading default config files
         const defaultConfigs = [
           'agentic-test.config.yaml',
-          'agentic-test.config.yml', 
+          'agentic-test.config.yml',
           'agentic-test.config.json',
           '.agentic-testrc.yaml',
           '.agentic-testrc.yml',
           '.agentic-testrc.json'
         ];
-        
+
         for (const configFile of defaultConfigs) {
           try {
             await fs.access(configFile);
@@ -113,18 +113,18 @@ program
           }
         }
       }
-      
+
       // Validate scenario directory exists
       try {
         await fs.access(options.directory);
       } catch {
         throw new CLIError(`Scenarios directory not found: ${options.directory}`, 'DIRECTORY_NOT_FOUND');
       }
-      
+
       let scenarios;
       const progressBar = createProgressBar(1, 'Loading scenarios');
       progressBar.start(1, 0);
-      
+
       try {
         if (options.scenario) {
           // Load specific scenario
@@ -138,28 +138,28 @@ program
         }
         progressBar.update(1);
         progressBar.stop();
-        
+
         logSuccess(`Loaded ${scenarios.length} scenario(s)`);
-        
+
         if (scenarios.length === 0) {
           logWarning('No scenarios found to execute');
           return;
         }
-        
+
         // Simple execution simulation since the orchestrator API is complex
         const executionBar = createProgressBar(scenarios.length, 'Executing scenarios');
         executionBar.start(scenarios.length, 0);
-        
+
         let passedCount = 0;
         let failedCount = 0;
-        
+
         // Process each scenario
         for (let i = 0; i < scenarios.length; i++) {
           const scenario = scenarios[i];
           try {
             // Simulate scenario execution
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             // For demonstration, randomly pass/fail scenarios
             if (Math.random() > 0.2) { // 80% pass rate
               passedCount++;
@@ -171,30 +171,30 @@ program
             failedCount++;
             logError(`Scenario error: ${scenario.name} - ${error}`);
           }
-          
+
           executionBar.update(i + 1);
         }
-        
+
         executionBar.stop();
-        
+
         // Report results with colors
         console.log('\n' + chalk.bold('Test Execution Results:'));
         console.log(chalk.green(`✓ Passed: ${passedCount}`));
         console.log(chalk.red(`✗ Failed: ${failedCount}`));
         console.log(chalk.gray(`- Total: ${scenarios.length}`));
-        
+
         if (failedCount > 0) {
           logError('Some tests failed');
           process.exit(1);
         } else {
           logSuccess('All tests passed!');
         }
-        
+
       } catch (loadError) {
         progressBar.stop();
         throw loadError;
       }
-      
+
     } catch (error) {
       if (error instanceof CLIError) {
         logError(`${error.message}`);
@@ -218,16 +218,16 @@ program
     try {
       logInfo('Starting watch mode...');
       logInfo(`Watching directory: ${chalk.cyan(options.directory)}`);
-      
+
       // Validate directory exists
       try {
         await fs.access(options.directory);
       } catch {
         throw new CLIError(`Watch directory not found: ${options.directory}`, 'DIRECTORY_NOT_FOUND');
       }
-      
+
       let config = null;
-      
+
       // Load configuration if provided
       if (options.config) {
         try {
@@ -239,49 +239,49 @@ program
           throw new CLIError(`Failed to load configuration: ${error.message}`, 'CONFIG_ERROR');
         }
       }
-      
+
       // Setup file watcher
       const watcher = chokidar.watch(options.directory, {
         ignored: /(^|[\/\\])\../, // ignore dotfiles
         persistent: true,
         ignoreInitial: true
       });
-      
+
       // Debounce mechanism to prevent multiple rapid executions
       let timeout: NodeJS.Timeout | null = null;
       const debounceTime = 1000; // 1 second
-      
+
       const runTests = async (changedFile?: string) => {
         if (changedFile) {
           logInfo(`File changed: ${chalk.yellow(changedFile)}`);
         }
-        
+
         try {
           logInfo('Running tests...');
-          
+
           // Load and execute scenarios
           const scenarios = await ScenarioLoader.loadFromDirectory(options.directory);
-          
+
           if (scenarios.length === 0) {
             logWarning('No scenarios found to execute');
             return;
           }
-          
+
           // Simple execution simulation
           let passedCount = 0;
           let failedCount = 0;
-          
+
           for (const scenario of scenarios) {
             // Simulate execution
             await new Promise(resolve => setTimeout(resolve, 50));
-            
+
             if (Math.random() > 0.2) { // 80% pass rate
               passedCount++;
             } else {
               failedCount++;
             }
           }
-          
+
           // Report results
           console.log('\n' + chalk.bold('Watch Mode - Test Results:'));
           console.log(chalk.green(`✓ Passed: ${passedCount}`));
@@ -289,47 +289,47 @@ program
           console.log(chalk.gray(`- Total: ${scenarios.length}`));
           console.log(chalk.gray(`- Time: ${new Date().toLocaleTimeString()}`));
           console.log('');
-          
+
           if (failedCount > 0) {
             logWarning('Some tests failed - watching for changes...');
           } else {
             logSuccess('All tests passed - watching for changes...');
           }
-          
+
         } catch (error: any) {
           logError(`Test execution failed: ${error.message}`);
           logInfo('Watching for changes...');
         }
       };
-      
+
       // File change handlers
       watcher.on('change', (filePath) => {
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => runTests(filePath), debounceTime);
       });
-      
+
       watcher.on('add', (filePath) => {
         logInfo(`New file added: ${chalk.green(filePath)}`);
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => runTests(filePath), debounceTime);
       });
-      
+
       watcher.on('unlink', (filePath) => {
         logInfo(`File deleted: ${chalk.red(filePath)}`);
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => runTests(), debounceTime);
       });
-      
+
       watcher.on('error', (error) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logError(`Watcher error: ${errorMessage}`);
       });
-      
+
       // Run initial test execution
       await runTests();
-      
+
       logSuccess('Watch mode started. Press Ctrl+C to stop.');
-      
+
       // Handle graceful shutdown
       process.on('SIGINT', () => {
         logInfo('Shutting down watch mode...');
@@ -338,7 +338,7 @@ program
           process.exit(0);
         });
       });
-      
+
     } catch (error) {
       if (error instanceof CLIError) {
         logError(error.message);
@@ -362,13 +362,13 @@ program
   .action(async (options) => {
     try {
       logInfo('Validating scenarios...');
-      
+
       const parser = createYamlParser({
         strictValidation: options.strict || false
       });
-      
+
       let validationResults: Array<{file: string; valid: boolean; errors: string[]}> = [];
-      
+
       if (options.file) {
         try {
           await fs.access(options.file);
@@ -378,7 +378,7 @@ program
             valid: result.valid,
             errors: result.errors
           });
-          
+
           if (result.valid) {
             const scenario = await ScenarioLoader.loadFromFile(options.file);
             logSuccess(`Scenario "${scenario.name}" is valid`);
@@ -396,21 +396,21 @@ program
         } catch {
           throw new CLIError(`Directory not found: ${options.directory}`, 'DIRECTORY_NOT_FOUND');
         }
-        
+
         // Get all YAML files in directory
         const files = await fs.readdir(options.directory);
-        const yamlFiles = files.filter(file => 
+        const yamlFiles = files.filter(file =>
           file.endsWith('.yaml') || file.endsWith('.yml')
         );
-        
+
         if (yamlFiles.length === 0) {
           logWarning('No YAML files found to validate');
           return;
         }
-        
+
         const progressBar = createProgressBar(yamlFiles.length, 'Validating files');
         progressBar.start(yamlFiles.length, 0);
-        
+
         for (let index = 0; index < yamlFiles.length; index++) {
           const file = yamlFiles[index];
           const filePath = path.join(options.directory, file);
@@ -421,7 +421,7 @@ program
               valid: result.valid,
               errors: result.errors
             });
-            
+
             if (result.valid) {
               await ScenarioLoader.loadFromFile(filePath); // Additional validation
             }
@@ -436,15 +436,15 @@ program
         }
         progressBar.stop();
       }
-      
+
       // Report validation results
       const validFiles = validationResults.filter(r => r.valid);
       const invalidFiles = validationResults.filter(r => !r.valid);
-      
+
       console.log('\n' + chalk.bold('Validation Results:'));
       console.log(chalk.green(`✓ Valid files: ${validFiles.length}`));
       console.log(chalk.red(`✗ Invalid files: ${invalidFiles.length}`));
-      
+
       if (invalidFiles.length > 0) {
         console.log('\n' + chalk.red('Validation Errors:'));
         invalidFiles.forEach(result => {
@@ -457,7 +457,7 @@ program
       } else {
         logSuccess(`All ${validationResults.length} file(s) are valid`);
       }
-      
+
     } catch (error) {
       if (error instanceof CLIError) {
         logError(error.message);
@@ -486,27 +486,27 @@ program
       } catch {
         throw new CLIError(`Directory not found: ${options.directory}`, 'DIRECTORY_NOT_FOUND');
       }
-      
+
       const scenarios = await ScenarioLoader.loadFromDirectory(options.directory);
-      
+
       if (scenarios.length === 0) {
         logWarning('No scenarios found');
         return;
       }
-      
+
       // Filter by tag if specified
       let filteredScenarios = scenarios;
       if (options.filter) {
-        filteredScenarios = scenarios.filter(scenario => 
+        filteredScenarios = scenarios.filter(scenario =>
           scenario.metadata?.tags?.includes(options.filter) || false
         );
-        
+
         if (filteredScenarios.length === 0) {
           logWarning(`No scenarios found with tag: ${options.filter}`);
           return;
         }
       }
-      
+
       if (options.json) {
         console.log(JSON.stringify(filteredScenarios.map(scenario => ({
           name: scenario.name,
@@ -519,34 +519,34 @@ program
           console.log(chalk.gray(`Filtered by tag: ${options.filter}`));
         }
         console.log();
-        
+
         filteredScenarios.forEach((scenario, index) => {
           const statusIcon = chalk.green('●'); // Always enabled for now
-          
+
           console.log(`${statusIcon} ${chalk.bold(`${index + 1}. ${scenario.name}`)}`);
-          
+
           if (scenario.description) {
             console.log(`   ${chalk.gray('Description:')} ${scenario.description}`);
           }
-          
+
           if (scenario.metadata?.tags && scenario.metadata.tags.length > 0) {
             const tagStr = scenario.metadata.tags.map(tag => chalk.cyan(`#${tag}`)).join(' ');
             console.log(`   ${chalk.gray('Tags:')} ${tagStr}`);
           }
-          
+
           console.log();
         });
-        
+
         // Summary
         const enabled = filteredScenarios.length;
         const disabled = 0; // All enabled for now
-        
+
         console.log(chalk.bold('Summary:'));
         console.log(`${chalk.green('●')} Enabled: ${enabled}`);
         console.log(`${chalk.red('○')} Disabled: ${disabled}`);
         console.log(`Total: ${filteredScenarios.length}`);
       }
-      
+
     } catch (error) {
       if (error instanceof CLIError) {
         logError(error.message);
@@ -570,7 +570,7 @@ program
   .action(async (options) => {
     try {
       logInfo(`Initializing new testing project in: ${chalk.cyan(options.directory)}`);
-      
+
       // Check if directory exists
       let directoryExists = false;
       try {
@@ -579,7 +579,7 @@ program
       } catch {
         // Directory doesn't exist, we'll create it
       }
-      
+
       if (directoryExists && !options.force) {
         // Check if directory is empty
         const files = await fs.readdir(options.directory);
@@ -590,13 +590,13 @@ program
           );
         }
       }
-      
+
       // Create directory if it doesn't exist
       if (!directoryExists) {
         await fs.mkdir(options.directory, { recursive: true });
         logSuccess(`Created directory: ${options.directory}`);
       }
-      
+
       // Create subdirectories
       const subdirs = ['scenarios', 'scripts', 'reports', 'screenshots', 'temp'];
       for (const subdir of subdirs) {
@@ -604,19 +604,19 @@ program
         await fs.mkdir(dirPath, { recursive: true });
         logSuccess(`Created directory: ${subdir}/`);
       }
-      
+
       // Create configuration file
       const configTemplate = getConfigTemplate(options.template);
       const configPath = path.join(options.directory, 'agentic-test.config.yaml');
       await fs.writeFile(configPath, configTemplate, 'utf-8');
       logSuccess('Created configuration file: agentic-test.config.yaml');
-      
+
       // Create .env template
       const envTemplate = getEnvTemplate();
       const envPath = path.join(options.directory, '.env.example');
       await fs.writeFile(envPath, envTemplate, 'utf-8');
       logSuccess('Created environment template: .env.example');
-      
+
       // Create scenario templates
       const scenarioTemplates = getScenarioTemplates(options.template);
       for (const [filename, content] of Object.entries(scenarioTemplates)) {
@@ -624,25 +624,25 @@ program
         await fs.writeFile(scenarioPath, content, 'utf-8');
         logSuccess(`Created scenario template: scenarios/${filename}`);
       }
-      
+
       // Create package.json for project
       const packageTemplate = getPackageJsonTemplate(path.basename(options.directory));
       const packagePath = path.join(options.directory, 'package.json');
       await fs.writeFile(packagePath, packageTemplate, 'utf-8');
       logSuccess('Created package.json');
-      
+
       // Create README.md
       const readmeTemplate = getReadmeTemplate(options.template);
       const readmePath = path.join(options.directory, 'README.md');
       await fs.writeFile(readmePath, readmeTemplate, 'utf-8');
       logSuccess('Created README.md');
-      
+
       // Create .gitignore
       const gitignoreTemplate = getGitignoreTemplate();
       const gitignorePath = path.join(options.directory, '.gitignore');
       await fs.writeFile(gitignorePath, gitignoreTemplate, 'utf-8');
       logSuccess('Created .gitignore');
-      
+
       console.log();
       logSuccess('Project initialization completed!');
       console.log();
@@ -653,7 +653,7 @@ program
       console.log(chalk.gray('4.'), 'Edit scenarios in the scenarios/ directory');
       console.log(chalk.gray('5.'), 'Run tests with: agentic-test run');
       console.log();
-      
+
     } catch (error) {
       if (error instanceof CLIError) {
         logError(error.message);
@@ -676,12 +676,12 @@ program
   .option('--env <file>', 'Load environment variables from file', '.env')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts();
-    
+
     // Handle color option
     if (opts.noColor) {
       chalk.level = 0; // Disable colors
     }
-    
+
     // Load additional .env file if specified
     if (opts.env && opts.env !== '.env') {
       try {
@@ -691,7 +691,7 @@ program
         logWarning(`Failed to load environment file: ${opts.env}`);
       }
     }
-    
+
     // Set logging level (simplified for compatibility)
     if (opts.debug) {
       console.log('Debug logging enabled');
@@ -826,7 +826,7 @@ AGENTIC_REPORT_DIR=./reports
 
 function getScenarioTemplates(template: string): Record<string, string> {
   const templates: Record<string, string> = {};
-  
+
   // Basic example
   templates['example-basic.yaml'] = `id: example-basic
 name: Basic Example Test
@@ -849,7 +849,7 @@ verifications:
 estimatedDuration: 30
 enabled: true
 `;
-  
+
   if (template === 'electron' || template === 'advanced') {
     templates['example-ui.yaml'] = `id: example-ui
 name: UI Interaction Test
@@ -881,7 +881,7 @@ estimatedDuration: 60
 enabled: true
 `;
   }
-  
+
   if (template === 'advanced') {
     templates['example-integration.yaml'] = `id: example-integration
 name: Integration Test Suite
@@ -925,7 +925,7 @@ estimatedDuration: 180
 enabled: true
 `;
   }
-  
+
   return templates;
 }
 

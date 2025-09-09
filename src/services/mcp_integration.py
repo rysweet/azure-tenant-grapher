@@ -29,7 +29,7 @@ class MCPConfig:
 class MCPIntegrationService:
     """
     Service for integrating MCP (Model Context Protocol) with Azure Tenant Grapher.
-    
+
     This service provides:
     - Natural language query interface for Azure resources
     - Optional MCP-based discovery alongside traditional discovery
@@ -68,23 +68,23 @@ class MCPIntegrationService:
             # Try to import MCP client
             try:
                 from autogen_ext.mcp import MCPClient
-                
+
                 self._mcp_client = MCPClient(
                     endpoint=self.config.endpoint,
                     timeout=self.config.timeout,
                     api_key=self.config.api_key,
                 )
-                
+
                 # Test connection
                 await self._test_connection()
                 self._is_connected = True
                 logger.info(f"✅ MCP connection established to {self.config.endpoint}")
                 return True
-                
+
             except ImportError:
                 logger.warning("MCP client library not available (autogen_ext.mcp)")
                 return False
-                
+
         except Exception as e:
             logger.warning(f"Failed to initialize MCP connection: {e}")
             return False
@@ -122,13 +122,13 @@ class MCPIntegrationService:
 
         try:
             logger.info(f"Executing MCP query: {natural_language_query}")
-            
+
             # Send natural language query to MCP
             response = await self._mcp_client.query(
                 f"azure resources: {natural_language_query}",
                 timeout=self.config.timeout,
             )
-            
+
             # Parse response - expecting JSON list of resources
             if isinstance(response, str):
                 try:
@@ -178,7 +178,9 @@ class MCPIntegrationService:
 
             success, mcp_resources = await self.query_resources(query)
             if success:
-                logger.info(f"Using MCP discovery results: {len(mcp_resources)} resources")
+                logger.info(
+                    f"Using MCP discovery results: {len(mcp_resources)} resources"
+                )
                 return mcp_resources
 
         # Fallback to traditional discovery
@@ -192,9 +194,7 @@ class MCPIntegrationService:
 
         return resources
 
-    async def analyze_resource_relationships(
-        self, resource_id: str
-    ) -> Dict[str, Any]:
+    async def analyze_resource_relationships(self, resource_id: str) -> Dict[str, Any]:
         """
         Analyze relationships for a specific resource using MCP.
 
@@ -208,7 +208,9 @@ class MCPIntegrationService:
             return {"resource_id": resource_id, "relationships": [], "mcp_used": False}
 
         try:
-            query = f"analyze relationships and dependencies for resource: {resource_id}"
+            query = (
+                f"analyze relationships and dependencies for resource: {resource_id}"
+            )
             response = await self._mcp_client.query(query, timeout=self.config.timeout)
 
             # Parse response
@@ -222,7 +224,7 @@ class MCPIntegrationService:
 
             analysis["mcp_used"] = True
             analysis["resource_id"] = resource_id
-            
+
             return analysis
 
         except Exception as e:
@@ -253,7 +255,7 @@ class MCPIntegrationService:
             # Create a focused query for insights
             resource_type = resource_data.get("type", "unknown")
             resource_name = resource_data.get("name", "unknown")
-            
+
             query = (
                 f"Provide security insights and recommendations for Azure {resource_type} "
                 f"resource named '{resource_name}' with the following configuration: "
@@ -306,10 +308,11 @@ class MCPIntegrationService:
 
         try:
             logger.info(f"Executing natural language command: {command}")
-            
+
             # Send command to MCP
             response = await self._mcp_client.query(
-                command, timeout=self.config.timeout * 2  # Allow more time for complex commands
+                command,
+                timeout=self.config.timeout * 2,  # Allow more time for complex commands
             )
 
             # Parse and structure response
@@ -361,7 +364,7 @@ async def execute_mcp_query(
         config = MCPConfig()
 
     service = MCPIntegrationService(config)
-    
+
     try:
         if await service.initialize():
             return await service.natural_language_command(query)

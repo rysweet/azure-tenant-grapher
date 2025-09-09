@@ -260,12 +260,8 @@ class MCPConfig:
     enabled: bool = field(
         default_factory=lambda: os.getenv("MCP_ENABLED", "false").lower() == "true"
     )
-    timeout: int = field(
-        default_factory=lambda: int(os.getenv("MCP_TIMEOUT", "30"))
-    )
-    api_key: Optional[str] = field(
-        default_factory=lambda: os.getenv("MCP_API_KEY")
-    )
+    timeout: int = field(default_factory=lambda: int(os.getenv("MCP_TIMEOUT", "30")))
+    api_key: Optional[str] = field(default_factory=lambda: os.getenv("MCP_API_KEY"))
 
     def __post_init__(self) -> None:
         """Validate MCP configuration."""
@@ -297,6 +293,18 @@ class SpecificationConfig:
     template_style: str = field(
         default_factory=lambda: os.getenv("AZTG_SPEC_TEMPLATE_STYLE", "comprehensive")
     )
+
+
+@dataclass
+class FilterConfig:
+    """Configuration for filtering subscriptions and resource groups during discovery."""
+
+    subscription_ids: Optional[List[str]] = None
+    resource_group_filter: Optional[str] = None
+
+    def has_filters(self) -> bool:
+        """Check if any filters are configured."""
+        return bool(self.subscription_ids or self.resource_group_filter)
 
 
 @dataclass
@@ -593,25 +601,27 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
 
 def get_config_for_tenant(tenant_num: int) -> dict:
     """Get configuration for a specific tenant.
-    
+
     Args:
         tenant_num: Tenant number (1 or 2)
-        
+
     Returns:
         Dictionary with tenant configuration
     """
     if tenant_num not in [1, 2]:
         raise ValueError(f"Invalid tenant number: {tenant_num}")
-    
+
     prefix = f"AZURE_TENANT_{tenant_num}_"
-    
+
     config = {
         "tenant_id": os.getenv(f"{prefix}ID", ""),
         "client_id": os.getenv(f"{prefix}CLIENT_ID", ""),
         "client_secret": os.getenv(f"{prefix}CLIENT_SECRET", ""),
-        "subscription_id": os.getenv(f"{prefix}SUBSCRIPTION_ID", os.getenv("AZURE_SUBSCRIPTION_ID", ""))
+        "subscription_id": os.getenv(
+            f"{prefix}SUBSCRIPTION_ID", os.getenv("AZURE_SUBSCRIPTION_ID", "")
+        ),
     }
-    
+
     # Validate required fields
     if not config["tenant_id"]:
         raise ValueError(f"Missing {prefix}ID environment variable")
@@ -619,5 +629,5 @@ def get_config_for_tenant(tenant_num: int) -> dict:
         raise ValueError(f"Missing {prefix}CLIENT_ID environment variable")
     if not config["client_secret"]:
         raise ValueError(f"Missing {prefix}CLIENT_SECRET environment variable")
-    
+
     return config

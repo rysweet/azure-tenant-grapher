@@ -322,6 +322,16 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     is_flag=True,
     help="Disable Azure AD user/group import from Microsoft Graph API",
 )
+@click.option(
+    "--filter-by-subscriptions",
+    type=str,
+    help="Comma-separated list of subscription IDs to include (filters discovery)",
+)
+@click.option(
+    "--filter-by-rgs",
+    type=str,
+    help="Comma-separated list of resource group names to include (filters discovery)",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -339,6 +349,8 @@ async def build(
     test_keypress_file: str,
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -368,6 +380,8 @@ async def build(
         rebuild_edges,
         no_aad_import,
         debug,
+        filter_by_subscriptions,
+        filter_by_rgs,
     )
     if debug:
         print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
@@ -690,7 +704,9 @@ async def generate_sim_doc(
     """
     from src.cli_commands import generate_sim_doc_command_handler
 
-    await generate_sim_doc_command_handler(ctx, size=size, seed_path=seed, out_path=output)
+    await generate_sim_doc_command_handler(
+        ctx, size=size, seed_path=seed, out_path=output
+    )
 
 
 # Alias: gensimdoc
@@ -703,8 +719,9 @@ cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
 
 # Import and add undeploy command
-from src.commands.undeploy import undeploy
 from src.commands.list_deployments import list_deployments
+from src.commands.undeploy import undeploy
+
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
 
@@ -750,13 +767,13 @@ async def mcp_query(
     format: str,
 ) -> None:
     """Execute natural language queries for Azure resources via MCP.
-    
+
     Examples:
         atg mcp-query "list all virtual machines"
         atg mcp-query "show storage accounts in westus2"
         atg mcp-query "find resources with public IP addresses"
         atg mcp-query "analyze security posture of my key vaults"
-    
+
     This is an experimental feature that requires MCP_ENABLED=true in your .env file.
     """
     from src.cli_commands import mcp_query_command

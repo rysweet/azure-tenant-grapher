@@ -306,7 +306,9 @@ class AADGraphService:
             props = {
                 "id": user_id,
                 "display_name": user.get("displayName"),  # Convert to snake_case
-                "user_principal_name": user.get("userPrincipalName"),  # Convert to snake_case
+                "user_principal_name": user.get(
+                    "userPrincipalName"
+                ),  # Convert to snake_case
                 "mail": user.get("mail"),
                 "type": "User",
             }
