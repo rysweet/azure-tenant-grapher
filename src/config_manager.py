@@ -296,18 +296,6 @@ class SpecificationConfig:
 
 
 @dataclass
-class FilterConfig:
-    """Configuration for filtering subscriptions and resource groups during discovery."""
-
-    subscription_ids: Optional[List[str]] = None
-    resource_group_filter: Optional[str] = None
-
-    def has_filters(self) -> bool:
-        """Check if any filters are configured."""
-        return bool(self.subscription_ids or self.resource_group_filter)
-
-
-@dataclass
 class AzureTenantGrapherConfig:
     """Main configuration class that aggregates all configuration sections."""
 

@@ -21,6 +21,8 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+from src.commands.list_deployments import list_deployments
+from src.commands.undeploy import undeploy
 
 # Initialize console for rich output
 console = Console()
@@ -717,10 +719,6 @@ cli.add_command(create_tenant_command, "create-tenant")
 cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
-
-# Import and add undeploy command
-from src.commands.list_deployments import list_deployments
-from src.commands.undeploy import undeploy
 
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")

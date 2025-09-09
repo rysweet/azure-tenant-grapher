@@ -8,7 +8,7 @@ This document serves as a comprehensive primer for implementing subscription and
 ### Key Components
 
 1. **CLI Entry Point** (`scripts/cli.py`)
-   - Main command: `build` 
+   - Main command: `build`
    - Current parameters include: tenant-id, resource-limit, max-llm-threads, max-build-threads, etc.
    - Delegates to `build_command_handler` in `src/cli_commands.py`
 
@@ -63,7 +63,7 @@ graph TD
 # Filter by subscriptions
 atg build --filter-by-subscriptions sub1,sub2,sub3
 
-# Filter by resource groups  
+# Filter by resource groups
 atg build --filter-by-rgs rg1,rg2,rg3
 ```
 
