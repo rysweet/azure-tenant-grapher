@@ -330,7 +330,9 @@ class AzureTenantGrapher:
                     stats.llm_skipped = 0
                 else:
                     stats = await self.processing_service.process_resources(
-                        all_resources, progress_callback=progress_callback
+                        all_resources, 
+                        progress_callback=progress_callback,
+                        filter_config=filter_config
                     )
                     logger.info(
                         f"[DEBUG][BUILD_GRAPH] Completed resource processing. Stats: {stats.to_dict() if hasattr(stats, 'to_dict') else stats}"
