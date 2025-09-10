@@ -11,7 +11,7 @@ uses Neo4j for tenant storage, leveraging the existing graph database.
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ..config_manager import Neo4jConfig
@@ -87,8 +87,8 @@ class Tenant:
     tenant_id: str
     display_name: str
     subscription_ids: List[str] = field(default_factory=list)
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    last_accessed: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_accessed: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     is_active: bool = True
     configuration: Dict[str, Any] = field(default_factory=dict)
 
@@ -103,7 +103,7 @@ class Tenant:
 
     def update_last_accessed(self) -> None:
         """Update the last accessed timestamp to current time."""
-        self.last_accessed = datetime.utcnow().isoformat()
+        self.last_accessed = datetime.now(timezone.utc).isoformat()
 
 
 class TenantManager:
@@ -372,7 +372,9 @@ class TenantManager:
             return tenant
 
         except Exception as e:
-            raise TenantSwitchError(f"Failed to switch to tenant {tenant_id}: {e}")
+            raise TenantSwitchError(
+                f"Failed to switch to tenant {tenant_id}: {e}"
+            ) from e
 
     def list_tenants(self, active_only: bool = False) -> List[Tenant]:
         """
@@ -563,7 +565,7 @@ class TenantManager:
                 tid: tenant.to_dict() for tid, tenant in self._tenant_cache.items()
             },
             "current_tenant_id": self._current_tenant_id,
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def import_tenants(self, data: Dict[str, Any]) -> None:
@@ -602,7 +604,7 @@ class TenantManager:
             logger.info(f"Imported {len(self._tenant_cache)} tenants")
 
         except Exception as e:
-            raise InvalidTenantConfigError(f"Failed to import tenants: {e}")
+            raise InvalidTenantConfigError(f"Failed to import tenants: {e}") from e
 
 
 # Module-level convenience functions

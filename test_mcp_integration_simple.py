@@ -34,7 +34,7 @@ def test_mcp_config():
     try:
         config = MCPConfig(timeout=0)
         config.__post_init__()
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
         assert "timeout must be at least 1" in str(e)
         print("✅ MCPConfig validation works")

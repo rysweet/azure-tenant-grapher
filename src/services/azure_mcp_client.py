@@ -13,7 +13,7 @@ Following the project's philosophy of ruthless simplicity, this implementation:
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ..config_manager import AzureTenantGrapherConfig
@@ -135,7 +135,7 @@ class AzureMCPClient:
         """Set the current Azure context for MCP operations."""
         self._current_context = {
             "tenant_id": self.config.tenant_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Add current tenant info if available
@@ -185,7 +185,7 @@ class AzureMCPClient:
 
         except Exception as e:
             logger.error(f"Failed to discover tenants via MCP: {e}")
-            raise MCPOperationError(f"Tenant discovery failed: {e}")
+            raise MCPOperationError(f"Tenant discovery failed: {e}") from e
 
     async def query_resources(self, natural_language_query: str) -> Dict[str, Any]:
         """
@@ -310,7 +310,7 @@ class AzureMCPClient:
 
         except Exception as e:
             logger.error(f"Operation execution failed: {e}")
-            raise MCPOperationError(f"Failed to execute operation: {e}")
+            raise MCPOperationError(f"Failed to execute operation: {e}") from e
 
     def _analyze_query(self, query: str) -> str:
         """
@@ -362,7 +362,7 @@ class AzureMCPClient:
                             "tenant_id": self.config.tenant_id,
                             "display_name": "Current Tenant",
                             "subscription_count": 1,
-                            "discovered_at": datetime.utcnow().isoformat(),
+                            "discovered_at": datetime.now(timezone.utc).isoformat(),
                         }
                     ]
                 }
@@ -379,7 +379,7 @@ class AzureMCPClient:
                         }
                     ],
                     "metadata": {
-                        "query_time": datetime.utcnow().isoformat(),
+                        "query_time": datetime.now(timezone.utc).isoformat(),
                         "result_count": 1,
                     },
                 }
@@ -401,12 +401,12 @@ class AzureMCPClient:
                 return {
                     "status": "success",
                     "operation": operation,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
 
         except Exception as e:
             logger.error(f"MCP request failed: {e}")
-            raise MCPOperationError(f"Request execution failed: {e}")
+            raise MCPOperationError(f"Request execution failed: {e}") from e
 
     async def get_natural_language_help(self) -> List[str]:
         """
@@ -442,7 +442,7 @@ class AzureMCPClient:
         await self.connect()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
         """Async context manager exit."""
         await self.disconnect()
 
@@ -500,7 +500,7 @@ def integrate_with_discovery_service(
     discovery_service.mcp_client = mcp_client
 
     # Add method to discovery service for natural language queries
-    async def query_with_natural_language(self, query: str) -> Dict[str, Any]:
+    async def query_with_natural_language(self: Any, query: str) -> Dict[str, Any]:
         """Query resources using natural language via MCP."""
         if hasattr(self, "mcp_client") and self.mcp_client.is_available():
             return await self.mcp_client.query_resources(query)

@@ -170,7 +170,7 @@ async def generate_iac_command_handler(
             out_dir = default_timestamped_dir()
 
         # Generate templates
-        paths = emitter.emit(graph, out_dir, domain_name=domain_name)
+        paths = emitter.emit(graph, out_dir)
 
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:

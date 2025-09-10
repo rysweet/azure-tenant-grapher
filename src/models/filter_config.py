@@ -1,7 +1,7 @@
 """Filter configuration model for Azure resource filtering."""
 
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -20,7 +20,7 @@ class FilterConfig(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_none_to_empty_list(cls, data):
+    def convert_none_to_empty_list(cls, data: Any) -> Any:
         """Convert None values to empty lists before other validation."""
         if isinstance(data, dict):
             if data.get("subscription_ids") is None:
@@ -46,10 +46,10 @@ class FilterConfig(BaseModel):
                 if sub_id not in seen:
                     validated.append(sub_id)
                     seen.add(sub_id)
-            except ValueError:
+            except ValueError as e:
                 raise ValueError(
                     f"Invalid subscription ID format: {sub_id}. Must be a valid UUID."
-                )
+                ) from e
 
         return validated
 
@@ -155,7 +155,7 @@ class FilterConfig(BaseModel):
             return True
         return resource_group_name in self.resource_group_names
 
-    def should_include_resource(self, resource: dict) -> bool:
+    def should_include_resource(self, resource: Dict[str, Any]) -> bool:
         """
         Check if a resource should be included based on filters.
 

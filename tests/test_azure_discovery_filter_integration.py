@@ -28,10 +28,10 @@ sys.modules["mcp.client.session"] = Mock()
 sys.modules["mcp.types"] = Mock()
 
 # Now import our modules
-from src.config_manager import AzureTenantGrapherConfig
-from src.models.filter_config import FilterConfig
-from src.services.azure_discovery_service import AzureDiscoveryService
-from src.services.discovery_filter_service import DiscoveryFilterService
+from src.config_manager import AzureTenantGrapherConfig  # noqa: E402
+from src.models.filter_config import FilterConfig  # noqa: E402
+from src.services.azure_discovery_service import AzureDiscoveryService  # noqa: E402
+from src.services.discovery_filter_service import DiscoveryFilterService  # noqa: E402
 
 
 class TestAzureDiscoveryFilterIntegration:

@@ -587,7 +587,7 @@ def create_neo4j_config_from_env() -> AzureTenantGrapherConfig:
     return config
 
 
-def get_config_for_tenant(tenant_num: int) -> dict:
+def get_config_for_tenant(tenant_num: int) -> dict[str, Any]:
     """Get configuration for a specific tenant.
 
     Args:

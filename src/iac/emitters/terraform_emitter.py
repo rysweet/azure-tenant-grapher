@@ -73,7 +73,7 @@ class TerraformEmitter(IaCEmitter):
         )
 
         # Build Terraform JSON structure
-        terraform_config = {
+        terraform_config: Dict[str, Any] = {
             "terraform": {
                 "required_providers": {
                     "azurerm": {"source": "hashicorp/azurerm", "version": ">=3.0"},

@@ -153,7 +153,7 @@ class DeploymentRegistry:
             deployments = [d for d in deployments if d["status"] == status.value]
 
         # Sort by deployment time (newest first)
-        deployments.sort(key=lambda x: x["deployed_at"], reverse=True)
+        deployments.sort(key=lambda x: x["deployed_at"], reverse=True)  # type: ignore[no-any-return]
 
         return deployments
 

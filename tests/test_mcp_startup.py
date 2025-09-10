@@ -3,6 +3,7 @@ Tests for MCP Server Startup Utilities
 """
 
 import os
+import subprocess
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -250,7 +251,3 @@ class TestGlobalFunctions:
         with patch("src.utils.mcp_startup._manager", mock_manager):
             await stop_mcp_if_managed_async()
             mock_manager.stop_mcp_server_async.assert_called_once()
-
-
-# Add missing import for subprocess
-import subprocess

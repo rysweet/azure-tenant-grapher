@@ -127,9 +127,7 @@ class DiscoveryFilterService:
         matches = resource_group in self.config.resource_group_names
 
         if not matches:
-            logger.debug(
-                f"Resource group '{resource_group}' not in filter list"
-            )
+            logger.debug(f"Resource group '{resource_group}' not in filter list")
 
         return matches
 
@@ -171,6 +169,8 @@ class DiscoveryFilterService:
         if self.config.subscription_ids:
             parts.append(f"Subscriptions: {', '.join(self.config.subscription_ids)}")
         if self.config.resource_group_names:
-            parts.append(f"Resource groups: {', '.join(self.config.resource_group_names)}")
+            parts.append(
+                f"Resource groups: {', '.join(self.config.resource_group_names)}"
+            )
 
         return f"Discovery filters: {' | '.join(parts)}"

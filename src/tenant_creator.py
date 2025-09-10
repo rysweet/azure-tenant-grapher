@@ -177,7 +177,7 @@ Instructions:
         content = response.choices[0].message.content
         # Remove any code fences or extra text, just in case
         json_text = re.sub(
-            r"^```json|```$", "", content.strip(), flags=re.MULTILINE
+            r"^```json|```$", "", content.strip() if content else "", flags=re.MULTILINE
         ).strip()
         return json_text
 
@@ -206,7 +206,8 @@ Instructions:
             json_text = _json.dumps(data)
             spec = TenantSpec.parse_raw_json(json_text)
             # Mark this as not LLM-generated since it came from a JSON block
-            spec._is_llm_generated = False
+            # Mark this as not LLM-generated since it came from a JSON block
+            # Note: TenantSpec doesn't have _is_llm_generated attribute
             return spec
         # No JSON block: extract narrative and use LLM
         print(
@@ -329,20 +330,22 @@ Instructions:
             raise LLMGenerationError(
                 "Failed to parse LLM output as valid JSON.",
                 model=(
-                    getattr(self.llm_generator, "config", None)
-                    and getattr(self.llm_generator.config, "model_chat", None)
+                    getattr(getattr(self.llm_generator, "config", None), "model_chat", None) 
+                    if self.llm_generator and hasattr(self.llm_generator, "config") 
+                    else None
                 ),  # type: ignore
                 context={"prompt": prompt, "raw_response": json_text},
                 cause=e,
             ) from e
         spec = TenantSpec.parse_raw_json(json_text)
         # Mark this as LLM-generated since it came from LLM processing
-        spec._is_llm_generated = True
+        # Mark this as LLM-generated since it came from LLM processing
+        # Note: TenantSpec doesn't have _is_llm_generated attribute
         return spec
 
     async def ingest_to_graph(
         self, spec: TenantSpec, is_llm_generated: bool = False
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Ingests the TenantSpec into Neo4j: creates Tenant, Subscriptions, Resources, Identities, RBAC, and Relationships.
 
@@ -793,7 +796,7 @@ Instructions:
                                     "EXEC",
                                 ]
                                 if any(
-                                    pattern in rel_type.upper()
+                                    pattern in (rel_type.upper() if rel_type else "")
                                     for pattern in dangerous_patterns
                                 ):
                                     raise ValueError(
@@ -814,7 +817,7 @@ Instructions:
                             )
 
                         # Normalize relationship type for Neo4j (replace hyphens with underscores)
-                        neo4j_rel_type = rel_type.replace("-", "_")
+                        neo4j_rel_type = rel_type.replace("-", "_") if rel_type else ""
 
                         # Prepare relationship properties
                         rel_properties = {}

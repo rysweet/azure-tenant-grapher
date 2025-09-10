@@ -56,7 +56,7 @@ class TestNeo4jTenantManager:
         assert tenant.tenant_id == tenant_id
         assert tenant.display_name == display_name
         assert tenant.subscription_ids == subscription_ids
-        assert tenant.is_active == True
+        assert tenant.is_active
 
         # Verify Neo4j query was executed
         mock_session_manager.execute_query.assert_called()
@@ -200,7 +200,7 @@ class TestNeo4jTenantManager:
                 mock_sm_instance.execute_query.return_value = ([], {}, {})
 
                 # Call module function without session manager
-                manager = get_tenant_manager()
+                get_tenant_manager()
 
                 # Should have created session manager from config
                 mock_config.assert_called_once()
@@ -226,7 +226,7 @@ class TestNeo4jTenantManager:
         mock_session_manager.execute_query.return_value = ([], {}, {})
 
         # Act
-        tenant = tenant_manager.register_tenant(
+        tenant_manager.register_tenant(
             tenant_id="test",
             display_name="Test",
             config=config,
@@ -249,14 +249,14 @@ class TestNeo4jTenantManager:
         tenant = tenant_manager.register_tenant(
             tenant_id=tenant_id, display_name="Test Tenant", config={"key": "value"}
         )
-        assert tenant.is_active == True
+        assert tenant.is_active
 
         # Act
         tenant_manager.deactivate_tenant(tenant_id)
 
         # Assert
         deactivated_tenant = tenant_manager.get_tenant(tenant_id)
-        assert deactivated_tenant.is_active == False
+        assert not deactivated_tenant.is_active
 
         # Verify Neo4j update query was executed
         calls = mock_session_manager.execute_query.call_args_list
@@ -264,7 +264,7 @@ class TestNeo4jTenantManager:
         assert "MERGE (t:TenantConfig {tenant_id: $tenant_id})" in last_query
         assert "SET" in last_query
         last_params = calls[-1][1]
-        assert last_params["is_active"] == False
+        assert not last_params["is_active"]
 
     def test_deactivate_nonexistent_tenant(self, tenant_manager):
         """Test deactivating a non-existent tenant raises error."""
@@ -283,14 +283,14 @@ class TestNeo4jTenantManager:
             tenant_id=tenant_id, display_name="Test Tenant"
         )
         tenant_manager.deactivate_tenant(tenant_id)
-        assert tenant_manager.get_tenant(tenant_id).is_active == False
+        assert not tenant_manager.get_tenant(tenant_id).is_active
 
         # Act
         tenant_manager.activate_tenant(tenant_id)
 
         # Assert
         activated_tenant = tenant_manager.get_tenant(tenant_id)
-        assert activated_tenant.is_active == True
+        assert activated_tenant.is_active
 
         # Verify last accessed was updated
         assert activated_tenant.last_accessed > tenant.created_at
@@ -300,7 +300,7 @@ class TestNeo4jTenantManager:
         last_query = calls[-1][0][0]
         assert "MERGE (t:TenantConfig {tenant_id: $tenant_id})" in last_query
         last_params = calls[-1][1]
-        assert last_params["is_active"] == True
+        assert last_params["is_active"]
 
     def test_activate_nonexistent_tenant(self, tenant_manager):
         """Test activating a non-existent tenant raises error."""
@@ -445,12 +445,12 @@ class TestNeo4jTenantManager:
         assert t1_data["display_name"] == "Tenant 1"
         assert t1_data["subscription_ids"] == ["sub1"]
         assert t1_data["configuration"]["env"] == "prod"
-        assert t1_data["is_active"] == True
+        assert t1_data["is_active"]
 
         # Check tenant2 data
         t2_data = exported["tenants"]["tenant2"]
         assert t2_data["tenant_id"] == "tenant2"
-        assert t2_data["is_active"] == False
+        assert not t2_data["is_active"]
 
     def test_import_tenants(self, tenant_manager, mock_session_manager):
         """Test importing tenants from dictionary."""
@@ -498,12 +498,12 @@ class TestNeo4jTenantManager:
         imported1 = tenant_manager.get_tenant("imported1")
         assert imported1.display_name == "Imported Tenant 1"
         assert imported1.subscription_ids == ["sub1", "sub2"]
-        assert imported1.is_active == True
+        assert imported1.is_active
         assert imported1.configuration["env"] == "prod"
 
         imported2 = tenant_manager.get_tenant("imported2")
         assert imported2.display_name == "Imported Tenant 2"
-        assert imported2.is_active == False
+        assert not imported2.is_active
 
         # Verify current tenant was set
         current = tenant_manager.get_current_tenant()
@@ -553,7 +553,7 @@ class TestNeo4jTenantManager:
 
         # Assert
         assert switched.tenant_id == tenant_id
-        assert switched.is_active == False
+        assert not switched.is_active
         current = tenant_manager.get_current_tenant()
         assert current.tenant_id == tenant_id
 
@@ -591,8 +591,8 @@ class TestNeo4jTenantManager:
         tenant_manager.register_tenant(tenant_id="existing", display_name="Existing")
 
         # Act & Assert
-        assert tenant_manager.tenant_exists("existing") == True
-        assert tenant_manager.tenant_exists("non-existent") == False
+        assert tenant_manager.tenant_exists("existing")
+        assert not tenant_manager.tenant_exists("non-existent")
 
     def test_get_tenant_count(self, tenant_manager, mock_session_manager):
         """Test getting tenant count with active_only filter."""

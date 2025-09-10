@@ -60,7 +60,7 @@ class TestSPACommands:
         mock_process.pid = 12345
         mock_popen.return_value = mock_process
 
-        with patch("builtins.open", mock_open()) as mock_file:
+        with patch("builtins.open", mock_open()):
             result = self.runner.invoke(spa_start)
 
             assert result.exit_code == 0
@@ -95,9 +95,7 @@ class TestSPACommands:
     def test_spa_start_no_package_json(self, mock_exists, mock_which):
         """Test SPA start when package.json doesn't exist."""
         mock_which.return_value = "/usr/bin/npm"
-        mock_exists.side_effect = lambda path: (
-            False if "package.json" in path else False  # Nothing exists
-        )
+        mock_exists.side_effect = lambda path: False  # Nothing exists
 
         result = self.runner.invoke(spa_start)
 
@@ -170,11 +168,7 @@ class TestSPACommands:
 
         # Mock file existence: package.json exists, node_modules doesn't
         mock_exists.side_effect = lambda path: (
-            True
-            if "package.json" in path
-            else False
-            if "node_modules" in path
-            else False  # PID file doesn't exist
+            "package.json" in path  # Only package.json exists
         )
 
         # Mock successful npm install

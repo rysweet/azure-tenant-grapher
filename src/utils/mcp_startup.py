@@ -5,11 +5,12 @@ Ensures MCP server is running and accessible, similar to Neo4j startup.
 """
 
 import asyncio
+import asyncio.subprocess as async_subprocess
 import logging
 import os
 import subprocess
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import aiohttp
 
@@ -25,7 +26,7 @@ class MCPServerManager:
         self.mcp_endpoint = os.environ.get(
             "MCP_ENDPOINT", f"http://localhost:{self.mcp_port}"
         )
-        self.process: Optional[subprocess.Popen] = None
+        self.process: Optional[Union[subprocess.Popen[bytes], async_subprocess.Process]] = None
 
     def is_mcp_running(self) -> bool:
         """Check if MCP server is running by checking health endpoint."""
@@ -43,7 +44,7 @@ class MCPServerManager:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.mcp_endpoint}/health", timeout=2
+                    f"{self.mcp_endpoint}/health", timeout=aiohttp.ClientTimeout(total=2)
                 ) as response:
                     return response.status == 200
         except Exception:
@@ -80,7 +81,7 @@ class MCPServerManager:
 
                 # Check if process has died
                 if self.process.poll() is not None:
-                    stdout, stderr = self.process.communicate()
+                    _, stderr = self.process.communicate()
                     error_msg = (
                         f"MCP server process died. Exit code: {self.process.returncode}"
                     )
@@ -134,8 +135,8 @@ class MCPServerManager:
                     return True
 
                 # Check if process has died
-                if self.process.returncode is not None:
-                    stdout, stderr = await self.process.communicate()
+                if self.process and self.process.returncode is not None:
+                    _, stderr = await self.process.communicate()
                     error_msg = (
                         f"MCP server process died. Exit code: {self.process.returncode}"
                     )
@@ -163,11 +164,26 @@ class MCPServerManager:
             logger.info("Stopping MCP server...")
             self.process.terminate()
             try:
-                self.process.wait(timeout=5)
+                # For subprocess.Popen, wait() doesn't take timeout as positional
+                # Use a loop with poll() instead
+                if isinstance(self.process, subprocess.Popen):
+                    for _ in range(50):  # 5 seconds with 0.1s intervals
+                        if self.process.poll() is not None:
+                            break
+                        import time
+                        time.sleep(0.1)
+                    else:
+                        raise subprocess.TimeoutExpired(self.process.args, 5)
+                else:
+                    # For async Process, we can't await in a sync function
+                    # Just skip the wait since terminate() was already called
+                    pass
             except subprocess.TimeoutExpired:
                 logger.warning("MCP server did not stop gracefully, killing it")
                 self.process.kill()
-                self.process.wait()
+                if isinstance(self.process, subprocess.Popen):
+                    self.process.wait()
+                # For async Process, can't wait in sync context
             self.process = None
             logger.info("MCP server stopped")
 
@@ -177,7 +193,13 @@ class MCPServerManager:
             logger.info("Stopping MCP server...")
             self.process.terminate()
             try:
-                await asyncio.wait_for(self.process.wait(), timeout=5)
+                # Wait for process to terminate with timeout
+                if isinstance(self.process, async_subprocess.Process):
+                    await asyncio.wait_for(self.process.wait(), timeout=5)
+                else:
+                    # For sync Popen, use executor
+                    loop = asyncio.get_event_loop()
+                    await asyncio.wait_for(loop.run_in_executor(None, self.process.wait), timeout=5)
             except asyncio.TimeoutError:
                 logger.warning("MCP server did not stop gracefully, killing it")
                 self.process.kill()

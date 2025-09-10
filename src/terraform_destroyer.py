@@ -133,7 +133,7 @@ class TerraformDestroyer:
         Returns:
             Tuple of (exit_code, stdout, stderr)
         """
-        cmd = ["terraform"] + args
+        cmd = ["terraform", *args]
         env = self._get_environment()
 
         logger.debug(f"Running command: {' '.join(cmd)}")

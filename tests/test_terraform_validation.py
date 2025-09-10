@@ -221,7 +221,7 @@ class TestTerraformValidation:
         assert "test_sql_password" in template["resource"]["random_password"]
         password_resource = template["resource"]["random_password"]["test_sql_password"]
         assert password_resource["length"] == 20
-        assert password_resource["special"] == True
+        assert password_resource["special"]
         assert password_resource["min_lower"] == 1
         assert password_resource["min_upper"] == 1
         assert password_resource["min_numeric"] == 1

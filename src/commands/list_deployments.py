@@ -82,7 +82,7 @@ def list_deployments(tenant: str, status: str, output_json: bool) -> None:
             try:
                 dt = datetime.fromisoformat(deployed_at)
                 deployed_at = dt.strftime("%Y-%m-%d %H:%M")
-            except:
+            except (ValueError, TypeError):
                 pass
 
         # Shorten directory path if too long

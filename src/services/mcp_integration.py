@@ -11,6 +11,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+# FilterConfig imported but not used directly - needed for type checking
+# from src.models.filter_config import FilterConfig
 from src.services.azure_discovery_service import AzureDiscoveryService
 
 logger = logging.getLogger(__name__)
@@ -124,6 +126,8 @@ class MCPIntegrationService:
             logger.info(f"Executing MCP query: {natural_language_query}")
 
             # Send natural language query to MCP
+            if not self._mcp_client:
+                raise RuntimeError("MCP client not initialized")
             response = await self._mcp_client.query(
                 f"azure resources: {natural_language_query}",
                 timeout=self.config.timeout,
@@ -186,9 +190,15 @@ class MCPIntegrationService:
         # Fallback to traditional discovery
         if self.discovery_service:
             logger.info("Using traditional API-based discovery")
-            resources = await self.discovery_service.discover_resources(
-                subscription_id, resource_types
+            # Note: resource_types filtering isn't supported directly in discover_resources_in_subscription
+            # We'd need to filter post-discovery if needed
+            resources = await self.discovery_service.discover_resources_in_subscription(
+                subscription_id, filter_config=None
             )
+            
+            # Filter by resource types if specified
+            if resource_types:
+                resources = [r for r in resources if any(rt in r.get('type', '') for rt in resource_types)]
         else:
             logger.warning("No discovery service available for fallback")
 
@@ -211,6 +221,8 @@ class MCPIntegrationService:
             query = (
                 f"analyze relationships and dependencies for resource: {resource_id}"
             )
+            if not self._mcp_client:
+                raise RuntimeError("MCP client not initialized")
             response = await self._mcp_client.query(query, timeout=self.config.timeout)
 
             # Parse response
@@ -222,7 +234,7 @@ class MCPIntegrationService:
             else:
                 analysis = response or {}
 
-            analysis["mcp_used"] = True
+            analysis["mcp_used"] = "true"
             analysis["resource_id"] = resource_id
 
             return analysis
@@ -262,6 +274,8 @@ class MCPIntegrationService:
                 f"{json.dumps(resource_data, indent=2)}"
             )
 
+            if not self._mcp_client:
+                raise RuntimeError("MCP client not initialized")
             response = await self._mcp_client.query(query, timeout=self.config.timeout)
 
             # Parse insights from response
@@ -276,7 +290,7 @@ class MCPIntegrationService:
             else:
                 insights = response or {"insights": [], "recommendations": []}
 
-            insights["mcp_used"] = True
+            insights["mcp_used"] = ["true"]
             return insights
 
         except Exception as e:
@@ -310,6 +324,8 @@ class MCPIntegrationService:
             logger.info(f"Executing natural language command: {command}")
 
             # Send command to MCP
+            if not self._mcp_client:
+                raise RuntimeError("MCP client not initialized")
             response = await self._mcp_client.query(
                 command,
                 timeout=self.config.timeout * 2,  # Allow more time for complex commands

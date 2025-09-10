@@ -73,7 +73,7 @@ def test_user_properties_consistency_tenant_creator(mock_session_manager):
         assert "displayName" in params or "display_name" in params
     else:
         # Incorrect: using snake_case - this is the bug we're fixing
-        assert False, (
+        raise AssertionError(
             "Query uses snake_case (u.display_name) instead of camelCase (u.displayName)"
         )
 
@@ -132,7 +132,7 @@ def test_query_can_find_users_by_principal_name(mock_session_manager):
     mock_session.run.return_value = MagicMock()
 
     with mock_manager.session() as session:
-        result = session.run(query, {"upn": "test@example.com"})
+        session.run(query, {"upn": "test@example.com"})
 
     # The query should have been executed successfully
     mock_session.run.assert_called_once_with(query, {"upn": "test@example.com"})
@@ -150,12 +150,13 @@ def test_user_node_expected_properties():
     ]
 
     # These should NOT be present (snake_case versions)
-    incorrect_properties = [
-        "display_name",
-        "user_principal_name",
-        "mail_nickname",
-        "job_title",
-    ]
+    # Note: This list is kept for documentation purposes
+    # incorrect_properties = [
+    #     "display_name",
+    #     "user_principal_name",
+    #     "mail_nickname",
+    #     "job_title",
+    # ]
 
     # This test documents the expected property names
     # After fix, all User nodes should use camelCase

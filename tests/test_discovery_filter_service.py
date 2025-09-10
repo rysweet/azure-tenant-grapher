@@ -49,7 +49,7 @@ class TestDiscoveryFilterService:
         sub2 = "22222222-2222-2222-2222-222222222222"
         sub3 = "33333333-3333-3333-3333-333333333333"
         sub4 = "44444444-4444-4444-4444-444444444444"
-        
+
         config = FilterConfig(subscription_ids=[sub1, sub3])
         service = DiscoveryFilterService(config)
 
@@ -106,7 +106,10 @@ class TestDiscoveryFilterService:
 
         assert service.is_subscription_included(sub1) is True
         assert service.is_subscription_included(sub2) is True
-        assert service.is_subscription_included("33333333-3333-3333-3333-333333333333") is False
+        assert (
+            service.is_subscription_included("33333333-3333-3333-3333-333333333333")
+            is False
+        )
         assert service.should_include_resource({"resource_group": "prod-web"}) is True
         assert service.should_include_resource({"resource_group": "dev-web"}) is False
 

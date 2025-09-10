@@ -1121,7 +1121,7 @@ def create_tenant_from_markdown(text: str):
         import nest_asyncio
 
         nest_asyncio.apply()
-        result = loop.run_until_complete(task)
+        loop.run_until_complete(task)
     else:
         asyncio.run(_run())
 
@@ -1325,7 +1325,7 @@ def spa_stop():
         except Exception as e:
             click.echo(f"❌ Failed to stop SPA: {e}", err=True)
     else:
-        click.echo("ℹ️  No SPA process running.")
+        click.echo("[INFO] No SPA process running.")
 
     # Stop MCP server
     if os.path.exists(MCP_PIDFILE):
@@ -1342,12 +1342,12 @@ def spa_stop():
         except Exception as e:
             click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
     else:
-        click.echo("ℹ️  No MCP server running.")
+        click.echo("[INFO] No MCP server running.")
 
     if spa_stopped or mcp_stopped:
         click.echo("✅ Services stopped successfully.")
     else:
-        click.echo("ℹ️  No services were running.")
+        click.echo("[INFO] No services were running.")
 
 
 @click.command("app-registration")
@@ -1787,13 +1787,13 @@ async def mcp_query_command(
     """
     from src.config_manager import create_config_from_env
     from src.services.azure_discovery_service import AzureDiscoveryService
+    from src.services.mcp_integration import MCPConfig as MCPIntegrationConfig
     from src.services.mcp_integration import MCPIntegrationService
     from src.utils.mcp_startup import ensure_mcp_running_async
 
     # Set up logging
-    log_level = ctx.obj.get("log_level", "INFO")
     if debug:
-        log_level = "DEBUG"
+        pass  # Debug logging configured elsewhere
 
     # Get tenant ID
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
@@ -1811,7 +1811,7 @@ async def mcp_query_command(
     # Check if MCP is configured
     if not config.mcp.enabled:
         click.echo(
-            "ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable."
+            "[INFO] MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable."
         )
         click.echo(
             "❌ MCP is required for natural language queries. Please enable it first."
@@ -1836,7 +1836,14 @@ async def mcp_query_command(
         except Exception as e:
             click.echo(f"⚠️  Warning: Could not initialize discovery service: {e}")
 
-    mcp_service = MCPIntegrationService(config.mcp, discovery_service)
+    # Convert config.mcp to MCPIntegrationConfig
+    mcp_config = MCPIntegrationConfig(
+        endpoint=config.mcp.endpoint,
+        enabled=config.mcp.enabled,
+        timeout=config.mcp.timeout,
+        api_key=config.mcp.api_key,
+    )
+    mcp_service = MCPIntegrationService(mcp_config, discovery_service)
 
     try:
         # Connect to MCP
@@ -1865,7 +1872,7 @@ async def mcp_query_command(
                 click.echo(formatted_result)
             elif output_format == "table":
                 # Simple table formatting for resource lists
-                if isinstance(result, dict) and "response" in result:
+                if isinstance(result, dict) and "response" in result:  # type: ignore[reportUnnecessaryIsInstance]
                     response = result["response"]
                     if isinstance(response, list):
                         click.echo("Resources found:")
@@ -1882,7 +1889,7 @@ async def mcp_query_command(
                     click.echo(str(result))
             else:
                 # Plain text output
-                if isinstance(result, dict):
+                if isinstance(result, dict):  # type: ignore[reportUnnecessaryIsInstance]
                     if "response" in result:
                         click.echo(str(result["response"]))
                     else:
@@ -1892,7 +1899,7 @@ async def mcp_query_command(
                     click.echo(str(result))
         else:
             click.echo("❌ Query failed\n")
-            if isinstance(result, dict):
+            if isinstance(result, dict):  # type: ignore[reportUnnecessaryIsInstance]
                 if "error" in result:
                     click.echo(f"Error: {result['error']}")
                 if "suggestion" in result:

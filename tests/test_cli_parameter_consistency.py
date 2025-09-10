@@ -101,7 +101,9 @@ def test_cli_parameters_use_kebab_case():
             suggested = param.replace("_", "-")
             print(f"    Suggested: {suggested}")
 
-        assert False, f"Found {len(underscore_params)} CLI parameters with underscores"
+        raise AssertionError(
+            f"Found {len(underscore_params)} CLI parameters with underscores"
+        )
     else:
         print(f"\n✅ All {len(all_parameters)} CLI parameters use kebab-case correctly")
 
@@ -112,7 +114,7 @@ def test_cli_parameters_use_kebab_case():
 
     # Print summary of checked parameters
     print(
-        f"\nChecked {len(all_parameters)} CLI parameters across {len(set(p[2] for p in all_parameters))} files"
+        f"\nChecked {len(all_parameters)} CLI parameters across {len({p[2] for p in all_parameters})} files"
     )
 
     # Show a sample of parameters for verification
@@ -174,7 +176,9 @@ def test_no_python_variables_with_hyphens():
             suggested = var_name.replace("-", "_")
             print(f"    Suggested: {suggested}")
 
-        assert False, f"Found {len(hyphen_variables)} Python parameters with hyphens"
+        raise AssertionError(
+            f"Found {len(hyphen_variables)} Python parameters with hyphens"
+        )
     else:
         print(
             "\n✅ All Python function parameters use underscores correctly (no hyphens)"

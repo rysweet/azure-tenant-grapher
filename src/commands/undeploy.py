@@ -8,7 +8,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import click
 
@@ -81,13 +81,18 @@ def undeploy(
             sys.exit(1)
         working_dir = Path(deployment["directory"])
     else:
+        if directory is None:
+            click.echo("❌ Error: Directory must be specified", err=True)
+            sys.exit(1)
         working_dir = Path(directory)
         if not working_dir.exists():
             click.echo(f"❌ Error: Directory '{directory}' does not exist", err=True)
             sys.exit(1)
 
         # Try to find deployment by directory
-        deployment = registry.get_deployment_by_directory(directory)
+        deployment = (
+            registry.get_deployment_by_directory(directory) if directory else None
+        )
         if not deployment:
             # Create a temporary deployment record for untracked deployments
             click.echo(
@@ -144,7 +149,7 @@ def undeploy(
 
 async def _run_undeploy(
     destroyer: TerraformDestroyer,
-    deployment: dict,
+    deployment: Dict[str, Any],
     registry: DeploymentRegistry,
     tenant: str,
     force: bool,
@@ -212,6 +217,7 @@ async def _run_undeploy(
         return
 
     # Backup state if not disabled
+    backup_path: Optional[Path] = None
     if not no_backup and destroyer.state_file.exists():
         click.echo("\n💾 Backing up Terraform state...")
         backup_path = registry.backup_state(deployment["id"], destroyer.state_file)
@@ -237,9 +243,7 @@ async def _run_undeploy(
         if deployment["id"].startswith("deploy-"):
             registry.mark_destroyed(
                 deployment["id"],
-                backup_path=str(backup_path)
-                if not no_backup and "backup_path" in locals()
-                else None,
+                backup_path=str(backup_path) if backup_path else None,
             )
 
         # Show summary
@@ -247,7 +251,7 @@ async def _run_undeploy(
         click.echo(f"   Deployment: {deployment['id']}")
         click.echo(f"   Directory: {deployment['directory']}")
         click.echo(f"   Resources destroyed: {len(resources)}")
-        if not no_backup and "backup_path" in locals():
+        if backup_path:
             click.echo(f"   State backup: {backup_path}")
     else:
         click.echo("\n❌ Terraform destroy failed!", err=True)
