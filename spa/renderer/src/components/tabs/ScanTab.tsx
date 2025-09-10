@@ -687,7 +687,7 @@ const ScanTab: React.FC = () => {
           <Grid container spacing={3}>
             {/* Left Column - Tenant and Filter Controls */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+              <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Tenant Configuration
               </Typography>
               
@@ -727,7 +727,7 @@ const ScanTab: React.FC = () => {
                     onChange={(e) => setSubscriptionFilter(e.target.value)}
                     placeholder="Enter subscription ID or name (optional)"
                     disabled={isRunning}
-                    helperText="Filter to specific subscription"
+                    helperText="Filter scan to only this subscription ID or name"
                   />
                 </Grid>
 
@@ -739,7 +739,7 @@ const ScanTab: React.FC = () => {
                     onChange={(e) => setResourceGroupFilter(e.target.value)}
                     placeholder="Enter resource group name (optional)"
                     disabled={isRunning}
-                    helperText="Filter to specific resource group"
+                    helperText="Limit scan to resources in this group"
                   />
                 </Grid>
               </Grid>
@@ -747,7 +747,7 @@ const ScanTab: React.FC = () => {
 
             {/* Right Column - Sliders and Checkboxes */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+              <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Processing Options
               </Typography>
 
@@ -764,6 +764,8 @@ const ScanTab: React.FC = () => {
                       max={20}
                       marks
                       disabled={isRunning}
+                      aria-label="Maximum LLM processing threads"
+                      sx={{ px: 2 }}
                     />
                   </FormControl>
                 </Grid>
@@ -780,6 +782,8 @@ const ScanTab: React.FC = () => {
                       max={20}
                       marks
                       disabled={isRunning}
+                      aria-label="Maximum build processing threads"
+                      sx={{ px: 2 }}
                     />
                   </FormControl>
                 </Grid>
@@ -797,7 +801,7 @@ const ScanTab: React.FC = () => {
                       label="Set Resource Limit"
                     />
                     {hasResourceLimit && (
-                      <Box sx={{ mt: 1, px: 1 }}>
+                      <Box sx={{ mt: 1, px: 2 }}>
                         <Typography variant="body2" gutterBottom>
                           Limit: {resourceLimit} resources
                         </Typography>
@@ -813,6 +817,7 @@ const ScanTab: React.FC = () => {
                             { value: 1000, label: '1000' },
                           ]}
                           disabled={isRunning}
+                          aria-label="Resource limit value"
                         />
                       </Box>
                     )}
