@@ -863,12 +863,24 @@ export const GraphVisualization: React.FC = () => {
                 onClick={async () => {
                   if (selectedNodesForExport.size === 0) return;
 
-                  // Get selected node IDs
+                  // Get selected node IDs and details
                   const nodeIds = Array.from(selectedNodesForExport);
+                  
+                  // Map node IDs to include resource names for ResourceGroup nodes
+                  const nodeDetails = nodeIds.map(nodeId => {
+                    const node = graphData?.nodes.find(n => n.id === nodeId);
+                    return {
+                      id: nodeId,
+                      type: node?.type,
+                      label: node?.label,
+                      resourceName: (node as any)?.resourceName,  // For ResourceGroup nodes
+                      azureId: (node as any)?.azureId  // Azure resource ID if available
+                    };
+                  });
 
                   // Dispatch event for GenerateIaCTab to pick up
                   const event = new CustomEvent('generateIaCForNodes', {
-                    detail: { nodeIds }
+                    detail: { nodeIds, nodeDetails }
                   });
                   window.dispatchEvent(event);
 

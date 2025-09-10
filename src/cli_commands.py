@@ -18,6 +18,7 @@ import click
 import structlog
 
 from src.azure_tenant_grapher import AzureTenantGrapher
+from src.utils.graph_id_resolver import is_graph_database_id, split_and_detect_ids
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
     create_config_from_env,
@@ -129,13 +130,45 @@ async def build_command_handler(
                 logger.info(f"📋 Filtering by subscriptions: {subscription_ids}")
 
             if filter_by_rgs:
-                resource_group_names = [rg.strip() for rg in filter_by_rgs.split(",")]
-                logger.info(f"📋 Filtering by resource groups: {resource_group_names}")
+                # Split and detect which values are graph IDs vs actual names
+                regular_names, graph_ids = split_and_detect_ids(filter_by_rgs)
+                
+                if graph_ids:
+                    logger.warning(
+                        f"⚠️  Detected graph database IDs in resource group filter: {graph_ids}\n"
+                        f"   These appear to be internal database IDs rather than Azure resource group names.\n"
+                        f"   Please use actual resource group names (e.g., 'Ballista_UCAScenario') instead.\n"
+                        f"   You can find the actual names in the Neo4j database or Azure portal."
+                    )
+                    
+                    # For now, we'll skip the graph IDs and only use the regular names
+                    # In a future improvement, we could resolve these IDs to actual names
+                    if regular_names:
+                        logger.info(f"📋 Using valid resource group names: {regular_names}")
+                        resource_group_names = regular_names
+                    else:
+                        logger.error(
+                            "❌ No valid resource group names found. All provided values appear to be graph IDs.\n"
+                            "   Please provide actual Azure resource group names."
+                        )
+                        resource_group_names = []
+                else:
+                    resource_group_names = regular_names
+                    logger.info(f"📋 Filtering by resource groups: {resource_group_names}")
 
-            filter_config = FilterConfig(
-                subscription_ids=subscription_ids,
-                resource_group_names=resource_group_names,
-            )
+            try:
+                filter_config = FilterConfig(
+                    subscription_ids=subscription_ids,
+                    resource_group_names=resource_group_names,
+                )
+            except ValueError as e:
+                logger.error(f"❌ Invalid filter configuration: {e}")
+                logger.info(
+                    "💡 Tip: Make sure you're using actual Azure resource names, not database IDs.\n"
+                    "   Resource group names should only contain alphanumeric characters, hyphens, underscores, periods, and parentheses."
+                )
+                # Create an empty filter config to continue without filtering
+                filter_config = FilterConfig()
 
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
