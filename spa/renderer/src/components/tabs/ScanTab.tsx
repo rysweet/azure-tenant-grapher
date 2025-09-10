@@ -64,6 +64,8 @@ const ScanTab: React.FC = () => {
   // State declarations
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
   const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
+  const [filterBySubscriptions, setFilterBySubscriptions] = useState('');
+  const [filterByRgs, setFilterByRgs] = useState('');
   const [hasResourceLimit, setHasResourceLimit] = useState(false);
   const [resourceLimit, setResourceLimit] = useState<number>(100);
   const [maxLlmThreads, setMaxLlmThreads] = useState<number>(20);
@@ -466,6 +468,14 @@ const ScanTab: React.FC = () => {
       '--max-build-threads', maxBuildThreads.toString(),
     ];
 
+    // Add filters if they have values
+    if (filterBySubscriptions) {
+      args.push('--filter-by-subscriptions', filterBySubscriptions);
+    }
+    if (filterByRgs) {
+      args.push('--filter-by-rgs', filterByRgs);
+    }
+
     // Only add resource limit if checkbox is checked
     if (hasResourceLimit) {
       args.push('--resource-limit', resourceLimit.toString());
@@ -701,7 +711,7 @@ const ScanTab: React.FC = () => {
           )}
 
           <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               label="Tenant ID"
@@ -713,7 +723,7 @@ const ScanTab: React.FC = () => {
             />
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Azure Tenant</InputLabel>
               <Select
@@ -728,7 +738,31 @@ const ScanTab: React.FC = () => {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Filter by Subscriptions"
+              value={filterBySubscriptions}
+              onChange={(e) => setFilterBySubscriptions(e.target.value)}
+              disabled={isRunning}
+              placeholder="sub-id-1,sub-id-2"
+              helperText="Comma-separated subscription IDs (optional)"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Filter by Resource Groups"
+              value={filterByRgs}
+              onChange={(e) => setFilterByRgs(e.target.value)}
+              disabled={isRunning}
+              placeholder="rg-1,rg-2"
+              helperText="Comma-separated resource group names (optional)"
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
             <FormControl fullWidth>
               <FormControlLabel
                 control={

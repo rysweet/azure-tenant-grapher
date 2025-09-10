@@ -17,7 +17,7 @@ The PriorityAgent is a comprehensive test failure analysis and ranking system th
 The agent considers seven key factors when calculating priority:
 
 1. **Error Severity** (25%): Crash/fatal errors vs warnings/minor issues
-2. **User Impact** (20%): GUI tests vs internal API tests 
+2. **User Impact** (20%): GUI tests vs internal API tests
 3. **Test Stability** (15%): Consistent failures vs flaky behavior
 4. **Business Priority** (15%): Critical path vs nice-to-have features
 5. **Security Implications** (10%): Security-related failures get priority boost
@@ -138,22 +138,22 @@ report.recommendations.forEach(rec => {
 interface PriorityAgentConfig {
   /** Custom priority scoring factors (weights must sum to ~1.0) */
   priorityFactors?: Partial<PriorityFactors>;
-  
+
   /** Historical data retention period in days (default: 30) */
   historyRetentionDays?: number;
-  
+
   /** Flaky test detection threshold 0-1 (default: 0.3) */
   flakyThreshold?: number;
-  
+
   /** Pattern recognition sensitivity (default: 0.7) */
   patternSensitivity?: number;
-  
+
   /** Minimum samples required for trend analysis (default: 5) */
   minSamplesForTrends?: number;
-  
+
   /** Custom priority rules */
   customRules?: PriorityRule[];
-  
+
   /** Logging level */
   logLevel?: LogLevel;
 }
@@ -217,7 +217,7 @@ interface PriorityReport {
 The agent automatically detects several types of patterns:
 
 - **Message Patterns**: Similar error messages across different tests
-- **Stack Trace Patterns**: Common stack traces indicating shared root causes  
+- **Stack Trace Patterns**: Common stack traces indicating shared root causes
 - **Timing Patterns**: Failures clustered around specific times (resource contention)
 - **Category Patterns**: Failures grouped by error category
 
@@ -252,7 +252,7 @@ afterEach(async () => {
       stackTrace: this.currentTest.err.stack,
       category: 'execution'
     };
-    
+
     const assignment = await priorityAgent.analyzePriority(failure);
     console.log(`Test failure priority: ${assignment.priority}`);
   }
@@ -271,7 +271,7 @@ await github.issues.createComment({
   body: `## Test Failure Priority Report
 
 **Critical:** ${report.summary.criticalCount}
-**High:** ${report.summary.highCount}  
+**High:** ${report.summary.highCount}
 **Medium:** ${report.summary.mediumCount}
 **Low:** ${report.summary.lowCount}
 
@@ -309,7 +309,7 @@ agent.on('reportGenerated', (report) => {
 The PriorityAgent is designed to be ML-ready:
 
 - **Structured Data**: All scoring factors are numerical and normalized
-- **Feature Engineering**: Factor breakdowns provide ML training features  
+- **Feature Engineering**: Factor breakdowns provide ML training features
 - **Confidence Scoring**: Built-in confidence metrics for model validation
 - **Historical Tracking**: Time-series data suitable for trend analysis
 - **Pattern Recognition**: Pattern data can train clustering models
@@ -325,7 +325,7 @@ Future enhancements could include:
 See `/src/agents/examples/PriorityAgent.example.ts` for comprehensive usage examples including:
 
 - Basic priority analysis
-- Custom rules configuration  
+- Custom rules configuration
 - Flaky test detection
 - Pattern analysis
 - Real-time monitoring

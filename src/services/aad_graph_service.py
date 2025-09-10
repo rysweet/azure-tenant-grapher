@@ -5,10 +5,10 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from azure.identity import ClientSecretCredential
 from kiota_abstractions.base_request_configuration import RequestConfiguration
-from msgraph import GraphServiceClient
 from msgraph.generated.groups.groups_request_builder import GroupsRequestBuilder
 from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 from msgraph.generated.users.users_request_builder import UsersRequestBuilder
+from msgraph.graph_service_client import GraphServiceClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,11 @@ class AADGraphService:
             )
 
         # Create credential using MSAL
+        if tenant_id is None or client_id is None or client_secret is None:
+            raise RuntimeError(
+                "Missing one or more required Azure AD credentials in environment variables: "
+                "AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET"
+            )
         credential = ClientSecretCredential(
             tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
         )
@@ -59,16 +64,16 @@ class AADGraphService:
             try:
                 return await operation()
             except ODataError as e:
-                if e.response_status_code == 429:
-                    # Rate limited - check for Retry-After header
-                    retry_after = e.response.headers.get("Retry-After", "2")
-                    sleep_time = int(retry_after)
+                status_code = getattr(e, "response_status_code", None)
+                if status_code == 429:
+                    # Rate limited - use fixed retry time
+                    sleep_time = 2
                     logger.warning(
                         f"Rate limited, retrying after {sleep_time} seconds (attempt {attempt + 1})"
                     )
                     time.sleep(sleep_time)
                     continue
-                elif 500 <= e.response_status_code < 600:
+                elif status_code is not None and 500 <= status_code < 600:
                     # Server error - exponential backoff
                     sleep_time = 2**attempt
                     logger.warning(
@@ -114,6 +119,8 @@ class AADGraphService:
             request_config = RequestConfiguration(query_parameters=query_params)
 
             # Get first page
+            if not self.client:
+                raise RuntimeError("Graph client not initialized")
             users_page = await self.client.users.get(
                 request_configuration=request_config
             )
@@ -134,6 +141,8 @@ class AADGraphService:
                 logger.info(
                     f"Fetching next page of users (current count: {len(users)})"
                 )
+                if not self.client:
+                    raise RuntimeError("Graph client not initialized")
                 users_page = await self.client.users.with_url(
                     users_page.odata_next_link
                 ).get()
@@ -179,6 +188,8 @@ class AADGraphService:
             request_config = RequestConfiguration(query_parameters=query_params)
 
             # Get first page
+            if not self.client:
+                raise RuntimeError("Graph client not initialized")
             groups_page = await self.client.groups.get(
                 request_configuration=request_config
             )
@@ -199,6 +210,8 @@ class AADGraphService:
                 logger.info(
                     f"Fetching next page of groups (current count: {len(groups)})"
                 )
+                if not self.client:
+                    raise RuntimeError("Graph client not initialized")
                 groups_page = await self.client.groups.with_url(
                     groups_page.odata_next_link
                 ).get()
@@ -240,6 +253,8 @@ class AADGraphService:
             members = []
 
             # Get first page of group members
+            if not self.client:
+                raise RuntimeError("Graph client not initialized")
             members_page = await self.client.groups.by_group_id(group_id).members.get()
 
             if members_page and members_page.value:
@@ -256,6 +271,8 @@ class AADGraphService:
                 logger.info(
                     f"Fetching next page of group members for group {group_id} (current count: {len(members)})"
                 )
+                if not self.client:
+                    raise RuntimeError("Graph client not initialized")
                 members_page = (
                     await self.client.groups.by_group_id(group_id)
                     .members.with_url(members_page.odata_next_link)
@@ -306,7 +323,9 @@ class AADGraphService:
             props = {
                 "id": user_id,
                 "display_name": user.get("displayName"),  # Convert to snake_case
-                "user_principal_name": user.get("userPrincipalName"),  # Convert to snake_case
+                "user_principal_name": user.get(
+                    "userPrincipalName"
+                ),  # Convert to snake_case
                 "mail": user.get("mail"),
                 "type": "User",
             }

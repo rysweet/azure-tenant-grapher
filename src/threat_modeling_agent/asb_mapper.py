@@ -596,9 +596,7 @@ class AzureSecurityBenchmarkMapper:
         if not controls:
             return {"total_controls": 0, "categories": [], "priorities": {}}
 
-        categories = list(
-            set(control.get("category", "Unknown") for control in controls)
-        )
+        categories = list({control.get("category", "Unknown") for control in controls})
         priorities = {}
 
         for control in controls:

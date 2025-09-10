@@ -1,6 +1,6 @@
 /**
  * PriorityAgent Usage Examples
- * 
+ *
  * This file demonstrates various use cases for the PriorityAgent including:
  * - Basic priority analysis
  * - Custom priority rules
@@ -34,7 +34,7 @@ export async function basicPriorityAnalysisExample(): Promise<void> {
 
   // Create agent with default configuration
   const agent = createPriorityAgent();
-  
+
   try {
     await agent.initialize();
 
@@ -194,17 +194,17 @@ export async function flakyTestDetectionExample(): Promise<void> {
     // Generate historical test results with flaky behavior
     const testResults: TestResult[] = [];
     const scenarios = ['stable-test', 'flaky-test', 'very-flaky-test'];
-    
+
     // Generate 20 results for each scenario
     scenarios.forEach(scenarioId => {
       for (let i = 0; i < 20; i++) {
         let status = TestStatus.PASSED;
-        
+
         // Make flaky-test fail 40% of the time randomly
         if (scenarioId === 'flaky-test' && Math.random() < 0.4) {
           status = TestStatus.FAILED;
         }
-        
+
         // Make very-flaky-test alternate between pass and fail
         if (scenarioId === 'very-flaky-test') {
           status = i % 2 === 0 ? TestStatus.PASSED : TestStatus.FAILED;
@@ -223,7 +223,7 @@ export async function flakyTestDetectionExample(): Promise<void> {
 
     console.log('\n--- Flaky Test Analysis ---');
     const flakyTests = agent.identifyFlaky(testResults);
-    
+
     flakyTests.forEach(flakyTest => {
       console.log(`${flakyTest.scenarioId}:`);
       console.log(`  Flakiness Score: ${flakyTest.flakinessScore.toFixed(3)}`);
@@ -270,7 +270,7 @@ export async function patternAnalysisExample(): Promise<void> {
         message: 'Connection timeout to database server 192.168.1.150',
         category: 'database'
       },
-      
+
       // Permission pattern
       {
         scenarioId: 'admin-panel',
@@ -284,7 +284,7 @@ export async function patternAnalysisExample(): Promise<void> {
         message: 'Access denied: Insufficient permissions for update',
         category: 'authorization'
       },
-      
+
       // Timing pattern (all happening at 2 AM)
       {
         scenarioId: 'backup-job',
@@ -308,7 +308,7 @@ export async function patternAnalysisExample(): Promise<void> {
 
     console.log('\n--- Pattern Analysis ---');
     const patterns = agent.analyzeFailurePatterns(failures);
-    
+
     patterns.forEach(pattern => {
       console.log(`Pattern: ${pattern.description}`);
       console.log(`  ID: ${pattern.id}`);
@@ -397,7 +397,7 @@ export async function comprehensiveReportExample(): Promise<void> {
 
     console.log(`Report Generated: ${report.timestamp.toISOString()}`);
     console.log(`Total Failures Analyzed: ${report.totalFailures}`);
-    
+
     console.log('\nPriority Summary:');
     console.log(`  Critical: ${report.summary.criticalCount}`);
     console.log(`  High: ${report.summary.highCount}`);
@@ -472,7 +472,7 @@ export async function realTimeMonitoringExample(): Promise<void> {
       console.log(`🔥 New failure detected: ${failure.scenarioId}`);
       console.log(`   Priority: ${assignment.priority}`);
       console.log(`   Impact Score: ${assignment.impactScore.toFixed(1)}`);
-      
+
       if (assignment.priority === Priority.CRITICAL) {
         console.log('   🚨 CRITICAL PRIORITY - Immediate attention required!');
       }
@@ -496,7 +496,7 @@ export async function runAllExamples(): Promise<void> {
     await patternAnalysisExample();
     await comprehensiveReportExample();
     await realTimeMonitoringExample();
-    
+
     console.log('\n✅ All PriorityAgent examples completed successfully!');
   } catch (error) {
     console.error('❌ Error running examples:', error);

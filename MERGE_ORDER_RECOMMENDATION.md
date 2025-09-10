@@ -9,7 +9,7 @@
 - **Why First**: Independent fix that improves SPA logging immediately
 
 ### 2. PR #223 - Agent mode TextMessage fix ⭐ **FOUNDATION PR**
-- **Files**: `src/agent_mode.py`  
+- **Files**: `src/agent_mode.py`
 - **Risk**: Low - Single file, specific import fix
 - **Dependencies**: None
 - **Why Second**: Required by PRs #224, #225, and #226
@@ -20,7 +20,7 @@
 - **Dependencies**: PR #223 (agent_mode.py changes)
 - **Why Third**: Builds on #223, required by #225 and #226
 
-### 4. PR #225 - Graph API permissions fix  
+### 4. PR #225 - Graph API permissions fix
 - **Files**: `spa/backend/src/server.ts`, `README.md`, `src/agent_mode.py`
 - **Risk**: Medium - Backend API changes
 - **Dependencies**: PR #223, #224 (agent_mode.py and README.md changes)
@@ -51,7 +51,7 @@ PR #223 ──── (Foundation for others)
 ### `src/agent_mode.py` (Modified by PRs #223, #224, #225, #226)
 **Solution**: Sequential merging prevents conflicts
 - PR #223: TextMessage import fix
-- PR #224: Includes #223 changes  
+- PR #224: Includes #223 changes
 - PR #225: Includes #223 changes
 - PR #226: Includes all previous changes
 
@@ -71,7 +71,7 @@ PR #223 ──── (Foundation for others)
 ### After Each PR Merge:
 1. **Run Tests**: `./scripts/run_tests_with_artifacts.sh`
 2. **Lint Check**: `uv run ruff check src scripts tests`
-3. **Type Check**: `uv run pyright`  
+3. **Type Check**: `uv run pyright`
 4. **SPA Tests**: `cd spa && npm test`
 
 ### Critical Validation Points:
@@ -158,7 +158,7 @@ Create integration branch combining all PRs.
 
 ### ❌ DON'T:
 1. Merge PRs out of order
-2. Skip testing between merges  
+2. Skip testing between merges
 3. Force-push or rebase after merge conflicts
 4. Merge multiple PRs simultaneously
 
@@ -170,7 +170,7 @@ Create integration branch combining all PRs.
 
 ---
 
-**Status**: Ready for execution  
-**Estimated Time**: 3-4 hours for safe, sequential merge  
-**Risk Level**: Low (with proper sequencing)  
+**Status**: Ready for execution
+**Estimated Time**: 3-4 hours for safe, sequential merge
+**Risk Level**: Low (with proper sequencing)
 **Success Probability**: 95%+ (if order followed)

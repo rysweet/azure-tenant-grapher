@@ -11,9 +11,9 @@ import pytest
 from pydantic import ValidationError
 
 from src.tenant_spec_models import (
-    APIPermission,
     AccessLevel,
     AdminRole,
+    APIPermission,
     AuthenticationMethod,
     ConditionalAccessCondition,
     ConditionalAccessControl,
@@ -21,8 +21,8 @@ from src.tenant_spec_models import (
     DirectoryRoleAssignment,
     Group,
     GroupType,
-    PIMAssignment,
     PermissionType,
+    PIMAssignment,
     RiskLevel,
     ServicePrincipal,
     ServicePrincipalCredential,

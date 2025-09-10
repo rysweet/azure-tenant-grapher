@@ -63,26 +63,26 @@ interface ElectronUIAgentConfig {
   args?: string[];                  // Command line arguments
   cwd?: string;                     // Working directory
   env?: Record<string, string>;     // Environment variables
-  
+
   // Timing settings
   launchTimeout?: number;           // Launch timeout (default: 30000ms)
   defaultTimeout?: number;          // Default operation timeout (default: 10000ms)
   slowMo?: number;                  // Slow motion delay
-  
+
   // Display settings
   headless?: boolean;               // Run in headless mode (default: false)
-  
+
   // Recording settings
   recordVideo?: boolean;            // Record video of test execution
   videoDir?: string;                // Video output directory
-  
+
   // Screenshot settings
   screenshotConfig?: {
     mode: 'off' | 'on' | 'only-on-failure';  // When to capture screenshots
     directory: string;                        // Screenshot directory
     fullPage: boolean;                        // Capture full page
   };
-  
+
   // Socket.IO monitoring
   websocketConfig?: {
     url: string;                    // Socket.IO server URL
@@ -90,14 +90,14 @@ interface ElectronUIAgentConfig {
     reconnectAttempts: number;      // Reconnection attempts
     reconnectDelay: number;         // Delay between reconnections
   };
-  
+
   // Performance monitoring
   performanceConfig?: {
     enabled: boolean;               // Enable performance monitoring
     sampleInterval: number;         // Sample collection interval (ms)
     collectLogs: boolean;           // Collect console logs
   };
-  
+
   // Recovery settings
   recoveryConfig?: {
     maxRetries: number;             // Maximum retry attempts
@@ -403,9 +403,9 @@ await agent.clickButton('xpath=//button[@id="submit"]');
 
 ```typescript
 // Wait for specific conditions
-await agent.waitForElement('[data-testid="loading"]', { 
+await agent.waitForElement('[data-testid="loading"]', {
   state: 'hidden',
-  timeout: 30000 
+  timeout: 30000
 });
 
 // Check element text
@@ -434,7 +434,7 @@ steps:
   - name: "Launch App"
     agent: "ui-agent"
     action: "launch_electron"
-    
+
   - name: "Navigate to Build Tab"
     agent: "ui-agent"
     action: "click_tab"

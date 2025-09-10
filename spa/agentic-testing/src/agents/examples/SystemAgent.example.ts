@@ -1,6 +1,6 @@
 /**
  * SystemAgent usage example
- * 
+ *
  * This example demonstrates how to use the SystemAgent for comprehensive
  * system resource monitoring during test execution.
  */
@@ -9,7 +9,7 @@ import { SystemAgent, createSystemAgent, SystemAgentConfig } from '../SystemAgen
 
 async function basicSystemMonitoringExample() {
   console.log('=== Basic System Monitoring Example ===');
-  
+
   // Create a SystemAgent with basic configuration
   const agent = createSystemAgent({
     monitoringInterval: 2000, // Monitor every 2 seconds
@@ -41,7 +41,7 @@ async function basicSystemMonitoringExample() {
     const topCpuProcesses = metrics.processes
       .sort((a, b) => b.cpu - a.cpu)
       .slice(0, 5);
-    
+
     console.log('\n=== Top 5 Processes by CPU Usage ===');
     topCpuProcesses.forEach(proc => {
       console.log(`${proc.name} (PID: ${proc.pid}): ${proc.cpu.toFixed(1)}% CPU, ${(proc.memory / 1024 / 1024).toFixed(1)} MB RAM`);
@@ -60,7 +60,7 @@ async function basicSystemMonitoringExample() {
 
 async function continuousMonitoringExample() {
   console.log('\n\n=== Continuous Monitoring Example ===');
-  
+
   const agent = createSystemAgent({
     monitoringInterval: 1000,
     cpuThreshold: 75,
@@ -92,17 +92,17 @@ async function continuousMonitoringExample() {
 
     // Start monitoring
     await agent.startMonitoring();
-    
+
     // Let it run for 10 seconds
     await new Promise(resolve => setTimeout(resolve, 10000));
-    
+
     // Stop monitoring
     await agent.stopMonitoring();
-    
+
     // Get metrics history
     const history = agent.getMetricsHistory();
     console.log(`\nCollected ${history.length} metric samples`);
-    
+
     if (history.length > 0) {
       const avgCpu = history.reduce((sum, m) => sum + m.cpu.usage, 0) / history.length;
       const avgMemory = history.reduce((sum, m) => sum + m.memory.percentage, 0) / history.length;
@@ -128,7 +128,7 @@ async function continuousMonitoringExample() {
 
 async function healthReportExample() {
   console.log('\n\n=== Health Report Example ===');
-  
+
   const agent = createSystemAgent({
     monitoringInterval: 500,
     cpuThreshold: 70,
@@ -139,15 +139,15 @@ async function healthReportExample() {
 
   try {
     await agent.initialize();
-    
+
     // Start monitoring to collect some data
     await agent.startMonitoring();
     await new Promise(resolve => setTimeout(resolve, 3000));
     await agent.stopMonitoring();
-    
+
     // Generate comprehensive health report
     const healthReport = await agent.generateHealthReport();
-    
+
     console.log('=== System Health Report ===');
     console.log(`Report Time: ${healthReport.timestamp.toISOString()}`);
     console.log(`Overall Health: ${healthReport.overall.toUpperCase()}`);
@@ -155,21 +155,21 @@ async function healthReportExample() {
     console.log(`Resource Leaks: ${healthReport.resourceLeaks.length}`);
     console.log(`Performance Issues: ${healthReport.performanceIssues.length}`);
     console.log(`Recommendations: ${healthReport.recommendations.length}`);
-    
+
     if (healthReport.issues.length > 0) {
       console.log('\n--- Issues ---');
       healthReport.issues.forEach((issue, index) => {
         console.log(`${index + 1}. [${issue.severity.toUpperCase()}] ${issue.type}: ${issue.message}`);
       });
     }
-    
+
     if (healthReport.recommendations.length > 0) {
       console.log('\n--- Recommendations ---');
       healthReport.recommendations.forEach((rec, index) => {
         console.log(`${index + 1}. ${rec}`);
       });
     }
-    
+
     if (healthReport.resourceLeaks.length > 0) {
       console.log('\n--- Resource Leaks ---');
       healthReport.resourceLeaks.forEach((leak, index) => {
@@ -186,7 +186,7 @@ async function healthReportExample() {
 
 async function testIntegrationExample() {
   console.log('\n\n=== Test Integration Example ===');
-  
+
   const agent = createSystemAgent({
     monitoringInterval: 1000,
     cpuThreshold: 80,
@@ -202,49 +202,49 @@ async function testIntegrationExample() {
   try {
     console.log('Initializing system monitoring for test...');
     await agent.initialize();
-    
+
     // Simulate test preparation
     console.log('Pre-test system health check...');
     const preTestHealth = await agent.getSystemHealth();
     console.log(`Pre-test health: ${preTestHealth}`);
-    
+
     // Start monitoring during test
     await agent.startMonitoring();
     console.log('Test monitoring started');
-    
+
     // Simulate running a test scenario
     console.log('Simulating test execution...');
-    
+
     // Create some CPU load to demonstrate monitoring
     const startTime = Date.now();
     while (Date.now() - startTime < 5000) {
       // Simulate some work
       Math.random() * Math.random();
     }
-    
+
     console.log('Test execution completed');
-    
+
     // Stop monitoring
     await agent.stopMonitoring();
-    
+
     // Post-test health check
     console.log('Post-test system health check...');
     const postTestHealth = await agent.getSystemHealth();
     console.log(`Post-test health: ${postTestHealth}`);
-    
+
     // Generate final report
     const finalReport = await agent.generateHealthReport();
     console.log('\n--- Test Execution Report ---');
     console.log(`System Status: ${finalReport.overall}`);
     console.log(`Metrics Collected: ${agent.getMetricsHistory().length} samples`);
-    
+
     if (finalReport.issues.length > 0) {
       console.log(`Issues During Test: ${finalReport.issues.length}`);
       finalReport.issues.forEach(issue => {
         console.log(`  - ${issue.message}`);
       });
     }
-    
+
     // Demonstrate cleanup functionality
     console.log('\nPerforming system cleanup...');
     await agent.cleanup();
@@ -257,7 +257,7 @@ async function testIntegrationExample() {
 
 async function dockerMonitoringExample() {
   console.log('\n\n=== Docker Monitoring Example ===');
-  
+
   const agent = createSystemAgent({
     dockerMonitoring: {
       enabled: true,
@@ -268,12 +268,12 @@ async function dockerMonitoringExample() {
 
   try {
     await agent.initialize();
-    
+
     const metrics = await agent.captureMetrics();
-    
+
     if (metrics.docker && metrics.docker.length > 0) {
       console.log(`Found ${metrics.docker.length} Docker containers:`);
-      
+
       metrics.docker.forEach(container => {
         console.log(`\n--- Container: ${container.name} ---`);
         console.log(`ID: ${container.id}`);
@@ -282,11 +282,11 @@ async function dockerMonitoringExample() {
         console.log(`CPU Usage: ${container.cpu.toFixed(1)}%`);
         console.log(`Memory Usage: ${container.memory.toFixed(1)}%`);
         console.log(`Ports: ${container.ports.join(', ') || 'None'}`);
-        
+
         if (container.networkIO) {
           console.log(`Network I/O: ${container.networkIO.rx} RX, ${container.networkIO.tx} TX`);
         }
-        
+
         if (container.blockIO) {
           console.log(`Block I/O: ${container.blockIO.read} reads, ${container.blockIO.write} writes`);
         }
@@ -305,31 +305,31 @@ async function dockerMonitoringExample() {
 // Advanced configuration example
 async function advancedConfigurationExample() {
   console.log('\n\n=== Advanced Configuration Example ===');
-  
+
   const advancedConfig: SystemAgentConfig = {
     monitoringInterval: 1000,
     cpuThreshold: 75,
     memoryThreshold: 80,
     diskThreshold: 85,
     processCountThreshold: 500,
-    
+
     networkMonitoring: {
       enabled: true,
       interfaces: [], // Monitor all interfaces
       bandwidth: true
     },
-    
+
     dockerMonitoring: {
       enabled: true,
       containerFilters: ['web', 'api', 'db'] // Monitor specific containers
     },
-    
+
     fileSystemMonitoring: {
       enabled: true,
       watchPaths: ['./logs', './temp', './cache'],
       excludePatterns: [/node_modules/, /\.git/, /\.DS_Store/]
     },
-    
+
     cleanup: {
       killZombieProcesses: true,
       cleanTempFiles: true,
@@ -345,7 +345,7 @@ async function advancedConfigurationExample() {
         'temp-process-*'
       ]
     },
-    
+
     performanceBaseline: {
       captureBaseline: true,
       baselineDuration: 10000, // 10 seconds
@@ -358,20 +358,20 @@ async function advancedConfigurationExample() {
   try {
     await agent.initialize();
     console.log('Advanced SystemAgent initialized with full configuration');
-    
+
     // Demonstrate all features briefly
     await agent.startMonitoring();
     console.log('Monitoring started with advanced configuration...');
-    
+
     // Let it run briefly
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     await agent.stopMonitoring();
-    
+
     const report = await agent.generateHealthReport();
     console.log(`\nAdvanced monitoring report: ${report.overall} status`);
     console.log(`File system changes tracked: ${agent.getFileSystemChanges().length}`);
-    
+
     const baseline = agent.getPerformanceBaseline();
     if (baseline) {
       console.log(`Performance baseline captured over ${baseline.duration}ms`);
@@ -387,7 +387,7 @@ async function advancedConfigurationExample() {
 // Main example runner
 async function runAllExamples() {
   console.log('🚀 SystemAgent Examples Starting...\n');
-  
+
   try {
     await basicSystemMonitoringExample();
     await continuousMonitoringExample();
@@ -395,9 +395,9 @@ async function runAllExamples() {
     await testIntegrationExample();
     await dockerMonitoringExample();
     await advancedConfigurationExample();
-    
+
     console.log('\n✅ All SystemAgent examples completed successfully!');
-    
+
   } catch (error) {
     console.error('❌ Error running examples:', error);
     process.exit(1);

@@ -1,6 +1,6 @@
 /**
  * PriorityAgent - Test priority analysis and ranking agent
- * 
+ *
  * This agent analyzes test failures to determine priority levels, calculates impact scores,
  * ranks failures by importance, and provides actionable recommendations for fixing order.
  * It includes pattern recognition, trend analysis, and machine learning-ready scoring.
@@ -8,13 +8,13 @@
 
 import { EventEmitter } from 'events';
 import { IAgent, AgentType } from './index';
-import { 
-  TestFailure, 
-  TestResult, 
-  TestStatus, 
-  Priority, 
+import {
+  TestFailure,
+  TestResult,
+  TestStatus,
+  Priority,
   TestInterface,
-  TestScenario 
+  TestScenario
 } from '../models/TestModels';
 import { TestLogger, createLogger, LogLevel } from '../utils/logger';
 
@@ -232,17 +232,17 @@ export class PriorityAgent extends EventEmitter implements IAgent {
    */
   async initialize(): Promise<void> {
     this.logger.info('Initializing PriorityAgent');
-    
+
     try {
       // Validate configuration
       this.validateConfiguration();
-      
+
       // Initialize analysis history
       await this.loadAnalysisHistory();
-      
+
       // Initialize pattern cache
       await this.loadPatternCache();
-      
+
       this.isInitialized = true;
       this.logger.info('PriorityAgent initialized successfully');
       this.emit('initialized');
@@ -261,7 +261,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.info(`Executing priority analysis for scenario: ${scenario.id}`);
-    
+
     // For the IAgent interface, we need a test failure to analyze
     // This is a simplified implementation that would need actual failure data
     const mockFailure: TestFailure = {
@@ -307,7 +307,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
 
     // Store in history
     this.storeAssignment(assignment);
-    
+
     this.logger.info(`Priority assigned: ${priority} (score: ${impactScore})`, {
       scenarioId: failure.scenarioId,
       assignment
@@ -399,7 +399,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     this.logger.info(`Suggesting fix order for ${failures.length} failures`);
 
     const rankedAssignments = await this.rankFailures(failures);
-    
+
     // Group by priority and consider fix effort
     const groups: Record<Priority, PriorityAssignment[]> = {
       [Priority.CRITICAL]: [],
@@ -447,7 +447,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     this.logger.info(`Analyzing ${results.length} results for flaky tests`);
 
     const scenarioGroups = new Map<string, TestResult[]>();
-    
+
     // Group results by scenario
     results.forEach(result => {
       if (!scenarioGroups.has(result.scenarioId)) {
@@ -488,7 +488,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     this.logger.info(`Analyzing patterns in ${failures.length} failures`);
 
     const patterns: FailurePattern[] = [];
-    
+
     // Group failures by error message similarity
     const messagePatterns = this.groupByMessagePatterns(failures);
     patterns.push(...messagePatterns);
@@ -570,17 +570,17 @@ export class PriorityAgent extends EventEmitter implements IAgent {
    */
   async cleanup(): Promise<void> {
     this.logger.info('Cleaning up PriorityAgent');
-    
+
     try {
       // Save analysis history
       await this.saveAnalysisHistory();
-      
+
       // Save pattern cache
       await this.savePatternCache();
-      
+
       // Close logger
       await this.logger.close();
-      
+
       this.emit('cleanup');
       this.logger.info('PriorityAgent cleanup completed');
     } catch (error) {
@@ -594,7 +594,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
   private validateConfiguration(): void {
     const factors = this.config.priorityFactors;
     const totalWeight = Object.values(factors).reduce((sum, weight) => sum + weight, 0);
-    
+
     if (Math.abs(totalWeight - 1.0) > 0.01) {
       this.logger.warn('Priority factor weights do not sum to 1.0', {
         totalWeight,
@@ -624,7 +624,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     const stackTrace = failure.stackTrace?.toLowerCase() || '';
 
     // Critical severity indicators
-    if (message.includes('crash') || message.includes('segfault') || 
+    if (message.includes('crash') || message.includes('segfault') ||
         message.includes('fatal') || message.includes('abort')) {
       return 1.0;
     }
@@ -713,7 +713,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
       'access', 'admin', 'privilege', 'encrypt', 'decrypt', 'certificate'
     ];
 
-    const hasSecurityKeywords = securityKeywords.some(keyword => 
+    const hasSecurityKeywords = securityKeywords.some(keyword =>
       message.includes(keyword) || tags.some(tag => tag.toLowerCase().includes(keyword))
     );
 
@@ -722,7 +722,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
 
   private scorePerformanceImpact(failure: TestFailure, context: AnalysisContext): number {
     const message = failure.message.toLowerCase();
-    
+
     // Performance-related keywords
     if (message.includes('timeout') || message.includes('slow') ||
         message.includes('performance') || message.includes('memory') ||
@@ -733,7 +733,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     // Check if scenario has performance tags
     const scenario = context.scenarios.get(failure.scenarioId);
     const tags = scenario?.tags || [];
-    const hasPerformanceTags = tags.some(tag => 
+    const hasPerformanceTags = tags.some(tag =>
       tag.toLowerCase().includes('performance') ||
       tag.toLowerCase().includes('load') ||
       tag.toLowerCase().includes('stress')
@@ -760,7 +760,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
 
   private applyCustomRules(failure: TestFailure, context: AnalysisContext): number {
     let modifierSum = 0;
-    
+
     this.config.customRules.forEach(rule => {
       if (rule.condition(failure, context)) {
         modifierSum += rule.priorityModifier;
@@ -788,9 +788,9 @@ export class PriorityAgent extends EventEmitter implements IAgent {
     impactScore: number
   ): string[] {
     const reasoning: string[] = [];
-    
+
     reasoning.push(`Impact score: ${impactScore.toFixed(1)}/100`);
-    
+
     if (impactScore >= 80) {
       reasoning.push('Critical priority due to high impact score');
     } else if (impactScore >= 60) {
@@ -865,22 +865,22 @@ export class PriorityAgent extends EventEmitter implements IAgent {
 
   private analyzeFlakyBehavior(scenarioId: string, results: TestResult[]): FlakyTestResult {
     const sortedResults = results.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-    
+
     let flipCount = 0;
     let failureCount = 0;
-    
+
     for (let i = 0; i < sortedResults.length; i++) {
       const current = sortedResults[i];
-      
+
       if (current.status === TestStatus.FAILED || current.status === TestStatus.ERROR) {
         failureCount++;
       }
-      
+
       if (i > 0) {
         const previous = sortedResults[i - 1];
         const currentFailed = current.status === TestStatus.FAILED || current.status === TestStatus.ERROR;
         const previousFailed = previous.status === TestStatus.FAILED || previous.status === TestStatus.ERROR;
-        
+
         if (currentFailed !== previousFailed) {
           flipCount++;
         }
@@ -889,10 +889,10 @@ export class PriorityAgent extends EventEmitter implements IAgent {
 
     const failureRate = failureCount / results.length;
     const flipRate = flipCount / Math.max(1, results.length - 1);
-    
+
     // Flakiness score combines failure rate and flip rate
     const flakinessScore = (failureRate * 0.6) + (flipRate * 0.4);
-    
+
     let recommendedAction: FlakyTestResult['recommendedAction'] = 'monitor';
     if (flakinessScore >= 0.7) {
       recommendedAction = 'quarantine';
@@ -956,7 +956,7 @@ export class PriorityAgent extends EventEmitter implements IAgent {
   private groupByTimingPatterns(failures: TestFailure[]): FailurePattern[] {
     // Group failures that happen at similar times
     const hourGroups = new Map<number, TestFailure[]>();
-    
+
     failures.forEach(failure => {
       const hour = failure.timestamp.getHours();
       if (!hourGroups.has(hour)) {

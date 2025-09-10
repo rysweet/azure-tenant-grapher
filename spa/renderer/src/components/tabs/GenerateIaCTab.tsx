@@ -56,17 +56,20 @@ const GenerateIaCTab: React.FC = () => {
   const [domainName, setDomainName] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectedNodeDetails, setSelectedNodeDetails] = useState<any[]>([]);
 
   // Listen for selected nodes from visualization
   useEffect(() => {
     const handleGenerateIaCForNodes = (event: CustomEvent) => {
       const nodeIds = event.detail?.nodeIds || [];
+      const nodeDetails = event.detail?.nodeDetails || [];
       setSelectedNodeIds(nodeIds);
+      setSelectedNodeDetails(nodeDetails);
       // Switch to this tab (the parent component should handle tab switching)
     };
 
     window.addEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
-    
+
     return () => {
       window.removeEventListener('generateIaCForNodes', handleGenerateIaCForNodes as EventListener);
     };
@@ -116,8 +119,33 @@ const GenerateIaCTab: React.FC = () => {
 
     if (dryRun) args.push('--dry-run');
 
-    // Add selected node IDs if any
-    if (selectedNodeIds.length > 0) {
+    // Add selected nodes - use resource names for ResourceGroup nodes
+    if (selectedNodeDetails.length > 0) {
+      // Separate ResourceGroup nodes from other nodes
+      const resourceGroupNames: string[] = [];
+      const otherNodeIds: string[] = [];
+
+      selectedNodeDetails.forEach(node => {
+        if (node.type === 'ResourceGroup' && node.resourceName) {
+          // For ResourceGroup nodes, use the actual resource name
+          resourceGroupNames.push(node.resourceName);
+        } else {
+          // For other nodes, use the node ID
+          otherNodeIds.push(node.id);
+        }
+      });
+
+      // Add resource group filters
+      if (resourceGroupNames.length > 0) {
+        args.push('--filter-by-rgs', resourceGroupNames.join(','));
+      }
+
+      // Add other node IDs
+      otherNodeIds.forEach(nodeId => {
+        args.push('--node-id', nodeId);
+      });
+    } else if (selectedNodeIds.length > 0) {
+      // Fallback to just node IDs if details aren't available
       selectedNodeIds.forEach(nodeId => {
         args.push('--node-id', nodeId);
       });
@@ -220,19 +248,40 @@ const GenerateIaCTab: React.FC = () => {
           </Alert>
         )}
 
-        {selectedNodeIds.length > 0 && (
-          <Alert severity="info" sx={{ mb: 2 }} onClose={() => setSelectedNodeIds([])}>
+        {selectedNodeDetails.length > 0 && (
+          <Alert 
+            severity="info" 
+            sx={{ mb: 2 }} 
+            onClose={() => {
+              setSelectedNodeIds([]);
+              setSelectedNodeDetails([]);
+            }}
+          >
             <Typography variant="body2">
-              Generating IaC for {selectedNodeIds.length} selected nodes and their connections
+              Generating IaC for {selectedNodeDetails.length} selected nodes and their connections
             </Typography>
             <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {selectedNodeIds.slice(0, 5).map(id => (
-                <Chip key={id} label={id} size="small" />
+              {selectedNodeDetails.slice(0, 5).map(node => (
+                <Chip 
+                  key={node.id} 
+                  label={
+                    node.type === 'ResourceGroup' && node.resourceName 
+                      ? `📁 ${node.resourceName}` 
+                      : node.label || node.id
+                  } 
+                  size="small"
+                  color={node.type === 'ResourceGroup' ? 'primary' : 'default'}
+                />
               ))}
-              {selectedNodeIds.length > 5 && (
-                <Chip label={`+${selectedNodeIds.length - 5} more`} size="small" />
+              {selectedNodeDetails.length > 5 && (
+                <Chip label={`+${selectedNodeDetails.length - 5} more`} size="small" />
               )}
             </Box>
+            {selectedNodeDetails.some(n => n.type === 'ResourceGroup') && (
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
+                ℹ️ Resource groups will be filtered by name, not internal IDs
+              </Typography>
+            )}
           </Alert>
         )}
 

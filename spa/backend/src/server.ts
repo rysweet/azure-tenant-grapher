@@ -109,11 +109,30 @@ app.post('/api/execute', (req, res) => {
 
   const fullArgs = ['run', 'atg', command, ...args];
 
+  // Check for filter arguments for better logging
+  const hasSubscriptionFilter = args.some((arg: string) => arg.startsWith('--filter-by-subscriptions'));
+  const hasResourceGroupFilter = args.some((arg: string) => arg.startsWith('--filter-by-rgs'));
+  const filters = [];
+  if (hasSubscriptionFilter) {
+    const subFilter = args.find((arg: string) => arg.startsWith('--filter-by-subscriptions'));
+    filters.push(subFilter);
+  }
+  if (hasResourceGroupFilter) {
+    const rgFilter = args.find((arg: string) => arg.startsWith('--filter-by-rgs'));
+    filters.push(rgFilter);
+  }
+
   logger.info('Executing CLI command:', {
     command: `${uvPath} ${fullArgs.join(' ')}`,
     cwd: projectRoot,
-    processId
+    processId,
+    filters: filters.length > 0 ? filters : undefined
   });
+
+  // Log filter details for debugging
+  if (filters.length > 0) {
+    logger.info(`Applying resource filters: ${filters.join(', ')}`);
+  }
 
   const childProcess = spawn(uvPath, fullArgs, {
     cwd: projectRoot,

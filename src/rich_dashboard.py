@@ -30,10 +30,12 @@ class RichDashboard:
         max_concurrency: Optional[int] = None,
         max_llm_threads: Optional[int] = None,
         max_build_threads: Optional[int] = None,
+        filter_config: Optional[Any] = None,
     ):
         self.console = Console()
         self.layout = Layout()
         self.config = config
+        self.filter_config = filter_config
         # Support both old and new parameter styles
         self.max_llm_threads = (
             max_llm_threads if max_llm_threads is not None else max_concurrency
@@ -95,6 +97,32 @@ class RichDashboard:
         # Show both thread parameters instead of generic max_concurrency
         table.add_row("Max LLM Threads", str(self.max_llm_threads))
         table.add_row("Max Build Threads", str(self.max_build_threads))
+
+        # Add filter information if present
+        if self.filter_config:
+            if (
+                hasattr(self.filter_config, "subscription_ids")
+                and self.filter_config.subscription_ids
+            ):
+                table.add_row(
+                    "Filters Active",
+                    f"Subscriptions: {len(self.filter_config.subscription_ids)} selected",
+                )
+            if (
+                hasattr(self.filter_config, "resource_group_names")
+                and self.filter_config.resource_group_names
+            ):
+                rg_count = len(self.filter_config.resource_group_names)
+                filter_text = f"Resource Groups: {rg_count} selected"
+                if (
+                    hasattr(self.filter_config, "subscription_ids")
+                    and self.filter_config.subscription_ids
+                ):
+                    # If both filters, show on same line
+                    table.add_row("", filter_text)
+                else:
+                    table.add_row("Filters Active", filter_text)
+
         # Add log file path as a single row, not split across lines
         table.add_row("Log File", self.log_file_path)
         return Panel(
@@ -106,7 +134,16 @@ class RichDashboard:
         table = Table.grid(expand=True)
         table.add_column("Metric", style="magenta")
         table.add_column("Value", style="bold")
-        table.add_row("Processed", f"{stats['processed']}/{stats['total']}")
+
+        # Show filtered indicator if filters are active
+        if self.filter_config:
+            processed_label = "Processed (filtered)"
+            title_suffix = " [Filtered]"
+        else:
+            processed_label = "Processed"
+            title_suffix = ""
+
+        table.add_row(processed_label, f"{stats['processed']}/{stats['total']}")
         table.add_row("Successful", str(stats["successful"]))
         table.add_row("Failed", str(stats["failed"]))
         table.add_row("Skipped", str(stats["skipped"]))
@@ -118,10 +155,14 @@ class RichDashboard:
         if self.processing:
             spinner = Spinner("dots", text="processing...", style="green")
             group = Group(table, exit_label, Align.center(spinner))
-            return Panel(group, title="Progress", border_style="blue", height=15)
+            return Panel(
+                group, title=f"Progress{title_suffix}", border_style="blue", height=15
+            )
         else:
             group = Group(table, exit_label)
-            return Panel(group, title="Progress", border_style="blue", height=15)
+            return Panel(
+                group, title=f"Progress{title_suffix}", border_style="blue", height=15
+            )
 
     # (Removed legacy _render_error_panel and all references to self.errors)
 

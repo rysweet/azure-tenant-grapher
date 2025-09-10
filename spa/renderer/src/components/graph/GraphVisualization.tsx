@@ -201,7 +201,7 @@ export const GraphVisualization: React.FC = () => {
   const [legendOpen, setLegendOpen] = useState(false);
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<string>>(new Set());
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(new Set());
-  
+
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNodesForExport, setSelectedNodesForExport] = useState<Set<string>>(new Set());
@@ -225,7 +225,7 @@ export const GraphVisualization: React.FC = () => {
   const getConnectedNodes = useCallback((nodeId: string, data: GraphData): Set<string> => {
     const connected = new Set<string>();
     connected.add(nodeId); // Include the selected node itself
-    
+
     // Find all edges connected to this node
     data.edges.forEach(edge => {
       if (edge.source === nodeId) {
@@ -234,26 +234,26 @@ export const GraphVisualization: React.FC = () => {
         connected.add(edge.source);
       }
     });
-    
+
     return connected;
   }, []);
 
   // Handle node selection for export
   const handleNodeSelectionForExport = useCallback((nodeId: string) => {
     if (!graphData || !selectionMode) return;
-    
+
     const connectedNodes = getConnectedNodes(nodeId, graphData);
     const newSelection = new Set(selectedNodesForExport);
-    
+
     // Toggle selection: if main node is already selected, deselect all
     if (selectedNodesForExport.has(nodeId)) {
       connectedNodes.forEach(id => newSelection.delete(id));
     } else {
       connectedNodes.forEach(id => newSelection.add(id));
     }
-    
+
     setSelectedNodesForExport(newSelection);
-    
+
     // Update visual selection in the network
     if (networkRef.current) {
       networkRef.current.selectNodes(Array.from(newSelection));
@@ -503,7 +503,7 @@ export const GraphVisualization: React.FC = () => {
     network.on('selectNode', async (params) => {
       if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
-        
+
         if (selectionMode) {
           // In selection mode, select node and connected nodes for export
           handleNodeSelectionForExport(nodeId);
@@ -840,9 +840,9 @@ export const GraphVisualization: React.FC = () => {
 
         {/* Selection Info Panel */}
         {selectionMode && (
-          <Paper sx={{ 
-            mb: 2, 
-            p: 2, 
+          <Paper sx={{
+            mb: 2,
+            p: 2,
             backgroundColor: '#2a2a2a',
             border: '2px solid #4caf50'
           }}>
@@ -862,20 +862,32 @@ export const GraphVisualization: React.FC = () => {
                 disabled={selectedNodesForExport.size === 0}
                 onClick={async () => {
                   if (selectedNodesForExport.size === 0) return;
-                  
-                  // Get selected node IDs
+
+                  // Get selected node IDs and details
                   const nodeIds = Array.from(selectedNodesForExport);
                   
+                  // Map node IDs to include resource names for ResourceGroup nodes
+                  const nodeDetails = nodeIds.map(nodeId => {
+                    const node = graphData?.nodes.find(n => n.id === nodeId);
+                    return {
+                      id: nodeId,
+                      type: node?.type,
+                      label: node?.label,
+                      resourceName: (node as any)?.resourceName,  // For ResourceGroup nodes
+                      azureId: (node as any)?.azureId  // Azure resource ID if available
+                    };
+                  });
+
                   // Dispatch event for GenerateIaCTab to pick up
-                  const event = new CustomEvent('generateIaCForNodes', { 
-                    detail: { nodeIds } 
+                  const event = new CustomEvent('generateIaCForNodes', {
+                    detail: { nodeIds, nodeDetails }
                   });
                   window.dispatchEvent(event);
-                  
+
                   // Navigate to Generate IaC tab
                   navigate('/generate-iac');
                   dispatch({ type: 'SET_ACTIVE_TAB', payload: 'generate-iac' });
-                  
+
                   // Exit selection mode
                   setSelectionMode(false);
                   setSelectedNodesForExport(new Set());

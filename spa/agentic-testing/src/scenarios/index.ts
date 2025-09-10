@@ -13,18 +13,18 @@ export class ScenarioLoader {
     const scenario = yaml.load(content) as TestScenario;
     return this.validateScenario(scenario);
   }
-  
+
   static async loadFromDirectory(dirPath: string): Promise<TestScenario[]> {
     const files = await fs.readdir(dirPath);
     const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
-    
+
     const scenarios = await Promise.all(
       yamlFiles.map(f => this.loadFromFile(path.join(dirPath, f)))
     );
-    
+
     return scenarios;
   }
-  
+
   private static validateScenario(scenario: any): TestScenario {
     if (!scenario.name) {
       throw new Error('Scenario must have a name');

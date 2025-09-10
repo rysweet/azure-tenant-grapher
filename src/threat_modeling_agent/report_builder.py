@@ -513,7 +513,7 @@ class ThreatModelReportBuilder:
         if medium_priority:
             lines.append("### Medium Priority (Within 1 Month)")
             lines.append("")
-            for threat, control in medium_priority:
+            for _threat, control in medium_priority:
                 lines.append(
                     f"- **{control.get('control_id', '')}**: {control.get('title', '')}"
                 )
