@@ -772,72 +772,60 @@ app.get('/api/test/azure-openai', async (req, res) => {
       });
     }
 
-    // Test the API key by making a minimal inference request
+    // Always test with actual API call, using modelChat or a fallback model
     try {
-      // If we have a chat model configured, test with actual inference
-      if (modelChat) {
-        const url = `${endpoint}/openai/deployments/${modelChat}/chat/completions?api-version=${apiVersion}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'api-key': apiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            messages: [{role: 'user', content: 'test'}],
-            max_tokens: 1,
-            temperature: 0
-          })
-        });
+      // Use configured model or try common deployment names as fallback
+      const modelToTest = modelChat || 'gpt-4' || 'gpt-35-turbo';
+      const url = `${endpoint}/openai/deployments/${modelToTest}/chat/completions?api-version=${apiVersion}`;
+      
+      // Make a test call with the joke prompt as specified in requirements
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [{role: 'user', content: 'Tell me a joke about Microsoft Azure'}],
+          max_tokens: 100,
+          temperature: 0.7
+        })
+      });
 
-        if (response.ok) {
-          const data: any = await response.json();
-          const endpointHost = new URL(endpoint).host;
-          return res.json({
-            success: true,
-            message: 'Inference test successful',
-            endpoint: endpointHost,
-            model: data.model || modelChat,
-            models: {
-              chat: modelChat,
-              reasoning: modelReasoning || 'Not configured'
-            }
-          });
-        } else if (response.status === 401) {
-          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
-        } else if (response.status === 404) {
-          return res.json({ success: false, error: `Deployment '${modelChat}' not found` });
-        } else {
-          const errorText = await response.text();
-          logger.error('Azure OpenAI inference failed:', response.status, errorText);
-          return res.json({ success: false, error: `Inference test failed: ${response.status}` });
+      if (response.ok) {
+        const data: any = await response.json();
+        const endpointHost = new URL(endpoint).host;
+        
+        // Extract the joke response if available
+        let testResponse = 'Connection successful';
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          testResponse = data.choices[0].message.content || 'Connection successful';
         }
+        
+        return res.json({
+          success: true,
+          message: 'Azure OpenAI is working correctly',
+          endpoint: endpointHost,
+          model: data.model || modelToTest,
+          models: {
+            chat: modelChat || `${modelToTest} (auto-detected)`,
+            reasoning: modelReasoning || 'Not configured'
+          },
+          testResponse: testResponse.substring(0, 200) // Limit response length
+        });
+      } else if (response.status === 401) {
+        return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+      } else if (response.status === 404) {
+        // If the model doesn't exist, still indicate that OpenAI is configured but model needs to be set
+        return res.json({ 
+          success: false, 
+          error: `Model deployment '${modelToTest}' not found. Please configure AZURE_OPENAI_MODEL_CHAT with a valid deployment name.`,
+          configured: true // Indicates that endpoint and key are set
+        });
       } else {
-        // Fallback to listing deployments if no model configured
-        const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'api-key': apiKey,
-          },
-        });
-
-        if (response.ok) {
-          const endpointHost = new URL(endpoint).host;
-          return res.json({
-            success: true,
-            message: 'API key valid (configure chat model for full test)',
-            endpoint: endpointHost,
-            models: {
-              chat: 'Not configured',
-              reasoning: modelReasoning || 'Not configured'
-            }
-          });
-        } else if (response.status === 401) {
-          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
-        } else {
-          return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
-        }
+        const errorText = await response.text();
+        logger.error('Azure OpenAI test failed:', response.status, errorText);
+        return res.json({ success: false, error: `API test failed: ${response.status}` });
       }
     } catch (error: any) {
       logger.error('Azure OpenAI API call failed:', error);
