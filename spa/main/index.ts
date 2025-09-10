@@ -354,10 +354,21 @@ app.on('window-all-closed', () => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up PID file
-    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
+    // Clean up MCP PID file
+    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    if (fs.existsSync(mcpPidFile)) {
+      fs.unlinkSync(mcpPidFile);
+    }
+  }
+
+  // Clean up SPA PID file created by Python CLI
+  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
+  if (fs.existsSync(spaPidFile)) {
+    try {
+      fs.unlinkSync(spaPidFile);
+      console.log('Cleaned up SPA PID file');
+    } catch (e) {
+      console.error('Error cleaning up SPA PID file:', e);
     }
   }
 
@@ -381,10 +392,21 @@ app.on('before-quit', (event) => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up PID file
-    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
+    // Clean up MCP PID file
+    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    if (fs.existsSync(mcpPidFile)) {
+      fs.unlinkSync(mcpPidFile);
+    }
+  }
+
+  // Clean up SPA PID file created by Python CLI
+  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
+  if (fs.existsSync(spaPidFile)) {
+    try {
+      fs.unlinkSync(spaPidFile);
+      console.log('Cleaned up SPA PID file');
+    } catch (e) {
+      console.error('Error cleaning up SPA PID file:', e);
     }
   }
 });
@@ -395,6 +417,15 @@ process.on('uncaughtException', (error) => {
   processManager.cleanup();
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
+  }
+  // Clean up PID files on unexpected termination
+  const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
+  if (fs.existsSync(mcpPidFile)) {
+    try { fs.unlinkSync(mcpPidFile); } catch (e) { }
+  }
+  if (fs.existsSync(spaPidFile)) {
+    try { fs.unlinkSync(spaPidFile); } catch (e) { }
   }
 });
 
@@ -408,6 +439,15 @@ process.on('SIGINT', () => {
     if (mcpServerProcess) {
       mcpServerProcess.kill('SIGTERM');
     }
+    // Clean up PID files
+    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
+    if (fs.existsSync(mcpPidFile)) {
+      try { fs.unlinkSync(mcpPidFile); } catch (e) { }
+    }
+    if (fs.existsSync(spaPidFile)) {
+      try { fs.unlinkSync(spaPidFile); } catch (e) { }
+    }
     app.quit();
   });
 });
@@ -416,6 +456,15 @@ process.on('SIGTERM', () => {
   processManager.cleanup().then(() => {
     if (mcpServerProcess) {
       mcpServerProcess.kill('SIGTERM');
+    }
+    // Clean up PID files
+    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
+    const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
+    if (fs.existsSync(mcpPidFile)) {
+      try { fs.unlinkSync(mcpPidFile); } catch (e) { }
+    }
+    if (fs.existsSync(spaPidFile)) {
+      try { fs.unlinkSync(spaPidFile); } catch (e) { }
     }
     app.quit();
   });

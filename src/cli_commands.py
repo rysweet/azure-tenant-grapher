@@ -1156,12 +1156,27 @@ MCP_PIDFILE = os.path.join("outputs", "mcp_server.pid")
 @click.command("start")
 def spa_start():
     """Start the local SPA/Electron dashboard and MCP server."""
+    # Check for stale PID file
     if os.path.exists(SPA_PIDFILE):
-        click.echo(
-            "⚠️  SPA already running (pidfile exists). Use 'atg stop' first or check process state.",
-            err=True,
-        )
-        return
+        try:
+            with open(SPA_PIDFILE) as f:
+                pid = int(f.read().strip())
+            # Check if process is actually running
+            try:
+                os.kill(pid, 0)  # Signal 0 checks if process exists
+                click.echo(
+                    f"⚠️  SPA already running (PID: {pid}). Use 'atg stop' first.",
+                    err=True,
+                )
+                return
+            except ProcessLookupError:
+                # Process not running, clean up stale PID file
+                click.echo(f"ℹ️  Cleaning up stale PID file (process {pid} not found)")
+                os.remove(SPA_PIDFILE)
+        except (ValueError, IOError) as e:
+            # Invalid PID file, remove it
+            click.echo(f"ℹ️  Removing invalid PID file: {e}")
+            os.remove(SPA_PIDFILE)
 
     # Check if npm is available
     if not shutil.which("npm"):
@@ -1222,7 +1237,26 @@ def spa_start():
         click.echo("🤖 Starting MCP server...")
         try:
             # Check if MCP server is already running
-            if not os.path.exists(MCP_PIDFILE):
+            mcp_needs_start = True
+            if os.path.exists(MCP_PIDFILE):
+                # Check if it's a stale PID file
+                try:
+                    with open(MCP_PIDFILE) as f:
+                        mcp_pid = int(f.read().strip())
+                    try:
+                        os.kill(mcp_pid, 0)  # Check if process exists
+                        click.echo(f"⚠️  MCP server already running (PID: {mcp_pid}), skipping...")
+                        mcp_needs_start = False
+                    except ProcessLookupError:
+                        # Process not running, clean up stale PID file
+                        click.echo(f"ℹ️  Cleaning up stale MCP PID file (process {mcp_pid} not found)")
+                        os.remove(MCP_PIDFILE)
+                except (ValueError, IOError) as e:
+                    # Invalid PID file, remove it
+                    click.echo(f"ℹ️  Removing invalid MCP PID file: {e}")
+                    os.remove(MCP_PIDFILE)
+            
+            if mcp_needs_start:
                 # Start MCP server in the background
                 mcp_proc = subprocess.Popen(
                     [sys.executable, "-m", "src.mcp_server"],
@@ -1239,8 +1273,6 @@ def spa_start():
                     f.write(str(mcp_proc.pid))
 
                 click.echo(f"✅ MCP server started (PID: {mcp_proc.pid})")
-            else:
-                click.echo("⚠️  MCP server already running, skipping...")
         except Exception as e:
             click.echo(f"⚠️  Failed to start MCP server: {e}")
             # Continue even if MCP fails to start
