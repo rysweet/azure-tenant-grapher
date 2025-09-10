@@ -61,7 +61,8 @@ const GenerateSpecTab: React.FC = () => {
       args.push('--limit', limit);
     }
 
-    args.push('--format', outputFormat);
+    // Note: --format option removed as generate-spec CLI command doesn't support it
+    // The outputFormat state is still used for the editor language and save file extension
 
     try {
       await execute('generate-spec', args);
@@ -120,17 +121,21 @@ const GenerateSpecTab: React.FC = () => {
             type="number"
           />
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Output Format</InputLabel>
-            <Select
-              value={outputFormat}
-              onChange={(e) => setOutputFormat(e.target.value)}
-              label="Output Format"
-            >
-              <MenuItem value="markdown">Markdown</MenuItem>
-              <MenuItem value="json">JSON</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Output format selector temporarily hidden - generate-spec only supports Markdown currently */}
+          {/* Keeping the state and logic for future when JSON format might be added */}
+          {false && (
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Output Format</InputLabel>
+              <Select
+                value={outputFormat}
+                onChange={(e) => setOutputFormat(e.target.value)}
+                label="Output Format"
+              >
+                <MenuItem value="markdown">Markdown</MenuItem>
+                <MenuItem value="json">JSON</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
           <Button
             variant="contained"
