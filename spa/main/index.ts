@@ -258,6 +258,33 @@ function startBackendServer() {
   });
 }
 
+// Shared function for cleaning up PID files
+function cleanupPidFiles() {
+  const projectRoot = path.join(__dirname, '../../..');
+  const mcpPidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+  const spaPidFile = path.join(projectRoot, 'outputs', 'spa_server.pid');
+  
+  // Clean up MCP PID file
+  if (fs.existsSync(mcpPidFile)) {
+    try {
+      fs.unlinkSync(mcpPidFile);
+      console.log('Cleaned up MCP PID file');
+    } catch (e) {
+      console.error('Error cleaning up MCP PID file:', e);
+    }
+  }
+  
+  // Clean up SPA PID file
+  if (fs.existsSync(spaPidFile)) {
+    try {
+      fs.unlinkSync(spaPidFile);
+      console.log('Cleaned up SPA PID file');
+    } catch (e) {
+      console.error('Error cleaning up SPA PID file:', e);
+    }
+  }
+}
+
 // Set app name
 app.setName('Azure Tenant Grapher');
 
@@ -354,23 +381,10 @@ app.on('window-all-closed', () => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up MCP PID file
-    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(mcpPidFile)) {
-      fs.unlinkSync(mcpPidFile);
-    }
   }
 
-  // Clean up SPA PID file created by Python CLI
-  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
-  if (fs.existsSync(spaPidFile)) {
-    try {
-      fs.unlinkSync(spaPidFile);
-      console.log('Cleaned up SPA PID file');
-    } catch (e) {
-      console.error('Error cleaning up SPA PID file:', e);
-    }
-  }
+  // Clean up PID files
+  cleanupPidFiles();
 
   // Always quit the app when the window is closed
   // This is a single-window application, so we want it to fully quit
@@ -392,23 +406,10 @@ app.on('before-quit', (event) => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up MCP PID file
-    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(mcpPidFile)) {
-      fs.unlinkSync(mcpPidFile);
-    }
   }
 
-  // Clean up SPA PID file created by Python CLI
-  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
-  if (fs.existsSync(spaPidFile)) {
-    try {
-      fs.unlinkSync(spaPidFile);
-      console.log('Cleaned up SPA PID file');
-    } catch (e) {
-      console.error('Error cleaning up SPA PID file:', e);
-    }
-  }
+  // Clean up PID files
+  cleanupPidFiles();
 });
 
 // Handle uncaught exceptions
@@ -419,14 +420,7 @@ process.on('uncaughtException', (error) => {
     mcpServerProcess.kill('SIGTERM');
   }
   // Clean up PID files on unexpected termination
-  const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-  const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
-  if (fs.existsSync(mcpPidFile)) {
-    try { fs.unlinkSync(mcpPidFile); } catch (e) { }
-  }
-  if (fs.existsSync(spaPidFile)) {
-    try { fs.unlinkSync(spaPidFile); } catch (e) { }
-  }
+  cleanupPidFiles();
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -440,14 +434,7 @@ process.on('SIGINT', () => {
       mcpServerProcess.kill('SIGTERM');
     }
     // Clean up PID files
-    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
-    if (fs.existsSync(mcpPidFile)) {
-      try { fs.unlinkSync(mcpPidFile); } catch (e) { }
-    }
-    if (fs.existsSync(spaPidFile)) {
-      try { fs.unlinkSync(spaPidFile); } catch (e) { }
-    }
+    cleanupPidFiles();
     app.quit();
   });
 });
@@ -458,14 +445,7 @@ process.on('SIGTERM', () => {
       mcpServerProcess.kill('SIGTERM');
     }
     // Clean up PID files
-    const mcpPidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    const spaPidFile = path.join(__dirname, '../../../outputs/spa_server.pid');
-    if (fs.existsSync(mcpPidFile)) {
-      try { fs.unlinkSync(mcpPidFile); } catch (e) { }
-    }
-    if (fs.existsSync(spaPidFile)) {
-      try { fs.unlinkSync(spaPidFile); } catch (e) { }
-    }
+    cleanupPidFiles();
     app.quit();
   });
 });
