@@ -1,13 +1,17 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Alert, Box, Button, Typography, Collapse, IconButton, Stack } from '@mui/material';
-import { ExpandMore, ExpandLess, Refresh, Home } from '@mui/icons-material';
+import { Alert, Box, Button, Typography, Collapse, IconButton, Stack, LinearProgress } from '@mui/material';
+import { ExpandMore, ExpandLess, Refresh, Home, AutorenewRounded } from '@mui/icons-material';
 import { errorService } from '../../services/errorService';
+import { errorRecoveryService } from '../../services/errorRecoveryService';
+import { ResourceManager } from '../../utils/resourceManager';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onReset?: () => void;
   isolate?: boolean; // If true, only affects this component tree
+  maxRetries?: number; // Maximum number of retry attempts
+  resetDelay?: number; // Delay in ms before allowing next retry
 }
 
 interface State {
@@ -16,22 +20,33 @@ interface State {
   errorInfo: ErrorInfo | null;
   showDetails: boolean;
   retryCount: number;
+  lastRetryTime: number;
+  isRecovering: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  private cleanupCallbacks: Set<() => void> = new Set();
+  private resetTimeoutId: NodeJS.Timeout | null = null;
+  private resourceManager: ResourceManager = new ResourceManager();
+
   public state: State = {
     hasError: false,
     error: null,
     errorInfo: null,
     showDetails: false,
     retryCount: 0,
+    lastRetryTime: 0,
+    isRecovering: false,
   };
 
   public static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const maxRetries = this.props.maxRetries ?? 3;
+    const shouldAutoRetry = this.state.retryCount < maxRetries;
+
     // Log to error service
     errorService.logError(
       error,
@@ -39,20 +54,64 @@ class ErrorBoundary extends Component<Props, State> {
       {
         componentStack: errorInfo.componentStack,
         retryCount: this.state.retryCount,
+        maxRetries,
+        willAutoRetry: shouldAutoRetry,
       },
       errorInfo.componentStack
     );
 
     this.setState({ errorInfo });
+
+    // Try automatic recovery strategies first
+    if (!this.props.isolate) {
+      const recoveryResult = await errorRecoveryService.attemptRecovery(error);
+      
+      if (recoveryResult.success) {
+        console.log(`Successfully recovered using ${recoveryResult.strategyUsed}`);
+        this.handleReset();
+        return;
+      }
+    }
+
+    // Fall back to auto-retry with exponential backoff if under retry limit
+    if (shouldAutoRetry && !this.props.isolate) {
+      const delay = Math.min(1000 * Math.pow(2, this.state.retryCount), 10000);
+      this.scheduleAutoRecovery(delay);
+    }
   }
 
   private handleReset = () => {
+    const maxRetries = this.props.maxRetries ?? 3;
+    const resetDelay = this.props.resetDelay ?? 1000;
+    const now = Date.now();
+    const timeSinceLastRetry = now - this.state.lastRetryTime;
+
+    // Enforce minimum delay between retries
+    if (timeSinceLastRetry < resetDelay) {
+      console.warn(`Retry attempted too soon. Please wait ${resetDelay - timeSinceLastRetry}ms`);
+      return;
+    }
+
+    // Check retry limit
+    if (this.state.retryCount >= maxRetries) {
+      console.error(`Maximum retry attempts (${maxRetries}) reached`);
+      return;
+    }
+
+    // Clear any pending auto-recovery
+    this.clearAutoRecovery();
+
+    // Perform cleanup before reset
+    this.performCleanup();
+
     this.setState((prevState) => ({
       hasError: false,
       error: null,
       errorInfo: null,
       showDetails: false,
       retryCount: prevState.retryCount + 1,
+      lastRetryTime: now,
+      isRecovering: false,
     }));
 
     // Call custom reset handler if provided
@@ -75,6 +134,60 @@ class ErrorBoundary extends Component<Props, State> {
     }));
   };
 
+  private scheduleAutoRecovery = (delay: number) => {
+    this.setState({ isRecovering: true });
+    
+    const timeoutId = setTimeout(() => {
+      if (this.state.hasError) {
+        console.log(`Attempting auto-recovery after ${delay}ms`);
+        this.handleReset();
+      }
+    }, delay);
+    
+    this.resetTimeoutId = timeoutId;
+    this.resourceManager.registerTimer('auto-recovery', timeoutId);
+  };
+
+  private clearAutoRecovery = () => {
+    if (this.resetTimeoutId) {
+      clearTimeout(this.resetTimeoutId);
+      this.resetTimeoutId = null;
+    }
+  };
+
+  private performCleanup = () => {
+    // Execute all registered cleanup callbacks
+    this.cleanupCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
+    });
+    this.cleanupCallbacks.clear();
+    
+    // Clean up any old resources to prevent memory leaks
+    this.resourceManager.cleanupOldResources(60000); // Clean up resources older than 1 minute
+  };
+
+  public registerCleanup = (callback: () => void) => {
+    this.cleanupCallbacks.add(callback);
+    return () => {
+      this.cleanupCallbacks.delete(callback);
+    };
+  };
+
+  public componentWillUnmount() {
+    // Clear any pending auto-recovery
+    this.clearAutoRecovery();
+    
+    // Perform cleanup to prevent memory leaks
+    this.performCleanup();
+    
+    // Dispose resource manager
+    void this.resourceManager.dispose();
+  }
+
   public render() {
     if (this.state.hasError) {
       // Use custom fallback if provided
@@ -82,8 +195,10 @@ class ErrorBoundary extends Component<Props, State> {
         return <>{this.props.fallback}</>;
       }
 
-      const { error, errorInfo, showDetails, retryCount } = this.state;
+      const { error, errorInfo, showDetails, retryCount, isRecovering } = this.state;
       const isIsolated = this.props.isolate;
+      const maxRetries = this.props.maxRetries ?? 3;
+      const canRetry = retryCount < maxRetries;
 
       return (
         <Box sx={{ p: 3, maxWidth: '100%', overflow: 'auto' }}>
@@ -105,8 +220,17 @@ class ErrorBoundary extends Component<Props, State> {
                 </Typography>
                 {retryCount > 0 && (
                   <Typography variant="caption" color="text.secondary">
-                    Retry attempts: {retryCount}
+                    Retry attempts: {retryCount}/{maxRetries}
                   </Typography>
+                )}
+                {isRecovering && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AutorenewRounded sx={{ fontSize: 16, animation: 'spin 2s linear infinite' }} />
+                    <Typography variant="caption" color="info.main">
+                      Auto-recovery in progress...
+                    </Typography>
+                    <LinearProgress sx={{ flex: 1, maxWidth: 100 }} />
+                  </Box>
                 )}
               </Box>
 
@@ -116,8 +240,9 @@ class ErrorBoundary extends Component<Props, State> {
                   size="small"
                   startIcon={<Refresh />}
                   onClick={this.handleReset}
+                  disabled={!canRetry || isRecovering}
                 >
-                  Try Again
+                  {canRetry ? 'Try Again' : 'Max Retries Reached'}
                 </Button>
                 {!isIsolated && (
                   <>

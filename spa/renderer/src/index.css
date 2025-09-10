@@ -13,6 +13,16 @@ body {
   overflow: hidden;
 }
 
+/* Spin animation for recovery indicators */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Force AppBar to be black */
 .MuiAppBar-root {
   background-color: #000000 !important;

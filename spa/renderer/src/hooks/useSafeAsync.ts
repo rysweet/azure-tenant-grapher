@@ -11,6 +11,9 @@ interface UseSafeAsyncOptions {
   onError?: (error: Error) => void;
   retries?: number;
   retryDelay?: number;
+  maxRetryDelay?: number; // Maximum delay between retries
+  onCleanup?: () => void; // Cleanup function called on unmount or reset
+  timeout?: number; // Operation timeout in milliseconds
 }
 
 /**
@@ -32,22 +35,58 @@ export function useSafeAsync<T = any>(
 
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const cleanupCallbacksRef = useRef<Set<() => void>>(new Set());
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      
       // Cancel any pending operations on unmount
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // Clear any pending timeouts
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      
+      // Execute cleanup callbacks
+      cleanupCallbacksRef.current.forEach(callback => {
+        try {
+          callback();
+        } catch (cleanupError) {
+          console.error('Error during cleanup:', cleanupError);
+        }
+      });
+      cleanupCallbacksRef.current.clear();
+      
+      // Call user-provided cleanup
+      if (options.onCleanup) {
+        try {
+          options.onCleanup();
+        } catch (cleanupError) {
+          console.error('Error during user cleanup:', cleanupError);
+        }
       }
     };
-  }, []);
+  }, [options]);
 
   const execute = useCallback(
     async (...args: any[]) => {
       // Cancel any previous operation
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+
+      // Clear any pending timeout
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
 
       // Create new abort controller for this operation
@@ -58,6 +97,8 @@ export function useSafeAsync<T = any>(
       let lastError: Error | null = null;
       const maxRetries = options.retries || 0;
       const retryDelay = options.retryDelay || 1000;
+      const maxRetryDelay = options.maxRetryDelay || 30000;
+      const timeout = options.timeout || 0;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
@@ -66,8 +107,32 @@ export function useSafeAsync<T = any>(
             return;
           }
 
-          // Execute the async function
-          const result = await asyncFunction(...args);
+          let result: T;
+          
+          // Execute with timeout if specified
+          if (timeout > 0) {
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              timeoutIdRef.current = setTimeout(() => {
+                reject(new Error(`Operation timed out after ${timeout}ms`));
+              }, timeout);
+            });
+            
+            try {
+              result = await Promise.race([
+                asyncFunction(...args),
+                timeoutPromise
+              ]);
+            } finally {
+              // Clear timeout if operation completed
+              if (timeoutIdRef.current) {
+                clearTimeout(timeoutIdRef.current);
+                timeoutIdRef.current = null;
+              }
+            }
+          } else {
+            // Execute without timeout
+            result = await asyncFunction(...args);
+          }
 
           // Check again if component is still mounted before updating state
           if (!isMountedRef.current) {
@@ -97,7 +162,29 @@ export function useSafeAsync<T = any>(
 
           // If we have retries left, wait and try again
           if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+            // Calculate delay with exponential backoff
+            const delay = Math.min(
+              retryDelay * Math.pow(2, attempt),
+              maxRetryDelay
+            );
+            
+            // Use AbortController-aware delay
+            await new Promise<void>((resolve, reject) => {
+              const timeoutId = setTimeout(resolve, delay);
+              
+              // Allow abort during retry delay
+              const abortHandler = () => {
+                clearTimeout(timeoutId);
+                reject(new Error('Retry aborted'));
+              };
+              
+              if (abortControllerRef.current) {
+                abortControllerRef.current.signal.addEventListener('abort', abortHandler, { once: true });
+              }
+            }).catch(() => {
+              // Retry was aborted
+              throw new Error('Operation cancelled');
+            });
           }
         }
       }
@@ -114,7 +201,24 @@ export function useSafeAsync<T = any>(
     // Cancel any pending operations
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
+    
+    // Clear any pending timeouts
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
+    
+    // Execute cleanup callbacks
+    cleanupCallbacksRef.current.forEach(callback => {
+      try {
+        callback();
+      } catch (cleanupError) {
+        console.error('Error during reset cleanup:', cleanupError);
+      }
+    });
+    
     setState({ data: null, error: null, loading: false });
   }, []);
 
@@ -130,17 +234,34 @@ export function useSafeAsyncEffect(
   options: UseSafeAsyncOptions = {}
 ): void {
   const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    // Create new abort controller for this effect
+    abortControllerRef.current = new AbortController();
+    const currentController = abortControllerRef.current;
 
     const runEffect = async () => {
       try {
-        if (!cancelled && isMountedRef.current) {
-          await effect();
+        if (!currentController.signal.aborted && isMountedRef.current) {
+          // Run effect with timeout if specified
+          if (options.timeout) {
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => {
+                reject(new Error(`Effect timed out after ${options.timeout}ms`));
+              }, options.timeout);
+            });
+            
+            await Promise.race([
+              effect(),
+              timeoutPromise
+            ]);
+          } else {
+            await effect();
+          }
         }
       } catch (error) {
-        if (!cancelled && isMountedRef.current) {
+        if (!currentController.signal.aborted && isMountedRef.current) {
           const err = error instanceof Error ? error : new Error(String(error));
           errorService.handleAsyncError(err, 'useEffect');
           
@@ -154,7 +275,17 @@ export function useSafeAsyncEffect(
     runEffect();
 
     return () => {
-      cancelled = true;
+      // Abort the effect on cleanup
+      currentController.abort();
+      
+      // Call user-provided cleanup
+      if (options.onCleanup) {
+        try {
+          options.onCleanup();
+        } catch (cleanupError) {
+          console.error('Error during effect cleanup:', cleanupError);
+        }
+      }
     };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
