@@ -358,19 +358,17 @@ export const GraphVisualization: React.FC = () => {
       .filter(node => nodeTypes.has(node.type))
       .filter(nodeMatchesFilters)
       .map(node => {
-        // Create detailed HTML tooltip content
+        // Create detailed HTML tooltip content using CSS classes
         const tooltipContent = `
-          <div style="padding: 8px; background-color: #1a1a1a; color: #ffffff; border: 1px solid #4caf50; border-radius: 4px; font-family: 'Segoe UI', Arial, sans-serif; max-width: 300px;">
-            <div style="font-weight: bold; color: #4caf50; margin-bottom: 8px; font-size: 14px;">${node.label}</div>
-            <div style="margin-bottom: 4px; font-size: 12px;"><strong>Type:</strong> ${node.type}</div>
-            ${node.properties?.resourceGroup ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>Resource Group:</strong> ${node.properties.resourceGroup}</div>` : ''}
-            ${node.properties?.location ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>Location:</strong> ${node.properties.location}</div>` : ''}
-            ${node.properties?.subscriptionId ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
-            ${node.properties?.sku ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
-            ${node.properties?.status ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
-            ${node.properties?.provisioningState ? `<div style="margin-bottom: 4px; font-size: 12px;"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
-            <div style="margin-top: 8px; font-size: 10px; color: #888;">Click for more details</div>
-          </div>
+          <div class="vis-tooltip-title">${node.label}</div>
+          <div class="vis-tooltip-row"><strong>Type:</strong> ${node.type}</div>
+          ${node.properties?.resourceGroup ? `<div class="vis-tooltip-row"><strong>Resource Group:</strong> ${node.properties.resourceGroup}</div>` : ''}
+          ${node.properties?.location ? `<div class="vis-tooltip-row"><strong>Location:</strong> ${node.properties.location}</div>` : ''}
+          ${node.properties?.subscriptionId ? `<div class="vis-tooltip-row"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
+          ${node.properties?.sku ? `<div class="vis-tooltip-row"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
+          ${node.properties?.status ? `<div class="vis-tooltip-row"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
+          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
+          <div class="vis-tooltip-hint">Click for more details</div>
         `;
 
         return {
