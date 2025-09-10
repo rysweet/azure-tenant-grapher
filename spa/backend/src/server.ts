@@ -813,28 +813,43 @@ app.get('/api/test/azure-openai', async (req, res) => {
           return res.json({ success: false, error: `Inference test failed: ${response.status}` });
         }
       } else {
-        // Fallback to listing deployments if no model configured
-        const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
+        // When no model is configured, use gpt-4 as default for health check
+        // This tests if the endpoint and API key are valid
+        const testModel = 'gpt-4';
+        const url = `${endpoint}/openai/deployments/${testModel}/chat/completions?api-version=${apiVersion}`;
         const response = await fetch(url, {
-          method: 'GET',
+          method: 'POST',
           headers: {
             'api-key': apiKey,
+            'Content-Type': 'application/json'
           },
+          body: JSON.stringify({
+            messages: [{role: 'user', content: 'Tell me a joke about Microsoft Azure'}],
+            max_tokens: 50,
+            temperature: 0.7
+          })
         });
 
         if (response.ok) {
+          const data: any = await response.json();
           const endpointHost = new URL(endpoint).host;
           return res.json({
             success: true,
-            message: 'API key valid (configure chat model for full test)',
+            message: 'Azure OpenAI configured and working',
             endpoint: endpointHost,
             models: {
-              chat: 'Not configured',
+              chat: 'gpt-4 (default for test)',
               reasoning: modelReasoning || 'Not configured'
             }
           });
         } else if (response.status === 401) {
           return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+        } else if (response.status === 404) {
+          // If gpt-4 deployment not found, the API is working but deployment name is different
+          return res.json({ 
+            success: false, 
+            error: `No 'gpt-4' deployment found. Please configure AZURE_OPENAI_MODEL_CHAT with your deployment name.` 
+          });
         } else {
           return res.json({ success: false, error: `Azure OpenAI API returned status ${response.status}` });
         }
