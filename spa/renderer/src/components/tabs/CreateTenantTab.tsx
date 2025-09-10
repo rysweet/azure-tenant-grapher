@@ -102,6 +102,13 @@ const CreateTenantTab: React.FC = () => {
           Create a new Tenant in the Graph
         </Typography>
 
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+          This feature will create a new fake tenant in the graph database for simulation and testing purposes. 
+          It will create a new tenant with a random GUID, and populate it with a set of realistic but fake resources. 
+          This is useful for testing the visualization and other features of the app without needing to connect to a real Azure tenant. 
+          You can then export the tenant as IaC in order to use it in Azure.
+        </Typography>
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
