@@ -12,11 +12,17 @@ import {
   MenuItem,
   Divider,
   LinearProgress,
+  Tooltip,
+  Chip,
 } from '@mui/material';
 import { Editor } from '@monaco-editor/react';
-import { PlayArrow as RunIcon, Save as SaveIcon } from '@mui/icons-material';
+import { PlayArrow as RunIcon, Save as SaveIcon, Info as InfoIcon } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 import { useProcessExecution } from '../../hooks/useProcessExecution';
+
+// Feature flag for format selector - set to true when CLI supports JSON output
+// TODO: Re-enable format selector when CLI supports JSON output (track in issue #XXX)
+const ENABLE_FORMAT_SELECTOR = false;
 
 const GenerateSpecTab: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -121,9 +127,8 @@ const GenerateSpecTab: React.FC = () => {
             type="number"
           />
 
-          {/* Output format selector temporarily hidden - generate-spec only supports Markdown currently */}
-          {/* Keeping the state and logic for future when JSON format might be added */}
-          {false && (
+          {/* Format selector - conditionally shown based on feature flag */}
+          {ENABLE_FORMAT_SELECTOR ? (
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Output Format</InputLabel>
               <Select
@@ -135,6 +140,16 @@ const GenerateSpecTab: React.FC = () => {
                 <MenuItem value="json">JSON</MenuItem>
               </Select>
             </FormControl>
+          ) : (
+            <Tooltip title="Currently only Markdown format is supported. JSON format will be available in a future update.">
+              <Chip
+                label="Markdown Only"
+                size="small"
+                icon={<InfoIcon />}
+                color="info"
+                variant="outlined"
+              />
+            </Tooltip>
           )}
 
           <Button
