@@ -47,14 +47,14 @@ describe('ScanTab', () => {
     expect(screen.getByLabelText(/Tenant ID/i)).toBeInTheDocument();
     expect(screen.getByText(/Resource Limit/i)).toBeInTheDocument();
     expect(screen.getByText(/Max LLM Threads/i)).toBeInTheDocument();
-    expect(screen.getByText(/Max Build Threads/i)).toBeInTheDocument();
-    expect(screen.getByText(/Start Build/i)).toBeInTheDocument();
+    expect(screen.getByText(/Max Scan Threads/i)).toBeInTheDocument();
+    expect(screen.getByText(/Start Scan/i)).toBeInTheDocument();
   });
 
-  test('validates tenant ID before starting build', async () => {
-    renderWithProviders(<BuildTab />);
+  test('validates tenant ID before starting scan', async () => {
+    renderWithProviders(<ScanTab />);
 
-    const startButton = screen.getByText(/Start Build/i);
+    const startButton = screen.getByText(/Start Scan/i);
 
     // Click without entering tenant ID
     fireEvent.click(startButton);
@@ -68,10 +68,10 @@ describe('ScanTab', () => {
     const { isValidTenantId } = require('../../renderer/src/utils/validation');
     isValidTenantId.mockReturnValue(false);
 
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
-    const startButton = screen.getByText(/Start Build/i);
+    const startButton = screen.getByText(/Start Scan/i);
 
     fireEvent.change(tenantInput, { target: { value: 'invalid-id' } });
     fireEvent.click(startButton);
@@ -82,7 +82,7 @@ describe('ScanTab', () => {
   });
 
   test('updates resource limit slider', () => {
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     // Find the first slider which should be the resource limit slider
     const sliders = screen.getAllByRole('slider');
@@ -94,7 +94,7 @@ describe('ScanTab', () => {
   });
 
   test('toggles rebuild edges checkbox', () => {
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const checkbox = screen.getByRole('checkbox', { name: /Rebuild Edges/i });
 
@@ -104,7 +104,7 @@ describe('ScanTab', () => {
   });
 
   test('toggles skip AAD import checkbox', () => {
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const checkbox = screen.getByRole('checkbox', { name: /Skip AAD Import/i });
 
@@ -113,7 +113,7 @@ describe('ScanTab', () => {
     expect(checkbox).toBeChecked();
   });
 
-  test('disables inputs when build is running', async () => {
+  test('disables inputs when scan is running', async () => {
     const mockExecute = jest.fn().mockResolvedValue({
       data: { id: 'test-process-id' }
     });
@@ -129,38 +129,38 @@ describe('ScanTab', () => {
     const { isValidTenantId } = require('../../renderer/src/utils/validation');
     isValidTenantId.mockReturnValue(true);
 
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
-    const startButton = screen.getByText(/Start Build/i);
+    const startButton = screen.getByText(/Start Scan/i);
 
     fireEvent.change(tenantInput, { target: { value: 'valid-tenant-id' } });
     fireEvent.click(startButton);
 
     await waitFor(() => {
       expect(tenantInput).toBeDisabled();
-      expect(screen.getByText(/Stop Build/i)).toBeInTheDocument();
+      expect(screen.getByText(/Stop Scan/i)).toBeInTheDocument();
     });
   });
 
   test('displays error when build fails', async () => {
-    const mockExecute = jest.fn().mockRejectedValue(new Error('Build failed'));
+    const mockExecute = jest.fn().mockRejectedValue(new Error('Scan failed'));
 
     (window as any).electronAPI.cli.execute = mockExecute;
 
     const { isValidTenantId } = require('../../renderer/src/utils/validation');
     isValidTenantId.mockReturnValue(true);
 
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
-    const startButton = screen.getByText(/Start Build/i);
+    const startButton = screen.getByText(/Start Scan/i);
 
     fireEvent.change(tenantInput, { target: { value: 'valid-tenant-id' } });
     fireEvent.click(startButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Build failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/Scan failed/i)).toBeInTheDocument();
     });
   });
 
@@ -168,10 +168,10 @@ describe('ScanTab', () => {
     const { isValidThreadCount } = require('../../renderer/src/utils/validation');
     isValidThreadCount.mockReturnValue(false);
 
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     const tenantInput = screen.getByLabelText(/Tenant ID/i);
-    const startButton = screen.getByText(/Start Build/i);
+    const startButton = screen.getByText(/Start Scan/i);
 
     fireEvent.change(tenantInput, { target: { value: 'valid-tenant-id' } });
     fireEvent.click(startButton);
@@ -182,7 +182,7 @@ describe('ScanTab', () => {
   });
 
   test('clears logs when clear button is clicked', async () => {
-    renderWithProviders(<BuildTab />);
+    renderWithProviders(<ScanTab />);
 
     // The LogViewer component should have a clear button
     // This would need the LogViewer to be rendered with logs

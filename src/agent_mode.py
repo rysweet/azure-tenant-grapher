@@ -388,9 +388,11 @@ Cypher Query:"""
             model=llm_config.model_chat,
         )
 
-        from autogen_ext.models._model_info import SystemMessage
+        from autogen_core.models import SystemMessage
 
-        response = await model_client.create([SystemMessage(content=query_prompt)])
+        response = await model_client.create(
+            [SystemMessage(content=query_prompt)]
+        )
 
         # Extract the generated query
         cypher_query = (
@@ -450,7 +452,7 @@ Instructions:
 Answer:"""
 
             # Call LLM to generate answer
-            from autogen_ext.models._model_info import SystemMessage
+            from autogen_core.models import SystemMessage
 
             answer_response = await model_client.create(
                 [SystemMessage(content=answer_prompt)]
@@ -467,6 +469,8 @@ Answer:"""
             print("\n❌ No results returned from database", flush=True)
 
     except Exception as e:
+        import traceback
         print(f"\n❌ Error in manual processing: {e}")
+        traceback.print_exc()
 
     # (No extra debug output)
