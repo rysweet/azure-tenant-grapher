@@ -528,8 +528,15 @@ const ScanTab: React.FC = () => {
         </Alert>
       )}
 
-      {/* Connection Status for Connected State */}
-      {connectionStatus === 'connected' && !isRunning && (
+      {/* Combined Connection Status */}
+      {connectionStatus === 'connected' && !isRunning && neo4jStatus?.running && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          ✓ Connected to backend server • Neo4j is running • Ready to start scanning your tenant
+        </Alert>
+      )}
+
+      {/* Show separate backend status only when Neo4j is not running */}
+      {connectionStatus === 'connected' && !isRunning && !neo4jStatus?.running && (
         <Alert severity="success" sx={{ mb: 2 }}>
           ✓ Connected to backend server - Ready to start scanning your tenant
         </Alert>
@@ -559,13 +566,6 @@ const ScanTab: React.FC = () => {
           }
         >
           Neo4j database is not running. Start it to begin building or viewing your graph.
-        </Alert>
-      )}
-
-      {/* Neo4j Running Status - Always show when Neo4j is running */}
-      {neo4jStatus && neo4jStatus.running && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Neo4j is connected. View database details in the Status tab.
         </Alert>
       )}
 
