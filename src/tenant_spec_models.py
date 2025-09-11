@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ValidationError, root_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 
 # Enums for enhanced models
@@ -715,7 +715,7 @@ class Relationship(BaseModel):
         None, description="Additional relationship attributes.", alias="attributes"
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode='before')
     def normalize_relationship_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize field names from various LLM outputs."""
         # Make a copy to avoid modifying the original

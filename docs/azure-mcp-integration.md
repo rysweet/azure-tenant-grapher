@@ -61,7 +61,7 @@ config = AzureTenantGrapherConfig(tenant_id="your-tenant-id")
 async with await create_mcp_client(config) as mcp_client:
     # Query resources with natural language
     result = await mcp_client.query_resources("show all VMs in production")
-    
+
     for resource in result["results"]:
         print(f"- {resource['name']} ({resource['type']})")
 ```

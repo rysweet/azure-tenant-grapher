@@ -1,13 +1,13 @@
 /**
  * ComprehensionAgent Usage Examples
- * 
+ *
  * This file demonstrates how to use the ComprehensionAgent to discover features from
  * documentation and generate comprehensive test scenarios.
  */
 
-import { 
-  ComprehensionAgent, 
-  createComprehensionAgent, 
+import {
+  ComprehensionAgent,
+  createComprehensionAgent,
   ComprehensionAgentConfig,
   LLMProvider
 } from '../ComprehensionAgent';
@@ -45,10 +45,10 @@ export async function basicOpenAIExample(): Promise<void> {
     if (features.length > 0) {
       const firstFeature = features[0];
       logger.info(`Analyzing feature: ${firstFeature.name}`);
-      
+
       const featureSpec = await agent.analyzeFeature(firstFeature.context);
       const scenarios = await agent.generateTestScenarios(featureSpec);
-      
+
       logger.info(`Generated ${scenarios.length} test scenarios for ${featureSpec.name}`);
       scenarios.forEach((scenario, index) => {
         logger.info(`  ${index + 1}. ${scenario.name} (${scenario.priority})`);
@@ -89,12 +89,12 @@ export async function azureOpenAIExample(): Promise<void> {
 
   try {
     await agent.initialize();
-    
+
     // Process all discovered features and generate scenarios
     const allScenarios = await agent.processDiscoveredFeatures();
-    
+
     logger.info(`Generated ${allScenarios.length} total test scenarios`);
-    
+
     // Group scenarios by interface type
     const scenariosByInterface = allScenarios.reduce((acc, scenario) => {
       const key = scenario.interface;
@@ -163,7 +163,7 @@ uv run atg build --tenant-id <TENANT_ID>
 
     // Analyze the specific feature
     const featureSpec = await agent.analyzeFeature(featureDocumentation);
-    
+
     logger.info(`Feature Analysis Results:`);
     logger.info(`Name: ${featureSpec.name}`);
     logger.info(`Purpose: ${featureSpec.purpose}`);
@@ -173,7 +173,7 @@ uv run atg build --tenant-id <TENANT_ID>
 
     // Generate test scenarios
     const scenarios = await agent.generateTestScenarios(featureSpec);
-    
+
     logger.info(`\nGenerated Test Scenarios:`);
     scenarios.forEach((scenario, index) => {
       logger.info(`${index + 1}. ${scenario.name}`);
@@ -208,7 +208,7 @@ export async function customPatternsExample(): Promise<void> {
 
     // Discover features with custom patterns
     const features = await agent.discoverFeatures();
-    
+
     logger.info(`Discovered features by type:`);
     const featuresByType = features.reduce((acc, feature) => {
       if (!acc[feature.type]) acc[feature.type] = 0;

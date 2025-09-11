@@ -10,7 +10,7 @@ config:
   timeout: 120000  # 2 minutes for CLI operations
   retries: 3
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -42,11 +42,11 @@ steps:
       command: "uv run atg --version"
     expect:
       exit_code: 0
-      stdout_contains: 
+      stdout_contains:
         - "Azure Tenant Grapher"
         - "version"
     timeout: 30000
-    
+
   # Test help command
   - name: "Test atg --help"
     agent: "cli-agent"
@@ -67,7 +67,7 @@ steps:
         - "threat-model"
         - "doctor"
     timeout: 30000
-    
+
   # Test doctor command
   - name: "Test atg doctor"
     agent: "cli-agent"
@@ -79,7 +79,7 @@ steps:
       stdout_contains:
         - "Checking CLI dependencies"
     timeout: 60000
-    
+
   # Test build command with missing tenant (should fail gracefully)
   - name: "Test atg build without tenant ID"
     agent: "cli-agent"
@@ -93,7 +93,7 @@ steps:
       stderr_contains:
         - "tenant"
     timeout: 30000
-    
+
   # Test build command with valid tenant ID
   - name: "Test atg build with tenant ID"
     agent: "cli-agent"
@@ -105,7 +105,7 @@ steps:
       stdout_contains:
         - "Starting Azure resource discovery"
     timeout: 90000
-    
+
   # Test generate-spec command
   - name: "Test atg generate-spec"
     agent: "cli-agent"
@@ -117,7 +117,7 @@ steps:
       stdout_contains:
         - "generate-spec"
     timeout: 30000
-    
+
   # Test generate-iac help
   - name: "Test atg generate-iac help"
     agent: "cli-agent"
@@ -133,7 +133,7 @@ steps:
         - "arm"
         - "bicep"
     timeout: 30000
-    
+
   # Test invalid command
   - name: "Test invalid command"
     agent: "cli-agent"
@@ -145,7 +145,7 @@ steps:
       stderr_contains:
         - "No such command"
     timeout: 30000
-    
+
   # Test start command (Electron GUI)
   - name: "Test atg start --help"
     agent: "cli-agent"
@@ -166,7 +166,7 @@ assertions:
     agent: "cli-agent"
     params:
       step: "Test atg --version"
-      
+
   - name: "Help Command Shows All Commands"
     type: "output_contains_all"
     agent: "cli-agent"
@@ -177,20 +177,20 @@ assertions:
         - "generate-spec"
         - "generate-iac"
         - "doctor"
-        
+
   - name: "Doctor Command Runs Successfully"
     type: "command_success"
     agent: "cli-agent"
     params:
       step: "Test atg doctor"
-      
+
   - name: "Missing Tenant ID Handled Gracefully"
     type: "command_failure_expected"
     agent: "cli-agent"
     params:
       step: "Test atg build without tenant ID"
       expected_exit_code: 1
-      
+
   - name: "Valid Build Command Starts Successfully"
     type: "command_success"
     agent: "cli-agent"

@@ -14,7 +14,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
   - [Create & Explore Your Graph](#create--explore-your-graph)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [Build & Rebuild Graph](#build--rebuild-graph)
+  - [Scan & Rebuild Graph](#scan--rebuild-graph)
   - [Agent Mode](#agent-mode)
   - [Threat Modeling](#threat-modeling)
   - [Generate & Deploy IaC](#generate--deploy-iac)
@@ -71,14 +71,14 @@ cp .env.example .env
 # 4. Authenticate with Azure
 az login --tenant <your-tenant-id>
 
-# 5. Build the graph with the interactive dashboard
-azure-tenant-grapher build --tenant-id <your-tenant-id>
+# 5. Scan the graph with the interactive dashboard
+azure-tenant-grapher scan --tenant-id <your-tenant-id>
 
 # 6. Visualize your Azure graph in 3D
 azure-tenant-grapher visualize
 
-# Or use the desktop GUI (Electron app)
-cd spa && npm install && npm run start
+# Or launch the desktop GUI (Electron app)
+azure-tenant-grapher start
 ```
 
 ## Installation
@@ -118,19 +118,19 @@ Whenever you add, remove, or update a dependency, you **must**:
 ## Usage
 
 ```bash
-# Build the Azure graph (includes Azure AD identity import by default)
-azure-tenant-grapher build --tenant-id <your-tenant-id>
+# Scan the Azure graph (includes Azure AD identity import by default)
+azure-tenant-grapher scan --tenant-id <your-tenant-id>
 
-# Build without Azure AD identity import
-azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
+# Scan without Azure AD identity import
+azure-tenant-grapher scan --tenant-id <your-tenant-id> --no-aad-import
 
-# Rebuild—all relationships will be re-evaluated
-azure-tenant-grapher build --tenant-id <your-tenant-id> --rebuild-edges
+# Rescan—all relationships will be re-evaluated
+azure-tenant-grapher scan --tenant-id <your-tenant-id> --rebuild-edges
 ```
 
 ### Azure AD Identity Import
 
-By default, the `build` command imports Azure AD identities (users, groups, and group memberships) from Microsoft Graph API. This enriches the graph with identity and RBAC relationships.
+By default, the `scan` command imports Azure AD identities (users, groups, and group memberships) from Microsoft Graph API. This enriches the graph with identity and RBAC relationships.
 
 **Requirements:**
 - Service principal credentials (`AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET`)
@@ -144,11 +144,11 @@ By default, the `build` command imports Azure AD identities (users, groups, and 
 **Disabling AAD import:**
 ```bash
 # Via CLI flag
-azure-tenant-grapher build --tenant-id <your-tenant-id> --no-aad-import
+azure-tenant-grapher scan --tenant-id <your-tenant-id> --no-aad-import
 
 # Via environment variable
 export ENABLE_AAD_IMPORT=false
-azure-tenant-grapher build --tenant-id <your-tenant-id>
+azure-tenant-grapher scan --tenant-id <your-tenant-id>
 ```
 
 ### Agent Mode
@@ -241,15 +241,27 @@ The project includes a full-featured desktop application built with Electron and
 ### GUI Quick Start
 
 ```bash
-# Install dependencies
+# Start the desktop app (user mode)
+azure-tenant-grapher start
+
+# Stop the desktop app
+azure-tenant-grapher stop
+```
+
+### GUI Development
+
+For developers working on the GUI itself:
+
+```bash
+# Install development dependencies
 cd spa
 npm install
 
-# Start the desktop app
-npm run start
-
-# Or for development with hot reload
+# Start in development mode with hot reload
 npm run dev
+
+# Build for production
+npm run build
 ```
 
 ### GUI Features
