@@ -1,6 +1,6 @@
 /**
  * ComprehensionAgent - Uses LLM to understand features from documentation and generate test scenarios
- * 
+ *
  * This agent analyzes documentation files to extract feature information and generate comprehensive
  * test scenarios using large language models (OpenAI GPT or Azure OpenAI).
  */
@@ -146,7 +146,7 @@ export class DocumentationLoader {
     try {
       // Find all markdown files matching patterns
       const files = await this.findDocumentationFiles();
-      
+
       logger.info(`Found ${files.length} documentation files to process`);
 
       // Load content for each file
@@ -230,7 +230,7 @@ export class DocumentationLoader {
     while ((match = headerPattern.exec(content)) !== null) {
       const header = match[1];
       const headerLower = header.toLowerCase();
-      
+
       // Check if header indicates UI feature
       if (this.isUIFeature(headerLower)) {
         const contextStart = Math.max(0, match.index - 200);
@@ -306,7 +306,7 @@ export class ComprehensionAgent implements IAgent {
    */
   async initialize(): Promise<void> {
     logger.info('Initializing ComprehensionAgent');
-    
+
     try {
       await this.initializeLLMClient();
       logger.info('ComprehensionAgent initialized successfully');
@@ -382,7 +382,7 @@ export class ComprehensionAgent implements IAgent {
    */
   async analyzeFeature(featureDoc: string): Promise<FeatureSpec> {
     logger.debug('Analyzing feature with LLM');
-    
+
     try {
       const client = await this.getLLMClient();
       const { llm } = this.config;
@@ -426,7 +426,7 @@ export class ComprehensionAgent implements IAgent {
 
     } catch (error) {
       logger.error(`LLM analysis failed: ${error}`);
-      
+
       // Return a basic spec as fallback
       return {
         name: 'Unknown Feature',
@@ -512,7 +512,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   async generateTestScenarios(featureSpec: FeatureSpec): Promise<TestScenario[]> {
     logger.info(`Generating test scenarios for feature: ${featureSpec.name}`);
-    
+
     const scenarios: TestScenario[] = [];
     let scenarioId = 1;
 
@@ -544,7 +544,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   private async generateSuccessScenario(spec: FeatureSpec, scenarioId: number): Promise<TestScenario> {
     const id = `${spec.name.replace(/\s+/g, '_').toLowerCase()}_${scenarioId}`;
-    
+
     return {
       id,
       name: `${spec.name} - Success Path`,
@@ -572,7 +572,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   private async generateFailureScenario(spec: FeatureSpec, failureMode: string, scenarioId: number): Promise<TestScenario> {
     const id = `${spec.name.replace(/\s+/g, '_').toLowerCase()}_${scenarioId}`;
-    
+
     return {
       id,
       name: `${spec.name} - Failure: ${failureMode.slice(0, 50)}`,
@@ -606,7 +606,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   private async generateEdgeCaseScenario(spec: FeatureSpec, edgeCase: string, scenarioId: number): Promise<TestScenario> {
     const id = `${spec.name.replace(/\s+/g, '_').toLowerCase()}_${scenarioId}`;
-    
+
     return {
       id,
       name: `${spec.name} - Edge Case: ${edgeCase.slice(0, 50)}`,
@@ -783,7 +783,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   async discoverFeatures(): Promise<DiscoveredFeature[]> {
     logger.info('Discovering features from documentation');
-    
+
     try {
       const docs = await this.docLoader.loadMarkdownFiles();
       const allFeatures: DiscoveredFeature[] = [];
@@ -810,7 +810,7 @@ Extract and return ONLY valid JSON in this exact format:
    */
   async processDiscoveredFeatures(): Promise<TestScenario[]> {
     logger.info('Processing discovered features and generating test scenarios');
-    
+
     try {
       const discoveredFeatures = await this.discoverFeatures();
       const allScenarios: TestScenario[] = [];
@@ -869,7 +869,7 @@ export function createComprehensionAgent(config: Partial<ComprehensionAgentConfi
   }
 
   const finalConfig = { ...defaultConfig, ...config };
-  
+
   if (config.llm) {
     finalConfig.llm = { ...defaultConfig.llm, ...config.llm };
   }

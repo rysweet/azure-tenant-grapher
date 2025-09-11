@@ -102,11 +102,11 @@ const unwatch = configManager.watch((newConfig) => {
 Robust retry mechanisms with exponential backoff and circuit breaker patterns.
 
 ```typescript
-import { 
-  RetryManager, 
-  CircuitBreaker, 
+import {
+  RetryManager,
+  CircuitBreaker,
   retryWithBackoff,
-  RetryStrategy 
+  RetryStrategy
 } from './retry';
 
 // Simple retry with exponential backoff
@@ -244,12 +244,12 @@ console.log(`Directory size: ${Math.round(size / 1024 / 1024)} MB`);
 Here's how to use multiple utilities together in a test scenario:
 
 ```typescript
-import { 
-  createLogger, 
-  YamlParser, 
-  ScreenshotManager, 
+import {
+  createLogger,
+  YamlParser,
+  ScreenshotManager,
   RetryManager,
-  FileUtils 
+  FileUtils
 } from './utils';
 
 // Set up utilities
@@ -261,47 +261,47 @@ const retry = new RetryManager({ maxAttempts: 3 });
 export async function runTestScenario(scenarioFile: string) {
   // Load test scenario
   const scenarios = await yamlParser.loadScenarios(scenarioFile);
-  
+
   for (const scenario of scenarios) {
     logger.scenarioStart(scenario.id, scenario.name);
-    
+
     try {
       // Execute with retry logic
       await retry.execute(async () => {
         for (const [index, step] of scenario.steps.entries()) {
           logger.stepExecution(index, step.action, step.target);
-          
+
           // Capture screenshot before action
           await screenshotManager.capturePageScreenshot(page, {
             scenarioId: scenario.id,
             stepIndex: index,
             description: `Before: ${step.description}`
           });
-          
+
           // Execute step
           await executeStep(step);
-          
+
           // Capture screenshot after action
           await screenshotManager.capturePageScreenshot(page, {
             scenarioId: scenario.id,
             stepIndex: index,
             description: `After: ${step.description}`
           });
-          
+
           logger.stepComplete(index, 'passed', 1000);
         }
       });
-      
+
       logger.scenarioEnd(scenario.id, 'passed', Date.now() - startTime);
     } catch (error) {
-      logger.error(`Scenario failed: ${error.message}`, { 
+      logger.error(`Scenario failed: ${error.message}`, {
         scenarioId: scenario.id,
-        error: error.stack 
+        error: error.stack
       });
       logger.scenarioEnd(scenario.id, 'failed', Date.now() - startTime);
     }
   }
-  
+
   // Export results
   const results = screenshotManager.getRunStatistics();
   await FileUtils.writeJsonFile('./results/test-run.json', results);

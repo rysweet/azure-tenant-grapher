@@ -80,7 +80,7 @@ const UndeployTab: React.FC = () => {
     setError(null);
     try {
       const result = await window.electronAPI.cli.execute('list-deployments', ['--json']);
-      
+
       const outputHandler = (data: ProcessOutputData) => {
         if (data.id === result.data.id) {
           try {
@@ -116,7 +116,7 @@ const UndeployTab: React.FC = () => {
 
   const confirmUndeploy = async () => {
     if (!selectedDeployment) return;
-    
+
     // Validate confirmation text
     if (confirmText !== selectedDeployment.id) {
       setError('Deployment ID does not match. Please type it exactly.');
@@ -154,7 +154,7 @@ const UndeployTab: React.FC = () => {
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setIsUndeploying(false);
-          
+
           if (data.code === 0) {
             // Refresh deployments list
             fetchDeployments();
@@ -309,7 +309,7 @@ const UndeployTab: React.FC = () => {
             You are about to destroy all resources in deployment <strong>{selectedDeployment?.id}</strong>.
             This will permanently delete {selectedDeployment ? getTotalResources(selectedDeployment.resources) : 0} Azure resources.
           </DialogContentText>
-          
+
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Target Tenant</InputLabel>
             <Select

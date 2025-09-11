@@ -109,11 +109,30 @@ app.post('/api/execute', (req, res) => {
 
   const fullArgs = ['run', 'atg', command, ...args];
 
+  // Check for filter arguments for better logging
+  const hasSubscriptionFilter = args.some((arg: string) => arg.startsWith('--filter-by-subscriptions'));
+  const hasResourceGroupFilter = args.some((arg: string) => arg.startsWith('--filter-by-rgs'));
+  const filters = [];
+  if (hasSubscriptionFilter) {
+    const subFilter = args.find((arg: string) => arg.startsWith('--filter-by-subscriptions'));
+    filters.push(subFilter);
+  }
+  if (hasResourceGroupFilter) {
+    const rgFilter = args.find((arg: string) => arg.startsWith('--filter-by-rgs'));
+    filters.push(rgFilter);
+  }
+
   logger.info('Executing CLI command:', {
     command: `${uvPath} ${fullArgs.join(' ')}`,
     cwd: projectRoot,
-    processId
+    processId,
+    filters: filters.length > 0 ? filters : undefined
   });
+
+  // Log filter details for debugging
+  if (filters.length > 0) {
+    logger.info(`Applying resource filters: ${filters.join(', ')}`);
+  }
 
   const childProcess = spawn(uvPath, fullArgs, {
     cwd: projectRoot,
@@ -774,66 +793,82 @@ app.get('/api/test/azure-openai', async (req, res) => {
 
     // Always test with actual API call, using modelChat or a fallback model
     try {
-      // Use configured model or try common deployment names as fallback
-      const modelToTest = modelChat || 'gpt-4' || 'gpt-35-turbo';
-      const url = `${endpoint}/openai/deployments/${modelToTest}/chat/completions?api-version=${apiVersion}`;
-      
-      // Make a test call with the joke prompt as specified in requirements
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'api-key': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: [{role: 'user', content: 'Tell me a joke about Microsoft Azure'}],
-          max_tokens: 100,
-          temperature: 0.7
-        })
-      });
-
-      if (response.ok) {
-        const data: any = await response.json();
-        const endpointHost = new URL(endpoint).host;
-        
-        // Extract the joke response if available
-        let testResponse = 'Connection successful';
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-          testResponse = data.choices[0].message.content || 'Connection successful';
-        }
-        
-        return res.json({
-          success: true,
-          message: 'Azure OpenAI is working correctly',
-          endpoint: endpointHost,
-          model: data.model || modelToTest,
-          models: {
-            chat: modelChat || `${modelToTest} (auto-detected)`,
-            reasoning: modelReasoning || 'Not configured'
+      // If we have a chat model configured, test with actual inference
+      if (modelChat) {
+        const url = `${endpoint}/openai/deployments/${modelChat}/chat/completions?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json'
           },
-          testResponse: testResponse.substring(0, 200) // Limit response length
+          body: JSON.stringify({
+            messages: [
+              {role: 'system', content: 'You are a helpful assistant that tells tech jokes.'},
+              {role: 'user', content: 'Tell me a short, funny joke about Microsoft Azure cloud services.'}
+            ],
+            max_tokens: 100,
+            temperature: 0.7
+          })
         });
-      } else if (response.status === 401) {
-        return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
-      } else if (response.status === 404) {
-        // If the model doesn't exist, still indicate that OpenAI is configured but model needs to be set
-        return res.json({ 
-          success: false, 
-          error: `Model deployment '${modelToTest}' not found. Please configure AZURE_OPENAI_MODEL_CHAT with a valid deployment name.`,
-          configured: true // Indicates that endpoint and key are set
-        });
+
+        if (response.ok) {
+          const data: any = await response.json();
+          const endpointHost = new URL(endpoint).host;
+          const joke = data.choices?.[0]?.message?.content?.trim() || 'No joke returned';
+          return res.json({
+            success: true,
+            message: `Azure OpenAI is working! Here's a joke: ${joke}`,
+            endpoint: endpointHost,
+            model: data.model || modelChat,
+            models: {
+              chat: modelChat,
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Azure OpenAI API key is invalid or expired. Please check your AZURE_OPENAI_KEY environment variable.' });
+        } else if (response.status === 404) {
+          return res.json({ success: false, error: `Azure OpenAI deployment '${modelChat}' not found. Please verify the model name in AZURE_OPENAI_MODEL_CHAT matches an existing deployment.` });
+        } else {
+          const errorText = await response.text();
+          logger.error('Azure OpenAI inference failed:', response.status, errorText);
+          return res.json({ success: false, error: `Azure OpenAI inference test failed (${response.status}). Check your endpoint URL and model deployment configuration.` });
+        }
       } else {
-        const errorText = await response.text();
-        logger.error('Azure OpenAI test failed:', response.status, errorText);
-        return res.json({ success: false, error: `API test failed: ${response.status}` });
+        // Fallback to listing deployments if no model configured
+        const url = `${endpoint}/openai/deployments?api-version=${apiVersion}`;
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'api-key': apiKey,
+          },
+        });
+
+        if (response.ok) {
+          const endpointHost = new URL(endpoint).host;
+          return res.json({
+            success: true,
+            message: 'API key valid (configure chat model for full test)',
+            endpoint: endpointHost,
+            models: {
+              chat: 'Not configured',
+              reasoning: modelReasoning || 'Not configured'
+            }
+          });
+        } else if (response.status === 401) {
+          return res.json({ success: false, error: 'Azure OpenAI API key is invalid or expired. Please check your AZURE_OPENAI_KEY environment variable.' });
+        } else {
+          return res.json({ success: false, error: `Azure OpenAI API connection failed (${response.status}). Please check your AZURE_OPENAI_ENDPOINT configuration.` });
+        }
       }
     } catch (error: any) {
       logger.error('Azure OpenAI API call failed:', error);
-      return res.json({ success: false, error: `Failed to connect to Azure OpenAI: ${error.message}` });
+      return res.json({ success: false, error: `Failed to connect to Azure OpenAI service. Check your network connection and endpoint configuration. Error: ${error.message}` });
     }
   } catch (error: any) {
     logger.error('Azure OpenAI connection test failed:', error);
-    res.json({ success: false, error: error.message });
+    res.json({ success: false, error: `Azure OpenAI test encountered an unexpected error: ${error.message}` });
   }
 });
 
@@ -842,49 +877,37 @@ app.get('/api/test/azure-openai', async (req, res) => {
  */
 app.get('/api/test/graph-permissions', async (req, res) => {
   try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execPromise = promisify(exec);
-
     logger.debug('Checking Graph API permissions...');
 
-    // Run the test_graph_api.py script
-    try {
-      const { stdout, stderr } = await execPromise('uv run python test_graph_api.py', {
-        cwd: path.join(__dirname, '../../..'),
-        timeout: 30000
-      });
+    // Check if we have the required environment variables for service principal auth
+    const tenantId = process.env.AZURE_TENANT_ID;
+    const clientId = process.env.AZURE_CLIENT_ID;
+    const clientSecret = process.env.AZURE_CLIENT_SECRET;
 
-      // Combine stdout and stderr (logging goes to stderr)
-      const output = stdout + stderr;
+    const hasServicePrincipalAuth = tenantId && clientId && clientSecret;
+    let accessToken = null;
 
-      // Parse the results
-      const hasUsers = output.includes('✅ Can read users');
-      const hasGroups = output.includes('✅ Can read groups');
-      const hasServicePrincipals = output.includes('✅ Can read service principals');
-      const hasDirectoryRoles = output.includes('✅ Can read directory roles');
-
-      return res.json({
-        success: hasUsers && hasGroups,
-        permissions: {
-          users: hasUsers,
-          groups: hasGroups,
-          servicePrincipals: hasServicePrincipals,
-          directoryRoles: hasDirectoryRoles
-        },
-        allRequired: hasUsers && hasGroups,
-        message: hasUsers && hasGroups
-          ? 'All required Graph API permissions are configured'
-          : 'Missing required Graph API permissions'
-      });
-    } catch (error: any) {
-      logger.error('Failed to run Graph API test:', error);
-
-      // Check if it's because dependencies are missing
-      if (error.message?.includes('uv: command not found')) {
+    if (hasServicePrincipalAuth) {
+      logger.debug('Testing Graph API permissions with service principal authentication');
+    } else {
+      logger.debug('Service principal credentials not found, attempting Azure CLI authentication');
+      
+      // Try to get access token from Azure CLI
+      try {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execPromise = promisify(exec);
+        
+        const { stdout } = await execPromise('az account get-access-token --resource https://graph.microsoft.com --query "accessToken" --output tsv', {
+          timeout: 10000
+        });
+        accessToken = stdout.trim();
+        logger.debug('Successfully obtained access token from Azure CLI');
+      } catch (error: any) {
+        logger.debug('Azure CLI authentication failed:', error.message);
         return res.json({
           success: false,
-          error: 'uv package manager not found',
+          error: 'No authentication method available. Please either:\n1. Set AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables, OR\n2. Login with Azure CLI (az login)',
           permissions: {
             users: false,
             groups: false,
@@ -893,10 +916,203 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           }
         });
       }
+    }
+
+    // Try to make actual Graph API calls to test permissions
+    try {
+      const permissions = {
+        users: false,
+        groups: false,
+        servicePrincipals: false,
+        directoryRoles: false
+      };
+
+      // Get access token for Microsoft Graph (if not already obtained from Azure CLI)
+      if (!accessToken && hasServicePrincipalAuth) {
+        const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+        const tokenResponse = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            scope: 'https://graph.microsoft.com/.default',
+            grant_type: 'client_credentials'
+          })
+        });
+
+        if (!tokenResponse.ok) {
+          const tokenError = await tokenResponse.text();
+          logger.error('Failed to get Graph API token:', tokenError);
+          return res.json({
+            success: false,
+            error: 'Failed to authenticate with Microsoft Graph API. Check your service principal credentials.',
+            permissions
+          });
+        }
+
+        const tokenData: any = await tokenResponse.json();
+        accessToken = tokenData.access_token;
+
+        if (!accessToken) {
+          return res.json({
+            success: false,
+            error: 'No access token received from Microsoft Graph API',
+            permissions
+          });
+        }
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      // Test 1: Check if we can read users
+      try {
+        const usersResponse = await fetch('https://graph.microsoft.com/v1.0/users?$top=1', {
+          headers,
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (usersResponse.ok) {
+          const usersData: any = await usersResponse.json();
+          permissions.users = true;
+          logger.debug('✅ Can read users:', usersData.value?.length || 0, 'users found');
+        } else if (usersResponse.status === 403) {
+          logger.debug('❌ Cannot read users - insufficient permissions');
+        } else {
+          logger.debug('❌ Cannot read users - error:', usersResponse.status);
+        }
+      } catch (error) {
+        logger.debug('❌ Cannot read users - network error:', error);
+      }
+
+      // Test 2: Check if we can read groups
+      try {
+        const groupsResponse = await fetch('https://graph.microsoft.com/v1.0/groups?$top=1', {
+          headers,
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (groupsResponse.ok) {
+          const groupsData: any = await groupsResponse.json();
+          permissions.groups = true;
+          logger.debug('✅ Can read groups:', groupsData.value?.length || 0, 'groups found');
+        } else if (groupsResponse.status === 403) {
+          logger.debug('❌ Cannot read groups - insufficient permissions');
+        } else {
+          logger.debug('❌ Cannot read groups - error:', groupsResponse.status);
+        }
+      } catch (error) {
+        logger.debug('❌ Cannot read groups - network error:', error);
+      }
+
+      // Test 3: Check if we can read service principals
+      try {
+        const spResponse = await fetch('https://graph.microsoft.com/v1.0/servicePrincipals?$top=1', {
+          headers,
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (spResponse.ok) {
+          const spData: any = await spResponse.json();
+          permissions.servicePrincipals = true;
+          logger.debug('✅ Can read service principals:', spData.value?.length || 0, 'service principals found');
+        } else if (spResponse.status === 403) {
+          logger.debug('❌ Cannot read service principals - insufficient permissions');
+        } else {
+          logger.debug('❌ Cannot read service principals - error:', spResponse.status);
+        }
+      } catch (error) {
+        logger.debug('❌ Cannot read service principals - network error:', error);
+      }
+
+      // Test 4: Check if we can read directory roles
+      try {
+        const rolesResponse = await fetch('https://graph.microsoft.com/v1.0/directoryRoles?$top=1', {
+          headers,
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (rolesResponse.ok) {
+          const rolesData: any = await rolesResponse.json();
+          permissions.directoryRoles = true;
+          logger.debug('✅ Can read directory roles:', rolesData.value?.length || 0, 'roles found');
+        } else if (rolesResponse.status === 403) {
+          logger.debug('❌ Cannot read directory roles - insufficient permissions');
+        } else {
+          logger.debug('❌ Cannot read directory roles - error:', rolesResponse.status);
+        }
+      } catch (error) {
+        logger.debug('❌ Cannot read directory roles - network error:', error);
+      }
+
+      // Determine if user has sufficient permissions
+      // Method 1: Has the basic required permissions (User.Read.All AND Group.Read.All)
+      const hasBasicRequired = permissions.users && permissions.groups;
+      
+      // Method 2: Has Directory.Read.All (indicated by having servicePrincipals AND directoryRoles)
+      const hasDirectoryReadAll = permissions.servicePrincipals && permissions.directoryRoles;
+      
+      // Method 3: Has mixed permissions that include core requirements + additional (likely Directory.Read.All)
+      const hasSufficientMixed = (permissions.users || permissions.servicePrincipals) && 
+                                 (permissions.groups || permissions.directoryRoles) &&
+                                 (permissions.servicePrincipals || permissions.directoryRoles);
+
+      const success = hasBasicRequired || hasDirectoryReadAll || hasSufficientMixed;
+
+      let message = '';
+      if (success) {
+        if (hasBasicRequired) {
+          message = 'Required Graph API permissions (User.Read.All, Group.Read.All) are configured';
+        } else if (hasDirectoryReadAll) {
+          message = 'Directory.Read.All permission detected - provides access to all required resources';
+        } else {
+          message = 'Sufficient Graph API permissions detected - can read required directory objects';
+        }
+      } else {
+        const missing = [];
+        const suggestions = [];
+        
+        if (!permissions.users && !permissions.servicePrincipals) {
+          missing.push('User.Read.All');
+        }
+        if (!permissions.groups && !permissions.directoryRoles) {
+          missing.push('Group.Read.All');
+        }
+        
+        if (missing.length > 0) {
+          suggestions.push(`Grant specific permissions: ${missing.join(', ')}`);
+        }
+        suggestions.push('Or grant Directory.Read.All for comprehensive access');
+        
+        message = `Insufficient Graph API permissions. ${suggestions.join(' ')}`;
+      }
 
       return res.json({
+        success,
+        permissions,
+        allRequired: success, // Updated to reflect the actual success status
+        message,
+        details: {
+          authMethod: hasServicePrincipalAuth ? 'Service Principal' : 'Azure CLI',
+          tenantId: tenantId || 'Unknown',
+          clientId: hasServicePrincipalAuth && clientId ? clientId.substring(0, 8) + '...' : undefined,
+          detectedPermissionLevel: hasDirectoryReadAll ? 'Directory.Read.All' : 
+                                   hasBasicRequired ? 'Specific (User+Group)' : 
+                                   hasSufficientMixed ? 'Mixed/Sufficient' : 'Insufficient'
+        }
+      });
+
+    } catch (error: any) {
+      logger.error('Graph API permissions test failed:', error);
+      
+      return res.json({
         success: false,
-        error: 'Failed to check Graph API permissions',
+        error: `Failed to test Graph API permissions: ${error.message}`,
         permissions: {
           users: false,
           groups: false,
@@ -905,6 +1121,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
         }
       });
     }
+
   } catch (error: any) {
     logger.error('Graph API permissions check failed:', error);
     res.json({

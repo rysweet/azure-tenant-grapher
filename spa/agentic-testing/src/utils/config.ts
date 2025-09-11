@@ -187,7 +187,7 @@ export class ConfigManager {
       const extension = path.extname(absolutePath).toLowerCase();
 
       let fileConfig: any;
-      
+
       if (extension === '.json') {
         fileConfig = JSON.parse(fileContent);
       } else if (extension === '.yaml' || extension === '.yml') {
@@ -305,7 +305,7 @@ export class ConfigManager {
    */
   watch(callback: (config: TestConfig) => void): () => void {
     this.watchers.push(callback);
-    
+
     // Return unwatch function
     return () => {
       const index = this.watchers.indexOf(callback);
@@ -464,7 +464,7 @@ export class ConfigManager {
   private setNestedValue(obj: any, path: string, value: any): void {
     const keys = path.split('.');
     const lastKey = keys.pop()!;
-    
+
     const target = keys.reduce((current, key) => {
       if (!(key in current) || typeof current[key] !== 'object') {
         current[key] = {};
@@ -488,7 +488,7 @@ export class ConfigManager {
     if (/^\d+\.\d+$/.test(value)) return parseFloat(value);
 
     // JSON values
-    if ((value.startsWith('{') && value.endsWith('}')) || 
+    if ((value.startsWith('{') && value.endsWith('}')) ||
         (value.startsWith('[') && value.endsWith(']'))) {
       try {
         return JSON.parse(value);

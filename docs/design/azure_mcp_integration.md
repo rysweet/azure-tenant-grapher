@@ -64,14 +64,14 @@ class MCPClientConfig:
     server_url: str
     timeout: int = 30
     max_retries: int = 3
-    
+
 class AzureMCPClient:
     """Lightweight MCP client for Azure operations"""
-    
+
     def __init__(self, config: MCPClientConfig):
         self.config = config
         self.session: Optional[ClientSession] = None
-        
+
     async def connect(self):
         """Establish connection to MCP server"""
         # Simple connection with basic retry
@@ -83,7 +83,7 @@ class AzureMCPClient:
                 if attempt == self.config.max_retries - 1:
                     raise
                 await asyncio.sleep(2 ** attempt)
-    
+
     async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]):
         """Execute an MCP tool with given arguments"""
         if not self.session:
@@ -116,10 +116,10 @@ class MCPOperation:
 
 class OperationMapper:
     """Maps natural language to ATG operations"""
-    
+
     def __init__(self):
         self.operation_patterns = self._build_patterns()
-    
+
     def _build_patterns(self) -> Dict[str, MCPOperation]:
         """Build mapping patterns for common operations"""
         return {
@@ -154,7 +154,7 @@ class OperationMapper:
                 parameters={"format": "bicep"}
             )
         }
-    
+
     def map_request(self, intent: str, entities: Dict[str, Any]) -> MCPOperation:
         """Map a natural language intent to an operation"""
         operation = self.operation_patterns.get(intent)
@@ -175,34 +175,34 @@ from src.iac.engine import IaCEngine
 
 class MCPServiceAdapter:
     """Adapts MCP operations to existing ATG services"""
-    
+
     def __init__(self, config: Any):
         self.config = config
         self._services: Dict[str, Any] = {}
         self._initialize_services()
-    
+
     def _initialize_services(self):
         """Lazy initialization of required services"""
         # Services are initialized on-demand to minimize resource usage
         pass
-    
+
     async def execute_operation(self, operation: MCPOperation) -> Any:
         """Execute an operation against the appropriate service"""
         service = await self._get_service(operation.service)
         method = getattr(service, operation.method)
-        
+
         try:
             result = await method(**operation.parameters)
             return self._format_response(result, operation.type)
         except Exception as e:
             return self._handle_error(e, operation)
-    
+
     async def _get_service(self, service_name: str) -> Any:
         """Get or create a service instance"""
         if service_name not in self._services:
             self._services[service_name] = await self._create_service(service_name)
         return self._services[service_name]
-    
+
     async def _create_service(self, service_name: str) -> Any:
         """Create a service instance based on name"""
         service_map = {
@@ -212,7 +212,7 @@ class MCPServiceAdapter:
             "iac_engine": lambda: IaCEngine(self.config)
         }
         return service_map[service_name]()
-    
+
     def _format_response(self, result: Any, operation_type: OperationType) -> Dict:
         """Format service response for MCP"""
         return {
@@ -242,8 +242,8 @@ class MCPErrorType(Enum):
 
 class MCPError(Exception):
     """Base MCP error with context"""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  error_type: MCPErrorType,
                  message: str,
                  context: Optional[Dict[str, Any]] = None):
@@ -254,21 +254,21 @@ class MCPError(Exception):
 
 class MCPErrorHandler:
     """Handles MCP errors with appropriate recovery strategies"""
-    
+
     def __init__(self):
         self.retry_strategies = {
             MCPErrorType.CONNECTION: self._retry_with_backoff,
             MCPErrorType.RATE_LIMIT: self._retry_with_exponential_backoff,
             MCPErrorType.AUTHENTICATION: self._refresh_credentials,
         }
-    
+
     async def handle(self, error: Exception, operation: Any) -> Any:
         """Handle an error with appropriate recovery"""
         if isinstance(error, MCPError):
             strategy = self.retry_strategies.get(error.error_type)
             if strategy:
                 return await strategy(error, operation)
-        
+
         # Log and re-raise unknown errors
         logger.error(f"Unhandled MCP error: {error}")
         raise
@@ -357,7 +357,7 @@ class MCPIntegrationConfig:
     cache_enabled: bool = True
     cache_ttl: int = 300
     operations_whitelist: List[str] = field(default_factory=list)
-    
+
     @classmethod
     def from_env(cls):
         """Load configuration from environment"""
@@ -413,7 +413,7 @@ async def test_mcp_client_connection():
     """Test MCP client can establish connection"""
     config = MCPClientConfig(server_url="http://test:8080")
     client = AzureMCPClient(config)
-    
+
     with mock_mcp_server():
         await client.connect()
         assert client.session is not None
@@ -441,7 +441,7 @@ async def test_tenant_discovery_via_mcp():
         method="discover_subscriptions",
         parameters={}
     )
-    
+
     result = await adapter.execute_operation(operation)
     assert result["success"]
     assert "data" in result
@@ -454,11 +454,11 @@ async def test_tenant_discovery_via_mcp():
 async def test_mcp_query_performance():
     """Ensure MCP queries complete within SLA"""
     client = AzureMCPClient(config)
-    
+
     start = time.time()
     await client.execute_tool("list_resources", {})
     duration = time.time() - start
-    
+
     assert duration < 5.0  # 5 second SLA
 ```
 

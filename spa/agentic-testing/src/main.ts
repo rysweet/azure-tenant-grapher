@@ -1,6 +1,6 @@
 /**
  * Main entry point for the Agentic Testing System
- * 
+ *
  * This module provides the core functionality for initializing and running
  * the testing system, including configuration management, agent initialization,
  * and orchestrator setup. It supports both CLI and programmatic usage.
@@ -227,7 +227,7 @@ export function parseArguments(): CliArguments {
   program.parse();
 
   const options = program.opts();
-  
+
   // Determine log level
   let logLevel: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' = 'INFO';
   if (options.debug) {
@@ -310,10 +310,10 @@ export async function loadConfiguration(configPath: string, cliArgs: CliArgument
  */
 export async function loadTestScenarios(scenarioFiles?: string[]): Promise<TestScenario[]> {
   const scenarios: TestScenario[] = [];
-  
+
   // Default scenario directory
   const scenarioDir = path.join(process.cwd(), 'scenarios');
-  
+
   if (scenarioFiles && scenarioFiles.length > 0) {
     // Load specific files
     for (const file of scenarioFiles) {
@@ -332,7 +332,7 @@ export async function loadTestScenarios(scenarioFiles?: string[]): Promise<TestS
       if (await pathExists(scenarioDir)) {
         const files = await fs.readdir(scenarioDir);
         const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
-        
+
         for (const file of yamlFiles) {
           const filePath = path.join(scenarioDir, file);
           const content = await fs.readFile(filePath, 'utf-8');
@@ -347,7 +347,7 @@ export async function loadTestScenarios(scenarioFiles?: string[]): Promise<TestS
       logger.error('Failed to load scenarios from directory:', error);
     }
   }
-  
+
   logger.info(`Loaded ${scenarios.length} total test scenarios`);
   return scenarios;
 }
@@ -363,19 +363,19 @@ export function filterScenariosForSuite(scenarios: TestScenario[], suite: string
   }
 
   const patterns = suiteConfig.patterns;
-  
+
   if (patterns.includes('*')) {
     return scenarios;
   }
-  
+
   const filtered: TestScenario[] = [];
-  
+
   for (const scenario of scenarios) {
     for (const pattern of patterns) {
       if (pattern.endsWith(':')) {
         // Prefix match
         const prefix = pattern.slice(0, -1);
-        if (scenario.id.startsWith(prefix) || 
+        if (scenario.id.startsWith(prefix) ||
             scenario.tags?.some(tag => tag.startsWith(prefix))) {
           filtered.push(scenario);
           break;
@@ -383,14 +383,14 @@ export function filterScenariosForSuite(scenarios: TestScenario[], suite: string
       } else if (pattern.includes('*')) {
         // Glob pattern
         const regex = new RegExp(pattern.replace('*', '.*'));
-        if (regex.test(scenario.id) || 
+        if (regex.test(scenario.id) ||
             scenario.tags?.some(tag => regex.test(tag))) {
           filtered.push(scenario);
           break;
         }
       } else {
         // Exact match
-        if (scenario.id === pattern || 
+        if (scenario.id === pattern ||
             scenario.tags?.includes(pattern)) {
           filtered.push(scenario);
           break;
@@ -398,7 +398,7 @@ export function filterScenariosForSuite(scenarios: TestScenario[], suite: string
       }
     }
   }
-  
+
   return filtered;
 }
 
@@ -437,7 +437,7 @@ export function displayResults(session: TestSession): void {
   console.log(`Passed: ${session.metrics.passed || 0}`);
   console.log(`Failed: ${session.metrics.failed || 0}`);
   console.log(`Skipped: ${session.metrics.skipped || 0}`);
-  
+
   const total = session.metrics.totalScenarios || 0;
   const passed = session.metrics.passed || 0;
   const passRate = total > 0 ? (passed / total) * 100 : 0;
@@ -460,12 +460,12 @@ export async function performDryRun(
   suite: string
 ): Promise<void> {
   const filteredScenarios = filterScenariosForSuite(scenarios, suite);
-  
+
   console.log('\n' + '='.repeat(60));
   console.log('DRY RUN MODE - Not executing tests');
   console.log('='.repeat(60));
   console.log(`Would execute ${filteredScenarios.length} scenarios for suite '${suite}':`);
-  
+
   for (const scenario of filteredScenarios) {
     console.log(`  - [${scenario.interface || TestInterface.CLI}] ${scenario.id}: ${scenario.name}`);
     if (scenario.description) {
@@ -484,7 +484,7 @@ export function setupGracefulShutdown(orchestrator: TestOrchestrator): void {
   const shutdown = (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     orchestrator.abort();
-    
+
     // Give some time for cleanup
     setTimeout(() => {
       logger.warn('Forcing shutdown');
@@ -494,7 +494,7 @@ export function setupGracefulShutdown(orchestrator: TestOrchestrator): void {
 
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-  
+
   // Handle unhandled rejections
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -512,7 +512,7 @@ export function setupGracefulShutdown(orchestrator: TestOrchestrator): void {
  */
 export async function main(): Promise<number> {
   let orchestrator: TestOrchestrator | null = null;
-  
+
   try {
     // Parse command line arguments
     const args = parseArguments();
@@ -614,11 +614,11 @@ export async function runTests(options: ProgrammaticTestOptions = {}): Promise<T
   setupLogger('info');
 
   // Load configuration
-  const baseConfig = opts.configPath 
+  const baseConfig = opts.configPath
     ? await loadConfiguration(opts.configPath, { noIssues: false } as CliArguments)
     : createDefaultConfig();
-  
-  const config = opts.config 
+
+  const config = opts.config
     ? { ...baseConfig, ...opts.config }
     : baseConfig;
 
@@ -634,7 +634,7 @@ export async function runTests(options: ProgrammaticTestOptions = {}): Promise<T
   // Handle dry run
   if (opts.dryRun) {
     await performDryRun(scenarios, opts.suite || 'smoke');
-    
+
     // Return a mock session for dry run
     return {
       id: uuidv4(),

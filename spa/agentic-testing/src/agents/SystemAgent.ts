@@ -1,6 +1,6 @@
 /**
  * SystemAgent - Comprehensive system resource monitoring and management agent
- * 
+ *
  * This agent provides complete system monitoring capabilities including:
  * - CPU usage, memory consumption, disk I/O monitoring
  * - Process tracking and resource usage analysis
@@ -297,7 +297,7 @@ const defaultSystemAgentConfig: SystemAgentConfig = {
 export class SystemAgent extends EventEmitter implements IAgent {
   public readonly name = 'SystemAgent';
   public readonly type = AgentType.SYSTEM;
-  
+
   private config: SystemAgentConfig;
   private logger: TestLogger;
   private monitoringInterval?: NodeJS.Timeout;
@@ -325,7 +325,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
     try {
       // Check if Docker is available
       await this.checkDockerAvailability();
-      
+
       // Capture initial system state
       this.initialMetrics = await this.captureMetrics();
       this.logger.info('Initial system metrics captured');
@@ -363,8 +363,8 @@ export class SystemAgent extends EventEmitter implements IAgent {
 
       // Generate health report
       const healthReport = await this.generateHealthReport();
-      
-      this.logger.info('System monitoring completed', { 
+
+      this.logger.info('System monitoring completed', {
         overall: healthReport.overall,
         issues: healthReport.issues.length,
         leaks: healthReport.resourceLeaks.length
@@ -425,7 +425,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       try {
         const metrics = await this.captureMetrics();
         this.metricsHistory.push(metrics);
-        
+
         // Keep history size manageable
         if (this.metricsHistory.length > this.maxHistorySize) {
           this.metricsHistory = this.metricsHistory.slice(-this.maxHistorySize);
@@ -515,7 +515,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
     try {
       const currentLoad = await si.currentLoad();
       const cpuTemperature = await si.cpuTemperature().catch(() => ({ main: undefined }));
-      
+
       return {
         usage: currentLoad.currentLoad,
         loadAverage: os.loadavg(),
@@ -538,7 +538,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
   private async getMemoryMetrics(): Promise<SystemMetrics['memory']> {
     try {
       const mem = await si.mem();
-      
+
       return {
         total: mem.total,
         free: mem.free,
@@ -551,7 +551,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       const totalMem = os.totalmem();
       const freeMem = os.freemem();
       const usedMem = totalMem - freeMem;
-      
+
       return {
         total: totalMem,
         free: freeMem,
@@ -635,7 +635,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       for (const proc of processes.list) {
         try {
           const stats = await pidusage(proc.pid).catch(() => null);
-          
+
           processInfos.push({
             pid: proc.pid,
             name: proc.name,
@@ -671,7 +671,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
   private async getSystemInfo(): Promise<SystemMetrics['system']> {
     try {
       const systemInfo = await si.system();
-      
+
       return {
         uptime: os.uptime(),
         platform: os.platform(),
@@ -707,7 +707,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
 
       for (const line of lines) {
         const [id, name, image, state, status, ports] = line.split('\t');
-        
+
         try {
           // Get container stats
           const { stdout: statsOutput } = await execAsync(
@@ -715,7 +715,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
           );
 
           const [cpuPerc, memPerc, netIO, blockIO] = statsOutput.trim().split(',');
-          
+
           containers.push({
             id: id.substring(0, 12),
             name,
@@ -762,7 +762,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       const [input, output] = ioString.split(' / ');
       const inputBytes = this.parseBytes(input);
       const outputBytes = this.parseBytes(output);
-      
+
       return { rx: inputBytes, tx: outputBytes };
     } catch (error) {
       return { rx: 0, tx: 0 };
@@ -781,7 +781,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       const [input, output] = ioString.split(' / ');
       const inputBytes = this.parseBytes(input);
       const outputBytes = this.parseBytes(output);
-      
+
       return { read: inputBytes, write: outputBytes };
     } catch (error) {
       return { read: 0, write: 0 };
@@ -793,13 +793,13 @@ export class SystemAgent extends EventEmitter implements IAgent {
    */
   private parseBytes(byteString: string): number {
     if (!byteString) return 0;
-    
+
     const match = byteString.match(/^([\d.]+)\s*([KMGT]?B?)$/i);
     if (!match) return 0;
-    
+
     const value = parseFloat(match[1]);
     const unit = match[2].toUpperCase();
-    
+
     const multipliers: Record<string, number> = {
       'B': 1,
       'KB': 1024,
@@ -807,7 +807,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       'GB': 1024 * 1024 * 1024,
       'TB': 1024 * 1024 * 1024 * 1024
     };
-    
+
     return value * (multipliers[unit] || 1);
   }
 
@@ -838,7 +838,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
     for (const watchPath of watchPaths) {
       try {
         const absolutePath = path.resolve(watchPath);
-        
+
         // Check if path exists
         await fs.access(absolutePath).catch(() => {
           // Create directory if it doesn't exist
@@ -848,7 +848,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
         // Set up watcher
         const chokidar = require('chokidar');
         const watcher = chokidar.watch(absolutePath, {
-          ignored: (filePath: string) => 
+          ignored: (filePath: string) =>
             excludePatterns?.some(pattern => pattern.test(filePath)) || false,
           persistent: true,
           ignoreInitial: true
@@ -911,12 +911,12 @@ export class SystemAgent extends EventEmitter implements IAgent {
 
     setTimeout(() => {
       clearInterval(interval);
-      
+
       if (samples.length > 0) {
         const avgCPU = samples.reduce((sum, s) => sum + s.cpu.usage, 0) / samples.length;
         const avgMemory = samples.reduce((sum, s) => sum + s.memory.percentage, 0) / samples.length;
         const avgDiskIO = samples.reduce((sum, s) => sum + (s.disk.io?.reads || 0), 0) / samples.length;
-        const avgNetworkIO = samples.reduce((sum, s) => 
+        const avgNetworkIO = samples.reduce((sum, s) =>
           sum + s.network.interfaces.reduce((netSum, iface) => netSum + iface.rx + iface.tx, 0), 0
         ) / samples.length;
         const avgProcessCount = samples.reduce((sum, s) => sum + s.processes.length, 0) / samples.length;
@@ -961,7 +961,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
         type: 'memory',
         severity: metrics.memory.percentage > 95 ? 'critical' : 'high',
         message: `High memory usage: ${metrics.memory.percentage.toFixed(1)}%`,
-        details: { 
+        details: {
           percentage: metrics.memory.percentage,
           used: metrics.memory.used,
           total: metrics.memory.total
@@ -1020,7 +1020,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
 
     // Determine overall health
     let overall: 'healthy' | 'warning' | 'critical' = 'healthy';
-    
+
     if (issues.some(i => i.severity === 'critical') || resourceLeaks.some(l => l.severity === 'high')) {
       overall = 'critical';
     } else if (issues.length > 0 || resourceLeaks.length > 0 || performanceIssues.length > 0) {
@@ -1052,7 +1052,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
     }
 
     const recentMetrics = this.metricsHistory.slice(-10);
-    
+
     // Memory leak detection
     const memoryTrend = recentMetrics.map(m => m.memory.percentage);
     if (this.isIncreasingTrend(memoryTrend, 5)) {
@@ -1108,7 +1108,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
     const diskIOSamples = recentMetrics
       .map(m => m.disk.io?.reads || 0)
       .filter(io => io > 0);
-    
+
     if (diskIOSamples.length > 0) {
       const avgDiskIO = diskIOSamples.reduce((sum, io) => sum + io, 0) / diskIOSamples.length;
       if (avgDiskIO > 1000) { // Threshold for high disk activity
@@ -1130,14 +1130,14 @@ export class SystemAgent extends EventEmitter implements IAgent {
    */
   private isIncreasingTrend(values: number[], threshold: number): boolean {
     if (values.length < 3) return false;
-    
+
     let increases = 0;
     for (let i = 1; i < values.length; i++) {
       if (values[i] > values[i - 1]) {
         increases++;
       }
     }
-    
+
     return (increases / (values.length - 1)) * 100 > threshold;
   }
 
@@ -1203,7 +1203,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
       // Also kill processes matching name patterns
       const { processNamePatterns } = this.config.cleanup || {};
       if (processNamePatterns) {
-        const processesToKill = currentMetrics.processes.filter(p => 
+        const processesToKill = currentMetrics.processes.filter(p =>
           processNamePatterns.some(pattern => p.name.match(pattern))
         );
 
@@ -1267,7 +1267,7 @@ export class SystemAgent extends EventEmitter implements IAgent {
   async getSystemHealth(): Promise<'healthy' | 'warning' | 'critical'> {
     const metrics = await this.captureMetrics();
     const issues = await this.analyzeMetrics(metrics);
-    
+
     if (issues.some(i => i.severity === 'critical')) {
       return 'critical';
     } else if (issues.length > 0) {
