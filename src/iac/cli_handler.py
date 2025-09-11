@@ -51,6 +51,7 @@ async def generate_iac_command_handler(
     dry_run: bool = False,
     resource_filters: Optional[str] = None,
     subset_filter: Optional[str] = None,
+    node_ids: Optional[list[str]] = None,
     dest_rg: Optional[str] = None,
     location: Optional[str] = None,
     domain_name: Optional[str] = None,
@@ -64,7 +65,10 @@ async def generate_iac_command_handler(
         rules_file: Path to transformation rules configuration file
         dry_run: If True, only validate inputs without generating templates
         resource_filters: Optional resource type filters
-        aad_mode: AAD object creation/replication mode (none, manual, auto)
+        subset_filter: Optional subset filter string
+        node_ids: Optional list of specific node IDs to generate IaC for
+        dest_rg: Target resource group name for Bicep module deployment
+        location: Target location/region for resource deployment
         domain_name: Domain name for entities that require one
 
     Returns:
@@ -82,7 +86,25 @@ async def generate_iac_command_handler(
 
         # Build filter if provided
         filter_cypher = None
-        if resource_filters:
+
+        # Handle node_ids filter
+        if node_ids:
+            # Get specified nodes and all their connected nodes
+            node_id_list = ", ".join([f"'{nid}'" for nid in node_ids])
+            filter_cypher = f"""
+            MATCH (n)
+            WHERE n.id IN [{node_id_list}]
+            OPTIONAL MATCH (n)-[r1]-(connected)
+            WITH DISTINCT n AS node
+            UNION
+            MATCH (n)
+            WHERE n.id IN [{node_id_list}]
+            OPTIONAL MATCH (n)-[r2]-(connected)
+            WITH DISTINCT connected AS node
+            WHERE node IS NOT NULL
+            RETURN node AS r, [] AS rels
+            """
+        elif resource_filters:
             # Convert comma-separated filters to Cypher WHERE clause
             filters = [f.strip() for f in resource_filters.split(",")]
             filter_conditions = [f"r.type = '{f}'" for f in filters]
@@ -148,32 +170,32 @@ async def generate_iac_command_handler(
             out_dir = default_timestamped_dir()
 
         # Generate templates
-        paths = emitter.emit(graph, out_dir, domain_name=domain_name)
+        paths = emitter.emit(graph, out_dir)
 
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
             click.echo(f"  📄 {path}")
-        
+
         # Register deployment if not a dry run
         if not dry_run:
             registry = DeploymentRegistry()
-            
+
             # Count resources by type
             resource_counts = {}
             for resource in graph.resources:
                 rtype = resource.get("type", "unknown")
                 resource_counts[rtype] = resource_counts.get(rtype, 0) + 1
-            
+
             # Determine tenant from environment
             tenant_name = "tenant-1"  # Default, could be enhanced with --tenant flag
-            
+
             deployment_id = registry.register_deployment(
                 directory=str(out_dir),
                 tenant=tenant_name,
                 resources=resource_counts,
-                terraform_version=None  # Could detect this
+                terraform_version=None,  # Could detect this
             )
-            
+
             click.echo(f"📝 Registered deployment: {deployment_id}")
             click.echo("   Use 'atg undeploy' to destroy these resources")
 

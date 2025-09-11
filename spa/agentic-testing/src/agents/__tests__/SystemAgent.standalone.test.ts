@@ -122,11 +122,11 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should capture metrics with correct structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       // Basic structure validation
       expect(metrics).toBeDefined();
       expect(typeof metrics).toBe('object');
-      
+
       // Required properties
       expect(metrics).toHaveProperty('timestamp');
       expect(metrics).toHaveProperty('cpu');
@@ -142,11 +142,11 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should have valid CPU metrics structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics.cpu).toHaveProperty('usage');
       expect(metrics.cpu).toHaveProperty('loadAverage');
       expect(metrics.cpu).toHaveProperty('cores');
-      
+
       expect(typeof metrics.cpu.usage).toBe('number');
       expect(Array.isArray(metrics.cpu.loadAverage)).toBe(true);
       expect(typeof metrics.cpu.cores).toBe('number');
@@ -154,13 +154,13 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should have valid memory metrics structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics.memory).toHaveProperty('total');
       expect(metrics.memory).toHaveProperty('free');
       expect(metrics.memory).toHaveProperty('used');
       expect(metrics.memory).toHaveProperty('percentage');
       expect(metrics.memory).toHaveProperty('available');
-      
+
       expect(typeof metrics.memory.total).toBe('number');
       expect(typeof metrics.memory.free).toBe('number');
       expect(typeof metrics.memory.used).toBe('number');
@@ -170,12 +170,12 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should have valid system info structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics.system).toHaveProperty('uptime');
       expect(metrics.system).toHaveProperty('platform');
       expect(metrics.system).toHaveProperty('arch');
       expect(metrics.system).toHaveProperty('hostname');
-      
+
       expect(typeof metrics.system.uptime).toBe('number');
       expect(typeof metrics.system.platform).toBe('string');
       expect(typeof metrics.system.arch).toBe('string');
@@ -184,9 +184,9 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should have valid process list structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(Array.isArray(metrics.processes)).toBe(true);
-      
+
       // If processes exist, validate structure
       if (metrics.processes.length > 0) {
         const process = metrics.processes[0];
@@ -195,7 +195,7 @@ describe('SystemAgent - Standalone Tests', () => {
         expect(process).toHaveProperty('cpu');
         expect(process).toHaveProperty('memory');
         expect(process).toHaveProperty('state');
-        
+
         expect(typeof process.pid).toBe('number');
         expect(typeof process.name).toBe('string');
         expect(typeof process.cpu).toBe('number');
@@ -218,7 +218,7 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should generate health report', async () => {
       const report = await agent.generateHealthReport();
-      
+
       expect(report).toBeDefined();
       expect(report).toHaveProperty('timestamp');
       expect(report).toHaveProperty('overall');
@@ -227,7 +227,7 @@ describe('SystemAgent - Standalone Tests', () => {
       expect(report).toHaveProperty('recommendations');
       expect(report).toHaveProperty('resourceLeaks');
       expect(report).toHaveProperty('performanceIssues');
-      
+
       expect(report.timestamp).toBeInstanceOf(Date);
       expect(['healthy', 'warning', 'critical']).toContain(report.overall);
       expect(Array.isArray(report.issues)).toBe(true);
@@ -331,7 +331,7 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should handle monitoring interval configurations', () => {
       const intervals = [1000, 5000, 10000, 30000];
-      
+
       intervals.forEach(interval => {
         const configuredAgent = createSystemAgent({
           monitoringInterval: interval
@@ -348,7 +348,7 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should capture real system metrics', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       // Validate against actual system
       expect(metrics.cpu.cores).toBe(os.cpus().length);
       expect(metrics.memory.total).toBe(os.totalmem());
@@ -359,27 +359,27 @@ describe('SystemAgent - Standalone Tests', () => {
 
     it('should have reasonable metric values', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       // CPU usage should be between 0 and 100
       expect(metrics.cpu.usage).toBeGreaterThanOrEqual(0);
       expect(metrics.cpu.usage).toBeLessThanOrEqual(100);
-      
+
       // Memory percentage should be between 0 and 100
       expect(metrics.memory.percentage).toBeGreaterThanOrEqual(0);
       expect(metrics.memory.percentage).toBeLessThanOrEqual(100);
-      
+
       // Used memory should be less than total
       expect(metrics.memory.used).toBeLessThanOrEqual(metrics.memory.total);
-      
+
       // System uptime should be positive
       expect(metrics.system.uptime).toBeGreaterThan(0);
     });
 
     it('should detect at least current process', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics.processes.length).toBeGreaterThan(0);
-      
+
       // Should find a process with current process ID
       const currentProcess = metrics.processes.find(p => p.pid === process.pid);
       if (currentProcess) {

@@ -64,8 +64,8 @@ const ScanTab: React.FC = () => {
   // State declarations
   const [tenantId, setTenantId] = useState(state.config.tenantId || '');
   const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
-  const [subscriptionFilter, setSubscriptionFilter] = useState('');
-  const [resourceGroupFilter, setResourceGroupFilter] = useState('');
+  const [filterBySubscriptions, setFilterBySubscriptions] = useState('');
+  const [filterByRgs, setFilterByRgs] = useState('');
   const [hasResourceLimit, setHasResourceLimit] = useState(false);
   const [resourceLimit, setResourceLimit] = useState<number>(100);
   const [maxLlmThreads, setMaxLlmThreads] = useState<number>(20);
@@ -80,8 +80,8 @@ const ScanTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
-  // Build statistics
-  const [buildStats, setBuildStats] = useState({
+  // Scan statistics
+  const [scanStats, setScanStats] = useState({
     resourcesDiscovered: 0,
     nodesCreated: 0,
     edgesCreated: 0,
@@ -165,58 +165,86 @@ const ScanTab: React.FC = () => {
     }
   }, [dispatch]);
 
+  // Handle tenant selection change
+  const handleTenantSelection = useCallback(async (selectedTenant: '1' | '2') => {
+    setSelectedTenant(selectedTenant);
+    
+    try {
+      // Load environment config to get tenant IDs
+      const response = await axios.get('http://localhost:3001/api/config/env');
+      const envData = response.data;
+      
+      // Map selected tenant to tenant ID based on environment variables
+      let tenantId = '';
+      if (selectedTenant === '1') {
+        // Primary tenant - use AZURE_TENANT_ID or AZURE_TENANT_ID_1
+        tenantId = envData.AZURE_TENANT_ID_1 || envData.AZURE_TENANT_ID || '';
+      } else if (selectedTenant === '2') {
+        // Simuland tenant - use AZURE_TENANT_ID_2
+        tenantId = envData.AZURE_TENANT_ID_2 || '';
+      }
+      
+      if (tenantId) {
+        setTenantId(tenantId);
+        dispatch({ type: 'UPDATE_CONFIG', payload: { tenantId } });
+      }
+    } catch (err) {
+      // Handle error silently - user can still enter tenant ID manually
+    }
+  }, [dispatch]);
+
   const updateProgress = useCallback((logLines: string[]) => {
     for (const line of logLines) {
       // Update phase
       if (line.includes('Starting discovery') || line.includes('Discovering')) {
         setProgress(10);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Discovery' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Discovery' }));
       } else if (line.includes('Fetching subscriptions')) {
         setProgress(15);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Fetching Subscriptions' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Fetching Subscriptions' }));
       } else if (line.includes('Discovering resources')) {
         setProgress(20);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Discovering Resources' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Discovering Resources' }));
       } else if (line.includes('Processing') && line.includes('resources')) {
         setProgress(35);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Processing Resources' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Processing Resources' }));
       } else if (line.includes('Creating nodes')) {
         setProgress(40);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Creating Nodes' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Creating Nodes' }));
       } else if (line.includes('Building relationships') || line.includes('Creating relationships')) {
         setProgress(60);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Building Relationships' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Building Relationships' }));
       } else if (line.includes('Creating edges') || line.includes('Building edges')) {
         setProgress(75);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Creating Edges' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Creating Edges' }));
       } else if (line.includes('Applying rules')) {
         setProgress(85);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Applying Rules' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Applying Rules' }));
       } else if (line.includes('Finalizing') || line.includes('Cleaning up')) {
         setProgress(95);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Finalizing' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Finalizing' }));
       } else if (line.includes('✅') && line.includes('completed')) {
         setProgress(100);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Complete' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Complete' }));
       } else if (line.includes('Build complete') || line.includes('Successfully built')) {
         setProgress(100);
-        setBuildStats(prev => ({ ...prev, currentPhase: 'Complete' }));
+        setScanStats(prev => ({ ...prev, currentPhase: 'Complete' }));
       }
 
       // Parse statistics from log lines
       const resourceCountMatch = line.match(/Discovered (\d+) resources/);
       if (resourceCountMatch) {
-        setBuildStats(prev => ({ ...prev, resourcesDiscovered: parseInt(resourceCountMatch[1]) }));
+        setScanStats(prev => ({ ...prev, resourcesDiscovered: parseInt(resourceCountMatch[1]) }));
       }
 
       const nodeCountMatch = line.match(/Created (\d+) nodes/);
       if (nodeCountMatch) {
-        setBuildStats(prev => ({ ...prev, nodesCreated: parseInt(nodeCountMatch[1]) }));
+        setScanStats(prev => ({ ...prev, nodesCreated: parseInt(nodeCountMatch[1]) }));
       }
 
       const edgeCountMatch = line.match(/Created (\d+) (edges|relationships)/);
       if (edgeCountMatch) {
-        setBuildStats(prev => ({ ...prev, edgesCreated: parseInt(edgeCountMatch[1]) }));
+        setScanStats(prev => ({ ...prev, edgesCreated: parseInt(edgeCountMatch[1]) }));
       }
 
       // Also check for resource counts to estimate progress
@@ -238,16 +266,16 @@ const ScanTab: React.FC = () => {
 
       // Update background operation status
       if (event.code === 0) {
-        setLogs((prev) => [...prev, '✅ Build completed successfully!']);
+        setLogs((prev) => [...prev, '✅ Scan completed successfully!']);
         updateBackgroundOperation(event.processId, { status: 'completed' });
-        dispatch({ type: 'ADD_LOG', payload: 'Build completed successfully' });
+        dispatch({ type: 'ADD_LOG', payload: 'Scan completed successfully' });
         // Reload stats after successful build
         loadDatabaseStats();
       } else {
-        setError(`Build failed with exit code ${event.code}`);
-        setLogs((prev) => [...prev, `❌ Build failed with exit code ${event.code}`]);
+        setError(`Scan failed with exit code ${event.code}`);
+        setLogs((prev) => [...prev, `❌ Scan failed with exit code ${event.code}`]);
         updateBackgroundOperation(event.processId, { status: 'error' });
-        dispatch({ type: 'ADD_LOG', payload: `Build failed with exit code ${event.code}` });
+        dispatch({ type: 'ADD_LOG', payload: `Scan failed with exit code ${event.code}` });
       }
 
       // Clean up
@@ -417,7 +445,7 @@ const ScanTab: React.FC = () => {
       return;
     }
 
-    logger.info(`Starting build process for tenant: ${tenantId}`, {
+    logger.info(`Starting scan process for tenant: ${tenantId}`, {
       tenantId,
       hasResourceLimit,
       resourceLimit: hasResourceLimit ? resourceLimit : null
@@ -427,7 +455,7 @@ const ScanTab: React.FC = () => {
     setIsRunning(true);
     setLogs([]);
     setProgress(0);
-    setBuildStats({
+    setScanStats({
       resourcesDiscovered: 0,
       nodesCreated: 0,
       edgesCreated: 0,
@@ -440,19 +468,17 @@ const ScanTab: React.FC = () => {
       '--max-build-threads', maxBuildThreads.toString(),
     ];
 
+    // Add filters if they have values
+    if (filterBySubscriptions) {
+      args.push('--filter-by-subscriptions', filterBySubscriptions);
+    }
+    if (filterByRgs) {
+      args.push('--filter-by-rgs', filterByRgs);
+    }
+
     // Only add resource limit if checkbox is checked
     if (hasResourceLimit) {
       args.push('--resource-limit', resourceLimit.toString());
-    }
-
-    // Add subscription filter if provided
-    if (subscriptionFilter.trim()) {
-      args.push('--subscription', subscriptionFilter.trim());
-    }
-
-    // Add resource group filter if provided
-    if (resourceGroupFilter.trim()) {
-      args.push('--resource-group', resourceGroupFilter.trim());
     }
 
     if (rebuildEdges) args.push('--rebuild-edges');
@@ -461,7 +487,7 @@ const ScanTab: React.FC = () => {
     try {
       // Use backend API instead of Electron API
       const response = await axios.post('http://localhost:3001/api/execute', {
-        command: 'build',
+        command: 'scan',
         args: args
       });
 
@@ -495,7 +521,7 @@ const ScanTab: React.FC = () => {
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
 
     } catch (err: any) {
-      dispatch({ type: 'ADD_LOG', payload: `Build failed to start: ${err.message}` });
+      dispatch({ type: 'ADD_LOG', payload: `Scan failed to start: ${err.message}` });
       setError(err.response?.data?.error || err.message);
       setIsRunning(false);
     }
@@ -513,8 +539,8 @@ const ScanTab: React.FC = () => {
         unsubscribeFromProcess(currentProcessId);
 
         setIsRunning(false);
-        setLogs((prev) => [...prev, 'Build cancelled by user']);
-        dispatch({ type: 'ADD_LOG', payload: 'Build cancelled by user' });
+        setLogs((prev) => [...prev, 'Scan cancelled by user']);
+        dispatch({ type: 'ADD_LOG', payload: 'Scan cancelled by user' });
       } catch (err: any) {
         setError(err.response?.data?.error || err.message);
       }
@@ -570,7 +596,7 @@ const ScanTab: React.FC = () => {
             </Button>
           }
         >
-          Neo4j database is not running. Start it to begin building or viewing your graph.
+          Neo4j database is not running. Start it to begin scanning or viewing your graph.
         </Alert>
       )}
 
@@ -581,13 +607,13 @@ const ScanTab: React.FC = () => {
         </Alert>
       )}
 
-      {/* Show Build Dashboard when running, Configuration when not */}
+      {/* Show Scan Dashboard when running, Configuration when not */}
       {isRunning ? (
-        // Build Dashboard (CLI-like view)
+        // Scan Dashboard (CLI-like view)
         <>
           {/* Configuration Overview */}
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>Build Configuration</Typography>
+            <Typography variant="h6" gutterBottom>Scan Configuration</Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
                 <Typography variant="body2" color="textSecondary">Tenant ID</Typography>
@@ -602,7 +628,7 @@ const ScanTab: React.FC = () => {
                 <Typography variant="body1">{maxLlmThreads}</Typography>
               </Grid>
               <Grid item xs={12} md={2}>
-                <Typography variant="body2" color="textSecondary">Build Threads</Typography>
+                <Typography variant="body2" color="textSecondary">Scan Threads</Typography>
                 <Typography variant="body1">{maxBuildThreads}</Typography>
               </Grid>
               <Grid item xs={12} md={2}>
@@ -617,7 +643,7 @@ const ScanTab: React.FC = () => {
           {/* Progress Dashboard */}
           <Paper sx={{ p: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Build Progress</Typography>
+              <Typography variant="h6">Scan Progress</Typography>
               <Button
                 variant="contained"
                 color="error"
@@ -625,7 +651,7 @@ const ScanTab: React.FC = () => {
                 onClick={handleStop}
                 size="small"
               >
-                Stop Build
+                Stop Scan
               </Button>
             </Box>
 
@@ -636,28 +662,28 @@ const ScanTab: React.FC = () => {
                 {progress}% Complete
               </Typography>
               <Typography variant="body2" color="primary" fontWeight="bold">
-                Phase: {buildStats.currentPhase}
+                Phase: {scanStats.currentPhase}
               </Typography>
             </Box>
 
-            {/* Build Statistics */}
+            {/* Scan Statistics */}
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid item xs={4}>
                 <Card variant="outlined" sx={{ p: 1 }}>
                   <Typography variant="caption" color="textSecondary">Resources Discovered</Typography>
-                  <Typography variant="h6">{buildStats.resourcesDiscovered}</Typography>
+                  <Typography variant="h6">{scanStats.resourcesDiscovered}</Typography>
                 </Card>
               </Grid>
               <Grid item xs={4}>
                 <Card variant="outlined" sx={{ p: 1 }}>
                   <Typography variant="caption" color="textSecondary">Nodes Created</Typography>
-                  <Typography variant="h6">{buildStats.nodesCreated}</Typography>
+                  <Typography variant="h6">{scanStats.nodesCreated}</Typography>
                 </Card>
               </Grid>
               <Grid item xs={4}>
                 <Card variant="outlined" sx={{ p: 1 }}>
                   <Typography variant="caption" color="textSecondary">Edges Created</Typography>
-                  <Typography variant="h6">{buildStats.edgesCreated}</Typography>
+                  <Typography variant="h6">{scanStats.edgesCreated}</Typography>
                 </Card>
               </Grid>
             </Grid>
@@ -672,7 +698,7 @@ const ScanTab: React.FC = () => {
           </Paper>
         </>
       ) : (
-        // Build Configuration Form
+        // Scan Configuration Form
         <Paper sx={{ p: 3, mb: 2 }}>
           <Typography variant="h6" gutterBottom>
             {dbPopulated ? 'Update Graph Database' : 'Scan Azure Tenant'}
@@ -709,7 +735,7 @@ const ScanTab: React.FC = () => {
                     <InputLabel>Azure Tenant</InputLabel>
                     <Select
                       value={selectedTenant}
-                      onChange={(e) => setSelectedTenant(e.target.value as '1' | '2')}
+                      onChange={(e) => handleTenantSelection(e.target.value as '1' | '2')}
                       disabled={isRunning}
                       label="Azure Tenant"
                     >
@@ -722,30 +748,30 @@ const ScanTab: React.FC = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Subscription Filter"
-                    value={subscriptionFilter}
-                    onChange={(e) => setSubscriptionFilter(e.target.value)}
-                    placeholder="Enter subscription ID or name (optional)"
+                    label="Filter by Subscriptions"
+                    value={filterBySubscriptions}
+                    onChange={(e) => setFilterBySubscriptions(e.target.value)}
                     disabled={isRunning}
-                    helperText="Filter scan to only this subscription ID or name"
+                    placeholder="sub-id-1,sub-id-2"
+                    helperText="Comma-separated subscription IDs (optional)"
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Resource Group Filter"
-                    value={resourceGroupFilter}
-                    onChange={(e) => setResourceGroupFilter(e.target.value)}
-                    placeholder="Enter resource group name (optional)"
+                    label="Filter by Resource Groups"
+                    value={filterByRgs}
+                    onChange={(e) => setFilterByRgs(e.target.value)}
                     disabled={isRunning}
-                    helperText="Limit scan to resources in this group"
+                    placeholder="rg-1,rg-2"
+                    helperText="Comma-separated resource group names (optional)"
                   />
                 </Grid>
               </Grid>
             </Grid>
 
-            {/* Right Column - Sliders and Checkboxes */}
+            {/* Right Column - Performance and Options */}
             <Grid item xs={12} md={6}>
               <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Processing Options
@@ -764,8 +790,6 @@ const ScanTab: React.FC = () => {
                       max={20}
                       marks
                       disabled={isRunning}
-                      aria-label="Maximum LLM processing threads"
-                      sx={{ px: 2 }}
                     />
                   </FormControl>
                 </Grid>
@@ -782,8 +806,6 @@ const ScanTab: React.FC = () => {
                       max={20}
                       marks
                       disabled={isRunning}
-                      aria-label="Maximum build processing threads"
-                      sx={{ px: 2 }}
                     />
                   </FormControl>
                 </Grid>
@@ -798,12 +820,12 @@ const ScanTab: React.FC = () => {
                           disabled={isRunning}
                         />
                       }
-                      label="Set Resource Limit"
+                      label="Set Resource Limit (default: unlimited)"
                     />
                     {hasResourceLimit && (
-                      <Box sx={{ mt: 1, px: 2 }}>
-                        <Typography variant="body2" gutterBottom>
-                          Limit: {resourceLimit} resources
+                      <Box sx={{ mt: 2 }}>
+                        <Typography gutterBottom>
+                          Resource Limit: {resourceLimit}
                         </Typography>
                         <Slider
                           value={resourceLimit}
@@ -817,7 +839,6 @@ const ScanTab: React.FC = () => {
                             { value: 1000, label: '1000' },
                           ]}
                           disabled={isRunning}
-                          aria-label="Resource limit value"
                         />
                       </Box>
                     )}
@@ -825,48 +846,55 @@ const ScanTab: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rebuildEdges}
-                        onChange={(e) => setRebuildEdges(e.target.checked)}
-                        disabled={isRunning}
-                      />
-                    }
-                    label="Rebuild edges (clears existing relationships)"
-                  />
+                  <FormControl fullWidth>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={rebuildEdges}
+                          onChange={(e) => setRebuildEdges(e.target.checked)}
+                          disabled={isRunning}
+                        />
+                      }
+                      label="Rebuild Edges"
+                    />
+                  </FormControl>
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={noAadImport}
-                        onChange={(e) => setNoAadImport(e.target.checked)}
-                        disabled={isRunning}
-                      />
-                    }
-                    label="Skip Azure AD import"
-                  />
+                  <FormControl fullWidth>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={noAadImport}
+                          onChange={(e) => setNoAadImport(e.target.checked)}
+                          disabled={isRunning}
+                        />
+                      }
+                      label="No AAD Import"
+                    />
+                  </FormControl>
                 </Grid>
               </Grid>
             </Grid>
 
-            {/* Action Button - Full Width Bottom */}
+            {/* Divider */}
             <Grid item xs={12}>
               <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'center' }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={dbPopulated ? <UpdateIcon /> : <PlayIcon />}
-                  onClick={handleStart}
-                  size="large"
-                  sx={{ minWidth: 200 }}
-                >
-                  {dbPopulated ? 'Update Database' : 'Start Scan'}
-                </Button>
-              </Box>
+            </Grid>
+
+            {/* Scan Action Button - Centered */}
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                size="large"
+                color="primary"
+                startIcon={dbPopulated ? <UpdateIcon /> : <PlayIcon />}
+                onClick={handleStart}
+                disabled={isRunning || !neo4jRunning}
+                sx={{ px: 4, py: 1.5 }}
+              >
+                {dbPopulated ? 'Update Database' : 'Start Scan'}
+              </Button>
             </Grid>
           </Grid>
       </Paper>
@@ -876,7 +904,7 @@ const ScanTab: React.FC = () => {
       {logs.length > 0 && (
         <Paper sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-            <Typography variant="h6">Build Output</Typography>
+            <Typography variant="h6">Scan Output</Typography>
           </Box>
           <LogViewer logs={logs} />
         </Paper>

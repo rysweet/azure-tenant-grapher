@@ -45,7 +45,7 @@ describe('SystemAgent', () => {
 
     it('should capture system metrics', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics).toHaveProperty('timestamp');
       expect(metrics).toHaveProperty('cpu');
       expect(metrics).toHaveProperty('memory');
@@ -91,7 +91,7 @@ describe('SystemAgent', () => {
 
     it('should emit metrics events during monitoring', (done) => {
       let eventReceived = false;
-      
+
       agent.on('metrics', (metrics) => {
         if (!eventReceived) {
           eventReceived = true;
@@ -112,7 +112,7 @@ describe('SystemAgent', () => {
 
     it('should generate comprehensive health report', async () => {
       const report = await agent.generateHealthReport();
-      
+
       expect(report).toHaveProperty('timestamp');
       expect(report).toHaveProperty('overall');
       expect(report).toHaveProperty('issues');
@@ -136,7 +136,7 @@ describe('SystemAgent', () => {
 
     it('should detect running processes', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(Array.isArray(metrics.processes)).toBe(true);
       expect(metrics.processes.length).toBeGreaterThan(0);
 
@@ -201,7 +201,7 @@ describe('SystemAgent', () => {
 
     it('should handle Docker monitoring gracefully when Docker is unavailable', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       // Should not crash even if Docker is not available
       expect(metrics.docker).toBeDefined();
       if (metrics.docker) {
@@ -226,7 +226,7 @@ describe('SystemAgent', () => {
     it('should analyze metrics for issues', async () => {
       // Get some metrics first
       await agent.captureMetrics();
-      
+
       const report = await agent.generateHealthReport();
       expect(report.issues).toBeDefined();
       expect(Array.isArray(report.issues)).toBe(true);
@@ -234,13 +234,13 @@ describe('SystemAgent', () => {
 
     it('should provide performance history', async () => {
       await agent.startMonitoring();
-      
+
       // Wait for some metrics to be collected
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const history = agent.getMetricsHistory();
       expect(Array.isArray(history)).toBe(true);
-      
+
       await agent.stopMonitoring();
     });
   });
@@ -263,14 +263,14 @@ describe('SystemAgent', () => {
 
     it('should handle metrics capture errors gracefully', async () => {
       await agent.initialize();
-      
+
       // Even if some metrics fail to capture, it should not crash
       await expect(agent.captureMetrics()).resolves.not.toThrow();
     });
 
     it('should handle execution without scenario', async () => {
       await agent.initialize();
-      
+
       // Should handle undefined scenario gracefully
       await expect(agent.execute(undefined)).rejects.toThrow();
     });

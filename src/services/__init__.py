@@ -20,6 +20,7 @@ from .azure_mcp_client import (
     integrate_with_discovery_service,
 )
 from .change_feed_ingestion_service import ChangeFeedIngestionService
+from .discovery_filter_service import DiscoveryFilterService
 from .tenant_manager import (
     InvalidTenantConfigError,
     Tenant,
@@ -36,6 +37,7 @@ __all__ = [
     "AzureDiscoveryService",
     "AzureMCPClient",
     "ChangeFeedIngestionService",
+    "DiscoveryFilterService",
     "InvalidTenantConfigError",
     "MCPConnectionError",
     "MCPOperationError",

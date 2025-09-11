@@ -115,7 +115,7 @@ export class YamlParser {
     try {
       const absolutePath = path.resolve(this.config.baseDir, filePath);
       const content = await fs.readFile(absolutePath, 'utf-8');
-      
+
       // Parse YAML content
       const parsed = yaml.load(content) as any;
       if (!parsed) {
@@ -124,15 +124,15 @@ export class YamlParser {
 
       // Handle includes
       const processedContent = await this.processIncludes(parsed, path.dirname(absolutePath), 0);
-      
+
       // Substitute variables
       const substitutedContent = this.substituteVariables(processedContent, variables);
-      
+
       // Convert to scenarios
       if (Array.isArray(substitutedContent)) {
         return substitutedContent.map((scenario, index) => this.validateAndConvertScenario(scenario, `${filePath}[${index}]`));
       } else if (substitutedContent.scenarios) {
-        return substitutedContent.scenarios.map((scenario: any, index: number) => 
+        return substitutedContent.scenarios.map((scenario: any, index: number) =>
           this.validateAndConvertScenario(scenario, `${filePath}[scenarios][${index}]`)
         );
       } else {
@@ -185,18 +185,18 @@ export class YamlParser {
     // Handle include directive
     if (content.include && typeof content.include === 'string') {
       const includePath = path.resolve(baseDir, content.include);
-      
+
       // Prevent circular includes
       if (this.processedFiles.has(includePath)) {
         throw new YamlParseError(`Circular include detected: ${includePath}`);
       }
 
       this.processedFiles.add(includePath);
-      
+
       try {
         const includeContent = await fs.readFile(includePath, 'utf-8');
         const parsed = yaml.load(includeContent);
-        
+
         // Merge variables if provided
         let result = parsed;
         if (content.variables && typeof parsed === 'object') {
@@ -297,7 +297,7 @@ export class YamlParser {
     if (!raw.id) errors.push('id is required');
     if (!raw.name) errors.push('name is required');
     if (!raw.description) errors.push('description is required');
-    
+
     // Validate priority
     const priority = this.validatePriority(raw.priority);
     if (!priority && this.config.strictValidation) {
@@ -448,7 +448,7 @@ export class YamlParser {
 
       for (const [key, value] of Object.entries(obj)) {
         const currentPath = path ? `${path}.${key}` : key;
-        
+
         if (key === 'variables' && typeof value === 'object') {
           Object.assign(variables, value);
         } else {

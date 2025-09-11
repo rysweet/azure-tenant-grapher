@@ -1,6 +1,6 @@
 /**
  * GitHub Issue Reporter Agent
- * 
+ *
  * Handles GitHub issue creation and management for test failures.
  * Supports issue deduplication, template-based creation, and comprehensive
  * GitHub API integration with rate limiting and error handling.
@@ -195,7 +195,7 @@ const DEFAULT_CONFIG: Partial<IssueReporterConfig> = {
 
 /**
  * GitHub Issue Reporter Agent
- * 
+ *
  * Provides comprehensive GitHub integration for test failure reporting
  * and issue management with advanced features like deduplication,
  * template-based issue creation, and rate limiting.
@@ -214,7 +214,7 @@ export class IssueReporter implements IAgent {
   constructor(config: IssueReporterConfig) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger = logger.child({ component: 'IssueReporter' });
-    
+
     // Initialize Octokit with configuration
     this.octokit = new Octokit({
       auth: this.config.token,
@@ -238,10 +238,10 @@ export class IssueReporter implements IAgent {
     try {
       // Verify GitHub API access
       await this.verifyAccess();
-      
+
       // Load rate limit information
       await this.updateRateLimitInfo();
-      
+
       // Load custom templates if specified
       if (this.config.templatesDir) {
         await this.loadCustomTemplates();
@@ -290,11 +290,11 @@ export class IssueReporter implements IAgent {
           this.logger.info('Duplicate issue found, updating instead of creating', {
             issueNumber: existingIssue.number
           });
-          
-          await this.addComment(existingIssue.number, 
+
+          await this.addComment(existingIssue.number,
             `## Additional Occurrence\n\n**Timestamp:** ${failure.timestamp.toISOString()}\n\nThis failure occurred again with the same fingerprint.`
           );
-          
+
           return {
             issueNumber: existingIssue.number,
             url: existingIssue.html_url
@@ -380,7 +380,7 @@ export class IssueReporter implements IAgent {
 
       // Search for recent issues with similar characteristics
       const searchQuery = `repo:${this.config.owner}/${this.config.repository} is:issue "${failure.scenarioId}" created:>=${lookbackDate.toISOString().split('T')[0]}`;
-      
+
       const searchResponse = await this.octokit.rest.search.issuesAndPullRequests({
         q: searchQuery,
         sort: 'created',
@@ -461,7 +461,7 @@ export class IssueReporter implements IAgent {
       const screenshotUrl = `${gistResponse.data.html_url}#file-${filename.replace(/\./g, '-')}`;
 
       // Add comment with screenshot link
-      await this.addComment(issueNumber, 
+      await this.addComment(issueNumber,
         `## Screenshot Added\n\n![${filename}](${screenshotUrl})\n\n*Screenshot uploaded at ${new Date().toISOString()}*`
       );
 
@@ -718,7 +718,7 @@ export class IssueReporter implements IAgent {
             new RegExp(`{{#${key}}}([\\s\\S]*?){{/${key}}}`, 'g'),
             (match, content) => {
               if (value.length === 0) return '';
-              return value.map(item => 
+              return value.map(item =>
                 content.replace(/{{this}}/g, item)
               ).join('');
             }
@@ -737,8 +737,8 @@ export class IssueReporter implements IAgent {
       /{{#(\w+)}}([\s\S]*?){{\/\1}}/g,
       (match, key, content) => {
         const value = vars[key as keyof IssueTemplateVars];
-        return (value && ((Array.isArray(value) && value.length > 0) || (!Array.isArray(value) && value !== ''))) 
-          ? content 
+        return (value && ((Array.isArray(value) && value.length > 0) || (!Array.isArray(value) && value !== '')))
+          ? content
           : '';
       }
     );
@@ -826,7 +826,7 @@ export class IssueReporter implements IAgent {
         owner: this.config.owner,
         repo: this.config.repository
       });
-      
+
       this.logger.info('GitHub API access verified');
     } catch (error) {
       this.logger.error('GitHub API access verification failed', {
@@ -864,7 +864,7 @@ export class IssueReporter implements IAgent {
           resetTime: this.rateLimitInfo.reset.toISOString(),
           waitTimeMs: waitTime
         });
-        
+
         await new Promise(resolve => setTimeout(resolve, waitTime + 1000));
         await this.updateRateLimitInfo();
       }
@@ -882,13 +882,13 @@ export class IssueReporter implements IAgent {
     try {
       const templateDir = this.config.templatesDir;
       const files = await fs.readdir(templateDir);
-      
+
       for (const file of files) {
         if (file.endsWith('.md') || file.endsWith('.txt')) {
           const templateName = path.basename(file, path.extname(file));
           const templatePath = path.join(templateDir, file);
           const content = await fs.readFile(templatePath, 'utf-8');
-          
+
           this.issueTemplates.set(templateName, content);
           this.logger.debug('Loaded custom template', {
             name: templateName,

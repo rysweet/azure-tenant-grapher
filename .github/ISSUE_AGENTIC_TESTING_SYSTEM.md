@@ -28,7 +28,7 @@ Microsoft Research's **Magentic-One** demonstrates the feasibility of multi-agen
 ```python
 class ATGTestingOrchestrator:
     """Main orchestrator for agentic testing system."""
-    
+
     def __init__(self):
         self.ui_agent = ElectronUIAgent()
         self.cli_agent = CLIAgent()
@@ -168,11 +168,11 @@ error_scenarios:
   - name: "Invalid Credentials"
     setup: Use incorrect Azure credentials
     expected: Clear error message with remediation steps
-    
+
   - name: "Network Timeout"
     setup: Simulate network latency
     expected: Graceful timeout with retry option
-    
+
   - name: "Neo4j Connection Lost"
     setup: Stop Neo4j during operation
     expected: Connection error with recovery instructions
@@ -185,11 +185,11 @@ platforms:
   - os: Windows 11
     electron_version: latest
     node_version: 18.x
-    
+
   - os: macOS Sonoma
     electron_version: latest
     node_version: 18.x
-    
+
   - os: Ubuntu 22.04
     electron_version: latest
     node_version: 18.x
@@ -206,7 +206,7 @@ import { ElectronApplication, Page, _electron as electron } from 'playwright';
 export class ElectronUIAgent {
   private app: ElectronApplication;
   private page: Page;
-  
+
   async launch(): Promise<void> {
     this.app = await electron.launch({
       args: [path.join(__dirname, '../../main/index.js')],
@@ -214,28 +214,28 @@ export class ElectronUIAgent {
     });
     this.page = await this.app.firstWindow();
   }
-  
+
   async clickTab(tabName: string): Promise<void> {
     await this.page.click(`text=${tabName}`);
     await this.page.waitForLoadState('networkidle');
   }
-  
+
   async fillForm(selector: string, value: string): Promise<void> {
     await this.page.fill(selector, value);
   }
-  
+
   async verifyElement(selector: string, options?: VerifyOptions): Promise<boolean> {
     const element = await this.page.$(selector);
     if (!element) return false;
-    
+
     if (options?.text) {
       const text = await element.textContent();
       return text?.includes(options.text) ?? false;
     }
-    
+
     return true;
   }
-  
+
   async captureScreenshot(name: string): Promise<string> {
     const path = `outputs/screenshots/${name}-${Date.now()}.png`;
     await this.page.screenshot({ path, fullPage: true });
@@ -255,17 +255,17 @@ from typing import Dict, List, Optional
 
 class CLIAgent:
     """Agent for testing CLI commands."""
-    
+
     def __init__(self, env_vars: Dict[str, str]):
         self.env = {**os.environ, **env_vars}
         self.command_history = []
-    
+
     def run_command(self, command: str, args: List[str] = None) -> CommandResult:
         """Execute a CLI command and capture output."""
         full_command = ['uv', 'run', 'atg', command]
         if args:
             full_command.extend(args)
-        
+
         result = subprocess.run(
             full_command,
             capture_output=True,
@@ -273,26 +273,26 @@ class CLIAgent:
             env=self.env,
             timeout=300
         )
-        
+
         self.command_history.append({
             'command': ' '.join(full_command),
             'returncode': result.returncode,
             'stdout': result.stdout,
             'stderr': result.stderr
         })
-        
+
         return CommandResult(
             success=result.returncode == 0,
             stdout=result.stdout,
             stderr=result.stderr,
             returncode=result.returncode
         )
-    
+
     def interactive_command(self, command: str) -> InteractiveSession:
         """Start an interactive CLI session."""
         session = pexpect.spawn(f'uv run atg {command}', env=self.env)
         return InteractiveSession(session)
-    
+
     def verify_output_format(self, output: str, expected_format: str) -> bool:
         """Verify command output matches expected format."""
         if expected_format == 'json':
@@ -316,21 +316,21 @@ from langchain.prompts import PromptTemplate
 
 class FeatureComprehensionAgent:
     """Agent that understands feature intent and generates test scenarios."""
-    
+
     def __init__(self, llm: AzureOpenAI):
         self.llm = llm
         self.documentation = self._load_documentation()
-    
+
     def understand_feature(self, feature_name: str) -> FeatureSpec:
         """Understand what a feature is supposed to do."""
         prompt = PromptTemplate(
             template="""
-            Based on the following documentation and code, explain what the {feature_name} feature 
+            Based on the following documentation and code, explain what the {feature_name} feature
             is supposed to do, what inputs it expects, and what outputs/side effects it should produce.
-            
+
             Documentation:
             {documentation}
-            
+
             Provide:
             1. Feature purpose
             2. Expected inputs
@@ -341,30 +341,30 @@ class FeatureComprehensionAgent:
             """,
             input_variables=["feature_name", "documentation"]
         )
-        
+
         response = self.llm(prompt.format(
             feature_name=feature_name,
             documentation=self.documentation.get(feature_name, "")
         ))
-        
+
         return self._parse_feature_spec(response)
-    
+
     def generate_test_scenarios(self, feature_spec: FeatureSpec) -> List[TestScenario]:
         """Generate comprehensive test scenarios for a feature."""
         scenarios = []
-        
+
         # Happy path
         scenarios.append(self._create_happy_path_scenario(feature_spec))
-        
+
         # Edge cases
         scenarios.extend(self._create_edge_case_scenarios(feature_spec))
-        
+
         # Error conditions
         scenarios.extend(self._create_error_scenarios(feature_spec))
-        
+
         # Performance tests
         scenarios.append(self._create_performance_scenario(feature_spec))
-        
+
         return scenarios
 ```
 
@@ -377,22 +377,22 @@ from typing import List, Dict, Optional
 
 class IssueReportingAgent:
     """Agent responsible for creating GitHub issues."""
-    
+
     def __init__(self, github_token: str, repo_name: str):
         self.github = Github(github_token)
         self.repo = self.github.get_repo(repo_name)
         self.existing_issues = self._load_existing_issues()
-    
+
     def create_issue(self, bug: BugReport) -> Optional[Issue]:
         """Create a GitHub issue for a discovered bug."""
-        
+
         # Check for duplicates
         if self._is_duplicate(bug):
             return None
-        
+
         # Format issue body
         body = self._format_issue_body(bug)
-        
+
         # Create issue
         issue = self.repo.create_issue(
             title=bug.title,
@@ -400,14 +400,14 @@ class IssueReportingAgent:
             labels=self._determine_labels(bug),
             assignee=self._determine_assignee(bug)
         )
-        
+
         # Attach screenshots if available
         if bug.screenshots:
             for screenshot in bug.screenshots:
                 self._attach_screenshot(issue, screenshot)
-        
+
         return issue
-    
+
     def _format_issue_body(self, bug: BugReport) -> str:
         """Format a comprehensive issue body."""
         return f"""
@@ -459,7 +459,7 @@ from typing import List, Dict
 
 class ATGTestingOrchestrator:
     """Main orchestrator for the testing system."""
-    
+
     def __init__(self, config: TestConfig):
         self.config = config
         self.ui_agent = ElectronUIAgent(config.electron_config)
@@ -467,28 +467,28 @@ class ATGTestingOrchestrator:
         self.comprehension = FeatureComprehensionAgent(config.llm)
         self.reporter = IssueReportingAgent(config.github)
         self.results = []
-    
+
     async def run_full_test_suite(self):
         """Run complete test suite across all features."""
         features = await self._discover_features()
-        
+
         for feature in features:
             # Understand the feature
             spec = await self.comprehension.understand_feature(feature)
-            
+
             # Generate test scenarios
             scenarios = await self.comprehension.generate_test_scenarios(spec)
-            
+
             # Execute tests
             for scenario in scenarios:
                 result = await self._execute_scenario(scenario)
                 self.results.append(result)
-                
+
                 # Report issues if test failed
                 if not result.success:
                     bug = self._create_bug_report(scenario, result)
                     await self.reporter.create_issue(bug)
-    
+
     async def _execute_scenario(self, scenario: TestScenario) -> TestResult:
         """Execute a single test scenario."""
         if scenario.interface == 'cli':
@@ -497,7 +497,7 @@ class ATGTestingOrchestrator:
             return await self._execute_gui_scenario(scenario)
         else:
             return await self._execute_mixed_scenario(scenario)
-    
+
     async def continuous_testing(self):
         """Run continuous testing in the background."""
         while True:
@@ -505,11 +505,11 @@ class ATGTestingOrchestrator:
                 # Run smoke tests every hour
                 await self.run_smoke_tests()
                 await asyncio.sleep(3600)
-                
+
                 # Run full suite every 24 hours
                 if self._should_run_full_suite():
                     await self.run_full_test_suite()
-                
+
             except Exception as e:
                 await self._handle_orchestrator_error(e)
 ```
@@ -522,27 +522,27 @@ class ATGTestingOrchestrator:
 # .agentic-testing.yml
 testing:
   mode: continuous  # continuous, on-demand, scheduled
-  
+
   credentials:
     azure_tenant_id: ${AZURE_TENANT_ID}
     azure_client_id: ${AZURE_CLIENT_ID}
     azure_client_secret: ${AZURE_CLIENT_SECRET}
     github_token: ${GITHUB_TOKEN}
-  
+
   coverage:
     cli_commands: all  # all, essential, custom list
     gui_features: all
-    
+
   reporting:
     create_issues: true
     issue_labels: ["bug", "agentic-test"]
     assign_to: "@rysweet"
-    
+
   schedule:
     smoke_tests: "0 * * * *"  # Every hour
     full_suite: "0 0 * * *"   # Daily
     regression: "0 0 * * 0"   # Weekly
-    
+
   thresholds:
     max_retries: 3
     failure_tolerance: 0.05  # 5% failure rate acceptable
@@ -557,17 +557,17 @@ features:
     cli_command: build
     gui_tab: Build
     priority: critical
-    
+
   - name: IaC Generation
     cli_command: generate-iac
     gui_tab: Generate IaC
     priority: high
-    
+
   - name: Graph Visualization
     cli_command: visualize
     gui_tab: Visualize
     priority: medium
-    
+
   - name: Threat Modeling
     cli_command: threat-model
     gui_tab: Threat Model
@@ -606,20 +606,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Environment
         run: |
           npm install
           pip install -r requirements.txt
           docker pull neo4j:5.25.1
-      
+
       - name: Run Agentic Tests
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m tests.agents.orchestrator --mode smoke
-      
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v3
         with:

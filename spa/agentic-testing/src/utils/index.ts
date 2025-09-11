@@ -39,19 +39,19 @@ export const legacyLogger = createLegacyLogger(process.env.LOG_LEVEL || 'info');
 // Legacy configuration utilities (kept for backward compatibility)
 export class LegacyConfigManager {
   private static config: Record<string, any> = {};
-  
+
   static set(key: string, value: any): void {
     this.config[key] = value;
   }
-  
+
   static get<T = any>(key: string, defaultValue?: T): T {
     return this.config[key] ?? defaultValue;
   }
-  
+
   static has(key: string): boolean {
     return key in this.config;
   }
-  
+
   static loadFromEnv(): void {
     const envVars = [
       'GITHUB_TOKEN',
@@ -61,7 +61,7 @@ export class LegacyConfigManager {
       'WEBSOCKET_URL',
       'AZURE_TENANT_ID'
     ];
-    
+
     envVars.forEach(envVar => {
       if (process.env[envVar]) {
         this.set(envVar, process.env[envVar]);
@@ -75,16 +75,16 @@ export class TimeUtils {
   static delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   static timeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     return Promise.race([
       promise,
-      new Promise<never>((_, reject) => 
+      new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms)
       )
     ]);
   }
-  
+
   static measureTime<T>(fn: () => Promise<T>): Promise<{ result: T; duration: number }> {
     const start = Date.now();
     return fn().then(result => ({
@@ -101,7 +101,7 @@ export class StringUtils {
       return variables[key] ?? match;
     });
   }
-  
+
   static slugify(text: string): string {
     return text
       .toLowerCase()
