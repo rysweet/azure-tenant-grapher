@@ -7,19 +7,19 @@
 export * from './models';
 
 // Agent exports with specific naming
-export { 
-  IAgent, 
-  AgentType, 
-  ElectronUIAgent, 
+export {
+  IAgent,
+  AgentType,
+  ElectronUIAgent,
   createElectronUIAgent,
   CLIAgent,
   createCLIAgent,
   ComprehensionAgent,
   createComprehensionAgent
 } from './agents';
-export type { 
-  ElectronUIAgentConfig, 
-  WebSocketEvent, 
+export type {
+  ElectronUIAgentConfig,
+  WebSocketEvent,
   PerformanceSample,
   CLIAgentConfig,
   CLIProcessInfo,
@@ -48,13 +48,13 @@ export { AgenticOrchestrator as default } from './orchestrator';
 export async function quickStart(scenarioPath: string): Promise<void> {
   const { AgenticOrchestrator } = await import('./orchestrator');
   const { ScenarioLoader } = await import('./scenarios');
-  
+
   const orchestrator = new AgenticOrchestrator({
     logLevel: 'info',
     maxConcurrentAgents: 3,
     retryAttempts: 2
   });
-  
+
   const scenarios = await ScenarioLoader.loadFromFile(scenarioPath);
   await orchestrator.executeScenarios([scenarios]);
 }

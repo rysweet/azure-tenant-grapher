@@ -94,7 +94,7 @@ const result = await screenshotManager.compareScreenshots(
   {
     colorOptions: {
       removedColor: [255, 0, 0],    // Red for removed pixels
-      addedColor: [0, 255, 0],      // Green for added pixels  
+      addedColor: [0, 255, 0],      // Green for added pixels
       changedColor: [255, 255, 0],  // Yellow for changed pixels
       alpha: 200                    // Transparency (0-255)
     }
@@ -138,7 +138,7 @@ const results = await screenshotManager.batchCompareScreenshots([
   },
   {
     name: 'Login',
-    baseline: './screenshots/login_baseline.png', 
+    baseline: './screenshots/login_baseline.png',
     actual: './screenshots/login_actual.png',
     options: { algorithm: 'pixel-by-pixel', threshold: 0.02 }
   }
@@ -160,9 +160,9 @@ const score = await screenshotManager.calculateSimilarityScore(
   baseline,
   actual,
   {
-    weights: { 
+    weights: {
       pixel: 0.4,      // 40% weight for pixel comparison
-      perceptual: 0.4, // 40% weight for perceptual comparison  
+      perceptual: 0.4, // 40% weight for perceptual comparison
       structural: 0.2  // 20% weight for structural comparison
     }
   }
@@ -200,14 +200,14 @@ import { createScreenshotManager } from './utils/screenshot';
 
 test('visual regression test', async ({ page }) => {
   const screenshotManager = createScreenshotManager();
-  
+
   await page.goto('/dashboard');
-  
+
   // Capture current screenshot
   const current = await screenshotManager.capturePageScreenshot(page, {
     scenarioId: 'dashboard-test'
   });
-  
+
   // Compare with baseline
   const result = await screenshotManager.compareScreenshots(
     './baselines/dashboard.png',
@@ -217,7 +217,7 @@ test('visual regression test', async ({ page }) => {
       threshold: 0.05
     }
   );
-  
+
   expect(result.matches).toBeTruthy();
 });
 ```

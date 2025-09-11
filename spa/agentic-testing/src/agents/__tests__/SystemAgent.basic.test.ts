@@ -99,22 +99,22 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should capture system metrics structure', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(metrics).toBeDefined();
       expect(metrics).toHaveProperty('timestamp');
       expect(metrics.timestamp).toBeInstanceOf(Date);
-      
+
       expect(metrics).toHaveProperty('cpu');
       expect(metrics.cpu).toHaveProperty('usage');
       expect(metrics.cpu).toHaveProperty('loadAverage');
       expect(metrics.cpu).toHaveProperty('cores');
-      
+
       expect(metrics).toHaveProperty('memory');
       expect(metrics.memory).toHaveProperty('total');
       expect(metrics.memory).toHaveProperty('free');
       expect(metrics.memory).toHaveProperty('used');
       expect(metrics.memory).toHaveProperty('percentage');
-      
+
       expect(metrics).toHaveProperty('system');
       expect(metrics.system).toHaveProperty('platform');
       expect(metrics.system).toHaveProperty('arch');
@@ -123,30 +123,30 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should capture valid CPU metrics', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(typeof metrics.cpu.usage).toBe('number');
       expect(metrics.cpu.usage).toBeGreaterThanOrEqual(0);
       expect(metrics.cpu.usage).toBeLessThanOrEqual(100);
-      
+
       expect(Array.isArray(metrics.cpu.loadAverage)).toBe(true);
       expect(metrics.cpu.loadAverage).toHaveLength(3);
-      
+
       expect(typeof metrics.cpu.cores).toBe('number');
       expect(metrics.cpu.cores).toBeGreaterThan(0);
     });
 
     it('should capture valid memory metrics', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(typeof metrics.memory.total).toBe('number');
       expect(metrics.memory.total).toBeGreaterThan(0);
-      
+
       expect(typeof metrics.memory.free).toBe('number');
       expect(metrics.memory.free).toBeGreaterThanOrEqual(0);
-      
+
       expect(typeof metrics.memory.used).toBe('number');
       expect(metrics.memory.used).toBeGreaterThanOrEqual(0);
-      
+
       expect(typeof metrics.memory.percentage).toBe('number');
       expect(metrics.memory.percentage).toBeGreaterThanOrEqual(0);
       expect(metrics.memory.percentage).toBeLessThanOrEqual(100);
@@ -154,16 +154,16 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should capture system information', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(typeof metrics.system.platform).toBe('string');
       expect(metrics.system.platform.length).toBeGreaterThan(0);
-      
+
       expect(typeof metrics.system.arch).toBe('string');
       expect(metrics.system.arch.length).toBeGreaterThan(0);
-      
+
       expect(typeof metrics.system.hostname).toBe('string');
       expect(metrics.system.hostname.length).toBeGreaterThan(0);
-      
+
       expect(typeof metrics.system.uptime).toBe('number');
       expect(metrics.system.uptime).toBeGreaterThan(0);
     });
@@ -199,7 +199,7 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should collect metrics history during monitoring', (done) => {
       let metricsReceived = 0;
-      
+
       agent.on('metrics', () => {
         metricsReceived++;
         if (metricsReceived >= 2) {
@@ -223,32 +223,32 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should generate health report structure', async () => {
       const report = await agent.generateHealthReport();
-      
+
       expect(report).toHaveProperty('timestamp');
       expect(report.timestamp).toBeInstanceOf(Date);
-      
+
       expect(report).toHaveProperty('overall');
       expect(['healthy', 'warning', 'critical']).toContain(report.overall);
-      
+
       expect(report).toHaveProperty('issues');
       expect(Array.isArray(report.issues)).toBe(true);
-      
+
       expect(report).toHaveProperty('metrics');
       expect(report.metrics).toBeDefined();
-      
+
       expect(report).toHaveProperty('recommendations');
       expect(Array.isArray(report.recommendations)).toBe(true);
-      
+
       expect(report).toHaveProperty('resourceLeaks');
       expect(Array.isArray(report.resourceLeaks)).toBe(true);
-      
+
       expect(report).toHaveProperty('performanceIssues');
       expect(Array.isArray(report.performanceIssues)).toBe(true);
     });
 
     it('should include current metrics in health report', async () => {
       const report = await agent.generateHealthReport();
-      
+
       expect(report.metrics).toHaveProperty('cpu');
       expect(report.metrics).toHaveProperty('memory');
       expect(report.metrics).toHaveProperty('system');
@@ -262,7 +262,7 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should detect running processes', async () => {
       const metrics = await agent.captureMetrics();
-      
+
       expect(Array.isArray(metrics.processes)).toBe(true);
       expect(metrics.processes.length).toBeGreaterThan(0);
 
@@ -273,7 +273,7 @@ describe('SystemAgent - Basic Tests', () => {
         expect(process).toHaveProperty('cpu');
         expect(process).toHaveProperty('memory');
         expect(process).toHaveProperty('state');
-        
+
         expect(typeof process.pid).toBe('number');
         expect(typeof process.name).toBe('string');
         expect(typeof process.cpu).toBe('number');
@@ -297,10 +297,10 @@ describe('SystemAgent - Basic Tests', () => {
     it('should handle monitoring errors gracefully', async () => {
       await agent.initialize();
       await agent.startMonitoring();
-      
+
       // Let it run briefly
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       await expect(agent.stopMonitoring()).resolves.not.toThrow();
     });
   });
@@ -313,7 +313,7 @@ describe('SystemAgent - Basic Tests', () => {
     it('should return consistent data structure', async () => {
       const metrics1 = await agent.captureMetrics();
       const metrics2 = await agent.captureMetrics();
-      
+
       // Both metrics should have the same structure
       expect(Object.keys(metrics1).sort()).toEqual(Object.keys(metrics2).sort());
       expect(Object.keys(metrics1.cpu).sort()).toEqual(Object.keys(metrics2.cpu).sort());
@@ -323,18 +323,18 @@ describe('SystemAgent - Basic Tests', () => {
 
     it('should maintain metrics history correctly', async () => {
       await agent.startMonitoring();
-      
+
       // Wait for some metrics to be collected
       await new Promise(resolve => setTimeout(resolve, 2500));
-      
+
       const history = agent.getMetricsHistory();
       expect(history.length).toBeGreaterThan(0);
-      
+
       // Each entry should have timestamp
       history.forEach(metrics => {
         expect(metrics.timestamp).toBeInstanceOf(Date);
       });
-      
+
       await agent.stopMonitoring();
     }, 10000);
   });
@@ -345,7 +345,7 @@ describe('SystemAgent - Basic Tests', () => {
         monitoringInterval: 2000,
         cpuThreshold: 75
       };
-      
+
       const configuredAgent = createSystemAgent(partialConfig);
       expect(configuredAgent).toBeInstanceOf(SystemAgent);
     });

@@ -184,7 +184,7 @@ export class ScreenshotManager {
     options: ScreenshotOptions & { scenarioId?: string; stepIndex?: number; description?: string } = {}
   ): Promise<ScreenshotMetadata> {
     const finalOptions = { ...DEFAULT_OPTIONS, ...options };
-    
+
     // Generate file path if not provided
     if (!finalOptions.path) {
       finalOptions.path = this.generateFilePath('page', options.scenarioId, options.stepIndex);
@@ -230,7 +230,7 @@ export class ScreenshotManager {
     options: ScreenshotOptions & { scenarioId?: string; stepIndex?: number; description?: string } = {}
   ): Promise<ScreenshotMetadata> {
     const finalOptions = { ...DEFAULT_OPTIONS, ...options };
-    
+
     // Generate file path if not provided
     if (!finalOptions.path) {
       finalOptions.path = this.generateFilePath('element', options.scenarioId, options.stepIndex);
@@ -359,7 +359,7 @@ export class ScreenshotManager {
       if (baselineSize.width !== actualSize.width || baselineSize.height !== actualSize.height) {
         const maxWidth = Math.max(baselineSize.width, actualSize.width);
         const maxHeight = Math.max(baselineSize.height, actualSize.height);
-        
+
         baseline.resize(maxWidth, maxHeight);
         actual.resize(maxWidth, maxHeight);
         resized = true;
@@ -509,18 +509,18 @@ export class ScreenshotManager {
       if (showSideBySide) {
         const sideBySideWidth = targetWidth * 3; // baseline + actual + diff
         const sideBySideImage = new Jimp(sideBySideWidth, targetHeight, '#FFFFFF');
-        
+
         // Composite images side by side
         sideBySideImage.composite(baseline, 0, 0);
         sideBySideImage.composite(actual, targetWidth, 0);
         sideBySideImage.composite(diffImage, targetWidth * 2, 0);
-        
+
         // Add labels
         const font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
         sideBySideImage.print(font, 10, 10, 'Baseline');
         sideBySideImage.print(font, targetWidth + 10, 10, 'Actual');
         sideBySideImage.print(font, targetWidth * 2 + 10, 10, 'Diff');
-        
+
         diffImage = sideBySideImage;
       }
 
@@ -529,7 +529,7 @@ export class ScreenshotManager {
 
       // Save the diff image
       await diffImage.writeAsync(outputPath);
-      
+
       return outputPath;
 
     } catch (error) {
@@ -548,7 +548,7 @@ export class ScreenshotManager {
   ): Promise<Jimp> {
     const width = baseline.getWidth();
     const height = baseline.getHeight();
-    
+
     const {
       removedColor = [255, 0, 0], // Red for removed
       addedColor = [0, 255, 0],   // Green for added
@@ -579,7 +579,7 @@ export class ScreenshotManager {
 
     // Create enhanced diff image with custom color coding
     const diffImage = new Jimp(width, height);
-    
+
     for (let i = 0; i < width * height; i++) {
       const pixelIndex = i * 4;
       const baselinePixel = [
@@ -607,7 +607,7 @@ export class ScreenshotManager {
         // Pixel has difference
         const baselineGray = (baselinePixel[0] + baselinePixel[1] + baselinePixel[2]) / 3;
         const actualGray = (actualPixel[0] + actualPixel[1] + actualPixel[2]) / 3;
-        
+
         if (baselineGray > actualGray + 10) {
           // Pixel was removed/darkened
           finalColor = [...removedColor, alpha];
@@ -660,9 +660,9 @@ export class ScreenshotManager {
         // Calculate perceptual luminance
         const baselineLum = 0.299 * baselineColor.r + 0.587 * baselineColor.g + 0.114 * baselineColor.b;
         const actualLum = 0.299 * actualColor.r + 0.587 * actualColor.g + 0.114 * actualColor.b;
-        
+
         const lumDiff = Math.abs(baselineLum - actualLum);
-        
+
         // Calculate color difference
         const colorDiff = Math.sqrt(
           Math.pow(baselineColor.r - actualColor.r, 2) +
@@ -703,7 +703,7 @@ export class ScreenshotManager {
   ): Promise<Jimp> {
     const width = baseline.getWidth();
     const height = baseline.getHeight();
-    
+
     const {
       removedColor = [255, 0, 0],
       addedColor = [0, 255, 0],
@@ -714,21 +714,21 @@ export class ScreenshotManager {
     // Apply edge detection (simple Sobel filter)
     const baselineEdges = this.detectEdges(baseline);
     const actualEdges = this.detectEdges(actual);
-    
+
     const diffImage = new Jimp(width, height);
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const baselineEdge = baselineEdges.getPixelColor(x, y);
         const actualEdge = actualEdges.getPixelColor(x, y);
-        
+
         const baselineGray = Jimp.intToRGBA(baselineEdge);
         const actualGray = Jimp.intToRGBA(actualEdge);
-        
+
         const edgeDiff = Math.abs(baselineGray.r - actualGray.r);
-        
+
         let finalColor: [number, number, number, number];
-        
+
         if (edgeDiff > 50) {
           if (baselineGray.r > actualGray.r) {
             finalColor = [...removedColor, alpha];
@@ -768,7 +768,7 @@ export class ScreenshotManager {
           for (let kx = -1; kx <= 1; kx++) {
             const pixel = Jimp.intToRGBA(image.getPixelColor(x + kx, y + ky));
             const gray = pixel.r; // Already greyscale
-            
+
             gx += gray * sobelX[ky + 1][kx + 1];
             gy += gray * sobelY[ky + 1][kx + 1];
           }
@@ -776,7 +776,7 @@ export class ScreenshotManager {
 
         const magnitude = Math.sqrt(gx * gx + gy * gy);
         const clampedMagnitude = Math.min(255, magnitude);
-        
+
         const color = Jimp.rgbaToInt(clampedMagnitude, clampedMagnitude, clampedMagnitude, 255);
         edges.setPixelColor(color, x, y);
       }
@@ -812,7 +812,7 @@ export class ScreenshotManager {
 
     for (const [filePath, metadata] of this.metadata.entries()) {
       const age = now - metadata.timestamp.getTime();
-      
+
       if (age > maxAge) {
         try {
           await fs.unlink(filePath);
@@ -862,24 +862,24 @@ export class ScreenshotManager {
    * Generate a unique filename
    */
   private generateFilePath(type: string, scenarioId?: string, stepIndex?: number): string {
-    const timestamp = this.organizationOptions.includeTimestamp 
-      ? new Date().toISOString().replace(/[:.]/g, '-').split('.')[0] 
+    const timestamp = this.organizationOptions.includeTimestamp
+      ? new Date().toISOString().replace(/[:.]/g, '-').split('.')[0]
       : '';
 
     let fileName = type;
-    
+
     if (scenarioId) {
       fileName += `_${this.sanitizeFilename(scenarioId)}`;
     }
-    
+
     if (stepIndex !== undefined) {
       fileName += `_step${stepIndex + 1}`;
     }
-    
+
     if (timestamp) {
       fileName += `_${timestamp}`;
     }
-    
+
     fileName += '.png';
 
     return path.join(this.getDirectoryPath(scenarioId), fileName);
@@ -1043,21 +1043,21 @@ export class ScreenshotManager {
     const { weights = { pixel: 0.4, perceptual: 0.4, structural: 0.2 } } = options;
 
     const [pixelResult, perceptualResult, structuralResult] = await Promise.all([
-      this.compareScreenshots(baseline, actual, { 
+      this.compareScreenshots(baseline, actual, {
         algorithm: 'pixel-by-pixel',
-        createDiffImage: false 
+        createDiffImage: false
       }),
-      this.compareScreenshots(baseline, actual, { 
+      this.compareScreenshots(baseline, actual, {
         algorithm: 'perceptual',
-        createDiffImage: false 
+        createDiffImage: false
       }),
-      this.compareScreenshots(baseline, actual, { 
+      this.compareScreenshots(baseline, actual, {
         algorithm: 'structural',
-        createDiffImage: false 
+        createDiffImage: false
       })
     ]);
 
-    const overall = 
+    const overall =
       pixelResult.similarityPercentage * weights.pixel +
       perceptualResult.similarityPercentage * weights.perceptual +
       structuralResult.similarityPercentage * weights.structural;

@@ -388,14 +388,18 @@ Cypher Query:"""
             model=llm_config.model_chat,
         )
 
-        from autogen_agentchat.messages import TextMessage
+        from autogen_core.models import SystemMessage
 
         response = await model_client.create(
-            [TextMessage(content=query_prompt, source="system")]
+            [SystemMessage(content=query_prompt)]
         )
 
         # Extract the generated query
-        cypher_query = response.content.strip()
+        cypher_query = (
+            response.content
+            if isinstance(response.content, str)
+            else str(response.content).strip()
+        )
         # Remove markdown code blocks if present
         if cypher_query.startswith("```"):
             lines = cypher_query.split("\n")
@@ -448,10 +452,16 @@ Instructions:
 Answer:"""
 
             # Call LLM to generate answer
+            from autogen_core.models import SystemMessage
+
             answer_response = await model_client.create(
-                [TextMessage(content=answer_prompt, source="system")]
+                [SystemMessage(content=answer_prompt)]
             )
-            final_answer = answer_response.content.strip()
+            final_answer = (
+                answer_response.content
+                if isinstance(answer_response.content, str)
+                else str(answer_response.content).strip()
+            )
 
             print(f"\n🎯 Final Answer: {final_answer}", flush=True)
             print(f"\n📊 Query used:\n{cypher_query}", flush=True)
@@ -459,6 +469,8 @@ Answer:"""
             print("\n❌ No results returned from database", flush=True)
 
     except Exception as e:
+        import traceback
         print(f"\n❌ Error in manual processing: {e}")
+        traceback.print_exc()
 
     # (No extra debug output)
