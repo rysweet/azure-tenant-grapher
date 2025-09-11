@@ -818,95 +818,106 @@ app.get('/api/test/azure-openai', async (req, res) => {
     }
     global.rateLimitCache[rateLimitKey] = now;
     
-    // Always test with actual API call, using modelChat or trying fallback models
+    // Test with actual API call - use the endpoint as configured
     try {
-      // Create a list of models to try in order
-      const modelsToTry = modelChat ? [modelChat] : ['gpt-4', 'gpt-35-turbo', 'gpt-4-32k'];
-      let lastError: any = null;
+      // Determine the URL to use
+      let url: string;
+      let actualModel = modelChat || 'gpt-4';
       
-      for (const modelToTest of modelsToTry) {
-        const url = `${endpoint}/openai/deployments/${modelToTest}/chat/completions?api-version=${apiVersion}`;
-        
-        // Make a test call with the joke prompt as specified in requirements
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'api-key': apiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            messages: [{role: 'user', content: 'Tell me a joke about Microsoft Azure'}],
-            max_tokens: 100,
-            temperature: 0.7
-          }),
-          signal: AbortSignal.timeout(10000) // 10 second timeout for the API call
-        });
-
-        if (response.ok) {
-          const data: any = await response.json();
-          
-          // Validate response structure
-          if (!data || typeof data !== 'object') {
-            logger.error('Invalid response structure from Azure OpenAI:', data);
-            return res.json({ 
-              success: false, 
-              error: 'Invalid response from Azure OpenAI API',
-              configured: true
-            });
-          }
-          
-          const endpointHost = new URL(endpoint).host;
-          
-          // Extract the joke response if available with validation
-          let testResponse = 'Connection successful';
-          if (data.choices && 
-              Array.isArray(data.choices) && 
-              data.choices.length > 0 && 
-              data.choices[0].message && 
-              typeof data.choices[0].message.content === 'string') {
-            testResponse = data.choices[0].message.content || 'Connection successful';
-          }
-          
-          // Sanitize response to prevent XSS
-          testResponse = testResponse.replace(/[<>]/g, '').substring(0, 200);
-          
-          return res.json({
-            success: true,
-            message: 'Azure OpenAI is working correctly',
-            endpoint: endpointHost,
-            model: data.model || modelToTest,
-            models: {
-              chat: modelChat || `${modelToTest} (auto-detected)`,
-              reasoning: modelReasoning || 'Not configured'
-            },
-            testResponse
-          });
-        } else if (response.status === 401) {
-          return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
-        } else if (response.status === 404) {
-          // Try next model in the list
-          lastError = `Model deployment '${modelToTest}' not found`;
-          continue;
-        } else if (response.status === 429) {
-          return res.json({ 
-            success: false, 
-            error: 'Azure OpenAI rate limit exceeded. Please try again later.',
-            configured: true
-          });
-        } else {
-          const errorText = await response.text();
-          logger.error('Azure OpenAI test failed:', response.status, errorText);
-          lastError = `API test failed: ${response.status}`;
-          continue;
+      // If endpoint already contains /chat/completions, it's a full URL - use as-is
+      if (endpoint.includes('/chat/completions')) {
+        url = endpoint;
+        // Extract model name from URL if possible (for display)
+        const deploymentMatch = endpoint.match(/\/deployments\/([^\/]+)\//);
+        if (deploymentMatch) {
+          actualModel = deploymentMatch[1];
         }
+      } else {
+        // It's a base URL - construct the full URL
+        // Map gpt-4.1 to gpt-4o (the actual deployment name)
+        const deploymentName = modelChat === 'gpt-4.1' ? 'gpt-4o' : (modelChat || 'gpt-4');
+        url = `${endpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
       }
       
-      // If we've tried all models and none worked
-      return res.json({ 
-        success: false, 
-        error: lastError || 'No valid model deployment found. Please configure AZURE_OPENAI_MODEL_CHAT with a valid deployment name.',
-        configured: true // Indicates that endpoint and key are set
+      logger.debug('Testing Azure OpenAI with URL:', url);
+      
+      // Make a test call with the joke prompt as specified in requirements
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [{role: 'user', content: 'Tell me a joke about Microsoft Azure'}],
+          max_tokens: 100,
+          temperature: 0.7
+        }),
+        signal: AbortSignal.timeout(10000) // 10 second timeout for the API call
       });
+
+      if (response.ok) {
+        const data: any = await response.json();
+        
+        // Validate response structure
+        if (!data || typeof data !== 'object') {
+          logger.error('Invalid response structure from Azure OpenAI:', data);
+          return res.json({ 
+            success: false, 
+            error: 'Invalid response from Azure OpenAI API',
+            configured: true
+          });
+        }
+        
+        const endpointHost = new URL(endpoint.includes('://') ? endpoint : `https://${endpoint}`).host;
+        
+        // Extract the joke response if available with validation
+        let testResponse = 'Connection successful';
+        if (data.choices && 
+            Array.isArray(data.choices) && 
+            data.choices.length > 0 && 
+            data.choices[0].message && 
+            typeof data.choices[0].message.content === 'string') {
+          testResponse = data.choices[0].message.content || 'Connection successful';
+        }
+        
+        // Sanitize response to prevent XSS
+        testResponse = testResponse.replace(/[<>]/g, '').substring(0, 200);
+        
+        return res.json({
+          success: true,
+          message: 'Azure OpenAI is working correctly',
+          endpoint: endpointHost,
+          model: data.model || actualModel,
+          models: {
+            chat: modelChat || actualModel,
+            reasoning: modelReasoning || 'Not configured'
+          },
+          testResponse
+        });
+      } else if (response.status === 401) {
+        return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
+      } else if (response.status === 404) {
+        return res.json({ 
+          success: false, 
+          error: `Model deployment '${actualModel}' not found`,
+          configured: true
+        });
+      } else if (response.status === 429) {
+        return res.json({ 
+          success: false, 
+          error: 'Azure OpenAI rate limit exceeded. Please try again later.',
+          configured: true
+        });
+      } else {
+        const errorText = await response.text();
+        logger.error('Azure OpenAI test failed:', response.status, errorText);
+        return res.json({ 
+          success: false, 
+          error: `API test failed: ${response.status}`,
+          configured: true
+        });
+      }
     } catch (error: any) {
       logger.error('Azure OpenAI API call failed:', error);
       return res.json({ success: false, error: `Failed to connect to Azure OpenAI: ${error.message}` });

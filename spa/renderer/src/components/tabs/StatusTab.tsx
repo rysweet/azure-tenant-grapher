@@ -95,7 +95,7 @@ const StatusTab: React.FC = () => {
   const [isCheckingDeps, setIsCheckingDeps] = useState(false);
   const [dependencies, setDependencies] = useState<Dependency[]>([]);
   const [azureStatus, setAzureStatus] = useState<{ connected: boolean; error?: string; loading: boolean; accountInfo?: any }>({ connected: false, loading: true });
-  const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean; endpoint?: string; models?: any }>({ connected: false, loading: true });
+  const [openAIStatus, setOpenAIStatus] = useState<{ connected: boolean; error?: string; loading: boolean; endpoint?: string; models?: any; testResponse?: string }>({ connected: false, loading: true });
   const [graphPermissions, setGraphPermissions] = useState<{
     loading: boolean;
     permissions?: {
@@ -185,7 +185,8 @@ const StatusTab: React.FC = () => {
         error: response.data.error,
         loading: false,
         endpoint: response.data.endpoint,
-        models: response.data.models
+        models: response.data.models,
+        testResponse: response.data.testResponse
       });
     } catch (err: any) {
       setOpenAIStatus({ connected: false, error: err.response?.data?.error || err.message, loading: false });
@@ -759,6 +760,13 @@ const StatusTab: React.FC = () => {
                           <Typography variant="caption" sx={{ fontSize: '0.6rem', display: 'block', color: 'text.disabled' }}>
                             Chat: {openAIStatus.models.chat}
                           </Typography>
+                        )}
+                        {openAIStatus.testResponse && (
+                          <Box sx={{ mt: 1, p: 1, bgcolor: 'background.default', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', fontStyle: 'italic', color: 'text.secondary' }}>
+                              "{openAIStatus.testResponse}"
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
                     )}

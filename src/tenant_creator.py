@@ -164,7 +164,7 @@ Instructions:
         )
         # Use the LLM's chat completion API directly
         response = self.llm_generator.client.chat.completions.create(
-            model=getattr(self.llm_generator.config, "model_chat", "gpt-4.1"),
+            model=getattr(self.llm_generator.config, "model_chat", "gpt-4"),
             messages=[
                 {
                     "role": "system",
