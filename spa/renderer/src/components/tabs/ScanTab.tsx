@@ -561,22 +561,29 @@ const ScanTab: React.FC = () => {
       {/* WebSocket Connection Status */}
       {connectionStatus !== 'connected' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server.
+          ⚠ WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server.
           Real-time updates may not work properly.
         </Alert>
       )}
 
-      {/* Connection Status for Connected State */}
-      {connectionStatus === 'connected' && !isRunning && (
+      {/* Combined Connection Status */}
+      {connectionStatus === 'connected' && !isRunning && neo4jStatus?.running && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          ✓ Connected to backend server - Ready to start scanning your tenant
+          ✓ Backend and Neo4j connected • Ready to scan your tenant
+        </Alert>
+      )}
+
+      {/* Show separate backend status only when Neo4j is not running */}
+      {connectionStatus === 'connected' && !isRunning && !neo4jStatus?.running && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          ✓ Backend connected • Ready to scan your tenant
         </Alert>
       )}
 
       {/* Backend/Neo4j Status Alert */}
       {neo4jStatus && neo4jStatus.message && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {neo4jStatus.message}
+          ✗ {neo4jStatus.message}
         </Alert>
       )}
 
