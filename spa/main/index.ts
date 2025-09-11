@@ -258,6 +258,33 @@ function startBackendServer() {
   });
 }
 
+// Shared function for cleaning up PID files
+function cleanupPidFiles() {
+  const projectRoot = path.join(__dirname, '../../..');
+  const mcpPidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
+  const spaPidFile = path.join(projectRoot, 'outputs', 'spa_server.pid');
+  
+  // Clean up MCP PID file
+  if (fs.existsSync(mcpPidFile)) {
+    try {
+      fs.unlinkSync(mcpPidFile);
+      console.log('Cleaned up MCP PID file');
+    } catch (e) {
+      console.error('Error cleaning up MCP PID file:', e);
+    }
+  }
+  
+  // Clean up SPA PID file
+  if (fs.existsSync(spaPidFile)) {
+    try {
+      fs.unlinkSync(spaPidFile);
+      console.log('Cleaned up SPA PID file');
+    } catch (e) {
+      console.error('Error cleaning up SPA PID file:', e);
+    }
+  }
+}
+
 // Set app name
 app.setName('Azure Tenant Grapher');
 
@@ -354,12 +381,10 @@ app.on('window-all-closed', () => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up PID file
-    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
-    }
   }
+
+  // Clean up PID files
+  cleanupPidFiles();
 
   // Always quit the app when the window is closed
   // This is a single-window application, so we want it to fully quit
@@ -381,12 +406,10 @@ app.on('before-quit', (event) => {
   // Stop MCP server
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
-    // Clean up PID file
-    const pidFile = path.join(__dirname, '../../../outputs/mcp_server.pid');
-    if (fs.existsSync(pidFile)) {
-      fs.unlinkSync(pidFile);
-    }
   }
+
+  // Clean up PID files
+  cleanupPidFiles();
 });
 
 // Handle uncaught exceptions
@@ -396,6 +419,8 @@ process.on('uncaughtException', (error) => {
   if (mcpServerProcess) {
     mcpServerProcess.kill('SIGTERM');
   }
+  // Clean up PID files on unexpected termination
+  cleanupPidFiles();
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -408,6 +433,8 @@ process.on('SIGINT', () => {
     if (mcpServerProcess) {
       mcpServerProcess.kill('SIGTERM');
     }
+    // Clean up PID files
+    cleanupPidFiles();
     app.quit();
   });
 });
@@ -417,6 +444,8 @@ process.on('SIGTERM', () => {
     if (mcpServerProcess) {
       mcpServerProcess.kill('SIGTERM');
     }
+    // Clean up PID files
+    cleanupPidFiles();
     app.quit();
   });
 });
