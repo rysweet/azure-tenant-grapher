@@ -16,11 +16,13 @@ from typing import Any, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resourcegraph import ResourceGraphClient
+from azure.mgmt.resourcegraph.models import QueryRequest, QueryRequestOptions
 
 try:
-    from azure.mgmt.monitor.v2015_04_01 import MonitorClient
+    from azure.mgmt.monitor import MonitorManagementClient
+    MonitorClient = MonitorManagementClient  # type: ignore[misc]
 except ImportError:
-    MonitorClient = None
+    MonitorClient = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +95,14 @@ class ChangeFeedIngestionService:
         | project id, changeType, changeTime, after, before
         """
         try:
-            response = resourcegraph_client.resources(
+            query_options = QueryRequestOptions(result_format="objectArray")
+            query_request = QueryRequest(
                 query=query,
                 subscriptions=[subscription_id],
-                result_format="objectArray",
+                options=query_options
+            )
+            response = resourcegraph_client.resources(
+                query=query_request
             )
             changes = response.data if hasattr(response, "data") else []
         except Exception as e:
@@ -112,8 +118,9 @@ class ChangeFeedIngestionService:
                     filter=f"eventTimestamp ge '{since_timestamp}' and (operationName/value eq 'Microsoft.Resources/subscriptions/resourceGroups/delete' or operationName/value eq 'Microsoft.Resources/delete')"
                 )
                 for event in activity_logs:
-                    if hasattr(event, "resourceId"):
-                        deleted_ids.add(event.resourceId)
+                    resource_id = getattr(event, "resourceId", None)
+                    if resource_id:
+                        deleted_ids.add(resource_id)
             except Exception as e:
                 logger.error(f"Failed to query Activity Logs: {e}")
         else:

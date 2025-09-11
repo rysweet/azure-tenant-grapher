@@ -1,16 +1,16 @@
 /**
  * ElectronUIAgent - Comprehensive Electron UI testing agent using Playwright
- * 
+ *
  * This agent provides complete automation capabilities for Electron applications
  * including Playwright's Electron support, WebSocket monitoring, performance tracking,
  * and comprehensive error handling with automatic recovery.
  */
 
-import { 
-  _electron as electron, 
-  ElectronApplication, 
-  Page, 
-  BrowserContext, 
+import {
+  _electron as electron,
+  ElectronApplication,
+  Page,
+  BrowserContext,
   Locator,
   ConsoleMessage,
   Dialog
@@ -20,22 +20,22 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { io, Socket } from 'socket.io-client';
 import { IAgent, AgentType } from './index';
-import { 
-  TestStep, 
-  TestStatus, 
+import {
+  TestStep,
+  TestStatus,
   StepResult
 } from '../models/TestModels';
-import { 
-  AppState, 
-  ProcessInfo, 
-  NetworkState, 
+import {
+  AppState,
+  ProcessInfo,
+  NetworkState,
   PerformanceMetrics,
-  StateSnapshot 
+  StateSnapshot
 } from '../models/AppState';
-import { 
-  ScreenshotManager, 
-  ScreenshotMetadata, 
-  createScreenshotManager 
+import {
+  ScreenshotManager,
+  ScreenshotMetadata,
+  createScreenshotManager
 } from '../utils/screenshot';
 import { TestLogger, createLogger, LogLevel } from '../utils/logger';
 
@@ -143,7 +143,7 @@ const DEFAULT_CONFIG: Partial<ElectronUIAgentConfig> = {
 export class ElectronUIAgent extends EventEmitter implements IAgent {
   public readonly name = 'ElectronUIAgent';
   public readonly type = AgentType.UI;
-  
+
   private config: ElectronUIAgentConfig;
   private app: ElectronApplication | null = null;
   private page: Page | null = null;
@@ -158,7 +158,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
   private currentScenarioId?: string;
   private stateSnapshots: StateSnapshot[] = [];
   private consoleMessages: ConsoleMessage[] = [];
-  
+
   constructor(config: ElectronUIAgentConfig) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config } as ElectronUIAgentConfig;
@@ -170,7 +170,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
       baseDir: this.config.screenshotConfig!.directory,
       strategy: 'by-scenario'
     });
-    
+
     this.setupEventListeners();
   }
 
@@ -179,15 +179,15 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
    */
   async initialize(): Promise<void> {
     this.logger.info('Initializing ElectronUIAgent', { config: this.sanitizeConfig() });
-    
+
     try {
       // Validate executable path
       await this.validateExecutablePath();
-      
+
       this.isInitialized = true;
       this.logger.info('ElectronUIAgent initialized successfully');
       this.emit('initialized');
-      
+
     } catch (error: any) {
       this.logger.error('Failed to initialize ElectronUIAgent', { error: error?.message });
       throw new TestError({
@@ -215,23 +215,23 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     const startTime = Date.now();
     let status = TestStatus.PASSED;
     let error: string | undefined;
-    
+
     try {
       // Execute scenario steps
       const stepResults: StepResult[] = [];
-      
+
       for (let i = 0; i < scenario.steps.length; i++) {
         const step = scenario.steps[i];
         const stepResult = await this.executeStep(step, i);
         stepResults.push(stepResult);
-        
+
         if (stepResult.status === TestStatus.FAILED || stepResult.status === TestStatus.ERROR) {
           status = stepResult.status;
           error = stepResult.error;
           break;
         }
       }
-      
+
       return {
         scenarioId: scenario.id,
         status,
@@ -246,17 +246,17 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         websocketEvents: [...this.websocketEvents],
         stateSnapshots: [...this.stateSnapshots]
       };
-      
+
     } catch (executeError: any) {
       this.logger.error('Scenario execution failed', { error: executeError?.message });
       status = TestStatus.ERROR;
       error = executeError?.message;
-      
+
       // Capture failure screenshot
       await this.captureFailureScreenshot();
-      
+
       throw executeError;
-      
+
     } finally {
       this.logger.scenarioEnd(scenario.id, status, Date.now() - startTime);
       this.currentScenarioId = undefined;
@@ -267,9 +267,9 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
    * Launch the Electron application
    */
   async launch(): Promise<void> {
-    this.logger.info('Launching Electron application', { 
+    this.logger.info('Launching Electron application', {
       executablePath: this.config.executablePath,
-      args: this.config.args 
+      args: this.config.args
     });
 
     try {
@@ -278,9 +278,9 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         executablePath: this.config.executablePath,
         args: this.config.args,
         cwd: this.config.cwd,
-        env: { 
+        env: {
           ...process.env as Record<string, string>,
-          ...this.config.env 
+          ...this.config.env
         },
         timeout: this.config.launchTimeout,
         recordVideo: this.config.recordVideo ? {
@@ -298,26 +298,26 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
       }
 
       this.context = this.page.context();
-      
+
       // Configure page timeouts
       this.page.setDefaultTimeout(this.config.defaultTimeout!);
-      
+
       // Setup page event listeners
       this.setupPageEventListeners();
-      
+
       // Connect to WebSocket if configured
       if (this.config.websocketConfig) {
         await this.connectWebSocket();
       }
-      
+
       // Start performance monitoring
       if (this.config.performanceConfig?.enabled) {
         this.startPerformanceMonitoring();
       }
-      
+
       this.logger.info('Electron application launched successfully');
       this.emit('launched');
-      
+
     } catch (error: any) {
       this.logger.error('Failed to launch Electron application', { error: error?.message });
       await this.cleanup();
@@ -330,29 +330,29 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
    */
   async close(): Promise<void> {
     this.logger.info('Closing Electron application');
-    
+
     try {
       // Stop performance monitoring
       this.stopPerformanceMonitoring();
-      
+
       // Disconnect Socket.IO
       if (this.websocket) {
         this.websocket.disconnect();
         this.websocket = null;
       }
-      
+
       // Close the application
       if (this.app) {
         await this.app.close();
         this.app = null;
       }
-      
+
       this.page = null;
       this.context = null;
-      
+
       this.logger.info('Electron application closed successfully');
       this.emit('closed');
-      
+
     } catch (error: any) {
       this.logger.error('Error closing Electron application', { error: error?.message });
       throw error;
@@ -368,7 +368,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.debug(`Clicking tab: ${tabName}`);
-    
+
     try {
       // Try multiple selector strategies for tabs
       const selectors = [
@@ -378,7 +378,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         `.tab:has-text("${tabName}")`,
         `[role="tab"]:has-text("${tabName}")`
       ];
-      
+
       let clicked = false;
       for (const selector of selectors) {
         try {
@@ -389,19 +389,19 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           // Try next selector
         }
       }
-      
+
       if (!clicked) {
         throw new Error(`Tab "${tabName}" not found with any selector strategy`);
       }
-      
+
       // Wait for tab to be active
       await this.page.waitForTimeout(500);
-      
+
       // Capture state after navigation
       await this.captureCurrentState(`tab_${tabName.toLowerCase()}`);
-      
+
       this.logger.debug(`Successfully clicked tab: ${tabName}`);
-      
+
     } catch (error: any) {
       await this.captureFailureScreenshot(`tab_click_failure_${tabName}`);
       throw new Error(`Failed to click tab "${tabName}": ${error?.message}`);
@@ -417,26 +417,26 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.debug(`Filling input: ${selector} with value: ${value}`);
-    
+
     try {
       const element = this.page.locator(selector);
-      
+
       // Wait for element to be available
       await element.waitFor({ state: 'attached', timeout: this.config.defaultTimeout });
       await element.waitFor({ state: 'visible', timeout: this.config.defaultTimeout });
-      
+
       // Clear existing content and fill
       await element.clear();
       await element.fill(value);
-      
+
       // Verify the value was set correctly
       const actualValue = await element.inputValue();
       if (actualValue !== value) {
         this.logger.warn(`Input value mismatch. Expected: "${value}", Actual: "${actualValue}"`);
       }
-      
+
       this.logger.debug(`Successfully filled input: ${selector}`);
-      
+
     } catch (error: any) {
       await this.captureFailureScreenshot(`fill_input_failure`);
       throw new Error(`Failed to fill input "${selector}": ${error?.message}`);
@@ -452,22 +452,22 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.debug(`Clicking button: ${selector}`);
-    
+
     try {
       const element = this.page.locator(selector);
-      
+
       // Wait for element to be clickable
       await element.waitFor({ state: 'attached', timeout: this.config.defaultTimeout });
       await element.waitFor({ state: 'visible', timeout: this.config.defaultTimeout });
-      
+
       // Scroll element into view if needed
       await element.scrollIntoViewIfNeeded();
-      
+
       // Click the element
       await element.click();
-      
+
       this.logger.debug(`Successfully clicked button: ${selector}`);
-      
+
     } catch (error: any) {
       await this.captureFailureScreenshot(`click_button_failure`);
       throw new Error(`Failed to click button "${selector}": ${error?.message}`);
@@ -478,8 +478,8 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
    * Wait for an element to appear
    */
   async waitForElement(
-    selector: string, 
-    options: { 
+    selector: string,
+    options: {
       state?: 'attached' | 'detached' | 'visible' | 'hidden';
       timeout?: number;
     } = {}
@@ -489,16 +489,16 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     const { state = 'visible', timeout = this.config.defaultTimeout } = options;
-    
+
     this.logger.debug(`Waiting for element: ${selector} (state: ${state})`);
-    
+
     try {
       const element = this.page.locator(selector);
       await element.waitFor({ state, timeout });
-      
+
       this.logger.debug(`Element found: ${selector}`);
       return element;
-      
+
     } catch (error: any) {
       await this.captureFailureScreenshot(`wait_for_element_failure`);
       throw new Error(`Element "${selector}" not found: ${error?.message}`);
@@ -514,16 +514,16 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.debug(`Getting text from element: ${selector}`);
-    
+
     try {
       const element = this.page.locator(selector);
       await element.waitFor({ state: 'visible', timeout: this.config.defaultTimeout });
-      
+
       const text = await element.textContent() || '';
       this.logger.debug(`Element text: ${text}`);
-      
+
       return text;
-      
+
     } catch (error: any) {
       await this.captureFailureScreenshot(`get_element_text_failure`);
       throw new Error(`Failed to get text from element "${selector}": ${error?.message}`);
@@ -539,17 +539,17 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     this.logger.debug(`Taking screenshot: ${name}`);
-    
+
     try {
       const metadata = await this.screenshotManager.capturePageScreenshot(this.page, {
         scenarioId: this.currentScenarioId,
         description: name,
         fullPage: this.config.screenshotConfig?.fullPage
       });
-      
+
       this.logger.screenshot(metadata.fileName);
       return metadata;
-      
+
     } catch (error: any) {
       this.logger.error(`Failed to take screenshot "${name}"`, { error: error?.message });
       throw error;
@@ -562,30 +562,30 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
   async executeStep(step: TestStep, stepIndex: number): Promise<StepResult> {
     const startTime = Date.now();
     this.logger.stepExecution(stepIndex, step.action, step.target);
-    
+
     try {
       let result: any;
-      
+
       switch (step.action.toLowerCase()) {
         case 'launch':
         case 'launch_electron':
           await this.launch();
           break;
-          
+
         case 'close':
         case 'close_app':
           await this.close();
           break;
-          
+
         case 'click_tab':
           await this.clickTab(step.target);
           break;
-          
+
         case 'click':
         case 'click_button':
           await this.clickButton(step.target);
           break;
-          
+
         case 'fill':
         case 'type':
           if (!step.value) {
@@ -593,53 +593,53 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           }
           await this.fillInput(step.target, step.value);
           break;
-          
+
         case 'wait_for_element':
         case 'wait_for':
           const timeout = step.timeout || this.config.defaultTimeout;
           await this.waitForElement(step.target, { timeout });
           break;
-          
+
         case 'get_text':
           result = await this.getElementText(step.target);
           break;
-          
+
         case 'screenshot':
           result = await this.screenshot(step.target);
           break;
-          
+
         case 'wait':
           const waitTime = parseInt(step.value || '1000');
           await this.page?.waitForTimeout(waitTime);
           break;
-          
+
         case 'navigate':
           if (this.page) {
             await this.page.goto(step.target);
           }
           break;
-          
+
         default:
           throw new Error(`Unsupported action: ${step.action}`);
       }
-      
+
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.PASSED, duration);
-      
+
       return {
         stepIndex,
         status: TestStatus.PASSED,
         duration,
         actualResult: typeof result === 'string' ? result : undefined
       };
-      
+
     } catch (error: any) {
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.FAILED, duration);
-      
+
       // Capture failure screenshot
       await this.captureFailureScreenshot(`step_${stepIndex}_failure`);
-      
+
       return {
         stepIndex,
         status: TestStatus.FAILED,
@@ -659,7 +659,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     }
 
     const timestamp = new Date();
-    
+
     try {
       // Capture screenshot for state
       const screenshot = await this.screenshotManager.capturePageScreenshot(this.page, {
@@ -670,13 +670,13 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
       // Get page information
       const url = this.page.url();
       const title = await this.page.title();
-      
+
       // Get process information if available
       const processInfo = await this.getProcessInfo();
-      
+
       // Get performance metrics
       const performance = this.getLatestPerformanceMetrics();
-      
+
       // Get network state
       const networkState = this.getNetworkState();
 
@@ -703,11 +703,11 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         state,
         scenarioId: this.currentScenarioId
       };
-      
+
       this.stateSnapshots.push(snapshot);
-      
+
       return state;
-      
+
     } catch (error: any) {
       this.logger.error('Failed to capture application state', { error: error?.message });
       throw error;
@@ -719,17 +719,17 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
    */
   async cleanup(): Promise<void> {
     this.logger.info('Cleaning up ElectronUIAgent resources');
-    
+
     try {
       // Stop performance monitoring
       this.stopPerformanceMonitoring();
-      
+
       // Close Socket.IO connection
       if (this.websocket) {
         this.websocket.disconnect();
         this.websocket = null;
       }
-      
+
       // Close Electron application
       if (this.app) {
         try {
@@ -739,17 +739,17 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         }
         this.app = null;
       }
-      
+
       // Clear references
       this.page = null;
       this.context = null;
-      
+
       // Export final data
       await this.exportFinalData();
-      
+
       this.logger.info('ElectronUIAgent cleanup completed');
       this.emit('cleanup');
-      
+
     } catch (error: any) {
       this.logger.error('Error during cleanup', { error: error?.message });
     }
@@ -774,9 +774,9 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         timestamp: new Date(),
         args: msg.args()
       };
-      
+
       this.consoleMessages.push(msg);
-      
+
       // Log based on console message type
       switch (msg.type()) {
         case 'error':
@@ -811,7 +811,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     if (!this.config.websocketConfig) return;
 
     const config = this.config.websocketConfig;
-    
+
     try {
       this.websocket = io(config.url, {
         reconnection: true,
@@ -819,12 +819,12 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         reconnectionDelay: config.reconnectDelay,
         timeout: 10000
       });
-      
+
       this.websocket.on('connect', () => {
         this.logger.info('Socket.IO connected', { url: config.url });
         this.emit('websocket_connected');
       });
-      
+
       // Listen for configured events
       config.events.forEach(eventType => {
         this.websocket!.on(eventType, (data: any) => {
@@ -834,12 +834,12 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
             data,
             source: 'socket.io'
           };
-          
+
           this.websocketEvents.push(event);
           this.emit('websocket_event', event);
         });
       });
-      
+
       // Generic message handler for any other events
       this.websocket.onAny((eventType: string, ...args: any[]) => {
         if (!config.events.includes(eventType)) {
@@ -849,21 +849,21 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
             data: args.length === 1 ? args[0] : args,
             source: 'socket.io'
           };
-          
+
           this.websocketEvents.push(event);
           this.emit('websocket_event', event);
         }
       });
-      
+
       this.websocket.on('connect_error', (error) => {
         this.logger.error('Socket.IO connection error', { error: error.message });
       });
-      
+
       this.websocket.on('disconnect', (reason) => {
         this.logger.info('Socket.IO disconnected', { reason });
         this.emit('websocket_disconnected');
       });
-      
+
     } catch (error: any) {
       this.logger.error('Failed to connect Socket.IO', { error: error?.message });
     }
@@ -873,17 +873,17 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     if (!this.config.performanceConfig?.enabled || !this.page) return;
 
     const interval = this.config.performanceConfig.sampleInterval || 1000;
-    
+
     this.performanceInterval = setInterval(async () => {
       try {
         const sample = await this.collectPerformanceSample();
         this.performanceSamples.push(sample);
-        
+
         // Limit stored samples to prevent memory issues
         if (this.performanceSamples.length > 1000) {
           this.performanceSamples.splice(0, 100);
         }
-        
+
       } catch (error: any) {
         this.logger.debug('Failed to collect performance sample', { error: error?.message });
       }
@@ -908,16 +908,16 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           const nav = performance.navigation;
           const timing = performance.timing;
           const memory = (performance as any).memory;
-          
+
           return {
             responseTime: timing.loadEventEnd - timing.navigationStart,
             memoryUsage: memory ? memory.usedJSHeapSize : undefined,
             // Add more metrics as needed
           };
         });
-        
+
         Object.assign(sample, metrics);
-        
+
       } catch (error: any) {
         this.logger.debug('Failed to collect browser metrics', { error: error?.message });
       }
@@ -941,7 +941,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
         status: 'running',
         startTime: new Date()
       };
-      
+
     } catch (error: any) {
       this.logger.debug('Failed to get process info', { error: error?.message });
       return undefined;
@@ -952,7 +952,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     if (this.performanceSamples.length === 0) return undefined;
 
     const latest = this.performanceSamples[this.performanceSamples.length - 1];
-    
+
     return {
       cpuUsage: latest.cpuUsage || 0,
       memoryUsage: latest.memoryUsage || 0,
@@ -991,7 +991,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
 
   private async getScenarioScreenshots(): Promise<string[]> {
     if (!this.currentScenarioId) return [];
-    
+
     const screenshots = this.screenshotManager.getScreenshotsByScenario(this.currentScenarioId);
     return screenshots.map(s => s.filePath);
   }
@@ -1004,7 +1004,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
 
   private async getLastScreenshotPath(): Promise<string | undefined> {
     if (!this.currentScenarioId) return undefined;
-    
+
     const screenshots = this.screenshotManager.getScreenshotsByScenario(this.currentScenarioId);
     return screenshots.length > 0 ? screenshots[screenshots.length - 1].filePath : undefined;
   }
@@ -1029,9 +1029,9 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
     try {
       const exportDir = './logs/electron-agent-exports';
       await fs.mkdir(exportDir, { recursive: true });
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      
+
       // Export performance data
       if (this.performanceSamples.length > 0) {
         await fs.writeFile(
@@ -1039,7 +1039,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           JSON.stringify(this.performanceSamples, null, 2)
         );
       }
-      
+
       // Export WebSocket events
       if (this.websocketEvents.length > 0) {
         await fs.writeFile(
@@ -1047,7 +1047,7 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           JSON.stringify(this.websocketEvents, null, 2)
         );
       }
-      
+
       // Export state snapshots
       if (this.stateSnapshots.length > 0) {
         await fs.writeFile(
@@ -1055,12 +1055,12 @@ export class ElectronUIAgent extends EventEmitter implements IAgent {
           JSON.stringify(this.stateSnapshots, null, 2)
         );
       }
-      
+
       // Export screenshot metadata
       await this.screenshotManager.exportMetadata(
         path.join(exportDir, `screenshots_${timestamp}.json`)
       );
-      
+
     } catch (error: any) {
       this.logger.warn('Failed to export final data', { error: error?.message });
     }
@@ -1094,7 +1094,7 @@ class TestError extends Error {
     this.timestamp = options.timestamp;
     this.context = options.context;
     this.name = 'TestError';
-    
+
     if (options.stackTrace) {
       this.stack = options.stackTrace;
     }

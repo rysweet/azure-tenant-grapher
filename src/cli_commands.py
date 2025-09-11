@@ -18,6 +18,7 @@ import click
 import structlog
 
 from src.azure_tenant_grapher import AzureTenantGrapher
+from src.utils.graph_id_resolver import is_graph_database_id, split_and_detect_ids
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
     create_config_from_env,
@@ -26,6 +27,7 @@ from src.config_manager import (
 )
 from src.graph_visualizer import GraphVisualizer
 from src.logging_config import configure_logging
+from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
 from src.utils.neo4j_startup import ensure_neo4j_running
 
@@ -75,6 +77,8 @@ async def build_command_handler(
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
     debug: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
@@ -113,9 +117,64 @@ async def build_command_handler(
         grapher = AzureTenantGrapher(config)
         print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
 
+        # Create FilterConfig from CLI parameters
+        filter_config = None
+        if filter_by_subscriptions or filter_by_rgs:
+            subscription_ids = []
+            resource_group_names = []
+
+            if filter_by_subscriptions:
+                subscription_ids = [
+                    s.strip() for s in filter_by_subscriptions.split(",")
+                ]
+                logger.info(f"📋 Filtering by subscriptions: {subscription_ids}")
+
+            if filter_by_rgs:
+                # Split and detect which values are graph IDs vs actual names
+                regular_names, graph_ids = split_and_detect_ids(filter_by_rgs)
+                
+                if graph_ids:
+                    logger.warning(
+                        f"⚠️  Detected graph database IDs in resource group filter: {graph_ids}\n"
+                        f"   These appear to be internal database IDs rather than Azure resource group names.\n"
+                        f"   Please use actual resource group names (e.g., 'Ballista_UCAScenario') instead.\n"
+                        f"   You can find the actual names in the Neo4j database or Azure portal."
+                    )
+                    
+                    # For now, we'll skip the graph IDs and only use the regular names
+                    # In a future improvement, we could resolve these IDs to actual names
+                    if regular_names:
+                        logger.info(f"📋 Using valid resource group names: {regular_names}")
+                        resource_group_names = regular_names
+                    else:
+                        logger.error(
+                            "❌ No valid resource group names found. All provided values appear to be graph IDs.\n"
+                            "   Please provide actual Azure resource group names."
+                        )
+                        resource_group_names = []
+                else:
+                    resource_group_names = regular_names
+                    logger.info(f"📋 Filtering by resource groups: {resource_group_names}")
+
+            try:
+                filter_config = FilterConfig(
+                    subscription_ids=subscription_ids,
+                    resource_group_names=resource_group_names,
+                )
+            except ValueError as e:
+                logger.error(f"❌ Invalid filter configuration: {e}")
+                logger.info(
+                    "💡 Tip: Make sure you're using actual Azure resource names, not database IDs.\n"
+                    "   Resource group names should only contain alphanumeric characters, hyphens, underscores, periods, and parentheses."
+                )
+                # Create an empty filter config to continue without filtering
+                filter_config = FilterConfig()
+
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
-            await _run_no_dashboard_mode(ctx, grapher, logger, rebuild_edges)
+            await _run_no_dashboard_mode(
+                ctx, grapher, logger, rebuild_edges, filter_config
+            )
             print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
             import asyncio
             import threading
@@ -161,6 +220,7 @@ async def build_command_handler(
                 visualize,
                 logger,
                 rebuild_edges,
+                filter_config,
             )
             print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
             structlog.get_logger(__name__).info(
@@ -189,6 +249,7 @@ async def _run_no_dashboard_mode(
     grapher: "AzureTenantGrapher",
     logger: logging.Logger,
     rebuild_edges: bool = False,
+    filter_config: Optional[FilterConfig] = None,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
     print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
@@ -201,25 +262,6 @@ async def _run_no_dashboard_mode(
         event="Log file path for no-dashboard mode", log_file_path=log_file_path
     )
 
-    from rich.logging import RichHandler
-    from rich.style import Style
-
-    class GreenInfoRichHandler(RichHandler):  # type: ignore[misc]
-        def get_level_style(self, level_name: str) -> Style:
-            """Override log level colors for better readability."""
-            if level_name == "INFO":
-                return Style(color="blue", bold=True)
-            if level_name == "DEBUG":
-                return Style(color="white", dim=True)
-            if level_name == "WARNING":
-                return Style(color="yellow", bold=True)
-            if level_name == "ERROR":
-                return Style(color="red", bold=True)
-            if level_name == "CRITICAL":
-                return Style(color="red", bold=True, reverse=True)
-            # Fallback for other levels
-            return Style(color="cyan")
-
     root_logger = logging.getLogger()
     cli_log_level = ctx.obj.get("log_level", "INFO").upper()
     level_map = {
@@ -230,11 +272,48 @@ async def _run_no_dashboard_mode(
     }
     root_logger.setLevel(level_map.get(cli_log_level, logging.INFO))
     root_logger.handlers.clear()
-    handler = GreenInfoRichHandler(
-        rich_tracebacks=True, show_time=True, show_level=True, show_path=False
-    )
-    handler.setLevel(level_map.get(cli_log_level, logging.INFO))
-    root_logger.addHandler(handler)
+    
+    # Check if we're running from Electron app (SPA)
+    is_electron = os.environ.get('ELECTRON_RUN_AS_NODE') == '1' or os.environ.get('IS_ELECTRON_APP') == 'true' or os.environ.get('PYTHONUNBUFFERED') == '1'
+    
+    if is_electron:
+        # Use simple StreamHandler for Electron to capture all output
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        ))
+        handler.setLevel(level_map.get(cli_log_level, logging.INFO))
+        root_logger.addHandler(handler)
+        # Force flush for immediate output
+        sys.stdout = sys.stdout
+        sys.stderr = sys.stderr
+    else:
+        # Use RichHandler for terminal output
+        from rich.logging import RichHandler
+        from rich.style import Style
+
+        class GreenInfoRichHandler(RichHandler):  # type: ignore[misc]
+            def get_level_style(self, level_name: str) -> Style:
+                """Override log level colors for better readability."""
+                if level_name == "INFO":
+                    return Style(color="blue", bold=True)
+                if level_name == "DEBUG":
+                    return Style(color="white", dim=True)
+                if level_name == "WARNING":
+                    return Style(color="yellow", bold=True)
+                if level_name == "ERROR":
+                    return Style(color="red", bold=True)
+                if level_name == "CRITICAL":
+                    return Style(color="red", bold=True, reverse=True)
+                # Fallback for other levels
+                return Style(color="cyan")
+        
+        handler = GreenInfoRichHandler(
+            rich_tracebacks=True, show_time=True, show_level=True, show_path=False
+        )
+        handler.setLevel(level_map.get(cli_log_level, logging.INFO))
+        root_logger.addHandler(handler)
     for name in logging.root.manager.loggerDict:
         if name in ["httpx", "azure", "openai"]:
             continue
@@ -253,13 +332,15 @@ async def _run_no_dashboard_mode(
                 click.echo(
                     "🔄 Forcing re-evaluation of all relationships/edges for all resources."
                 )
-                result = await grapher.build_graph(force_rebuild_edges=True)
+                result = await grapher.build_graph(
+                    force_rebuild_edges=True, filter_config=filter_config
+                )
                 print(
                     "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
                     flush=True,
                 )
             else:
-                result = await grapher.build_graph()
+                result = await grapher.build_graph(filter_config=filter_config)
                 print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
@@ -319,16 +400,18 @@ async def _run_dashboard_mode(
     visualize: bool,
     logger: logging.Logger,
     rebuild_edges: bool = False,
+    filter_config: Optional[FilterConfig] = None,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
     print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
     logger.info("[DEBUG] Entered _run_dashboard_mode")
-    # Setup RichDashboard with both thread parameters
+    # Setup RichDashboard with both thread parameters and filter config
     dashboard = RichDashboard(
         config=config.to_dict(),
         max_llm_threads=max_llm_threads,
         max_build_threads=getattr(config.processing, "max_build_threads", 20),
+        filter_config=filter_config,
     )
     # Print log file path for test discoverability
     structlog.get_logger(__name__).info(
@@ -395,8 +478,8 @@ async def _run_dashboard_mode(
 
     dashboard.log_info(f"📄 Logs are being written to: {dashboard.log_file_path}")
 
-    # Create dashboard manager first
-    dashboard_manager = CLIDashboardManager(dashboard)
+    # Create dashboard manager with filter config
+    dashboard_manager = CLIDashboardManager(dashboard, filter_config=filter_config)
 
     # Start the exit file checker immediately if using file-based testing
     exit_checker_task = None
@@ -437,12 +520,16 @@ async def _run_dashboard_mode(
         if rebuild_edges:
             build_task = asyncio.create_task(
                 grapher.build_graph(
-                    progress_callback=progress_callback, force_rebuild_edges=True
+                    progress_callback=progress_callback,
+                    force_rebuild_edges=True,
+                    filter_config=filter_config,
                 )
             )
         else:
             build_task = asyncio.create_task(
-                grapher.build_graph(progress_callback=progress_callback)
+                grapher.build_graph(
+                    progress_callback=progress_callback, filter_config=filter_config
+                )
             )
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
@@ -1034,19 +1121,22 @@ def create_tenant_from_markdown(text: str):
 
     llm_generator = create_llm_generator()
     creator = TenantCreator(llm_generator=llm_generator)
-    
+
     # Store stats for return
     creation_stats = None
 
     async def _run():
         from src.exceptions import LLMGenerationError
+
         nonlocal creation_stats
 
         try:
             spec = await creator.create_from_markdown(text)
             # Check if spec was generated by LLM for permissive validation
             is_llm_generated = getattr(spec, "_is_llm_generated", False)
-            creation_stats = await creator.ingest_to_graph(spec, is_llm_generated=is_llm_generated)
+            creation_stats = await creator.ingest_to_graph(
+                spec, is_llm_generated=is_llm_generated
+            )
         except LLMGenerationError as e:
             import click
 
@@ -1082,10 +1172,10 @@ def create_tenant_from_markdown(text: str):
         import nest_asyncio
 
         nest_asyncio.apply()
-        result = loop.run_until_complete(task)
+        loop.run_until_complete(task)
     else:
         asyncio.run(_run())
-    
+
     return creation_stats
 
 
@@ -1098,20 +1188,20 @@ def create_tenant_command(markdown_file: str):
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
         print("DEBUG: Raw markdown file contents:\n", text)
-        
+
         # Get creation statistics
         stats = create_tenant_from_markdown(text)
-        
+
         # Display success with detailed feedback
         click.echo("")
         click.echo("✅ Tenant successfully created in Neo4j!")
         click.echo("")
-        
+
         # Display resource counts
         if stats:
             click.echo("📊 Resources created:")
             click.echo("-" * 40)
-            
+
             # Display non-zero counts in a logical order
             display_order = [
                 ("tenant", "Tenant"),
@@ -1124,13 +1214,13 @@ def create_tenant_command(markdown_file: str):
                 ("managed_identities", "Managed Identities"),
                 ("admin_units", "Admin Units"),
                 ("rbac_assignments", "RBAC Assignments"),
-                ("relationships", "Relationships")
+                ("relationships", "Relationships"),
             ]
-            
+
             for key, label in display_order:
                 if key in stats and stats[key] > 0:
                     click.echo(f"  • {label}: {stats[key]}")
-            
+
             click.echo("-" * 40)
             click.echo(f"  Total entities: {stats.get('total', 0)}")
             click.echo("")
@@ -1139,7 +1229,7 @@ def create_tenant_command(markdown_file: str):
             click.echo("  • Run 'atg build' to enrich with more data")
         else:
             click.echo("⚠️  No statistics available")
-            
+
     except Exception as e:
         click.echo(
             f"❌ Failed to create tenant: {e}\n"
@@ -1156,12 +1246,27 @@ MCP_PIDFILE = os.path.join("outputs", "mcp_server.pid")
 @click.command("start")
 def spa_start():
     """Start the local SPA/Electron dashboard and MCP server."""
+    # Check for stale PID file
     if os.path.exists(SPA_PIDFILE):
-        click.echo(
-            "⚠️  SPA already running (pidfile exists). Use 'atg stop' first or check process state.",
-            err=True,
-        )
-        return
+        try:
+            with open(SPA_PIDFILE) as f:
+                pid = int(f.read().strip())
+            # Check if process is actually running
+            try:
+                os.kill(pid, 0)  # Signal 0 checks if process exists
+                click.echo(
+                    f"⚠️  SPA already running (PID: {pid}). Use 'atg stop' first.",
+                    err=True,
+                )
+                return
+            except ProcessLookupError:
+                # Process not running, clean up stale PID file
+                click.echo(f"ℹ️  Cleaning up stale PID file (process {pid} not found)")
+                os.remove(SPA_PIDFILE)
+        except (ValueError, IOError) as e:
+            # Invalid PID file, remove it
+            click.echo(f"ℹ️  Removing invalid PID file: {e}")
+            os.remove(SPA_PIDFILE)
 
     # Check if npm is available
     if not shutil.which("npm"):
@@ -1222,7 +1327,26 @@ def spa_start():
         click.echo("🤖 Starting MCP server...")
         try:
             # Check if MCP server is already running
-            if not os.path.exists(MCP_PIDFILE):
+            mcp_needs_start = True
+            if os.path.exists(MCP_PIDFILE):
+                # Check if it's a stale PID file
+                try:
+                    with open(MCP_PIDFILE) as f:
+                        mcp_pid = int(f.read().strip())
+                    try:
+                        os.kill(mcp_pid, 0)  # Check if process exists
+                        click.echo(f"⚠️  MCP server already running (PID: {mcp_pid}), skipping...")
+                        mcp_needs_start = False
+                    except ProcessLookupError:
+                        # Process not running, clean up stale PID file
+                        click.echo(f"ℹ️  Cleaning up stale MCP PID file (process {mcp_pid} not found)")
+                        os.remove(MCP_PIDFILE)
+                except (ValueError, IOError) as e:
+                    # Invalid PID file, remove it
+                    click.echo(f"ℹ️  Removing invalid MCP PID file: {e}")
+                    os.remove(MCP_PIDFILE)
+            
+            if mcp_needs_start:
                 # Start MCP server in the background
                 mcp_proc = subprocess.Popen(
                     [sys.executable, "-m", "src.mcp_server"],
@@ -1239,8 +1363,6 @@ def spa_start():
                     f.write(str(mcp_proc.pid))
 
                 click.echo(f"✅ MCP server started (PID: {mcp_proc.pid})")
-            else:
-                click.echo("⚠️  MCP server already running, skipping...")
         except Exception as e:
             click.echo(f"⚠️  Failed to start MCP server: {e}")
             # Continue even if MCP fails to start
@@ -1286,7 +1408,7 @@ def spa_stop():
         except Exception as e:
             click.echo(f"❌ Failed to stop SPA: {e}", err=True)
     else:
-        click.echo("ℹ️  No SPA process running.")
+        click.echo("[INFO] No SPA process running.")
 
     # Stop MCP server
     if os.path.exists(MCP_PIDFILE):
@@ -1303,12 +1425,12 @@ def spa_stop():
         except Exception as e:
             click.echo(f"❌ Failed to stop MCP server: {e}", err=True)
     else:
-        click.echo("ℹ️  No MCP server running.")
+        click.echo("[INFO] No MCP server running.")
 
     if spa_stopped or mcp_stopped:
         click.echo("✅ Services stopped successfully.")
     else:
-        click.echo("ℹ️  No services were running.")
+        click.echo("[INFO] No services were running.")
 
 
 @click.command("app-registration")
@@ -1742,20 +1864,20 @@ async def mcp_query_command(
 ) -> None:
     """
     Execute natural language queries using MCP (Model Context Protocol).
-    
+
     This command ensures MCP server is running and executes natural language
     queries against Azure resources.
     """
-    from src.config_manager import MCPConfig, create_config_from_env
-    from src.services.mcp_integration import MCPIntegrationService
+    from src.config_manager import create_config_from_env
     from src.services.azure_discovery_service import AzureDiscoveryService
+    from src.services.mcp_integration import MCPConfig as MCPIntegrationConfig
+    from src.services.mcp_integration import MCPIntegrationService
     from src.utils.mcp_startup import ensure_mcp_running_async
-    
+
     # Set up logging
-    log_level = ctx.obj.get("log_level", "INFO")
     if debug:
-        log_level = "DEBUG"
-    
+        pass  # Debug logging configured elsewhere
+
     # Get tenant ID
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
     if not effective_tenant_id:
@@ -1764,17 +1886,21 @@ async def mcp_query_command(
             err=True,
         )
         sys.exit(1)
-    
+
     # Create configuration
     config = create_config_from_env(effective_tenant_id, debug=debug)
     setup_logging(config.logging)
-    
+
     # Check if MCP is configured
     if not config.mcp.enabled:
-        click.echo("ℹ️  MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable.")
-        click.echo("❌ MCP is required for natural language queries. Please enable it first.")
+        click.echo(
+            "[INFO] MCP is not enabled. Set MCP_ENABLED=true in your .env file to enable."
+        )
+        click.echo(
+            "❌ MCP is required for natural language queries. Please enable it first."
+        )
         sys.exit(1)
-    
+
     # Ensure MCP server is running
     click.echo("🚀 Ensuring MCP server is running...")
     try:
@@ -1783,7 +1909,7 @@ async def mcp_query_command(
     except RuntimeError as e:
         click.echo(f"❌ Failed to start MCP server: {e}", err=True)
         sys.exit(1)
-    
+
     # Initialize services
     discovery_service = None
     if use_fallback:
@@ -1792,37 +1918,44 @@ async def mcp_query_command(
             click.echo("✅ Traditional discovery service initialized as fallback")
         except Exception as e:
             click.echo(f"⚠️  Warning: Could not initialize discovery service: {e}")
-    
-    mcp_service = MCPIntegrationService(config.mcp, discovery_service)
-    
+
+    # Convert config.mcp to MCPIntegrationConfig
+    mcp_config = MCPIntegrationConfig(
+        endpoint=config.mcp.endpoint,
+        enabled=config.mcp.enabled,
+        timeout=config.mcp.timeout,
+        api_key=config.mcp.api_key,
+    )
+    mcp_service = MCPIntegrationService(mcp_config, discovery_service)
+
     try:
         # Connect to MCP
         click.echo(f"🔌 Connecting to MCP at {config.mcp.endpoint}...")
         connected = await mcp_service.initialize()
-        
+
         if not connected:
             click.echo("❌ MCP connection failed after server startup", err=True)
             click.echo("Please check the MCP server logs for errors.")
             sys.exit(1)
-        
+
         click.echo("✅ MCP connection established")
-        
+
         # Execute the query
         click.echo(f"\n📝 Executing query: {query}")
         click.echo("-" * 60)
-        
+
         success, result = await mcp_service.natural_language_command(query)
-        
+
         if success:
             click.echo("✅ Query executed successfully\n")
-            
+
             # Format and display results
             if output_format == "json":
                 formatted_result = json.dumps(result, indent=2)
                 click.echo(formatted_result)
             elif output_format == "table":
                 # Simple table formatting for resource lists
-                if isinstance(result, dict) and "response" in result:
+                if isinstance(result, dict) and "response" in result:  # type: ignore[reportUnnecessaryIsInstance]
                     response = result["response"]
                     if isinstance(response, list):
                         click.echo("Resources found:")
@@ -1839,7 +1972,7 @@ async def mcp_query_command(
                     click.echo(str(result))
             else:
                 # Plain text output
-                if isinstance(result, dict):
+                if isinstance(result, dict):  # type: ignore[reportUnnecessaryIsInstance]
                     if "response" in result:
                         click.echo(str(result["response"]))
                     else:
@@ -1849,14 +1982,14 @@ async def mcp_query_command(
                     click.echo(str(result))
         else:
             click.echo("❌ Query failed\n")
-            if isinstance(result, dict):
+            if isinstance(result, dict):  # type: ignore[reportUnnecessaryIsInstance]
                 if "error" in result:
                     click.echo(f"Error: {result['error']}")
                 if "suggestion" in result:
                     click.echo(f"💡 Suggestion: {result['suggestion']}")
             else:
                 click.echo(f"Error: {result}")
-    
+
     except KeyboardInterrupt:
         click.echo("\n⚠️  Query interrupted by user")
         sys.exit(130)
@@ -1864,6 +1997,7 @@ async def mcp_query_command(
         click.echo(f"❌ Unexpected error: {e}", err=True)
         if debug:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
     finally:

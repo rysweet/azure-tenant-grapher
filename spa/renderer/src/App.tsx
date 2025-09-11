@@ -6,7 +6,10 @@ import Header from './components/common/Header';
 import TabNavigation from './components/common/TabNavigation';
 import StatusBar from './components/common/StatusBar';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import TabErrorBoundary from './components/common/TabErrorBoundary';
 import { useApp } from './context/AppContext';
+import { withErrorHandling, withNetworkErrorHandling } from './utils/errorUtils';
+import { errorService } from './services/errorService';
 
 // Lazy load heavy components
 const StatusTab = lazy(() => import('./components/tabs/StatusTab'));
@@ -58,14 +61,26 @@ const App: React.FC = () => {
     checkConnection();
     checkDatabaseStatus();
 
-    // Listen for menu events
-    window.electronAPI.on('menu:navigate', (tab: string) => {
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
-    });
+    // Listen for menu events with error handling
+    try {
+      window.electronAPI.on('menu:navigate', (tab: string) => {
+        try {
+          dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
+        } catch (error) {
+          errorService.logError(error as Error, 'component', { event: 'menu:navigate', tab });
+        }
+      });
 
-    window.electronAPI.on('menu:new-build', () => {
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
-    });
+      window.electronAPI.on('menu:new-scan', () => {
+        try {
+          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
+        } catch (error) {
+          errorService.logError(error as Error, 'component', { event: 'menu:new-scan' });
+        }
+      });
+    } catch (error) {
+      errorService.logError(error as Error, 'component', { context: 'electronAPI event setup' });
+    }
 
     return () => {
       // Cleanup listeners
@@ -80,30 +95,43 @@ const App: React.FC = () => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'visualize' });
     } else if (!initialCheckDone && dbPopulated === false) {
       setInitialCheckDone(true);
-      navigate('/build');
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+      navigate('/scan');
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
     }
   }, [dbPopulated, navigate, dispatch, initialCheckDone]);
 
   const checkConnection = async () => {
-    try {
-      const platform = await window.electronAPI.system.platform();
-      if (platform) {
-        setConnectionStatus('connected');
+    await withErrorHandling(
+      async () => {
+        const platform = await window.electronAPI.system.platform();
+        if (platform) {
+          setConnectionStatus('connected');
+        }
+      },
+      'checkConnection',
+      {
+        onError: () => setConnectionStatus('disconnected'),
+        fallbackValue: undefined
       }
-    } catch (error) {
-      setConnectionStatus('disconnected');
-    }
+    );
   };
 
   const checkDatabaseStatus = async () => {
-    try {
-      const response = await axios.get('http://localhost:3001/api/graph/status');
-      setDbPopulated(response.data.isPopulated);
-    } catch (error) {
-      console.error('Failed to check DB status:', error);
-      setDbPopulated(false);
-    }
+    await withNetworkErrorHandling(
+      async () => {
+        const response = await axios.get('http://localhost:3001/api/graph/status');
+        setDbPopulated(response.data.isPopulated);
+      },
+      'http://localhost:3001/api/graph/status',
+      {
+        onError: (error) => {
+          errorService.logWarning('Failed to check database status', { error });
+          setDbPopulated(false);
+        },
+        retries: 2,
+        retryDelay: 1000
+      }
+    );
   };
 
   return (
@@ -121,19 +149,72 @@ const App: React.FC = () => {
             }>
               <Routes>
                 <Route path="/" element={<Navigate to="/status" replace />} />
-                <Route path="/status" element={<StatusTab />} />
-                <Route path="/logs" element={<LogsTab />} />
-                <Route path="/scan" element={<ScanTab />} />
-                <Route path="/cli" element={<CLITab />} />
-                <Route path="/visualize" element={<VisualizeTab />} />
-                <Route path="/generate-spec" element={<GenerateSpecTab />} />
-                <Route path="/generate-iac" element={<GenerateIaCTab />} />
-                <Route path="/undeploy" element={<UndeployTab />} />
-                <Route path="/create-tenant" element={<CreateTenantTab />} />
-                <Route path="/agent-mode" element={<AgentModeTab />} />
-                <Route path="/threat-model" element={<ThreatModelTab />} />
-                <Route path="/docs" element={<DocsTab />} />
-                <Route path="/config" element={<ConfigTab />} />
+                <Route path="/status" element={
+                  <TabErrorBoundary tabName="Status">
+                    <StatusTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/logs" element={
+                  <TabErrorBoundary tabName="Logs">
+                    <LogsTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/scan" element={
+                  <TabErrorBoundary tabName="Scan">
+                    <ScanTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/build" element={<Navigate to="/scan" replace />} />
+                <Route path="/cli" element={
+                  <TabErrorBoundary tabName="CLI">
+                    <CLITab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/visualize" element={
+                  <TabErrorBoundary tabName="Visualize">
+                    <VisualizeTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/generate-spec" element={
+                  <TabErrorBoundary tabName="Generate Spec">
+                    <GenerateSpecTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/generate-iac" element={
+                  <TabErrorBoundary tabName="Generate IaC">
+                    <GenerateIaCTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/undeploy" element={
+                  <TabErrorBoundary tabName="Undeploy">
+                    <UndeployTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/create-tenant" element={
+                  <TabErrorBoundary tabName="Create Tenant">
+                    <CreateTenantTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/agent-mode" element={
+                  <TabErrorBoundary tabName="Agent Mode">
+                    <AgentModeTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/threat-model" element={
+                  <TabErrorBoundary tabName="Threat Model">
+                    <ThreatModelTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/docs" element={
+                  <TabErrorBoundary tabName="Documentation">
+                    <DocsTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/config" element={
+                  <TabErrorBoundary tabName="Configuration">
+                    <ConfigTab />
+                  </TabErrorBoundary>
+                } />
               </Routes>
             </Suspense>
           </ErrorBoundary>

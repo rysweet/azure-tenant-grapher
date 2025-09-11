@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Network, DataSet, Node, Edge } from 'vis-network/standalone';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 import {
   Box,
   Paper,
@@ -46,7 +48,10 @@ import {
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
   ArrowBack as ArrowLeftIcon,
-  ArrowForward as ArrowRightIcon
+  ArrowForward as ArrowRightIcon,
+  TouchApp as SelectIcon,
+  GetApp as ExportIcon,
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -184,6 +189,8 @@ const getEdgeDescription = (type: string): string => {
 export const GraphVisualization: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
+  const navigate = useNavigate();
+  const { dispatch } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +201,11 @@ export const GraphVisualization: React.FC = () => {
   const [legendOpen, setLegendOpen] = useState(false);
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<string>>(new Set());
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(new Set());
+
+  // Selection mode state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedNodesForExport, setSelectedNodesForExport] = useState<Set<string>>(new Set());
+  const [selectionPanelOpen, setSelectionPanelOpen] = useState(false);
 
   // Advanced filtering state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -208,6 +220,45 @@ export const GraphVisualization: React.FC = () => {
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   const [availableResourceGroups, setAvailableResourceGroups] = useState<string[]>([]);
   const [availableSubscriptions, setAvailableSubscriptions] = useState<string[]>([]);
+
+  // Get all connected nodes for a given node
+  const getConnectedNodes = useCallback((nodeId: string, data: GraphData): Set<string> => {
+    const connected = new Set<string>();
+    connected.add(nodeId); // Include the selected node itself
+
+    // Find all edges connected to this node
+    data.edges.forEach(edge => {
+      if (edge.source === nodeId) {
+        connected.add(edge.target);
+      } else if (edge.target === nodeId) {
+        connected.add(edge.source);
+      }
+    });
+
+    return connected;
+  }, []);
+
+  // Handle node selection for export
+  const handleNodeSelectionForExport = useCallback((nodeId: string) => {
+    if (!graphData || !selectionMode) return;
+
+    const connectedNodes = getConnectedNodes(nodeId, graphData);
+    const newSelection = new Set(selectedNodesForExport);
+
+    // Toggle selection: if main node is already selected, deselect all
+    if (selectedNodesForExport.has(nodeId)) {
+      connectedNodes.forEach(id => newSelection.delete(id));
+    } else {
+      connectedNodes.forEach(id => newSelection.add(id));
+    }
+
+    setSelectedNodesForExport(newSelection);
+
+    // Update visual selection in the network
+    if (networkRef.current) {
+      networkRef.current.selectNodes(Array.from(newSelection));
+    }
+  }, [graphData, selectionMode, selectedNodesForExport, getConnectedNodes]);
 
   // Fetch graph data from backend
   const fetchGraphData = useCallback(async () => {
@@ -357,21 +408,36 @@ export const GraphVisualization: React.FC = () => {
     const visNodes = data.nodes
       .filter(node => nodeTypes.has(node.type))
       .filter(nodeMatchesFilters)
-      .map(node => ({
-        id: node.id,
-        label: node.label,
-        title: `${node.type}: ${node.label}`,
-        color: NODE_COLORS[node.type] || NODE_COLORS.Default,
-        shape: 'dot',
-        size: 20,
-        font: {
-          size: 12,
-          color: '#2c3e50'
-        },
-        borderWidth: 2,
-        borderWidthSelected: 4,
-        ...node
-      }));
+      .map(node => {
+        // Create detailed HTML tooltip content using CSS classes
+        const tooltipContent = `
+          <div class="vis-tooltip-title">${node.label}</div>
+          <div class="vis-tooltip-row"><strong>Type:</strong> ${node.type}</div>
+          ${node.properties?.resourceGroup ? `<div class="vis-tooltip-row"><strong>Resource Group:</strong> ${node.properties.resourceGroup}</div>` : ''}
+          ${node.properties?.location ? `<div class="vis-tooltip-row"><strong>Location:</strong> ${node.properties.location}</div>` : ''}
+          ${node.properties?.subscriptionId ? `<div class="vis-tooltip-row"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
+          ${node.properties?.sku ? `<div class="vis-tooltip-row"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
+          ${node.properties?.status ? `<div class="vis-tooltip-row"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
+          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
+          <div class="vis-tooltip-hint">Click for more details</div>
+        `;
+
+        return {
+          id: node.id,
+          label: node.label,
+          title: tooltipContent,
+          color: NODE_COLORS[node.type] || NODE_COLORS.Default,
+          shape: 'dot',
+          size: 20,
+          font: {
+            size: 12,
+            color: '#2c3e50'
+          },
+          borderWidth: 2,
+          borderWidthSelected: 4,
+          ...node
+        };
+      });
 
     // Transform edges for vis-network
     const visEdges = data.edges
@@ -452,12 +518,19 @@ export const GraphVisualization: React.FC = () => {
     network.on('selectNode', async (params) => {
       if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
-        try {
-          const response = await axios.get(`http://localhost:3001/api/graph/node/${nodeId}`);
-          setSelectedNode(response.data);
-          setDetailsOpen(true);
-        } catch (err) {
-          // Handle node details fetch error
+
+        if (selectionMode) {
+          // In selection mode, select node and connected nodes for export
+          handleNodeSelectionForExport(nodeId);
+        } else {
+          // Normal mode - show node details
+          try {
+            const response = await axios.get(`http://localhost:3001/api/graph/node/${nodeId}`);
+            setSelectedNode(response.data);
+            setDetailsOpen(true);
+          } catch (err) {
+            // Handle node details fetch error
+          }
         }
       }
     });
@@ -470,7 +543,7 @@ export const GraphVisualization: React.FC = () => {
     network.once('stabilizationIterationsDone', () => {
       network.setOptions({ physics: { enabled: false } });
     });
-  }, [nodeMatchesFilters]);
+  }, [nodeMatchesFilters, selectionMode, handleNodeSelectionForExport]);
 
   // Filter graph by node/edge types and advanced filters
   const handleFilterChange = useCallback(() => {
@@ -621,8 +694,37 @@ export const GraphVisualization: React.FC = () => {
         overflowY: 'auto'
       }}>
         {/* Header */}
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ color: 'white', fontSize: '1rem' }}>Graph Controls</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title={selectionMode ? "Exit Selection Mode" : "Enter Selection Mode"}>
+              <Button
+                size="small"
+                variant={selectionMode ? "contained" : "outlined"}
+                onClick={() => {
+                  setSelectionMode(!selectionMode);
+                  if (!selectionMode) {
+                    setSelectedNodesForExport(new Set());
+                    if (networkRef.current) {
+                      networkRef.current.unselectAll();
+                    }
+                  }
+                }}
+                startIcon={<SelectIcon />}
+                sx={{
+                  backgroundColor: selectionMode ? '#4caf50' : '#000000',
+                  color: selectionMode ? '#000000' : '#4caf50',
+                  borderColor: '#4caf50',
+                  '&:hover': {
+                    backgroundColor: selectionMode ? '#45a049' : '#000000',
+                    borderColor: '#4caf50'
+                  }
+                }}
+              >
+                Select
+              </Button>
+            </Tooltip>
+          </Box>
         </Box>
 
         {/* All Controls in Single Line */}
@@ -750,6 +852,100 @@ export const GraphVisualization: React.FC = () => {
             </IconButton>
           </Tooltip>
         </Box>
+
+        {/* Selection Info Panel */}
+        {selectionMode && (
+          <Paper sx={{
+            mb: 2,
+            p: 2,
+            backgroundColor: '#2a2a2a',
+            border: '2px solid #4caf50'
+          }}>
+            <Typography variant="subtitle2" sx={{ color: '#4caf50', mb: 1 }}>
+              Selection Mode Active
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'white', mb: 2 }}>
+              Click on nodes to select them and their connected nodes
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'white', mb: 1 }}>
+              Selected: {selectedNodesForExport.size} nodes
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+              <Button
+                size="small"
+                variant="contained"
+                disabled={selectedNodesForExport.size === 0}
+                onClick={async () => {
+                  if (selectedNodesForExport.size === 0) return;
+
+                  // Get selected node IDs and details
+                  const nodeIds = Array.from(selectedNodesForExport);
+                  
+                  // Map node IDs to include resource names for ResourceGroup nodes
+                  const nodeDetails = nodeIds.map(nodeId => {
+                    const node = graphData?.nodes.find(n => n.id === nodeId);
+                    return {
+                      id: nodeId,
+                      type: node?.type,
+                      label: node?.label,
+                      resourceName: (node as any)?.resourceName,  // For ResourceGroup nodes
+                      azureId: (node as any)?.azureId  // Azure resource ID if available
+                    };
+                  });
+
+                  // Dispatch event for GenerateIaCTab to pick up
+                  const event = new CustomEvent('generateIaCForNodes', {
+                    detail: { nodeIds, nodeDetails }
+                  });
+                  window.dispatchEvent(event);
+
+                  // Navigate to Generate IaC tab
+                  navigate('/generate-iac');
+                  dispatch({ type: 'SET_ACTIVE_TAB', payload: 'generate-iac' });
+
+                  // Exit selection mode
+                  setSelectionMode(false);
+                  setSelectedNodesForExport(new Set());
+                }}
+                startIcon={<ExportIcon />}
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: '#000000',
+                  '&:hover': {
+                    backgroundColor: '#45a049'
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#333',
+                    color: '#666'
+                  }
+                }}
+              >
+                Generate IaC
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setSelectedNodesForExport(new Set());
+                  if (networkRef.current) {
+                    networkRef.current.unselectAll();
+                  }
+                }}
+                startIcon={<ClearIcon />}
+                sx={{
+                  borderColor: '#f44336',
+                  color: '#f44336',
+                  '&:hover': {
+                    borderColor: '#d32f2f',
+                    backgroundColor: 'rgba(244, 67, 54, 0.08)'
+                  }
+                }}
+              >
+                Clear
+              </Button>
+            </Box>
+          </Paper>
+        )}
 
         {/* Search bar */}
         <Box sx={{ mb: 3 }}>

@@ -10,7 +10,7 @@ config:
   timeout: 90000  # 1.5 minutes for UI operations
   retries: 2
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -43,7 +43,7 @@ steps:
       executablePath: "${ELECTRON_APP_PATH}"
       args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-web-security"]
     timeout: 20000
-    
+
   # Wait for app to fully load
   - name: "Wait for App Initialization"
     agent: "ui-agent"
@@ -52,7 +52,7 @@ steps:
       selector: "[data-testid='app-container']"
       state: "visible"
       timeout: 15000
-    
+
   # Test Build Tab Navigation
   - name: "Navigate to Build Tab"
     agent: "ui-agent"
@@ -63,7 +63,7 @@ steps:
       selector: "[data-testid='build-form']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Build Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -71,7 +71,7 @@ steps:
       selector: "[data-testid='tenant-id-input']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Generate Spec Tab Navigation
   - name: "Navigate to Generate Spec Tab"
     agent: "ui-agent"
@@ -82,7 +82,7 @@ steps:
       selector: "[data-testid='generate-spec-form']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Generate Spec Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -90,7 +90,7 @@ steps:
       selector: "[data-testid='spec-template-select']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Generate IaC Tab Navigation
   - name: "Navigate to Generate IaC Tab"
     agent: "ui-agent"
@@ -101,7 +101,7 @@ steps:
       selector: "[data-testid='generate-iac-form']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Generate IaC Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -109,7 +109,7 @@ steps:
       selector: "[data-testid='iac-format-select']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Create Tenant Tab Navigation
   - name: "Navigate to Create Tenant Tab"
     agent: "ui-agent"
@@ -120,7 +120,7 @@ steps:
       selector: "[data-testid='create-tenant-form']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Create Tenant Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -128,7 +128,7 @@ steps:
       selector: "[data-testid='tenant-spec-upload']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Visualize Tab Navigation
   - name: "Navigate to Visualize Tab"
     agent: "ui-agent"
@@ -139,7 +139,7 @@ steps:
       selector: "[data-testid='visualize-container']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Visualize Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -147,7 +147,7 @@ steps:
       selector: "[data-testid='graph-canvas'], [data-testid='no-data-message']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Agent Mode Tab Navigation
   - name: "Navigate to Agent Mode Tab"
     agent: "ui-agent"
@@ -158,7 +158,7 @@ steps:
       selector: "[data-testid='agent-mode-container']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Agent Mode Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -166,7 +166,7 @@ steps:
       selector: "[data-testid='agent-chat-interface']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Threat Model Tab Navigation
   - name: "Navigate to Threat Model Tab"
     agent: "ui-agent"
@@ -177,7 +177,7 @@ steps:
       selector: "[data-testid='threat-model-container']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Threat Model Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -185,7 +185,7 @@ steps:
       selector: "[data-testid='threat-analysis-form']"
       state: "visible"
       timeout: 5000
-      
+
   # Test Configuration Tab Navigation
   - name: "Navigate to Configuration Tab"
     agent: "ui-agent"
@@ -196,7 +196,7 @@ steps:
       selector: "[data-testid='config-form']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Verify Configuration Tab Content"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -204,7 +204,7 @@ steps:
       selector: "[data-testid='azure-credentials-section']"
       state: "visible"
       timeout: 5000
-      
+
   # Test tab switching back and forth
   - name: "Test Rapid Tab Switching"
     agent: "ui-agent"
@@ -223,7 +223,7 @@ steps:
         - action: "click"
           selector: "[data-testid='tab-build']"
           wait: 1000
-          
+
   # Verify final state
   - name: "Verify Final Tab State"
     agent: "ui-agent"
@@ -248,55 +248,55 @@ assertions:
         - "[data-testid='tab-agent-mode']"
         - "[data-testid='tab-threat-model']"
         - "[data-testid='tab-config']"
-        
+
   - name: "Build Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='build-form']"
-      
+
   - name: "Generate Spec Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='generate-spec-form']"
-      
+
   - name: "Generate IaC Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='generate-iac-form']"
-      
+
   - name: "Create Tenant Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='create-tenant-form']"
-      
+
   - name: "Visualize Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='visualize-container']"
-      
+
   - name: "Agent Mode Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='agent-mode-container']"
-      
+
   - name: "Threat Model Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='threat-model-container']"
-      
+
   - name: "Configuration Tab Content Loads"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='config-form']"
-      
+
   - name: "No JavaScript Errors Present"
     type: "no_console_errors"
     agent: "ui-agent"

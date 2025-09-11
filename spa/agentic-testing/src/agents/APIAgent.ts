@@ -1,6 +1,6 @@
 /**
  * APIAgent - Comprehensive REST API testing agent using Axios
- * 
+ *
  * This agent provides complete automation capabilities for REST API testing
  * including support for all HTTP methods, authentication, request/response
  * validation, performance measurement, retries, and comprehensive error handling.
@@ -9,11 +9,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { EventEmitter } from 'events';
 import { IAgent, AgentType } from './index';
-import { 
-  TestStep, 
-  TestStatus, 
-  StepResult, 
-  TestScenario 
+import {
+  TestStep,
+  TestStatus,
+  StepResult,
+  TestScenario
 } from '../models/TestModels';
 import { TestLogger, createLogger, LogLevel } from '../utils/logger';
 
@@ -228,7 +228,7 @@ const DEFAULT_CONFIG: Required<APIAgentConfig> = {
 export class APIAgent extends EventEmitter implements IAgent {
   public readonly name = 'APIAgent';
   public readonly type = AgentType.API;
-  
+
   private config: Required<APIAgentConfig>;
   private logger: TestLogger;
   private isInitialized = false;
@@ -237,7 +237,7 @@ export class APIAgent extends EventEmitter implements IAgent {
   private requestHistory: APIRequest[] = [];
   private responseHistory: APIResponse[] = [];
   private performanceMetrics: RequestPerformance[] = [];
-  
+
   constructor(config: APIAgentConfig = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -245,7 +245,7 @@ export class APIAgent extends EventEmitter implements IAgent {
       level: this.config.logConfig.logLevel,
       logDir: './logs/api-agent'
     });
-    
+
     this.axiosInstance = this.createAxiosInstance();
     this.setupEventListeners();
   }
@@ -254,25 +254,25 @@ export class APIAgent extends EventEmitter implements IAgent {
    * Initialize the agent
    */
   async initialize(): Promise<void> {
-    this.logger.info('Initializing APIAgent', { 
+    this.logger.info('Initializing APIAgent', {
       baseURL: this.config.baseURL,
       timeout: this.config.timeout,
       authType: this.config.auth.type
     });
-    
+
     try {
       // Test connectivity if base URL is provided
       if (this.config.baseURL) {
         await this.testConnectivity();
       }
-      
+
       // Setup interceptors
       this.setupInterceptors();
-      
+
       this.isInitialized = true;
       this.logger.info('APIAgent initialized successfully');
       this.emit('initialized');
-      
+
     } catch (error: any) {
       this.logger.error('Failed to initialize APIAgent', { error: error?.message });
       throw new Error(`Failed to initialize APIAgent: ${error?.message}`);
@@ -294,28 +294,28 @@ export class APIAgent extends EventEmitter implements IAgent {
     const startTime = Date.now();
     let status = TestStatus.PASSED;
     let error: string | undefined;
-    
+
     try {
       // Set environment variables if specified in scenario
       if (scenario.environment) {
         this.applyEnvironmentConfig(scenario.environment);
       }
-      
+
       // Execute scenario steps
       const stepResults: StepResult[] = [];
-      
+
       for (let i = 0; i < scenario.steps.length; i++) {
         const step = scenario.steps[i];
         const stepResult = await this.executeStep(step, i);
         stepResults.push(stepResult);
-        
+
         if (stepResult.status === TestStatus.FAILED || stepResult.status === TestStatus.ERROR) {
           status = stepResult.status;
           error = stepResult.error;
           break;
         }
       }
-      
+
       return {
         scenarioId: scenario.id,
         status,
@@ -329,13 +329,13 @@ export class APIAgent extends EventEmitter implements IAgent {
         responseHistory: [...this.responseHistory],
         performanceMetrics: [...this.performanceMetrics]
       };
-      
+
     } catch (executeError: any) {
       this.logger.error('Scenario execution failed', { error: executeError?.message });
       status = TestStatus.ERROR;
       error = executeError?.message;
       throw executeError;
-      
+
     } finally {
       this.logger.scenarioEnd(scenario.id, status, Date.now() - startTime);
       this.currentScenarioId = undefined;
@@ -354,7 +354,7 @@ export class APIAgent extends EventEmitter implements IAgent {
   ): Promise<APIResponse> {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
-    
+
     const request: APIRequest = {
       id: requestId,
       method,
@@ -364,9 +364,9 @@ export class APIAgent extends EventEmitter implements IAgent {
       timestamp: new Date(),
       timeout: options?.timeout
     };
-    
+
     this.requestHistory.push(request);
-    
+
     if (this.config.logConfig.logRequests) {
       this.logger.info(`Making ${method} request`, {
         requestId,
@@ -377,7 +377,7 @@ export class APIAgent extends EventEmitter implements IAgent {
 
     let attempt = 0;
     const maxAttempts = this.config.retry.maxRetries + 1;
-    
+
     while (attempt < maxAttempts) {
       try {
         const axiosConfig: AxiosRequestConfig = {
@@ -387,10 +387,10 @@ export class APIAgent extends EventEmitter implements IAgent {
           headers,
           ...options
         };
-        
+
         const response = await this.axiosInstance.request(axiosConfig);
         const duration = Date.now() - startTime;
-        
+
         const apiResponse: APIResponse = {
           requestId,
           status: response.status,
@@ -401,13 +401,13 @@ export class APIAgent extends EventEmitter implements IAgent {
           timestamp: new Date(),
           size: this.calculateResponseSize(response.data)
         };
-        
+
         this.responseHistory.push(apiResponse);
-        
+
         if (this.config.performance.enabled) {
           this.recordPerformanceMetrics(requestId, response, duration);
         }
-        
+
         if (this.config.logConfig.logResponses) {
           this.logger.info(`Request completed successfully`, {
             requestId,
@@ -416,13 +416,13 @@ export class APIAgent extends EventEmitter implements IAgent {
             size: apiResponse.size
           });
         }
-        
+
         this.emit('response', apiResponse);
         return apiResponse;
-        
+
       } catch (error: any) {
         attempt++;
-        
+
         if (attempt >= maxAttempts || !this.shouldRetry(error)) {
           const duration = Date.now() - startTime;
           const errorResponse: APIResponse = {
@@ -434,17 +434,17 @@ export class APIAgent extends EventEmitter implements IAgent {
             duration,
             timestamp: new Date()
           };
-          
+
           this.responseHistory.push(errorResponse);
           this.logger.error(`Request failed after ${attempt} attempts`, {
             requestId,
             error: error?.message,
             status: error.response?.status
           });
-          
+
           throw error;
         }
-        
+
         const retryDelay = this.calculateRetryDelay(attempt);
         this.logger.warn(`Request attempt ${attempt} failed, retrying in ${retryDelay}ms`, {
           requestId,
@@ -452,11 +452,11 @@ export class APIAgent extends EventEmitter implements IAgent {
           attempt,
           maxAttempts
         });
-        
+
         await this.delay(retryDelay);
       }
     }
-    
+
     throw new Error('Unexpected end of retry loop');
   }
 
@@ -466,95 +466,95 @@ export class APIAgent extends EventEmitter implements IAgent {
   async executeStep(step: TestStep, stepIndex: number): Promise<StepResult> {
     const startTime = Date.now();
     this.logger.stepExecution(stepIndex, step.action, step.target);
-    
+
     try {
       let result: any;
-      
+
       switch (step.action.toLowerCase()) {
         case 'get':
           result = await this.handleGetRequest(step);
           break;
-          
+
         case 'post':
           result = await this.handlePostRequest(step);
           break;
-          
+
         case 'put':
           result = await this.handlePutRequest(step);
           break;
-          
+
         case 'delete':
           result = await this.handleDeleteRequest(step);
           break;
-          
+
         case 'patch':
           result = await this.handlePatchRequest(step);
           break;
-          
+
         case 'head':
           result = await this.handleHeadRequest(step);
           break;
-          
+
         case 'options':
           result = await this.handleOptionsRequest(step);
           break;
-          
+
         case 'validate_response':
           result = await this.validateResponse(step);
           break;
-          
+
         case 'validate_status':
           result = await this.validateStatus(parseInt(step.expected || step.value || '200'));
           break;
-          
+
         case 'validate_headers':
           result = await this.validateHeaders(step.expected || step.value || '');
           break;
-          
+
         case 'validate_schema':
           result = await this.validateResponseSchema(step.expected || step.value || '');
           break;
-          
+
         case 'set_header':
           this.setDefaultHeader(step.target, step.value || '');
           result = true;
           break;
-          
+
         case 'set_auth':
           this.setAuthentication(step.target, step.value);
           result = true;
           break;
-          
+
         case 'wait':
           const waitTime = parseInt(step.value || '1000');
           await this.delay(waitTime);
           result = true;
           break;
-          
+
         case 'clear_cookies':
           // Note: Axios doesn't handle cookies automatically like browsers
           // This would need to be implemented if cookie support is needed
           result = true;
           break;
-          
+
         default:
           throw new Error(`Unsupported API action: ${step.action}`);
       }
-      
+
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.PASSED, duration);
-      
+
       return {
         stepIndex,
         status: TestStatus.PASSED,
         duration,
         actualResult: typeof result === 'string' ? result : JSON.stringify(result)
       };
-      
+
     } catch (error: any) {
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.FAILED, duration);
-      
+
       return {
         stepIndex,
         status: TestStatus.FAILED,
@@ -573,28 +573,28 @@ export class APIAgent extends EventEmitter implements IAgent {
         this.config.auth = { type: 'bearer', token: value };
         this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${value}`;
         break;
-        
+
       case 'apikey':
         const [header, key] = (value || '').split(':');
-        this.config.auth = { 
-          type: 'apikey', 
-          apiKey: key, 
-          apiKeyHeader: header || 'X-API-Key' 
+        this.config.auth = {
+          type: 'apikey',
+          apiKey: key,
+          apiKeyHeader: header || 'X-API-Key'
         };
         this.axiosInstance.defaults.headers.common[header || 'X-API-Key'] = key;
         break;
-        
+
       case 'basic':
         const [username, password] = (value || '').split(':');
         this.config.auth = { type: 'basic', username, password };
         const basicAuth = Buffer.from(`${username}:${password}`).toString('base64');
         this.axiosInstance.defaults.headers.common['Authorization'] = `Basic ${basicAuth}`;
         break;
-        
+
       default:
         throw new Error(`Unsupported authentication type: ${type}`);
     }
-    
+
     this.logger.debug(`Authentication configured: ${type}`);
   }
 
@@ -604,7 +604,7 @@ export class APIAgent extends EventEmitter implements IAgent {
   setDefaultHeader(name: string, value: string): void {
     this.config.defaultHeaders[name] = value;
     this.axiosInstance.defaults.headers.common[name] = value;
-    this.logger.debug(`Default header set: ${name}=${this.config.logConfig.maskSensitiveData && 
+    this.logger.debug(`Default header set: ${name}=${this.config.logConfig.maskSensitiveData &&
       this.config.logConfig.sensitiveHeaders.includes(name.toLowerCase()) ? '[MASKED]' : value}`);
   }
 
@@ -627,16 +627,16 @@ export class APIAgent extends EventEmitter implements IAgent {
    */
   async cleanup(): Promise<void> {
     this.logger.info('Cleaning up APIAgent resources');
-    
+
     try {
       // Clear history
       this.requestHistory = [];
       this.responseHistory = [];
       this.performanceMetrics = [];
-      
+
       this.logger.info('APIAgent cleanup completed');
       this.emit('cleanup');
-      
+
     } catch (error: any) {
       this.logger.error('Error during cleanup', { error: error?.message });
     }
@@ -774,14 +774,14 @@ export class APIAgent extends EventEmitter implements IAgent {
 
     try {
       const expectedHeaders = JSON.parse(expected);
-      
+
       for (const [key, value] of Object.entries(expectedHeaders)) {
         const actualValue = latestResponse.headers[key.toLowerCase()];
         if (actualValue !== value) {
           return false;
         }
       }
-      
+
       return true;
     } catch (error) {
       throw new Error(`Invalid header validation format: ${expected}`);
@@ -816,13 +816,13 @@ export class APIAgent extends EventEmitter implements IAgent {
 
     try {
       const parsed = JSON.parse(value);
-      
+
       if (parsed.data && parsed.headers) {
         return parsed;
       } else if (typeof parsed === 'object') {
         return { data: parsed };
       }
-      
+
       return { data: parsed };
     } catch {
       return { data: value };
@@ -880,17 +880,17 @@ export class APIAgent extends EventEmitter implements IAgent {
     }
 
     const masked = { ...headers };
-    
+
     for (const sensitiveHeader of this.config.logConfig.sensitiveHeaders) {
-      const header = Object.keys(masked).find(key => 
+      const header = Object.keys(masked).find(key =>
         key.toLowerCase() === sensitiveHeader.toLowerCase()
       );
-      
+
       if (header) {
         masked[header] = '[MASKED]';
       }
     }
-    
+
     return masked;
   }
 
@@ -930,23 +930,23 @@ export class APIAgent extends EventEmitter implements IAgent {
 
   private deepEqual(obj1: any, obj2: any): boolean {
     if (obj1 === obj2) return true;
-    
+
     if (obj1 == null || obj2 == null) return false;
-    
+
     if (typeof obj1 !== typeof obj2) return false;
-    
+
     if (typeof obj1 !== 'object') return obj1 === obj2;
-    
+
     const keys1 = Object.keys(obj1);
     const keys2 = Object.keys(obj2);
-    
+
     if (keys1.length !== keys2.length) return false;
-    
+
     for (const key of keys1) {
       if (!keys2.includes(key)) return false;
       if (!this.deepEqual(obj1[key], obj2[key])) return false;
     }
-    
+
     return true;
   }
 

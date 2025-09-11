@@ -10,7 +10,7 @@ config:
   timeout: 60000
   retries: 2
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -31,7 +31,7 @@ agents:
         width: 1280
         height: 720
       timeout: 30000
-      
+
   - name: "websocket-agent"
     type: "websocket"
     config:
@@ -49,14 +49,14 @@ steps:
       executablePath: "${ELECTRON_APP_PATH}"
       args: ["--no-sandbox", "--disable-dev-shm-usage"]
     timeout: 15000
-    
+
   # Connect to WebSocket for real-time updates
   - name: "Connect WebSocket"
     agent: "websocket-agent"
     action: "connect"
     params:
       events: ["log", "progress", "status"]
-    
+
   # Navigate to Build tab
   - name: "Navigate to Build Tab"
     agent: "ui-agent"
@@ -66,7 +66,7 @@ steps:
     wait_for:
       selector: "[data-testid='build-form']"
       state: "visible"
-      
+
   # Fill in tenant ID
   - name: "Fill Tenant ID"
     agent: "ui-agent"
@@ -74,7 +74,7 @@ steps:
     params:
       selector: "[data-testid='tenant-id-input']"
       value: "${AZURE_TENANT_ID}"
-      
+
   # Configure build options
   - name: "Configure Build Options"
     agent: "ui-agent"
@@ -88,7 +88,7 @@ steps:
         - action: "select"
           selector: "[data-testid='resource-limit-select']"
           value: "100"
-          
+
   # Start the build process
   - name: "Start Build"
     agent: "ui-agent"
@@ -99,7 +99,7 @@ steps:
       selector: "[data-testid='build-progress']"
       state: "visible"
       timeout: 5000
-      
+
   # Monitor build progress via WebSocket
   - name: "Monitor Build Progress"
     agent: "websocket-agent"
@@ -110,7 +110,7 @@ steps:
     until:
       condition: "contains"
       value: "Build completed"
-      
+
   # Verify build completion
   - name: "Verify Build Success"
     agent: "ui-agent"
@@ -126,14 +126,14 @@ assertions:
     agent: "ui-agent"
     params:
       selector: "[data-testid='build-success-message']"
-      
+
   - name: "Progress Shows Completion"
     type: "element_text_contains"
     agent: "ui-agent"
     params:
       selector: "[data-testid='progress-status']"
       text: "completed"
-      
+
   - name: "WebSocket Received Success Event"
     type: "websocket_event_received"
     agent: "websocket-agent"
@@ -141,7 +141,7 @@ assertions:
       event: "status"
       data:
         status: "success"
-        
+
   - name: "No Error Messages Present"
     type: "element_not_visible"
     agent: "ui-agent"
@@ -153,7 +153,7 @@ cleanup:
   - name: "Close Application"
     agent: "ui-agent"
     action: "close_app"
-    
+
   - name: "Disconnect WebSocket"
     agent: "websocket-agent"
     action: "disconnect"
