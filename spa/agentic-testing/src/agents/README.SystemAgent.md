@@ -64,27 +64,27 @@ const config: SystemAgentConfig = {
   memoryThreshold: 85,           // Alert if Memory > 85%
   diskThreshold: 90,             // Alert if Disk > 90%
   processCountThreshold: 500,    // Alert if > 500 processes
-  
+
   // Network monitoring
   networkMonitoring: {
     enabled: true,
     interfaces: [],              // Monitor all interfaces
     bandwidth: true              // Include bandwidth metrics
   },
-  
+
   // Docker container monitoring
   dockerMonitoring: {
     enabled: true,
     containerFilters: []         // Monitor all containers
   },
-  
+
   // File system change tracking
   fileSystemMonitoring: {
     enabled: true,
     watchPaths: ['./logs', './temp'],
     excludePatterns: [/node_modules/, /\.git/]
   },
-  
+
   // Automated cleanup
   cleanup: {
     killZombieProcesses: true,
@@ -92,7 +92,7 @@ const config: SystemAgentConfig = {
     tempDirPatterns: ['./temp/*', '/tmp/test-*'],
     processNamePatterns: ['zombie-*', 'test-*']
   },
-  
+
   // Performance baseline
   performanceBaseline: {
     captureBaseline: true,
@@ -378,11 +378,11 @@ beforeAll(async () => {
 afterAll(async () => {
   await systemAgent.stopMonitoring();
   const report = await systemAgent.generateHealthReport();
-  
+
   if (report.overall !== 'healthy') {
     console.warn('System issues detected during tests:', report.issues);
   }
-  
+
   await systemAgent.cleanup();
 });
 ```
@@ -395,29 +395,29 @@ import { SystemAgent, createSystemAgent } from './agents/SystemAgent';
 
 test.describe('System monitored tests', () => {
   let systemAgent: SystemAgent;
-  
+
   test.beforeEach(async () => {
     systemAgent = createSystemAgent({
       monitoringInterval: 2000,
       cpuThreshold: 70,
       memoryThreshold: 75
     });
-    
+
     await systemAgent.initialize();
     await systemAgent.startMonitoring();
   });
-  
+
   test.afterEach(async () => {
     await systemAgent.stopMonitoring();
     const health = await systemAgent.getSystemHealth();
-    
+
     if (health !== 'healthy') {
       console.warn(`Test completed with system health: ${health}`);
     }
-    
+
     await systemAgent.cleanup();
   });
-  
+
   test('monitored test case', async ({ page }: { page: Page }) => {
     // Your test implementation
     await page.goto('https://example.com');

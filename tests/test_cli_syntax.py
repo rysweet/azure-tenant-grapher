@@ -45,9 +45,9 @@ def test_can_import_cli():
 
         # Try to import cli_commands
         # Try to import the main CLI
-        from scripts.cli import cli
+        from scripts.cli import cli  # noqa: F401
 
-        import src.cli_commands
+        import src.cli_commands  # noqa: F401
 
     except SyntaxError as e:
         pytest.fail(f"Cannot import CLI due to syntax error: {e}")

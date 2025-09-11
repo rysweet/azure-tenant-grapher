@@ -28,8 +28,9 @@ class DashboardExitException(Exception):
 class CLIDashboardManager:
     """Manages CLI dashboard interactions and build task coordination."""
 
-    def __init__(self, dashboard: RichDashboard):
+    def __init__(self, dashboard: RichDashboard, filter_config: Optional[Any] = None):
         self.dashboard = dashboard
+        self.filter_config = filter_config
         self.logger = logging.getLogger(__name__)
 
     async def run_with_file_keypress(

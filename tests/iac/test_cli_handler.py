@@ -42,6 +42,7 @@ def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
         dry_run: bool = False,
         resource_filters: Optional[str] = None,
         subset_filter: Optional[str] = None,
+        node_ids: Optional[list[str]] = None,
         dest_rg: Optional[str] = None,
         location: Optional[str] = None,
         domain_name: Optional[str] = None,
@@ -49,9 +50,16 @@ def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
         called["tenant_id"] = tenant_id
         return 0
 
+    # Mock at the correct import location in the CLI script
     monkeypatch.setattr(
-        "src.iac.cli_handler.generate_iac_command_handler",
+        "scripts.cli.generate_iac_command_handler",
         mock_generate_iac_command_handler,
+    )
+
+    # Also mock the tool check
+    monkeypatch.setattr(
+        "src.utils.cli_installer.ensure_tool",
+        lambda tool, auto_prompt=False: None,
     )
 
     runner = CliRunner()

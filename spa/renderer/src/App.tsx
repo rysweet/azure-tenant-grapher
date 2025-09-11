@@ -71,11 +71,11 @@ const App: React.FC = () => {
         }
       });
 
-      window.electronAPI.on('menu:new-build', () => {
+      window.electronAPI.on('menu:new-scan', () => {
         try {
-          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+          dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
         } catch (error) {
-          errorService.logError(error as Error, 'component', { event: 'menu:new-build' });
+          errorService.logError(error as Error, 'component', { event: 'menu:new-scan' });
         }
       });
     } catch (error) {
@@ -95,8 +95,8 @@ const App: React.FC = () => {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'visualize' });
     } else if (!initialCheckDone && dbPopulated === false) {
       setInitialCheckDone(true);
-      navigate('/build');
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'build' });
+      navigate('/scan');
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'scan' });
     }
   }, [dbPopulated, navigate, dispatch, initialCheckDone]);
 
@@ -164,6 +164,7 @@ const App: React.FC = () => {
                     <ScanTab />
                   </TabErrorBoundary>
                 } />
+                <Route path="/build" element={<Navigate to="/scan" replace />} />
                 <Route path="/cli" element={
                   <TabErrorBoundary tabName="CLI">
                     <CLITab />

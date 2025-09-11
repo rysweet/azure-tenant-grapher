@@ -187,9 +187,9 @@ export class FileUtils {
   static async copy(source: string, destination: string, overwrite: boolean = true): Promise<void> {
     try {
       await this.ensureDirectory(path.dirname(destination));
-      
+
       const stats = await fs.stat(source);
-      
+
       if (stats.isDirectory()) {
         await this.copyDirectory(source, destination, overwrite);
       } else {
@@ -219,15 +219,15 @@ export class FileUtils {
    */
   private static async copyDirectory(source: string, destination: string, overwrite: boolean): Promise<void> {
     await this.ensureDirectory(destination);
-    
+
     const items = await fs.readdir(source);
-    
+
     for (const item of items) {
       const srcPath = path.join(source, item);
       const destPath = path.join(destination, item);
-      
+
       const stats = await fs.stat(srcPath);
-      
+
       if (stats.isDirectory()) {
         await this.copyDirectory(srcPath, destPath, overwrite);
       } else {
@@ -261,7 +261,7 @@ export class FileUtils {
   static async delete(filePath: string, recursive: boolean = false): Promise<void> {
     try {
       const stats = await fs.stat(filePath);
-      
+
       if (stats.isDirectory()) {
         if (recursive) {
           await fs.rm(filePath, { recursive: true, force: true });
@@ -302,7 +302,7 @@ export class FileUtils {
       const stats = await fs.stat(filePath);
       const fileName = path.basename(filePath);
       const extension = path.extname(fileName).toLowerCase();
-      
+
       return {
         filePath,
         fileName,
@@ -349,7 +349,7 @@ export class FileUtils {
     try {
       const globPatterns = Array.isArray(patterns) ? patterns : [patterns];
       const results: string[] = [];
-      
+
       for (const pattern of globPatterns) {
         const matches = await glob(pattern, {
           cwd: options?.cwd,
@@ -358,7 +358,7 @@ export class FileUtils {
         });
         results.push(...matches);
       }
-      
+
       // Remove duplicates
       return [...new Set(results)];
     } catch (error) {
@@ -427,9 +427,9 @@ export class FileUtils {
           } else {
             const stats = await fs.stat(filePath);
             result.totalSize += stats.size;
-            
+
             await this.delete(filePath, true);
-            
+
             if (stats.isDirectory()) {
               result.deletedDirectories.push(filePath);
             } else {
@@ -509,9 +509,9 @@ export class FileUtils {
 
       // Get source files
       const sourceFiles = await this.findFiles('**/*', { cwd: source, absolute: false });
-      
+
       // Filter by exclude patterns
-      const filteredSourceFiles = options.exclude 
+      const filteredSourceFiles = options.exclude
         ? await this.filterByPatterns(sourceFiles, options.exclude, true)
         : sourceFiles;
 
@@ -591,7 +591,7 @@ export class FileUtils {
 
     try {
       const files = await this.findFiles('**/*', { cwd: directory, absolute: true });
-      
+
       for (const filePath of files) {
         try {
           const stats = await fs.stat(filePath);
@@ -662,7 +662,7 @@ export class FileUtils {
    */
   private static async filterByAge(files: string[], cutoffTime: number): Promise<string[]> {
     const filtered: string[] = [];
-    
+
     for (const filePath of files) {
       try {
         const stats = await fs.stat(filePath);
@@ -673,7 +673,7 @@ export class FileUtils {
         // Skip files that can't be accessed
       }
     }
-    
+
     return filtered;
   }
 
@@ -698,14 +698,14 @@ export class FileUtils {
   private static async removeEmptyDirectories(directory: string): Promise<void> {
     try {
       const items = await fs.readdir(directory);
-      
+
       for (const item of items) {
         const itemPath = path.join(directory, item);
         const stats = await fs.stat(itemPath);
-        
+
         if (stats.isDirectory()) {
           await this.removeEmptyDirectories(itemPath);
-          
+
           // Check if directory is now empty
           const remainingItems = await fs.readdir(itemPath);
           if (remainingItems.length === 0) {

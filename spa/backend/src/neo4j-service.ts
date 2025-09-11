@@ -1,10 +1,12 @@
 import neo4j, { Driver, Session, DateTime } from 'neo4j-driver';
 
 export interface GraphNode {
-  id: string;
-  label: string;
-  type: string;
+  id: string;  // Internal graph ID (elementId)
+  label: string;  // Display label
+  type: string;  // Node type
   properties: Record<string, any>;
+  resourceName?: string;  // Actual resource name for filtering (e.g., for ResourceGroup nodes)
+  azureId?: string;  // Azure resource ID if available
 }
 
 export interface GraphEdge {
@@ -118,12 +120,25 @@ export class Neo4jService {
                             node.elementId ||
                             'Unnamed';
 
-          nodes.push({
+          // Create the node object with additional metadata
+          const graphNode: GraphNode = {
             id: node.elementId || node.identity.toString(),
             label: displayName,
             type: nodeType,
             properties: props
-          });
+          };
+
+          // For ResourceGroup nodes, add the actual name for filtering
+          if (nodeType === 'ResourceGroup' || labels.includes('ResourceGroup')) {
+            graphNode.resourceName = props.name || displayName;
+          }
+
+          // Add Azure ID if available (useful for all Azure resources)
+          if (props.id && typeof props.id === 'string' && props.id.startsWith('/')) {
+            graphNode.azureId = props.id;
+          }
+
+          nodes.push(graphNode);
         });
 
         // Process relationships

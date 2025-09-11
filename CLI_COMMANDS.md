@@ -20,11 +20,11 @@ All commands are identical and provide the same functionality.
 # Show help
 atg --help
 
-# Build graph with dashboard (most common usage)
-atg build
+# Scan graph with dashboard (most common usage)
+atg scan
 
-# Build with specific tenant and no dashboard
-atg build --tenant-id "your-tenant-id" --no-dashboard
+# Scan with specific tenant and no dashboard
+atg scan --tenant-id "your-tenant-id" --no-dashboard
 
 # Test with limited resources
 atg test --limit 20
@@ -49,16 +49,16 @@ atg wipe --force
 
 ### Detailed Examples
 ```bash
-# Build graph with custom settings
-atg build \
+# Scan graph with custom settings
+atg scan \
   --tenant-id "12345678-1234-1234-1234-123456789012" \
   --resource-limit 1000 \
   --max-llm-threads 10 \
   --generate-spec \
   --visualize
 
-# Build without container auto-start
-atg build --no-container --no-dashboard
+# Scan without container auto-start
+atg scan --no-container --no-dashboard
 
 # Generate specification only (requires existing graph)
 atg spec
@@ -69,7 +69,7 @@ atg generate-spec --output outputs/my-spec.md
 
 ## Dashboard Features
 
-When using the dashboard (default for `atg build`):
+When using the dashboard (default for `atg scan`):
 
 ### Keyboard Shortcuts
 - **Press 'x'** to exit the dashboard at any time
@@ -86,7 +86,7 @@ When using the dashboard (default for `atg build`):
 The 'g' hotkey provides a convenient way to launch the desktop GUI without leaving the CLI dashboard. There are two ways to access the GUI:
 
 1. **Direct command**: `atg start` (run in a separate terminal)
-2. **Dashboard hotkey**: Press 'g' while in the build dashboard
+2. **Dashboard hotkey**: Press 'g' while in the scan dashboard
 
 Both methods launch the same Electron application with full CLI functionality.
 

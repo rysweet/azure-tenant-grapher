@@ -109,7 +109,7 @@ export class TestLogger {
             winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             winston.format.printf(({ timestamp, level, message, ...meta }) => {
               let output = `${timestamp} [${level}]`;
-              
+
               // Add context information
               if (this.context.scenarioId) {
                 output += ` [${this.context.scenarioId}]`;
@@ -117,14 +117,14 @@ export class TestLogger {
               if (this.context.component) {
                 output += ` [${this.context.component}]`;
               }
-              
+
               output += `: ${message}`;
-              
+
               // Add metadata if present
               if (Object.keys(meta).length > 0) {
                 output += ` ${JSON.stringify(meta)}`;
               }
-              
+
               return output;
             })
           )
@@ -253,10 +253,10 @@ export class TestLogger {
    */
   scenarioStart(scenarioId: string, scenarioName: string): void {
     this.setContext({ scenarioId });
-    this.info(`Starting test scenario: ${scenarioName}`, { 
+    this.info(`Starting test scenario: ${scenarioName}`, {
       event: 'scenario_start',
       scenarioId,
-      scenarioName 
+      scenarioName
     });
   }
 
@@ -264,11 +264,11 @@ export class TestLogger {
    * Log test scenario completion
    */
   scenarioEnd(scenarioId: string, status: string, duration: number): void {
-    this.info(`Test scenario completed: ${status}`, { 
+    this.info(`Test scenario completed: ${status}`, {
       event: 'scenario_end',
       scenarioId,
       status,
-      duration 
+      duration
     });
     this.clearContext();
   }
@@ -359,7 +359,7 @@ export class TestLogger {
   setLevel(level: LogLevel): void {
     this.config.level = level;
     this.logger.level = level;
-    
+
     // Update all transports
     this.logger.transports.forEach(transport => {
       transport.level = level;
@@ -380,7 +380,7 @@ export class TestLogger {
     return new Promise((resolve) => {
       // Winston doesn't have a built-in flush method, so we use a workaround
       let pendingTransports = this.logger.transports.length;
-      
+
       if (pendingTransports === 0) {
         resolve();
         return;

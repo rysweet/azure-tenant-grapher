@@ -1,6 +1,6 @@
 /**
  * IssueReporter Agent Usage Examples
- * 
+ *
  * Demonstrates how to use the IssueReporter agent for GitHub integration
  * in test failure scenarios.
  */
@@ -111,7 +111,7 @@ async function basicUsageExample(): Promise<void> {
     console.log(`  URL: ${issue.url}`);
 
     // Add a comment with additional information
-    await issueReporter.addComment(issue.issueNumber, 
+    await issueReporter.addComment(issue.issueNumber,
       '## Additional Investigation\n\nThis appears to be related to a recent dependency update. Investigating further...'
     );
     console.log('✓ Comment added to issue');
@@ -141,7 +141,7 @@ async function advancedFeaturesExample(): Promise<void> {
       enableDeduplication: true,
       screenshotStorage: 'attach'
     });
-    
+
     await issueReporter.initialize();
 
     // Check rate limit status
@@ -159,7 +159,7 @@ async function advancedFeaturesExample(): Promise<void> {
     // Attach a screenshot
     try {
       const screenshotUrl = await issueReporter.attachScreenshot(
-        issue.issueNumber, 
+        issue.issueNumber,
         'screenshots/build-error-1.png'
       );
       console.log(`✓ Screenshot attached: ${screenshotUrl}`);
@@ -266,7 +266,7 @@ async function batchOperationsExample(): Promise<void> {
         const issue = await issueReporter.createIssue(failure);
         createdIssues.push(issue.issueNumber);
         console.log(`✓ Issue created for ${failure.scenarioId}: #${issue.issueNumber}`);
-        
+
         // Small delay to respect rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
@@ -278,7 +278,7 @@ async function batchOperationsExample(): Promise<void> {
     if (createdIssues.length > 1) {
       const mainIssue = createdIssues[0];
       const relatedIssues = createdIssues.slice(1);
-      
+
       await issueReporter.linkIssues(mainIssue, relatedIssues, 'relates');
       console.log(`✓ Linked ${createdIssues.length} related issues`);
     }
