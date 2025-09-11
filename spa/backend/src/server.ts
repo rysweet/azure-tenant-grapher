@@ -791,7 +791,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
       });
     }
 
-    // Test the API key by making a minimal inference request
+    // Always test with actual API call, using modelChat or a fallback model
     try {
       // If we have a chat model configured, test with actual inference
       if (modelChat) {
