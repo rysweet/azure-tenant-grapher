@@ -116,7 +116,7 @@ class TestSpaStartCommand:
                     # Simulate build completing
                     mock_run.return_value = MagicMock(returncode=0)
 
-                    with patch("src.cli_commands.subprocess.Popen") as mock_popen:
+                    with patch("src.cli_commands.subprocess.Popen"):
                         # This should not be called if main entry doesn't exist
                         result = runner.invoke(spa_start, catch_exceptions=False)
 

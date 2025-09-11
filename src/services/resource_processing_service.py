@@ -38,6 +38,7 @@ class ResourceProcessingService:
         resources: list[dict[str, Any]],
         progress_callback: Optional[Callable[[ProcessingStats], None]] = None,
         max_workers: Optional[int] = None,
+        filter_config: Optional[Any] = None,
     ) -> ProcessingStats:
         logger.info("[DEBUG][RPS] Entered ResourceProcessingService.process_resources")
         """
@@ -62,8 +63,13 @@ class ResourceProcessingService:
         # --- AAD Graph Ingestion ---
         # Use config value which defaults to True, can be overridden by env var
         enable_aad = getattr(self.config, "enable_aad_import", True)
-
-        if enable_aad and self.aad_graph_service:
+        
+        # Skip AAD import when filtering by resource groups or subscriptions
+        # Because we can't determine which users/groups are relevant to just those resources
+        is_filtering = filter_config and (filter_config.has_filters() if hasattr(filter_config, 'has_filters') else 
+                                          (filter_config.resource_group_names or filter_config.subscription_ids))
+        
+        if enable_aad and self.aad_graph_service and not is_filtering:
             logger.info(
                 "AAD import enabled: ingesting Azure AD users and groups into graph."
             )
@@ -71,6 +77,11 @@ class ResourceProcessingService:
                 await self.aad_graph_service.ingest_into_graph(processor.db_ops)
             except Exception as ex:
                 logger.exception(f"Failed to ingest AAD users/groups: {ex}")
+        elif is_filtering and enable_aad:
+            logger.info(
+                "⚠️  Skipping AAD user/group import when filtering by subscriptions or resource groups. "
+                "Only resources matching the filter will be imported."
+            )
 
         if max_workers is None:
             max_workers = getattr(self.config, "max_concurrency", 5)

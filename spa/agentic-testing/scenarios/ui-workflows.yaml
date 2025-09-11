@@ -10,7 +10,7 @@ config:
   timeout: 300000  # 5 minutes for complete workflows
   retries: 2
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -35,7 +35,7 @@ agents:
         height: 720
       timeout: 45000
       slowMo: 300
-      
+
   - name: "websocket-agent"
     type: "websocket"
     config:
@@ -53,7 +53,7 @@ steps:
       executablePath: "${ELECTRON_APP_PATH}"
       args: ["--no-sandbox", "--disable-dev-shm-usage"]
     timeout: 20000
-    
+
   # Connect to WebSocket for real-time updates
   - name: "Connect WebSocket"
     agent: "websocket-agent"
@@ -61,7 +61,7 @@ steps:
     params:
       events: ["log", "progress", "status", "error"]
     timeout: 10000
-    
+
   # Wait for app initialization
   - name: "Wait for App Ready"
     agent: "ui-agent"
@@ -80,7 +80,7 @@ steps:
     wait_for:
       selector: "[data-testid='config-form']"
       state: "visible"
-      
+
   - name: "Update Azure Configuration"
     agent: "ui-agent"
     action: "multi_action"
@@ -95,7 +95,7 @@ steps:
         - action: "fill"
           selector: "[data-testid='neo4j-port-input']"
           value: "${NEO4J_PORT}"
-          
+
   - name: "Save Configuration"
     agent: "ui-agent"
     action: "click"
@@ -115,7 +115,7 @@ steps:
     wait_for:
       selector: "[data-testid='build-form']"
       state: "visible"
-      
+
   - name: "Configure Build Parameters"
     agent: "ui-agent"
     action: "multi_action"
@@ -133,7 +133,7 @@ steps:
           value: "50"  # Small limit for testing
         - action: "check"
           selector: "[data-testid='dry-run-checkbox']"  # Use dry run for safety
-          
+
   - name: "Start Build Process"
     agent: "ui-agent"
     action: "click"
@@ -143,7 +143,7 @@ steps:
       selector: "[data-testid='build-progress']"
       state: "visible"
       timeout: 10000
-      
+
   - name: "Monitor Build Progress"
     agent: "websocket-agent"
     action: "listen"
@@ -153,7 +153,7 @@ steps:
     until:
       condition: "contains"
       value: "completed"
-      
+
   - name: "Verify Build Completion"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -170,7 +170,7 @@ steps:
     wait_for:
       selector: "[data-testid='generate-spec-form']"
       state: "visible"
-      
+
   - name: "Configure Spec Generation"
     agent: "ui-agent"
     action: "multi_action"
@@ -184,7 +184,7 @@ steps:
           value: "/tmp/test-spec.md"
         - action: "check"
           selector: "[data-testid='include-diagrams-checkbox']"
-          
+
   - name: "Generate Specification"
     agent: "ui-agent"
     action: "click"
@@ -194,7 +194,7 @@ steps:
       selector: "[data-testid='spec-generation-progress']"
       state: "visible"
       timeout: 10000
-      
+
   - name: "Wait for Spec Generation Complete"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -211,7 +211,7 @@ steps:
     wait_for:
       selector: "[data-testid='generate-iac-form']"
       state: "visible"
-      
+
   - name: "Configure IaC Generation"
     agent: "ui-agent"
     action: "multi_action"
@@ -230,7 +230,7 @@ steps:
           selector: "[data-testid='include-variables-checkbox']"
         - action: "check"
           selector: "[data-testid='dry-run-iac-checkbox']"
-          
+
   - name: "Generate IaC"
     agent: "ui-agent"
     action: "click"
@@ -240,7 +240,7 @@ steps:
       selector: "[data-testid='iac-generation-progress']"
       state: "visible"
       timeout: 10000
-      
+
   - name: "Monitor IaC Generation"
     agent: "websocket-agent"
     action: "listen"
@@ -250,7 +250,7 @@ steps:
     until:
       condition: "contains"
       value: "IaC generation completed"
-      
+
   - name: "Verify IaC Generation Complete"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -267,7 +267,7 @@ steps:
     wait_for:
       selector: "[data-testid='visualize-container']"
       state: "visible"
-      
+
   - name: "Load Visualization"
     agent: "ui-agent"
     action: "click"
@@ -277,7 +277,7 @@ steps:
       selector: "[data-testid='graph-canvas'], [data-testid='no-data-message']"
       state: "visible"
       timeout: 30000
-      
+
   - name: "Test Graph Interactions"
     agent: "ui-agent"
     action: "multi_action"
@@ -302,7 +302,7 @@ steps:
     wait_for:
       selector: "[data-testid='threat-model-container']"
       state: "visible"
-      
+
   - name: "Configure Threat Analysis"
     agent: "ui-agent"
     action: "multi_action"
@@ -316,7 +316,7 @@ steps:
           value: "medium"
         - action: "check"
           selector: "[data-testid='include-mitigations-checkbox']"
-          
+
   - name: "Run Threat Analysis"
     agent: "ui-agent"
     action: "click"
@@ -326,7 +326,7 @@ steps:
       selector: "[data-testid='threat-analysis-progress']"
       state: "visible"
       timeout: 10000
-      
+
   - name: "Wait for Threat Analysis Complete"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -341,43 +341,43 @@ assertions:
     agent: "ui-agent"
     params:
       selector: "[data-testid='config-saved-message']"
-      
+
   - name: "Build Completed Successfully"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='build-success-message'], [data-testid='build-complete-message']"
-      
+
   - name: "Spec Generation Completed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='spec-generation-complete']"
-      
+
   - name: "IaC Generation Completed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='iac-generation-complete']"
-      
+
   - name: "Visualization Loaded"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='graph-canvas'], [data-testid='no-data-message']"
-      
+
   - name: "Threat Analysis Completed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='threat-analysis-complete'], [data-testid='threat-analysis-results']"
-      
+
   - name: "WebSocket Communication Active"
     type: "websocket_connected"
     agent: "websocket-agent"
     params:
       expected_events: ["log", "progress", "status"]
-      
+
   - name: "No Critical Errors Occurred"
     type: "element_not_visible"
     agent: "ui-agent"
@@ -398,11 +398,11 @@ cleanup:
         } catch (e) {
           console.log('Cleanup completed with minor issues:', e.message);
         }
-        
+
   - name: "Disconnect WebSocket"
     agent: "websocket-agent"
     action: "disconnect"
-    
+
   - name: "Close Application"
     agent: "ui-agent"
     action: "close_app"

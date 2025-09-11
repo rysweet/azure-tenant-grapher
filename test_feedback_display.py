@@ -18,7 +18,7 @@ stats = {
     "admin_units": 0,
     "rbac_assignments": 1,
     "relationships": 1,
-    "total": 11
+    "total": 11,
 }
 
 # Display success with detailed feedback (copied from our implementation)
@@ -30,7 +30,7 @@ click.echo("")
 if stats:
     click.echo("📊 Resources created:")
     click.echo("-" * 40)
-    
+
     # Display non-zero counts in a logical order
     display_order = [
         ("tenant", "Tenant"),
@@ -43,13 +43,13 @@ if stats:
         ("managed_identities", "Managed Identities"),
         ("admin_units", "Admin Units"),
         ("rbac_assignments", "RBAC Assignments"),
-        ("relationships", "Relationships")
+        ("relationships", "Relationships"),
     ]
-    
+
     for key, label in display_order:
         if key in stats and stats[key] > 0:
             click.echo(f"  • {label}: {stats[key]}")
-    
+
     click.echo("-" * 40)
     click.echo(f"  Total entities: {stats.get('total', 0)}")
     click.echo("")

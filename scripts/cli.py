@@ -21,6 +21,8 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+from src.commands.list_deployments import list_deployments
+from src.commands.undeploy import undeploy
 
 # Initialize console for rich output
 console = Console()
@@ -322,6 +324,16 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     is_flag=True,
     help="Disable Azure AD user/group import from Microsoft Graph API",
 )
+@click.option(
+    "--filter-by-subscriptions",
+    type=str,
+    help="Comma-separated list of subscription IDs to include (filters discovery)",
+)
+@click.option(
+    "--filter-by-rgs",
+    type=str,
+    help="Comma-separated list of resource group names to include (filters discovery)",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -339,6 +351,8 @@ async def build(
     test_keypress_file: str,
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -368,9 +382,132 @@ async def build(
         rebuild_edges,
         no_aad_import,
         debug,
+        filter_by_subscriptions,
+        filter_by_rgs,
     )
     if debug:
         print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
+    return result
+
+
+# Add "scan" as an alias to the "build" command for consistency with documentation and UI
+@cli.command(name="scan")
+@click.option(
+    "--tenant-id",
+    required=False,
+    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
+)
+@click.option(
+    "--resource-limit",
+    type=int,
+    help="Maximum number of resources to process (for testing)",
+)
+@click.option(
+    "--max-llm-threads",
+    type=int,
+    default=5,
+    help="Maximum number of parallel LLM threads (default: 5)",
+)
+@click.option(
+    "--max-build-threads",
+    type=int,
+    default=20,
+    help="Maximum concurrent API calls for fetching resource details (default: 20)",
+)
+@click.option(
+    "--max-retries",
+    type=int,
+    default=3,
+    help="Maximum number of retries for failed resources (default: 3)",
+)
+@click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
+@click.option(
+    "--generate-spec",
+    is_flag=True,
+    help="Generate tenant specification after graph scanning",
+)
+@click.option(
+    "--visualize",
+    is_flag=True,
+    help="Generate graph visualization after scanning",
+)
+@click.option(
+    "--no-dashboard",
+    is_flag=True,
+    help="Disable the Rich dashboard and emit logs line by line",
+)
+@click.option(
+    "--test-keypress-queue",
+    is_flag=True,
+    help="Enable test mode for dashboard keypresses (for integration tests only)",
+)
+@click.option(
+    "--test-keypress-file",
+    type=str,
+    default="",
+    help="Path to file containing simulated keypresses (for integration tests only)",
+)
+@click.option(
+    "--rebuild-edges",
+    is_flag=True,
+    help="Force re-evaluation of all relationships/edges for all resources in the graph database",
+)
+@click.option(
+    "--no-aad-import",
+    is_flag=True,
+    help="Disable Azure AD user/group import from Microsoft Graph API",
+)
+@click.pass_context
+@async_command
+async def scan(
+    ctx: click.Context,
+    tenant_id: str,
+    resource_limit: Optional[int],
+    max_llm_threads: int,
+    max_build_threads: int,
+    max_retries: int,
+    no_container: bool,
+    generate_spec: bool,
+    visualize: bool,
+    no_dashboard: bool,
+    test_keypress_queue: bool,
+    test_keypress_file: str,
+    rebuild_edges: bool = False,
+    no_aad_import: bool = False,
+) -> str | None:
+    """
+    Scan the complete Azure tenant graph with enhanced processing.
+
+    This command discovers all resources in your Azure tenant and builds a comprehensive 
+    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs, 
+    and interactive controls:
+      - Press 'x' to exit the dashboard at any time.
+      - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
+
+    Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
+    """
+    debug = ctx.obj.get("debug", False)
+    if debug:
+        print("[DEBUG] CLI scan command called", flush=True)
+    result = await build_command_handler(
+        ctx,
+        tenant_id,
+        resource_limit,
+        max_llm_threads,
+        max_build_threads,
+        max_retries,
+        no_container,
+        generate_spec,
+        visualize,
+        no_dashboard,
+        test_keypress_queue,
+        test_keypress_file,
+        rebuild_edges,
+        no_aad_import,
+        debug,
+    )
+    if debug:
+        print(f"[DEBUG] scan command (via build_command_handler) returned: {result!r}", flush=True)
     return result
 
 
@@ -501,6 +638,12 @@ def generate_spec(
     help="Subset filter string (e.g., 'types=Microsoft.Storage/*;nodeIds=abc123')",
 )
 @click.option(
+    "--node-id",
+    "node_ids",
+    multiple=True,
+    help="Specific node IDs to generate IaC for (can be specified multiple times)",
+)
+@click.option(
     "--dest-rg",
     help="Target resource group name for Bicep module deployment",
 )
@@ -525,6 +668,7 @@ async def generate_iac(
     dry_run: bool,
     resource_filters: Optional[str],
     subset_filter: Optional[str],
+    node_ids: tuple,
     dest_rg: Optional[str],
     location: Optional[str],
     domain_name: Optional[str] = None,
@@ -568,6 +712,7 @@ async def generate_iac(
         dry_run=dry_run,
         resource_filters=resource_filters,
         subset_filter=subset_filter,
+        node_ids=list(node_ids) if node_ids else None,
         dest_rg=dest_rg,
         location=location,
         # aad_mode removed, now always manual by default
@@ -682,7 +827,9 @@ async def generate_sim_doc(
     """
     from src.cli_commands import generate_sim_doc_command_handler
 
-    await generate_sim_doc_command_handler(ctx, size=size, seed_path=seed, out_path=output)
+    await generate_sim_doc_command_handler(
+        ctx, size=size, seed_path=seed, out_path=output
+    )
 
 
 # Alias: gensimdoc
@@ -694,9 +841,6 @@ cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
 
-# Import and add undeploy command
-from src.commands.undeploy import undeploy
-from src.commands.list_deployments import list_deployments
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
 
@@ -742,13 +886,13 @@ async def mcp_query(
     format: str,
 ) -> None:
     """Execute natural language queries for Azure resources via MCP.
-    
+
     Examples:
         atg mcp-query "list all virtual machines"
         atg mcp-query "show storage accounts in westus2"
         atg mcp-query "find resources with public IP addresses"
         atg mcp-query "analyze security posture of my key vaults"
-    
+
     This is an experimental feature that requires MCP_ENABLED=true in your .env file.
     """
     from src.cli_commands import mcp_query_command

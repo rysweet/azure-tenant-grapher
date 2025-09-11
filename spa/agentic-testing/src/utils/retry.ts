@@ -141,7 +141,7 @@ export class RetryManager {
    */
   async execute<T>(fn: () => Promise<T>): Promise<T> {
     const result = await this.executeWithDetails(fn);
-    
+
     if (result.success && result.result !== undefined) {
       return result.result;
     }
@@ -193,7 +193,7 @@ export class RetryManager {
       } catch (error) {
         const attemptEnd = new Date();
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         attemptDetails.push({
           attempt,
           startTime: attemptStart,
@@ -206,7 +206,7 @@ export class RetryManager {
 
         // Check if we should retry this error
         const shouldRetry = this.options.shouldRetry?.(lastError, attempt) ?? true;
-        
+
         if (attempt < this.options.maxAttempts && shouldRetry) {
           this.options.onRetry?.(lastError, attempt, this.calculateDelay(attempt));
         }
@@ -387,7 +387,7 @@ export class CircuitBreaker<T> {
    */
   private onFailure(error: Error): void {
     const isFailure = this.options.isFailure?.(error) ?? true;
-    
+
     if (!isFailure) {
       return; // Don't count this as a failure
     }
@@ -544,7 +544,7 @@ export function createTestRetry(options: Partial<RetryOptions> = {}): RetryManag
     jitter: 0.1,
     shouldRetry: (error) => {
       // Don't retry assertion errors or syntax errors
-      return !error.message.includes('AssertionError') && 
+      return !error.message.includes('AssertionError') &&
              !error.message.includes('SyntaxError');
     },
     ...options
