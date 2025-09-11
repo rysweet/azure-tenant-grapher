@@ -561,22 +561,29 @@ const ScanTab: React.FC = () => {
       {/* WebSocket Connection Status */}
       {connectionStatus !== 'connected' && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server.
+          ⚠ WebSocket {connectionStatus === 'connecting' ? 'connecting to' : 'disconnected from'} backend server.
           Real-time updates may not work properly.
         </Alert>
       )}
 
-      {/* Connection Status for Connected State */}
-      {connectionStatus === 'connected' && !isRunning && (
+      {/* Combined Connection Status */}
+      {connectionStatus === 'connected' && !isRunning && neo4jStatus?.running && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          ✓ Connected to backend server - Ready to start scanning your tenant
+          ✓ Backend and Neo4j connected • Ready to scan your tenant
+        </Alert>
+      )}
+
+      {/* Show separate backend status only when Neo4j is not running */}
+      {connectionStatus === 'connected' && !isRunning && !neo4jStatus?.running && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          ✓ Backend connected • Ready to scan your tenant
         </Alert>
       )}
 
       {/* Backend/Neo4j Status Alert */}
       {neo4jStatus && neo4jStatus.message && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {neo4jStatus.message}
+          ✗ {neo4jStatus.message}
         </Alert>
       )}
 
@@ -711,161 +718,192 @@ const ScanTab: React.FC = () => {
           )}
 
           <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Tenant ID"
-              value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              disabled={isRunning}
-              helperText="Azure Tenant ID or domain (e.g., contoso.onmicrosoft.com)"
-              error={!!error && error.includes('Tenant ID')}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Azure Tenant</InputLabel>
-              <Select
-                value={selectedTenant}
-                onChange={(e) => handleTenantSelection(e.target.value as '1' | '2')}
-                disabled={isRunning}
-                label="Azure Tenant"
-              >
-                <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
-                <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Filter by Subscriptions"
-              value={filterBySubscriptions}
-              onChange={(e) => setFilterBySubscriptions(e.target.value)}
-              disabled={isRunning}
-              placeholder="sub-id-1,sub-id-2"
-              helperText="Comma-separated subscription IDs (optional)"
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Filter by Resource Groups"
-              value={filterByRgs}
-              onChange={(e) => setFilterByRgs(e.target.value)}
-              disabled={isRunning}
-              placeholder="rg-1,rg-2"
-              helperText="Comma-separated resource group names (optional)"
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={hasResourceLimit}
-                    onChange={(e) => setHasResourceLimit(e.target.checked)}
-                    disabled={isRunning}
-                  />
-                }
-                label="Set Resource Limit (default: unlimited)"
-              />
-              {hasResourceLimit && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography gutterBottom>
-                    Resource Limit: {resourceLimit}
-                  </Typography>
-                  <Slider
-                    value={resourceLimit}
-                    onChange={(e, value) => setResourceLimit(value as number)}
-                    min={10}
-                    max={1000}
-                    step={10}
-                    marks={[
-                      { value: 100, label: '100' },
-                      { value: 500, label: '500' },
-                      { value: 1000, label: '1000' },
-                    ]}
-                    disabled={isRunning}
-                  />
-                </Box>
-              )}
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <Typography gutterBottom>
-                Max LLM Threads: {maxLlmThreads}
+            {/* Left Column - Tenant and Filter Controls */}
+            <Grid item xs={12} md={6}>
+              <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                Tenant Configuration
               </Typography>
-              <Slider
-                value={maxLlmThreads}
-                onChange={(e, value) => setMaxLlmThreads(value as number)}
-                min={1}
-                max={20}
-                marks
-                disabled={isRunning}
-              />
-            </FormControl>
-          </Grid>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Tenant ID"
+                    value={tenantId}
+                    onChange={(e) => setTenantId(e.target.value)}
+                    disabled={isRunning}
+                    helperText="Azure Tenant ID or domain (e.g., contoso.onmicrosoft.com)"
+                    error={!!error && error.includes('Tenant ID')}
+                  />
+                </Grid>
 
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <Typography gutterBottom>
-                Max Build Threads: {maxBuildThreads}
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Azure Tenant</InputLabel>
+                    <Select
+                      value={selectedTenant}
+                      onChange={(e) => handleTenantSelection(e.target.value as '1' | '2')}
+                      disabled={isRunning}
+                      label="Azure Tenant"
+                    >
+                      <MenuItem value="1">Tenant 1 (Primary)</MenuItem>
+                      <MenuItem value="2">Tenant 2 (Simuland)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Filter by Subscriptions"
+                    value={filterBySubscriptions}
+                    onChange={(e) => setFilterBySubscriptions(e.target.value)}
+                    disabled={isRunning}
+                    placeholder="sub-id-1,sub-id-2"
+                    helperText="Comma-separated subscription IDs (optional)"
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Filter by Resource Groups"
+                    value={filterByRgs}
+                    onChange={(e) => setFilterByRgs(e.target.value)}
+                    disabled={isRunning}
+                    placeholder="rg-1,rg-2"
+                    helperText="Comma-separated resource group names (optional)"
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Right Column - Performance and Options */}
+            <Grid item xs={12} md={6}>
+              <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                Processing Options
               </Typography>
-              <Slider
-                value={maxBuildThreads}
-                onChange={(e, value) => setMaxBuildThreads(value as number)}
-                min={1}
-                max={20}
-                marks
-                disabled={isRunning}
-              />
-            </FormControl>
-          </Grid>
 
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={rebuildEdges}
-                  onChange={(e) => setRebuildEdges(e.target.checked)}
-                  disabled={isRunning}
-                />
-              }
-              label="Rebuild edges (clears existing relationships)"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={noAadImport}
-                  onChange={(e) => setNoAadImport(e.target.checked)}
-                  disabled={isRunning}
-                />
-              }
-              label="Skip Azure AD import"
-            />
-          </Grid>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <Typography gutterBottom>
+                      Max LLM Threads: {maxLlmThreads}
+                    </Typography>
+                    <Slider
+                      value={maxLlmThreads}
+                      onChange={(e, value) => setMaxLlmThreads(value as number)}
+                      min={1}
+                      max={20}
+                      marks
+                      disabled={isRunning}
+                    />
+                  </FormControl>
+                </Grid>
 
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <Typography gutterBottom>
+                      Max Build Threads: {maxBuildThreads}
+                    </Typography>
+                    <Slider
+                      value={maxBuildThreads}
+                      onChange={(e, value) => setMaxBuildThreads(value as number)}
+                      min={1}
+                      max={20}
+                      marks
+                      disabled={isRunning}
+                    />
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={hasResourceLimit}
+                          onChange={(e) => setHasResourceLimit(e.target.checked)}
+                          disabled={isRunning}
+                        />
+                      }
+                      label="Set Resource Limit (default: unlimited)"
+                    />
+                    {hasResourceLimit && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography gutterBottom>
+                          Resource Limit: {resourceLimit}
+                        </Typography>
+                        <Slider
+                          value={resourceLimit}
+                          onChange={(e, value) => setResourceLimit(value as number)}
+                          min={10}
+                          max={1000}
+                          step={10}
+                          marks={[
+                            { value: 100, label: '100' },
+                            { value: 500, label: '500' },
+                            { value: 1000, label: '1000' },
+                          ]}
+                          disabled={isRunning}
+                        />
+                      </Box>
+                    )}
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={rebuildEdges}
+                          onChange={(e) => setRebuildEdges(e.target.checked)}
+                          disabled={isRunning}
+                        />
+                      }
+                      label="Rebuild Edges"
+                    />
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={noAadImport}
+                          onChange={(e) => setNoAadImport(e.target.checked)}
+                          disabled={isRunning}
+                        />
+                      }
+                      label="No AAD Import"
+                    />
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Divider */}
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+            </Grid>
+
+            {/* Scan Action Button - Centered */}
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center' }}>
               <Button
                 variant="contained"
+                size="large"
                 color="primary"
                 startIcon={dbPopulated ? <UpdateIcon /> : <PlayIcon />}
                 onClick={handleStart}
-                size="large"
+                disabled={isRunning || !neo4jRunning}
+                sx={{ px: 4, py: 1.5 }}
               >
                 {dbPopulated ? 'Update Database' : 'Start Scan'}
               </Button>
-            </Box>
+            </Grid>
           </Grid>
-        </Grid>
       </Paper>
       )}
 

@@ -418,7 +418,7 @@ export const GraphVisualization: React.FC = () => {
           ${node.properties?.subscriptionId ? `<div class="vis-tooltip-row"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
           ${node.properties?.sku ? `<div class="vis-tooltip-row"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
           ${node.properties?.status ? `<div class="vis-tooltip-row"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
-          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>Provisioning:</strong> ${node.properties.provisioningState}</div>` : ''}
+          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
           <div class="vis-tooltip-hint">Click for more details</div>
         `;
 

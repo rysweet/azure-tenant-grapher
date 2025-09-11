@@ -12,11 +12,17 @@ import {
   MenuItem,
   Divider,
   LinearProgress,
+  Tooltip,
+  Chip,
 } from '@mui/material';
 import { Editor } from '@monaco-editor/react';
-import { PlayArrow as RunIcon, Save as SaveIcon } from '@mui/icons-material';
+import { PlayArrow as RunIcon, Save as SaveIcon, Info as InfoIcon } from '@mui/icons-material';
 import { useApp } from '../../context/AppContext';
 import { useProcessExecution } from '../../hooks/useProcessExecution';
+
+// Feature flag for format selector - set to true when CLI supports JSON output
+// TODO: Re-enable format selector when CLI supports JSON output (track in issue #XXX)
+const ENABLE_FORMAT_SELECTOR = false;
 
 const GenerateSpecTab: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -61,7 +67,8 @@ const GenerateSpecTab: React.FC = () => {
       args.push('--limit', limit);
     }
 
-    args.push('--format', outputFormat);
+    // Note: --format option removed as generate-spec CLI command doesn't support it
+    // The outputFormat state is still used for the editor language and save file extension
 
     try {
       await execute('generate-spec', args);
@@ -120,17 +127,30 @@ const GenerateSpecTab: React.FC = () => {
             type="number"
           />
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Output Format</InputLabel>
-            <Select
-              value={outputFormat}
-              onChange={(e) => setOutputFormat(e.target.value)}
-              label="Output Format"
-            >
-              <MenuItem value="markdown">Markdown</MenuItem>
-              <MenuItem value="json">JSON</MenuItem>
-            </Select>
-          </FormControl>
+          {/* Format selector - conditionally shown based on feature flag */}
+          {ENABLE_FORMAT_SELECTOR ? (
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Output Format</InputLabel>
+              <Select
+                value={outputFormat}
+                onChange={(e) => setOutputFormat(e.target.value)}
+                label="Output Format"
+              >
+                <MenuItem value="markdown">Markdown</MenuItem>
+                <MenuItem value="json">JSON</MenuItem>
+              </Select>
+            </FormControl>
+          ) : (
+            <Tooltip title="Currently only Markdown format is supported. JSON format will be available in a future update.">
+              <Chip
+                label="Markdown Only"
+                size="small"
+                icon={<InfoIcon />}
+                color="info"
+                variant="outlined"
+              />
+            </Tooltip>
+          )}
 
           <Button
             variant="contained"
