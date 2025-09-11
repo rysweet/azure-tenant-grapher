@@ -408,21 +408,36 @@ export const GraphVisualization: React.FC = () => {
     const visNodes = data.nodes
       .filter(node => nodeTypes.has(node.type))
       .filter(nodeMatchesFilters)
-      .map(node => ({
-        id: node.id,
-        label: node.label,
-        title: `${node.type}: ${node.label}`,
-        color: NODE_COLORS[node.type] || NODE_COLORS.Default,
-        shape: 'dot',
-        size: 20,
-        font: {
-          size: 12,
-          color: '#2c3e50'
-        },
-        borderWidth: 2,
-        borderWidthSelected: 4,
-        ...node
-      }));
+      .map(node => {
+        // Create detailed HTML tooltip content using CSS classes
+        const tooltipContent = `
+          <div class="vis-tooltip-title">${node.label}</div>
+          <div class="vis-tooltip-row"><strong>Type:</strong> ${node.type}</div>
+          ${node.properties?.resourceGroup ? `<div class="vis-tooltip-row"><strong>Resource Group:</strong> ${node.properties.resourceGroup}</div>` : ''}
+          ${node.properties?.location ? `<div class="vis-tooltip-row"><strong>Location:</strong> ${node.properties.location}</div>` : ''}
+          ${node.properties?.subscriptionId ? `<div class="vis-tooltip-row"><strong>Subscription:</strong> ${node.properties.subscriptionId}</div>` : ''}
+          ${node.properties?.sku ? `<div class="vis-tooltip-row"><strong>SKU:</strong> ${node.properties.sku}</div>` : ''}
+          ${node.properties?.status ? `<div class="vis-tooltip-row"><strong>Status:</strong> ${node.properties.status}</div>` : ''}
+          ${node.properties?.provisioningState ? `<div class="vis-tooltip-row"><strong>State:</strong> ${node.properties.provisioningState}</div>` : ''}
+          <div class="vis-tooltip-hint">Click for more details</div>
+        `;
+
+        return {
+          id: node.id,
+          label: node.label,
+          title: tooltipContent,
+          color: NODE_COLORS[node.type] || NODE_COLORS.Default,
+          shape: 'dot',
+          size: 20,
+          font: {
+            size: 12,
+            color: '#2c3e50'
+          },
+          borderWidth: 2,
+          borderWidthSelected: 4,
+          ...node
+        };
+      });
 
     // Transform edges for vis-network
     const visEdges = data.edges
