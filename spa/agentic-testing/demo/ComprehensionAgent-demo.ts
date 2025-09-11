@@ -2,13 +2,13 @@
 
 /**
  * ComprehensionAgent Demonstration Script
- * 
+ *
  * This script demonstrates the capabilities of the ComprehensionAgent by:
  * 1. Creating sample documentation
  * 2. Discovering features from the documentation
  * 3. Analyzing features with LLM
  * 4. Generating comprehensive test scenarios
- * 
+ *
  * Run with: npx ts-node demo/ComprehensionAgent-demo.ts
  */
 
@@ -296,17 +296,17 @@ Clears all data from the graph database.
  */
 function createSampleDocs(): void {
   const docsDir = join(__dirname, 'temp-docs');
-  
+
   // Create docs directory
   mkdirSync(docsDir, { recursive: true });
-  
+
   // Write sample documentation files
   Object.entries(SAMPLE_DOCS).forEach(([filename, content]) => {
     const filePath = join(docsDir, filename);
     writeFileSync(filePath, content.trim(), 'utf-8');
     logger.info(`Created sample doc: ${filename}`);
   });
-  
+
   logger.info(`Sample documentation created in: ${docsDir}`);
 }
 
@@ -315,18 +315,18 @@ function createSampleDocs(): void {
  */
 async function demonstrateFeatureDiscovery(agent: ComprehensionAgent): Promise<void> {
   logger.info('\n=== Feature Discovery Demonstration ===');
-  
+
   const features = await agent.discoverFeatures();
-  
+
   logger.info(`\nDiscovered ${features.length} features:`);
-  
+
   // Group features by type
   const featuresByType = features.reduce((acc, feature) => {
     if (!acc[feature.type]) acc[feature.type] = [];
     acc[feature.type].push(feature);
     return acc;
   }, {} as Record<string, typeof features>);
-  
+
   Object.entries(featuresByType).forEach(([type, typeFeatures]) => {
     logger.info(`\n${type.toUpperCase()} Features (${typeFeatures.length}):`);
     typeFeatures.forEach((feature, index) => {
@@ -342,7 +342,7 @@ async function demonstrateFeatureDiscovery(agent: ComprehensionAgent): Promise<v
  */
 async function demonstrateFeatureAnalysis(agent: ComprehensionAgent): Promise<void> {
   logger.info('\n=== Feature Analysis Demonstration ===');
-  
+
   // Sample feature documentation for analysis
   const sampleFeature = `
 # Build Command Analysis
@@ -388,7 +388,7 @@ The \`atg build\` command is the core functionality of Azure Tenant Grapher. It 
 ### Edge Cases and Boundary Conditions
 - Empty tenant with no subscriptions or resources
 - Tenant with thousands of resources requiring pagination
-- Resources with circular or complex dependency relationships  
+- Resources with circular or complex dependency relationships
 - Partial tenant access due to limited user permissions
 - Concurrent operations on the same tenant
 - Recovery from interrupted discovery processes
@@ -397,37 +397,37 @@ The \`atg build\` command is the core functionality of Azure Tenant Grapher. It 
   try {
     logger.info('Analyzing sample feature with LLM...');
     const featureSpec = await agent.analyzeFeature(sampleFeature);
-    
+
     logger.info('\nFeature Analysis Results:');
     logger.info(`Name: ${featureSpec.name}`);
     logger.info(`Purpose: ${featureSpec.purpose}`);
-    
+
     logger.info(`\nInputs (${featureSpec.inputs.length}):`);
     featureSpec.inputs.forEach((input, index) => {
       logger.info(`  ${index + 1}. ${input.name} (${input.type}) - ${input.required ? 'Required' : 'Optional'}`);
       logger.info(`     ${input.description}`);
     });
-    
+
     logger.info(`\nOutputs (${featureSpec.outputs.length}):`);
     featureSpec.outputs.forEach((output, index) => {
       logger.info(`  ${index + 1}. ${output.name} (${output.type}): ${output.description}`);
     });
-    
+
     logger.info(`\nSuccess Criteria (${featureSpec.successCriteria.length}):`);
     featureSpec.successCriteria.forEach((criterion, index) => {
       logger.info(`  ${index + 1}. ${criterion}`);
     });
-    
+
     logger.info(`\nFailure Modes (${featureSpec.failureModes.length}):`);
     featureSpec.failureModes.forEach((failure, index) => {
       logger.info(`  ${index + 1}. ${failure}`);
     });
-    
+
     logger.info(`\nEdge Cases (${featureSpec.edgeCases.length}):`);
     featureSpec.edgeCases.forEach((edgeCase, index) => {
       logger.info(`  ${index + 1}. ${edgeCase}`);
     });
-    
+
     return featureSpec;
   } catch (error) {
     logger.error(`Feature analysis failed: ${error}`);
@@ -441,7 +441,7 @@ The \`atg build\` command is the core functionality of Azure Tenant Grapher. It 
  */
 async function demonstrateScenarioGeneration(agent: ComprehensionAgent): Promise<void> {
   logger.info('\n=== Test Scenario Generation Demonstration ===');
-  
+
   // Create a mock feature spec for demonstration
   const mockFeatureSpec = {
     name: 'Build Command',
@@ -474,12 +474,12 @@ async function demonstrateScenarioGeneration(agent: ComprehensionAgent): Promise
     ],
     dependencies: ['Docker', 'Neo4j', 'Azure CLI']
   };
-  
+
   try {
     const scenarios = await agent.generateTestScenarios(mockFeatureSpec);
-    
+
     logger.info(`\nGenerated ${scenarios.length} test scenarios:`);
-    
+
     scenarios.forEach((scenario, index) => {
       logger.info(`\n${index + 1}. ${scenario.name}`);
       logger.info(`   Priority: ${scenario.priority}`);
@@ -489,7 +489,7 @@ async function demonstrateScenarioGeneration(agent: ComprehensionAgent): Promise
       logger.info(`   Verifications: ${scenario.verifications.length}`);
       logger.info(`   Tags: ${scenario.tags.join(', ')}`);
       logger.info(`   Expected: ${scenario.expectedOutcome.substring(0, 100)}...`);
-      
+
       if (scenario.steps.length > 0) {
         logger.info('   Sample Steps:');
         scenario.steps.slice(0, 2).forEach((step, stepIndex) => {
@@ -497,7 +497,7 @@ async function demonstrateScenarioGeneration(agent: ComprehensionAgent): Promise
         });
       }
     });
-    
+
   } catch (error) {
     logger.error(`Scenario generation failed: ${error}`);
   }
@@ -508,9 +508,9 @@ async function demonstrateScenarioGeneration(agent: ComprehensionAgent): Promise
  */
 async function demonstrateCompleteWorkflow(): Promise<void> {
   logger.info('\n=== Complete Workflow Demonstration ===');
-  
+
   const docsDir = join(__dirname, 'temp-docs');
-  
+
   // Create agent with mock configuration
   const agent = createComprehensionAgent({
     llm: {
@@ -524,29 +524,29 @@ async function demonstrateCompleteWorkflow(): Promise<void> {
     includePatterns: ['**/*.md'],
     excludePatterns: ['**/node_modules/**', '**/temp/**']
   });
-  
+
   try {
     // Initialize agent
     await agent.initialize();
     logger.info('ComprehensionAgent initialized successfully');
-    
+
     // Run demonstrations
     await demonstrateFeatureDiscovery(agent);
     await demonstrateFeatureAnalysis(agent);
     await demonstrateScenarioGeneration(agent);
-    
+
     // If LLM is available, run full workflow
     if (process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_KEY) {
       logger.info('\n=== Full Workflow with LLM ===');
       const allScenarios = await agent.processDiscoveredFeatures();
       logger.info(`\nComplete workflow generated ${allScenarios.length} test scenarios from documentation`);
-      
+
       // Summary by priority
       const priorityCount = allScenarios.reduce((acc, scenario) => {
         acc[scenario.priority] = (acc[scenario.priority] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
-      
+
       logger.info('\nScenarios by Priority:');
       Object.entries(priorityCount).forEach(([priority, count]) => {
         logger.info(`  ${priority}: ${count} scenarios`);
@@ -555,11 +555,11 @@ async function demonstrateCompleteWorkflow(): Promise<void> {
       logger.warn('\nSkipping full LLM workflow - no API key configured');
       logger.info('Set OPENAI_API_KEY or Azure OpenAI environment variables to test with real LLM');
     }
-    
+
     // Cleanup
     await agent.cleanup();
     logger.info('\nComprehensionAgent demonstration completed successfully');
-    
+
   } catch (error) {
     logger.error(`Demonstration failed: ${error}`);
   }
@@ -571,23 +571,23 @@ async function demonstrateCompleteWorkflow(): Promise<void> {
 async function main(): Promise<void> {
   logger.info('ComprehensionAgent Demonstration Starting...');
   logger.info('============================================');
-  
+
   try {
     // Create sample documentation
     createSampleDocs();
-    
+
     // Run complete demonstration
     await demonstrateCompleteWorkflow();
-    
+
     logger.info('\n============================================');
     logger.info('ComprehensionAgent Demonstration Complete!');
-    
+
     // Cleanup temp files
     const { rmSync } = await import('fs');
     const tempDocsDir = join(__dirname, 'temp-docs');
     rmSync(tempDocsDir, { recursive: true, force: true });
     logger.info('Temporary files cleaned up');
-    
+
   } catch (error) {
     logger.error(`Demonstration error: ${error}`);
     process.exit(1);

@@ -21,7 +21,7 @@ if (!fs.existsSync(testScript)) {
     cwd: gadugiPath,
     stdio: 'inherit'
   });
-  
+
   build.on('close', (code) => {
     if (code !== 0) {
       console.error('❌ Failed to build Gadugi framework');

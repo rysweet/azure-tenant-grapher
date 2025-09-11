@@ -57,7 +57,7 @@ def run_pending_migrations():
                     with driver.session() as session:
 
                         def run_schema(tx: ManagedTransaction, stmt: str = stmt):
-                            tx.run(stmt)
+                            tx.run(stmt)  # type: ignore[arg-type]
 
                         session.execute_write(run_schema)
                 finally:

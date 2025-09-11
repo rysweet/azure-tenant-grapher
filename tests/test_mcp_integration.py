@@ -7,7 +7,6 @@ and mock MCP server responses.
 
 import asyncio
 import json
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -123,7 +122,9 @@ class TestMCPIntegrationService:
         """Test initialization with connection error."""
         with patch("src.services.mcp_integration.MCPClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.query = AsyncMock(side_effect=ConnectionError("Connection failed"))
+            mock_client.query = AsyncMock(
+                side_effect=ConnectionError("Connection failed")
+            )
             MockClient.return_value = mock_client
 
             result = await service.initialize()

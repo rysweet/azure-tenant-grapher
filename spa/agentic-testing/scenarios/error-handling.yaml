@@ -10,7 +10,7 @@ config:
   timeout: 120000  # 2 minutes for error scenarios
   retries: 1  # Don't retry error scenarios
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -32,14 +32,14 @@ agents:
         height: 720
       timeout: 30000
       slowMo: 300
-      
+
   - name: "websocket-agent"
     type: "websocket"
     config:
       url: "ws://localhost:3001"
       reconnect: true
       timeout: 5000
-      
+
   - name: "network-agent"
     type: "network"
     config:
@@ -56,7 +56,7 @@ steps:
       executablePath: "${ELECTRON_APP_PATH}"
       args: ["--no-sandbox", "--disable-dev-shm-usage"]
     timeout: 20000
-    
+
   # Wait for app initialization
   - name: "Wait for App Ready"
     agent: "ui-agent"
@@ -85,7 +85,7 @@ steps:
       selector: "[data-testid='tenant-id-error'], [data-testid='validation-error']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Test Build with Invalid Tenant ID Format"
     agent: "ui-agent"
     action: "multi_action"
@@ -100,7 +100,7 @@ steps:
       selector: "[data-testid='tenant-id-format-error'], [data-testid='validation-error']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Test Configuration with Missing Neo4j Password"
     agent: "ui-agent"
     action: "multi_action"
@@ -140,7 +140,7 @@ steps:
       selector: "[data-testid='path-error'], [data-testid='directory-error']"
       state: "visible"
       timeout: 5000
-      
+
   - name: "Test Generate Spec with Invalid File Extension"
     agent: "ui-agent"
     action: "multi_action"
@@ -168,7 +168,7 @@ steps:
     params:
       port: 3001
       duration: 30000  # 30 seconds
-      
+
   - name: "Attempt WebSocket Connection During Block"
     agent: "websocket-agent"
     action: "connect"
@@ -176,7 +176,7 @@ steps:
       events: ["log", "progress"]
       expect_failure: true
     timeout: 10000
-    
+
   - name: "Verify WebSocket Error Handling"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -184,7 +184,7 @@ steps:
       selector: "[data-testid='websocket-connection-error'], [data-testid='connection-status-error']"
       state: "visible"
       timeout: 15000
-      
+
   - name: "Restore Network Connection"
     agent: "network-agent"
     action: "unblock_port"
@@ -210,7 +210,7 @@ steps:
           value: "5"  # Very short timeout for testing
         - action: "click"
           selector: "[data-testid='start-build-button']"
-          
+
   - name: "Wait for Timeout Error"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -282,7 +282,7 @@ steps:
         - action: "select"
           selector: "[data-testid='resource-limit-select']"
           value: "10"  # Small valid limit
-          
+
   - name: "Verify Error Recovery"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -298,67 +298,67 @@ assertions:
     agent: "ui-agent"
     params:
       selector: "[data-testid='tenant-id-error'], [data-testid='validation-error']"
-      
+
   - name: "Invalid Tenant ID Format Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='tenant-id-format-error'], [data-testid='validation-error']"
-      
+
   - name: "Missing Neo4j Password Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='neo4j-password-error'], [data-testid='config-validation-error']"
-      
+
   - name: "Invalid Path Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='path-error'], [data-testid='directory-error']"
-      
+
   - name: "File Extension Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='file-extension-error'], [data-testid='validation-error']"
-      
+
   - name: "WebSocket Connection Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='websocket-connection-error'], [data-testid='connection-status-error']"
-      
+
   - name: "Timeout Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='timeout-error'], [data-testid='operation-timeout-error']"
-      
+
   - name: "Permission Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='permission-error'], [data-testid='filesystem-error']"
-      
+
   - name: "Resource Limit Error Displayed"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='resource-limit-error'], [data-testid='validation-error']"
-      
+
   - name: "Error Recovery Successful"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='start-build-button']:not([disabled])"
-      
+
   - name: "Application Remains Stable"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='app-container']"
-      
+
   - name: "No Unhandled JavaScript Errors"
     type: "no_console_errors"
     agent: "ui-agent"
@@ -373,12 +373,12 @@ cleanup:
   - name: "Restore Network State"
     agent: "network-agent"
     action: "reset_all_blocks"
-    
+
   - name: "Disconnect WebSocket"
     agent: "websocket-agent"
     action: "disconnect"
     ignore_errors: true
-    
+
   - name: "Close Application"
     agent: "ui-agent"
     action: "close_app"

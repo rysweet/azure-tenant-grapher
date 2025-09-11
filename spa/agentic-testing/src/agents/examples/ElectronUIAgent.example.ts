@@ -1,6 +1,6 @@
 /**
  * ElectronUIAgent Usage Examples
- * 
+ *
  * This file demonstrates various usage patterns for the ElectronUIAgent
  * in different testing scenarios.
  */
@@ -38,36 +38,36 @@ async function basicSpaTest(): Promise<void> {
   try {
     // Initialize the agent
     await agent.initialize();
-    
+
     // Launch the Electron app
     await agent.launch();
-    
+
     // Navigate to Build tab and start a build
     await agent.clickTab('Build');
     await agent.fillInput('[data-testid="tenant-id-input"]', process.env.AZURE_TENANT_ID || 'test-tenant');
-    
+
     // Configure build options
     await agent.clickButton('[data-testid="include-users-checkbox"]');
     await agent.clickButton('[data-testid="include-groups-checkbox"]');
-    
+
     // Start the build
     await agent.clickButton('[data-testid="start-build-button"]');
-    
+
     // Wait for build to complete (or progress to show)
     await agent.waitForElement('[data-testid="build-progress"]', { timeout: 30000 });
-    
+
     // Capture final state
     const finalState = await agent.captureState();
     console.log('Build completed, final state captured');
-    
+
     // Take a success screenshot
     await agent.screenshot('build-completed-successfully');
-    
+
   } catch (error: any) {
     console.error('Test failed:', error?.message);
     await agent.screenshot('test-failure');
     throw error;
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -139,15 +139,15 @@ async function fullScenarioTest(): Promise<void> {
   try {
     await agent.initialize();
     const result = await agent.execute(scenario);
-    
+
     console.log('Scenario execution result:');
     console.log('- Status:', result.status);
     console.log('- Duration:', result.duration, 'ms');
     console.log('- Screenshots:', result.screenshots?.length || 0);
     console.log('- Performance samples:', result.performanceSamples?.length || 0);
-    
+
     return result;
-    
+
   } catch (error: any) {
     console.error('Scenario execution failed:', error?.message);
     throw error;
@@ -166,29 +166,29 @@ async function multiTabNavigationTest(): Promise<void> {
   try {
     await agent.initialize();
     await agent.launch();
-    
+
     // Test navigation across different tabs
     const tabs = ['Build', 'Generate Spec', 'Generate IaC', 'Visualize', 'Agent Mode'];
-    
+
     for (const tab of tabs) {
       console.log(`Testing navigation to ${tab} tab`);
-      
+
       // Navigate to tab
       await agent.clickTab(tab);
-      
+
       // Take screenshot of each tab
       await agent.screenshot(`tab-${tab.toLowerCase().replace(' ', '-')}`);
-      
+
       // Capture state for each tab
       const state = await agent.captureState();
       console.log(`${tab} tab loaded, title: ${state.title}`);
-      
+
       // Wait a bit between navigations
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
+
     console.log('Multi-tab navigation test completed successfully');
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -211,31 +211,31 @@ async function performanceMonitoringTest(): Promise<void> {
   try {
     await agent.initialize();
     await agent.launch();
-    
+
     // Perform some intensive operations
     await agent.clickTab('Build');
     await agent.fillInput('[data-testid="tenant-id-input"]', 'performance-test-tenant');
-    
+
     // Enable all options for maximum load
     await agent.clickButton('[data-testid="include-users-checkbox"]');
     await agent.clickButton('[data-testid="include-groups-checkbox"]');
     await agent.clickButton('[data-testid="include-applications-checkbox"]');
-    
+
     // Start build and monitor performance
     console.log('Starting build with performance monitoring...');
     await agent.clickButton('[data-testid="start-build-button"]');
-    
+
     // Wait for some time to collect performance data
     await new Promise(resolve => setTimeout(resolve, 30000)); // 30 seconds
-    
+
     // Capture final state with performance metrics
     const finalState = await agent.captureState();
-    
+
     console.log('Performance test completed:');
     console.log('- CPU Usage:', finalState.performance?.cpuUsage);
     console.log('- Memory Usage:', finalState.performance?.memoryUsage);
     console.log('- Response Time:', finalState.performance?.responseTime);
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -263,7 +263,7 @@ async function errorHandlingTest(): Promise<void> {
   try {
     await agent.initialize();
     await agent.launch();
-    
+
     // Intentionally try to interact with non-existent elements
     try {
       await agent.clickButton('[data-testid="non-existent-button"]');
@@ -271,7 +271,7 @@ async function errorHandlingTest(): Promise<void> {
       console.log('Expected error caught:', error?.message);
       await agent.screenshot('after-expected-error');
     }
-    
+
     // Try to fill a non-existent input
     try {
       await agent.fillInput('[data-testid="non-existent-input"]', 'test value');
@@ -279,13 +279,13 @@ async function errorHandlingTest(): Promise<void> {
       console.log('Expected error caught:', error?.message);
       await agent.screenshot('after-second-expected-error');
     }
-    
+
     // Recover by performing valid actions
     await agent.clickTab('Build');
     await agent.screenshot('recovered-to-build-tab');
-    
+
     console.log('Error handling test completed - recovery successful');
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -322,19 +322,19 @@ async function websocketMonitoringTest(): Promise<void> {
   try {
     await agent.initialize();
     await agent.launch();
-    
+
     // Start a build process to generate WebSocket events
     await agent.clickTab('Build');
     await agent.fillInput('[data-testid="tenant-id-input"]', 'websocket-test-tenant');
     await agent.clickButton('[data-testid="start-build-button"]');
-    
+
     // Wait for events to be generated
     await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-    
+
     // Capture state to see collected events
     const state = await agent.captureState();
     console.log('WebSocket events collected:', state.customData?.websocketEventCount);
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -351,7 +351,7 @@ async function customStepExecutionTest(): Promise<void> {
 
   try {
     await agent.initialize();
-    
+
     // Execute custom steps
     const steps: TestStep[] = [
       { action: 'launch_electron', target: '', description: 'Launch app' },
@@ -364,20 +364,20 @@ async function customStepExecutionTest(): Promise<void> {
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       console.log(`Executing step ${i + 1}: ${step.description}`);
-      
+
       const result = await agent.executeStep(step, i);
-      
+
       console.log(`Step ${i + 1} result:`, result.status);
       if (result.actualResult) {
         console.log(`Step ${i + 1} output:`, result.actualResult);
       }
-      
+
       if (result.status === 'FAILED') {
         console.error(`Step ${i + 1} failed:`, result.error);
         break;
       }
     }
-    
+
   } finally {
     await agent.close();
     await agent.cleanup();
@@ -398,9 +398,9 @@ export {
 // Main execution if run directly
 if (require.main === module) {
   console.log('Running ElectronUIAgent examples...');
-  
+
   // Uncomment the example you want to run:
-  
+
   // basicSpaTest().catch(console.error);
   // fullScenarioTest().catch(console.error);
   // multiTabNavigationTest().catch(console.error);
@@ -408,6 +408,6 @@ if (require.main === module) {
   // errorHandlingTest().catch(console.error);
   // websocketMonitoringTest().catch(console.error);
   // customStepExecutionTest().catch(console.error);
-  
+
   console.log('Examples ready to run. Uncomment the desired example in the main section.');
 }

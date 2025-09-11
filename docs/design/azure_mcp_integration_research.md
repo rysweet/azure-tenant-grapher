@@ -97,14 +97,14 @@ class AzureAuthenticationManager:
 class AzureADMCPTools:
     async def list_users(self, filter: Optional[str] = None) -> List[User]:
         """List Azure AD users with optional filtering"""
-        
+
     async def create_user(self, user_data: UserCreateRequest) -> User:
         """Create new Azure AD user"""
-        
-    async def manage_group_membership(self, user_id: str, group_id: str, 
+
+    async def manage_group_membership(self, user_id: str, group_id: str,
                                      action: Literal["add", "remove"]) -> bool:
         """Manage user group memberships"""
-        
+
     async def list_service_principals(self) -> List[ServicePrincipal]:
         """List all service principals in tenant"""
 ```
@@ -119,14 +119,14 @@ class AzureADMCPTools:
 class KeyVaultMCPTools:
     async def list_secrets(self, vault_name: str) -> List[SecretProperties]:
         """List secrets in a Key Vault"""
-        
+
     async def get_secret_value(self, vault_name: str, secret_name: str) -> str:
         """Retrieve secret value (with audit logging)"""
-        
-    async def create_secret(self, vault_name: str, secret_name: str, 
+
+    async def create_secret(self, vault_name: str, secret_name: str,
                            value: str, expires: Optional[datetime]) -> Secret:
         """Create or update a secret"""
-        
+
     async def manage_access_policy(self, vault_name: str, principal_id: str,
                                   permissions: Dict) -> AccessPolicy:
         """Manage Key Vault access policies"""
@@ -142,14 +142,14 @@ class KeyVaultMCPTools:
 class RBACMCPTools:
     async def list_role_assignments(self, scope: str) -> List[RoleAssignment]:
         """List role assignments at specified scope"""
-        
+
     async def create_role_assignment(self, principal_id: str, role_id: str,
                                     scope: str) -> RoleAssignment:
         """Create new role assignment"""
-        
+
     async def analyze_permissions(self, principal_id: str) -> PermissionAnalysis:
         """Analyze effective permissions for a principal"""
-        
+
     async def recommend_least_privilege(self, principal_id: str) -> List[Recommendation]:
         """Recommend least privilege adjustments"""
 ```
@@ -164,13 +164,13 @@ class RBACMCPTools:
 class ConditionalAccessMCPTools:
     async def list_policies(self, state: Optional[str] = None) -> List[Policy]:
         """List conditional access policies"""
-        
+
     async def create_policy(self, policy_config: PolicyConfig) -> Policy:
         """Create new conditional access policy"""
-        
+
     async def simulate_policy(self, user_id: str, conditions: Dict) -> SimulationResult:
         """Simulate policy evaluation for given conditions"""
-        
+
     async def analyze_policy_conflicts(self) -> List[Conflict]:
         """Identify conflicting or redundant policies"""
 ```
@@ -182,16 +182,16 @@ class ConditionalAccessMCPTools:
 class ResourceManagementMCPTools:
     async def list_resource_groups(self, tags: Optional[Dict] = None) -> List[ResourceGroup]:
         """List resource groups with optional tag filtering"""
-        
-    async def create_resource_group(self, name: str, location: str, 
+
+    async def create_resource_group(self, name: str, location: str,
                                    tags: Dict) -> ResourceGroup:
         """Create new resource group"""
-        
-    async def move_resources(self, resource_ids: List[str], 
+
+    async def move_resources(self, resource_ids: List[str],
                             target_rg: str) -> MoveResult:
         """Move resources between resource groups"""
-        
-    async def apply_tags_bulk(self, scope: str, tags: Dict, 
+
+    async def apply_tags_bulk(self, scope: str, tags: Dict,
                              mode: Literal["merge", "replace"]) -> TagResult:
         """Bulk apply tags to resources"""
 ```
@@ -201,14 +201,14 @@ class ResourceManagementMCPTools:
 class ComputeNetworkMCPTools:
     async def list_vms(self, state: Optional[str] = None) -> List[VirtualMachine]:
         """List virtual machines with optional state filter"""
-        
-    async def manage_vm_state(self, vm_id: str, 
+
+    async def manage_vm_state(self, vm_id: str,
                              action: Literal["start", "stop", "restart"]) -> StateResult:
         """Manage VM power state"""
-        
+
     async def analyze_network_topology(self, vnet_id: str) -> NetworkTopology:
         """Analyze virtual network topology and connections"""
-        
+
     async def check_connectivity(self, source_id: str, dest_id: str) -> ConnectivityCheck:
         """Check network connectivity between resources"""
 ```
@@ -218,15 +218,15 @@ class ComputeNetworkMCPTools:
 class StorageMCPTools:
     async def list_storage_accounts(self, kind: Optional[str] = None) -> List[StorageAccount]:
         """List storage accounts with optional filtering"""
-        
+
     async def analyze_storage_usage(self, account_name: str) -> UsageAnalysis:
         """Analyze storage usage and costs"""
-        
-    async def configure_lifecycle_policy(self, account_name: str, 
+
+    async def configure_lifecycle_policy(self, account_name: str,
                                         rules: List[LifecycleRule]) -> Policy:
         """Configure blob lifecycle management"""
-        
-    async def enable_diagnostics(self, account_name: str, 
+
+    async def enable_diagnostics(self, account_name: str,
                                 workspace_id: str) -> DiagnosticSettings:
         """Enable diagnostic logging for storage account"""
 ```
@@ -236,14 +236,14 @@ class StorageMCPTools:
 class AppServiceMCPTools:
     async def list_web_apps(self, runtime: Optional[str] = None) -> List[WebApp]:
         """List web apps with optional runtime filter"""
-        
+
     async def deploy_code(self, app_name: str, source: DeploymentSource) -> DeploymentResult:
         """Deploy code to web app"""
-        
+
     async def configure_autoscale(self, app_name: str, rules: List[ScaleRule]) -> AutoscaleProfile:
         """Configure autoscaling rules"""
-        
-    async def analyze_performance(self, app_name: str, 
+
+    async def analyze_performance(self, app_name: str,
                                  timeframe: str) -> PerformanceMetrics:
         """Analyze app performance metrics"""
 ```
@@ -255,15 +255,15 @@ class AppServiceMCPTools:
 class AKSMCPTools:
     async def list_clusters(self) -> List[AKSCluster]:
         """List AKS clusters in subscription"""
-        
+
     async def get_cluster_credentials(self, cluster_name: str) -> KubeConfig:
         """Get kubeconfig for cluster access"""
-        
-    async def scale_node_pool(self, cluster_name: str, pool_name: str, 
+
+    async def scale_node_pool(self, cluster_name: str, pool_name: str,
                              count: int) -> ScaleResult:
         """Scale AKS node pool"""
-        
-    async def upgrade_cluster(self, cluster_name: str, 
+
+    async def upgrade_cluster(self, cluster_name: str,
                              version: str) -> UpgradeResult:
         """Upgrade AKS cluster version"""
 ```
@@ -273,15 +273,15 @@ class AKSMCPTools:
 class FunctionsMCPTools:
     async def list_function_apps(self) -> List[FunctionApp]:
         """List all function apps"""
-        
+
     async def get_function_logs(self, app_name: str, function_name: str,
                                last_n_minutes: int = 30) -> List[LogEntry]:
         """Retrieve function execution logs"""
-        
+
     async def configure_triggers(self, app_name: str, function_name: str,
                                 trigger_config: TriggerConfig) -> Trigger:
         """Configure function triggers"""
-        
+
     async def analyze_cold_starts(self, app_name: str) -> ColdStartAnalysis:
         """Analyze cold start patterns"""
 ```
@@ -291,16 +291,16 @@ class FunctionsMCPTools:
 class LogicAppsMCPTools:
     async def list_workflows(self, state: Optional[str] = None) -> List[Workflow]:
         """List Logic App workflows"""
-        
-    async def trigger_workflow(self, workflow_id: str, 
+
+    async def trigger_workflow(self, workflow_id: str,
                               inputs: Dict) -> RunResult:
         """Manually trigger workflow execution"""
-        
-    async def get_run_history(self, workflow_id: str, 
+
+    async def get_run_history(self, workflow_id: str,
                              status: Optional[str] = None) -> List[WorkflowRun]:
         """Get workflow run history"""
-        
-    async def update_workflow_definition(self, workflow_id: str, 
+
+    async def update_workflow_definition(self, workflow_id: str,
                                         definition: Dict) -> Workflow:
         """Update workflow definition"""
 ```
@@ -310,16 +310,16 @@ class LogicAppsMCPTools:
 class DevOpsMCPTools:
     async def list_projects(self, organization: str) -> List[Project]:
         """List Azure DevOps projects"""
-        
+
     async def trigger_pipeline(self, project: str, pipeline_id: str,
                               parameters: Dict) -> PipelineRun:
         """Trigger pipeline execution"""
-        
-    async def get_build_status(self, project: str, 
+
+    async def get_build_status(self, project: str,
                               build_id: str) -> BuildStatus:
         """Get build status and logs"""
-        
-    async def create_work_item(self, project: str, 
+
+    async def create_work_item(self, project: str,
                               work_item: WorkItemCreate) -> WorkItem:
         """Create new work item"""
 ```
@@ -336,15 +336,15 @@ class NLPCommandProcessor:
     def __init__(self, llm_client, mcp_tools):
         self.llm = llm_client
         self.tools = mcp_tools
-        
+
     async def process_command(self, user_input: str) -> CommandResult:
         # Extract intent and entities
         intent = await self.llm.extract_intent(user_input)
         entities = await self.llm.extract_entities(user_input)
-        
+
         # Map to appropriate tool
         tool = self.tools.get_tool_for_intent(intent)
-        
+
         # Execute with retry logic
         return await self.execute_with_retry(tool, entities)
 ```
@@ -355,20 +355,20 @@ class WorkflowOrchestrator:
     async def execute_workflow(self, steps: List[WorkflowStep]) -> WorkflowResult:
         context = {}
         results = []
-        
+
         for step in steps:
             # Check preconditions
             if not await self.check_preconditions(step, context):
-                return WorkflowResult(success=False, 
+                return WorkflowResult(success=False,
                                     failed_step=step.name)
-            
+
             # Execute step
             result = await self.execute_step(step, context)
             results.append(result)
-            
+
             # Update context for next steps
             context.update(result.outputs)
-            
+
         return WorkflowResult(success=True, results=results)
 ```
 
@@ -384,11 +384,11 @@ class RetryManager:
             except TransientError as e:
                 if attempt == max_attempts - 1:
                     raise
-                    
+
                 # Exponential backoff with jitter
                 delay = (2 ** attempt) + random.uniform(0, 1)
                 await asyncio.sleep(delay)
-                
+
             except RateLimitError as e:
                 # Use retry-after header if available
                 retry_after = e.retry_after or 60
@@ -405,21 +405,21 @@ class RateLimiter:
         self.capacity = capacity
         self.tokens = capacity
         self.last_update = time.time()
-        
+
     async def acquire(self, tokens: int = 1):
         while True:
             current = time.time()
             elapsed = current - self.last_update
-            
+
             # Add tokens based on elapsed time
-            self.tokens = min(self.capacity, 
+            self.tokens = min(self.capacity,
                             self.tokens + elapsed * self.rate)
             self.last_update = current
-            
+
             if self.tokens >= tokens:
                 self.tokens -= tokens
                 return
-                
+
             # Wait for tokens to become available
             wait_time = (tokens - self.tokens) / self.rate
             await asyncio.sleep(wait_time)
@@ -434,19 +434,19 @@ class CacheManager:
         self.memory_cache = {}  # L1: In-memory
         self.redis_cache = None  # L2: Redis
         self.neo4j_cache = None  # L3: Neo4j
-        
+
     async def get(self, key: str) -> Optional[Any]:
         # Check L1
         if key in self.memory_cache:
             return self.memory_cache[key]
-            
+
         # Check L2
         if self.redis_cache:
             value = await self.redis_cache.get(key)
             if value:
                 self.memory_cache[key] = value
                 return value
-                
+
         # Check L3
         if self.neo4j_cache:
             value = await self.neo4j_cache.query(key)
@@ -454,7 +454,7 @@ class CacheManager:
                 # Promote to faster caches
                 await self.promote_to_cache(key, value)
                 return value
-                
+
         return None
 ```
 
@@ -510,11 +510,11 @@ async def test_azure_ad_list_users():
     mock_client.users.list.return_value = [
         {"id": "user1", "displayName": "Test User"}
     ]
-    
+
     # Test tool execution
     tool = AzureADMCPTools(mock_client)
     users = await tool.list_users()
-    
+
     assert len(users) == 1
     assert users[0].display_name == "Test User"
 ```
@@ -530,13 +530,13 @@ async def test_end_to_end_workflow():
             name="test-rg",
             location="eastus"
         )
-        
+
         # Deploy VM
         vm = await env.tools.deploy_vm(
             resource_group=rg.name,
             vm_config=test_vm_config()
         )
-        
+
         # Verify deployment
         assert vm.provisioning_state == "Succeeded"
 ```
@@ -550,7 +550,7 @@ async def test_concurrent_operations():
         tasks.append(
             tools.list_resources(f"subscription-{i}")
         )
-    
+
     results = await asyncio.gather(*tasks)
     assert all(r.success for r in results)
 ```
@@ -670,17 +670,17 @@ identity_queries:
   - "List all users in the marketing department"
   - "Show me service principals created this month"
   - "Who has owner access to production resources?"
-  
+
 resource_queries:
   - "Find all stopped VMs in the dev subscription"
   - "Show storage accounts without encryption"
   - "List resources missing required tags"
-  
+
 operational_queries:
   - "Start all VMs in the test resource group"
   - "Deploy the latest code to staging"
   - "Scale the AKS cluster to 10 nodes"
-  
+
 analytical_queries:
   - "What's our monthly Azure spend trend?"
   - "Show me unused resources over 30 days old"
@@ -708,6 +708,6 @@ analytical_queries:
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: 2024*  
+*Document Version: 1.0*
+*Last Updated: 2024*
 *Author: Azure Tenant Grapher Team*
