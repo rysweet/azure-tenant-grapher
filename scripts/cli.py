@@ -457,6 +457,16 @@ async def build(
     is_flag=True,
     help="Disable Azure AD user/group import from Microsoft Graph API",
 )
+@click.option(
+    "--filter-by-subscriptions",
+    type=str,
+    help="Comma-separated list of subscription IDs to include (filters discovery)",
+)
+@click.option(
+    "--filter-by-rgs",
+    type=str,
+    help="Comma-separated list of resource group names to include (filters discovery)",
+)
 @click.pass_context
 @async_command
 async def scan(
@@ -474,6 +484,8 @@ async def scan(
     test_keypress_file: str,
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
     Scan the complete Azure tenant graph with enhanced processing.
@@ -505,6 +517,8 @@ async def scan(
         rebuild_edges,
         no_aad_import,
         debug,
+        filter_by_subscriptions,
+        filter_by_rgs,
     )
     if debug:
         print(f"[DEBUG] scan command (via build_command_handler) returned: {result!r}", flush=True)

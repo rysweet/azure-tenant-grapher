@@ -57,6 +57,22 @@ atg scan \
   --generate-spec \
   --visualize
 
+# Scan specific subscriptions only
+atg scan \
+  --filter-by-subscriptions "sub-id-1,sub-id-2" \
+  --no-dashboard
+
+# Scan specific resource groups only
+atg scan \
+  --filter-by-rgs "rg-prod,rg-staging" \
+  --no-dashboard
+
+# Combine subscription and resource group filtering
+atg scan \
+  --filter-by-subscriptions "prod-subscription-id" \
+  --filter-by-rgs "critical-resources-rg,data-rg" \
+  --no-dashboard
+
 # Scan without container auto-start
 atg scan --no-container --no-dashboard
 
