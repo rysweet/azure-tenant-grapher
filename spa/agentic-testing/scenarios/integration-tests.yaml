@@ -10,7 +10,7 @@ config:
   timeout: 240000  # 4 minutes for integration tests
   retries: 2
   parallel: false
-  
+
 # Environment requirements
 environment:
   requires:
@@ -35,14 +35,14 @@ agents:
         height: 720
       timeout: 45000
       slowMo: 200
-      
+
   - name: "websocket-agent"
     type: "websocket"
     config:
       url: "ws://localhost:3001"
       reconnect: true
       timeout: 10000
-      
+
   - name: "cli-agent"
     type: "system"
     config:
@@ -50,18 +50,18 @@ agents:
       cwd: "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
       timeout: 90000
       capture_output: true
-      
+
   - name: "database-agent"
     type: "database"
     config:
       type: "neo4j"
       host: "localhost"
       port: "${NEO4J_PORT}"
-      auth: 
+      auth:
         username: "neo4j"
         password: "${NEO4J_PASSWORD}"
       timeout: 15000
-      
+
   - name: "api-agent"
     type: "api"
     config:
@@ -80,14 +80,14 @@ steps:
       exit_code: 0
       stdout_contains: ["neo4j", "Up"]
     timeout: 30000
-    
+
   - name: "Test Neo4j Database Connection"
     agent: "database-agent"
     action: "connect"
     params:
       test_query: "RETURN 1 as test"
     timeout: 15000
-    
+
   - name: "Launch Electron App"
     agent: "ui-agent"
     action: "launch_electron"
@@ -95,7 +95,7 @@ steps:
       executablePath: "${ELECTRON_APP_PATH}"
       args: ["--no-sandbox", "--disable-dev-shm-usage"]
     timeout: 25000
-    
+
   - name: "Wait for App Initialization"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -111,7 +111,7 @@ steps:
     params:
       events: ["log", "progress", "status", "error", "cli-output"]
     timeout: 15000
-    
+
   - name: "Test WebSocket Ping-Pong"
     agent: "websocket-agent"
     action: "send_message"
@@ -121,7 +121,7 @@ steps:
     expect:
       response_type: "pong"
       response_timeout: 5000
-      
+
   - name: "Test WebSocket Event Broadcasting"
     agent: "ui-agent"
     action: "multi_action"
@@ -134,7 +134,7 @@ steps:
           state: "visible"
         - action: "click"
           selector: "[data-testid='test-connection-button']"
-          
+
   - name: "Verify WebSocket Receives Connection Test Events"
     agent: "websocket-agent"
     action: "listen"
@@ -167,7 +167,7 @@ steps:
           value: "5"
         - action: "click"
           selector: "[data-testid='start-build-button']"
-          
+
   - name: "Monitor CLI Process Start via WebSocket"
     agent: "websocket-agent"
     action: "listen"
@@ -177,7 +177,7 @@ steps:
     until:
       condition: "equals"
       value: "started"
-      
+
   - name: "Verify CLI Process in System"
     agent: "cli-agent"
     action: "execute_command"
@@ -187,7 +187,7 @@ steps:
       exit_code: 0
       stdout_contains: ["python", "atg"]
     timeout: 10000
-    
+
   - name: "Monitor Build Progress Synchronization"
     agent: "websocket-agent"
     action: "listen"
@@ -197,7 +197,7 @@ steps:
     until:
       condition: "contains"
       value: "completed"
-      
+
   - name: "Verify UI Reflects CLI Status"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -215,7 +215,7 @@ steps:
     expect:
       row_count: ">= 0"  # Should have some indexes
     timeout: 15000
-    
+
   - name: "Test Database Write Operations"
     agent: "database-agent"
     action: "execute_query"
@@ -227,7 +227,7 @@ steps:
     expect:
       row_count: 1
     timeout: 10000
-    
+
   - name: "Test Database Read Operations"
     agent: "database-agent"
     action: "execute_query"
@@ -236,7 +236,7 @@ steps:
     expect:
       row_count: 1
     timeout: 10000
-    
+
   - name: "Test Database Relationship Creation"
     agent: "database-agent"
     action: "execute_query"
@@ -259,7 +259,7 @@ steps:
       client_secret: "${AZURE_CLIENT_SECRET}"
       skip_if_missing_credentials: true
     timeout: 30000
-    
+
   - name: "Test Azure Graph API Call (if authenticated)"
     agent: "api-agent"
     action: "call_api"
@@ -270,7 +270,7 @@ steps:
         Authorization: "Bearer ${AZURE_ACCESS_TOKEN}"
       skip_if_no_auth: true
     timeout: 30000
-    
+
   - name: "Test Azure Resource Manager API (if authenticated)"
     agent: "api-agent"
     action: "call_api"
@@ -291,7 +291,7 @@ steps:
     expect:
       exit_code: 0
     timeout: 60000
-    
+
   - name: "Verify UI Shows CLI Output"
     agent: "ui-agent"
     action: "wait_for_element"
@@ -299,7 +299,7 @@ steps:
       selector: "[data-testid='cli-output-log']"
       state: "visible"
       timeout: 10000
-    
+
   - name: "Test Database Query via UI"
     agent: "ui-agent"
     action: "multi_action"
@@ -313,7 +313,7 @@ steps:
         - action: "click"
           selector: "[data-testid='refresh-graph-button']"
           optional: true
-          
+
   - name: "Monitor Database Query Execution"
     agent: "websocket-agent"
     action: "listen"
@@ -333,21 +333,21 @@ steps:
       count: 5
       events: ["log", "progress"]
       timeout: 15000
-      
+
   - name: "Test WebSocket Message Broadcasting"
     agent: "ui-agent"
     action: "click"
     params:
       selector: "[data-testid='broadcast-test-button']"
       optional: true
-      
+
   - name: "Verify All WebSocket Connections Receive Message"
     agent: "websocket-agent"
     action: "verify_all_connections_received"
     params:
       event_type: "broadcast"
       timeout: 10000
-      
+
   - name: "Test Database Connection Pool"
     agent: "database-agent"
     action: "stress_test"
@@ -363,62 +363,62 @@ assertions:
     agent: "cli-agent"
     params:
       step: "Check Neo4j Container Status"
-      
+
   - name: "Database Connection Successful"
     type: "database_connected"
     agent: "database-agent"
     params:
       connection_test: true
-      
+
   - name: "WebSocket Connection Established"
     type: "websocket_connected"
     agent: "websocket-agent"
     params:
       expected_events: ["log", "progress", "status"]
-      
+
   - name: "WebSocket Ping-Pong Successful"
     type: "websocket_ping_success"
     agent: "websocket-agent"
     params:
       response_time: "< 5000"
-      
+
   - name: "CLI Process Started via UI"
     type: "command_success"
     agent: "cli-agent"
     params:
       step: "Verify CLI Process in System"
-      
+
   - name: "CLI-UI Synchronization Working"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='build-complete-message'], [data-testid='build-success-message']"
-      
+
   - name: "Database Operations Successful"
     type: "database_query_success"
     agent: "database-agent"
     params:
       step: "Test Database Write Operations"
-      
+
   - name: "Azure API Integration (if available)"
     type: "api_call_success"
     agent: "api-agent"
     params:
       step: "Test Azure Graph API Call (if authenticated)"
       optional: true
-      
+
   - name: "Cross-Component Communication Working"
     type: "element_visible"
     agent: "ui-agent"
     params:
       selector: "[data-testid='cli-output-log']"
-      
+
   - name: "Multiple WebSocket Connections Stable"
     type: "websocket_connections_stable"
     agent: "websocket-agent"
     params:
       expected_count: 5
-      
+
   - name: "Database Connection Pool Stable"
     type: "database_stress_test_success"
     agent: "database-agent"
@@ -433,22 +433,22 @@ cleanup:
     params:
       query: "MATCH (t:TestNode) WHERE t.id STARTS WITH 'integration-test-' DETACH DELETE t"
     ignore_errors: true
-    
+
   - name: "Close All WebSocket Connections"
     agent: "websocket-agent"
     action: "disconnect_all"
-    
+
   - name: "Stop CLI Processes"
     agent: "cli-agent"
     action: "execute_command"
     params:
       command: "pkill -f 'atg|azure-tenant-grapher' || true"
     ignore_errors: true
-    
+
   - name: "Close Database Connections"
     agent: "database-agent"
     action: "disconnect"
-    
+
   - name: "Close Application"
     agent: "ui-agent"
     action: "close_app"

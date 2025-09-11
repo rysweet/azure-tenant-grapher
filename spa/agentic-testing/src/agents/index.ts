@@ -28,12 +28,12 @@ export type { ElectronUIAgentConfig, WebSocketEvent, PerformanceSample } from '.
 export { CLIAgent, createCLIAgent } from './CLIAgent';
 export type { CLIAgentConfig, CLIProcessInfo, ExecutionContext, StreamData } from './CLIAgent';
 export { IssueReporter, createIssueReporter, defaultIssueReporterConfig } from './IssueReporter';
-export type { 
-  IssueReporterConfig, 
-  RateLimitInfo, 
-  IssueFingerprint, 
-  CreateIssueOptions, 
-  UpdateIssueOptions, 
+export type {
+  IssueReporterConfig,
+  RateLimitInfo,
+  IssueFingerprint,
+  CreateIssueOptions,
+  UpdateIssueOptions,
   CreatePullRequestOptions,
   IssueTemplateVars,
   SystemInfo

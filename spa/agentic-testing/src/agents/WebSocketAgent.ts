@@ -1,6 +1,6 @@
 /**
  * WebSocketAgent - Comprehensive WebSocket testing agent using Socket.IO Client
- * 
+ *
  * This agent provides complete automation capabilities for WebSocket testing
  * including connection lifecycle management, message sending/receiving,
  * event handling, performance measurement, reconnection logic, and
@@ -10,11 +10,11 @@
 import { io, Socket } from 'socket.io-client';
 import { EventEmitter } from 'events';
 import { IAgent, AgentType } from './index';
-import { 
-  TestStep, 
-  TestStatus, 
-  StepResult, 
-  TestScenario 
+import {
+  TestStep,
+  TestStatus,
+  StepResult,
+  TestScenario
 } from '../models/TestModels';
 import { TestLogger, createLogger, LogLevel } from '../utils/logger';
 
@@ -216,7 +216,7 @@ const DEFAULT_CONFIG: Required<WebSocketAgentConfig> = {
 export class WebSocketAgent extends EventEmitter implements IAgent {
   public readonly name = 'WebSocketAgent';
   public readonly type = AgentType.WEBSOCKET;
-  
+
   private config: Required<WebSocketAgentConfig>;
   private logger: TestLogger;
   private isInitialized = false;
@@ -230,7 +230,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
   private eventHandlers: Map<string, Function> = new Map();
   private pingInterval?: NodeJS.Timeout;
   private connectionPromise?: Promise<void>;
-  
+
   constructor(config: WebSocketAgentConfig = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -238,7 +238,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
       level: this.config.logConfig.logLevel,
       logDir: './logs/websocket-agent'
     });
-    
+
     this.setupEventListeners();
   }
 
@@ -246,25 +246,25 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
    * Initialize the agent
    */
   async initialize(): Promise<void> {
-    this.logger.info('Initializing WebSocketAgent', { 
+    this.logger.info('Initializing WebSocketAgent', {
       serverURL: this.config.serverURL,
       namespace: this.config.namespace,
       authType: this.config.auth.type
     });
-    
+
     try {
       // Validate server URL
       if (this.config.serverURL) {
         this.validateServerURL(this.config.serverURL);
       }
-      
+
       // Setup default event listeners
       this.setupDefaultEventListeners();
-      
+
       this.isInitialized = true;
       this.logger.info('WebSocketAgent initialized successfully');
       this.emit('initialized');
-      
+
     } catch (error: any) {
       this.logger.error('Failed to initialize WebSocketAgent', { error: error?.message });
       throw new Error(`Failed to initialize WebSocketAgent: ${error?.message}`);
@@ -286,28 +286,28 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
     const startTime = Date.now();
     let status = TestStatus.PASSED;
     let error: string | undefined;
-    
+
     try {
       // Set environment variables if specified in scenario
       if (scenario.environment) {
         this.applyEnvironmentConfig(scenario.environment);
       }
-      
+
       // Execute scenario steps
       const stepResults: StepResult[] = [];
-      
+
       for (let i = 0; i < scenario.steps.length; i++) {
         const step = scenario.steps[i];
         const stepResult = await this.executeStep(step, i);
         stepResults.push(stepResult);
-        
+
         if (stepResult.status === TestStatus.FAILED || stepResult.status === TestStatus.ERROR) {
           status = stepResult.status;
           error = stepResult.error;
           break;
         }
       }
-      
+
       return {
         scenarioId: scenario.id,
         status,
@@ -322,13 +322,13 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
         latencyMetrics: [...this.latencyHistory],
         connectionMetrics: this.connectionMetrics
       };
-      
+
     } catch (executeError: any) {
       this.logger.error('Scenario execution failed', { error: executeError?.message });
       status = TestStatus.ERROR;
       error = executeError?.message;
       throw executeError;
-      
+
     } finally {
       this.logger.scenarioEnd(scenario.id, status, Date.now() - startTime);
       this.currentScenarioId = undefined;
@@ -393,8 +393,8 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
         clearTimeout(timeout);
         this.connectionInfo!.state = ConnectionState.CONNECTED;
         this.connectionInfo!.connectTime = new Date();
-        this.logger.info('WebSocket connected successfully', { 
-          connectionId: this.connectionInfo!.id 
+        this.logger.info('WebSocket connected successfully', {
+          connectionId: this.connectionInfo!.id
         });
         resolve();
       });
@@ -533,82 +533,82 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
   async executeStep(step: TestStep, stepIndex: number): Promise<StepResult> {
     const startTime = Date.now();
     this.logger.stepExecution(stepIndex, step.action, step.target);
-    
+
     try {
       let result: any;
-      
+
       switch (step.action.toLowerCase()) {
         case 'connect':
           await this.connect(step.target || undefined);
           result = true;
           break;
-          
+
         case 'disconnect':
           await this.disconnect();
           result = true;
           break;
-          
+
         case 'send':
         case 'emit':
           result = await this.handleSendMessage(step);
           break;
-          
+
         case 'wait_for_message':
         case 'wait_for_event':
           result = await this.handleWaitForMessage(step);
           break;
-          
+
         case 'validate_message':
           result = await this.validateMessage(step);
           break;
-          
+
         case 'validate_connection':
           result = this.validateConnection();
           break;
-          
+
         case 'add_listener':
           this.addEventListener(step.target, step.value);
           result = true;
           break;
-          
+
         case 'remove_listener':
           this.removeEventListener(step.target);
           result = true;
           break;
-          
+
         case 'ping':
           result = await this.pingServer();
           break;
-          
+
         case 'wait':
           const waitTime = parseInt(step.value || '1000');
           await this.delay(waitTime);
           result = true;
           break;
-          
+
         case 'set_auth':
           this.setAuthentication(step.target, step.value);
           result = true;
           break;
-          
+
         default:
           throw new Error(`Unsupported WebSocket action: ${step.action}`);
       }
-      
+
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.PASSED, duration);
-      
+
       return {
         stepIndex,
         status: TestStatus.PASSED,
         duration,
         actualResult: typeof result === 'string' ? result : JSON.stringify(result)
       };
-      
+
     } catch (error: any) {
       const duration = Date.now() - startTime;
       this.logger.stepComplete(stepIndex, TestStatus.FAILED, duration);
-      
+
       return {
         stepIndex,
         status: TestStatus.FAILED,
@@ -651,20 +651,20 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
    */
   async cleanup(): Promise<void> {
     this.logger.info('Cleaning up WebSocketAgent resources');
-    
+
     try {
       // Disconnect if connected
       await this.disconnect();
-      
+
       // Clear history
       this.messageHistory = [];
       this.latencyHistory = [];
       this.pendingMessages.clear();
       this.eventHandlers.clear();
-      
+
       this.logger.info('WebSocketAgent cleanup completed');
       this.emit('cleanup');
-      
+
     } catch (error: any) {
       this.logger.error('Error during cleanup', { error: error?.message });
     }
@@ -690,7 +690,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
           socketOptions.auth = { token: this.config.auth.token };
         }
         break;
-        
+
       case 'query':
         if (this.config.auth.token && this.config.auth.queryParam) {
           socketOptions.query = {
@@ -699,7 +699,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
           };
         }
         break;
-        
+
       case 'header':
         if (this.config.auth.token && this.config.auth.headerName) {
           socketOptions.extraHeaders = {
@@ -708,7 +708,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
           };
         }
         break;
-        
+
       case 'custom':
         if (this.config.auth.customAuth) {
           Object.assign(socketOptions, this.config.auth.customAuth);
@@ -792,16 +792,16 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
             const result = listener.handler(data);
             if (result instanceof Promise) {
               result.catch(error => {
-                this.logger.error('Event handler error', { 
-                  event: listener.event, 
-                  error: error.message 
+                this.logger.error('Event handler error', {
+                  event: listener.event,
+                  error: error.message
                 });
               });
             }
           } catch (error: any) {
-            this.logger.error('Event handler error', { 
-              event: listener.event, 
-              error: error.message 
+            this.logger.error('Event handler error', {
+              event: listener.event,
+              error: error.message
             });
           }
         };
@@ -882,9 +882,9 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
   private async handleWaitForMessage(step: TestStep): Promise<WebSocketMessage> {
     const event = step.target;
     const timeout = step.timeout || 10000;
-    
+
     let filter: ((data: any) => boolean) | undefined;
-    
+
     if (step.value) {
       try {
         const filterConfig = JSON.parse(step.value);
@@ -924,7 +924,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
   }
 
   private validateConnection(): boolean {
-    return this.socket?.connected === true && 
+    return this.socket?.connected === true &&
            this.connectionInfo?.state === ConnectionState.CONNECTED;
   }
 
@@ -954,7 +954,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
 
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const timeout = setTimeout(() => {
         reject(new Error('Ping timeout'));
       }, 5000);
@@ -973,29 +973,29 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
       case 'token':
         this.config.auth = { type: 'token', token: value };
         break;
-        
+
       case 'query':
         const [param, token] = (value || '').split(':');
-        this.config.auth = { 
-          type: 'query', 
-          queryParam: param || 'token', 
-          token: token || value 
+        this.config.auth = {
+          type: 'query',
+          queryParam: param || 'token',
+          token: token || value
         };
         break;
-        
+
       case 'header':
         const [header, headerToken] = (value || '').split(':');
-        this.config.auth = { 
-          type: 'header', 
-          headerName: header || 'Authorization', 
-          token: headerToken || value 
+        this.config.auth = {
+          type: 'header',
+          headerName: header || 'Authorization',
+          token: headerToken || value
         };
         break;
-        
+
       default:
         throw new Error(`Unsupported WebSocket authentication type: ${type}`);
     }
-    
+
     this.logger.debug(`WebSocket authentication configured: ${type}`);
   }
 
@@ -1025,7 +1025,7 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
 
   private calculateAverageLatency(): number {
     if (this.latencyHistory.length === 0) return 0;
-    
+
     const sum = this.latencyHistory.reduce((acc, measurement) => acc + measurement.latency, 0);
     return sum / this.latencyHistory.length;
   }
@@ -1040,8 +1040,8 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
   }
 
   private shouldMaskData(event: string): boolean {
-    return this.config.logConfig.maskSensitiveData && 
-           this.config.logConfig.sensitiveEvents.some(sensitiveEvent => 
+    return this.config.logConfig.maskSensitiveData &&
+           this.config.logConfig.sensitiveEvents.some(sensitiveEvent =>
              event.toLowerCase().includes(sensitiveEvent.toLowerCase())
            );
   }
@@ -1086,23 +1086,23 @@ export class WebSocketAgent extends EventEmitter implements IAgent {
 
   private deepEqual(obj1: any, obj2: any): boolean {
     if (obj1 === obj2) return true;
-    
+
     if (obj1 == null || obj2 == null) return false;
-    
+
     if (typeof obj1 !== typeof obj2) return false;
-    
+
     if (typeof obj1 !== 'object') return obj1 === obj2;
-    
+
     const keys1 = Object.keys(obj1);
     const keys2 = Object.keys(obj2);
-    
+
     if (keys1.length !== keys2.length) return false;
-    
+
     for (const key of keys1) {
       if (!keys2.includes(key)) return false;
       if (!this.deepEqual(obj1[key], obj2[key])) return false;
     }
-    
+
     return true;
   }
 

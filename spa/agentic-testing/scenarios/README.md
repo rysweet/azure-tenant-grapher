@@ -66,7 +66,7 @@ agents:
     type: "agent-type"  # ui, system, websocket, database, api, network
     config:
       # Agent-specific configuration
-      
+
 # Test execution steps
 steps:
   - name: "Step Description"
@@ -79,7 +79,7 @@ steps:
     timeout: 30000
     wait_for:
       # Conditions to wait for
-      
+
 # Validation assertions
 assertions:
   - name: "Assertion Description"
@@ -87,13 +87,13 @@ assertions:
     agent: "agent-name"
     params:
       # Assertion parameters
-      
+
 # Cleanup actions
 cleanup:
   - name: "Cleanup Description"
     agent: "agent-name"
     action: "cleanup-action"
-    
+
 # Metadata
 metadata:
   tags: ["tag1", "tag2"]
@@ -323,7 +323,7 @@ steps:
     params:
       executablePath: "${ELECTRON_APP_PATH}"
     timeout: 20000
-    
+
   - name: "Click Button"
     agent: "ui-agent"
     action: "click"

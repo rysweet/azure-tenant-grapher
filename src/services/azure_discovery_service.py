@@ -24,6 +24,7 @@ from ..exceptions import (
     AzureAuthenticationError,
     AzureDiscoveryError,
 )
+from ..models.filter_config import FilterConfig
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +83,14 @@ class AzureDiscoveryService:
         return self._subscriptions.copy()
 
     async def discover_subscriptions(
-        self, _skip_fallback: bool = False
+        self, _skip_fallback: bool = False, filter_config: Optional[FilterConfig] = None
     ) -> List[Dict[str, Any]]:
         """
         Discover all subscriptions in the tenant.
+
+        Args:
+            _skip_fallback: Skip fallback authentication (internal use)
+            filter_config: Optional FilterConfig to filter subscriptions
 
         Returns:
             List of subscription dictionaries with id and display_name
@@ -110,6 +115,21 @@ class AzureDiscoveryService:
                     logger.info(
                         f"📋 Found subscription: {subscription_dict['display_name']} ({subscription_dict['id']})"
                     )
+                # Apply filter if provided
+                if filter_config:
+                    filtered_subscriptions = []
+                    for sub in subscriptions:
+                        if filter_config.should_include_subscription(sub["id"]):
+                            filtered_subscriptions.append(sub)
+                        else:
+                            logger.info(
+                                f"🚫 Filtering out subscription: {sub['display_name']} ({sub['id']})"
+                            )
+                    subscriptions = filtered_subscriptions
+                    logger.info(
+                        f"✅ After filtering: {len(subscriptions)} subscriptions included"
+                    )
+
                 self._subscriptions = subscriptions
                 logger.info(f"✅ Discovered {len(subscriptions)} subscriptions total")
 
@@ -184,13 +204,14 @@ class AzureDiscoveryService:
         return []
 
     async def discover_resources_in_subscription(
-        self, subscription_id: str
+        self, subscription_id: str, filter_config: Optional[FilterConfig] = None
     ) -> List[Dict[str, Any]]:
         """
         Discover all resources in a specific subscription with optional parallel property fetching.
 
         Args:
             subscription_id: Azure subscription ID
+            filter_config: Optional FilterConfig to filter resources
 
         Returns:
             List of resource dictionaries with full properties if max_build_threads > 0
@@ -231,10 +252,19 @@ class AzureDiscoveryService:
                         ),
                         "resource_group": parsed_info.get("resource_group"),
                     }
-                    resource_basics.append(resource_dict)
+                    # Apply resource filter if provided
+                    if filter_config:
+                        if filter_config.should_include_resource(resource_dict):
+                            resource_basics.append(resource_dict)
+                        else:
+                            logger.debug(
+                                f"🚫 Filtering out resource: {resource_dict.get('name')} in RG {resource_dict.get('resource_group')}"
+                            )
+                    else:
+                        resource_basics.append(resource_dict)
 
                 logger.info(
-                    f"✅ Found {len(resource_basics)} resources in subscription {subscription_id}"
+                    f"✅ Found {len(resource_basics)} resources in subscription {subscription_id} after filtering"
                 )
 
                 # Phase 2: Fetch full properties in parallel if enabled
@@ -322,7 +352,10 @@ class AzureDiscoveryService:
         return []
 
     async def discover_resources_across_subscriptions(
-        self, subscription_ids: List[str], concurrency: int = 5
+        self,
+        subscription_ids: List[str],
+        concurrency: int = 5,
+        filter_config: Optional[FilterConfig] = None,
     ) -> List[Dict[str, Any]]:
         """
         Discover resources for many subscriptions concurrently while ensuring that
@@ -331,6 +364,7 @@ class AzureDiscoveryService:
         Args:
             subscription_ids: List of Azure subscription IDs.
             concurrency: Maximum number of concurrent discovery tasks (``>=1``).
+            filter_config: Optional FilterConfig to filter resources
 
         Returns
         -------
@@ -347,7 +381,9 @@ class AzureDiscoveryService:
         async def _bounded_discover(sub_id: str) -> List[Dict[str, Any]]:
             # Ensure no more than `concurrency` coroutines execute concurrently.
             async with semaphore:
-                return await self.discover_resources_in_subscription(sub_id)
+                return await self.discover_resources_in_subscription(
+                    sub_id, filter_config
+                )
 
         # Kick off the tasks concurrently and wait for them to finish.
         results_nested: List[List[Dict[str, Any]]] = await asyncio.gather(

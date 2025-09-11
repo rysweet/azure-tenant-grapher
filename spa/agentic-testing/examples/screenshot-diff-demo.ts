@@ -1,6 +1,6 @@
 /**
  * Screenshot Diff Visualization Demo
- * 
+ *
  * This example demonstrates the comprehensive screenshot diff functionality
  * with multiple algorithms, color coding, and batch processing capabilities.
  */
