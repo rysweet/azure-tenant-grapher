@@ -126,7 +126,27 @@ azure-tenant-grapher scan --tenant-id <your-tenant-id> --no-aad-import
 
 # Rescan—all relationships will be re-evaluated
 azure-tenant-grapher scan --tenant-id <your-tenant-id> --rebuild-edges
+
+# Scan with filtering by subscriptions (includes referenced identities)
+azure-tenant-grapher scan --tenant-id <your-tenant-id> --filter-by-subscriptions sub1,sub2
+
+# Scan with filtering by resource groups (includes referenced identities)
+azure-tenant-grapher scan --tenant-id <your-tenant-id> --filter-by-rgs rg1,rg2
 ```
+
+### Filtered Scanning with Identity Inclusion
+
+When using `--filter-by-subscriptions` or `--filter-by-rgs` options, Azure Tenant Grapher automatically:
+
+1. **Discovers only resources** matching your filter criteria
+2. **Extracts identity references** from filtered resources:
+   - System-assigned managed identities
+   - User-assigned managed identities  
+   - Users, groups, and service principals from role assignments
+3. **Imports only referenced identities** from Azure AD/Graph API
+4. **Preserves all relationships** between filtered resources and their identities
+
+This ensures your filtered graph contains all necessary identity information without importing the entire Azure AD directory.
 
 ### Azure AD Identity Import
 
