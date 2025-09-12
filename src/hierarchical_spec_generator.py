@@ -2,12 +2,15 @@
 
 This module extends the base TenantSpecificationGenerator to organize resources
 by Azure's containment hierarchy: Tenant → Subscriptions → Regions → Resource Groups → Resources.
+
+Includes purpose inference at each level.
 """
 
 import logging
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.tenant_spec_generator import ResourceAnonymizer, TenantSpecificationGenerator
 from src.config_manager import SpecificationConfig

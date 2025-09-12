@@ -768,18 +768,13 @@ async def spec_command_handler(
 
 
 def generate_spec_command_handler(
-    ctx: click.Context, limit: Optional[int], output: Optional[str]
+    ctx: click.Context, limit: Optional[int], output: Optional[str], hierarchical: bool = False
 ) -> None:
     """Handle the generate-spec command logic."""
     ensure_neo4j_running()
     import os
 
     try:
-        from src.tenant_spec_generator import (
-            ResourceAnonymizer,
-            TenantSpecificationGenerator,
-        )
-
         # Load config (Neo4j-only)
         config = create_neo4j_config_from_env()
         config.logging.level = ctx.obj["log_level"]
@@ -798,13 +793,28 @@ def generate_spec_command_handler(
         # Ensure outputs/ dir exists for defaulting
         os.makedirs("outputs", exist_ok=True)
 
+        # Choose generator based on hierarchical flag
+        from src.tenant_spec_generator import ResourceAnonymizer
+        
         # Anonymizer
         anonymizer = ResourceAnonymizer(seed=spec_config.anonymization_seed)
-
-        # Generator
-        generator = TenantSpecificationGenerator(
-            neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
-        )
+        
+        if hierarchical:
+            from src.hierarchical_spec_generator import HierarchicalSpecGenerator
+            
+            # Generator
+            generator = HierarchicalSpecGenerator(
+                neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
+            )
+            
+            click.echo("📊 Generating hierarchical tenant specification...")
+        else:
+            from src.tenant_spec_generator import TenantSpecificationGenerator
+            
+            # Generator
+            generator = TenantSpecificationGenerator(
+                neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
+            )
 
         # Default output to outputs/ if not specified
         effective_output = output
@@ -812,7 +822,8 @@ def generate_spec_command_handler(
             from datetime import datetime, timezone
 
             ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            effective_output = os.path.join("outputs", f"{ts}_tenant_spec.md")
+            prefix = "hierarchical_" if hierarchical else ""
+            effective_output = os.path.join("outputs", f"{prefix}{ts}_tenant_spec.md")
 
         output_path = generator.generate_specification(output_path=effective_output)
         click.echo(f"✅ Tenant Markdown specification generated: {output_path}")

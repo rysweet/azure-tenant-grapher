@@ -608,12 +608,17 @@ async def spec(
     "--limit", type=int, default=None, help="Resource limit (overrides config)"
 )
 @click.option("--output", type=str, default=None, help="Custom output path")
+@click.option(
+    "--hierarchical", 
+    is_flag=True, 
+    help="Generate hierarchical specification organized by Tenant→Subscription→Region→ResourceGroup"
+)
 @click.pass_context
 def generate_spec(
-    ctx: click.Context, limit: Optional[int], output: Optional[str]
+    ctx: click.Context, limit: Optional[int], output: Optional[str], hierarchical: bool
 ) -> None:
     """Generate anonymized tenant Markdown specification (no tenant-id required)."""
-    generate_spec_command_handler(ctx, limit, output)
+    generate_spec_command_handler(ctx, limit, output, hierarchical)
 
 
 @cli.command()
