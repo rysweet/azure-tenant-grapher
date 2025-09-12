@@ -390,7 +390,8 @@ async def build(
     return result
 
 
-# Add "scan" as an alias to the "build" command for consistency with documentation and UI
+# Create "scan" as an exact alias of "build" command
+# We'll register the same function under a different name
 @cli.command(name="scan")
 @click.option(
     "--tenant-id",
@@ -457,6 +458,16 @@ async def build(
     is_flag=True,
     help="Disable Azure AD user/group import from Microsoft Graph API",
 )
+@click.option(
+    "--filter-by-subscriptions",
+    type=str,
+    help="Comma-separated list of subscription IDs to include (filters discovery)",
+)
+@click.option(
+    "--filter-by-rgs",
+    type=str,
+    help="Comma-separated list of resource group names to include (filters discovery)",
+)
 @click.pass_context
 @async_command
 async def scan(
@@ -474,9 +485,11 @@ async def scan(
     test_keypress_file: str,
     rebuild_edges: bool = False,
     no_aad_import: bool = False,
+    filter_by_subscriptions: Optional[str] = None,
+    filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
-    Scan the complete Azure tenant graph with enhanced processing.
+    Scan the complete Azure tenant graph (alias for 'build' command).
 
     This command discovers all resources in your Azure tenant and builds a comprehensive 
     Neo4j graph database. By default, shows a live Rich dashboard with progress, logs, 
@@ -485,11 +498,12 @@ async def scan(
       - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
+    
+    Note: This is an alias for the 'build' command. Both commands are functionally identical.
     """
-    debug = ctx.obj.get("debug", False)
-    if debug:
-        print("[DEBUG] CLI scan command called", flush=True)
-    result = await build_command_handler(
+    # Directly call the build function with all the same parameters
+    # This makes scan a true alias of build
+    return await build(
         ctx,
         tenant_id,
         resource_limit,
@@ -504,11 +518,9 @@ async def scan(
         test_keypress_file,
         rebuild_edges,
         no_aad_import,
-        debug,
+        filter_by_subscriptions,
+        filter_by_rgs,
     )
-    if debug:
-        print(f"[DEBUG] scan command (via build_command_handler) returned: {result!r}", flush=True)
-    return result
 
 
 @cli.command()
