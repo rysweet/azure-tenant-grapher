@@ -1,8 +1,7 @@
-"""
-Hierarchical Tenant Specification Generator
+"""Hierarchical specification generator for Azure Tenant Grapher.
 
-Generates tenant specifications organized by containment hierarchy:
-Tenant → Subscriptions → Regions → Resource Groups → Resources
+This module extends the base TenantSpecificationGenerator to organize resources
+by Azure's containment hierarchy: Tenant → Subscriptions → Regions → Resource Groups → Resources.
 
 Includes purpose inference at each level.
 """
@@ -13,376 +12,480 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from neo4j import GraphDatabase
-
-from src.tenant_spec_generator import TenantSpecificationGenerator, ResourceAnonymizer
+from src.tenant_spec_generator import ResourceAnonymizer, TenantSpecificationGenerator
+from src.config_manager import SpecificationConfig
 
 logger = logging.getLogger(__name__)
 
 
-class TenantAnalyzer:
-    """Analyzes tenant-level patterns and infers purpose."""
-    
-    @staticmethod
-    def infer_tenant_purpose(resources: List[Dict[str, Any]]) -> str:
-        """Infer the overall purpose of the tenant based on resources."""
-        patterns = {
-            'development': ['dev', 'test', 'staging', 'sandbox', 'poc'],
-            'production': ['prod', 'production', 'live', 'prd'],
-            'hybrid_cloud': ['dc', 'domain', 'ad', 'hybrid', 'onprem'],
-            'data_platform': ['databricks', 'synapse', 'datalake', 'datafactory', 'hdinsight'],
-            'web_hosting': ['app-service', 'webapp', 'api', 'functionapp', 'frontdoor'],
-            'infrastructure': ['bastion', 'vpn', 'firewall', 'gateway', 'expressroute'],
-            'analytics': ['analytics', 'loganalytics', 'powerbi', 'insights'],
-            'ml_ai': ['machinelearning', 'cognitive', 'openai', 'ml-', 'ai-'],
-            'containers': ['kubernetes', 'aks', 'container', 'registry'],
-            'iot': ['iothub', 'iotcentral', 'eventhub', 'stream'],
+class HierarchicalSpecGenerator(TenantSpecificationGenerator):
+    """Generates hierarchically organized tenant specifications with purpose inference."""
+
+    def __init__(
+        self,
+        neo4j_uri: str,
+        neo4j_user: str,
+        neo4j_password: str,
+        anonymizer: ResourceAnonymizer,
+        config: SpecificationConfig,
+    ):
+        """Initialize the hierarchical specification generator.
+        
+        Args:
+            neo4j_uri: URI for Neo4j database connection
+            neo4j_user: Username for Neo4j authentication
+            neo4j_password: Password for Neo4j authentication
+            anonymizer: ResourceAnonymizer instance for anonymizing sensitive data
+            config: SpecificationConfig with generation settings
+        """
+        super().__init__(neo4j_uri, neo4j_user, neo4j_password, anonymizer, config)
+        self.hierarchy_depth = getattr(config, "hierarchy_depth", 5)  # Default to full depth
+        self.infer_purpose = getattr(config, "infer_purpose", True)  # Default to inferring purpose
+
+    def _query_resources_with_hierarchy(self) -> Dict[str, Any]:
+        """Query resources while preserving hierarchy metadata.
+        
+        Returns:
+            Dictionary with hierarchical structure of resources
+        """
+        from neo4j import GraphDatabase
+        import json
+        
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        )
+        
+        # Query to get resources with hierarchy information
+        query = """
+        MATCH (r)
+        WHERE r.id IS NOT NULL AND r.type IS NOT NULL
+        RETURN r, 
+               r.subscription_id as subscription_id,
+               r.resource_group as resource_group,
+               r.location as location,
+               r.type as resource_type,
+               r.name as resource_name,
+               r.tags as tags,
+               r.properties as properties,
+               r.llm_description as llm_description
+        """
+        
+        if self.config.resource_limit:
+            query += f" LIMIT {self.config.resource_limit}"
+        
+        hierarchy = {
+            "tenant": {
+                "name": "Azure Tenant",
+                "purpose": "",
+                "subscriptions": defaultdict(lambda: {
+                    "name": "",
+                    "purpose": "",
+                    "regions": defaultdict(lambda: {
+                        "name": "",
+                        "resource_groups": defaultdict(lambda: {
+                            "name": "",
+                            "purpose": "",
+                            "resources": []
+                        })
+                    })
+                })
+            }
         }
         
-        scores = defaultdict(int)
-        total_resources = len(resources)
+        with driver.session() as session:
+            for record in session.run(query):
+                node = record["r"]
+                resource = dict(node)
+                
+                # Parse JSON fields
+                for key in ("properties", "tags"):
+                    if key in resource and isinstance(resource[key], str):
+                        try:
+                            resource[key] = json.loads(resource[key])
+                        except Exception:
+                            resource[key] = {}
+                
+                # Extract hierarchy information
+                subscription_id = record["subscription_id"] or "unknown-subscription"
+                resource_group = record["resource_group"] or "unknown-resource-group"
+                location = record["location"] or "unknown-region"
+                
+                # Place resource in hierarchy
+                subscription = hierarchy["tenant"]["subscriptions"][subscription_id]
+                if not subscription["name"]:
+                    subscription["name"] = subscription_id
+                
+                region = subscription["regions"][location]
+                if not region["name"]:
+                    region["name"] = location
+                
+                rg = region["resource_groups"][resource_group]
+                if not rg["name"]:
+                    rg["name"] = resource_group
+                
+                rg["resources"].append(resource)
         
-        for resource in resources:
-            name = resource.get('name', '').lower()
-            rtype = resource.get('type', '').lower()
-            description = resource.get('llm_description', '').lower()
-            
-            combined_text = f"{name} {rtype} {description}"
-            
-            for category, keywords in patterns.items():
-                for keyword in keywords:
-                    if keyword in combined_text:
-                        scores[category] += 1
+        driver.close()
         
-        # Determine primary purposes
+        # Query and attach relationships
+        relationships = self._query_relationships()
+        rel_map = defaultdict(list)
+        for rel in relationships:
+            rel_map[rel["source_id"]].append(rel)
+        
+        # Attach relationships to resources
+        for sub_data in hierarchy["tenant"]["subscriptions"].values():
+            for region_data in sub_data["regions"].values():
+                for rg_data in region_data["resource_groups"].values():
+                    for resource in rg_data["resources"]:
+                        resource["relationships"] = rel_map.get(resource.get("id"), [])
+        
+        return hierarchy
+
+    def _infer_tenant_purpose(self, hierarchy: Dict[str, Any]) -> str:
+        """Infer the overall purpose of the tenant based on resources.
+        
+        Args:
+            hierarchy: Hierarchical structure of tenant resources
+            
+        Returns:
+            Inferred purpose string
+        """
+        resource_types = defaultdict(int)
+        naming_patterns = []
+        tags_analysis = defaultdict(int)
+        
+        # Collect data from all resources
+        for sub_data in hierarchy["tenant"]["subscriptions"].values():
+            for region_data in sub_data["regions"].values():
+                for rg_data in region_data["resource_groups"].values():
+                    for resource in rg_data["resources"]:
+                        # Count resource types
+                        resource_type = resource.get("type", "")
+                        if resource_type:
+                            resource_types[resource_type] += 1
+                        
+                        # Collect naming patterns
+                        name = resource.get("name", "")
+                        if name:
+                            naming_patterns.append(name.lower())
+                        
+                        # Analyze tags
+                        tags = resource.get("tags", {})
+                        for key, value in tags.items():
+                            if key.lower() in ["environment", "env", "stage"]:
+                                tags_analysis[value.lower()] += 1
+        
+        # Infer purpose based on collected data
         purposes = []
-        for category, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3]:
-            if score > total_resources * 0.1:  # At least 10% of resources
-                purposes.append(category.replace('_', ' ').title())
         
-        if not purposes:
-            return "General Purpose Cloud Infrastructure"
+        # Check for development/test environment
+        dev_keywords = ["dev", "test", "qa", "staging", "sandbox"]
+        if any(env in tags_analysis for env in dev_keywords):
+            purposes.append("Development/Testing Environment")
+        elif "production" in tags_analysis or "prod" in tags_analysis:
+            purposes.append("Production Environment")
         
-        return f"{', '.join(purposes)} Infrastructure"
+        # Check for specific workload types
+        if resource_types.get("Microsoft.Web/sites", 0) > 5:
+            purposes.append("Web Application Hosting")
+        if resource_types.get("Microsoft.ContainerService/managedClusters", 0) > 0:
+            purposes.append("Container Orchestration (AKS)")
+        if resource_types.get("Microsoft.Sql/servers", 0) > 2:
+            purposes.append("Database Infrastructure")
+        if resource_types.get("Microsoft.MachineLearningServices/workspaces", 0) > 0:
+            purposes.append("Machine Learning/AI Workloads")
+        
+        # Check naming patterns
+        if any("data" in pattern or "analytics" in pattern for pattern in naming_patterns):
+            purposes.append("Data Analytics Platform")
+        if any("api" in pattern for pattern in naming_patterns):
+            purposes.append("API Services")
+        
+        return " | ".join(purposes) if purposes else "General Purpose Infrastructure"
 
+    def _infer_subscription_purpose(self, subscription_data: Dict[str, Any]) -> str:
+        """Infer the purpose of a subscription based on its resources.
+        
+        Args:
+            subscription_data: Subscription data including regions and resources
+            
+        Returns:
+            Inferred purpose string
+        """
+        resource_count = 0
+        resource_types = set()
+        regions = list(subscription_data["regions"].keys())
+        
+        for region_data in subscription_data["regions"].values():
+            for rg_data in region_data["resource_groups"].values():
+                resource_count += len(rg_data["resources"])
+                for resource in rg_data["resources"]:
+                    resource_types.add(resource.get("type", ""))
+        
+        # Infer based on patterns
+        if resource_count == 0:
+            return "Empty/Unused Subscription"
+        elif resource_count < 10:
+            return "Minimal Infrastructure"
+        elif len(regions) > 3:
+            return "Multi-Region Deployment"
+        elif "Microsoft.DevTestLab" in resource_types:
+            return "Dev/Test Environment"
+        else:
+            return "Standard Workload Subscription"
 
-class ResourceGroupAnalyzer:
-    """Analyzes resource group patterns and infers purpose."""
-    
-    @staticmethod
-    def infer_rg_purpose(resources: List[Dict[str, Any]]) -> str:
-        """Infer the purpose of a resource group based on contained resources."""
+    def _infer_resource_group_purpose(self, rg_data: Dict[str, Any]) -> str:
+        """Infer the purpose of a resource group based on its resources.
+        
+        Args:
+            rg_data: Resource group data including resources
+            
+        Returns:
+            Inferred purpose string
+        """
+        resources = rg_data["resources"]
         if not resources:
             return "Empty Resource Group"
         
-        # Count resource types
-        type_counts = defaultdict(int)
-        for resource in resources:
-            rtype = resource.get('type', '').split('/')[-1].lower()
-            type_counts[rtype] += 1
+        # Analyze resource composition
+        resource_types = [r.get("type", "") for r in resources]
         
         # Common patterns
-        if 'virtualMachines' in type_counts and 'networkInterfaces' in type_counts:
-            if 'loadBalancers' in type_counts:
-                return "Load-Balanced Compute Cluster"
+        if any("Microsoft.Web" in t for t in resource_types):
+            if any("Microsoft.Sql" in t for t in resource_types):
+                return "Web Application with Database"
+            return "Web Application Resources"
+        elif any("Microsoft.Compute/virtualMachines" in t for t in resource_types):
+            vm_count = sum(1 for t in resource_types if "virtualMachines" in t)
+            if vm_count > 3:
+                return "Virtual Machine Scale Set"
             return "Virtual Machine Infrastructure"
-        
-        if 'sites' in type_counts:
-            if 'serverfarms' in type_counts:
-                return "Web Application Hosting"
-            return "App Service Infrastructure"
-        
-        if 'storageAccounts' in type_counts and 'factories' in type_counts:
-            return "Data Pipeline Infrastructure"
-        
-        if 'workspaces' in type_counts:
-            if 'databricks' in str(type_counts):
-                return "Databricks Analytics Platform"
-            return "Log Analytics Workspace"
-        
-        if 'vaults' in type_counts:
-            return "Security and Secrets Management"
-        
-        if 'databaseAccounts' in type_counts or 'servers' in type_counts:
-            return "Database Infrastructure"
-        
-        if 'virtualNetworks' in type_counts or 'networkSecurityGroups' in type_counts:
-            return "Network Infrastructure"
-        
-        # Default to most common resource type
-        if type_counts:
-            most_common = max(type_counts.items(), key=lambda x: x[1])
-            return f"{most_common[0].title()} Resources"
+        elif any("Microsoft.Storage" in t for t in resource_types):
+            return "Storage Resources"
+        elif any("Microsoft.Network" in t for t in resource_types):
+            return "Networking Infrastructure"
         
         return "Mixed Resources"
 
-
-class HierarchicalSpecGenerator(TenantSpecificationGenerator):
-    """Generates hierarchical tenant specifications with purpose inference."""
-    
-    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str, 
-                 anonymizer: Optional[ResourceAnonymizer] = None, 
-                 spec_config: Optional[Any] = None):
-        """Initialize the hierarchical spec generator."""
-        super().__init__(neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config)
-        self.tenant_analyzer = TenantAnalyzer()
-        self.rg_analyzer = ResourceGroupAnalyzer()
-    
-    def generate_specification(self, output_path: Optional[str] = None) -> str:
-        """Generate a hierarchical tenant specification."""
-        # Query all resources with hierarchy information
-        resources = self._query_resources_with_hierarchy()
+    def generate_specification(
+        self, output_path: Optional[str] = None, domain_name: Optional[str] = None
+    ) -> str:
+        """Generate hierarchical specification with purpose inference.
         
-        if not resources:
-            content = "# No resources found in the graph database\n"
-        else:
-            # Build hierarchical structure
-            hierarchy = self._build_hierarchy(resources)
+        Args:
+            output_path: Optional path for output file
+            domain_name: Optional domain name for user accounts
             
-            # Generate markdown
-            content = self._generate_hierarchical_markdown(hierarchy, resources)
-        
-        # Save to file if output path provided
-        if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            return output_path
-        
-        return content
-    
-    def _query_resources_with_hierarchy(self) -> List[Dict[str, Any]]:
-        """Query resources with full hierarchy information."""
-        query = """
-        MATCH (r:Resource)
-        OPTIONAL MATCH (r)-[:BELONGS_TO]->(rg:ResourceGroup)
-        OPTIONAL MATCH (rg)-[:BELONGS_TO]->(s:Subscription)
-        RETURN r, rg.name as resource_group, s.id as subscription_id, 
-               r.location as region, r.type as type, r.name as name,
-               r.id as id, r.llm_description as llm_description,
-               properties(r) as properties
-        ORDER BY s.id, r.location, rg.name, r.type, r.name
+        Returns:
+            Path to generated specification file
         """
+        # Query resources with hierarchy preserved
+        hierarchy = self._query_resources_with_hierarchy()
         
-        resources = []
-        with self.driver.session() as session:
-            result = session.run(query)
-            for record in result:
-                resource = dict(record['r'])
-                resource['resource_group'] = record['resource_group'] or 'unknown-rg'
-                resource['subscription_id'] = record['subscription_id'] or 'unknown-sub'
-                resource['region'] = record['region'] or 'global'
-                resources.append(resource)
+        # Infer purposes at each level
+        if self.infer_purpose:
+            hierarchy["tenant"]["purpose"] = self._infer_tenant_purpose(hierarchy)
+            
+            for sub_id, sub_data in hierarchy["tenant"]["subscriptions"].items():
+                sub_data["purpose"] = self._infer_subscription_purpose(sub_data)
+                
+                for region_id, region_data in sub_data["regions"].items():
+                    for rg_id, rg_data in region_data["resource_groups"].items():
+                        rg_data["purpose"] = self._infer_resource_group_purpose(rg_data)
         
-        return resources
-    
-    def _build_hierarchy(self, resources: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Build a hierarchical structure from flat resource list."""
-        hierarchy = {
-            'subscriptions': defaultdict(lambda: {
-                'regions': defaultdict(lambda: {
-                    'resource_groups': defaultdict(list)
-                })
-            })
+        # Anonymize the entire hierarchy
+        anonymized_hierarchy = self._anonymize_hierarchy(hierarchy, domain_name)
+        
+        # Render hierarchical markdown
+        markdown = self._render_hierarchical_markdown(anonymized_hierarchy)
+        
+        # Write to file
+        if not output_path:
+            output_path = self._get_default_output_path()
+        
+        import os
+        output_dir = os.path.dirname(output_path)
+        if output_dir and output_dir != "." and output_dir != os.getcwd():
+            os.makedirs(output_dir, exist_ok=True)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(markdown)
+        
+        logger.info(f"Hierarchical specification written to {output_path}")
+        return output_path
+
+    def _anonymize_hierarchy(
+        self, hierarchy: Dict[str, Any], domain_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Anonymize the entire hierarchical structure.
+        
+        Args:
+            hierarchy: Original hierarchy with sensitive data
+            domain_name: Optional domain name for user accounts
+            
+        Returns:
+            Anonymized hierarchy
+        """
+        anonymized = {
+            "tenant": {
+                "name": "Azure Tenant",
+                "purpose": hierarchy["tenant"]["purpose"],
+                "subscriptions": {}
+            }
         }
         
-        for resource in resources:
-            sub_id = resource['subscription_id']
-            region = resource['region']
-            rg = resource['resource_group']
+        for sub_id, sub_data in hierarchy["tenant"]["subscriptions"].items():
+            anon_sub_id = f"subscription-{hash(sub_id) % 10000:04d}"
+            anonymized["tenant"]["subscriptions"][anon_sub_id] = {
+                "name": anon_sub_id,
+                "purpose": sub_data["purpose"],
+                "regions": {}
+            }
             
-            hierarchy['subscriptions'][sub_id]['regions'][region]['resource_groups'][rg].append(resource)
-        
-        return hierarchy
-    
-    def _generate_hierarchical_markdown(self, hierarchy: Dict[str, Any], all_resources: List[Dict[str, Any]]) -> str:
-        """Generate markdown from hierarchical structure."""
-        lines = []
-        
-        # Header
-        lines.append("# Azure Tenant Infrastructure Specification")
-        lines.append(f"\n*Generated: {datetime.now(timezone.utc).isoformat()}*\n")
-        
-        # Executive Summary
-        lines.append("## Executive Summary\n")
-        lines.append(self._generate_executive_summary(hierarchy, all_resources))
-        
-        # Subscriptions
-        for sub_id, sub_data in hierarchy['subscriptions'].items():
-            lines.append(f"\n## Subscription: {self._anonymize_id(sub_id)}\n")
-            
-            # Subscription overview
-            sub_resources = self._get_subscription_resources(sub_data)
-            lines.append("### Overview\n")
-            lines.append(f"- **Total Resources**: {len(sub_resources)}")
-            lines.append(f"- **Regions**: {', '.join(sub_data['regions'].keys())}")
-            lines.append(f"- **Resource Groups**: {self._count_resource_groups(sub_data)}")
-            
-            # Infer subscription purpose
-            sub_purpose = self._infer_subscription_purpose(sub_resources)
-            lines.append(f"- **Primary Purpose**: {sub_purpose}\n")
-            
-            # Regions
-            for region, region_data in sorted(sub_data['regions'].items()):
-                if region == 'global':
-                    lines.append(f"\n### Global Resources\n")
-                else:
-                    lines.append(f"\n### Region: {region}\n")
+            for region_id, region_data in sub_data["regions"].items():
+                anonymized["tenant"]["subscriptions"][anon_sub_id]["regions"][region_id] = {
+                    "name": region_id,  # Regions are not sensitive
+                    "resource_groups": {}
+                }
                 
-                # Resource Groups
-                for rg_name, resources in sorted(region_data['resource_groups'].items()):
-                    lines.append(f"\n#### Resource Group: {self._anonymize_id(rg_name)}\n")
+                for rg_id, rg_data in region_data["resource_groups"].items():
+                    anon_rg_id = f"rg-{hash(rg_id) % 10000:04d}"
+                    anon_region = anonymized["tenant"]["subscriptions"][anon_sub_id]["regions"][region_id]
+                    anon_region["resource_groups"][anon_rg_id] = {
+                        "name": anon_rg_id,
+                        "purpose": rg_data["purpose"],
+                        "resources": []
+                    }
                     
-                    # Infer RG purpose
-                    rg_purpose = self.rg_analyzer.infer_rg_purpose(resources)
-                    lines.append(f"**Purpose**: {rg_purpose}\n")
-                    lines.append(f"**Resource Count**: {len(resources)}\n")
+                    # Anonymize resources
+                    for resource in rg_data["resources"]:
+                        anon_resource = self.anonymizer.anonymize_resource(resource)
+                        
+                        # Handle domain name for user accounts
+                        if domain_name and anon_resource.get("type", "").lower() in (
+                            "user", "aaduser", "microsoft.aad/user"
+                        ):
+                            base_name = anon_resource.get("name", "user").split("@")[0]
+                            anon_resource["userPrincipalName"] = f"{base_name}@{domain_name}"
+                            anon_resource["email"] = f"{base_name}@{domain_name}"
+                        
+                        # Anonymize relationships
+                        anon_resource["relationships"] = [
+                            self.anonymizer.anonymize_relationship(rel)
+                            for rel in resource.get("relationships", [])
+                        ]
+                        
+                        anon_region["resource_groups"][anon_rg_id]["resources"].append(anon_resource)
+        
+        return anonymized
+
+    def _render_hierarchical_markdown(self, hierarchy: Dict[str, Any]) -> str:
+        """Render the hierarchical structure as markdown.
+        
+        Args:
+            hierarchy: Anonymized hierarchical structure
+            
+        Returns:
+            Markdown string
+        """
+        from datetime import datetime, timezone
+        
+        lines = []
+        lines.append("# Azure Tenant Infrastructure Specification (Hierarchical View)\n")
+        lines.append(
+            f"_Generated at: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}_\n"
+        )
+        
+        # Tenant level
+        tenant = hierarchy["tenant"]
+        lines.append(f"## 🏢 Tenant Overview\n")
+        if tenant["purpose"]:
+            lines.append(f"**Purpose:** {tenant['purpose']}\n")
+        
+        subscription_count = len(tenant["subscriptions"])
+        total_resources = sum(
+            len(rg_data["resources"])
+            for sub_data in tenant["subscriptions"].values()
+            for region_data in sub_data["regions"].values()
+            for rg_data in region_data["resource_groups"].values()
+        )
+        
+        lines.append(f"- **Subscriptions:** {subscription_count}")
+        lines.append(f"- **Total Resources:** {total_resources}\n")
+        
+        # Subscription level
+        for sub_id, sub_data in tenant["subscriptions"].items():
+            lines.append(f"### 📁 Subscription: {sub_id}\n")
+            if sub_data["purpose"]:
+                lines.append(f"**Purpose:** {sub_data['purpose']}\n")
+            
+            region_count = len(sub_data["regions"])
+            sub_resources = sum(
+                len(rg_data["resources"])
+                for region_data in sub_data["regions"].values()
+                for rg_data in region_data["resource_groups"].values()
+            )
+            
+            lines.append(f"- **Regions:** {region_count}")
+            lines.append(f"- **Resources:** {sub_resources}\n")
+            
+            # Region level
+            for region_id, region_data in sub_data["regions"].items():
+                lines.append(f"#### 🌍 Region: {region_id}\n")
+                
+                rg_count = len(region_data["resource_groups"])
+                region_resources = sum(
+                    len(rg_data["resources"])
+                    for rg_data in region_data["resource_groups"].values()
+                )
+                
+                lines.append(f"- **Resource Groups:** {rg_count}")
+                lines.append(f"- **Resources:** {region_resources}\n")
+                
+                # Resource Group level
+                for rg_id, rg_data in region_data["resource_groups"].items():
+                    lines.append(f"##### 📦 Resource Group: {rg_id}\n")
+                    if rg_data["purpose"]:
+                        lines.append(f"**Purpose:** {rg_data['purpose']}\n")
+                    
+                    lines.append(f"- **Resource Count:** {len(rg_data['resources'])}\n")
                     
                     # Resources
-                    lines.append("\n##### Resources:\n")
-                    for resource in sorted(resources, key=lambda r: (r.get('type', ''), r.get('name', ''))):
-                        lines.append(self._format_resource(resource))
+                    if rg_data["resources"]:
+                        lines.append("###### Resources:\n")
+                        
+                        # Group resources by type for better readability
+                        resources_by_type = defaultdict(list)
+                        for resource in rg_data["resources"]:
+                            resources_by_type[resource.get("type", "Unknown")].append(resource)
+                        
+                        for resource_type, resources in sorted(resources_by_type.items()):
+                            lines.append(f"**{resource_type}** ({len(resources)} items)\n")
+                            
+                            for resource in resources:
+                                lines.append(f"- **{resource['name']}**")
+                                
+                                if self.config.include_ai_summaries and resource.get("llm_description"):
+                                    lines.append(f"  > {resource['llm_description']}")
+                                
+                                if self.config.include_configuration_details:
+                                    if resource.get("properties"):
+                                        lines.append("  - Properties:")
+                                        for k, v in list(resource["properties"].items())[:5]:  # Limit to 5 properties
+                                            lines.append(f"    - {k}: {v}")
+                                    
+                                    if resource.get("tags"):
+                                        lines.append("  - Tags:")
+                                        for k, v in resource["tags"].items():
+                                            lines.append(f"    - {k}: {v}")
+                                
+                                if resource.get("relationships"):
+                                    lines.append("  - Relationships:")
+                                    for rel in resource["relationships"][:5]:  # Limit to 5 relationships
+                                        lines.append(
+                                            f"    - {rel['type']} → {rel['target_id']}"
+                                        )
+                            lines.append("")
         
-        # Cross-subscription relationships (if any)
-        lines.append("\n## Cross-Subscription Dependencies\n")
-        lines.append(self._identify_cross_subscription_dependencies(all_resources))
-        
-        return '\n'.join(lines)
-    
-    def _generate_executive_summary(self, hierarchy: Dict[str, Any], all_resources: List[Dict[str, Any]]) -> str:
-        """Generate executive summary section."""
-        lines = []
-        
-        # Basic statistics
-        total_subs = len(hierarchy['subscriptions'])
-        total_resources = len(all_resources)
-        
-        # Get all regions
-        all_regions = set()
-        total_rgs = 0
-        for sub_data in hierarchy['subscriptions'].values():
-            all_regions.update(sub_data['regions'].keys())
-            for region_data in sub_data['regions'].values():
-                total_rgs += len(region_data['resource_groups'])
-        
-        lines.append(f"- **Tenant Purpose**: {self.tenant_analyzer.infer_tenant_purpose(all_resources)}")
-        lines.append(f"- **Total Subscriptions**: {total_subs}")
-        lines.append(f"- **Total Resource Groups**: {total_rgs}")
-        lines.append(f"- **Total Resources**: {total_resources}")
-        lines.append(f"- **Primary Regions**: {', '.join(sorted(all_regions)[:5])}")
-        
-        # Key technologies
-        tech_patterns = self._identify_key_technologies(all_resources)
-        if tech_patterns:
-            lines.append(f"- **Key Technologies**: {', '.join(tech_patterns)}")
-        
-        return '\n'.join(lines)
-    
-    def _identify_key_technologies(self, resources: List[Dict[str, Any]]) -> List[str]:
-        """Identify key technologies used in the tenant."""
-        tech_map = {
-            'Microsoft.Compute/virtualMachines': 'Virtual Machines',
-            'Microsoft.Web/sites': 'App Services',
-            'Microsoft.ContainerService/managedClusters': 'Kubernetes (AKS)',
-            'Microsoft.Storage/storageAccounts': 'Storage',
-            'Microsoft.Sql/servers': 'SQL Database',
-            'Microsoft.DocumentDB/databaseAccounts': 'Cosmos DB',
-            'Microsoft.Databricks/workspaces': 'Databricks',
-            'Microsoft.Synapse/workspaces': 'Synapse Analytics',
-            'Microsoft.KeyVault/vaults': 'Key Vault',
-            'Microsoft.Network/applicationGateways': 'Application Gateway',
-            'Microsoft.Network/frontDoors': 'Front Door',
-            'Microsoft.MachineLearningServices/workspaces': 'Machine Learning',
-        }
-        
-        found_tech = set()
-        for resource in resources:
-            rtype = resource.get('type', '')
-            if rtype in tech_map:
-                found_tech.add(tech_map[rtype])
-        
-        return sorted(list(found_tech))[:10]  # Top 10 technologies
-    
-    def _get_subscription_resources(self, sub_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Get all resources in a subscription."""
-        resources = []
-        for region_data in sub_data['regions'].values():
-            for rg_resources in region_data['resource_groups'].values():
-                resources.extend(rg_resources)
-        return resources
-    
-    def _count_resource_groups(self, sub_data: Dict[str, Any]) -> int:
-        """Count resource groups in a subscription."""
-        count = 0
-        for region_data in sub_data['regions'].values():
-            count += len(region_data['resource_groups'])
-        return count
-    
-    def _infer_subscription_purpose(self, resources: List[Dict[str, Any]]) -> str:
-        """Infer subscription purpose based on resource patterns."""
-        # Check for environment patterns in resource names
-        names = ' '.join([r.get('name', '').lower() for r in resources])
-        
-        if any(env in names for env in ['prod', 'production', 'prd']):
-            return "Production Environment"
-        elif any(env in names for env in ['dev', 'development', 'test']):
-            return "Development/Test Environment"
-        elif any(env in names for env in ['staging', 'stage', 'uat']):
-            return "Staging/UAT Environment"
-        
-        # Fall back to technology-based inference
-        return self.tenant_analyzer.infer_tenant_purpose(resources)
-    
-    def _format_resource(self, resource: Dict[str, Any]) -> str:
-        """Format a single resource for markdown output."""
-        name = self._anonymize_id(resource.get('name', 'unknown'))
-        rtype = resource.get('type', 'unknown')
-        description = resource.get('llm_description', '')
-        
-        # Clean up description
-        if description:
-            description = self._remove_azure_identifiers(description)
-            # Truncate if too long
-            if len(description) > 200:
-                description = description[:197] + "..."
-        
-        return f"- **{name}** ({rtype})\n  {description}\n"
-    
-    def _identify_cross_subscription_dependencies(self, resources: List[Dict[str, Any]]) -> str:
-        """Identify cross-subscription dependencies."""
-        # This would require relationship queries in the real implementation
-        # For now, return a placeholder
-        return "*No cross-subscription dependencies detected in this analysis.*\n"
-    
-    def _anonymize_id(self, identifier: str) -> str:
-        """Anonymize an identifier."""
-        if not self.anonymizer:
-            return identifier
-        
-        # Use the anonymizer's placeholder cache if available
-        if hasattr(self.anonymizer, 'placeholder_cache'):
-            if identifier in self.anonymizer.placeholder_cache:
-                return self.anonymizer.placeholder_cache[identifier]
-        
-        # Generate a simple hash-based placeholder
-        import hashlib
-        hash_val = hashlib.md5(identifier.encode()).hexdigest()[:8]
-        return f"anon-{hash_val}"
-    
-    def _remove_azure_identifiers(self, text: str) -> str:
-        """Remove Azure identifiers from text."""
-        if not text:
-            return text
-        
-        # Patterns to remove
-        patterns = [
-            r'/subscriptions/[a-f0-9-]{36}',
-            r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-            r'https://[\w-]+\.vault\.azure\.net',
-            r'[\w-]+\.database\.windows\.net',
-        ]
-        
-        result = text
-        for pattern in patterns:
-            result = re.sub(pattern, '[REDACTED]', result, flags=re.IGNORECASE)
-        
-        return result
+        return "\n".join(lines)
