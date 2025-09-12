@@ -19,24 +19,24 @@ When implementing new features or fixing issues, follow this workflow:
 
 ## Current Issues
 
-### 1.  Fix 'atg scan' and 'atg build' command inconsistency
+### 1. ✅ Fix 'atg scan' and 'atg build' command inconsistency
 **Status**: Completed - PR #256
 - The scan and build commands should be identical (one should be an alias of the other)
 - The help text was different and PR #229 changes didn't appear in atg scan
 - Fixed by adding missing filter options to scan command
 
-### 2.  Improve 'atg generate-spec' organization by resource containment
+### 2. ✅ Improve 'atg generate-spec' organization by resource containment
 **Status**: Completed - PR #257
 - Reorganized output by containment hierarchy
 - Added purpose inference at each level
 - Starts with tenant summary, then subscriptions, regions, resource groups, and resources
 
-### 3. = Fix managed identity inclusion in filtered builds
-**Status**: In Progress
+### 3. ✅ Fix managed identity inclusion in filtered builds
+**Status**: Completed - PR #258
 - When using filters (--filter-by-subscriptions or --filter-by-rgs)
-- Should include referenced managed identities
-- Should include roles/groups assigned to those identities
-- Requires Graph API integration
+- Automatically extracts and includes referenced managed identities
+- Imports only relevant users, groups, and service principals from Graph API
+- Preserves all identity relationships for filtered resources
 
 ## Future Enhancements
 
