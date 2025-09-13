@@ -9,7 +9,10 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { Neo4jService } from './neo4j-service';
 import { Neo4jContainer } from './neo4j-container';
-import { logger } from './logger';
+import { initializeLogger, createLogger } from './logger-setup';
+import { WebSocketServer } from 'ws';
+import { InputValidator } from './security/input-validator';
+import { AuthMiddleware } from './security/auth-middleware';
 
 // Declare global rate limit cache
 declare global {
@@ -18,12 +21,6 @@ declare global {
 
 // Load .env file from the project root
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
-logger.info('Backend starting with environment');
-logger.debug('Environment variables:', {
-  AZURE_TENANT_ID: process.env.AZURE_TENANT_ID ? 'SET' : 'NOT SET',
-  NEO4J_URI: process.env.NEO4J_URI || 'NOT SET',
-  NEO4J_PORT: process.env.NEO4J_PORT || 'NOT SET'
-});
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,6 +29,23 @@ const io = new SocketIOServer(httpServer, {
     origin: ['http://localhost:5173', 'app://./'],
     methods: ['GET', 'POST'],
   },
+});
+
+// Initialize WebSocket server for logger
+const wss = new WebSocketServer({ server: httpServer, path: '/logs' });
+
+// Initialize the logger with WebSocket transport
+initializeLogger(wss);
+
+// Create component logger
+const logger = createLogger('server');
+
+// Now we can use the logger
+logger.info('Backend starting with environment');
+logger.debug('Environment variables:', {
+  AZURE_TENANT_ID: process.env.AZURE_TENANT_ID ? 'SET' : 'NOT SET',
+  NEO4J_URI: process.env.NEO4J_URI || 'NOT SET',
+  NEO4J_PORT: process.env.NEO4J_PORT || 'NOT SET'
 });
 
 // Middleware
@@ -45,9 +59,15 @@ const activeProcesses = new Map<string, ChildProcess>();
 const neo4jService = new Neo4jService();
 const neo4jContainer = new Neo4jContainer();
 
+// Apply authentication middleware to WebSocket connections
+io.use(AuthMiddleware.authenticate);
+
 // WebSocket connection handling
 io.on('connection', (socket) => {
   logger.info('Client connected:', socket.id);
+  
+  // Setup heartbeat for this connection
+  AuthMiddleware.setupHeartbeat(socket);
 
   // Subscribe to process output
   socket.on('subscribe', (processId: string) => {
@@ -67,6 +87,40 @@ io.on('connection', (socket) => {
 });
 
 // API Routes
+
+// Authentication endpoint - generate token for WebSocket connections
+app.post('/api/auth/token', (req, res) => {
+  try {
+    // In production, validate credentials here
+    // For now, we'll use a simple user identification
+    const { userId = 'default-user', clientId = uuidv4() } = req.body;
+    
+    const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'];
+    
+    const token = AuthMiddleware.createSession(userId, clientId, ipAddress, userAgent);
+    
+    res.json({ 
+      success: true, 
+      token,
+      expiresIn: 86400 // 24 hours in seconds
+    });
+  } catch (error) {
+    logger.error('Failed to generate auth token:', error);
+    res.status(500).json({ error: 'Failed to generate authentication token' });
+  }
+});
+
+// Get authentication stats (admin endpoint)
+app.get('/api/auth/stats', (req, res) => {
+  try {
+    const stats = AuthMiddleware.getStats();
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to get auth stats:', error);
+    res.status(500).json({ error: 'Failed to get authentication statistics' });
+  }
+});
 
 // Get Azure tenant name
 app.get('/api/tenant-name', async (req, res) => {
@@ -98,7 +152,7 @@ app.get('/api/tenant-name', async (req, res) => {
 });
 
 /**
- * Execute a CLI command
+ * Execute a CLI command with input validation
  */
 app.post('/api/execute', (req, res) => {
   const { command, args = [] } = req.body;
@@ -106,6 +160,20 @@ app.post('/api/execute', (req, res) => {
 
   if (!command) {
     return res.status(400).json({ error: 'Command is required' });
+  }
+
+  // Validate command input
+  const commandValidation = InputValidator.validateCommand(command);
+  if (!commandValidation.isValid) {
+    logger.warn('Invalid command attempted:', { command, error: commandValidation.error });
+    return res.status(400).json({ error: commandValidation.error });
+  }
+
+  // Validate arguments
+  const argsValidation = InputValidator.validateArguments(args);
+  if (!argsValidation.isValid) {
+    logger.warn('Invalid arguments:', { args, error: argsValidation.error });
+    return res.status(400).json({ error: argsValidation.error });
   }
 
   // Use uv to run the atg CLI command
@@ -139,8 +207,10 @@ app.post('/api/execute', (req, res) => {
     logger.info(`Applying resource filters: ${filters.join(', ')}`);
   }
 
+  // Never use shell: true to prevent command injection
   const childProcess = spawn(uvPath, fullArgs, {
     cwd: projectRoot,
+    shell: false, // Explicitly disable shell execution
     env: {
       ...process.env,
       // Ensure the project root is in PYTHONPATH for proper module resolution
@@ -150,9 +220,10 @@ app.post('/api/execute', (req, res) => {
 
   activeProcesses.set(processId, childProcess);
 
-  // Stream stdout
+  // Stream stdout with output sanitization
   childProcess.stdout?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter((line: string) => line);
+    const sanitized = InputValidator.sanitizeOutput(data.toString());
+    const lines = sanitized.split('\n').filter((line: string) => line);
     io.to(`process-${processId}`).emit('output', {
       processId,
       type: 'stdout',
@@ -161,9 +232,10 @@ app.post('/api/execute', (req, res) => {
     });
   });
 
-  // Stream stderr
+  // Stream stderr with output sanitization
   childProcess.stderr?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter((line: string) => line);
+    const sanitized = InputValidator.sanitizeOutput(data.toString());
+    const lines = sanitized.split('\n').filter((line: string) => line);
     io.to(`process-${processId}`).emit('output', {
       processId,
       type: 'stderr',
@@ -339,9 +411,14 @@ app.get('/api/graph/node/:nodeId', async (req, res) => {
 app.get('/api/neo4j/tenants', async (req, res) => {
   try {
     const neo4j = require('neo4j-driver');
+    const { CredentialManager } = require('./security/credential-manager');
+    
+    // Get credentials from secure manager
+    const credentials = CredentialManager.getNeo4jCredentials();
+    
     const driver = neo4j.driver(
-      process.env.NEO4J_URI || 'bolt://localhost:7687',
-      neo4j.auth.basic('neo4j', process.env.NEO4J_PASSWORD || 'password')
+      credentials.uri,
+      neo4j.auth.basic(credentials.username, credentials.password)
     );
 
     const session = driver.session();
@@ -361,7 +438,7 @@ app.get('/api/neo4j/tenants', async (req, res) => {
       await driver.close();
     }
   } catch (error: any) {
-    console.error('Failed to fetch tenants from Neo4j:', error);
+    logger.error('Failed to fetch tenants from Neo4j:', error);
     res.json({ tenants: [], error: error.message });
   }
 });
@@ -434,6 +511,7 @@ app.get('/api/mcp/status', async (req, res) => {
       }
     } catch (e) {
       // Healthcheck failed, fall back to file checks
+      logger.debug('MCP healthcheck failed, checking files');
     }
 
     // Check the status file for readiness state
@@ -479,7 +557,7 @@ app.get('/api/mcp/status', async (req, res) => {
       res.json({ running: false });
     }
   } catch (error) {
-    console.error('Failed to check MCP status:', error);
+    logger.error('Failed to check MCP status:', error);
     res.json({ running: false, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });

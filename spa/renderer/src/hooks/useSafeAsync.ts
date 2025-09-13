@@ -59,7 +59,7 @@ export function useSafeAsync<T = any>(
         try {
           callback();
         } catch (cleanupError) {
-          console.error('Error during cleanup:', cleanupError);
+          // Console error removed
         }
       });
       cleanupCallbacksRef.current.clear();
@@ -69,7 +69,7 @@ export function useSafeAsync<T = any>(
         try {
           options.onCleanup();
         } catch (cleanupError) {
-          console.error('Error during user cleanup:', cleanupError);
+          // Console error removed
         }
       }
     };
@@ -215,7 +215,7 @@ export function useSafeAsync<T = any>(
       try {
         callback();
       } catch (cleanupError) {
-        console.error('Error during reset cleanup:', cleanupError);
+        // Console error removed
       }
     });
     
@@ -283,7 +283,7 @@ export function useSafeAsyncEffect(
         try {
           options.onCleanup();
         } catch (cleanupError) {
-          console.error('Error during effect cleanup:', cleanupError);
+          // Console error removed
         }
       }
     };

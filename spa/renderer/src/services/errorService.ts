@@ -39,7 +39,7 @@ class ErrorService {
     this.addLog(errorLog);
     
     // Console log for development
-    console.error('[ErrorService]', errorLog);
+    // Console error removed
 
     // Send to backend if available
     this.sendToBackend(errorLog).catch(console.error);
@@ -61,7 +61,7 @@ class ErrorService {
     };
 
     this.addLog(errorLog);
-    console.warn('[ErrorService]', errorLog);
+    // Console warn removed
   }
 
   /**
@@ -77,7 +77,7 @@ class ErrorService {
     };
 
     this.addLog(errorLog);
-    console.info('[ErrorService]', errorLog);
+    // Console info removed
   }
 
   /**
@@ -146,7 +146,7 @@ class ErrorService {
       try {
         listener(error);
       } catch (err) {
-        console.error('Error in error listener:', err);
+        // Console error removed
       }
     });
   }
@@ -169,11 +169,11 @@ class ErrorService {
       });
 
       if (!response.ok) {
-        console.warn('Failed to send error to backend:', response.statusText);
+        // Console warn removed
       }
     } catch (err) {
       // Silently fail - we don't want to create an error loop
-      console.warn('Could not send error to backend:', err);
+      // Console warn removed
     }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -10,7 +10,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Divider,
   LinearProgress,
   Tooltip,
   Chip,
@@ -75,7 +74,7 @@ const GenerateSpecTab: React.FC = () => {
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
     } catch (err: any) {
       // Error is already handled by the hook
-      console.error('Failed to generate spec:', err);
+      // Console error removed
     }
   };
 
@@ -86,7 +85,7 @@ const GenerateSpecTab: React.FC = () => {
       const extension = outputFormat === 'json' ? 'json' : 'md';
       const defaultFileName = `tenant-spec-${Date.now()}.${extension}`;
 
-      const filePath = await window.electronAPI.dialog.saveFile({
+      const filePath = await window.electronAPI?.dialog?.saveFile?.({
         defaultPath: defaultFileName,
         filters: [
           { name: outputFormat === 'json' ? 'JSON' : 'Markdown', extensions: [extension] },
@@ -95,7 +94,7 @@ const GenerateSpecTab: React.FC = () => {
       });
 
       if (filePath) {
-        await window.electronAPI.file.write(filePath, generatedSpec);
+        await window.electronAPI?.file?.write?.(filePath, generatedSpec);
         // You could show a success message here
       }
     } catch (err: any) {

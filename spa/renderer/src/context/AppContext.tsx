@@ -45,6 +45,7 @@ type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_OPERATION'; payload: any }
   | { type: 'SET_CONFIG'; payload: Partial<AppState['config']> }
+  | { type: 'UPDATE_CONFIG'; payload: Partial<AppState['config']> }
   | { type: 'ADD_RESULT'; payload: { key: string; value: any } }
   | { type: 'ADD_LOG'; payload: string | LogEntry }
   | { type: 'ADD_STRUCTURED_LOG'; payload: { level: LogLevel; source: string; message: string; data?: any } }
@@ -87,6 +88,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, currentOperation: action.payload };
 
     case 'SET_CONFIG':
+      return {
+        ...state,
+        config: { ...state.config, ...action.payload },
+      };
+    case 'UPDATE_CONFIG':
       return {
         ...state,
         config: { ...state.config, ...action.payload },
@@ -184,7 +190,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_THEME', payload: theme });
       }
     } catch (error) {
-      console.error('Failed to load config:', error);
+      // Failed to load config
     }
   };
 

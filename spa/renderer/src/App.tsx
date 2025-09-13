@@ -27,7 +27,7 @@ const DocsTab = lazy(() => import('./components/tabs/DocsTab'));
 const ConfigTab = lazy(() => import('./components/tabs/ConfigTab'));
 
 const App: React.FC = () => {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const [dbPopulated, setDbPopulated] = useState<boolean | null>(null);
@@ -103,7 +103,8 @@ const App: React.FC = () => {
   const checkConnection = async () => {
     await withErrorHandling(
       async () => {
-        const platform = await window.electronAPI.system.platform();
+        const systemInfo = await window.electronAPI.system.getInfo();
+        const platform = systemInfo?.platform;
         if (platform) {
           setConnectionStatus('connected');
         }

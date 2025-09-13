@@ -49,7 +49,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       socketRef.current = io(url, {
         transports: ['websocket'],
         reconnection: true,
-        reconnectionDelay: getReconnectionDelay,
+        reconnectionDelay: getReconnectionDelay(),
         reconnectionAttempts: 10,
       });
 

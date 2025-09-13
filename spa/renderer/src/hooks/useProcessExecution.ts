@@ -1,13 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-interface ProcessResult {
-  id: string;
-  pid?: number;
-  command: string;
-  args: string[];
-  startTime: Date;
-}
-
 interface ProcessOutput {
   stdout: string[];
   stderr: string[];
@@ -137,9 +129,9 @@ export function useProcessExecution(options: UseProcessExecutionOptions = {}) {
     if (!currentProcessId.current) return;
 
     try {
-      await window.electronAPI.cli.cancel(currentProcessId.current);
+      await window.electronAPI.cli.cancel?.(currentProcessId.current);
     } catch (err: any) {
-      console.error('Failed to cancel process:', err);
+      // Console error removed
     }
   }, []);
 

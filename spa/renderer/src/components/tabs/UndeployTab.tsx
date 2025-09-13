@@ -30,11 +30,9 @@ import {
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
   Warning as WarningIcon,
-  Info as InfoIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 interface Deployment {
   id: string;
@@ -87,7 +85,7 @@ const UndeployTab: React.FC = () => {
             const deploymentData = JSON.parse(data.data.join('\n'));
             setDeployments(deploymentData);
           } catch (e) {
-            console.error('Failed to parse deployments:', e);
+            // Console error removed
           }
         }
       };
@@ -95,8 +93,8 @@ const UndeployTab: React.FC = () => {
       const exitHandler = (data: ProcessExitData) => {
         if (data.id === result.data.id) {
           setLoading(false);
-          window.electronAPI.off('process:output', outputHandler);
-          window.electronAPI.off('process:exit', exitHandler);
+          window.electronAPI?.off?.('process:output', outputHandler);
+          window.electronAPI?.off?.('process:exit', exitHandler);
         }
       };
 
@@ -162,8 +160,8 @@ const UndeployTab: React.FC = () => {
             setError(`Undeployment failed with exit code ${data.code}`);
           }
 
-          window.electronAPI.off('process:output', outputHandler);
-          window.electronAPI.off('process:exit', exitHandler);
+          window.electronAPI?.off?.('process:output', outputHandler);
+          window.electronAPI?.off?.('process:exit', exitHandler);
         }
       };
 

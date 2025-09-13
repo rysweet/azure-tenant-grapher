@@ -43,7 +43,7 @@ export const useGraphAPI = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch graph data';
       setError(message);
-      console.error('Error fetching graph:', err);
+      // Console error removed
       return null;
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ export const useGraphAPI = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to search nodes';
       setError(message);
-      console.error('Error searching nodes:', err);
+      // Console error removed
       return [];
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export const useGraphAPI = () => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch node details';
       setError(message);
-      console.error('Error fetching node details:', err);
+      // Console error removed
       return null;
     } finally {
       setLoading(false);

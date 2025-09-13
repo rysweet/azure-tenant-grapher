@@ -19,11 +19,6 @@ import {
   DialogActions,
   TextField,
   Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Stack,
 } from '@mui/material';
 import {
   Storage as StorageIcon,
@@ -135,7 +130,7 @@ const StatusTab: React.FC = () => {
         await loadDatabaseStats();
       }
     } catch (err) {
-      console.error('Failed to check Neo4j status:', err);
+      // Console error removed
       setNeo4jStatus({ status: 'error', running: false });
     }
   };
@@ -147,7 +142,7 @@ const StatusTab: React.FC = () => {
       const stats = response.data;
       setDbStats(stats);
     } catch (err) {
-      console.error('Failed to load database stats:', err);
+      // Console error removed
       setDbStats({
         nodeCount: 0,
         edgeCount: 0,
@@ -225,7 +220,7 @@ const StatusTab: React.FC = () => {
       const response = await axios.get('http://localhost:3001/api/dependencies');
       setDependencies(response.data);
     } catch (err: any) {
-      console.error('Failed to check dependencies:', err);
+      // Console error removed
       // Fallback to empty array if API fails
       setDependencies([]);
     } finally {
@@ -280,9 +275,9 @@ const StatusTab: React.FC = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/database/backup', {
-        path: backupPath
-      });
+      // const response = await axios.post('http://localhost:3001/api/database/backup', {
+      //   path: backupPath
+      // });
       setSuccess(`Backup created successfully at ${backupPath}`);
       setBackupDialog(false);
       setBackupPath('');
@@ -305,9 +300,9 @@ const StatusTab: React.FC = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/database/restore', {
-        path: restorePath
-      });
+      // const response = await axios.post('http://localhost:3001/api/database/restore', {
+      //   path: restorePath
+      // });
       setSuccess('Database restored successfully');
       setRestoreDialog(false);
       setRestorePath('');
@@ -329,7 +324,7 @@ const StatusTab: React.FC = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/database/wipe');
+      // const response = await axios.post('http://localhost:3001/api/database/wipe');
       setSuccess('Database wiped successfully');
       setWipeDialog(false);
       // Reload stats after wipe
@@ -346,42 +341,6 @@ const StatusTab: React.FC = () => {
 
   const formatNumber = (num: number) => {
     return num.toLocaleString();
-  };
-
-  const formatTimestampDisplay = (timestampInfo: TimestampInfo | null) => {
-    if (!timestampInfo || !timestampInfo.timestamp) {
-      return (
-        <Typography variant="body2" color="textSecondary">
-          Never
-        </Typography>
-      );
-    }
-
-    const { utcString, localString, timezone } = timestampInfo;
-
-    if (!utcString && !localString) {
-      return (
-        <Typography variant="body2" color="error">
-          Invalid timestamp
-        </Typography>
-      );
-    }
-
-    return (
-      <Stack spacing={0.5}>
-        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-          {localString || 'Unable to display local time'}
-        </Typography>
-        <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem' }}>
-          {utcString || 'Unable to display UTC time'}
-        </Typography>
-        {timezone && timezone !== 'N/A' && timezone !== 'Unknown' && (
-          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem', fontStyle: 'italic' }}>
-            Timezone: {timezone}
-          </Typography>
-        )}
-      </Stack>
-    );
   };
 
   return (

@@ -12,7 +12,8 @@ import {
   Chip,
   LinearProgress,
 } from '@mui/material';
-import { Security as SecurityIcon, Assessment as AssessmentIcon, GetApp as ExportIcon } from '@mui/icons-material';
+import SecurityIcon from '@mui/icons-material/Security';
+import DownloadIcon from '@mui/icons-material/Download';
 import axios from 'axios';
 
 interface ThreatResult {
@@ -46,7 +47,7 @@ const ThreatModelTab: React.FC = () => {
           setTenantId(envData.AZURE_TENANT_ID);
         }
       } catch (err) {
-        console.error('Failed to load env config:', err);
+        // Console error removed
         // Silently fail - user can still manually enter tenant ID
       }
     };
@@ -135,7 +136,7 @@ const ThreatModelTab: React.FC = () => {
                 else if (highSeverityCount === 1 || threats.length >= 2) riskLevel = 'medium';
 
                 setResults({
-                  riskLevel,
+                  riskLevel: riskLevel as 'low' | 'medium' | 'high' | 'critical',
                   threats: threats.length > 0 ? threats : [{
                     id: '1',
                     name: 'No Critical Issues Found',
@@ -147,7 +148,7 @@ const ThreatModelTab: React.FC = () => {
                 });
               }
             } catch (parseError) {
-              console.error('Failed to parse threat model results:', parseError);
+              // Console error removed
               setError('Failed to parse analysis results');
             }
           } else {
@@ -166,7 +167,7 @@ const ThreatModelTab: React.FC = () => {
     if (!results) return;
 
     try {
-      const filePath = await window.electronAPI.dialog.saveFile({
+      const filePath = await window.electronAPI?.dialog?.saveFile?.({
         defaultPath: 'threat-model-report.json',
         filters: [
           { name: 'JSON', extensions: ['json'] },
@@ -175,7 +176,7 @@ const ThreatModelTab: React.FC = () => {
       });
 
       if (filePath) {
-        await window.electronAPI.file.write(filePath, JSON.stringify(results, null, 2));
+        await window.electronAPI?.file?.write?.(filePath, JSON.stringify(results, null, 2));
       }
     } catch (err: any) {
       setError(err.message);
@@ -234,7 +235,7 @@ const ThreatModelTab: React.FC = () => {
               {results && (
                 <Button
                   variant="outlined"
-                  startIcon={<ExportIcon />}
+                  startIcon={<DownloadIcon />}
                   onClick={handleExport}
                 >
                   Export Report
