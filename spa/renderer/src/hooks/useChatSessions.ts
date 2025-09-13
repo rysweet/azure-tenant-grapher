@@ -72,7 +72,7 @@ export function useChatSessions() {
         setActiveSessionId(activeId);
       }
     } catch (e) {
-      console.error('Failed to load chat sessions:', e);
+      // Console error removed
     }
   }, []);
 
@@ -82,7 +82,7 @@ export function useChatSessions() {
       const serialized = sessions.map(serializeSession);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
     } catch (e) {
-      console.error('Failed to save chat sessions:', e);
+      // Console error removed
     }
   }, [sessions]);
 

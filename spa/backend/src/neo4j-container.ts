@@ -1,5 +1,8 @@
 import { exec, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
+import { createLogger } from './logger-setup';
+
+const logger = createLogger('neo4j-container');
 
 const execAsync = promisify(exec);
 
@@ -31,7 +34,7 @@ export class Neo4jContainer {
       const runningContainers = stdout.split('\n').filter(name => name.trim());
       return runningContainers.includes(this.containerName);
     } catch (error) {
-      console.error('Error checking if Neo4j is running:', error);
+      logger.error('Error checking if Neo4j is running:', error);
       return false;
     }
   }
@@ -42,7 +45,7 @@ export class Neo4jContainer {
       const allContainers = stdout.split('\n').filter(name => name.trim());
       return allContainers.includes(this.containerName);
     } catch (error) {
-      console.error('Error checking if Neo4j container exists:', error);
+      logger.error('Error checking if Neo4j container exists:', error);
       return false;
     }
   }
@@ -54,37 +57,37 @@ export class Neo4jContainer {
       throw new Error('Docker is not installed or not running. Please install Docker Desktop and ensure it is running.');
     }
 
-    console.log(`Checking Neo4j container status (${this.containerName})...`);
+    logger.info(`Checking Neo4j container status (${this.containerName})...`);
 
     const running = await this.isRunning();
     if (running) {
-      console.log(`Neo4j container '${this.containerName}' is already running on port ${this.neo4jPort}`);
+      logger.info(`Neo4j container '${this.containerName}' is already running on port ${this.neo4jPort}`);
       return;
     }
 
     const exists = await this.containerExists();
     if (exists) {
-      console.log(`Starting existing Neo4j container '${this.containerName}'...`);
+      logger.info(`Starting existing Neo4j container '${this.containerName}'...`);
       try {
         await execAsync(`docker start ${this.containerName}`);
-        console.log('Neo4j container started successfully');
+        logger.info('Neo4j container started successfully');
       } catch (error: any) {
         // If container exists but can't start (e.g., port conflict), check if another is using the port
         if (error.message?.includes('port is already allocated')) {
-          console.log(`Port ${this.neo4jPort} is already in use, checking for other Neo4j containers...`);
+          logger.info(`Port ${this.neo4jPort} is already in use, checking for other Neo4j containers...`);
           // Check if the azure-tenant-grapher-neo4j container is already running
           const { stdout } = await execAsync(`docker ps --filter "publish=${this.neo4jPort}" --format "table {{.Names}}"`);
           if (stdout.includes('neo4j')) {
-            console.log(`Another Neo4j container is already using port ${this.neo4jPort}: ${stdout.trim()}`);
-            console.log('Using the existing Neo4j instance.');
+            logger.info(`Another Neo4j container is already using port ${this.neo4jPort}: ${stdout.trim()}`);
+            logger.info('Using the existing Neo4j instance.');
             return;
           }
         }
-        console.error('Failed to start Neo4j container:', error);
+        logger.error('Failed to start Neo4j container:', error);
         throw error;
       }
     } else {
-      console.log(`Creating new Neo4j container '${this.containerName}'...`);
+      logger.info(`Creating new Neo4j container '${this.containerName}'...`);
       await this.create();
     }
 
@@ -114,16 +117,16 @@ export class Neo4jContainer {
       const dockerProcess = spawn('docker', cmd);
 
       dockerProcess.stdout.on('data', (data) => {
-        console.log(`Docker: ${data}`);
+        logger.debug(`Docker: ${data}`);
       });
 
       dockerProcess.stderr.on('data', (data) => {
-        console.error(`Docker Error: ${data}`);
+        logger.error(`Docker Error: ${data}`);
       });
 
       dockerProcess.on('close', (code) => {
         if (code === 0) {
-          console.log('Neo4j container created successfully');
+          logger.info('Neo4j container created successfully');
           resolve();
         } else {
           reject(new Error(`Failed to create Neo4j container, exit code: ${code}`));
@@ -139,9 +142,9 @@ export class Neo4jContainer {
   async stop(): Promise<void> {
     try {
       await execAsync(`docker stop ${this.containerName}`);
-      console.log('Neo4j container stopped');
+      logger.info('Neo4j container stopped');
     } catch (error) {
-      console.error('Failed to stop Neo4j container:', error);
+      logger.error('Failed to stop Neo4j container:', error);
     }
   }
 
@@ -149,14 +152,14 @@ export class Neo4jContainer {
     try {
       await this.stop();
       await execAsync(`docker rm ${this.containerName}`);
-      console.log('Neo4j container removed');
+      logger.info('Neo4j container removed');
     } catch (error) {
-      console.error('Failed to remove Neo4j container:', error);
+      logger.error('Failed to remove Neo4j container:', error);
     }
   }
 
   async waitForReady(maxRetries: number = 30, delayMs: number = 2000): Promise<void> {
-    console.log('Waiting for Neo4j to be ready...');
+    logger.info('Waiting for Neo4j to be ready...');
 
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -172,7 +175,7 @@ export class Neo4jContainer {
         await session.close();
         await driver.close();
 
-        console.log('Neo4j is ready!');
+        logger.info('Neo4j is ready!');
         return;
       } catch (error) {
         if (i === maxRetries - 1) {
@@ -204,7 +207,7 @@ export class Neo4jContainer {
 
       return true;
     } catch (error) {
-      console.log('Neo4j connection test failed:', error instanceof Error ? error.message : error);
+      logger.debug('Neo4j connection test failed:', error instanceof Error ? error.message : error);
       return false;
     }
   }

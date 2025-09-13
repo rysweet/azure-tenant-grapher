@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { InputValidator } from '../backend/src/security/input-validator';
 
 interface ProcessInfo {
   id: string;
@@ -22,6 +23,19 @@ export class ProcessManager extends EventEmitter {
   private cleanedUp: boolean = false;
 
   execute(command: string, args: string[]): any {
+    // Validate command and arguments
+    const commandValidation = InputValidator.validateCommand(command);
+    if (!commandValidation.isValid) {
+      console.error('[ProcessManager] Invalid command:', commandValidation.error);
+      throw new Error(commandValidation.error || 'Invalid command');
+    }
+
+    const argsValidation = InputValidator.validateArguments(args);
+    if (!argsValidation.isValid) {
+      console.error('[ProcessManager] Invalid arguments:', argsValidation.error);
+      throw new Error(argsValidation.error || 'Invalid arguments');
+    }
+
     const id = uuidv4();
     const pythonPath = process.env.PYTHON_PATH || 'python3';
     const cliPath = path.resolve(__dirname, '../../../scripts/cli.py');
@@ -33,8 +47,10 @@ export class ProcessManager extends EventEmitter {
     // Build the full command
     const fullArgs = [cliPath, command, ...args];
 
+    // Never use shell: true to prevent command injection
     const childProcess = spawn(pythonPath, fullArgs, {
       cwd: path.resolve(__dirname, '../../..'),
+      shell: false, // Explicitly disable shell execution
       env: {
         ...process.env,
         PYTHONPATH: path.resolve(__dirname, '../../..'),
@@ -56,9 +72,9 @@ export class ProcessManager extends EventEmitter {
 
     this.processes.set(id, processInfo);
 
-    // Handle stdout
+    // Handle stdout with output sanitization
     childProcess.stdout?.on('data', (data) => {
-      const text = data.toString();
+      const text = InputValidator.sanitizeOutput(data.toString());
       console.log('[ProcessManager] stdout received:', text);
       const lines = text.split('\n');
       // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline
@@ -70,9 +86,9 @@ export class ProcessManager extends EventEmitter {
       this.emit('output', { id, type: 'stdout', data: lines });
     });
 
-    // Handle stderr
+    // Handle stderr with output sanitization
     childProcess.stderr?.on('data', (data) => {
-      const text = data.toString();
+      const text = InputValidator.sanitizeOutput(data.toString());
       console.log('[ProcessManager] stderr received:', text);
       const lines = text.split('\n');
       // Keep all lines including empty ones, but remove the last empty line if text doesn't end with newline

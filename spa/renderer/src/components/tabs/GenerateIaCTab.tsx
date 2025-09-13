@@ -90,7 +90,7 @@ const GenerateIaCTab: React.FC = () => {
         setTenantId(response.data.tenants[0].id);
       }
     } catch (err) {
-      console.warn('Failed to fetch tenants:', err);
+      // Console warn removed
       // Don't show error, just allow manual input
     } finally {
       setLoadingTenants(false);
@@ -199,8 +199,8 @@ const GenerateIaCTab: React.FC = () => {
           }
 
           // Clean up event listeners
-          window.electronAPI.off('process:output', outputHandler);
-          window.electronAPI.off('process:exit', exitHandler);
+          window.electronAPI.off?.('process:output', outputHandler);
+          window.electronAPI.off?.('process:exit', exitHandler);
         }
       };
 
@@ -218,7 +218,7 @@ const GenerateIaCTab: React.FC = () => {
     if (!outputPath) return;
 
     try {
-      await window.electronAPI.shell.openPath(outputPath);
+      await window.electronAPI.shell?.openPath(outputPath);
     } catch (err: any) {
       setError(`Failed to open folder: ${err.message}`);
     }

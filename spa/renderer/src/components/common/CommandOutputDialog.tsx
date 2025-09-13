@@ -8,7 +8,6 @@ import {
   Box,
   Typography,
   IconButton,
-  Paper,
   LinearProgress,
   Alert,
 } from '@mui/material';
@@ -56,7 +55,7 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
           background: '#1e1e1e',
           foreground: '#d4d4d4',
           cursor: '#ffffff',
-          selection: '#264f78',
+          selectionBackground: '#264f78',
           black: '#000000',
           red: '#cd3131',
           green: '#0dbc79',
@@ -121,7 +120,7 @@ const CommandOutputDialog: React.FC<CommandOutputDialogProps> = ({
       const socket = io('http://localhost:3001');
 
       socket.on('connect', () => {
-        console.log('CommandOutputDialog: Process event socket connected');
+        // CommandOutputDialog: Process event socket connected
       });
 
       socket.on('output', (data: any) => {

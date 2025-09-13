@@ -17,14 +17,10 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  Divider,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  Card,
-  CardContent,
-  CardActions,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -52,14 +48,12 @@ import {
   Backup as BackupIcon,
   Restore as RestoreIcon,
   AppRegistration as AppRegIcon,
-  Storage as DatabaseIcon,
 } from '@mui/icons-material';
 import { Terminal } from 'xterm';
 import axios from 'axios';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useApp } from '../../context/AppContext';
 import { io, Socket } from 'socket.io-client';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 interface CommandDefinition {
   name: string;
@@ -327,7 +321,7 @@ interface CommandHistoryItem {
 }
 
 const CLITab: React.FC = () => {
-  const { state } = useApp();
+  // const { state } = useApp();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
   const [searchParams] = useSearchParams();
 
@@ -375,11 +369,11 @@ const CLITab: React.FC = () => {
     const resizeWindow = async () => {
       try {
         if (window.electronAPI?.window?.resize) {
-          await window.electronAPI.window.resize(1600, 1200);
-          console.log('Window resized for CLI tab');
+          await window.electronAPI.window.resize?.(1600, 1200);
+          // Window resized for CLI tab
         }
       } catch (error) {
-        console.error('Failed to resize window:', error);
+        // Console error removed
       }
     };
 
@@ -394,7 +388,7 @@ const CLITab: React.FC = () => {
           background: '#1e1e1e',
           foreground: '#d4d4d4',
           cursor: '#ffffff',
-          selection: '#264f78',
+          selectionBackground: '#264f78',
           black: '#000000',
           red: '#cd3131',
           green: '#0dbc79',
@@ -438,7 +432,7 @@ const CLITab: React.FC = () => {
       const socket = io('http://localhost:3001');
 
       socket.on('connect', () => {
-        console.log('CLI tab: Process event socket connected');
+        // CLI tab: Process event socket connected
       });
 
       socket.on('output', (data: any) => {

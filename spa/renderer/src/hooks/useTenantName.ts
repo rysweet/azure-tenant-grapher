@@ -23,7 +23,7 @@ export const useTenantName = (): string => {
             return;
           }
         } catch (error) {
-          console.log('Could not get tenant name from backend');
+          // Console log removed
         }
 
         // Fallback to getting from config/env and formatting
@@ -37,7 +37,7 @@ export const useTenantName = (): string => {
         // Fallback to formatting the tenant ID
         setTenantName(formatTenantName(tenantId));
       } catch (error) {
-        console.error('Failed to get tenant name:', error);
+        // Console error removed
         setTenantName('Unknown Tenant');
       }
     };

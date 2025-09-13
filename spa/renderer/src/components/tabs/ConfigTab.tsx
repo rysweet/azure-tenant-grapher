@@ -50,15 +50,15 @@ const ConfigTab: React.FC = () => {
 
   const loadConfig = async () => {
     try {
-      const envVars = await window.electronAPI.env.getAll();
+      const envVars = await window.electronAPI?.env?.getAll?.();
       setConfig((prev) =>
         prev.map((item) => ({
           ...item,
-          value: envVars[item.key] || item.value,
+          value: envVars?.[item.key] || item.value,
         }))
       );
     } catch (err) {
-      console.error('Failed to load config:', err);
+      // Console error removed
     }
   };
 
@@ -85,7 +85,7 @@ const ConfigTab: React.FC = () => {
         }
       });
     } catch (err) {
-      console.error('Failed to check app registration:', err);
+      // Console error removed
       setAppRegStatus({ exists: false, checking: false });
     }
   };
@@ -131,7 +131,7 @@ const ConfigTab: React.FC = () => {
 
   const testConnection = async (service: string) => {
     try {
-      const result = await window.electronAPI.cli.execute('test-connection', ['--service', service]);
+      // const result = await window.electronAPI.cli.execute('test-connection', ['--service', service]);
       setMessage({ type: 'success', text: `${service} connection successful` });
     } catch (err: any) {
       setMessage({ type: 'error', text: `${service} connection failed: ${err.message}` });

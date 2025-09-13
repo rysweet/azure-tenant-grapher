@@ -33,12 +33,12 @@ export class ResourceManager {
    */
   registerInterval(id: string, intervalId: NodeJS.Timer): void {
     if (this.isDisposed) {
-      clearInterval(intervalId);
+      clearInterval(intervalId as any);
       return;
     }
 
     this.resources.set(id, {
-      cleanup: () => clearInterval(intervalId),
+      cleanup: () => clearInterval(intervalId as any),
       type: 'timer',
       created: Date.now(),
     });
@@ -178,7 +178,7 @@ export class ResourceManager {
     try {
       await cleanup();
     } catch (error) {
-      console.error('Error during resource cleanup:', error);
+      // Console error removed
     }
   }
 

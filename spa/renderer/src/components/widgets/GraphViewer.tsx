@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Network, DataSet, Options } from 'vis-network/standalone';
+import { Network, DataSet } from 'vis-network/standalone';
 import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 
 interface GraphNode {
@@ -27,14 +27,22 @@ interface GraphViewerProps {
   loading?: boolean;
 }
 
-const GraphViewer: React.FC<GraphViewerProps> = ({
+export interface GraphViewerRef {
+  fitNetwork: () => void;
+  centerNode: (nodeId: string) => void;
+  getConnectedNodes: (nodeId: string) => string[];
+  highlightPath: (nodeIds: string[]) => void;
+  network: Network | null;
+}
+
+const GraphViewer = React.forwardRef<GraphViewerRef, GraphViewerProps>(({
   nodes,
   edges,
   onNodeClick,
   onEdgeClick,
   height = 600,
   loading = false,
-}) => {
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -58,11 +66,11 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         arrows: edge.arrows || 'to',
         color: edge.color || { color: '#848484', highlight: '#0078d4' },
         smooth: { type: 'curvedCW', roundness: 0.2 },
-      }))
+      })) as any
     );
 
     // Network options
-    const options: Options = {
+    const options: any = {
       nodes: {
         borderWidth: 2,
         borderWidthSelected: 3,
@@ -71,7 +79,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           face: 'Segoe UI, Roboto, sans-serif',
         },
         chosen: {
-          node: (values, id, selected, hovering) => {
+          node: (values: any, _id: any, selected: boolean) => {
             if (selected) {
               values.borderColor = '#0078d4';
               values.borderWidth = 3;
@@ -89,6 +97,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         smooth: {
           enabled: true,
           type: 'dynamic',
+          roundness: 0.5,
         },
       },
       physics: {
@@ -130,7 +139,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     // Create network
     const network = new Network(
       containerRef.current,
-      { nodes: nodesDataSet, edges: edgesDataSet },
+      { nodes: nodesDataSet, edges: edgesDataSet as any },
       options
     );
 
@@ -233,7 +242,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
   // Expose methods and network instance via ref
   React.useImperativeHandle(
-    React.forwardRef((props, ref) => ref),
+    ref,
     () => ({
       fitNetwork,
       centerNode,
@@ -241,7 +250,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       highlightPath,
       network: networkRef.current,
     }),
-    [networkRef.current]
+    []
   );
 
   if (loading) {
@@ -299,6 +308,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
       )}
     </Paper>
   );
-};
+});
+
+GraphViewer.displayName = 'GraphViewer';
 
 export default GraphViewer;
