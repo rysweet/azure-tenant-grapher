@@ -31,7 +31,7 @@ if (Test-Path ".env") {
 if ($Neo4jPassword) {
     $PlainPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Neo4jPassword))
 } else {
-    $PlainPassword = "azure-grapher-2024"
+    $PlainPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 16 | % {[char]$_})
 }
 
 # Build arguments

@@ -117,7 +117,7 @@ Created `spa/backend/src/security/credential-manager.ts`:
 #### Code Example
 ```typescript
 // BEFORE (Vulnerable)
-const password = process.env.NEO4J_PASSWORD || 'azure-grapher-2024';
+const password = process.env.NEO4J_PASSWORD || 'INSECURE-DEFAULT'; // Example of vulnerable code - DO NOT USE
 this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
 
 // AFTER (Secure)

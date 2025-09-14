@@ -121,7 +121,7 @@ async function startMcpServer() {
       PYTHONPATH: projectRoot,
       NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7688',
       NEO4J_PORT: process.env.NEO4J_PORT || '7688',
-      NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024'
+      NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || require('crypto').randomBytes(16).toString('hex')
     },
     detached: false,
     stdio: ['ignore', 'pipe', 'pipe']  // MCP service doesn't need stdin

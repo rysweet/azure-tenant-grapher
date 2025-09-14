@@ -16,7 +16,7 @@ const backend = spawn('npx', ['tsx', backendPath], {
     BACKEND_PORT: '3001',
     NEO4J_URI: process.env.NEO4J_URI || 'bolt://localhost:7687',
     NEO4J_USER: process.env.NEO4J_USER || 'neo4j',
-    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || 'azure-grapher-2024'
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD || require('crypto').randomBytes(16).toString('hex')
   },
   stdio: 'inherit'
 });

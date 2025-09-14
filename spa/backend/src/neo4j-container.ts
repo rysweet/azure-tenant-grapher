@@ -16,7 +16,7 @@ export class Neo4jContainer {
     // Use the same container name as the Python CLI
     this.containerName = process.env.NEO4J_CONTAINER_NAME || 'azure-tenant-grapher-neo4j';
     this.neo4jPort = process.env.NEO4J_PORT || '7687';
-    this.neo4jPassword = process.env.NEO4J_PASSWORD || 'azure-grapher-2024';
+    this.neo4jPassword = process.env.NEO4J_PASSWORD || require('crypto').randomBytes(16).toString('hex');
   }
 
   async isDockerAvailable(): Promise<boolean> {
