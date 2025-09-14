@@ -6,7 +6,7 @@ set -e
 # Default values
 NEO4J_URI="bolt://localhost:7688"
 NEO4J_USER="neo4j"
-NEO4J_PASSWORD="azure-grapher-2024"
+NEO4J_PASSWORD="$(openssl rand -hex 16 2>/dev/null || echo 'dev-password')"
 CONTAINER_ONLY=false
 NO_CONTAINER=false
 VISUALIZE=false
@@ -23,7 +23,7 @@ show_usage() {
     echo "Options:"
     echo "  --neo4j-uri <uri>       Neo4j connection URI (default: bolt://localhost:7688)"
     echo "  --neo4j-user <user>     Neo4j username (default: neo4j)"
-    echo "  --neo4j-password <pwd>  Neo4j password (default: azure-grapher-2024)"
+    echo "  --neo4j-password <pwd>  Neo4j password (default: auto-generated)"
     echo "  --container-only        Start Neo4j container only, don't run grapher"
     echo "  --no-container          Skip container management, use existing Neo4j"
     echo "  --visualize             Generate 3D graph visualization after building graph"

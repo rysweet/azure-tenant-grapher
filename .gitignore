@@ -198,6 +198,14 @@ simdocs/
 .env
 .env.local
 
+# Security-related files - NEVER commit these
+.credential-key
+.neo4j-credentials.enc
+*.key
+*.pem
+*.cert
+*.pfx
+
 # Neo4j logs
 neo4j-logs/
 

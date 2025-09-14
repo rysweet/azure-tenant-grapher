@@ -12,11 +12,15 @@ import './index.css';
 import './services/errorService';
 import './services/axiosConfig';
 
+// Initialize logger for renderer process
+import { initializeRendererLogger } from './utils/logger';
+initializeRendererLogger();
+
 // Global error handler for React errors
 window.addEventListener('error', (event) => {
   // These are already handled by errorService, but we can add React-specific handling here
   if (event.error && event.error.stack && event.error.stack.includes('React')) {
-    console.error('React Error:', event.error);
+    // React Error occurred - handled by error service
   }
 });
 

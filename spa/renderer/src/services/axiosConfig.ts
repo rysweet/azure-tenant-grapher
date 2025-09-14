@@ -13,7 +13,7 @@ axios.interceptors.request.use(
     
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Axios Request] ${config.method?.toUpperCase()} ${config.url}`);
+      // Console log removed
     }
     
     return config;
@@ -47,36 +47,36 @@ axios.interceptors.response.use(
   (error: AxiosError) => {
     // Don't log cancelled requests as errors
     if (axios.isCancel(error)) {
-      console.log('Request cancelled:', error.message);
+      // Console log removed
       return Promise.reject(error);
     }
 
     const errorDetails: any = {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
+      url: (error as any).config?.url,
+      method: (error as any).config?.method,
+      status: (error as any).response?.status,
+      statusText: (error as any).response?.statusText,
+      data: (error as any).response?.data,
     };
 
     // Categorize errors
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+    if ((error as any).code === 'ECONNABORTED' || (error as any).message?.includes('timeout')) {
       errorService.logError(
-        `Request timeout: ${error.config?.url}`,
+        `Request timeout: ${(error as any).config?.url}`,
         'network',
         { ...errorDetails, type: 'timeout' }
       );
-    } else if (!error.response) {
+    } else if (!(error as any).response) {
       // Network error (no response received)
       errorService.logError(
-        `Network error: ${error.message}`,
+        `Network error: ${(error as any).message}`,
         'network',
         { ...errorDetails, type: 'network_failure' }
       );
     } else {
       // Server responded with error status
-      const status = error.response.status;
-      const message = (error.response.data as any)?.message || error.message;
+      const status = (error as any).response.status;
+      const message = (error as any).response?.data?.message || (error as any).message;
       
       if (status >= 500) {
         errorService.logError(
@@ -86,7 +86,7 @@ axios.interceptors.response.use(
         );
       } else if (status === 404) {
         errorService.logWarning(
-          `Resource not found: ${error.config?.url}`,
+          `Resource not found: ${(error as any).config?.url}`,
           errorDetails
         );
       } else if (status === 401 || status === 403) {
@@ -117,7 +117,7 @@ axios.interceptors.response.use(
  */
 function getUserFriendlyErrorMessage(error: AxiosError): string {
   if (!error.response) {
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+    if ((error as any).code === 'ECONNABORTED' || (error as any).message?.includes('timeout')) {
       return 'Request timed out. Please try again.';
     }
     return 'Unable to connect to the server. Please check your connection.';

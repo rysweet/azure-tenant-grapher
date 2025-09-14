@@ -7,10 +7,7 @@ import {
   Typography,
   List,
   ListItem,
-  ListItemButton,
-  ListItemText,
   Divider,
-  Alert,
   CircularProgress,
   Chip,
   Stack,
@@ -19,7 +16,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  Tooltip,
   Menu,
   MenuItem,
 } from '@mui/material';
@@ -35,7 +31,7 @@ import {
   MoreVert as MoreVertIcon,
   Chat as ChatIcon,
 } from '@mui/icons-material';
-import { useChatSessions, Message, ConsoleOutput, ChatSession } from '../../hooks/useChatSessions';
+import { useChatSessions, Message, ConsoleOutput } from '../../hooks/useChatSessions';
 
 interface SampleQuery {
   title: string;
@@ -145,7 +141,7 @@ const AgentModeTab: React.FC = () => {
   // Set up event listeners for process output
   useEffect(() => {
     const handleProcessOutput = (data: any) => {
-      console.log('Process output received:', data);
+      // Process output received
 
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const lines = Array.isArray(data.data) ? data.data : [data.data];
@@ -177,7 +173,7 @@ const AgentModeTab: React.FC = () => {
     };
 
     const handleProcessExit = (data: any) => {
-      console.log('Process exit received:', data);
+      // Process exit received
 
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         setIsProcessing(false);
@@ -204,7 +200,7 @@ const AgentModeTab: React.FC = () => {
     };
 
     const handleProcessError = (data: any) => {
-      console.log('Process error received:', data);
+      // Process error received
 
       if (currentProcessId && data.id === currentProcessId && activeSessionId) {
         const errorOutput: ConsoleOutput = {
@@ -223,9 +219,9 @@ const AgentModeTab: React.FC = () => {
 
     // Cleanup
     return () => {
-      window.electronAPI.off('process:output', handleProcessOutput);
-      window.electronAPI.off('process:exit', handleProcessExit);
-      window.electronAPI.off('process:error', handleProcessError);
+      window.electronAPI.off?.('process:output', handleProcessOutput);
+      window.electronAPI.off?.('process:exit', handleProcessExit);
+      window.electronAPI.off?.('process:error', handleProcessError);
     };
   }, [currentProcessId, activeSessionId, addMessage, addConsoleOutput]);
 
@@ -264,7 +260,7 @@ const AgentModeTab: React.FC = () => {
     try {
       // Execute with --question parameter
       const result = await window.electronAPI.cli.execute('agent-mode', ['--question', messageText]);
-      console.log('CLI execute result:', result);
+      // CLI execute result
 
       if (result.success && result.data?.id) {
         setCurrentProcessId(result.data.id);

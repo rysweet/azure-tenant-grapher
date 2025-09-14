@@ -1,14 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Network, DataSet, Node, Edge } from 'vis-network/standalone';
+import { Network, DataSet } from 'vis-network/standalone';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Box,
   Paper,
   TextField,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   Chip,
   IconButton,
   Typography,
@@ -23,16 +20,8 @@ import {
   ButtonGroup,
   Tooltip,
   Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Collapse,
-  Grid,
-  Accordion,
   InputAdornment,
-  AccordionSummary,
-  AccordionDetails
 } from '@mui/material';
 import {
   ZoomIn as ZoomInIcon,
@@ -41,17 +30,14 @@ import {
   Search as SearchIcon,
   Close as CloseIcon,
   Refresh as RefreshIcon,
-  Info as InfoIcon,
   FilterList as FilterIcon,
   Clear as ClearIcon,
-  ExpandMore as ExpandMoreIcon,
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
   ArrowBack as ArrowLeftIcon,
   ArrowForward as ArrowRightIcon,
   TouchApp as SelectIcon,
   GetApp as ExportIcon,
-  Cancel as CancelIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -205,7 +191,7 @@ export const GraphVisualization: React.FC = () => {
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNodesForExport, setSelectedNodesForExport] = useState<Set<string>>(new Set());
-  const [selectionPanelOpen, setSelectionPanelOpen] = useState(false);
+  // const [selectionPanelOpen, setSelectionPanelOpen] = useState(false);
 
   // Advanced filtering state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -423,6 +409,7 @@ export const GraphVisualization: React.FC = () => {
         `;
 
         return {
+          ...node,
           id: node.id,
           label: node.label,
           title: tooltipContent,
@@ -434,8 +421,7 @@ export const GraphVisualization: React.FC = () => {
             color: '#2c3e50'
           },
           borderWidth: 2,
-          borderWidthSelected: 4,
-          ...node
+          borderWidthSelected: 4
         };
       });
 
@@ -465,7 +451,7 @@ export const GraphVisualization: React.FC = () => {
     const nodes = new DataSet(visNodes);
     const edges = new DataSet(visEdges);
 
-    const options = {
+    const options: any = {
       nodes: {
         font: {
           size: 12
@@ -536,7 +522,7 @@ export const GraphVisualization: React.FC = () => {
     });
 
     // Stabilization progress
-    network.on('stabilizationProgress', (params) => {
+    network.on('stabilizationProgress', () => {
       // Physics stabilization in progress
     });
 
@@ -1093,7 +1079,6 @@ export const GraphVisualization: React.FC = () => {
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip
-                      key={option}
                       label={option}
                       size="small"
                       {...getTagProps({ index })}
@@ -1136,7 +1121,6 @@ export const GraphVisualization: React.FC = () => {
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip
-                      key={option}
                       label={option}
                       size="small"
                       color="primary"
@@ -1180,7 +1164,6 @@ export const GraphVisualization: React.FC = () => {
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip
-                      key={option}
                       label={option}
                       size="small"
                       color="secondary"
@@ -1224,7 +1207,6 @@ export const GraphVisualization: React.FC = () => {
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip
-                      key={option}
                       label={option}
                       size="small"
                       color="info"

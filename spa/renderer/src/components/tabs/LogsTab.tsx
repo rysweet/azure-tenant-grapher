@@ -12,11 +12,9 @@ import {
   MenuItem,
   SelectChangeEvent,
   Chip,
-  Button,
   Tooltip,
   FormControlLabel,
   Switch,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -33,9 +31,43 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { useApp } from '../../context/AppContext';
-import { LogEntry, LogLevel } from '../../context/AppContext';
+import { LogEntry as AppLogEntry, LogLevel as AppLogLevel } from '../../context/AppContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useLogger } from '../../hooks/useLogger';
+import { 
+  getLogs,
+  clearLogs,
+  createLogger
+} from '../../utils/logger';
+import { LogEntry as SystemLogEntry, LogLevel as SystemLogLevel } from '../../../../shared/logger';
+
+// Unified LogLevel type
+type LogLevel = AppLogLevel;
+
+// Map SystemLogLevel to AppLogLevel
+const mapSystemLogLevel = (level: SystemLogLevel): LogLevel => {
+  switch (level) {
+    case SystemLogLevel.DEBUG:
+      return 'debug';
+    case SystemLogLevel.INFO:
+      return 'info';
+    case SystemLogLevel.WARN:
+      return 'warning';
+    case SystemLogLevel.ERROR:
+      return 'error';
+    default:
+      return 'info';
+  }
+};
+
+// Convert SystemLogEntry to AppLogEntry
+const convertSystemLogEntry = (entry: SystemLogEntry): AppLogEntry => ({
+  id: entry.id,
+  timestamp: new Date(entry.timestamp),
+  level: mapSystemLogLevel(entry.level),
+  source: entry.component || 'System',
+  message: entry.message,
+  data: entry.metadata
+});
 
 // Log level colors for dark theme
 const logLevelColors: Record<LogLevel, string> = {
@@ -66,18 +98,43 @@ const LogsTab: React.FC = () => {
 
   const editorRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const processOutputRef = useRef<Map<string, string[]>>(new Map());
+
+  // System logs from WebSocket
+  const [systemLogs, setSystemLogs] = useState<AppLogEntry[]>([]);
+  const [logWebSocketConnected, setLogWebSocketConnected] = useState(false);
 
   // Initialize WebSocket connection and logger
   const webSocket = useWebSocket();
-  const logger = useLogger('LogsTab');
+  const logger = useMemo(() => createLogger('LogsTab'), []);
 
   // Track active processes that we're subscribing to
   const [activeProcesses, setActiveProcesses] = useState<Set<string>>(new Set());
 
+  // Fetch logs from memory transport periodically
+  useEffect(() => {
+    const updateSystemLogs = () => {
+      const logs = getLogs();
+      const convertedLogs = logs.map(convertSystemLogEntry);
+      setSystemLogs(convertedLogs);
+    };
+
+    // Initial fetch
+    updateSystemLogs();
+
+    // Update every 500ms
+    const interval = setInterval(updateSystemLogs, 500);
+
+    // For now, assume WebSocket is connected if we have the logger
+    setLogWebSocketConnected(true);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   // Convert WebSocket process outputs to LogEntry format
   const processLogs = useMemo(() => {
-    const logs: LogEntry[] = [];
+    const logs: AppLogEntry[] = [];
 
     webSocket.outputs.forEach((outputs, processId) => {
       outputs.forEach(output => {
@@ -100,10 +157,10 @@ const LogsTab: React.FC = () => {
     return logs;
   }, [webSocket.outputs]);
 
-  // Combine system logs and process logs
+  // Combine all log sources: state logs, system logs from WebSocket, and process logs
   const allLogs = useMemo(() => {
-    return [...state.logs, ...processLogs];
-  }, [state.logs, processLogs]);
+    return [...state.logs, ...systemLogs, ...processLogs];
+  }, [state.logs, systemLogs, processLogs]);
 
   // Handle PID parameter from URL
   useEffect(() => {
@@ -199,6 +256,8 @@ const LogsTab: React.FC = () => {
   // Clear all logs
   const handleClearLogs = () => {
     dispatch({ type: 'CLEAR_LOGS' });
+    clearLogs(); // Clear memory transport
+    setSystemLogs([]);
     // Also clear WebSocket outputs
     activeProcesses.forEach(processId => {
       webSocket.clearProcessOutput(processId);
@@ -249,7 +308,7 @@ const LogsTab: React.FC = () => {
   useEffect(() => {
     const checkActiveProcesses = async () => {
       try {
-        const processes = await window.electronAPI.process.list();
+        const processes = await window.electronAPI?.process?.list?.() || [];
         const runningProcessIds = new Set(
           processes
             .filter(p => p.status === 'running')
@@ -285,24 +344,40 @@ const LogsTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [activeProcesses, webSocket]); // Remove logger from deps to prevent re-runs
 
-  // Log WebSocket connection status (only when it changes)
+  // Log WebSocket connection status changes
   useEffect(() => {
     if (webSocket.isConnected) {
-      logger.info('Connected to backend WebSocket server');
+      logger.info('Connected to process WebSocket server');
     } else {
-      logger.warning('Disconnected from backend WebSocket server');
+      logger.warn('Disconnected from process WebSocket server');
     }
-  }, [webSocket.isConnected]); // Remove logger from deps to prevent infinite loop
+  }, [webSocket.isConnected, logger]);
+
+  useEffect(() => {
+    if (logWebSocketConnected) {
+      logger.info('Connected to log stream WebSocket');
+    } else {
+      logger.warn('Disconnected from log stream WebSocket');
+    }
+  }, [logWebSocketConnected, logger]);
 
   // Add some test logs for demonstration
   const addTestLogs = () => {
+    // Use the new logger to generate real system logs
+    logger.info('WebSocket connected to backend server');
+    logger.debug('GET /api/neo4j/status - 200 OK', { responseTime: '45ms' });
+    logger.warn('Resource limit reached, some resources may be skipped');
+    logger.error('Failed to create relationship: Invalid node ID', { nodeId: 'invalid-123', error: 'Node not found' });
+    logger.info('Discovered 1,245 Azure resources across 3 subscriptions');
+    logger.debug('Query executed successfully', { query: 'MATCH (n) RETURN count(n)', duration: '12ms' });
+
+    // Also add some logs to the state for testing
     const testLogs = [
-      { level: 'info' as LogLevel, source: 'WebSocket', message: 'Connected to backend server' },
-      { level: 'debug' as LogLevel, source: 'API', message: 'GET /api/neo4j/status - 200 OK', data: { responseTime: '45ms' } },
-      { level: 'warning' as LogLevel, source: 'Build', message: 'Resource limit reached, some resources may be skipped' },
-      { level: 'error' as LogLevel, source: 'Graph', message: 'Failed to create relationship: Invalid node ID', data: { nodeId: 'invalid-123', error: 'Node not found' } },
-      { level: 'info' as LogLevel, source: 'Build', message: 'Discovered 1,245 Azure resources across 3 subscriptions' },
-      { level: 'debug' as LogLevel, source: 'Neo4j', message: 'Query executed successfully', data: { query: 'MATCH (n) RETURN count(n)', duration: '12ms' } },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Starting Azure resource discovery...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Authenticating with Azure...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Discovered 15 resources in resource group "test-rg"' },
+      { level: 'debug' as LogLevel, source: 'Process-abcd1234', message: 'Processing virtual machines...' },
+      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Found 3 VMs, 2 storage accounts, 1 network security group' },
     ];
 
     testLogs.forEach(log => {
@@ -312,23 +387,7 @@ const LogsTab: React.FC = () => {
       });
     });
 
-    // Also add some process-like logs directly to test the formatting
-    const processLogs = [
-      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Starting Azure resource discovery...' },
-      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Authenticating with Azure...' },
-      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Discovered 15 resources in resource group "test-rg"' },
-      { level: 'debug' as LogLevel, source: 'Process-abcd1234', message: 'Processing virtual machines...' },
-      { level: 'info' as LogLevel, source: 'Process-abcd1234', message: 'Found 3 VMs, 2 storage accounts, 1 network security group' },
-    ];
-
-    processLogs.forEach(log => {
-      dispatch({
-        type: 'ADD_STRUCTURED_LOG',
-        payload: log,
-      });
-    });
-
-    logger.info(`Added ${testLogs.length} test system logs and simulated process output`);
+    logger.info(`Added test logs for demonstration`);
   };
 
   return (
@@ -348,12 +407,19 @@ const LogsTab: React.FC = () => {
             sx={{ mr: 2 }}
           />
 
-          {/* WebSocket Status Badge */}
+          {/* WebSocket Status Badges */}
           <Chip
-            label={webSocket.isConnected ? 'Live' : 'Offline'}
+            label={`Processes: ${webSocket.isConnected ? 'Live' : 'Offline'}`}
             size="small"
             variant="outlined"
             color={webSocket.isConnected ? 'success' : 'error'}
+            sx={{ mr: 1 }}
+          />
+          <Chip
+            label={`Logs: ${logWebSocketConnected ? 'Live' : 'Offline'}`}
+            size="small"
+            variant="outlined"
+            color={logWebSocketConnected ? 'success' : 'error'}
             sx={{ mr: 2 }}
           />
 
@@ -529,9 +595,13 @@ const LogsTab: React.FC = () => {
             <Typography variant="body2">
               System logs and process output will appear here in real-time.
             </Typography>
-            {!webSocket.isConnected && (
+            {(!webSocket.isConnected || !logWebSocketConnected) && (
               <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                WebSocket disconnected - some logs may not appear.
+                {!webSocket.isConnected && !logWebSocketConnected 
+                  ? 'WebSocket connections disconnected - logs may not appear.'
+                  : !webSocket.isConnected 
+                  ? 'Process WebSocket disconnected - process output may not appear.'
+                  : 'Log WebSocket disconnected - system logs may not appear.'}
               </Typography>
             )}
           </Box>

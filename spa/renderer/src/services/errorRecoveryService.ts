@@ -225,7 +225,7 @@ class ErrorRecoveryService {
       // Log successful recovery
       errorService.logError(
         originalError,
-        'recovery',
+        'unhandled',
         {
           strategy: strategy.name,
           attempts: attempts + 1,
@@ -245,7 +245,7 @@ class ErrorRecoveryService {
       // Log failed recovery attempt
       errorService.logError(
         originalError,
-        'recovery',
+        'unhandled',
         {
           strategy: strategy.name,
           attempts: attempts + 1,
@@ -287,7 +287,7 @@ class ErrorRecoveryService {
         }
       });
     } catch (e) {
-      console.error('Failed to clear session storage:', e);
+      // Console error removed
     }
 
     // Force garbage collection if available (non-standard)

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Paper,
-  TextField,
   Button,
   Typography,
   Alert,
@@ -35,7 +34,7 @@ const CreateTenantTab: React.FC = () => {
 
   const handleFileUpload = async () => {
     try {
-      const filePath = await window.electronAPI.dialog.openFile({
+      const filePath = await window.electronAPI?.dialog?.openFile?.({
         filters: [
           { name: 'Spec Files', extensions: ['json', 'yaml', 'yml'] },
           { name: 'All Files', extensions: ['*'] }
@@ -43,11 +42,18 @@ const CreateTenantTab: React.FC = () => {
       });
 
       if (filePath) {
-        const result = await window.electronAPI.file.read(filePath);
-        if (result.success) {
-          setSpecContent(result.data);
+        const result = await window.electronAPI?.file?.read?.(filePath);
+        if (result && typeof result === 'object' && 'success' in result) {
+          const typedResult = result as { success: boolean; data?: string; error?: string };
+          if (typedResult.success && typedResult.data) {
+            setSpecContent(typedResult.data);
+          } else {
+            setError(typedResult.error || 'Failed to read file');
+          }
+        } else if (typeof result === 'string') {
+          setSpecContent(result);
         } else {
-          setError(result.error);
+          setError('Invalid file read response');
         }
       }
     } catch (err: any) {
@@ -68,7 +74,7 @@ const CreateTenantTab: React.FC = () => {
     try {
       // Save spec to temp file
       const tempPath = `/tmp/tenant-spec-${Date.now()}.json`;
-      await window.electronAPI.file.write(tempPath, specContent);
+      await window.electronAPI.file?.write(tempPath, specContent);
 
       const result = await window.electronAPI.cli.execute('create-tenant', [tempPath]);
 
@@ -176,7 +182,6 @@ const CreateTenantTab: React.FC = () => {
                 minimap: { enabled: false },
                 fontSize: 14,
                 wordWrap: 'on',
-                placeholder: '// Paste or upload your tenant specification here',
               }}
             />
           </Box>
@@ -221,7 +226,7 @@ const CreateTenantTab: React.FC = () => {
                 variant="outlined"
                 onClick={async () => {
                   try {
-                    const filePath = await window.electronAPI.dialog.openFile({
+                    const filePath = await window.electronAPI?.dialog?.openFile?.({
                       filters: [
                         { name: 'Markdown Files', extensions: ['md'] },
                         { name: 'All Files', extensions: ['*'] }
@@ -270,7 +275,7 @@ const CreateTenantTab: React.FC = () => {
                     const pathMatch = output.match(/Generated simulation document: (.+\.md)/);
                     if (pathMatch) {
                       // Read the generated file and set it as spec content
-                      window.electronAPI.file.read(pathMatch[1]).then((readResult: any) => {
+                      window.electronAPI.file?.read(pathMatch[1]).then((readResult: any) => {
                         if (readResult.success) {
                           setSpecContent(readResult.data);
                         }

@@ -1,4 +1,8 @@
 import neo4j, { Driver, Session, DateTime } from 'neo4j-driver';
+import { createLogger } from './logger-setup';
+import { CredentialManager } from './security/credential-manager';
+
+const logger = createLogger('neo4j-service');
 
 export interface GraphNode {
   id: string;  // Internal graph ID (elementId)
@@ -54,15 +58,22 @@ export class Neo4jService {
   }
 
   private connect() {
-    const uri = process.env.NEO4J_URI || 'bolt://localhost:7687';
-    const user = process.env.NEO4J_USER || 'neo4j';
-    const password = process.env.NEO4J_PASSWORD || 'azure-grapher-2024';
-
     try {
-      this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-      console.log(`Connected to Neo4j at ${uri}`);
+      // Get credentials from secure credential manager
+      const credentials = CredentialManager.getNeo4jCredentials();
+      
+      // Validate credentials before use
+      if (!CredentialManager.validateCredentials(credentials)) {
+        throw new Error('Invalid Neo4j credentials format');
+      }
+
+      this.driver = neo4j.driver(
+        credentials.uri, 
+        neo4j.auth.basic(credentials.username, credentials.password)
+      );
+      logger.info(`Connected to Neo4j at ${credentials.uri}`);
     } catch (error) {
-      console.error('Failed to connect to Neo4j:', error);
+      logger.error('Failed to connect to Neo4j:', error);
     }
   }
 
@@ -311,7 +322,7 @@ export class Neo4jService {
         timezone: 'Unknown'
       };
     } catch (error) {
-      console.error('Error formatting timestamp:', error);
+      logger.error('Error formatting timestamp:', error);
       return {
         timestamp: timestamp,
         utcString: 'Error formatting timestamp',
@@ -448,7 +459,7 @@ export class Neo4jService {
           };
         }
       } catch (fallbackError) {
-        console.error('Error getting DB stats:', fallbackError);
+        logger.error('Error getting DB stats:', fallbackError);
         throw fallbackError;
       }
 
@@ -482,7 +493,7 @@ export class Neo4jService {
 
       return false;
     } catch (error) {
-      console.error('Error checking if database is populated:', error);
+      logger.error('Error checking if database is populated:', error);
       return false;
     } finally {
       await session.close();

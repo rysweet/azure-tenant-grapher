@@ -52,7 +52,7 @@ const Header: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
-        WebkitAppRegion: 'drag',
+        ['WebkitAppRegion' as any]: 'drag',
         userSelect: 'none',
         height: '48px',
         boxSizing: 'border-box',
@@ -75,7 +75,7 @@ const Header: React.FC = () => {
 
       <Box
         style={{
-          WebkitAppRegion: 'no-drag',
+          ['WebkitAppRegion' as any]: 'no-drag',
           display: 'flex',
           gap: '8px',
           marginLeft: 'auto'

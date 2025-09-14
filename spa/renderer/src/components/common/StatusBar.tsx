@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import {
-  Circle as CircleIcon,
-  CheckCircle as ConnectedIcon,
-  Error as DisconnectedIcon,
   PlayArrow as RunningIcon,
   Business as TenantIcon,
   Storage as DatabaseIcon,
@@ -40,7 +37,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
 
       if (typeof op.pid !== 'number' || op.pid <= 0) {
         if (op.pid !== undefined) {
-          console.warn(`Background operation ${op.id} has invalid PID:`, op.pid);
+          // Console warn removed
         }
         return false;
       }
@@ -57,10 +54,10 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
   useEffect(() => {
     const fetchActiveProcesses = async () => {
       try {
-        const processes = await window.electronAPI.process.list();
+        const processes = await window.electronAPI.process.list?.();
         setActiveProcesses(processes || []);
       } catch (error) {
-        console.error('Failed to fetch active processes:', error);
+        // Console error removed
         setActiveProcesses([]);
       }
     };
@@ -163,7 +160,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus }) => {
               .filter(process => {
                 if (typeof process.pid !== 'number' || process.pid <= 0) {
                   if (process.pid !== undefined) {
-                    console.warn(`CLI process ${process.id} has invalid PID:`, process.pid);
+                    // Console warn removed
                   }
                   return false;
                 }

@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, Box, Button, Typography, Collapse, IconButton, Stack, LinearProgress } from '@mui/material';
 import { ExpandMore, ExpandLess, Refresh, Home, AutorenewRounded } from '@mui/icons-material';
 import { errorService } from '../../services/errorService';
@@ -57,7 +57,7 @@ class ErrorBoundary extends Component<Props, State> {
         maxRetries,
         willAutoRetry: shouldAutoRetry,
       },
-      errorInfo.componentStack
+      errorInfo.componentStack || undefined
     );
 
     this.setState({ errorInfo });
@@ -67,7 +67,7 @@ class ErrorBoundary extends Component<Props, State> {
       const recoveryResult = await errorRecoveryService.attemptRecovery(error);
       
       if (recoveryResult.success) {
-        console.log(`Successfully recovered using ${recoveryResult.strategyUsed}`);
+        // Successfully recovered using recovery strategy
         this.handleReset();
         return;
       }
@@ -88,13 +88,13 @@ class ErrorBoundary extends Component<Props, State> {
 
     // Enforce minimum delay between retries
     if (timeSinceLastRetry < resetDelay) {
-      console.warn(`Retry attempted too soon. Please wait ${resetDelay - timeSinceLastRetry}ms`);
+      // Console warn removed
       return;
     }
 
     // Check retry limit
     if (this.state.retryCount >= maxRetries) {
-      console.error(`Maximum retry attempts (${maxRetries}) reached`);
+      // Console error removed
       return;
     }
 
@@ -139,7 +139,7 @@ class ErrorBoundary extends Component<Props, State> {
     
     const timeoutId = setTimeout(() => {
       if (this.state.hasError) {
-        console.log(`Attempting auto-recovery after ${delay}ms`);
+        // Attempting auto-recovery after delay
         this.handleReset();
       }
     }, delay);
@@ -161,7 +161,7 @@ class ErrorBoundary extends Component<Props, State> {
       try {
         callback();
       } catch (cleanupError) {
-        console.error('Error during cleanup:', cleanupError);
+        // Console error removed
       }
     });
     this.cleanupCallbacks.clear();

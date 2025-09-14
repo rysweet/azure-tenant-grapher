@@ -405,12 +405,12 @@ const DocsTab: React.FC = () => {
       if (typeof response.data === 'string') {
         setFileContent(response.data);
       } else {
-        console.error('DocsTab: Unexpected response format for file:', filePath, response.data);
+        // Console error removed
         setError(`Unexpected response format for file: ${filePath}`);
         setFileContent('');
       }
     } catch (err) {
-      console.error('DocsTab: Error loading file:', filePath, err);
+      // Console error removed
       if (axios.isAxiosError(err)) {
         const statusCode = err.response?.status;
         const errorMessage = err.response?.data?.error || err.message;
@@ -539,7 +539,7 @@ const DocsTab: React.FC = () => {
           <Box
             component="a"
             href="#"
-            onClick={(e) => {
+            onClick={(e: any) => {
               e.preventDefault();
               const fullPath = href.startsWith('/') ? href.slice(1) : href;
               setSelectedFile(fullPath);
@@ -589,7 +589,7 @@ const DocsTab: React.FC = () => {
           size="small"
           placeholder="Search files..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e: any) => setSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -687,7 +687,7 @@ const DocsTab: React.FC = () => {
               size="small"
               placeholder="Search in document..."
               value={contentSearchQuery}
-              onChange={(e) => setContentSearchQuery(e.target.value)}
+              onChange={(e: any) => setContentSearchQuery(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

@@ -13,14 +13,7 @@ import {
   Alert,
   Slider,
   Card,
-  CardContent,
-  Chip,
   Divider,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Tooltip,
   Select,
   InputLabel,
   MenuItem,
@@ -28,12 +21,7 @@ import {
 import {
   PlayArrow as PlayIcon,
   Stop as StopIcon,
-  Refresh as RefreshIcon,
   Update as UpdateIcon,
-  Storage as StorageIcon,
-  AccountTree as TreeIcon,
-  Link as LinkIcon,
-  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
@@ -44,6 +32,7 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import { useLogger } from '../../hooks/useLogger';
 import { isValidTenantId, isValidResourceLimit, isValidThreadCount } from '../../utils/validation';
 
+// DBStats interface - used for type safety
 interface DBStats {
   nodeCount: number;
   edgeCount: number;
@@ -88,9 +77,9 @@ const ScanTab: React.FC = () => {
     currentPhase: 'Initializing'
   });
 
-  // Database stats
-  const [dbStats, setDbStats] = useState<DBStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
+  // Database stats - currently unused but kept for future UI updates
+  const [_dbStats, setDbStats] = useState<DBStats | null>(null);
+  const [_loadingStats, setLoadingStats] = useState(false);
   const [dbPopulated, setDbPopulated] = useState(false);
   const [neo4jStatus, setNeo4jStatus] = useState<any>(null);
   const [startingNeo4j, setStartingNeo4j] = useState(false);
@@ -510,7 +499,7 @@ const ScanTab: React.FC = () => {
       // Check if process is already running by polling status initially
       setTimeout(async () => {
         try {
-          const statusResponse = await axios.get(`http://localhost:3001/api/status/${processId}`);
+          await axios.get(`http://localhost:3001/api/status/${processId}`);
           // Process status retrieved successfully
         } catch (err) {
           // Process might have already completed, that's ok
@@ -547,14 +536,11 @@ const ScanTab: React.FC = () => {
     }
   };
 
-  const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return 'Unknown';
-    return new Date(timestamp).toLocaleString();
-  };
+  // Removed unused formatTimestamp function - formatting handled inline where needed
 
-  const formatNumber = (num: number) => {
-    return num.toLocaleString();
-  };
+  // const formatNumber = (num: number) => {
+  //   return num.toLocaleString();
+  // };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -792,7 +778,7 @@ const ScanTab: React.FC = () => {
                     </Typography>
                     <Slider
                       value={maxLlmThreads}
-                      onChange={(e, value) => setMaxLlmThreads(value as number)}
+                      onChange={(_e, value) => setMaxLlmThreads(value as number)}
                       min={1}
                       max={20}
                       marks
@@ -808,7 +794,7 @@ const ScanTab: React.FC = () => {
                     </Typography>
                     <Slider
                       value={maxBuildThreads}
-                      onChange={(e, value) => setMaxBuildThreads(value as number)}
+                      onChange={(_e, value) => setMaxBuildThreads(value as number)}
                       min={1}
                       max={20}
                       marks
@@ -836,7 +822,7 @@ const ScanTab: React.FC = () => {
                         </Typography>
                         <Slider
                           value={resourceLimit}
-                          onChange={(e, value) => setResourceLimit(value as number)}
+                          onChange={(_e, value) => setResourceLimit(value as number)}
                           min={10}
                           max={1000}
                           step={10}
@@ -897,7 +883,7 @@ const ScanTab: React.FC = () => {
                 color="primary"
                 startIcon={dbPopulated ? <UpdateIcon /> : <PlayIcon />}
                 onClick={handleStart}
-                disabled={isRunning || !neo4jRunning}
+                disabled={isRunning}
                 sx={{ px: 4, py: 1.5 }}
               >
                 {dbPopulated ? 'Update Database' : 'Start Scan'}
