@@ -57,13 +57,13 @@ export class SecureProcessManager extends EventEmitter {
 
     // Validate command
     const commandValidation = validateCommand(command);
-    if (!commandValidation.valid) {
+    if (!commandValidation.isValid) {
       throw new Error('Invalid command: ' + commandValidation.error);
     }
 
     // Validate arguments
     const argsValidation = validateArguments(args);
-    if (!argsValidation.valid) {
+    if (!argsValidation.isValid) {
       throw new Error('Invalid arguments: ' + argsValidation.error);
     }
 
@@ -77,8 +77,8 @@ export class SecureProcessManager extends EventEmitter {
       throw new Error('CLI path outside project directory');
     }
 
-    const sanitizedCommand = commandValidation.sanitized!;
-    const sanitizedArgs = argsValidation.sanitized!;
+    const sanitizedCommand = commandValidation.sanitized as string;
+    const sanitizedArgs = argsValidation.sanitized as string[];
 
     console.log('[SecureProcessManager] Executing command:', sanitizedCommand, 'with args:', sanitizedArgs);
     console.log('[SecureProcessManager] Python path:', pythonPath);

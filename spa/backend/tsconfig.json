@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "../dist/backend",
-    "rootDir": ".",
+    "rootDir": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -17,7 +17,8 @@
     "composite": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "../shared/**/*.ts"
   ],
   "exclude": [
     "node_modules",

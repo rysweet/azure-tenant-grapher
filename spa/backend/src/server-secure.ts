@@ -164,19 +164,19 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
   
   // Validate command
   const commandValidation = validateCommand(command);
-  if (!commandValidation.valid) {
+  if (!commandValidation.isValid) {
     return res.status(400).json({ error: commandValidation.error });
   }
 
   // Validate arguments
   const argsValidation = validateArguments(args);
-  if (!argsValidation.valid) {
+  if (!argsValidation.isValid) {
     return res.status(400).json({ error: argsValidation.error });
   }
 
   const processId = uuidv4();
-  const sanitizedCommand = commandValidation.sanitized!;
-  const sanitizedArgs = argsValidation.sanitized!;
+  const sanitizedCommand = commandValidation.sanitized as string;
+  const sanitizedArgs = argsValidation.sanitized as string[];
 
   // Use uv to run the atg CLI command
   const uvPath = process.env.UV_PATH || 'uv';
@@ -191,19 +191,20 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
     user: (req as any).session?.clientId
   });
 
-  const childProcess = spawn(uvPath, fullArgs, {
+  const childProcess: ChildProcess = spawn(uvPath, fullArgs, {
     cwd: projectRoot,
     env: {
       ...process.env,
       PYTHONPATH: projectRoot,
     },
     shell: false, // Never use shell to prevent injection
+    stdio: ['ignore', 'pipe', 'pipe'] // Explicitly set stdio to avoid type conflicts
   });
 
   activeProcesses.set(processId, childProcess);
 
   // Stream stdout with sanitization
-  childProcess.stdout?.on('data', (data) => {
+  childProcess.stdout?.on('data', (data: any) => {
     const sanitized = sanitizeOutput(data.toString());
     const lines = sanitized.split('\n').filter((line: string) => line);
     io.to('process-' + processId).emit('output', {
@@ -215,7 +216,7 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
   });
 
   // Stream stderr with sanitization
-  childProcess.stderr?.on('data', (data) => {
+  childProcess.stderr?.on('data', (data: any) => {
     const sanitized = sanitizeOutput(data.toString());
     const lines = sanitized.split('\n').filter((line: string) => line);
     io.to('process-' + processId).emit('output', {
@@ -227,7 +228,7 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
   });
 
   // Handle process exit
-  childProcess.on('exit', (code) => {
+  childProcess.on('exit', (code: any) => {
     io.to('process-' + processId).emit('process-exit', {
       processId,
       code,
@@ -237,7 +238,7 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
   });
 
   // Handle process error
-  childProcess.on('error', (error) => {
+  childProcess.on('error', (error: any) => {
     io.to('process-' + processId).emit('process-error', {
       processId,
       error: sanitizeOutput(error.message),
@@ -370,12 +371,12 @@ app.get('/api/graph/search', requireAuth, rateLimiters.search, async (req, res) 
 
   // Validate and sanitize search query
   const queryValidation = validateSearchQuery(query);
-  if (!queryValidation.valid) {
+  if (!queryValidation.isValid) {
     return res.status(400).json({ error: queryValidation.error });
   }
 
   try {
-    const nodes = await neo4jService.searchNodes(queryValidation.sanitized!);
+    const nodes = await neo4jService.searchNodes(queryValidation.sanitized as string);
     res.json(nodes);
   } catch (error) {
     logger.error('Error searching nodes:', error);
@@ -462,12 +463,12 @@ app.get('/api/docs/:filePath(*)', requireAuth, async (req, res) => {
     
     // Validate file path
     const pathValidation = validateFilePath(filePath, projectRoot);
-    if (!pathValidation.valid) {
+    if (!pathValidation.isValid) {
       logger.warn('Docs API: ' + pathValidation.error);
       return res.status(403).json({ error: pathValidation.error });
     }
 
-    const fullFilePath = pathValidation.resolved!;
+    const fullFilePath = pathValidation.sanitized as string;
 
     // Check if file exists
     if (!fs.existsSync(fullFilePath)) {

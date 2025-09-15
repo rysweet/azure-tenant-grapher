@@ -6,7 +6,7 @@
 import { LogEntry, LogLevel, LogTransport } from './logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { WebSocket } from 'ws';
+import { WebSocket } from 'ws';
 
 /**
  * Console Transport - outputs to console

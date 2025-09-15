@@ -34,7 +34,7 @@ export class Neo4jContainer {
       const runningContainers = stdout.split('\n').filter(name => name.trim());
       return runningContainers.includes(this.containerName);
     } catch (error) {
-      logger.error('Error checking if Neo4j is running:', error);
+      logger.error('Error checking if Neo4j is running', { error });
       return false;
     }
   }
@@ -45,7 +45,7 @@ export class Neo4jContainer {
       const allContainers = stdout.split('\n').filter(name => name.trim());
       return allContainers.includes(this.containerName);
     } catch (error) {
-      logger.error('Error checking if Neo4j container exists:', error);
+      logger.error('Error checking if Neo4j container exists', { error });
       return false;
     }
   }
@@ -83,7 +83,7 @@ export class Neo4jContainer {
             return;
           }
         }
-        logger.error('Failed to start Neo4j container:', error);
+        logger.error('Failed to start Neo4j container', { error });
         throw error;
       }
     } else {
@@ -144,7 +144,7 @@ export class Neo4jContainer {
       await execAsync(`docker stop ${this.containerName}`);
       logger.info('Neo4j container stopped');
     } catch (error) {
-      logger.error('Failed to stop Neo4j container:', error);
+      logger.error('Failed to stop Neo4j container', { error });
     }
   }
 
@@ -154,7 +154,7 @@ export class Neo4jContainer {
       await execAsync(`docker rm ${this.containerName}`);
       logger.info('Neo4j container removed');
     } catch (error) {
-      logger.error('Failed to remove Neo4j container:', error);
+      logger.error('Failed to remove Neo4j container', { error });
     }
   }
 
@@ -207,7 +207,7 @@ export class Neo4jContainer {
 
       return true;
     } catch (error) {
-      logger.debug('Neo4j connection test failed:', error instanceof Error ? error.message : error);
+      logger.debug('Neo4j connection test failed', { error: error instanceof Error ? error.message : error });
       return false;
     }
   }

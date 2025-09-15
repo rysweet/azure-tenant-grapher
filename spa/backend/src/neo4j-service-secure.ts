@@ -4,7 +4,7 @@
  */
 
 import neo4j, { Driver, Session, DateTime } from 'neo4j-driver';
-import credentialManager from './security/credential-manager';
+import CredentialManager from './security/credential-manager';
 import { validateNodeId, validateSearchQuery } from './security/input-validator';
 
 export interface GraphNode {
@@ -65,14 +65,14 @@ export class Neo4jService {
   private async connect() {
     try {
       // Get credentials securely from credential manager
-      const { uri, user, password } = credentialManager.getNeo4jCredentials();
+      const { uri, username, password } = CredentialManager.getNeo4jCredentials();
       
       // Validate credentials before use
-      if (!credentialManager.validateCredential(password, 'password')) {
+      if (!CredentialManager.validateCredentials({ uri, username, password })) {
         throw new Error('Invalid Neo4j password format');
       }
 
-      this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
+      this.driver = neo4j.driver(uri, neo4j.auth.basic(username, password), {
         maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
         maxConnectionPoolSize: 50,
         connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
@@ -90,7 +90,7 @@ export class Neo4jService {
       const session = this.driver.session();
       try {
         await session.run('RETURN 1');
-        console.log('Connected to Neo4j at', credentialManager.maskCredential(uri));
+        console.log('Connected to Neo4j at', uri.replace(/:\/\/.*@/, '://***@'));
       } finally {
         await session.close();
       }
@@ -208,7 +208,7 @@ export class Neo4jService {
 
     // Validate and sanitize query
     const validation = validateSearchQuery(query);
-    if (!validation.valid || !validation.sanitized) {
+    if (!validation.isValid || !validation.sanitized) {
       throw new Error(validation.error || 'Invalid search query');
     }
 

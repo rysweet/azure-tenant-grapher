@@ -366,4 +366,47 @@ setInterval(() => {
   AuthMiddleware.cleanupExpiredSessions();
 }, 60 * 60 * 1000); // Run every hour
 
+// Export convenience functions for backward compatibility
+export const requireAuth = (req: any, res: any, next: any) => {
+  // Simple auth check - in production, validate token
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token || !AuthMiddleware.validateToken(token)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+};
+
+export const authenticateWebSocket = (socket: Socket, next: (err?: ExtendedError) => void) => {
+  const token = socket.handshake.auth?.token;
+  if (!token || !AuthMiddleware.validateToken(token)) {
+    return next(new Error('Authentication failed'));
+  }
+  next();
+};
+
+export const requireSocketAuth = (socket: Socket): boolean => {
+  return !!(socket as any).userId;
+};
+
+export const handleLogin = (req: any, res: any) => {
+  // Simple login handler - in production, validate credentials
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+
+  const token = AuthMiddleware.generateToken();
+  const session = AuthMiddleware.createSession(username, req.ip || 'unknown', req.headers['user-agent']);
+
+  res.json({ token, userId: username });
+};
+
+export const handleLogout = (req: any, res: any) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (token) {
+    AuthMiddleware.revokeToken(token);
+  }
+  res.json({ success: true });
+};
+
 export default AuthMiddleware;

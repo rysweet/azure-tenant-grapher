@@ -41,6 +41,7 @@ exports.MemoryTransport = exports.BrowserConsoleTransport = exports.WebSocketTra
 const logger_1 = require("./logger");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const ws_1 = require("ws");
 /**
  * Console Transport - outputs to console
  */
@@ -209,7 +210,7 @@ class WebSocketTransport {
         });
         // Send to all connected clients
         for (const ws of this.connections) {
-            if (ws.readyState === WebSocket.OPEN) {
+            if (ws.readyState === ws_1.WebSocket.OPEN) {
                 try {
                     ws.send(message);
                 }

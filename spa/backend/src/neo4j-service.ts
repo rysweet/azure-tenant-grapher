@@ -73,7 +73,7 @@ export class Neo4jService {
       );
       logger.info(`Connected to Neo4j at ${credentials.uri}`);
     } catch (error) {
-      logger.error('Failed to connect to Neo4j:', error);
+      logger.error('Failed to connect to Neo4j', { error });
     }
   }
 
@@ -322,7 +322,7 @@ export class Neo4jService {
         timezone: 'Unknown'
       };
     } catch (error) {
-      logger.error('Error formatting timestamp:', error);
+      logger.error('Error formatting timestamp', { error });
       return {
         timestamp: timestamp,
         utcString: 'Error formatting timestamp',
@@ -459,7 +459,7 @@ export class Neo4jService {
           };
         }
       } catch (fallbackError) {
-        logger.error('Error getting DB stats:', fallbackError);
+        logger.error('Error getting DB stats', { error: fallbackError });
         throw fallbackError;
       }
 
@@ -493,7 +493,7 @@ export class Neo4jService {
 
       return false;
     } catch (error) {
-      logger.error('Error checking if database is populated:', error);
+      logger.error('Error checking if database is populated', { error });
       return false;
     } finally {
       await session.close();

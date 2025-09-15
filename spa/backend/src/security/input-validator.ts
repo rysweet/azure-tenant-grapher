@@ -53,7 +53,7 @@ const DANGEROUS_PATTERNS = [
 
 export interface ValidationResult {
   isValid: boolean;
-  sanitized?: string;
+  sanitized?: string | string[];
   error?: string;
 }
 
@@ -118,7 +118,7 @@ export class InputValidator {
       sanitizedArgs.push(arg);
     }
 
-    return { isValid: true, sanitized: sanitizedArgs.join(' ') };
+    return { isValid: true, sanitized: sanitizedArgs };
   }
 
   /**
@@ -247,7 +247,7 @@ export class InputValidator {
         console.error('Tenant name validation failed:', tenantResult.error);
         return null;
       }
-      safeArgs.push('--tenant-name', tenantResult.sanitized!);
+      safeArgs.push('--tenant-name', tenantResult.sanitized as string);
     }
 
     if (options?.resourceGroup) {
@@ -256,7 +256,7 @@ export class InputValidator {
         console.error('Resource group validation failed:', rgResult.error);
         return null;
       }
-      safeArgs.push('--resource-group', rgResult.sanitized!);
+      safeArgs.push('--resource-group', rgResult.sanitized as string);
     }
 
     if (options?.filters && options.filters.length > 0) {
@@ -265,7 +265,7 @@ export class InputValidator {
         console.error('Filter validation failed:', filterResult.error);
         return null;
       }
-      safeArgs.push('--filters', filterResult.sanitized!);
+      safeArgs.push('--filters', filterResult.sanitized as string);
     }
 
     // Validate additional arguments
@@ -279,11 +279,11 @@ export class InputValidator {
     }
 
     // Create a hash of the command for logging/auditing
-    const commandString = `${cmdResult.sanitized} ${safeArgs.join(' ')}`;
+    const commandString = `${cmdResult.sanitized as string} ${safeArgs.join(' ')}`;
     const hash = createHash('sha256').update(commandString).digest('hex').substring(0, 8);
 
     return {
-      command: cmdResult.sanitized!,
+      command: cmdResult.sanitized as string,
       args: safeArgs,
       hash
     };
@@ -316,3 +316,42 @@ export class InputValidator {
     return sanitized;
   }
 }
+
+// Additional validation functions needed by server-secure.ts
+export function validateProcessId(processId: string): boolean {
+  // UUID v4 format validation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(processId);
+}
+
+export function validateNodeId(nodeId: string): boolean {
+  // Basic validation for node IDs (alphanumeric, dash, underscore)
+  if (!nodeId || typeof nodeId !== 'string') return false;
+  if (nodeId.length > 100) return false;
+  const pattern = /^[a-zA-Z0-9_-]+$/;
+  return pattern.test(nodeId);
+}
+
+export function validateSearchQuery(query: string): ValidationResult {
+  if (!query || typeof query !== 'string') {
+    return { isValid: false, error: 'Query must be a non-empty string' };
+  }
+
+  if (query.length > 200) {
+    return { isValid: false, error: 'Query exceeds maximum length of 200' };
+  }
+
+  // Remove potentially dangerous characters but allow spaces for search
+  const sanitized = query.replace(/[;<>{}[\]()]/g, '').trim();
+
+  return { isValid: true, sanitized };
+}
+
+export function validateFilePath(filePath: string, baseDir: string): ValidationResult {
+  return InputValidator.validatePath(filePath, baseDir);
+}
+
+// Export static methods for backward compatibility
+export const validateCommand = InputValidator.validateCommand.bind(InputValidator);
+export const validateArguments = InputValidator.validateArguments.bind(InputValidator);
+export const sanitizeOutput = InputValidator.sanitizeOutput.bind(InputValidator);

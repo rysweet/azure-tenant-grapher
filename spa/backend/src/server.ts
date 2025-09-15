@@ -64,7 +64,7 @@ io.use(AuthMiddleware.authenticate);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  logger.info('Client connected:', socket.id);
+  logger.info('Client connected', { socketId: socket.id });
   
   // Setup heartbeat for this connection
   AuthMiddleware.setupHeartbeat(socket);
@@ -82,7 +82,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    logger.info('Client disconnected:', socket.id);
+    logger.info('Client disconnected', { socketId: socket.id });
   });
 });
 
@@ -106,7 +106,7 @@ app.post('/api/auth/token', (req, res) => {
       expiresIn: 86400 // 24 hours in seconds
     });
   } catch (error) {
-    logger.error('Failed to generate auth token:', error);
+    logger.error('Failed to generate auth token', { error });
     res.status(500).json({ error: 'Failed to generate authentication token' });
   }
 });
@@ -117,7 +117,7 @@ app.get('/api/auth/stats', (req, res) => {
     const stats = AuthMiddleware.getStats();
     res.json(stats);
   } catch (error) {
-    logger.error('Failed to get auth stats:', error);
+    logger.error('Failed to get auth stats', { error });
     res.status(500).json({ error: 'Failed to get authentication statistics' });
   }
 });
@@ -146,7 +146,7 @@ app.get('/api/tenant-name', async (req, res) => {
     const tenantId = process.env.AZURE_TENANT_ID || 'Unknown';
     res.json({ name: tenantId });
   } catch (error) {
-    logger.error('Error getting tenant name:', error);
+    logger.error('Error getting tenant name', { error });
     res.status(500).json({ error: 'Failed to get tenant name' });
   }
 });
@@ -327,7 +327,7 @@ app.get('/api/graph/status', async (req, res) => {
       stats
     });
   } catch (error) {
-    logger.error('Error checking database status:', error);
+    logger.error('Error checking database status', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to check database status'
     });
@@ -342,7 +342,7 @@ app.get('/api/graph/stats', async (req, res) => {
     const stats = await neo4jService.getDatabaseStats();
     res.json(stats);
   } catch (error) {
-    logger.error('Error fetching database stats:', error);
+    logger.error('Error fetching database stats', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch database statistics'
     });
@@ -357,7 +357,7 @@ app.get('/api/graph', async (req, res) => {
     const graphData = await neo4jService.getFullGraph();
     res.json(graphData);
   } catch (error) {
-    logger.error('Error fetching graph:', error);
+    logger.error('Error fetching graph', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch graph data'
     });
@@ -378,7 +378,7 @@ app.get('/api/graph/search', async (req, res) => {
     const nodes = await neo4jService.searchNodes(query);
     res.json(nodes);
   } catch (error) {
-    logger.error('Error searching nodes:', error);
+    logger.error('Error searching nodes', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to search nodes'
     });
@@ -398,7 +398,7 @@ app.get('/api/graph/node/:nodeId', async (req, res) => {
     }
     res.json(details);
   } catch (error) {
-    logger.error('Error fetching node details:', error);
+    logger.error('Error fetching node details', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch node details'
     });
@@ -438,7 +438,7 @@ app.get('/api/neo4j/tenants', async (req, res) => {
       await driver.close();
     }
   } catch (error: any) {
-    logger.error('Failed to fetch tenants from Neo4j:', error);
+    logger.error('Failed to fetch tenants from Neo4j', { error });
     res.json({ tenants: [], error: error.message });
   }
 });
@@ -557,7 +557,7 @@ app.get('/api/mcp/status', async (req, res) => {
       res.json({ running: false });
     }
   } catch (error) {
-    logger.error('Failed to check MCP status:', error);
+    logger.error('Failed to check MCP status', { error });
     res.json({ running: false, error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
@@ -585,7 +585,7 @@ app.get('/api/config/env', (req, res) => {
         }
       });
     } catch (error) {
-      logger.error('Failed to read .env file:', error);
+      logger.error('Failed to read .env file', { error });
     }
   }
 
@@ -624,7 +624,7 @@ app.get('/api/docs/:filePath(*)', async (req, res) => {
 
     // Check if the resolved path is within the project directory
     if (!fullFilePath.startsWith(projectRoot)) {
-      logger.warn('Docs API: Access denied - path outside project root:', filePath);
+      logger.warn('Docs API: Access denied - path outside project root', { filePath });
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -642,7 +642,7 @@ app.get('/api/docs/:filePath(*)', async (req, res) => {
     res.json(content);
 
   } catch (error) {
-    logger.error('Error serving markdown file:', error);
+    logger.error('Error serving markdown file', { error });
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to read file'
     });
@@ -840,7 +840,7 @@ app.get('/api/test/azure', async (req, res) => {
       }
     }
   } catch (error: any) {
-    logger.error('Azure connection test failed:', error);
+    logger.error('Azure connection test failed', { error });
     res.json({ success: false, error: error.message });
   }
 });
@@ -917,7 +917,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
         url = `${endpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
       }
       
-      logger.debug('Testing Azure OpenAI with URL:', url);
+      logger.debug('Testing Azure OpenAI with URL', { url });
       
       // Make a test call with the joke prompt as specified in requirements
       const response = await fetch(url, {
@@ -939,7 +939,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
         
         // Validate response structure
         if (!data || typeof data !== 'object') {
-          logger.error('Invalid response structure from Azure OpenAI:', data);
+          logger.error('Invalid response structure from Azure OpenAI', { data });
           return res.json({ 
             success: false, 
             error: 'Invalid response from Azure OpenAI API',
@@ -989,7 +989,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
         });
       } else {
         const errorText = await response.text();
-        logger.error('Azure OpenAI test failed:', response.status, errorText);
+        logger.error(`Azure OpenAI test failed: ${response.status}`, { errorText });
         return res.json({ 
           success: false, 
           error: `API test failed: ${response.status}`,
@@ -997,11 +997,11 @@ app.get('/api/test/azure-openai', async (req, res) => {
         });
       }
     } catch (error: any) {
-      logger.error('Azure OpenAI API call failed:', error);
+      logger.error('Azure OpenAI API call failed', { error });
       return res.json({ success: false, error: `Failed to connect to Azure OpenAI: ${error.message}` });
     }
   } catch (error: any) {
-    logger.error('Azure OpenAI connection test failed:', error);
+    logger.error('Azure OpenAI connection test failed', { error });
     res.json({ success: false, error: error.message });
   }
 });
@@ -1079,7 +1079,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
 
         if (!tokenResponse.ok) {
           const tokenError = await tokenResponse.text();
-          logger.error('Failed to get Graph API token:', tokenError);
+          logger.error('Failed to get Graph API token', { tokenError });
           return res.json({
             success: false,
             error: 'Failed to authenticate with Microsoft Graph API. Check your service principal credentials.',
@@ -1114,14 +1114,14 @@ app.get('/api/test/graph-permissions', async (req, res) => {
         if (usersResponse.ok) {
           const usersData: any = await usersResponse.json();
           permissions.users = true;
-          logger.debug('✅ Can read users:', usersData.value?.length || 0, 'users found');
+          logger.debug(`✅ Can read users: ${usersData.value?.length || 0} users found`);
         } else if (usersResponse.status === 403) {
           logger.debug('❌ Cannot read users - insufficient permissions');
         } else {
-          logger.debug('❌ Cannot read users - error:', usersResponse.status);
+          logger.debug(`❌ Cannot read users - error: ${usersResponse.status}`);
         }
       } catch (error) {
-        logger.debug('❌ Cannot read users - network error:', error);
+        logger.debug('❌ Cannot read users - network error', { error });
       }
 
       // Test 2: Check if we can read groups
@@ -1134,14 +1134,14 @@ app.get('/api/test/graph-permissions', async (req, res) => {
         if (groupsResponse.ok) {
           const groupsData: any = await groupsResponse.json();
           permissions.groups = true;
-          logger.debug('✅ Can read groups:', groupsData.value?.length || 0, 'groups found');
+          logger.debug(`✅ Can read groups: ${groupsData.value?.length || 0} groups found`);
         } else if (groupsResponse.status === 403) {
           logger.debug('❌ Cannot read groups - insufficient permissions');
         } else {
-          logger.debug('❌ Cannot read groups - error:', groupsResponse.status);
+          logger.debug(`❌ Cannot read groups - error: ${groupsResponse.status}`);
         }
       } catch (error) {
-        logger.debug('❌ Cannot read groups - network error:', error);
+        logger.debug('❌ Cannot read groups - network error', { error });
       }
 
       // Test 3: Check if we can read service principals
@@ -1154,14 +1154,14 @@ app.get('/api/test/graph-permissions', async (req, res) => {
         if (spResponse.ok) {
           const spData: any = await spResponse.json();
           permissions.servicePrincipals = true;
-          logger.debug('✅ Can read service principals:', spData.value?.length || 0, 'service principals found');
+          logger.debug(`✅ Can read service principals: ${spData.value?.length || 0} service principals found`);
         } else if (spResponse.status === 403) {
           logger.debug('❌ Cannot read service principals - insufficient permissions');
         } else {
-          logger.debug('❌ Cannot read service principals - error:', spResponse.status);
+          logger.debug(`❌ Cannot read service principals - error: ${spResponse.status}`);
         }
       } catch (error) {
-        logger.debug('❌ Cannot read service principals - network error:', error);
+        logger.debug('❌ Cannot read service principals - network error', { error });
       }
 
       // Test 4: Check if we can read directory roles
@@ -1174,14 +1174,14 @@ app.get('/api/test/graph-permissions', async (req, res) => {
         if (rolesResponse.ok) {
           const rolesData: any = await rolesResponse.json();
           permissions.directoryRoles = true;
-          logger.debug('✅ Can read directory roles:', rolesData.value?.length || 0, 'roles found');
+          logger.debug(`✅ Can read directory roles: ${rolesData.value?.length || 0} roles found`);
         } else if (rolesResponse.status === 403) {
           logger.debug('❌ Cannot read directory roles - insufficient permissions');
         } else {
-          logger.debug('❌ Cannot read directory roles - error:', rolesResponse.status);
+          logger.debug(`❌ Cannot read directory roles - error: ${rolesResponse.status}`);
         }
       } catch (error) {
-        logger.debug('❌ Cannot read directory roles - network error:', error);
+        logger.debug('❌ Cannot read directory roles - network error', { error });
       }
 
       // Determine if user has sufficient permissions
@@ -1242,7 +1242,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
       });
 
     } catch (error: any) {
-      logger.error('Graph API permissions test failed:', error);
+      logger.error('Graph API permissions test failed', { error });
       
       return res.json({
         success: false,
@@ -1257,7 +1257,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
     }
 
   } catch (error: any) {
-    logger.error('Graph API permissions check failed:', error);
+    logger.error('Graph API permissions check failed', { error });
     res.json({
       success: false,
       error: error.message,
@@ -1273,7 +1273,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Internal server error:', err);
+  logger.error('Internal server error', { err });
   res.status(500).json({ error: 'Internal server error' });
 });
 
@@ -1304,7 +1304,7 @@ async function startServer() {
     }, 2000);
 
   } catch (error) {
-    logger.error('Failed to start Neo4j container:', error);
+    logger.error('Failed to start Neo4j container', { error });
     logger.warn('Continuing without Neo4j - some features may not work');
   }
 

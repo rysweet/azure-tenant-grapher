@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "../dist/main",
-    "rootDir": ".",
+    "rootDir": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,7 +18,9 @@
     "composite": true
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "../shared/**/*.ts",
+    "../backend/src/security/input-validator.ts"
   ],
   "exclude": [
     "node_modules",
