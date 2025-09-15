@@ -1,0 +1,113 @@
+# Agent Mode Scenario
+
+name: "Agent Mode"
+description: "AI-powered agent interactions and chat interface"
+navigate: false
+
+steps:
+  - description: "Navigate to Agent Mode tab"
+    action: "click"
+    selector: "[data-testid='tab-agent-mode'], [href='#/agent'], .nav-link:has-text('Agent Mode')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for agent interface"
+    action: "wait"
+    selector: ".agent-container, [data-testid='agent-content'], .chat-interface"
+    timeout: 5000
+
+  - description: "Capture agent interface"
+    action: "screenshot"
+    description: "Agent mode interface"
+
+  - description: "Type initial query"
+    action: "fill"
+    selector: "input[name='agent_query'], [data-testid='agent-input'], .chat-input"
+    value: "What resources are in my Azure tenant?"
+    wait_after: 500
+
+  - description: "Submit query"
+    action: "press"
+    selector: "input[name='agent_query'], [data-testid='agent-input'], .chat-input"
+    key: "Enter"
+    wait_after: 2000
+
+  - description: "Wait for agent response"
+    action: "wait"
+    selector: ".agent-response, [data-testid='agent-message'], .chat-message"
+    timeout: 10000
+
+  - description: "Capture agent response"
+    action: "screenshot"
+    description: "Agent query response"
+
+  - description: "Ask for recommendations"
+    action: "fill"
+    selector: "input[name='agent_query'], [data-testid='agent-input'], .chat-input"
+    value: "What security improvements do you recommend?"
+    wait_after: 500
+
+  - description: "Submit recommendation query"
+    action: "press"
+    selector: "input[name='agent_query'], [data-testid='agent-input'], .chat-input"
+    key: "Enter"
+    wait_after: 2000
+
+  - description: "Wait for recommendations"
+    action: "wait"
+    selector: ".agent-response:last-child, .chat-message:last-child"
+    timeout: 10000
+
+  - description: "Capture recommendations"
+    action: "screenshot"
+    description: "Security recommendations from agent"
+
+  - description: "Scroll chat history"
+    action: "scroll"
+    position: 300
+    wait_after: 500
+
+  - description: "Use suggested action"
+    action: "click"
+    selector: ".suggested-action:first-child, [data-testid='suggestion']"
+    optional: true
+    wait_after: 1000
+
+  - description: "Clear chat"
+    action: "click"
+    selector: "[data-testid='clear-chat'], button:has-text('Clear')"
+    optional: true
+    wait_after: 500
+
+  - description: "Toggle agent settings"
+    action: "click"
+    selector: "[data-testid='agent-settings'], .settings-toggle"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture agent settings"
+    action: "screenshot"
+    description: "Agent configuration options"
+
+  - description: "Export chat history"
+    action: "click"
+    selector: "[data-testid='export-chat'], button:has-text('Export')"
+    optional: true
+    wait_after: 1000
+
+assertions:
+  - type: "element_visible"
+    selector: ".agent-container, [data-testid='agent-content'], .chat-interface"
+
+  - type: "element_visible"
+    selector: "input[name='agent_query'], [data-testid='agent-input'], .chat-input"
+
+  - type: "element_count"
+    selector: ".agent-response, .chat-message"
+    count: 2
+    optional: true
+
+  - type: "custom"
+    code: |
+      const messages = document.querySelectorAll('.chat-message, .agent-response');
+      return messages.length >= 1;

@@ -1,0 +1,40 @@
+# Full Walkthrough Story
+# Complete demonstration of all features
+
+name: "Full Walkthrough"
+description: "Comprehensive tour of all Azure Tenant Grapher features"
+stop_on_failure: false
+
+scenarios:
+  - "00_setup"           # Authentication and initial setup
+  - "01_status"          # Dashboard status overview
+  - "02_config"          # Configuration management
+  - "03_scan"            # Azure resource scanning
+  - "04_visualize"       # Graph visualization
+  - "05_generate_spec"   # Specification generation
+  - "06_generate_iac"    # Infrastructure as Code generation
+  - "07_threat_model"    # Security threat modeling
+  - "08_agent_mode"      # AI agent interactions
+  - "09_create_tenant"   # Tenant provisioning
+  - "10_cli"             # Command-line interface
+  - "11_logs"            # System logging
+  - "12_docs"            # Documentation access
+  - "13_undeploy"        # Resource cleanup
+
+settings:
+  timeout: 900000        # 15 minutes total
+  screenshot_all: true
+  skip_optional: false
+  parallel: false
+
+summary:
+  generate: true
+  include_screenshots: true
+  include_timings: true
+  format: "html"
+
+post_actions:
+  - type: "generate_gallery"
+    title: "Full Feature Walkthrough Gallery"
+  - type: "export_results"
+    format: "json"

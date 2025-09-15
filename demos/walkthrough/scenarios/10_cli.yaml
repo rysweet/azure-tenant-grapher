@@ -1,0 +1,117 @@
+# CLI Interface Scenario
+
+name: "CLI Interface"
+description: "Command-line interface and terminal operations"
+navigate: false
+
+steps:
+  - description: "Navigate to CLI tab"
+    action: "click"
+    selector: "[data-testid='tab-cli'], [href='#/cli'], .nav-link:has-text('CLI')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for CLI interface"
+    action: "wait"
+    selector: ".cli-container, [data-testid='cli-content'], .terminal-container"
+    timeout: 5000
+
+  - description: "Capture CLI interface"
+    action: "screenshot"
+    description: "CLI terminal interface"
+
+  - description: "Type help command"
+    action: "fill"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    value: "atg --help"
+    wait_after: 500
+
+  - description: "Execute help command"
+    action: "press"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    key: "Enter"
+    wait_after: 1000
+
+  - description: "Capture help output"
+    action: "screenshot"
+    description: "CLI help documentation"
+
+  - description: "List resources command"
+    action: "fill"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    value: "atg list resources --format json"
+    wait_after: 500
+
+  - description: "Execute list command"
+    action: "press"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    key: "Enter"
+    wait_after: 2000
+
+  - description: "Capture resource list"
+    action: "screenshot"
+    description: "Resource listing output"
+
+  - description: "Scan command"
+    action: "fill"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    value: "atg scan --subscription all --parallel"
+    wait_after: 500
+
+  - description: "Execute scan"
+    action: "press"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    key: "Enter"
+    wait_after: 3000
+
+  - description: "Capture scan output"
+    action: "screenshot"
+    description: "CLI scan execution"
+
+  - description: "Clear terminal"
+    action: "click"
+    selector: "[data-testid='clear-terminal'], button:has-text('Clear')"
+    optional: true
+    wait_after: 500
+
+  - description: "Show command history"
+    action: "press"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    key: "ArrowUp"
+    optional: true
+    wait_after: 500
+
+  - description: "Export command"
+    action: "fill"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    value: "atg export --format terraform --output ./export"
+    wait_after: 500
+
+  - description: "Execute export"
+    action: "press"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+    key: "Enter"
+    wait_after: 2000
+
+  - description: "Capture export result"
+    action: "screenshot"
+    description: "Export command result"
+
+  - description: "Toggle terminal theme"
+    action: "click"
+    selector: "[data-testid='terminal-theme'], .theme-toggle"
+    optional: true
+    wait_after: 500
+
+assertions:
+  - type: "element_visible"
+    selector: ".cli-container, [data-testid='cli-content'], .terminal-container"
+
+  - type: "element_visible"
+    selector: "input[name='cli_command'], [data-testid='cli-input'], .terminal-input"
+
+  - type: "custom"
+    code: |
+      const output = document.querySelectorAll('.terminal-output, .cli-output');
+      return output.length > 0;
+    optional: true

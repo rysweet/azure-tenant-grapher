@@ -1,0 +1,70 @@
+# Demo Walkthrough Configuration
+
+app:
+  url: "http://localhost:3000"
+  electron_app: "../spa/dist/azure-tenant-grapher"
+  timeout: 30000
+  retry_attempts: 3
+  retry_delay: 1000
+
+authentication:
+  method: "azure_cli"  # Options: azure_cli, service_principal, interactive
+  tenant_id: "${AZURE_TENANT_ID}"
+  client_id: "${AZURE_CLIENT_ID}"
+  client_secret: "${AZURE_CLIENT_SECRET}"
+
+screenshot:
+  enabled: true
+  format: "png"
+  quality: 90
+  fullPage: false
+  path: "./screenshots"
+  naming_pattern: "{timestamp}_{scenario}_{step}_{description}"
+  animations: "disabled"
+
+test:
+  headless: false
+  slowMo: 100  # Milliseconds between actions for visibility
+  timeout: 60000  # Overall test timeout
+  viewport:
+    width: 1920
+    height: 1080
+  browser: "chromium"  # Options: chromium, firefox, webkit
+
+logging:
+  level: "info"  # Options: debug, info, warning, error
+  file: "logs/demo_{timestamp}.log"
+  console: true
+
+report:
+  generate: true
+  format: ["html", "json", "junit"]
+  path: "./reports"
+  include_screenshots: true
+  include_videos: false
+
+gallery:
+  template: "default"  # Options: default, grid, carousel
+  title: "Azure Tenant Grapher Demo Gallery"
+  description: "Visual walkthrough of all features"
+  group_by: "scenario"  # Options: scenario, timestamp, feature
+  thumbnail_size:
+    width: 400
+    height: 300
+  annotations:
+    enabled: true
+    highlight_color: "#FF0000"
+
+scenarios:
+  parallel_execution: false
+  stop_on_failure: false
+  screenshot_on_failure: true
+
+stories:
+  default: "quick_demo"
+  available:
+    - quick_demo
+    - full_walkthrough
+    - security_focus
+    - developer_workflow
+    - admin_workflow

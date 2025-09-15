@@ -1,0 +1,118 @@
+# Infrastructure as Code Generation Scenario
+
+name: "Generate IaC"
+description: "Generate Terraform or Bicep code from specifications"
+navigate: false
+
+steps:
+  - description: "Navigate to Generate IaC tab"
+    action: "click"
+    selector: "[data-testid='tab-generate-iac'], [href='#/generate-iac'], .nav-link:has-text('Generate IaC')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for IaC generator page"
+    action: "wait"
+    selector: ".iac-generator, [data-testid='iac-content']"
+    timeout: 5000
+
+  - description: "Capture IaC generator interface"
+    action: "screenshot"
+    description: "IaC generator ready"
+
+  - description: "Select IaC provider"
+    action: "select"
+    selector: "select[name='iac_provider'], [data-testid='iac-provider']"
+    value: "terraform"
+    optional: true
+    wait_after: 500
+
+  - description: "Configure Terraform version"
+    action: "fill"
+    selector: "input[name='tf_version'], [data-testid='tf-version']"
+    value: "1.5.0"
+    optional: true
+
+  - description: "Enable module structure"
+    action: "click"
+    selector: "input[name='use_modules'], [data-testid='use-modules']"
+    optional: true
+
+  - description: "Select resources to include"
+    action: "click"
+    selector: "input[name='include_all'], [data-testid='include-all-resources']"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture IaC configuration"
+    action: "screenshot"
+    description: "IaC generation configured"
+
+  - description: "Generate IaC code"
+    action: "click"
+    selector: "[data-testid='generate-iac'], button:has-text('Generate')"
+    wait_after: 3000
+
+  - description: "Wait for code generation"
+    action: "wait"
+    selector: ".iac-output, [data-testid='iac-result'], .code-output"
+    timeout: 15000
+
+  - description: "Capture generated IaC"
+    action: "screenshot"
+    description: "Generated Infrastructure as Code"
+
+  - description: "Switch to file view"
+    action: "click"
+    selector: "[data-testid='file-view'], .view-files"
+    optional: true
+    wait_after: 1000
+
+  - description: "Explore main.tf"
+    action: "click"
+    selector: ".file-item:has-text('main.tf'), [data-testid='file-main']"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture main configuration"
+    action: "screenshot"
+    description: "Main Terraform configuration"
+
+  - description: "View variables file"
+    action: "click"
+    selector: ".file-item:has-text('variables.tf'), [data-testid='file-variables']"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through code"
+    action: "scroll"
+    position: 600
+    wait_after: 500
+
+  - description: "Download IaC package"
+    action: "click"
+    selector: "[data-testid='download-iac'], button:has-text('Download')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Run validation"
+    action: "click"
+    selector: "[data-testid='validate-iac'], button:has-text('Validate')"
+    optional: true
+    wait_after: 2000
+
+assertions:
+  - type: "element_visible"
+    selector: ".iac-generator, [data-testid='iac-content']"
+
+  - type: "element_visible"
+    selector: "[data-testid='generate-iac'], button:has-text('Generate')"
+
+  - type: "element_visible"
+    selector: ".iac-output, [data-testid='iac-result'], .code-output"
+    timeout: 15000
+
+  - type: "text_contains"
+    selector: ".iac-output, .code-output"
+    value: "resource"
+    optional: true

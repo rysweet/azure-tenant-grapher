@@ -1,0 +1,112 @@
+# Documentation Scenario
+
+name: "Documentation"
+description: "Access documentation and help system"
+navigate: false
+
+steps:
+  - description: "Navigate to Docs tab"
+    action: "click"
+    selector: "[data-testid='tab-docs'], [href='#/docs'], .nav-link:has-text('Docs')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for docs page"
+    action: "wait"
+    selector: ".docs-container, [data-testid='docs-content']"
+    timeout: 5000
+
+  - description: "Capture documentation interface"
+    action: "screenshot"
+    description: "Documentation main page"
+
+  - description: "Open getting started"
+    action: "click"
+    selector: ".doc-section:has-text('Getting Started'), [data-testid='getting-started']"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture getting started"
+    action: "screenshot"
+    description: "Getting started guide"
+
+  - description: "Navigate to API docs"
+    action: "click"
+    selector: ".doc-link:has-text('API'), [data-testid='api-docs']"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture API documentation"
+    action: "screenshot"
+    description: "API reference documentation"
+
+  - description: "Search documentation"
+    action: "fill"
+    selector: "input[name='doc_search'], [data-testid='doc-search']"
+    value: "authentication"
+    optional: true
+    wait_after: 500
+
+  - description: "Execute search"
+    action: "press"
+    selector: "input[name='doc_search'], [data-testid='doc-search']"
+    key: "Enter"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture search results"
+    action: "screenshot"
+    description: "Documentation search results"
+
+  - description: "View troubleshooting"
+    action: "click"
+    selector: ".doc-link:has-text('Troubleshooting'), [data-testid='troubleshooting']"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through docs"
+    action: "scroll"
+    position: 400
+    wait_after: 500
+
+  - description: "Open FAQ"
+    action: "click"
+    selector: ".doc-link:has-text('FAQ'), [data-testid='faq']"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture FAQ section"
+    action: "screenshot"
+    description: "Frequently asked questions"
+
+  - description: "Toggle dark mode docs"
+    action: "click"
+    selector: "[data-testid='docs-theme'], .theme-toggle"
+    optional: true
+    wait_after: 500
+
+  - description: "View release notes"
+    action: "click"
+    selector: ".doc-link:has-text('Release Notes'), [data-testid='release-notes']"
+    optional: true
+    wait_after: 500
+
+  - description: "Print documentation"
+    action: "click"
+    selector: "[data-testid='print-docs'], button:has-text('Print')"
+    optional: true
+    wait_after: 1000
+
+assertions:
+  - type: "element_visible"
+    selector: ".docs-container, [data-testid='docs-content']"
+
+  - type: "custom"
+    code: |
+      const docSections = document.querySelectorAll('.doc-section, .doc-content');
+      return docSections.length > 0;
+    optional: true
+
+  - type: "element_visible"
+    selector: "input[name='doc_search'], [data-testid='doc-search']"
+    optional: true

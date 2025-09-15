@@ -1,0 +1,113 @@
+# Graph Visualization Scenario
+
+name: "Graph Visualization"
+description: "Interactive visualization of Azure resources and relationships"
+navigate: false
+
+steps:
+  - description: "Navigate to Visualize tab"
+    action: "click"
+    selector: "[data-testid='tab-visualize'], [href='#/visualize'], .nav-link:has-text('Visualize')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for visualization page"
+    action: "wait"
+    selector: ".visualize-container, [data-testid='visualize-content'], #graph-container"
+    timeout: 5000
+
+  - description: "Wait for graph to render"
+    action: "wait"
+    selector: "canvas, svg, .graph-canvas"
+    timeout: 10000
+
+  - description: "Capture initial graph view"
+    action: "screenshot"
+    description: "Initial graph visualization"
+
+  - description: "Open filter panel"
+    action: "click"
+    selector: "[data-testid='filter-toggle'], .filter-button"
+    optional: true
+    wait_after: 500
+
+  - description: "Filter by resource type"
+    action: "click"
+    selector: "input[value='VirtualMachine'], [data-testid='filter-vm']"
+    optional: true
+    wait_after: 1000
+
+  - description: "Apply filters"
+    action: "click"
+    selector: "[data-testid='apply-filters'], button:has-text('Apply')"
+    optional: true
+    wait_after: 2000
+
+  - description: "Capture filtered view"
+    action: "screenshot"
+    description: "Filtered resource view"
+
+  - description: "Reset zoom"
+    action: "click"
+    selector: "[data-testid='reset-zoom'], .zoom-reset"
+    optional: true
+    wait_after: 500
+
+  - description: "Zoom in on graph"
+    action: "click"
+    selector: "[data-testid='zoom-in'], .zoom-in"
+    optional: true
+    wait_after: 500
+
+  - description: "Pan graph view"
+    action: "evaluate"
+    code: |
+      const canvas = document.querySelector('canvas, svg');
+      if (canvas) {
+        const event = new MouseEvent('mousedown', { bubbles: true, clientX: 400, clientY: 300 });
+        canvas.dispatchEvent(event);
+        const moveEvent = new MouseEvent('mousemove', { bubbles: true, clientX: 600, clientY: 400 });
+        canvas.dispatchEvent(moveEvent);
+        const upEvent = new MouseEvent('mouseup', { bubbles: true });
+        canvas.dispatchEvent(upEvent);
+      }
+    optional: true
+
+  - description: "Select a node"
+    action: "click"
+    selector: ".graph-node:first-child, .node"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture node details"
+    action: "screenshot"
+    description: "Node details panel"
+
+  - description: "Toggle layout"
+    action: "click"
+    selector: "[data-testid='layout-toggle'], .layout-button"
+    optional: true
+    wait_after: 2000
+
+  - description: "Capture alternative layout"
+    action: "screenshot"
+    description: "Alternative graph layout"
+
+  - description: "Export graph"
+    action: "click"
+    selector: "[data-testid='export-graph'], button:has-text('Export')"
+    optional: true
+    wait_after: 1000
+
+assertions:
+  - type: "element_visible"
+    selector: ".visualize-container, [data-testid='visualize-content'], #graph-container"
+
+  - type: "element_visible"
+    selector: "canvas, svg, .graph-canvas"
+
+  - type: "custom"
+    code: |
+      const graphElements = document.querySelectorAll('.graph-node, .node, circle, rect');
+      return graphElements.length > 0;
+    optional: true

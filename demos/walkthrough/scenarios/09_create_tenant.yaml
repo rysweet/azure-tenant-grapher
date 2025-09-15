@@ -1,0 +1,110 @@
+# Create Tenant Scenario
+
+name: "Create Tenant"
+description: "Provision a new Azure tenant environment"
+navigate: false
+
+steps:
+  - description: "Navigate to Create Tenant tab"
+    action: "click"
+    selector: "[data-testid='tab-create-tenant'], [href='#/create-tenant'], .nav-link:has-text('Create Tenant')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for create tenant page"
+    action: "wait"
+    selector: ".create-tenant-container, [data-testid='create-tenant-content']"
+    timeout: 5000
+
+  - description: "Capture create tenant interface"
+    action: "screenshot"
+    description: "Tenant creation interface"
+
+  - description: "Enter tenant name"
+    action: "fill"
+    selector: "input[name='tenant_name'], [data-testid='tenant-name']"
+    value: "demo-tenant-001"
+    wait_after: 500
+
+  - description: "Select tenant region"
+    action: "select"
+    selector: "select[name='tenant_region'], [data-testid='tenant-region']"
+    value: "eastus"
+    optional: true
+
+  - description: "Configure tenant settings"
+    action: "click"
+    selector: "input[name='enable_mfa'], [data-testid='enable-mfa']"
+    optional: true
+
+  - description: "Set admin email"
+    action: "fill"
+    selector: "input[name='admin_email'], [data-testid='admin-email']"
+    value: "admin@demo-tenant.com"
+    optional: true
+
+  - description: "Select subscription type"
+    action: "select"
+    selector: "select[name='subscription_type'], [data-testid='subscription-type']"
+    value: "pay-as-you-go"
+    optional: true
+
+  - description: "Capture tenant configuration"
+    action: "screenshot"
+    description: "Tenant configuration complete"
+
+  - description: "Validate configuration"
+    action: "click"
+    selector: "[data-testid='validate-config'], button:has-text('Validate')"
+    optional: true
+    wait_after: 2000
+
+  - description: "Review tenant preview"
+    action: "click"
+    selector: "[data-testid='preview-tenant'], button:has-text('Preview')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture tenant preview"
+    action: "screenshot"
+    description: "Tenant creation preview"
+
+  - description: "Scroll to create button"
+    action: "scroll"
+    position: 500
+    wait_after: 500
+
+  - description: "Create tenant"
+    action: "click"
+    selector: "[data-testid='create-tenant-button'], button:has-text('Create Tenant')"
+    wait_after: 3000
+
+  - description: "Wait for creation process"
+    action: "wait"
+    selector: ".creation-progress, [data-testid='creation-status']"
+    timeout: 10000
+    optional: true
+
+  - description: "Capture creation progress"
+    action: "screenshot"
+    description: "Tenant creation in progress"
+
+  - description: "Check creation result"
+    action: "wait"
+    selector: ".creation-success, [data-testid='creation-complete']"
+    timeout: 30000
+    optional: true
+
+assertions:
+  - type: "element_visible"
+    selector: ".create-tenant-container, [data-testid='create-tenant-content']"
+
+  - type: "element_visible"
+    selector: "input[name='tenant_name'], [data-testid='tenant-name']"
+
+  - type: "element_enabled"
+    selector: "[data-testid='create-tenant-button'], button:has-text('Create Tenant')"
+
+  - type: "value_equals"
+    selector: "input[name='tenant_name'], [data-testid='tenant-name']"
+    value: "demo-tenant-001"

@@ -1,0 +1,119 @@
+# Threat Modeling Scenario
+
+name: "Threat Model"
+description: "Security threat modeling and risk analysis"
+navigate: false
+
+steps:
+  - description: "Navigate to Threat Model tab"
+    action: "click"
+    selector: "[data-testid='tab-threat-model'], [href='#/threat-model'], .nav-link:has-text('Threat Model')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for threat model page"
+    action: "wait"
+    selector: ".threat-model-container, [data-testid='threat-model-content']"
+    timeout: 5000
+
+  - description: "Capture threat model interface"
+    action: "screenshot"
+    description: "Threat modeling interface"
+
+  - description: "Select threat framework"
+    action: "select"
+    selector: "select[name='threat_framework'], [data-testid='threat-framework']"
+    value: "STRIDE"
+    optional: true
+    wait_after: 500
+
+  - description: "Configure analysis scope"
+    action: "click"
+    selector: "input[name='include_network'], [data-testid='include-network']"
+    optional: true
+
+  - description: "Set risk level threshold"
+    action: "select"
+    selector: "select[name='risk_level'], [data-testid='risk-level']"
+    value: "medium"
+    optional: true
+
+  - description: "Start threat analysis"
+    action: "click"
+    selector: "[data-testid='analyze-threats'], button:has-text('Analyze')"
+    wait_after: 2000
+
+  - description: "Wait for analysis"
+    action: "wait"
+    selector: ".threat-results, [data-testid='threat-analysis-results']"
+    timeout: 20000
+
+  - description: "Capture threat overview"
+    action: "screenshot"
+    description: "Threat analysis overview"
+
+  - description: "Expand high-risk threats"
+    action: "click"
+    selector: ".threat-category:has-text('High'), [data-testid='high-risk-threats']"
+    optional: true
+    wait_after: 500
+
+  - description: "View threat details"
+    action: "click"
+    selector: ".threat-item:first-child, [data-testid='threat-detail']"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture threat details"
+    action: "screenshot"
+    description: "Detailed threat information"
+
+  - description: "View mitigation recommendations"
+    action: "click"
+    selector: "[data-testid='view-mitigations'], .mitigations-tab"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture mitigations"
+    action: "screenshot"
+    description: "Mitigation recommendations"
+
+  - description: "Generate threat report"
+    action: "click"
+    selector: "[data-testid='generate-report'], button:has-text('Generate Report')"
+    optional: true
+    wait_after: 2000
+
+  - description: "View compliance mapping"
+    action: "click"
+    selector: "[data-testid='compliance-mapping'], .compliance-tab"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through threats"
+    action: "scroll"
+    position: 400
+    wait_after: 500
+
+  - description: "Export threat model"
+    action: "click"
+    selector: "[data-testid='export-threats'], button:has-text('Export')"
+    optional: true
+    wait_after: 1000
+
+assertions:
+  - type: "element_visible"
+    selector: ".threat-model-container, [data-testid='threat-model-content']"
+
+  - type: "element_visible"
+    selector: "[data-testid='analyze-threats'], button:has-text('Analyze')"
+
+  - type: "element_visible"
+    selector: ".threat-results, [data-testid='threat-analysis-results']"
+    timeout: 20000
+
+  - type: "custom"
+    code: |
+      const threats = document.querySelectorAll('.threat-item, .threat-entry');
+      return threats.length > 0;
+    optional: true

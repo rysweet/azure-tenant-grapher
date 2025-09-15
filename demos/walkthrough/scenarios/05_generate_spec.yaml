@@ -1,0 +1,112 @@
+# Specification Generation Scenario
+
+name: "Generate Specification"
+description: "Generate YAML specification from discovered resources"
+navigate: false
+
+steps:
+  - description: "Navigate to Generate Spec tab"
+    action: "click"
+    selector: "[data-testid='tab-generate-spec'], [href='#/generate-spec'], .nav-link:has-text('Generate Spec')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for spec generation page"
+    action: "wait"
+    selector: ".spec-generator, [data-testid='spec-content']"
+    timeout: 5000
+
+  - description: "Capture spec generator interface"
+    action: "screenshot"
+    description: "Specification generator ready"
+
+  - description: "Select specification format"
+    action: "select"
+    selector: "select[name='spec_format'], [data-testid='spec-format']"
+    value: "yaml"
+    optional: true
+    wait_after: 500
+
+  - description: "Configure spec options"
+    action: "click"
+    selector: "input[name='include_tags'], [data-testid='include-tags']"
+    optional: true
+
+  - description: "Set spec name"
+    action: "fill"
+    selector: "input[name='spec_name'], [data-testid='spec-name']"
+    value: "demo-tenant-spec"
+    optional: true
+
+  - description: "Capture spec configuration"
+    action: "screenshot"
+    description: "Spec generation configured"
+
+  - description: "Generate specification"
+    action: "click"
+    selector: "[data-testid='generate-spec'], button:has-text('Generate')"
+    wait_after: 2000
+
+  - description: "Wait for generation"
+    action: "wait"
+    selector: ".spec-output, [data-testid='spec-result'], .code-editor"
+    timeout: 10000
+
+  - description: "Capture generated spec"
+    action: "screenshot"
+    description: "Generated specification"
+
+  - description: "Expand spec sections"
+    action: "click"
+    selector: ".expand-all, [data-testid='expand-sections']"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through spec"
+    action: "scroll"
+    position: 400
+    wait_after: 500
+
+  - description: "Capture detailed spec"
+    action: "screenshot"
+    description: "Detailed specification view"
+
+  - description: "Copy spec to clipboard"
+    action: "click"
+    selector: "[data-testid='copy-spec'], button:has-text('Copy')"
+    optional: true
+    wait_after: 500
+
+  - description: "Download spec"
+    action: "click"
+    selector: "[data-testid='download-spec'], button:has-text('Download')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Validate spec"
+    action: "click"
+    selector: "[data-testid='validate-spec'], button:has-text('Validate')"
+    optional: true
+    wait_after: 2000
+
+  - description: "Check validation results"
+    action: "wait"
+    selector: ".validation-success, [data-testid='validation-result']"
+    timeout: 5000
+    optional: true
+
+assertions:
+  - type: "element_visible"
+    selector: ".spec-generator, [data-testid='spec-content']"
+
+  - type: "element_visible"
+    selector: "[data-testid='generate-spec'], button:has-text('Generate')"
+
+  - type: "element_visible"
+    selector: ".spec-output, [data-testid='spec-result'], .code-editor"
+    timeout: 10000
+
+  - type: "custom"
+    code: |
+      const specContent = document.querySelector('.spec-output, .code-editor');
+      return specContent && specContent.textContent.length > 100;

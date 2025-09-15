@@ -1,0 +1,158 @@
+[
+  {
+    "filename": "20250914_190330_00_setup_error_failure.png",
+    "filepath": "screenshots/20250914_190330_00_setup_error_failure.png",
+    "timestamp": "20250914_190330",
+    "scenario": "00_setup",
+    "step": "error",
+    "description": "failure",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190405_01_status_1_wait_for_status_dashboard.png",
+    "filepath": "screenshots/20250914_190405_01_status_1_wait_for_status_dashboard.png",
+    "timestamp": "20250914_190405",
+    "scenario": "01_status",
+    "step": 1,
+    "description": "Wait for status dashboard",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190405_01_status_2_status_dashboard_overview.png",
+    "filepath": "screenshots/20250914_190405_01_status_2_status_dashboard_overview.png",
+    "timestamp": "20250914_190405",
+    "scenario": "01_status",
+    "step": 2,
+    "description": "Status dashboard overview",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190405_01_status_2_status_dashboard_overview.png",
+    "filepath": "screenshots/20250914_190405_01_status_2_status_dashboard_overview.png",
+    "timestamp": "20250914_190405",
+    "scenario": "01_status",
+    "step": 2,
+    "description": "Status dashboard overview",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190408_01_status_3_check_system_health.png",
+    "filepath": "screenshots/20250914_190408_01_status_3_check_system_health.png",
+    "timestamp": "20250914_190408",
+    "scenario": "01_status",
+    "step": 3,
+    "description": "Check system health",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190438_01_status_4_expand_metrics_section.png",
+    "filepath": "screenshots/20250914_190438_01_status_4_expand_metrics_section.png",
+    "timestamp": "20250914_190438",
+    "scenario": "01_status",
+    "step": 4,
+    "description": "Expand metrics section",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190438_01_status_5_system_metrics_display.png",
+    "filepath": "screenshots/20250914_190438_01_status_5_system_metrics_display.png",
+    "timestamp": "20250914_190438",
+    "scenario": "01_status",
+    "step": 5,
+    "description": "System metrics display",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190438_01_status_5_system_metrics_display.png",
+    "filepath": "screenshots/20250914_190438_01_status_5_system_metrics_display.png",
+    "timestamp": "20250914_190438",
+    "scenario": "01_status",
+    "step": 5,
+    "description": "System metrics display",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190438_01_status_6_check_for_error_indicators.png",
+    "filepath": "screenshots/20250914_190438_01_status_6_check_for_error_indicators.png",
+    "timestamp": "20250914_190438",
+    "scenario": "01_status",
+    "step": 6,
+    "description": "Check for error indicators",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190439_01_status_7_scroll_to_connection_status.png",
+    "filepath": "screenshots/20250914_190439_01_status_7_scroll_to_connection_status.png",
+    "timestamp": "20250914_190439",
+    "scenario": "01_status",
+    "step": 7,
+    "description": "Scroll to connection status",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190439_01_status_8_connection_and_service_status.png",
+    "filepath": "screenshots/20250914_190439_01_status_8_connection_and_service_status.png",
+    "timestamp": "20250914_190439",
+    "scenario": "01_status",
+    "step": 8,
+    "description": "Connection and service status",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  {
+    "filename": "20250914_190439_01_status_8_connection_and_service_status.png",
+    "filepath": "screenshots/20250914_190439_01_status_8_connection_and_service_status.png",
+    "timestamp": "20250914_190439",
+    "scenario": "01_status",
+    "step": 8,
+    "description": "Connection and service status",
+    "url": "chrome-error://chromewebdata/",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  }
+]

@@ -1,0 +1,46 @@
+# Security-Focused Story
+# Emphasizes security and compliance features
+
+name: "Security Focus"
+description: "Security and compliance features demonstration"
+stop_on_failure: true
+
+scenarios:
+  - "00_setup"           # Authentication
+  - "02_config"          # Security configuration
+  - "03_scan"            # Resource discovery
+  - "07_threat_model"    # Threat analysis
+  - "08_agent_mode"      # Security recommendations from AI
+  - "11_logs"            # Audit logging
+
+settings:
+  timeout: 600000        # 10 minutes
+  screenshot_all: true
+  highlight_security: true
+
+filters:
+  focus_on:
+    - "security"
+    - "compliance"
+    - "threats"
+    - "vulnerabilities"
+
+assertions:
+  strict: true
+  security_checks:
+    - mfa_enabled: true
+    - encryption_at_rest: true
+    - audit_logging: true
+
+summary:
+  generate: true
+  include_screenshots: true
+  include_security_report: true
+  format: "html"
+
+post_actions:
+  - type: "generate_security_report"
+    include_threats: true
+    include_mitigations: true
+  - type: "export_compliance_data"
+    frameworks: ["NIST", "ISO27001", "SOC2"]

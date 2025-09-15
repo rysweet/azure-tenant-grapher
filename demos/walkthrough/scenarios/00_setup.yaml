@@ -1,0 +1,53 @@
+# Initial Setup and Authentication Scenario
+
+name: "Setup and Authentication"
+description: "Initial application setup and Azure authentication"
+navigate: true
+
+steps:
+  - description: "Load application"
+    action: "navigate"
+    url: "http://localhost:3000"
+    screenshot: true
+    wait_after: 2000
+
+  - description: "Check for authentication prompt"
+    action: "wait"
+    selector: "[data-testid='auth-prompt'], [data-testid='dashboard']"
+    timeout: 5000
+
+  - description: "Click login button if present"
+    action: "click"
+    selector: "[data-testid='login-button']"
+    screenshot: true
+    wait_after: 1000
+    optional: true
+
+  - description: "Wait for authentication"
+    action: "wait"
+    selector: "[data-testid='dashboard'], .dashboard-container"
+    timeout: 30000
+
+  - description: "Verify dashboard loaded"
+    action: "screenshot"
+    description: "Dashboard after authentication"
+
+assertions:
+  - type: "element_visible"
+    selector: "[data-testid='dashboard'], .dashboard-container"
+    timeout: 5000
+
+  - type: "url_contains"
+    value: "/#/dashboard"
+    optional: true
+
+  - type: "local_storage"
+    key: "auth_token"
+    optional: true
+
+post_actions:
+  - description: "Store authentication state"
+    action: "evaluate"
+    code: |
+      localStorage.setItem('demo_auth_timestamp', new Date().toISOString());
+      sessionStorage.setItem('demo_session', 'active');

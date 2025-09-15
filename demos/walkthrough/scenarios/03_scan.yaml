@@ -1,0 +1,103 @@
+# Azure Resource Scanning Scenario
+
+name: "Resource Scan"
+description: "Perform Azure resource discovery and scanning"
+navigate: false
+
+steps:
+  - description: "Navigate to Scan tab"
+    action: "click"
+    selector: "[data-testid='tab-scan'], [href='#/scan'], .nav-link:has-text('Scan')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for scan page"
+    action: "wait"
+    selector: ".scan-container, [data-testid='scan-content']"
+    timeout: 5000
+
+  - description: "Capture scan interface"
+    action: "screenshot"
+    description: "Scan interface ready"
+
+  - description: "Select subscription"
+    action: "click"
+    selector: "[data-testid='subscription-select'], select[name='subscription']"
+    optional: true
+    wait_after: 500
+
+  - description: "Configure scan options"
+    action: "click"
+    selector: "input[type='checkbox'][name='include_identities'], [data-testid='include-identities']"
+    optional: true
+
+  - description: "Set resource filters"
+    action: "fill"
+    selector: "input[name='resource_filter'], [data-testid='resource-filter']"
+    value: "*"
+    optional: true
+
+  - description: "Capture scan configuration"
+    action: "screenshot"
+    description: "Scan options configured"
+
+  - description: "Start scan"
+    action: "click"
+    selector: "[data-testid='start-scan'], button:has-text('Start Scan')"
+    wait_after: 2000
+
+  - description: "Wait for scan progress"
+    action: "wait"
+    selector: ".scan-progress, [data-testid='scan-progress']"
+    timeout: 5000
+
+  - description: "Capture scan in progress"
+    action: "screenshot"
+    description: "Scan in progress"
+
+  - description: "Monitor scan status"
+    action: "wait"
+    selector: ".scan-status:has-text('Scanning'), [data-testid='scan-status']"
+    timeout: 10000
+    optional: true
+
+  - description: "Wait for scan completion"
+    action: "wait"
+    selector: ".scan-complete, [data-testid='scan-complete'], .scan-results"
+    timeout: 60000
+
+  - description: "Capture scan results"
+    action: "screenshot"
+    description: "Scan completed with results"
+
+  - description: "Expand results summary"
+    action: "click"
+    selector: "[data-testid='results-summary'], .results-expand"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through results"
+    action: "scroll"
+    position: 400
+    wait_after: 500
+
+  - description: "Capture detailed results"
+    action: "screenshot"
+    description: "Detailed scan results"
+
+assertions:
+  - type: "element_visible"
+    selector: ".scan-container, [data-testid='scan-content']"
+
+  - type: "element_visible"
+    selector: "[data-testid='start-scan'], button:has-text('Start Scan')"
+
+  - type: "element_visible"
+    selector: ".scan-results, [data-testid='scan-results']"
+    timeout: 60000
+
+  - type: "custom"
+    code: |
+      const results = document.querySelectorAll('.resource-item, .scan-result-item');
+      return results.length > 0;
+    optional: true

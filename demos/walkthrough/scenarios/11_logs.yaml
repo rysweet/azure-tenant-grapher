@@ -1,0 +1,115 @@
+# Logs Viewing Scenario
+
+name: "Logs"
+description: "System logging and debug information"
+navigate: false
+
+steps:
+  - description: "Navigate to Logs tab"
+    action: "click"
+    selector: "[data-testid='tab-logs'], [href='#/logs'], .nav-link:has-text('Logs')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for logs page"
+    action: "wait"
+    selector: ".logs-container, [data-testid='logs-content']"
+    timeout: 5000
+
+  - description: "Capture logs interface"
+    action: "screenshot"
+    description: "Logs viewer interface"
+
+  - description: "Select log level filter"
+    action: "select"
+    selector: "select[name='log_level'], [data-testid='log-level-filter']"
+    value: "info"
+    optional: true
+    wait_after: 500
+
+  - description: "Filter by date"
+    action: "fill"
+    selector: "input[type='date'], [data-testid='log-date-filter']"
+    value: "2024-03-15"
+    optional: true
+    wait_after: 500
+
+  - description: "Search logs"
+    action: "fill"
+    selector: "input[name='log_search'], [data-testid='log-search']"
+    value: "scan"
+    optional: true
+    wait_after: 500
+
+  - description: "Apply filters"
+    action: "click"
+    selector: "[data-testid='apply-log-filters'], button:has-text('Apply')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture filtered logs"
+    action: "screenshot"
+    description: "Filtered log entries"
+
+  - description: "Expand log entry"
+    action: "click"
+    selector: ".log-entry:first-child, [data-testid='log-entry']"
+    optional: true
+    wait_after: 500
+
+  - description: "View log details"
+    action: "screenshot"
+    description: "Detailed log information"
+
+  - description: "Toggle error logs"
+    action: "click"
+    selector: "input[value='error'], [data-testid='show-errors']"
+    optional: true
+    wait_after: 500
+
+  - description: "Scroll through logs"
+    action: "scroll"
+    position: 400
+    wait_after: 500
+
+  - description: "Auto-refresh toggle"
+    action: "click"
+    selector: "[data-testid='auto-refresh'], .auto-refresh-toggle"
+    optional: true
+    wait_after: 500
+
+  - description: "Download logs"
+    action: "click"
+    selector: "[data-testid='download-logs'], button:has-text('Download')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Clear old logs"
+    action: "click"
+    selector: "[data-testid='clear-old-logs'], button:has-text('Clear Old')"
+    optional: true
+    wait_after: 500
+
+  - description: "View system metrics"
+    action: "click"
+    selector: "[data-testid='system-metrics'], .metrics-tab"
+    optional: true
+    wait_after: 1000
+
+  - description: "Capture system metrics"
+    action: "screenshot"
+    description: "System performance metrics"
+
+assertions:
+  - type: "element_visible"
+    selector: ".logs-container, [data-testid='logs-content']"
+
+  - type: "custom"
+    code: |
+      const logEntries = document.querySelectorAll('.log-entry, .log-line');
+      return logEntries.length > 0;
+    optional: true
+
+  - type: "element_visible"
+    selector: "[data-testid='log-level-filter'], select[name='log_level']"
+    optional: true

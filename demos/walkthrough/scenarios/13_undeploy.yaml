@@ -1,0 +1,118 @@
+# Undeploy/Cleanup Scenario
+
+name: "Undeploy"
+description: "Resource cleanup and teardown process"
+navigate: false
+
+steps:
+  - description: "Navigate to Settings"
+    action: "click"
+    selector: "[data-testid='settings'], .settings-button, button:has-text('Settings')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Open cleanup section"
+    action: "click"
+    selector: "[data-testid='cleanup-section'], .cleanup-options"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture cleanup interface"
+    action: "screenshot"
+    description: "Cleanup options interface"
+
+  - description: "Select resources to remove"
+    action: "click"
+    selector: "input[name='select_all_resources'], [data-testid='select-all']"
+    optional: true
+    wait_after: 500
+
+  - description: "Configure cleanup options"
+    action: "click"
+    selector: "input[name='remove_backups'], [data-testid='remove-backups']"
+    optional: true
+
+  - description: "Set retention period"
+    action: "fill"
+    selector: "input[name='retention_days'], [data-testid='retention-days']"
+    value: "7"
+    optional: true
+
+  - description: "Capture cleanup configuration"
+    action: "screenshot"
+    description: "Cleanup configuration set"
+
+  - description: "Validate cleanup"
+    action: "click"
+    selector: "[data-testid='validate-cleanup'], button:has-text('Validate')"
+    optional: true
+    wait_after: 2000
+
+  - description: "Review cleanup preview"
+    action: "wait"
+    selector: ".cleanup-preview, [data-testid='cleanup-summary']"
+    timeout: 5000
+    optional: true
+
+  - description: "Capture cleanup preview"
+    action: "screenshot"
+    description: "Resources to be removed"
+
+  - description: "Confirm cleanup"
+    action: "click"
+    selector: "[data-testid='confirm-cleanup'], button:has-text('Confirm')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Enter confirmation"
+    action: "fill"
+    selector: "input[name='confirm_text'], [data-testid='confirm-input']"
+    value: "DELETE"
+    optional: true
+
+  - description: "Execute cleanup"
+    action: "click"
+    selector: "[data-testid='execute-cleanup'], button:has-text('Delete')"
+    optional: true
+    wait_after: 3000
+
+  - description: "Monitor cleanup progress"
+    action: "wait"
+    selector: ".cleanup-progress, [data-testid='cleanup-status']"
+    timeout: 10000
+    optional: true
+
+  - description: "Capture cleanup progress"
+    action: "screenshot"
+    description: "Cleanup in progress"
+
+  - description: "Check cleanup completion"
+    action: "wait"
+    selector: ".cleanup-complete, [data-testid='cleanup-success']"
+    timeout: 30000
+    optional: true
+
+  - description: "Capture final state"
+    action: "screenshot"
+    description: "Cleanup completed"
+
+  - description: "Download cleanup report"
+    action: "click"
+    selector: "[data-testid='download-report'], button:has-text('Download Report')"
+    optional: true
+    wait_after: 1000
+
+assertions:
+  - type: "element_visible"
+    selector: "[data-testid='settings'], .settings-button"
+    optional: true
+
+  - type: "custom"
+    code: |
+      const cleanupOptions = document.querySelectorAll('.cleanup-option, input[type="checkbox"]');
+      return cleanupOptions.length > 0;
+    optional: true
+
+  - type: "element_visible"
+    selector: "[data-testid='execute-cleanup'], button:has-text('Delete')"
+    optional: true

@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Tenant Grapher Demo Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .group {
+            margin-bottom: 40px;
+        }
+        .group-title {
+            font-size: 1.5em;
+            color: #0078d4;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0078d4;
+        }
+        .screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .screenshot-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .screenshot-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        .screenshot-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+        .screenshot-info {
+            padding: 15px;
+        }
+        .screenshot-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .screenshot-meta {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 50px;
+        }
+        .modal-caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+        }
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #bbb;
+        }
+        .filters {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .filter-button {
+            background: white;
+            border: 2px solid #0078d4;
+            color: #0078d4;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-button:hover {
+            background: #0078d4;
+            color: white;
+        }
+        .filter-button.active {
+            background: #0078d4;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Azure Tenant Grapher Demo Gallery</h1>
+        <p class="description">Visual walkthrough of all features</p>
+
+        <div class="filters">
+            <button class="filter-button active" onclick="filterScreenshots('all')">All</button>
+            <button class="filter-button" onclick="filterScreenshots('00_setup')">00_setup</button>
+            <button class="filter-button" onclick="filterScreenshots('01_status')">01_status</button>
+        </div>
+
+        <div class="group" data-group="00_setup">
+            <h2 class="group-title">00_setup</h2>
+            <div class="screenshots">
+                <div class="screenshot-card" onclick="openModal('20250914_190330_00_setup_error_failure.png', 'failure')">
+                    <img src="20250914_190330_00_setup_error_failure.png" alt="failure" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">failure</div>
+                        <div class="screenshot-meta">Step error • 20250914_190330</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="group" data-group="01_status">
+            <h2 class="group-title">01_status</h2>
+            <div class="screenshots">
+                <div class="screenshot-card" onclick="openModal('20250914_190405_01_status_1_wait_for_status_dashboard.png', 'Wait for status dashboard')">
+                    <img src="20250914_190405_01_status_1_wait_for_status_dashboard.png" alt="Wait for status dashboard" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Wait for status dashboard</div>
+                        <div class="screenshot-meta">Step 1 • 20250914_190405</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190405_01_status_2_status_dashboard_overview.png', 'Status dashboard overview')">
+                    <img src="20250914_190405_01_status_2_status_dashboard_overview.png" alt="Status dashboard overview" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Status dashboard overview</div>
+                        <div class="screenshot-meta">Step 2 • 20250914_190405</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190405_01_status_2_status_dashboard_overview.png', 'Status dashboard overview')">
+                    <img src="20250914_190405_01_status_2_status_dashboard_overview.png" alt="Status dashboard overview" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Status dashboard overview</div>
+                        <div class="screenshot-meta">Step 2 • 20250914_190405</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190408_01_status_3_check_system_health.png', 'Check system health')">
+                    <img src="20250914_190408_01_status_3_check_system_health.png" alt="Check system health" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Check system health</div>
+                        <div class="screenshot-meta">Step 3 • 20250914_190408</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190438_01_status_4_expand_metrics_section.png', 'Expand metrics section')">
+                    <img src="20250914_190438_01_status_4_expand_metrics_section.png" alt="Expand metrics section" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Expand metrics section</div>
+                        <div class="screenshot-meta">Step 4 • 20250914_190438</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190438_01_status_5_system_metrics_display.png', 'System metrics display')">
+                    <img src="20250914_190438_01_status_5_system_metrics_display.png" alt="System metrics display" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">System metrics display</div>
+                        <div class="screenshot-meta">Step 5 • 20250914_190438</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190438_01_status_5_system_metrics_display.png', 'System metrics display')">
+                    <img src="20250914_190438_01_status_5_system_metrics_display.png" alt="System metrics display" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">System metrics display</div>
+                        <div class="screenshot-meta">Step 5 • 20250914_190438</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190438_01_status_6_check_for_error_indicators.png', 'Check for error indicators')">
+                    <img src="20250914_190438_01_status_6_check_for_error_indicators.png" alt="Check for error indicators" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Check for error indicators</div>
+                        <div class="screenshot-meta">Step 6 • 20250914_190438</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190439_01_status_7_scroll_to_connection_status.png', 'Scroll to connection status')">
+                    <img src="20250914_190439_01_status_7_scroll_to_connection_status.png" alt="Scroll to connection status" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Scroll to connection status</div>
+                        <div class="screenshot-meta">Step 7 • 20250914_190439</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190439_01_status_8_connection_and_service_status.png', 'Connection and service status')">
+                    <img src="20250914_190439_01_status_8_connection_and_service_status.png" alt="Connection and service status" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Connection and service status</div>
+                        <div class="screenshot-meta">Step 8 • 20250914_190439</div>
+                    </div>
+                </div>
+                <div class="screenshot-card" onclick="openModal('20250914_190439_01_status_8_connection_and_service_status.png', 'Connection and service status')">
+                    <img src="20250914_190439_01_status_8_connection_and_service_status.png" alt="Connection and service status" class="screenshot-image">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">Connection and service status</div>
+                        <div class="screenshot-meta">Step 8 • 20250914_190439</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="modal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modal-image">
+        <div class="modal-caption" id="modal-caption"></div>
+    </div>
+
+    <script>
+        function openModal(imageSrc, caption) {
+            const modal = document.getElementById('modal');
+            const modalImg = document.getElementById('modal-image');
+            const modalCaption = document.getElementById('modal-caption');
+
+            modal.style.display = "block";
+            modalImg.src = imageSrc;
+            modalCaption.innerHTML = caption;
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = "none";
+        }
+
+        function filterScreenshots(group) {
+            const allGroups = document.querySelectorAll('.group');
+            const allButtons = document.querySelectorAll('.filter-button');
+
+            // Update button states
+            allButtons.forEach(button => {
+                if (button.textContent.toLowerCase() === group.toLowerCase() ||
+                    (group === 'all' && button.textContent === 'All')) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            // Show/hide groups
+            if (group === 'all') {
+                allGroups.forEach(g => g.style.display = 'block');
+            } else {
+                allGroups.forEach(g => {
+                    if (g.dataset.group === group) {
+                        g.style.display = 'block';
+                    } else {
+                        g.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('modal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

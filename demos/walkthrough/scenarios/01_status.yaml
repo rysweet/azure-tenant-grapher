@@ -1,0 +1,70 @@
+# Status Dashboard Scenario
+
+name: "Status Dashboard"
+description: "Explore the status dashboard and system health metrics"
+navigate: false
+
+steps:
+  - description: "Navigate to Status tab"
+    action: "click"
+    selector: "[data-testid='tab-status'], [href='#/status'], .nav-link:has-text('Status')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for status dashboard"
+    action: "wait"
+    selector: ".status-dashboard, [data-testid='status-content']"
+    timeout: 5000
+
+  - description: "Capture status overview"
+    action: "screenshot"
+    description: "Status dashboard overview"
+
+  - description: "Check system health"
+    action: "wait"
+    selector: ".health-indicator, [data-testid='health-status']"
+    timeout: 3000
+
+  - description: "Expand metrics section"
+    action: "click"
+    selector: "[data-testid='metrics-toggle'], .metrics-expand"
+    optional: true
+    wait_after: 500
+
+  - description: "Capture metrics view"
+    action: "screenshot"
+    description: "System metrics display"
+
+  - description: "Check for error indicators"
+    action: "evaluate"
+    code: |
+      const errors = document.querySelectorAll('.error-indicator, .status-error');
+      return errors.length === 0;
+
+  - description: "Scroll to connection status"
+    action: "scroll"
+    position: 300
+    wait_after: 500
+
+  - description: "Capture connection status"
+    action: "screenshot"
+    description: "Connection and service status"
+
+assertions:
+  - type: "element_visible"
+    selector: ".status-dashboard, [data-testid='status-content']"
+
+  - type: "text_contains"
+    selector: ".health-status, [data-testid='health-indicator']"
+    value: "Healthy"
+    optional: true
+
+  - type: "element_count"
+    selector: ".error-indicator, .status-error"
+    count: 0
+    optional: true
+
+  - type: "custom"
+    code: |
+      const statusElements = document.querySelectorAll('.status-item, .service-status');
+      return statusElements.length > 0;

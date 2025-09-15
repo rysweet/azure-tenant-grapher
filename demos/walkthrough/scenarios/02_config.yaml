@@ -1,0 +1,85 @@
+# Configuration Management Scenario
+
+name: "Configuration"
+description: "Review and modify application configuration settings"
+navigate: false
+
+steps:
+  - description: "Navigate to Config tab"
+    action: "click"
+    selector: "[data-testid='tab-config'], [href='#/config'], .nav-link:has-text('Config')"
+    screenshot: false
+    wait_after: 1000
+
+  - description: "Wait for config page"
+    action: "wait"
+    selector: ".config-container, [data-testid='config-content']"
+    timeout: 5000
+
+  - description: "Capture configuration overview"
+    action: "screenshot"
+    description: "Configuration settings overview"
+
+  - description: "Expand Azure settings"
+    action: "click"
+    selector: "[data-testid='azure-settings'], .settings-section:has-text('Azure')"
+    optional: true
+    wait_after: 500
+
+  - description: "Check tenant configuration"
+    action: "wait"
+    selector: "input[name='tenant_id'], [data-testid='tenant-id-input']"
+    timeout: 3000
+
+  - description: "Capture Azure settings"
+    action: "screenshot"
+    description: "Azure tenant configuration"
+
+  - description: "Expand scan settings"
+    action: "click"
+    selector: "[data-testid='scan-settings'], .settings-section:has-text('Scan')"
+    optional: true
+    wait_after: 500
+
+  - description: "Toggle parallel scanning"
+    action: "click"
+    selector: "input[type='checkbox'][name='parallel_scan'], [data-testid='parallel-scan-toggle']"
+    optional: true
+    screenshot: true
+
+  - description: "Scroll to advanced settings"
+    action: "scroll"
+    position: 600
+    wait_after: 500
+
+  - description: "Capture advanced settings"
+    action: "screenshot"
+    description: "Advanced configuration options"
+
+  - description: "Test save configuration"
+    action: "click"
+    selector: "[data-testid='save-config'], button:has-text('Save')"
+    optional: true
+    wait_after: 1000
+
+  - description: "Check save confirmation"
+    action: "wait"
+    selector: ".success-message, [data-testid='save-success']"
+    timeout: 3000
+    optional: true
+
+assertions:
+  - type: "element_visible"
+    selector: ".config-container, [data-testid='config-content']"
+
+  - type: "element_visible"
+    selector: "input[name='tenant_id'], [data-testid='tenant-id-input']"
+
+  - type: "custom"
+    code: |
+      const configInputs = document.querySelectorAll('input, select, textarea');
+      return configInputs.length > 0;
+
+  - type: "element_enabled"
+    selector: "[data-testid='save-config'], button:has-text('Save')"
+    optional: true

@@ -1,0 +1,23 @@
+# Quick Demo Story
+# A fast walkthrough of core functionality
+
+name: "Quick Demo"
+description: "Quick demonstration of Azure Tenant Grapher core features"
+stop_on_failure: false
+
+scenarios:
+  - "00_setup"           # Authentication and initial setup
+  - "01_status"          # Check system status
+  - "03_scan"            # Scan Azure resources
+  - "04_visualize"       # Visualize the graph
+  - "05_generate_spec"   # Generate specification
+
+settings:
+  timeout: 300000        # 5 minutes total
+  screenshot_all: true
+  skip_optional: true
+
+summary:
+  generate: true
+  include_screenshots: true
+  format: "html"
