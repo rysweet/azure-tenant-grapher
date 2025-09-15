@@ -23,6 +23,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
   - [Graph Enrichment & Refactor Plan](#graph-enrichment--refactor-plan)
   - [IaC Subset & Rules System](#iac-subset--rules-system)
   - [Architecture](#architecture)
+- [Demo Walkthrough System](#demo-walkthrough-system)
 - [Development & Testing](#development--testing)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -294,6 +295,81 @@ npm run build
 - **Process Management**: Monitor and control running operations
 
 The GUI automatically detects your Neo4j database state and Azure configuration, providing a seamless experience for both new and existing users.
+
+## Demo Walkthrough System
+
+The project includes a comprehensive demo walkthrough system that showcases all Azure Tenant Grapher capabilities through automated, step-by-step demonstrations with screenshot capture and validation.
+
+### Demo Features
+
+- **14 Scenario Files**: One for each SPA tab, covering all functionality
+- **3 Story Workflows**: Quick demo (5 min), full walkthrough (15 min), and security-focused demo
+- **Automated Screenshots**: Capture with metadata tracking and HTML gallery generation
+- **E2E Testing**: Functions as comprehensive integration tests with visual validation
+- **Gadugi Integration**: Compatible with the gadugi-agentic-test framework
+
+### Running Demos
+
+```bash
+# Install demo dependencies
+cd demos/walkthrough
+uv pip install -r requirements.txt
+playwright install chromium
+
+# Run quick demo (5 minutes)
+python orchestrator.py --story quick_demo
+
+# Run full walkthrough (15 minutes)
+python orchestrator.py --story full_walkthrough
+
+# Run security-focused demo
+python orchestrator.py --story security_focus
+
+# Run individual scenario
+python orchestrator.py --scenario 03_scan
+
+# Headless mode for CI/CD
+python orchestrator.py --story quick_demo --headless
+
+# Generate screenshot gallery
+python orchestrator.py --gallery
+open screenshots/gallery.html
+```
+
+### Demo Scenarios
+
+1. **00_setup** - Authentication and initial setup
+2. **01_status** - Status tab overview and health checks
+3. **02_config** - Configuration management
+4. **03_scan** - Resource scanning and discovery
+5. **04_visualize** - Graph visualization
+6. **05_generate_spec** - Terraform spec generation
+7. **06_generate_iac** - Infrastructure as Code generation
+8. **07_threat_model** - Threat modeling and analysis
+9. **08_agent_mode** - AI agent interactions
+10. **09_create_tenant** - New tenant creation
+11. **10_cli** - Command-line interface testing
+12. **11_logs** - Audit logs and history
+13. **12_docs** - Documentation viewer
+14. **13_undeploy** - Cleanup and teardown
+
+### CI/CD Integration
+
+```yaml
+# Add to GitHub Actions workflow
+- name: Run Demo Tests
+  run: |
+    cd demos/walkthrough
+    python orchestrator.py --headless --story full_walkthrough
+
+- name: Upload Screenshots
+  uses: actions/upload-artifact@v3
+  with:
+    name: demo-screenshots
+    path: demos/walkthrough/screenshots/
+```
+
+For more details, see [demos/walkthrough/README.md](demos/walkthrough/README.md).
 
 ## Development & Testing
 
