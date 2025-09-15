@@ -1,0 +1,547 @@
+# SPA Tabs Complete Workflow Test Scenarios
+# Comprehensive E2E testing for all major tab components
+
+name: "SPA Tabs Complete Workflows"
+description: "End-to-end workflow tests for Status, Create Tenant, Threat Model, Undeploy, and Docs tabs"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 600000  # 10 minutes for complete test suite
+  retries: 2
+  parallel: false
+  screenshot_on_failure: true
+
+# Environment requirements
+environment:
+  requires:
+    - ELECTRON_APP_PATH
+    - SPA_SERVER_URL
+  optional:
+    - WEBSOCKET_URL
+    - HEADLESS
+    - AZURE_TENANT_ID
+    - NEO4J_PASSWORD
+
+# Agents configuration
+agents:
+  - name: "ui-agent"
+    type: "ui"
+    config:
+      browser: "chromium"
+      headless: "${HEADLESS:-false}"
+      viewport:
+        width: 1280
+        height: 720
+      timeout: 30000
+      slowMo: 100
+      screenshot_dir: "./screenshots"
+
+  - name: "websocket-agent"
+    type: "websocket"
+    config:
+      url: "${WEBSOCKET_URL:-ws://localhost:3001}"
+      reconnect: true
+      timeout: 10000
+      events: ["status", "progress", "error", "complete"]
+
+  - name: "api-agent"
+    type: "api"
+    config:
+      base_url: "${SPA_SERVER_URL:-http://localhost:3000}"
+      timeout: 10000
+      retry_on_failure: true
+
+# Test scenarios
+scenarios:
+  # ===== STATUS TAB WORKFLOW =====
+  - name: "Status Tab Real-time Monitoring"
+    description: "Test status tab real-time updates and system monitoring"
+    steps:
+      - name: "Navigate to Application"
+        agent: "ui-agent"
+        action: "navigate"
+        params:
+          url: "${SPA_SERVER_URL}"
+        wait_for:
+          selector: "[data-testid='app-container']"
+          state: "visible"
+
+      - name: "Open Status Tab"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='tab-status']"
+        wait_for:
+          selector: "[data-testid='status-content']"
+          state: "visible"
+
+      - name: "Connect WebSocket for Real-time Updates"
+        agent: "websocket-agent"
+        action: "connect"
+        params:
+          events: ["status_update", "health_check", "metrics"]
+
+      - name: "Verify System Status"
+        agent: "ui-agent"
+        action: "assert_element_visible"
+        params:
+          selector: "[data-testid='system-status']"
+          timeout: 5000
+
+      - name: "Check Service Health Indicators"
+        agent: "ui-agent"
+        action: "multi_assert"
+        params:
+          assertions:
+            - type: "element_visible"
+              selector: "[data-testid='health-azure']"
+            - type: "element_visible"
+              selector: "[data-testid='health-neo4j']"
+            - type: "element_visible"
+              selector: "[data-testid='health-api']"
+            - type: "element_visible"
+              selector: "[data-testid='health-websocket']"
+
+      - name: "Monitor WebSocket Events"
+        agent: "websocket-agent"
+        action: "wait_for_event"
+        params:
+          event_type: "status_update"
+          timeout: 10000
+        validate:
+          - field: "status"
+            operator: "equals"
+            value: "connected"
+
+      - name: "Enable Auto-refresh"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='auto-refresh-toggle']"
+
+      - name: "Verify Auto-refresh Working"
+        agent: "ui-agent"
+        action: "wait_for_text_change"
+        params:
+          selector: "[data-testid='last-updated']"
+          timeout: 15000
+
+      - name: "Export Status Report"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='export-status-report']"
+        validate:
+          download: true
+          filename_pattern: "status-report.*\\.(json|txt)"
+
+  # ===== CREATE TENANT TAB WORKFLOW =====
+  - name: "Create Tenant Complete Workflow"
+    description: "Test tenant creation with validation and error handling"
+    steps:
+      - name: "Navigate to Create Tenant Tab"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='tab-create-tenant']"
+        wait_for:
+          selector: "[data-testid='create-tenant-form']"
+          state: "visible"
+
+      - name: "Test Form Validation - Empty Submit"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='create-tenant-submit']"
+        validate:
+          - selector: "[data-testid='tenant-name-error']"
+            visible: true
+          - selector: "[data-testid='tenant-domain-error']"
+            visible: true
+          - selector: "[data-testid='admin-email-error']"
+            visible: true
+
+      - name: "Fill Tenant Information"
+        agent: "ui-agent"
+        action: "multi_action"
+        params:
+          actions:
+            - action: "fill"
+              selector: "[data-testid='tenant-name-input']"
+              value: "E2E Test Tenant ${TIMESTAMP}"
+            - action: "fill"
+              selector: "[data-testid='tenant-domain-input']"
+              value: "e2e-test-${TIMESTAMP}.onmicrosoft.com"
+            - action: "fill"
+              selector: "[data-testid='admin-email-input']"
+              value: "admin@e2e-test.com"
+            - action: "fill"
+              selector: "[data-testid='admin-password-input']"
+              value: "SecureP@ssw0rd123!"
+
+      - name: "Check Password Strength"
+        agent: "ui-agent"
+        action: "assert_element_has_class"
+        params:
+          selector: "[data-testid='password-strength']"
+          class: "strong"
+
+      - name: "Expand Advanced Options"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='advanced-options-toggle']"
+
+      - name: "Configure Advanced Settings"
+        agent: "ui-agent"
+        action: "multi_action"
+        params:
+          actions:
+            - action: "select"
+              selector: "[data-testid='region-select']"
+              value: "eastus"
+            - action: "select"
+              selector: "[data-testid='subscription-type-select']"
+              value: "enterprise"
+            - action: "check"
+              selector: "[data-testid='enable-mfa-checkbox']"
+
+      - name: "Mock API Response"
+        agent: "api-agent"
+        action: "mock_endpoint"
+        params:
+          path: "/api/tenants/create"
+          method: "POST"
+          response:
+            status: 200
+            body:
+              success: true
+              tenantId: "test-${TIMESTAMP}"
+              message: "Tenant created successfully"
+
+      - name: "Submit Tenant Creation"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='create-tenant-submit']"
+
+      - name: "Verify Loading State"
+        agent: "ui-agent"
+        action: "assert_element_visible"
+        params:
+          selector: "[data-testid='create-tenant-loading']"
+          timeout: 2000
+
+      - name: "Verify Success Message"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='success-message']"
+          state: "visible"
+          timeout: 10000
+        validate:
+          text_contains: "successfully"
+
+  # ===== THREAT MODEL TAB WORKFLOW =====
+  - name: "Threat Model Generation and Analysis"
+    description: "Test threat model generation with STRIDE analysis"
+    steps:
+      - name: "Navigate to Threat Model Tab"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='tab-threat-model']"
+        wait_for:
+          selector: "[data-testid='threat-model-content']"
+          state: "visible"
+
+      - name: "Select Target System"
+        agent: "ui-agent"
+        action: "select"
+        params:
+          selector: "[data-testid='target-system-select']"
+          value: "azure-tenant"
+
+      - name: "Enable Analysis Options"
+        agent: "ui-agent"
+        action: "multi_action"
+        params:
+          actions:
+            - action: "click"
+              selector: "[data-testid='include-stride-checkbox']"
+            - action: "click"
+              selector: "[data-testid='include-mitre-checkbox']"
+
+      - name: "Set Threat Model Scope"
+        agent: "ui-agent"
+        action: "fill"
+        params:
+          selector: "[data-testid='scope-input']"
+          value: "Production Azure Environment - E2E Test"
+
+      - name: "Mock Threat Model API"
+        agent: "api-agent"
+        action: "mock_endpoint"
+        params:
+          path: "/api/threat-model/generate"
+          method: "POST"
+          response:
+            status: 200
+            body:
+              id: "tm-${TIMESTAMP}"
+              system: "azure-tenant"
+              threats:
+                - id: "T001"
+                  category: "Spoofing"
+                  description: "Identity spoofing attack"
+                  impact: "High"
+                  likelihood: "Medium"
+                  mitigation: "Implement MFA"
+                - id: "T002"
+                  category: "Tampering"
+                  description: "Data tampering"
+                  impact: "High"
+                  likelihood: "Low"
+                  mitigation: "Enable audit logging"
+
+      - name: "Generate Threat Model"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='generate-threat-model-btn']"
+
+      - name: "Wait for Generation"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='threat-model-results']"
+          state: "visible"
+          timeout: 15000
+
+      - name: "Verify Threats Displayed"
+        agent: "ui-agent"
+        action: "assert_element_count"
+        params:
+          selector: "[data-testid='threat-card']"
+          count: 2
+
+      - name: "Filter by Impact"
+        agent: "ui-agent"
+        action: "select"
+        params:
+          selector: "[data-testid='impact-filter']"
+          value: "high"
+
+      - name: "Export Threat Model"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='export-json-btn']"
+        validate:
+          download: true
+          filename_pattern: "threat-model.*\\.json"
+
+  # ===== UNDEPLOY TAB WORKFLOW =====
+  - name: "Resource Undeploy Workflow"
+    description: "Test resource cleanup with safety checks"
+    steps:
+      - name: "Navigate to Undeploy Tab"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='tab-undeploy']"
+        wait_for:
+          selector: "[data-testid='undeploy-content']"
+          state: "visible"
+
+      - name: "Load Sample Resources"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='load-sample-resources']"
+
+      - name: "Wait for Resources"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='resource-item']"
+          state: "visible"
+          timeout: 5000
+
+      - name: "Select All Resources"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='select-all-checkbox']"
+
+      - name: "Verify Selection Count"
+        agent: "ui-agent"
+        action: "assert_element_text"
+        params:
+          selector: "[data-testid='selection-count']"
+          text_pattern: "\\d+ selected"
+
+      - name: "Initiate Undeploy"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='undeploy-selected-btn']"
+
+      - name: "Verify Confirmation Dialog"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='confirmation-dialog']"
+          state: "visible"
+
+      - name: "Type Confirmation"
+        agent: "ui-agent"
+        action: "fill"
+        params:
+          selector: "[data-testid='confirmation-input']"
+          value: "DELETE"
+
+      - name: "Mock Undeploy API"
+        agent: "api-agent"
+        action: "mock_endpoint"
+        params:
+          path: "/api/resources/undeploy"
+          method: "POST"
+          response:
+            status: 200
+            body:
+              success: true
+              deleted: 3
+              message: "Resources successfully undeployed"
+
+      - name: "Confirm Deletion"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='confirm-delete-btn']"
+
+      - name: "Verify Success"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='undeploy-success']"
+          state: "visible"
+          timeout: 10000
+
+  # ===== DOCS TAB WORKFLOW =====
+  - name: "Documentation Navigation and Search"
+    description: "Test documentation browsing and search functionality"
+    steps:
+      - name: "Navigate to Docs Tab"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='tab-docs']"
+        wait_for:
+          selector: "[data-testid='docs-content']"
+          state: "visible"
+
+      - name: "Verify Documentation Structure"
+        agent: "ui-agent"
+        action: "multi_assert"
+        params:
+          assertions:
+            - type: "element_visible"
+              selector: "[data-testid='docs-sidebar']"
+            - type: "element_visible"
+              selector: "[data-testid='docs-viewer']"
+
+      - name: "Expand Documentation Category"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='doc-category-getting-started']"
+
+      - name: "Navigate to Document"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='doc-item-installation']"
+
+      - name: "Verify Content Loaded"
+        agent: "ui-agent"
+        action: "assert_element_text"
+        params:
+          selector: "[data-testid='docs-viewer']"
+          text_contains: "Installation"
+
+      - name: "Search Documentation"
+        agent: "ui-agent"
+        action: "fill"
+        params:
+          selector: "[data-testid='docs-search-input']"
+          value: "configuration"
+
+      - name: "Submit Search"
+        agent: "ui-agent"
+        action: "press"
+        params:
+          key: "Enter"
+
+      - name: "Verify Search Results"
+        agent: "ui-agent"
+        action: "wait_for_element"
+        params:
+          selector: "[data-testid='search-results']"
+          state: "visible"
+          timeout: 5000
+
+      - name: "Click Search Result"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='search-result-item']:first-child"
+
+      - name: "Test Code Copy"
+        agent: "ui-agent"
+        action: "click"
+        params:
+          selector: "[data-testid='copy-code-btn']:first-of-type"
+        validate:
+          - selector: "[data-testid='copy-success']"
+            visible: true
+            text_contains: "Copied"
+
+# Assertions for all scenarios
+assertions:
+  global:
+    - type: "no_console_errors"
+      severity: "error"
+    - type: "no_network_errors"
+      status_codes: [500, 503]
+    - type: "performance"
+      metrics:
+        first_contentful_paint: 3000
+        time_to_interactive: 5000
+
+# Cleanup actions
+cleanup:
+  - name: "Close WebSocket Connection"
+    agent: "websocket-agent"
+    action: "disconnect"
+
+  - name: "Clear Local Storage"
+    agent: "ui-agent"
+    action: "clear_storage"
+    params:
+      types: ["localStorage", "sessionStorage"]
+
+  - name: "Take Final Screenshot"
+    agent: "ui-agent"
+    action: "screenshot"
+    params:
+      filename: "test-complete-${TIMESTAMP}.png"
+
+# Reporting configuration
+reporting:
+  format: "json"
+  output_dir: "./test-results"
+  include_screenshots: true
+  include_network_logs: true
+  include_console_logs: true
