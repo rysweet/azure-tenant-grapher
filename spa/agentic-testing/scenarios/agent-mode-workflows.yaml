@@ -1,0 +1,556 @@
+# Agent Mode Workflow Scenarios
+# Comprehensive test scenarios for Agent Mode and MCP Integration
+
+metadata:
+  name: Agent Mode E2E Test Scenarios
+  version: 1.0.0
+  description: End-to-end test scenarios for Agent Mode functionality including MCP tools, WebSocket communication, and UI interactions
+  tags:
+    - agent-mode
+    - mcp
+    - e2e
+    - integration
+
+scenarios:
+  # Basic Agent Mode Initialization
+  - id: agent-mode-init
+    name: Agent Mode Initialization
+    description: Verify agent mode starts correctly with MCP integration
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+        wait: 2000
+
+      - action: waitForElement
+        selector: "#agent-mode-container"
+        timeout: 5000
+
+      - action: verify
+        type: element
+        selector: "#mcp-status-indicator"
+        expected:
+          text: "Connected"
+          class: "status-connected"
+
+      - action: verify
+        type: element
+        selector: "#agent-tools-list"
+        expected:
+          minChildren: 3
+          contains:
+            - "query_graph"
+            - "discover_resources"
+            - "analyze_security"
+
+  # Natural Language Query Processing
+  - id: nlp-query-basic
+    name: Basic Natural Language Query
+    description: Test processing of simple natural language queries
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Show me all virtual machines"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".query-result"
+        timeout: 10000
+
+      - action: verify
+        type: element
+        selector: ".query-result"
+        expected:
+          contains: "virtual machine"
+          minLength: 100
+
+      - action: verify
+        type: element
+        selector: ".tools-used"
+        expected:
+          contains:
+            - "discover_resources"
+            - "query_graph"
+
+  # Complex Multi-Tool Workflow
+  - id: multi-tool-workflow
+    name: Multi-Tool Security Analysis
+    description: Test complex workflow requiring multiple MCP tools
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Analyze security posture of all resources and generate recommendations"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".workflow-steps"
+        timeout: 15000
+
+      - action: verify
+        type: element
+        selector: ".workflow-step[data-step='1']"
+        expected:
+          text: "Discovering resources..."
+          class: "step-complete"
+
+      - action: verify
+        type: element
+        selector: ".workflow-step[data-step='2']"
+        expected:
+          text: "Querying relationships..."
+          class: "step-complete"
+
+      - action: verify
+        type: element
+        selector: ".workflow-step[data-step='3']"
+        expected:
+          text: "Analyzing security..."
+          class: "step-complete"
+
+      - action: verify
+        type: element
+        selector: ".security-score"
+        expected:
+          exists: true
+          minValue: 0
+          maxValue: 100
+
+      - action: verify
+        type: element
+        selector: ".recommendations-list"
+        expected:
+          minChildren: 1
+
+  # WebSocket Real-time Updates
+  - id: websocket-streaming
+    name: WebSocket Streaming Response
+    description: Test real-time streaming responses via WebSocket
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: click
+        selector: "#enable-streaming-toggle"
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Perform comprehensive infrastructure audit"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".streaming-indicator"
+        timeout: 2000
+
+      - action: verify
+        type: element
+        selector: ".streaming-indicator"
+        expected:
+          class: "streaming-active"
+          animated: true
+
+      - action: wait
+        duration: 500
+
+      - action: verify
+        type: element
+        selector: ".response-chunks"
+        expected:
+          minChildren: 2
+          incremental: true
+
+      - action: waitForElement
+        selector: ".streaming-complete"
+        timeout: 20000
+
+      - action: verify
+        type: element
+        selector: ".final-response"
+        expected:
+          exists: true
+          contains: "Audit complete"
+
+  # Error Handling - MCP Unavailable
+  - id: mcp-unavailable-fallback
+    name: MCP Server Unavailable Fallback
+    description: Test graceful fallback when MCP server is unavailable
+    steps:
+      - action: simulate
+        type: network
+        condition: block
+        url: "ws://localhost:8080"
+
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: waitForElement
+        selector: "#mcp-status-indicator"
+        timeout: 5000
+
+      - action: verify
+        type: element
+        selector: "#mcp-status-indicator"
+        expected:
+          text: "Disconnected"
+          class: "status-disconnected"
+
+      - action: verify
+        type: element
+        selector: "#fallback-mode-banner"
+        expected:
+          exists: true
+          text: "Running in fallback mode"
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "List resources"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".query-result"
+        timeout: 10000
+
+      - action: verify
+        type: element
+        selector: ".query-result"
+        expected:
+          contains: "Results from traditional API"
+
+      - action: simulate
+        type: network
+        condition: unblock
+        url: "ws://localhost:8080"
+
+  # Concurrent Query Handling
+  - id: concurrent-queries
+    name: Concurrent Query Execution
+    description: Test handling of multiple simultaneous queries
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: openTab
+        id: tab1
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Query 1: List all VMs"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: openTab
+        id: tab2
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Query 2: Analyze storage accounts"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: openTab
+        id: tab3
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Query 3: Check security compliance"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: switchTab
+        id: tab1
+
+      - action: waitForElement
+        selector: ".query-result"
+        timeout: 15000
+
+      - action: verify
+        type: element
+        selector: ".query-id"
+        expected:
+          unique: true
+
+      - action: switchTab
+        id: tab2
+
+      - action: verify
+        type: element
+        selector: ".query-result"
+        expected:
+          exists: true
+
+      - action: switchTab
+        id: tab3
+
+      - action: verify
+        type: element
+        selector: ".query-result"
+        expected:
+          exists: true
+
+  # Tool Chaining Validation
+  - id: tool-chain-validation
+    name: Tool Chain Execution Validation
+    description: Verify correct tool chaining for complex queries
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: click
+        selector: "#debug-mode-toggle"
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Find VMs with security issues and generate terraform to fix them"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: "#tool-chain-visualization"
+        timeout: 5000
+
+      - action: verify
+        type: element
+        selector: ".tool-node[data-tool='discover_resources']"
+        expected:
+          exists: true
+          order: 1
+
+      - action: verify
+        type: element
+        selector: ".tool-node[data-tool='analyze_security']"
+        expected:
+          exists: true
+          order: 2
+
+      - action: verify
+        type: element
+        selector: ".tool-node[data-tool='generate_terraform']"
+        expected:
+          exists: true
+          order: 3
+
+      - action: verify
+        type: element
+        selector: ".tool-edge"
+        expected:
+          count: 2
+          connected: true
+
+  # UI Feedback Integration
+  - id: user-feedback-flow
+    name: User Feedback Collection
+    description: Test user feedback collection and processing
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Show resource summary"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".query-result"
+        timeout: 10000
+
+      - action: click
+        selector: ".feedback-btn[data-rating='positive']"
+
+      - action: waitForElement
+        selector: "#feedback-dialog"
+        timeout: 2000
+
+      - action: type
+        selector: "#feedback-comment"
+        text: "Very helpful response with clear details"
+
+      - action: click
+        selector: "#submit-feedback-btn"
+
+      - action: waitForElement
+        selector: ".feedback-success"
+        timeout: 3000
+
+      - action: verify
+        type: element
+        selector: ".feedback-success"
+        expected:
+          text: "Thank you for your feedback"
+
+  # Performance Monitoring
+  - id: performance-monitoring
+    name: Query Performance Monitoring
+    description: Verify performance metrics are tracked correctly
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: click
+        selector: "#show-metrics-toggle"
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Quick status check"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: waitForElement
+        selector: ".performance-metrics"
+        timeout: 10000
+
+      - action: verify
+        type: element
+        selector: ".metric[data-name='total-time']"
+        expected:
+          exists: true
+          maxValue: 5000
+
+      - action: verify
+        type: element
+        selector: ".metric[data-name='tool-calls']"
+        expected:
+          exists: true
+          minValue: 1
+
+      - action: verify
+        type: element
+        selector: ".metric[data-name='response-size']"
+        expected:
+          exists: true
+          unit: "bytes"
+
+  # Session Recovery
+  - id: session-recovery
+    name: Session Recovery After Disconnect
+    description: Test session recovery after connection loss
+    steps:
+      - action: navigate
+        url: http://localhost:3000/agent
+
+      - action: type
+        selector: "#agent-query-input"
+        text: "Start long-running analysis"
+
+      - action: click
+        selector: "#submit-query-btn"
+
+      - action: wait
+        duration: 2000
+
+      - action: simulate
+        type: network
+        condition: disconnect
+        duration: 3000
+
+      - action: waitForElement
+        selector: ".reconnecting-indicator"
+        timeout: 2000
+
+      - action: verify
+        type: element
+        selector: ".reconnecting-indicator"
+        expected:
+          text: "Reconnecting..."
+          animated: true
+
+      - action: wait
+        duration: 3500
+
+      - action: verify
+        type: element
+        selector: "#mcp-status-indicator"
+        expected:
+          text: "Connected"
+          class: "status-connected"
+
+      - action: verify
+        type: element
+        selector: ".query-result"
+        expected:
+          exists: true
+          complete: true
+
+test_suites:
+  - name: Basic Agent Mode
+    scenarios:
+      - agent-mode-init
+      - nlp-query-basic
+
+  - name: Advanced Workflows
+    scenarios:
+      - multi-tool-workflow
+      - tool-chain-validation
+      - concurrent-queries
+
+  - name: Real-time Features
+    scenarios:
+      - websocket-streaming
+      - session-recovery
+
+  - name: Error Handling
+    scenarios:
+      - mcp-unavailable-fallback
+
+  - name: User Experience
+    scenarios:
+      - user-feedback-flow
+      - performance-monitoring
+
+  - name: Full E2E Suite
+    scenarios:
+      - agent-mode-init
+      - nlp-query-basic
+      - multi-tool-workflow
+      - websocket-streaming
+      - mcp-unavailable-fallback
+      - concurrent-queries
+      - tool-chain-validation
+      - user-feedback-flow
+      - performance-monitoring
+      - session-recovery
+
+execution:
+  parallel: false
+  timeout: 300000
+  retries: 2
+  screenshots:
+    on_failure: true
+    on_success: false
+  video:
+    enabled: true
+    on_failure_only: true
+  environment:
+    BASE_URL: http://localhost:3000
+    MCP_ENDPOINT: ws://localhost:8080
+    NEO4J_URI: bolt://localhost:7687
+    HEADLESS: false
+  before_all:
+    - command: npm run start:test-services
+      wait: 10000
+  after_all:
+    - command: npm run stop:test-services
+  before_each:
+    - action: clearLocalStorage
+    - action: clearCookies
+  after_each:
+    - action: screenshot
+      condition: on_failure
