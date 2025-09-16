@@ -206,32 +206,21 @@ async function startMcpServer() {
 // Start the backend server
 function startBackendServer() {
 
-  const backendPath = path.join(__dirname, '../backend/src/server.js');
-  const tsxPath = path.join(__dirname, '../../node_modules/.bin/tsx');
+  // Always use tsx to run TypeScript directly
+  // The compiled backend has issues with shared module path resolution
+  // Since __dirname in compiled code is dist/main, go up to spa and then to backend
+  const backendTsPath = path.join(__dirname, '../../backend/src/server.ts');
 
-  // Check if we're in development mode
-  if (process.env.NODE_ENV === 'development' || !require('fs').existsSync(backendPath)) {
-    // Use tsx to run TypeScript directly in development
-    const backendTsPath = path.join(__dirname, '../backend/src/server.ts');
-
-    backendProcess = spawn('npx', ['tsx', backendTsPath], {
-      cwd: path.join(__dirname, '..'),
-      env: {
-        ...process.env,
-        BACKEND_PORT: '3001'
-        // Pass through all environment variables as-is from the parent process
-      }
-    });
-  } else {
-    // Use compiled JavaScript in production
-    backendProcess = spawn('node', [backendPath], {
-      env: {
-        ...process.env,
-        BACKEND_PORT: '3001'
-        // Pass through all environment variables as-is from the parent process
-      }
-    });
-  }
+  backendProcess = spawn('npx', ['tsx', backendTsPath], {
+    cwd: path.join(__dirname, '..'),
+    env: {
+      ...process.env,
+      BACKEND_PORT: '3001',
+      PORT: '3001'  // Some servers check PORT instead of BACKEND_PORT
+      // Pass through all environment variables as-is from the parent process
+    },
+    stdio: ['pipe', 'pipe', 'pipe']  // Properly set up pipes for stdout/stderr
+  });
 
   if (!backendProcess) {
     console.error('Failed to spawn backend process');
@@ -239,7 +228,8 @@ function startBackendServer() {
   }
 
   backendProcess.stdout?.on('data', (data) => {
-    // Backend output handled by backend logger
+    // Log backend output for debugging
+    console.log(`Backend: ${data}`);
   });
 
   backendProcess.stderr?.on('data', (data) => {
