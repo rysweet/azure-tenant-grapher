@@ -103,7 +103,7 @@ const App: React.FC = () => {
   const checkConnection = async () => {
     await withErrorHandling(
       async () => {
-        const systemInfo = await window.electronAPI.system.getInfo();
+        const systemInfo = await window.electronAPI.system.platform();
         const platform = systemInfo?.platform;
         if (platform) {
           setConnectionStatus('connected');
