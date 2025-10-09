@@ -174,9 +174,14 @@ class TerraformEmitter(IaCEmitter):
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
         # Get Terraform resource type
-        terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
-            azure_type, "azurerm_generic_resource"
-        )
+        terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
+
+        if not terraform_type:
+            logger.warning(
+                f"Skipping unsupported Azure resource type '{azure_type}' "
+                f"for resource '{resource_name}'. Add mapping to AZURE_TO_TERRAFORM_MAPPING."
+            )
+            return None
 
         # Sanitize resource name for Terraform
         safe_name = self._sanitize_terraform_name(resource_name)
@@ -247,6 +252,41 @@ class TerraformEmitter(IaCEmitter):
                     },
                 }
             )
+
+            # Add network_interface_ids by parsing VM properties
+            properties_str = resource.get("properties", "{}")
+            if isinstance(properties_str, str):
+                try:
+                    properties = json.loads(properties_str)
+                except json.JSONDecodeError:
+                    properties = {}
+            else:
+                properties = properties_str
+
+            network_profile = properties.get("networkProfile", {})
+            nics = network_profile.get("networkInterfaces", [])
+
+            if nics:
+                nic_refs = []
+                for nic in nics:
+                    nic_id = nic.get("id", "")
+                    if nic_id:
+                        # Extract NIC name from ID
+                        # Format: /subscriptions/.../networkInterfaces/{nic_name}
+                        if "/networkInterfaces/" in nic_id:
+                            nic_name = nic_id.split("/networkInterfaces/")[-1]
+                            nic_name = self._sanitize_terraform_name(nic_name)
+                            nic_refs.append(
+                                f"${{azurerm_network_interface.{nic_name}.id}}"
+                            )
+
+                if nic_refs:
+                    resource_config["network_interface_ids"] = nic_refs
+            else:
+                logger.warning(
+                    f"VM '{resource_name}' has no network interfaces in properties. "
+                    "Generated Terraform may be invalid."
+                )
         elif azure_type == "Microsoft.Network/publicIPAddresses":
             resource_config["allocation_method"] = resource.get(
                 "allocation_method", "Static"
@@ -254,6 +294,52 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.Network/networkSecurityGroups":
             # NSGs don't need additional required properties beyond name, location, and resource_group
             pass
+        elif azure_type == "Microsoft.Network/networkInterfaces":
+            # NICs require ip_configuration blocks
+            # Parse properties field to get ipConfigurations
+            properties_str = resource.get("properties", "{}")
+            if isinstance(properties_str, str):
+                try:
+                    properties = json.loads(properties_str)
+                except json.JSONDecodeError:
+                    properties = {}
+            else:
+                properties = properties_str
+
+            ip_configurations = properties.get("ipConfigurations", [])
+            if ip_configurations:
+                # Use first IP configuration
+                ip_config = ip_configurations[0]
+                ip_props = ip_config.get("properties", {})
+                subnet_info = ip_props.get("subnet", {})
+                subnet_id = subnet_info.get("id", "")
+
+                # Extract subnet name from ID
+                # Format: /subscriptions/.../virtualNetworks/{vnet}/subnets/{subnet}
+                subnet_name = "unknown"
+                if subnet_id and "/subnets/" in subnet_id:
+                    subnet_name = subnet_id.split("/subnets/")[-1]
+                    subnet_name = self._sanitize_terraform_name(subnet_name)
+
+                private_ip = ip_props.get("privateIPAddress", "")
+                allocation_method = ip_props.get("privateIPAllocationMethod", "Dynamic")
+
+                ip_config_block = {
+                    "name": ip_config.get("name", "internal"),
+                    "subnet_id": f"${{azurerm_subnet.{subnet_name}.id}}",
+                    "private_ip_address_allocation": allocation_method,
+                }
+
+                # Add private IP if static allocation
+                if allocation_method == "Static" and private_ip:
+                    ip_config_block["private_ip_address"] = private_ip
+
+                resource_config["ip_configuration"] = ip_config_block
+            else:
+                logger.warning(
+                    f"NIC '{resource_name}' has no ip_configurations in properties. "
+                    "Generated Terraform may be invalid."
+                )
         elif azure_type == "Microsoft.Web/sites":
             resource_config.update(
                 {
