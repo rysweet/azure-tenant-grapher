@@ -24,6 +24,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
         "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
+        "Microsoft.Network/subnets": "azurerm_subnet",
         "Microsoft.Network/networkSecurityGroups": "azurerm_network_security_group",
         "Microsoft.Network/publicIPAddresses": "azurerm_public_ip",
         "Microsoft.Network/networkInterfaces": "azurerm_network_interface",
@@ -216,6 +217,50 @@ class TerraformEmitter(IaCEmitter):
             resource_config["address_space"] = resource.get(
                 "address_space", ["10.0.0.0/16"]
             )
+
+            # Extract and emit subnets from vnet properties
+            properties_str = resource.get("properties", "{}")
+            if isinstance(properties_str, str):
+                try:
+                    properties = json.loads(properties_str)
+                except json.JSONDecodeError:
+                    properties = {}
+            else:
+                properties = properties_str
+
+            subnets = properties.get("subnets", [])
+            for subnet in subnets:
+                subnet_name = subnet.get("name")
+                if not subnet_name:
+                    continue  # Skip subnets without names
+
+                subnet_props = subnet.get("properties", {})
+                address_prefix = subnet_props.get("addressPrefix")
+                if not address_prefix:
+                    logger.warning(
+                        f"Subnet '{subnet_name}' in vnet '{resource_name}' has no addressPrefix, skipping"
+                    )
+                    continue
+
+                # Build subnet resource name
+                subnet_safe_name = self._sanitize_terraform_name(subnet_name)
+
+                # Build subnet resource config
+                subnet_config = {
+                    "name": subnet_name,
+                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "virtual_network_name": f"${{azurerm_virtual_network.{safe_name}.name}}",
+                    "address_prefixes": [address_prefix],
+                }
+
+                # Add to terraform config
+                if "azurerm_subnet" not in terraform_config["resource"]:
+                    terraform_config["resource"]["azurerm_subnet"] = {}
+
+                terraform_config["resource"]["azurerm_subnet"][subnet_safe_name] = (
+                    subnet_config
+                )
+
         elif azure_type == "Microsoft.Compute/virtualMachines":
             # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
             ssh_key_resource_name = f"{safe_name}_ssh_key"
