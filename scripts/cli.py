@@ -24,6 +24,7 @@ from src.cli_commands import DashboardExitException
 from src.commands.deploy import deploy_command
 from src.commands.list_deployments import list_deployments
 from src.commands.undeploy import undeploy
+from src.commands.validate_deployment import validate_deployment_command
 
 # Initialize console for rich output
 console = Console()
@@ -864,6 +865,7 @@ cli.add_command(app_registration_command, "app-registration")
 cli.add_command(deploy_command, "deploy")
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
+cli.add_command(validate_deployment_command, "validate-deployment")
 
 
 @cli.command()
