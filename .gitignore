@@ -246,6 +246,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Claude Code
-.claude/
+# Claude Code (only ignore runtime and traces, commit project config)
+.claude/runtime/
 .claude-trace/
