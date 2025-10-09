@@ -22,36 +22,84 @@ This demo showcases the Azure Tenant Grapher CLI for cross-tenant infrastructure
 Extract Infrastructure-as-Code for the SimuLand resource group:
 
 ```bash
-./01_generate_iac.sh
+./01_generate_iac.sh              # Original approach (manual Neo4j queries)
+# OR
+./01_generate_iac_v2.sh           # Improved approach (resource group filtering)
 ```
 
-### Step 2: Deploy to Target Tenant (Manual)
+The v2 script uses the new `--subset-filter "resourceGroup=SimuLand"` option, eliminating the need for manual Neo4j queries.
 
-Deploy the generated IaC to Tenant 2 using terraform or az cli:
+### Step 2: Deploy to Target Tenant
+
+Deploy the generated IaC to Tenant 2 using the new `atg deploy` command:
 
 ```bash
-cd output/iac
-terraform init
-terraform plan
-terraform apply
+./02_deploy.sh
 ```
 
-### Step 3: Validate Deployment (Manual)
+This script demonstrates:
+- Auto-detection of IaC format (Terraform, Bicep, ARM)
+- Dry-run validation before deployment
+- Multi-tenant authentication switching
+- Safety prompts for production deployments
 
-Compare the source and target graphs using Neo4j Cypher queries.
+### Step 3: Validate Deployment
 
-### Step 4: Cleanup (Manual)
+Compare the source and target graphs using the new `atg validate-deployment` command:
 
-Remove deployed resources using terraform or Azure CLI.
+```bash
+./03_validate.sh
+```
 
-## Known Issues & Gaps
+This script demonstrates:
+- Graph comparison between source and target tenants
+- Similarity scoring
+- Missing/extra resource detection
+- Markdown and JSON report generation
 
-See `ISSUES.md` for discovered bugs and missing features that need to be addressed.
+### Step 4: Cleanup
+
+Remove deployed resources using the cleanup script:
+
+```bash
+./04_cleanup.sh
+```
+
+This script demonstrates:
+- Safe deletion with confirmation prompts
+- Support for Terraform destroy
+- Resource group deletion for Bicep/ARM
+- Cross-tenant cleanup operations
+
+## Implementation Status
+
+All 4 issues have been implemented and tested:
+
+- ✅ **Issue #276** (P0): Fix Cypher Syntax Error - [PR #280](https://github.com/rysweet/azure-tenant-grapher/pull/280)
+- ✅ **Issue #277** (P1): Add Resource Group Filtering - [PR #281](https://github.com/rysweet/azure-tenant-grapher/pull/281)
+- ✅ **Issue #278** (P2): Add Deployment Command - [PR #282](https://github.com/rysweet/azure-tenant-grapher/pull/282)
+- ✅ **Issue #279** (P2): Add Validation Command - [PR #283](https://github.com/rysweet/azure-tenant-grapher/pull/283)
+
+**Total**: 83 tests added, all passing, all PRs have CI passing.
+
+See `FINAL_STATUS.md` for complete implementation details.
 
 ## Files
 
-- `01_generate_iac.sh` - IaC generation script (implemented)
-- `helpers/get_rg_node_ids.sh` - Neo4j query helper
-- `ISSUES.md` - Documented gaps and bugs
-- `BUG_FIX_CYPHER_SYNTAX.md` - Critical P0 bug analysis
-- `DEMO_SUMMARY.md` - Complete status and recommendations
+### Demo Scripts
+- `01_generate_iac.sh` - Original IaC generation (manual Neo4j queries)
+- `01_generate_iac_v2.sh` - Improved IaC generation (resource group filtering)
+- `02_deploy.sh` - Deploy IaC to target tenant
+- `03_validate.sh` - Validate deployment fidelity
+- `04_cleanup.sh` - Cleanup deployed resources
+
+### Documentation
+- `README.md` - This file (demo overview and workflow)
+- `FINAL_STATUS.md` - Complete implementation status
+- `IMPLEMENTATION_STATUS.md` - Historical implementation tracking
+- `ISSUES.md` - Original issue analysis
+- `DEMO_SUMMARY.md` - Historical demo summary
+- `BUG_FIX_CYPHER_SYNTAX.md` - P0 bug analysis
+
+### Helpers
+- `helpers/get_rg_node_ids.sh` - Neo4j query helper (legacy)

@@ -9,20 +9,31 @@ This directory contains a dedicated walkthrough for each Azure Tenant Grapher CL
 
 ## Command Walkthroughs
 
-- [build.md](build.md)
-- [rebuild-edges.md](rebuild-edges.md)
-- [config.md](config.md)
-- [visualize.md](visualize.md)
-- [spec.md](spec.md)
-- [generate-spec.md](generate-spec.md)
-- [generate-iac.md](generate-iac.md)
-- [generate-sim-doc.md](generate-sim-doc.md)
-- [threat-model.md](threat-model.md)
-- [agent-mode.md](agent-mode.md)
-- [mcp-server.md](mcp-server.md)
-- [create-tenant.md](create-tenant.md)
-- [backup-db.md](backup-db.md)
-- [doctor.md](doctor.md)
-- [test.md](test.md)
+### Core Commands
+- [build.md](build.md) - Build the Neo4j graph from Azure resources
+- [rebuild-edges.md](rebuild-edges.md) - Rebuild relationship edges
+- [config.md](config.md) - Configure Azure Tenant Grapher settings
+- [doctor.md](doctor.md) - Check system health and dependencies
+- [test.md](test.md) - Run test suite
+
+### Graph Operations
+- [visualize.md](visualize.md) - Visualize the Neo4j graph
+- [backup-db.md](backup-db.md) - Backup Neo4j database
+
+### Specification & Generation
+- [spec.md](spec.md) - View tenant specifications
+- [generate-spec.md](generate-spec.md) - Generate tenant specification from graph
+- [generate-iac.md](generate-iac.md) - Generate Infrastructure-as-Code templates
+- [generate-sim-doc.md](generate-sim-doc.md) - Generate simulation documentation
+
+### Deployment & Validation (New in Issue #278, #279)
+- [deploy.md](deploy.md) - Deploy IaC to target tenant
+- [validate-deployment.md](validate-deployment.md) - Validate deployment fidelity
+
+### Advanced Features
+- [threat-model.md](threat-model.md) - Generate threat models
+- [agent-mode.md](agent-mode.md) - Run in agent mode
+- [mcp-server.md](mcp-server.md) - Model Context Protocol server
+- [create-tenant.md](create-tenant.md) - Create tenant from specification
 
 Return to the [Demo Overview](../overview.md).
