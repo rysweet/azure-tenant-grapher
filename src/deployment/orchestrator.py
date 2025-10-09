@@ -23,8 +23,8 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
     if not iac_dir.exists() or not iac_dir.is_dir():
         return None
 
-    # Check for Terraform files
-    if list(iac_dir.glob("*.tf")):
+    # Check for Terraform files (both .tf and .tf.json)
+    if list(iac_dir.glob("*.tf")) or list(iac_dir.glob("*.tf.json")):
         return "terraform"
 
     # Check for Bicep files
