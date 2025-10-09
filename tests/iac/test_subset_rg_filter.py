@@ -4,7 +4,6 @@ Unit tests for resource group filtering in SubsetFilter.
 Tests the new resource_group predicate functionality added in Issue #277.
 """
 
-import pytest
 
 from src.iac.subset import SubsetFilter, SubsetSelector
 from src.iac.traverser import TenantGraph
