@@ -94,15 +94,14 @@ async def generate_iac_command_handler(
             filter_cypher = f"""
             MATCH (n)
             WHERE n.id IN [{node_id_list}]
-            OPTIONAL MATCH (n)-[r1]-(connected)
-            WITH DISTINCT n AS node
-            UNION
-            MATCH (n)
-            WHERE n.id IN [{node_id_list}]
-            OPTIONAL MATCH (n)-[r2]-(connected)
-            WITH DISTINCT connected AS node
-            WHERE node IS NOT NULL
-            RETURN node AS r, [] AS rels
+            OPTIONAL MATCH (n)-[rel]-(connected)
+            WITH n, collect(DISTINCT {{
+                type: type(rel),
+                target: connected.id,
+                original_type: rel.original_type,
+                narrative_context: rel.narrative_context
+            }}) AS rels
+            RETURN n AS r, rels
             """
         elif resource_filters:
             # Convert comma-separated filters to Cypher WHERE clause
