@@ -137,7 +137,7 @@ async def generate_iac_command_handler(
                 out_dir = default_timestamped_dir()
             # Pass RG and location to emitter if supported (BicepEmitter will need to accept these)
             paths = engine.generate_iac(
-                graph, emitter, str(out_dir), subset_filter=subset_filter_obj
+                graph, emitter, out_dir, subset_filter=subset_filter_obj
             )
             click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
             for path in paths:

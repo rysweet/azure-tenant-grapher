@@ -106,7 +106,7 @@ class TransformationEngine:
         self,
         graph: TenantGraph,
         emitter: Any,
-        out_dir: str,
+        out_dir: Path | str,
         subset_filter: Optional[SubsetFilter] = None,
     ) -> List[str]:
         """Generate IaC templates from tenant graph.
@@ -114,7 +114,7 @@ class TransformationEngine:
         Args:
             graph: The full tenant graph
             emitter: The IaCEmitter instance (e.g., BicepEmitter)
-            out_dir: Output directory for templates
+            out_dir: Output directory for templates (Path or str)
             subset_filter: Optional SubsetFilter for resource selection
 
         Returns:
