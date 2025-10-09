@@ -28,6 +28,7 @@ class SubsetFilter:
         policy_state: Compliance state to match (case-insensitive).
         created_after: Only include resources created after this datetime (ISO 8601 or datetime).
         tag_selector: Dict of tag key/values to match (all must match).
+        resource_group: List of resource group names to filter by (extracts from resource IDs).
         depth: Optional int, limits closure hops from initial match.
     """
 
@@ -39,6 +40,7 @@ class SubsetFilter:
     policy_state: Optional[str] = None
     created_after: Optional["str"] = None  # Accept ISO str, parse at runtime
     tag_selector: Optional[dict[str, str]] = None
+    resource_group: Optional[List[str]] = None
     depth: Optional[int] = None
 
     @classmethod
@@ -47,7 +49,7 @@ class SubsetFilter:
         Parse a subset filter string into a SubsetFilter object.
 
         Args:
-            filter_string: String format like "nodeIds=a,b;types=Microsoft.Storage/*;label=DMZ;policyState=noncompliant;createdAfter=2024-01-01T00:00:00;tagSelector=env:prod,team:foo;depth=2"
+            filter_string: String format like "nodeIds=a,b;types=Microsoft.Storage/*;label=DMZ;policyState=noncompliant;createdAfter=2024-01-01T00:00:00;tagSelector=env:prod,team:foo;resourceGroup=SimuLand,Production;depth=2"
 
         Returns:
             SubsetFilter object with parsed predicates
@@ -89,6 +91,8 @@ class SubsetFilter:
                         k, v = pair.split(":", 1)
                         tag_dict[k.strip()] = v.strip()
                 predicates["tag_selector"] = tag_dict
+            elif key_lc == "resourcegroup":
+                predicates["resource_group"] = [v.strip() for v in value.split(",")]
             elif key_lc == "depth":
                 try:
                     predicates["depth"] = int(value)
@@ -131,12 +135,14 @@ class SubsetSelector:
 
         logger.info(f"Initial subset contains {len(included_resources)} resources")
 
-        # If using policy_state, created_after, or tag_selector, do NOT perform closure
+        # If using policy_state, created_after, tag_selector, or resource_group, do NOT perform closure
         if filter_config.policy_state is not None:
             closed_resources = included_resources
         elif filter_config.created_after is not None:
             closed_resources = included_resources
         elif filter_config.tag_selector is not None:
+            closed_resources = included_resources
+        elif filter_config.resource_group is not None:
             closed_resources = included_resources
         elif filter_config.labels is not None:
             # Labels filter should include closure
@@ -166,6 +172,7 @@ class SubsetSelector:
             or filter_config.policy_state
             or filter_config.created_after
             or filter_config.tag_selector
+            or filter_config.resource_group
         )
 
     def _build_inclusion_set(
@@ -277,7 +284,22 @@ class SubsetSelector:
                         included.add(resource_id)
             return included
 
-        # 7. cypher_query (not implemented)
+        # 7. resource_group (query Neo4j for RG resources)
+        if filter_config.resource_group:
+            included = set()
+            for resource in graph.resources:
+                resource_id = resource.get("id")
+                # Extract RG name from resource ID
+                # Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/...
+                if resource_id and "/resourceGroups/" in resource_id:
+                    parts = resource_id.split("/resourceGroups/")
+                    if len(parts) > 1:
+                        rg_part = parts[1].split("/")[0]
+                        if rg_part in filter_config.resource_group:
+                            included.add(resource_id)
+            return included
+
+        # 8. cypher_query (not implemented)
         if filter_config.cypher_query:
             logger.warning("Cypher query filtering not yet implemented")
             return set()
