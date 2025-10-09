@@ -7,7 +7,7 @@ and similarity scores.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

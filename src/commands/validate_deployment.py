@@ -133,10 +133,12 @@ def validate_deployment_command(
         logging.basicConfig(level=logging.INFO)
 
     try:
-        console.print(f"[cyan]Connecting to Neo4j...[/cyan]")
+        console.print("[cyan]Connecting to Neo4j...[/cyan]")
 
         # Connect to Neo4j
         config = create_neo4j_config_from_env()
+        if not config.neo4j.uri:
+            raise RuntimeError("Neo4j URI is not configured")
         driver = GraphDatabase.driver(
             config.neo4j.uri, auth=(config.neo4j.user, config.neo4j.password)
         )
@@ -189,7 +191,7 @@ def validate_deployment_command(
             console.print(f"[green]✅ Report saved to {output}[/green]")
 
             # Show summary in console
-            console.print(f"\n[bold]Validation Summary[/bold]")
+            console.print("\n[bold]Validation Summary[/bold]")
             console.print(f"Similarity Score: {result.similarity_score:.1f}%")
             console.print(f"Source Resources: {result.source_resource_count}")
             console.print(f"Target Resources: {result.target_resource_count}")
@@ -208,4 +210,4 @@ def validate_deployment_command(
         console.print(f"[red]❌ Validation failed: {e}[/red]")
         if verbose:
             logger.exception("Validation error details:")
-        raise SystemExit(1)
+        raise SystemExit(1) from e

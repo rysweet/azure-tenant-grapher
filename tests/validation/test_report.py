@@ -2,8 +2,6 @@
 
 import json
 
-import pytest
-
 from src.validation.comparator import ComparisonResult
 from src.validation.report import (
     _get_validation_status,

@@ -16,8 +16,8 @@ from .report import generate_json_report, generate_markdown_report
 
 __all__ = [
     "ComparisonResult",
-    "compare_graphs",
     "compare_filtered_graphs",
-    "generate_markdown_report",
+    "compare_graphs",
     "generate_json_report",
+    "generate_markdown_report",
 ]

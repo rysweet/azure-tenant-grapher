@@ -1,6 +1,5 @@
 """Tests for graph comparator module."""
 
-import pytest
 
 from src.validation.comparator import (
     ComparisonResult,
