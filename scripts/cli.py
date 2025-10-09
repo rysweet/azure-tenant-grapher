@@ -21,6 +21,7 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_commands import DashboardExitException
+from src.commands.deploy import deploy_command
 from src.commands.list_deployments import list_deployments
 from src.commands.undeploy import undeploy
 
@@ -860,6 +861,7 @@ cli.add_command(spa_start, "start")
 cli.add_command(spa_stop, "stop")
 cli.add_command(app_registration_command, "app-registration")
 
+cli.add_command(deploy_command, "deploy")
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
 
