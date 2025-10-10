@@ -245,3 +245,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Claude Code runtime artifacts
+.claude-trace/
+.claude/runtime/
+.claude/settings.json
