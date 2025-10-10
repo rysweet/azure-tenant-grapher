@@ -673,6 +673,11 @@ def generate_spec(
     help="Target location/region for resource deployment",
 )
 # AAD mode is now always 'manual' (default behavior, flag removed)
+@click.option(
+    "--skip-validation",
+    is_flag=True,
+    help="Skip Terraform validation after generation (for terraform format only)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -692,6 +697,7 @@ async def generate_iac(
     node_ids: tuple,
     dest_rg: Optional[str],
     location: Optional[str],
+    skip_validation: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -736,6 +742,7 @@ async def generate_iac(
         node_ids=list(node_ids) if node_ids else None,
         dest_rg=dest_rg,
         location=location,
+        skip_validation=skip_validation,
         # aad_mode removed, now always manual by default
         domain_name=domain_name,
     )

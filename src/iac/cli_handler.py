@@ -54,6 +54,7 @@ async def generate_iac_command_handler(
     node_ids: Optional[list[str]] = None,
     dest_rg: Optional[str] = None,
     location: Optional[str] = None,
+    skip_validation: bool = False,
     domain_name: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
@@ -174,6 +175,27 @@ async def generate_iac_command_handler(
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
             click.echo(f"  📄 {path}")
+
+        # Validate Terraform if format is terraform and not skipped
+        if format_type.lower() == "terraform" and not skip_validation:
+            from .validators import TerraformValidator
+
+            logger.info("Running Terraform validation...")
+            validator = TerraformValidator()
+            validation_result = validator.validate(out_dir)
+
+            if not validation_result.valid:
+                # Handle validation failure
+                keep_files = validator.handle_failure(validation_result)
+                if not keep_files:
+                    # Cleanup files
+                    import shutil
+
+                    shutil.rmtree(out_dir)
+                    click.echo("🗑️  Removed invalid IaC files")
+                    return 1
+            else:
+                click.echo("✅ Terraform validation passed")
 
         # Register deployment if not a dry run
         if not dry_run:
