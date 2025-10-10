@@ -80,6 +80,7 @@ dev-dependencies = [
     "pytest-html>=4.0.0",
     "websockets>=15.0.1",
     "aiohttp>=3.12.12",
+    "playwright>=1.40.0",
 ]
 
 [tool.pytest.ini_options]

