@@ -332,27 +332,51 @@ def deploy_iac(
         f"Deploying {iac_format} to tenant {target_tenant_id}, RG {resource_group}"
     )
 
-    # Authenticate to target tenant
-    logger.info(f"Authenticating to tenant {target_tenant_id}...")
-    auth_result = subprocess.run(
-        ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+    # Smart tenant authentication handling
+    # Check current authentication status
+    current_tenant_result = subprocess.run(
+        ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
         capture_output=True,
         text=True,
         check=False,
     )
-    if auth_result.returncode != 0:
-        logger.warning(f"Azure login may have failed: {auth_result.stderr}")
-        # Don't raise - may already be authenticated
 
-    # Set subscription if provided
-    if subscription_id:
-        logger.info(f"Setting subscription to {subscription_id}...")
-        subprocess.run(
+    current_tenant = current_tenant_result.stdout.strip() if current_tenant_result.returncode == 0 else None
+
+    if current_tenant == target_tenant_id:
+        logger.info(f"Already authenticated to target tenant {target_tenant_id}")
+    elif subscription_id:
+        # Try switching subscription (works for multi-tenant users)
+        logger.info(f"Switching to subscription {subscription_id} in tenant {target_tenant_id}...")
+        switch_result = subprocess.run(
             ["az", "account", "set", "--subscription", subscription_id],
             capture_output=True,
             text=True,
             check=False,
         )
+        if switch_result.returncode != 0:
+            logger.warning(f"Subscription switch failed: {switch_result.stderr}")
+            logger.info("Attempting interactive login...")
+            auth_result = subprocess.run(
+                ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if auth_result.returncode != 0:
+                raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
+    else:
+        # No subscription ID provided, attempt login
+        logger.info(f"Authenticating to tenant {target_tenant_id}...")
+        auth_result = subprocess.run(
+            ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if auth_result.returncode != 0:
+            logger.warning(f"Azure login may have failed: {auth_result.stderr}")
+            # Don't raise - may already be authenticated
 
     # Deploy based on format
     if iac_format == "terraform":
