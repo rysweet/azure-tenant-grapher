@@ -242,14 +242,7 @@ class TerraformEmitter(IaCEmitter):
             )
 
             # Extract and emit subnets from vnet properties
-            properties_str = resource.get("properties", "{}")
-            if isinstance(properties_str, str):
-                try:
-                    properties = json.loads(properties_str)
-                except json.JSONDecodeError:
-                    properties = {}
-            else:
-                properties = properties_str
+            properties = self._parse_properties(resource)
 
             subnets = properties.get("subnets", [])
             for subnet in subnets:
@@ -322,14 +315,7 @@ class TerraformEmitter(IaCEmitter):
             )
 
             # Add network_interface_ids by parsing VM properties
-            properties_str = resource.get("properties", "{}")
-            if isinstance(properties_str, str):
-                try:
-                    properties = json.loads(properties_str)
-                except json.JSONDecodeError:
-                    properties = {}
-            else:
-                properties = properties_str
+            properties = self._parse_properties(resource)
 
             network_profile = properties.get("networkProfile", {})
             nics = network_profile.get("networkInterfaces", [])
@@ -339,10 +325,11 @@ class TerraformEmitter(IaCEmitter):
                 for nic in nics:
                     nic_id = nic.get("id", "")
                     if nic_id:
-                        # Extract NIC name from ID
-                        # Format: /subscriptions/.../networkInterfaces/{nic_name}
-                        if "/networkInterfaces/" in nic_id:
-                            nic_name = nic_id.split("/networkInterfaces/")[-1]
+                        # Extract NIC name from ID using helper
+                        nic_name = self._extract_resource_name_from_id(
+                            nic_id, "networkInterfaces"
+                        )
+                        if nic_name != "unknown":
                             nic_name = self._sanitize_terraform_name(nic_name)
                             nic_refs.append(
                                 f"${{azurerm_network_interface.{nic_name}.id}}"
@@ -365,14 +352,7 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.Network/networkInterfaces":
             # NICs require ip_configuration blocks
             # Parse properties field to get ipConfigurations
-            properties_str = resource.get("properties", "{}")
-            if isinstance(properties_str, str):
-                try:
-                    properties = json.loads(properties_str)
-                except json.JSONDecodeError:
-                    properties = {}
-            else:
-                properties = properties_str
+            properties = self._parse_properties(resource)
 
             ip_configurations = properties.get("ipConfigurations", [])
             if ip_configurations:
@@ -382,11 +362,9 @@ class TerraformEmitter(IaCEmitter):
                 subnet_info = ip_props.get("subnet", {})
                 subnet_id = subnet_info.get("id", "")
 
-                # Extract subnet name from ID
-                # Format: /subscriptions/.../virtualNetworks/{vnet}/subnets/{subnet}
-                subnet_name = "unknown"
-                if subnet_id and "/subnets/" in subnet_id:
-                    subnet_name = subnet_id.split("/subnets/")[-1]
+                # Extract subnet name from ID using helper
+                subnet_name = self._extract_resource_name_from_id(subnet_id, "subnets")
+                if subnet_name != "unknown":
                     subnet_name = self._sanitize_terraform_name(subnet_name)
 
                 private_ip = ip_props.get("privateIPAddress", "")
@@ -408,6 +386,54 @@ class TerraformEmitter(IaCEmitter):
                     f"NIC '{resource_name}' has no ip_configurations in properties. "
                     "Generated Terraform may be invalid."
                 )
+        elif azure_type == "Microsoft.Network/subnets":
+            properties = self._parse_properties(resource)
+
+            # Extract and link to parent VNet
+            subnet_id = resource.get("id", "")
+            vnet_name = self._extract_resource_name_from_id(
+                subnet_id, "virtualNetworks"
+            )
+            if vnet_name != "unknown" and "/subnets/" in subnet_id:
+                vnet_name = self._sanitize_terraform_name(vnet_name)
+                resource_config["virtual_network_name"] = (
+                    f"${{azurerm_virtual_network.{vnet_name}.name}}"
+                )
+            else:
+                logger.warning(
+                    f"Subnet '{resource_name}' has no parent VNet in ID: {subnet_id}"
+                )
+                resource_config["virtual_network_name"] = vnet_name
+
+            # Handle address prefixes with fallback
+            address_prefixes = (
+                [properties.get("addressPrefix")]
+                if properties.get("addressPrefix")
+                else properties.get("addressPrefixes", [])
+            )
+            if not address_prefixes:
+                logger.warning(f"Subnet '{resource_name}' has no address prefixes")
+                address_prefixes = ["10.0.0.0/24"]
+            resource_config["address_prefixes"] = address_prefixes
+
+            # Optional: Network Security Group
+            nsg_info = properties.get("networkSecurityGroup", {})
+            if nsg_info and "id" in nsg_info:
+                nsg_name = self._extract_resource_name_from_id(
+                    nsg_info["id"], "networkSecurityGroups"
+                )
+                if nsg_name != "unknown":
+                    nsg_name = self._sanitize_terraform_name(nsg_name)
+                    resource_config["network_security_group_id"] = (
+                        f"${{azurerm_network_security_group.{nsg_name}.id}}"
+                    )
+
+            # Optional: Service Endpoints
+            service_endpoints = properties.get("serviceEndpoints", [])
+            if service_endpoints:
+                resource_config["service_endpoints"] = [
+                    ep["service"] for ep in service_endpoints if "service" in ep
+                ]
         elif azure_type == "Microsoft.Web/sites":
             resource_config.update(
                 {
@@ -493,6 +519,40 @@ class TerraformEmitter(IaCEmitter):
             }
 
         return terraform_type, safe_name, resource_config
+
+    def _parse_properties(self, resource: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse properties JSON from resource.
+
+        Args:
+            resource: Azure resource with properties field
+
+        Returns:
+            Parsed properties dict (empty dict if parsing fails)
+        """
+        properties_str = resource.get("properties", "{}")
+        if isinstance(properties_str, str):
+            try:
+                return json.loads(properties_str)
+            except json.JSONDecodeError:
+                return {}
+        return properties_str
+
+    def _extract_resource_name_from_id(
+        self, resource_id: str, resource_type: str
+    ) -> str:
+        """Extract resource name from Azure resource ID path.
+
+        Args:
+            resource_id: Full Azure resource ID
+            resource_type: Azure resource type segment (e.g., "subnets", "networkInterfaces")
+
+        Returns:
+            Extracted resource name or "unknown"
+        """
+        path_segment = f"/{resource_type}/"
+        if path_segment in resource_id:
+            return resource_id.split(path_segment)[-1].split("/")[0]
+        return "unknown"
 
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
