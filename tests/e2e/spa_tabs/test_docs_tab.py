@@ -35,7 +35,13 @@ class TestDocsTab:
         await page.click("[data-testid='tab-docs']")
 
         # Check for documentation categories
-        categories = ["getting-started", "configuration", "api-reference", "troubleshooting", "faq"]
+        categories = [
+            "getting-started",
+            "configuration",
+            "api-reference",
+            "troubleshooting",
+            "faq",
+        ]
 
         for category in categories:
             category_node = page.locator(f"[data-testid='doc-category-{category}']")
@@ -45,8 +51,12 @@ class TestDocsTab:
         await page.click("[data-testid='doc-category-getting-started']")
 
         # Check for sub-items
-        await expect(page.locator("[data-testid='doc-item-installation']")).to_be_visible()
-        await expect(page.locator("[data-testid='doc-item-quickstart']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='doc-item-installation']")
+        ).to_be_visible()
+        await expect(
+            page.locator("[data-testid='doc-item-quickstart']")
+        ).to_be_visible()
 
         # Click on a documentation item
         await page.click("[data-testid='doc-item-installation']")
@@ -70,7 +80,9 @@ class TestDocsTab:
         await page.keyboard.press("Enter")
 
         # Wait for search results
-        await expect(page.locator("[data-testid='search-results']")).to_be_visible(timeout=5000)
+        await expect(page.locator("[data-testid='search-results']")).to_be_visible(
+            timeout=5000
+        )
 
         # Check search results
         search_results = page.locator("[data-testid='search-result-item']")
@@ -90,7 +102,7 @@ class TestDocsTab:
         # Check for highlighted search terms
         highlighted = page.locator("[data-testid='search-highlight']")
         if await highlighted.count() > 0:
-            # await expect(highlighted.first).to_contain_text("configuration", ignore_case=True)
+            pass  # await expect(highlighted.first).to_contain_text("configuration", ignore_case=True)
 
     @pytest.mark.asyncio
     async def test_table_of_contents(self, page: Page, spa_server_url: str):
@@ -147,7 +159,9 @@ class TestDocsTab:
 
         # Check for copy confirmation
         await expect(page.locator("[data-testid='copy-success']")).to_be_visible()
-        await expect(page.locator("[data-testid='copy-success']")).to_contain_text("Copied")
+        await expect(page.locator("[data-testid='copy-success']")).to_contain_text(
+            "Copied"
+        )
 
         # Confirmation should disappear after a few seconds
         await page.wait_for_timeout(3000)
@@ -247,7 +261,9 @@ class TestDocsTab:
 
         # Check that print-specific styles are applied
         sidebar = page.locator("[data-testid='docs-sidebar']")
-        sidebar_display = await sidebar.evaluate("el => window.getComputedStyle(el).display")
+        sidebar_display = await sidebar.evaluate(
+            "el => window.getComputedStyle(el).display"
+        )
         assert sidebar_display == "none"  # Sidebar should be hidden in print view
 
         # Reset media
@@ -299,7 +315,9 @@ class TestDocsTab:
 
         # Check for feedback options
         await expect(page.locator("[data-testid='feedback-helpful']")).to_be_visible()
-        await expect(page.locator("[data-testid='feedback-not-helpful']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='feedback-not-helpful']")
+        ).to_be_visible()
 
         # Click helpful
         await page.click("[data-testid='feedback-helpful']")
@@ -311,11 +329,15 @@ class TestDocsTab:
         feedback_form = page.locator("[data-testid='feedback-form']")
         if await feedback_form.is_visible():
             # Fill feedback
-            await page.fill("[data-testid='feedback-text']", "Very clear documentation!")
+            await page.fill(
+                "[data-testid='feedback-text']", "Very clear documentation!"
+            )
             await page.click("[data-testid='submit-feedback-btn']")
 
             # Confirmation should appear
-            await expect(page.locator("[data-testid='feedback-submitted']")).to_be_visible()
+            await expect(
+                page.locator("[data-testid='feedback-submitted']")
+            ).to_be_visible()
 
     @pytest.mark.asyncio
     async def test_offline_documentation(self, page: Page, spa_server_url: str):
@@ -339,15 +361,17 @@ class TestDocsTab:
 
         # Either offline indicator or cached content should be visible
         if await offline_indicator.is_visible():
-            # await expect(offline_indicator).to_contain_text("offline")
+            pass  # await expect(offline_indicator).to_contain_text("offline")
         elif await cached_content.is_visible():
-            # await expect(cached_content).to_be_visible()
+            pass  # await expect(cached_content).to_be_visible()
 
         # Go back online
         await page.context.set_offline(False)
 
         # Content should load normally
-        await page.click("[data-testid='retry-load-btn']") if await page.locator("[data-testid='retry-load-btn']").is_visible() else None
+        await page.click("[data-testid='retry-load-btn']") if await page.locator(
+            "[data-testid='retry-load-btn']"
+        ).is_visible() else None
         await expect(page.locator("[data-testid='docs-viewer']")).to_be_visible()
 
     @pytest.mark.asyncio
@@ -357,7 +381,11 @@ class TestDocsTab:
         await page.click("[data-testid='tab-docs']")
 
         # Test search shortcut (usually Ctrl+K or Cmd+K)
-        await page.keyboard.press("Control+K" if page.context.browser.browser_type.name != "webkit" else "Meta+K")
+        await page.keyboard.press(
+            "Control+K"
+            if page.context.browser.browser_type.name != "webkit"
+            else "Meta+K"
+        )
 
         # Search should be focused
         search_input = page.locator("[data-testid='docs-search-input']")
@@ -381,22 +409,32 @@ class TestDocsTab:
 
         # Navigate to API reference
         await page.click("[data-testid='doc-category-api-reference']")
-        await page.click("[data-testid='doc-item-api-playground']") if await page.locator("[data-testid='doc-item-api-playground']").is_visible() else None
+        await page.click(
+            "[data-testid='doc-item-api-playground']"
+        ) if await page.locator(
+            "[data-testid='doc-item-api-playground']"
+        ).is_visible() else None
 
         # If API playground exists
         api_playground = page.locator("[data-testid='api-playground']")
         if await api_playground.is_visible():
             # Check for endpoint selector
-            await expect(page.locator("[data-testid='endpoint-selector']")).to_be_visible()
+            await expect(
+                page.locator("[data-testid='endpoint-selector']")
+            ).to_be_visible()
 
             # Select an endpoint
             await page.select_option("[data-testid='endpoint-selector']", index=0)
 
             # Check for request builder
-            await expect(page.locator("[data-testid='request-builder']")).to_be_visible()
+            await expect(
+                page.locator("[data-testid='request-builder']")
+            ).to_be_visible()
 
             # Try to execute request
             await page.click("[data-testid='execute-request-btn']")
 
             # Response should be displayed
-            await expect(page.locator("[data-testid='api-response']")).to_be_visible(timeout=5000)
+            await expect(page.locator("[data-testid='api-response']")).to_be_visible(
+                timeout=5000
+            )

@@ -3,9 +3,6 @@ E2E tests for the Undeploy Tab component.
 Tests resource cleanup, deletion workflows, and safety checks.
 """
 
-import asyncio
-from typing import List
-
 import pytest
 from playwright.async_api import Page, expect
 
@@ -45,7 +42,7 @@ class TestUndeployTab:
                 "type": "ResourceGroup",
                 "status": "deployed",
                 "created": "2024-01-15T10:00:00Z",
-                "dependencies": []
+                "dependencies": [],
             },
             {
                 "id": "vm-001",
@@ -53,7 +50,7 @@ class TestUndeployTab:
                 "type": "VirtualMachine",
                 "status": "deployed",
                 "created": "2024-01-15T10:30:00Z",
-                "dependencies": ["rg-001"]
+                "dependencies": ["rg-001"],
             },
             {
                 "id": "nsg-001",
@@ -61,14 +58,14 @@ class TestUndeployTab:
                 "type": "NetworkSecurityGroup",
                 "status": "deployed",
                 "created": "2024-01-15T10:15:00Z",
-                "dependencies": ["rg-001"]
-            }
+                "dependencies": ["rg-001"],
+            },
         ]
 
-        await page.route("**/api/resources/deployed", lambda route: route.fulfill(
-            status=200,
-            json={"resources": mock_resources}
-        ))
+        await page.route(
+            "**/api/resources/deployed",
+            lambda route: route.fulfill(status=200, json={"resources": mock_resources}),
+        )
 
         # Refresh resource list
         await page.click("[data-testid='refresh-resources-btn']")
@@ -101,7 +98,9 @@ class TestUndeployTab:
         assert await first_checkbox.is_checked()
 
         # Verify selection count
-        await expect(page.locator("[data-testid='selection-count']")).to_contain_text("1 selected")
+        await expect(page.locator("[data-testid='selection-count']")).to_contain_text(
+            "1 selected"
+        )
 
         # Select all resources
         await page.click("[data-testid='select-all-checkbox']")
@@ -113,7 +112,9 @@ class TestUndeployTab:
             assert await checkboxes.nth(i).is_checked()
 
         # Verify selection count updated
-        await expect(page.locator("[data-testid='selection-count']")).to_contain_text(f"{count} selected")
+        await expect(page.locator("[data-testid='selection-count']")).to_contain_text(
+            f"{count} selected"
+        )
 
         # Deselect all
         await page.click("[data-testid='select-all-checkbox']")
@@ -131,12 +132,16 @@ class TestUndeployTab:
         # await expect(page.locator("[data-testid='resource-item']").first).to_be_visible()
 
         # Select a resource with dependencies (VM depends on RG)
-        vm_checkbox = page.locator("[data-testid='resource-checkbox'][data-resource-type='VirtualMachine']").first
+        vm_checkbox = page.locator(
+            "[data-testid='resource-checkbox'][data-resource-type='VirtualMachine']"
+        ).first
         await vm_checkbox.check()
 
         # Warning should appear
         await expect(page.locator("[data-testid='dependency-warning']")).to_be_visible()
-        await expect(page.locator("[data-testid='dependency-warning']")).to_contain_text("dependencies")
+        await expect(
+            page.locator("[data-testid='dependency-warning']")
+        ).to_contain_text("dependencies")
 
         # Check if dependent resources are highlighted
         dependent_resources = page.locator("[data-testid='dependent-resource']")
@@ -164,10 +169,14 @@ class TestUndeployTab:
         await page.click("[data-testid='undeploy-selected-btn']")
 
         # Confirmation dialog should appear
-        await expect(page.locator("[data-testid='confirmation-dialog']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='confirmation-dialog']")
+        ).to_be_visible()
 
         # Check confirmation details
-        await expect(page.locator("[data-testid='confirmation-message']")).to_contain_text("permanently delete")
+        await expect(
+            page.locator("[data-testid='confirmation-message']")
+        ).to_contain_text("permanently delete")
         await expect(page.locator("[data-testid='resource-summary']")).to_be_visible()
 
         # Type confirmation text
@@ -178,10 +187,12 @@ class TestUndeployTab:
         # await expect(confirm_btn).to_be_enabled()
 
         # Mock API response
-        await page.route("**/api/resources/undeploy", lambda route: route.fulfill(
-            status=200,
-            json={"success": True, "deleted": 3}
-        ))
+        await page.route(
+            "**/api/resources/undeploy",
+            lambda route: route.fulfill(
+                status=200, json={"success": True, "deleted": 3}
+            ),
+        )
 
         # Confirm deletion
         await confirm_btn.click()
@@ -190,7 +201,9 @@ class TestUndeployTab:
         await expect(page.locator("[data-testid='undeploy-progress']")).to_be_visible()
 
         # Success message should appear
-        await expect(page.locator("[data-testid='undeploy-success']")).to_be_visible(timeout=10000)
+        await expect(page.locator("[data-testid='undeploy-success']")).to_be_visible(
+            timeout=10000
+        )
 
     @pytest.mark.asyncio
     async def test_force_undeploy_mode(self, page: Page, spa_server_url: str):
@@ -208,7 +221,9 @@ class TestUndeployTab:
 
         # Warning should appear
         await expect(page.locator("[data-testid='force-mode-warning']")).to_be_visible()
-        await expect(page.locator("[data-testid='force-mode-warning']")).to_contain_text("DANGEROUS")
+        await expect(
+            page.locator("[data-testid='force-mode-warning']")
+        ).to_contain_text("DANGEROUS")
 
         # Select resources
         await page.click("[data-testid='select-all-checkbox']")
@@ -225,16 +240,20 @@ class TestUndeployTab:
         await expect(page.locator("[data-testid='force-confirmation']")).to_be_visible()
 
         # Mock API response
-        await page.route("**/api/resources/force-undeploy", lambda route: route.fulfill(
-            status=200,
-            json={"success": True, "deleted": 3, "forced": True}
-        ))
+        await page.route(
+            "**/api/resources/force-undeploy",
+            lambda route: route.fulfill(
+                status=200, json={"success": True, "deleted": 3, "forced": True}
+            ),
+        )
 
         # Confirm
         await page.click("[data-testid='force-confirm-btn']")
 
         # Check for completion
-        await expect(page.locator("[data-testid='undeploy-success']")).to_be_visible(timeout=10000)
+        await expect(page.locator("[data-testid='undeploy-success']")).to_be_visible(
+            timeout=10000
+        )
 
     @pytest.mark.asyncio
     async def test_undeploy_progress_tracking(self, page: Page, spa_server_url: str):
@@ -247,7 +266,7 @@ class TestUndeployTab:
         await page.click("[data-testid='select-all-checkbox']")
 
         # Mock progressive API responses
-        await page.route("**/api/resources/undeploy", async route => {
+        async def handle_undeploy_route(route):
             # Simulate progressive updates
             await route.fulfill(
                 status=200,
@@ -255,9 +274,10 @@ class TestUndeployTab:
                 body="""data: {"progress": 0, "message": "Starting undeployment..."}\n\n
 data: {"progress": 33, "message": "Deleting VirtualMachine..."}\n\n
 data: {"progress": 66, "message": "Deleting NetworkSecurityGroup..."}\n\n
-data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
+data: {"progress": 100, "message": "Complete", "success": true}\n\n""",
             )
-        })
+
+        await page.route("**/api/resources/undeploy", handle_undeploy_route)
 
         # Start undeployment
         await page.click("[data-testid='undeploy-selected-btn']")
@@ -288,16 +308,19 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
         await page.click("[data-testid='select-all-checkbox']")
 
         # Mock API failure response
-        await page.route("**/api/resources/undeploy", lambda route: route.fulfill(
-            status=500,
-            json={
-                "success": False,
-                "error": "Failed to delete VirtualMachine",
-                "deleted": ["nsg-001"],
-                "failed": ["vm-001"],
-                "rollback_available": True
-            }
-        ))
+        await page.route(
+            "**/api/resources/undeploy",
+            lambda route: route.fulfill(
+                status=500,
+                json={
+                    "success": False,
+                    "error": "Failed to delete VirtualMachine",
+                    "deleted": ["nsg-001"],
+                    "failed": ["vm-001"],
+                    "rollback_available": True,
+                },
+            ),
+        )
 
         # Attempt undeployment
         await page.click("[data-testid='undeploy-selected-btn']")
@@ -306,17 +329,21 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
 
         # Error should be displayed
         await expect(page.locator("[data-testid='undeploy-error']")).to_be_visible()
-        await expect(page.locator("[data-testid='undeploy-error']")).to_contain_text("Failed to delete")
+        await expect(page.locator("[data-testid='undeploy-error']")).to_contain_text(
+            "Failed to delete"
+        )
 
         # Rollback option should be available
         rollback_btn = page.locator("[data-testid='rollback-btn']")
         # await expect(rollback_btn).to_be_visible()
 
         # Mock rollback API
-        await page.route("**/api/resources/rollback", lambda route: route.fulfill(
-            status=200,
-            json={"success": True, "restored": ["nsg-001"]}
-        ))
+        await page.route(
+            "**/api/resources/rollback",
+            lambda route: route.fulfill(
+                status=200, json={"success": True, "restored": ["nsg-001"]}
+            ),
+        )
 
         # Perform rollback
         await rollback_btn.click()
@@ -326,7 +353,9 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
 
         # Success message
         await expect(page.locator("[data-testid='rollback-success']")).to_be_visible()
-        await expect(page.locator("[data-testid='rollback-success']")).to_contain_text("restored")
+        await expect(page.locator("[data-testid='rollback-success']")).to_contain_text(
+            "restored"
+        )
 
     @pytest.mark.asyncio
     async def test_resource_filtering(self, page: Page, spa_server_url: str):
@@ -341,7 +370,9 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
         initial_count = await page.locator("[data-testid='resource-item']").count()
 
         # Filter by resource type
-        await page.select_option("[data-testid='resource-type-filter']", "VirtualMachine")
+        await page.select_option(
+            "[data-testid='resource-type-filter']", "VirtualMachine"
+        )
 
         # Only VMs should be visible
         filtered_items = page.locator("[data-testid='resource-item']:visible")
@@ -379,15 +410,18 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
         await page.fill("[data-testid='confirmation-input']", "DELETE")
 
         # Mock successful undeploy
-        await page.route("**/api/resources/undeploy", lambda route: route.fulfill(
-            status=200,
-            json={
-                "success": True,
-                "deleted": ["rg-001", "vm-001", "nsg-001"],
-                "timestamp": "2024-01-15T12:00:00Z",
-                "duration": "45s"
-            }
-        ))
+        await page.route(
+            "**/api/resources/undeploy",
+            lambda route: route.fulfill(
+                status=200,
+                json={
+                    "success": True,
+                    "deleted": ["rg-001", "vm-001", "nsg-001"],
+                    "timestamp": "2024-01-15T12:00:00Z",
+                    "duration": "45s",
+                },
+            ),
+        )
 
         await page.click("[data-testid='confirm-delete-btn']")
 
@@ -400,7 +434,9 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
 
         download = await download_promise
         assert download.suggested_filename.startswith("undeploy-report")
-        assert download.suggested_filename.endswith(".json") or download.suggested_filename.endswith(".csv")
+        assert download.suggested_filename.endswith(
+            ".json"
+        ) or download.suggested_filename.endswith(".csv")
 
     @pytest.mark.asyncio
     async def test_undo_history(self, page: Page, spa_server_url: str):
@@ -415,27 +451,30 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n"""
         await expect(page.locator("[data-testid='history-panel']")).to_be_visible()
 
         # Mock history API
-        await page.route("**/api/resources/undeploy-history", lambda route: route.fulfill(
-            status=200,
-            json={
-                "history": [
-                    {
-                        "id": "op-001",
-                        "timestamp": "2024-01-15T11:00:00Z",
-                        "resources": ["test-vm"],
-                        "status": "completed",
-                        "undoable": True
-                    },
-                    {
-                        "id": "op-002",
-                        "timestamp": "2024-01-15T10:00:00Z",
-                        "resources": ["test-nsg", "test-rg"],
-                        "status": "completed",
-                        "undoable": False
-                    }
-                ]
-            }
-        ))
+        await page.route(
+            "**/api/resources/undeploy-history",
+            lambda route: route.fulfill(
+                status=200,
+                json={
+                    "history": [
+                        {
+                            "id": "op-001",
+                            "timestamp": "2024-01-15T11:00:00Z",
+                            "resources": ["test-vm"],
+                            "status": "completed",
+                            "undoable": True,
+                        },
+                        {
+                            "id": "op-002",
+                            "timestamp": "2024-01-15T10:00:00Z",
+                            "resources": ["test-nsg", "test-rg"],
+                            "status": "completed",
+                            "undoable": False,
+                        },
+                    ]
+                },
+            ),
+        )
 
         # Load history
         await page.click("[data-testid='refresh-history-btn']")
