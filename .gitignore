@@ -176,6 +176,7 @@ iac-out-*/
 # Project outputs
 outputs/
 !outputs/.gitkeep
+output/
 
 # Terraform output directory
 terraform-output/
@@ -250,3 +251,8 @@ Thumbs.db
 .claude-trace/
 .claude/runtime/
 .claude/settings.json
+.claude/agents/
+.claude/commands/
+.claude/context/
+.claude/tools/
+.claude/workflow/
