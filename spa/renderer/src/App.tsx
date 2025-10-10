@@ -18,6 +18,8 @@ const ScanTab = lazy(() => import('./components/tabs/ScanTab'));
 const CLITab = lazy(() => import('./components/tabs/CLITab'));
 const GenerateSpecTab = lazy(() => import('./components/tabs/GenerateSpecTab'));
 const GenerateIaCTab = lazy(() => import('./components/tabs/GenerateIaCTab'));
+const DeployTab = lazy(() => import('./components/tabs/DeployTab'));
+const ValidateDeploymentTab = lazy(() => import('./components/tabs/ValidateDeploymentTab'));
 const UndeployTab = lazy(() => import('./components/tabs/UndeployTab'));
 const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
 const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
@@ -184,6 +186,16 @@ const App: React.FC = () => {
                 <Route path="/generate-iac" element={
                   <TabErrorBoundary tabName="Generate IaC">
                     <GenerateIaCTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/deploy" element={
+                  <TabErrorBoundary tabName="Deploy">
+                    <DeployTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/validate-deployment" element={
+                  <TabErrorBoundary tabName="Validate Deployment">
+                    <ValidateDeploymentTab />
                   </TabErrorBoundary>
                 } />
                 <Route path="/undeploy" element={
