@@ -149,6 +149,27 @@ class TerraformEmitter(IaCEmitter):
             "resource_count": len(tenant_graph.resources),
         }
 
+    def _parse_tags(self, tags: Any, resource_name: str) -> Optional[Dict[str, str]]:
+        """Parse and validate resource tags from Neo4j (JSON string or dict)."""
+        if not tags:
+            return None
+
+        if isinstance(tags, str):
+            try:
+                parsed = json.loads(tags)
+                return parsed if isinstance(parsed, dict) and parsed else None
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    f"Invalid tags JSON for '{resource_name}': {str(tags)[:100]} ({e})"
+                )
+                return None
+
+        if isinstance(tags, dict):
+            return tags if tags else None
+
+        logger.warning(f"Unexpected tags type for '{resource_name}': {type(tags)}")
+        return None
+
     def _convert_resource(
         self, resource: Dict[str, Any], terraform_config: Dict[str, Any]
     ) -> Optional[tuple[str, str, Dict[str, Any]]]:
@@ -201,7 +222,9 @@ class TerraformEmitter(IaCEmitter):
 
         # Add tags if present
         if "tags" in resource:
-            resource_config["tags"] = resource["tags"]
+            parsed_tags = self._parse_tags(resource["tags"], resource_name)
+            if parsed_tags:
+                resource_config["tags"] = parsed_tags
 
         # Add type-specific properties to ensure all required fields are present
         if azure_type == "Microsoft.Storage/storageAccounts":
