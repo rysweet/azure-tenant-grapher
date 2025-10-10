@@ -91,7 +91,7 @@ class SubsetFilter:
                         k, v = pair.split(":", 1)
                         tag_dict[k.strip()] = v.strip()
                 predicates["tag_selector"] = tag_dict
-            elif key_lc == "resourcegroup":
+            elif key_lc in ("resourcegroup", "resourcegroups"):  # Accept both singular and plural
                 predicates["resource_group"] = [v.strip() for v in value.split(",")]
             elif key_lc == "depth":
                 try:
