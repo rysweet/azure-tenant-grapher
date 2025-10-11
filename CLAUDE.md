@@ -56,6 +56,11 @@ uv run atg agent-mode
 uv run atg threat-model
 uv run atg doctor  # Check and install CLI dependencies
 
+# IaC generation with subnet validation (Issue #333)
+uv run atg generate-iac --tenant-id <TENANT_ID>  # Validates subnets by default
+uv run atg generate-iac --tenant-id <TENANT_ID> --auto-fix-subnets  # Auto-fix invalid subnets
+uv run atg generate-iac --tenant-id <TENANT_ID> --skip-subnet-validation  # Skip validation (not recommended)
+
 # SPA/GUI commands
 uv run atg start    # Launch Electron GUI
 uv run atg stop     # Stop GUI application
@@ -89,6 +94,12 @@ uv run atg stop     # Stop GUI application
    - Traverses Neo4j graph to generate IaC
    - Supports multiple output formats via emitters
    - Handles resource dependencies and ordering
+   - Validates subnet address space containment (Issue #333)
+
+6. **IaC Validators** (`src/iac/validators/`):
+   - **SubnetValidator**: Validates subnets are within VNet address space
+   - **TerraformValidator**: Validates Terraform templates
+   - Supports auto-fix for common subnet misconfigurations
 
 ### Key Design Patterns
 

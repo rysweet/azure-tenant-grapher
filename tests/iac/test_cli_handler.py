@@ -1,12 +1,15 @@
 from pathlib import Path
 from typing import Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from click.testing import CliRunner
 from scripts.cli import cli
 
-from src.iac.cli_handler import generate_iac_command_handler, get_neo4j_driver_from_config
+from src.iac.cli_handler import (
+    generate_iac_command_handler,
+    get_neo4j_driver_from_config,
+)
 
 
 def test_get_driver_returns_driver(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -46,6 +49,9 @@ def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
         node_ids: Optional[list[str]] = None,
         dest_rg: Optional[str] = None,
         location: Optional[str] = None,
+        skip_validation: bool = False,
+        skip_subnet_validation: bool = False,
+        auto_fix_subnets: bool = False,
         domain_name: Optional[str] = None,
     ) -> int:
         called["tenant_id"] = tenant_id
@@ -83,8 +89,12 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     # Create mock records
     mock_record = MagicMock()
     mock_record.get.side_effect = lambda key: {
-        "r": {"id": "node-1", "type": "Microsoft.Compute/virtualMachines", "name": "vm-1"},
-        "rels": []
+        "r": {
+            "id": "node-1",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "vm-1",
+        },
+        "rels": [],
     }.get(key)
     mock_result.__iter__.return_value = iter([mock_record])
 
@@ -93,20 +103,20 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Mock the driver creation
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_neo4j_driver_from_config",
-        lambda: mock_driver
+        "src.iac.cli_handler.get_neo4j_driver_from_config", lambda: mock_driver
     )
 
     # Mock the GraphTraverser
     mock_graph = MagicMock()
-    mock_graph.resources = [{"id": "node-1", "type": "Microsoft.Compute/virtualMachines"}]
+    mock_graph.resources = [
+        {"id": "node-1", "type": "Microsoft.Compute/virtualMachines"}
+    ]
 
     mock_traverser = MagicMock()
     mock_traverser.traverse = AsyncMock(return_value=mock_graph)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.GraphTraverser",
-        lambda driver, rules: mock_traverser
+        "src.iac.cli_handler.GraphTraverser", lambda driver, rules: mock_traverser
     )
 
     # Mock emitter
@@ -114,8 +124,7 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter",
-        lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
@@ -123,23 +132,17 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_engine.apply.side_effect = lambda r: r
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.TransformationEngine",
-        lambda *args, **kwargs: mock_engine
+        "src.iac.cli_handler.TransformationEngine", lambda *args, **kwargs: mock_engine
     )
 
     # Mock DeploymentRegistry
     mock_registry = MagicMock()
     mock_registry.register_deployment.return_value = "test-deployment-id"
-    monkeypatch.setattr(
-        "src.iac.cli_handler.DeploymentRegistry",
-        lambda: mock_registry
-    )
+    monkeypatch.setattr("src.iac.cli_handler.DeploymentRegistry", lambda: mock_registry)
 
     # Run the handler
     result = await generate_iac_command_handler(
-        node_ids=["node-1"],
-        format_type="terraform",
-        dry_run=False
+        node_ids=["node-1"], format_type="terraform", dry_run=False
     )
 
     assert result == 0
@@ -172,8 +175,12 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     for i in range(1, 4):
         mock_record = MagicMock()
         mock_record.get.side_effect = lambda key, idx=i: {
-            "r": {"id": f"node-{idx}", "type": "Microsoft.Storage/storageAccounts", "name": f"storage-{idx}"},
-            "rels": []
+            "r": {
+                "id": f"node-{idx}",
+                "type": "Microsoft.Storage/storageAccounts",
+                "name": f"storage-{idx}",
+            },
+            "rels": [],
         }.get(key)
         mock_records.append(mock_record)
 
@@ -183,8 +190,7 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Mock the driver creation
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_neo4j_driver_from_config",
-        lambda: mock_driver
+        "src.iac.cli_handler.get_neo4j_driver_from_config", lambda: mock_driver
     )
 
     # Mock the GraphTraverser
@@ -198,8 +204,7 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_traverser.traverse = AsyncMock(return_value=mock_graph)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.GraphTraverser",
-        lambda driver, rules: mock_traverser
+        "src.iac.cli_handler.GraphTraverser", lambda driver, rules: mock_traverser
     )
 
     # Mock emitter
@@ -207,8 +212,7 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter",
-        lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
@@ -216,24 +220,18 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_engine.apply.side_effect = lambda r: r
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.TransformationEngine",
-        lambda *args, **kwargs: mock_engine
+        "src.iac.cli_handler.TransformationEngine", lambda *args, **kwargs: mock_engine
     )
 
     # Mock DeploymentRegistry
     mock_registry = MagicMock()
     mock_registry.register_deployment.return_value = "test-deployment-id"
-    monkeypatch.setattr(
-        "src.iac.cli_handler.DeploymentRegistry",
-        lambda: mock_registry
-    )
+    monkeypatch.setattr("src.iac.cli_handler.DeploymentRegistry", lambda: mock_registry)
 
     # Run the handler with multiple node IDs
     node_ids = ["node-1", "node-2", "node-3"]
     result = await generate_iac_command_handler(
-        node_ids=node_ids,
-        format_type="terraform",
-        dry_run=False
+        node_ids=node_ids, format_type="terraform", dry_run=False
     )
 
     assert result == 0
@@ -254,7 +252,9 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_node_id_filter_with_relationships(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that node ID filter properly handles relationships."""
     # Mock Neo4j driver and session
     mock_driver = MagicMock()
@@ -264,11 +264,15 @@ async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch
     # Create mock record with relationships
     mock_record = MagicMock()
     mock_record.get.side_effect = lambda key: {
-        "r": {"id": "node-1", "type": "Microsoft.Network/virtualNetworks", "name": "vnet-1"},
+        "r": {
+            "id": "node-1",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "vnet-1",
+        },
         "rels": [
             {"type": "CONTAINS", "target": "subnet-1"},
-            {"type": "CONNECTED_TO", "target": "node-2"}
-        ]
+            {"type": "CONNECTED_TO", "target": "node-2"},
+        ],
     }.get(key)
     mock_result.__iter__.return_value = iter([mock_record])
 
@@ -277,8 +281,7 @@ async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch
 
     # Mock the driver creation
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_neo4j_driver_from_config",
-        lambda: mock_driver
+        "src.iac.cli_handler.get_neo4j_driver_from_config", lambda: mock_driver
     )
 
     # Mock the GraphTraverser
@@ -291,8 +294,7 @@ async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch
     mock_traverser.traverse = AsyncMock(return_value=mock_graph)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.GraphTraverser",
-        lambda driver, rules: mock_traverser
+        "src.iac.cli_handler.GraphTraverser", lambda driver, rules: mock_traverser
     )
 
     # Mock emitter
@@ -300,8 +302,7 @@ async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter",
-        lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
@@ -309,23 +310,17 @@ async def test_node_id_filter_with_relationships(monkeypatch: pytest.MonkeyPatch
     mock_engine.apply.side_effect = lambda r: r
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.TransformationEngine",
-        lambda *args, **kwargs: mock_engine
+        "src.iac.cli_handler.TransformationEngine", lambda *args, **kwargs: mock_engine
     )
 
     # Mock DeploymentRegistry
     mock_registry = MagicMock()
     mock_registry.register_deployment.return_value = "test-deployment-id"
-    monkeypatch.setattr(
-        "src.iac.cli_handler.DeploymentRegistry",
-        lambda: mock_registry
-    )
+    monkeypatch.setattr("src.iac.cli_handler.DeploymentRegistry", lambda: mock_registry)
 
     # Run the handler
     result = await generate_iac_command_handler(
-        node_ids=["node-1"],
-        format_type="terraform",
-        dry_run=False
+        node_ids=["node-1"], format_type="terraform", dry_run=False
     )
 
     assert result == 0

@@ -55,6 +55,8 @@ async def generate_iac_command_handler(
     dest_rg: Optional[str] = None,
     location: Optional[str] = None,
     skip_validation: bool = False,
+    skip_subnet_validation: bool = False,
+    auto_fix_subnets: bool = False,
     domain_name: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
@@ -70,6 +72,9 @@ async def generate_iac_command_handler(
         node_ids: Optional list of specific node IDs to generate IaC for
         dest_rg: Target resource group name for Bicep module deployment
         location: Target location/region for resource deployment
+        skip_validation: Skip Terraform validation after generation
+        skip_subnet_validation: Skip subnet containment validation (Issue #333)
+        auto_fix_subnets: Auto-fix subnet addresses outside VNet range (Issue #333)
         domain_name: Domain name for entities that require one
 
     Returns:
@@ -138,7 +143,13 @@ async def generate_iac_command_handler(
                 out_dir = default_timestamped_dir()
             # Pass RG and location to emitter if supported (BicepEmitter will need to accept these)
             paths = engine.generate_iac(
-                graph, emitter, out_dir, subset_filter=subset_filter_obj
+                graph,
+                emitter,
+                out_dir,
+                subset_filter=subset_filter_obj,
+                validate_subnet_containment=not skip_subnet_validation,
+                auto_fix_subnets=auto_fix_subnets,
+                tenant_id=tenant_id,
             )
             click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
             for path in paths:

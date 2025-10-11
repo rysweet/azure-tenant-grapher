@@ -492,8 +492,8 @@ async def scan(
     """
     Scan the complete Azure tenant graph with enhanced processing.
 
-    This command discovers all resources in your Azure tenant and builds a comprehensive 
-    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs, 
+    This command discovers all resources in your Azure tenant and builds a comprehensive
+    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs,
     and interactive controls:
       - Press 'x' to exit the dashboard at any time.
       - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
@@ -523,7 +523,10 @@ async def scan(
         filter_by_rgs,
     )
     if debug:
-        print(f"[DEBUG] scan command (via build_command_handler) returned: {result!r}", flush=True)
+        print(
+            f"[DEBUG] scan command (via build_command_handler) returned: {result!r}",
+            flush=True,
+        )
     return result
 
 
@@ -611,9 +614,9 @@ async def spec(
 )
 @click.option("--output", type=str, default=None, help="Custom output path")
 @click.option(
-    "--hierarchical", 
-    is_flag=True, 
-    help="Generate hierarchical specification organized by Tenant→Subscription→Region→ResourceGroup"
+    "--hierarchical",
+    is_flag=True,
+    help="Generate hierarchical specification organized by Tenant→Subscription→Region→ResourceGroup",
 )
 @click.pass_context
 def generate_spec(
@@ -678,6 +681,16 @@ def generate_spec(
     is_flag=True,
     help="Skip Terraform validation after generation (for terraform format only)",
 )
+@click.option(
+    "--skip-subnet-validation",
+    is_flag=True,
+    help="Skip subnet address space containment validation (not recommended, Issue #333)",
+)
+@click.option(
+    "--auto-fix-subnets",
+    is_flag=True,
+    help="Automatically fix subnet addresses that fall outside VNet address range (Issue #333)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -698,6 +711,8 @@ async def generate_iac(
     dest_rg: Optional[str],
     location: Optional[str],
     skip_validation: bool,
+    skip_subnet_validation: bool,
+    auto_fix_subnets: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -743,6 +758,8 @@ async def generate_iac(
         dest_rg=dest_rg,
         location=location,
         skip_validation=skip_validation,
+        skip_subnet_validation=skip_subnet_validation,
+        auto_fix_subnets=auto_fix_subnets,
         # aad_mode removed, now always manual by default
         domain_name=domain_name,
     )
