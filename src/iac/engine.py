@@ -5,6 +5,7 @@ tenant graph data into Infrastructure-as-Code representations.
 """
 
 import copy
+import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -14,6 +15,7 @@ from ruamel.yaml import YAML
 
 from .subset import SubsetFilter, SubsetSelector
 from .traverser import TenantGraph
+from .validators.subnet_validator import SubnetValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,10 @@ class TransformationEngine:
         emitter: Any,
         out_dir: Path | str,
         subset_filter: Optional[SubsetFilter] = None,
+        validate_subnet_containment: bool = True,
+        auto_fix_subnets: bool = False,
+        tenant_id: Optional[str] = None,
+        subscription_id: Optional[str] = None,
     ) -> List[str]:
         """Generate IaC templates from tenant graph.
 
@@ -116,9 +122,16 @@ class TransformationEngine:
             emitter: The IaCEmitter instance (e.g., BicepEmitter)
             out_dir: Output directory for templates (Path or str)
             subset_filter: Optional SubsetFilter for resource selection
+            validate_subnet_containment: Validate subnets are within VNet address space
+            auto_fix_subnets: Automatically fix subnet addresses outside VNet range
+            tenant_id: Optional tenant ID (for metadata)
+            subscription_id: Optional subscription ID (for metadata)
 
         Returns:
             List of output file paths
+
+        Raises:
+            ValueError: If subnet validation fails and auto_fix_subnets is False
         """
         filtered_graph = graph
         if subset_filter is not None and SubsetSelector().has_filters(subset_filter):
@@ -132,6 +145,52 @@ class TransformationEngine:
             transformed = self.apply(resource)
             transformed_resources.append(transformed)
         filtered_graph.resources = transformed_resources
+
+        # Validate subnet containment (Issue #333)
+        if validate_subnet_containment:
+            logger.info("Validating subnet address space containment...")
+
+            subnet_validator = SubnetValidator(auto_fix=auto_fix_subnets)
+            validation_results = self._validate_subnet_containment(
+                filtered_graph.resources, subnet_validator
+            )
+
+            # Log results
+            for result in validation_results:
+                if not result.valid:
+                    logger.error(
+                        f"VNet '{result.vnet_name}': {len(result.issues)} subnet issues"
+                    )
+                    for issue in result.issues:
+                        if issue.issue_type in (
+                            "out_of_range",
+                            "overlap",
+                            "invalid_prefix",
+                        ):
+                            logger.error(f"  ❌ {issue.subnet_name}: {issue.message}")
+                        else:
+                            logger.warning(f"  ⚠️  {issue.subnet_name}: {issue.message}")
+
+            # Check for critical failures
+            critical_issues = [
+                r for r in validation_results if not r.valid and not r.auto_fixed
+            ]
+
+            if critical_issues:
+                error_report = subnet_validator.format_validation_report(
+                    validation_results
+                )
+                logger.error(error_report)
+                raise ValueError(
+                    f"Subnet validation failed for {len(critical_issues)} VNets. "
+                    "Use --skip-subnet-validation to bypass (not recommended), "
+                    "or fix subnet address spaces in source data."
+                )
+
+            # Log auto-fix success
+            auto_fixed = [r for r in validation_results if r.auto_fixed]
+            if auto_fixed:
+                logger.info(f"✅ Auto-fixed subnets in {len(auto_fixed)} VNets")
 
         return emitter.emit(filtered_graph, out_dir)
 
@@ -201,3 +260,81 @@ class TransformationEngine:
                 result["tags"].update(tag_config["add"])
 
         return result
+
+    def _validate_subnet_containment(
+        self, resources: List[Dict[str, Any]], validator: SubnetValidator
+    ) -> List[ValidationResult]:
+        """Validate subnet containment for all VNets.
+
+        Args:
+            resources: List of resources to validate
+            validator: SubnetValidator instance to use
+
+        Returns:
+            List of ValidationResult for each VNet
+        """
+        results = []
+
+        # Extract VNets
+        vnets = [
+            r for r in resources if r.get("type") == "Microsoft.Network/virtualNetworks"
+        ]
+
+        for vnet in vnets:
+            vnet_name = vnet.get("name", "unknown")
+            vnet_address_space = vnet.get("address_space", [])
+
+            # Extract subnets
+            subnets = self._extract_subnets_from_vnet(vnet)
+
+            # Validate
+            result = validator.validate_vnet_subnets(
+                vnet_name=vnet_name,
+                vnet_address_space=vnet_address_space,
+                subnets=subnets,
+            )
+
+            results.append(result)
+
+        return results
+
+    def _extract_subnets_from_vnet(self, vnet: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract subnet configurations from VNet resource.
+
+        Args:
+            vnet: VNet resource dictionary
+
+        Returns:
+            List of subnet configurations
+        """
+        properties = vnet.get("properties", {})
+
+        # Handle JSON string from Neo4j
+        if isinstance(properties, str):
+            try:
+                properties = json.loads(properties)
+            except json.JSONDecodeError:
+                logger.warning(
+                    f"Failed to parse properties for VNet '{vnet.get('name')}'"
+                )
+                return []
+
+        subnets = properties.get("subnets", [])
+
+        # Normalize subnet format
+        normalized_subnets = []
+        for subnet in subnets:
+            subnet_props = subnet.get("properties", {})
+
+            normalized = {"name": subnet.get("name"), "address_prefixes": []}
+
+            # Extract address prefix(es)
+            if "addressPrefix" in subnet_props:
+                normalized["address_prefixes"] = [subnet_props["addressPrefix"]]
+            elif "addressPrefixes" in subnet_props:
+                normalized["address_prefixes"] = subnet_props["addressPrefixes"]
+
+            if normalized["address_prefixes"]:
+                normalized_subnets.append(normalized)
+
+        return normalized_subnets
