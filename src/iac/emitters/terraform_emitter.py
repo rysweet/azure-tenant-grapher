@@ -28,6 +28,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/networkSecurityGroups": "azurerm_network_security_group",
         "Microsoft.Network/publicIPAddresses": "azurerm_public_ip",
         "Microsoft.Network/networkInterfaces": "azurerm_network_interface",
+        "Microsoft.Network/bastionHosts": "azurerm_bastion_host",
         "Microsoft.Web/sites": "azurerm_app_service",
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
@@ -258,23 +259,38 @@ class TerraformEmitter(IaCEmitter):
                     )
                     continue
 
-                # Build subnet resource name
+                # Build VNet-scoped subnet resource name
+                # Pattern: {vnet_name}_{subnet_name}
+                vnet_safe_name = safe_name  # Already computed: self._sanitize_terraform_name(resource_name)
                 subnet_safe_name = self._sanitize_terraform_name(subnet_name)
+                scoped_subnet_name = f"{vnet_safe_name}_{subnet_safe_name}"
 
-                # Build subnet resource config
+                # Build subnet resource config (name field remains original Azure name)
                 subnet_config = {
-                    "name": subnet_name,
+                    "name": subnet_name,  # Azure resource name (unchanged)
                     "resource_group_name": resource.get("resourceGroup", "default-rg"),
-                    "virtual_network_name": f"${{azurerm_virtual_network.{safe_name}.name}}",
+                    "virtual_network_name": f"${{azurerm_virtual_network.{vnet_safe_name}.name}}",
                     "address_prefixes": [address_prefix],
                 }
 
-                # Add to terraform config
+                # Add to terraform config with scoped key
                 if "azurerm_subnet" not in terraform_config["resource"]:
                     terraform_config["resource"]["azurerm_subnet"] = {}
 
-                terraform_config["resource"]["azurerm_subnet"][subnet_safe_name] = (
+                # Log if overwriting (shouldn't happen with scoped names)
+                if scoped_subnet_name in terraform_config["resource"]["azurerm_subnet"]:
+                    logger.warning(
+                        f"Subnet resource name collision: {scoped_subnet_name} already exists. "
+                        f"This indicates identical VNet and subnet names."
+                    )
+
+                terraform_config["resource"]["azurerm_subnet"][scoped_subnet_name] = (
                     subnet_config
+                )
+
+                logger.debug(
+                    f"Generated subnet resource: {scoped_subnet_name} "
+                    f"(VNet: {resource_name}, Subnet: {subnet_name})"
                 )
 
         elif azure_type == "Microsoft.Compute/virtualMachines":
@@ -346,6 +362,65 @@ class TerraformEmitter(IaCEmitter):
             resource_config["allocation_method"] = resource.get(
                 "allocation_method", "Static"
             )
+        elif azure_type == "Microsoft.Network/bastionHosts":
+            # Bastion Hosts require IP configuration with subnet and public IP
+            properties = self._parse_properties(resource)
+
+            ip_configurations = properties.get("ipConfigurations", [])
+            if ip_configurations:
+                # Use first IP configuration
+                ip_config = ip_configurations[0]
+                ip_config_name = ip_config.get("name", "IpConf")
+                ip_props = ip_config.get("properties", {})
+
+                # Extract subnet reference
+                subnet_info = ip_props.get("subnet", {})
+                subnet_id = subnet_info.get("id", "")
+
+                # Use helper method to resolve VNet-scoped subnet reference
+                subnet_reference = self._resolve_subnet_reference(
+                    subnet_id, resource_name
+                )
+
+                # Extract public IP reference
+                public_ip_info = ip_props.get("publicIPAddress", {})
+                public_ip_id = public_ip_info.get("id", "")
+                public_ip_name = self._extract_resource_name_from_id(
+                    public_ip_id, "publicIPAddresses"
+                )
+
+                # Build IP configuration block
+                ip_config_block = {
+                    "name": ip_config_name,
+                    "subnet_id": subnet_reference,  # Always set (even if placeholder)
+                }
+
+                # Add public IP reference if found
+                if public_ip_name != "unknown":
+                    public_ip_name = self._sanitize_terraform_name(public_ip_name)
+                    ip_config_block["public_ip_address_id"] = (
+                        f"${{azurerm_public_ip.{public_ip_name}.id}}"
+                    )
+
+                resource_config["ip_configuration"] = ip_config_block
+
+                # Validate reference (warn if placeholder)
+                if "unknown" in subnet_reference:
+                    logger.warning(
+                        f"Bastion Host '{resource_name}' has invalid subnet reference. "
+                        f"Generated Terraform may be invalid."
+                    )
+            else:
+                logger.warning(
+                    f"Bastion Host '{resource_name}' has no IP configurations in properties. "
+                    "Generated Terraform may be invalid."
+                )
+
+            # Add SKU if present
+            sku = properties.get("sku", {})
+            if sku and "name" in sku:
+                resource_config["sku"] = sku["name"]
+
         elif azure_type == "Microsoft.Network/networkSecurityGroups":
             # NSGs don't need additional required properties beyond name, location, and resource_group
             pass
@@ -362,17 +437,17 @@ class TerraformEmitter(IaCEmitter):
                 subnet_info = ip_props.get("subnet", {})
                 subnet_id = subnet_info.get("id", "")
 
-                # Extract subnet name from ID using helper
-                subnet_name = self._extract_resource_name_from_id(subnet_id, "subnets")
-                if subnet_name != "unknown":
-                    subnet_name = self._sanitize_terraform_name(subnet_name)
+                # Use helper method to resolve VNet-scoped subnet reference
+                subnet_reference = self._resolve_subnet_reference(
+                    subnet_id, resource_name
+                )
 
                 private_ip = ip_props.get("privateIPAddress", "")
                 allocation_method = ip_props.get("privateIPAllocationMethod", "Dynamic")
 
                 ip_config_block = {
                     "name": ip_config.get("name", "internal"),
-                    "subnet_id": f"${{azurerm_subnet.{subnet_name}.id}}",
+                    "subnet_id": subnet_reference,
                     "private_ip_address_allocation": allocation_method,
                 }
 
@@ -381,6 +456,13 @@ class TerraformEmitter(IaCEmitter):
                     ip_config_block["private_ip_address"] = private_ip
 
                 resource_config["ip_configuration"] = ip_config_block
+
+                # Validate reference (warn if placeholder)
+                if "unknown" in subnet_reference:
+                    logger.warning(
+                        f"NIC '{resource_name}' has invalid subnet reference. "
+                        f"Generated Terraform may be invalid."
+                    )
             else:
                 logger.warning(
                     f"NIC '{resource_name}' has no ip_configurations in properties. "
@@ -389,21 +471,41 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.Network/subnets":
             properties = self._parse_properties(resource)
 
-            # Extract and link to parent VNet
+            # Extract parent VNet name from subnet ID
             subnet_id = resource.get("id", "")
             vnet_name = self._extract_resource_name_from_id(
                 subnet_id, "virtualNetworks"
             )
+
+            # Build VNet-scoped resource name
             if vnet_name != "unknown" and "/subnets/" in subnet_id:
-                vnet_name = self._sanitize_terraform_name(vnet_name)
-                resource_config["virtual_network_name"] = (
-                    f"${{azurerm_virtual_network.{vnet_name}.name}}"
+                vnet_name_safe = self._sanitize_terraform_name(vnet_name)
+                subnet_name_safe = self._sanitize_terraform_name(resource_name)
+                # Override safe_name to use scoped naming
+                safe_name = f"{vnet_name_safe}_{subnet_name_safe}"
+
+                resource_config = {
+                    "name": resource_name,  # Original Azure name
+                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "virtual_network_name": f"${{azurerm_virtual_network.{vnet_name_safe}.name}}",
+                }
+
+                logger.debug(
+                    f"Generated standalone subnet: {safe_name} "
+                    f"(VNet: {vnet_name}, Subnet: {resource_name})"
                 )
             else:
                 logger.warning(
-                    f"Subnet '{resource_name}' has no parent VNet in ID: {subnet_id}"
+                    f"Standalone subnet '{resource_name}' has no parent VNet in ID: {subnet_id}. "
+                    f"Using fallback naming (may cause collisions)."
                 )
-                resource_config["virtual_network_name"] = vnet_name
+                # Fallback to old behavior
+                safe_name = self._sanitize_terraform_name(resource_name)
+                resource_config = {
+                    "name": resource_name,
+                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "virtual_network_name": "unknown_vnet",
+                }
 
             # Handle address prefixes with fallback
             address_prefixes = (
@@ -573,6 +675,67 @@ class TerraformEmitter(IaCEmitter):
             sanitized = f"resource_{sanitized}"
 
         return sanitized or "unnamed_resource"
+
+    def _resolve_subnet_reference(self, subnet_id: str, resource_name: str) -> str:
+        """Resolve subnet reference to VNet-scoped Terraform resource name.
+
+        Extracts both VNet and subnet names from Azure resource ID and constructs
+        the scoped Terraform reference: ${azurerm_subnet.{vnet}_{subnet}.id}
+
+        Args:
+            subnet_id: Azure subnet resource ID
+                Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/
+                        Microsoft.Network/virtualNetworks/{vnet}/subnets/{subnet}
+            resource_name: Name of the resource referencing this subnet (for logging)
+
+        Returns:
+            Terraform reference string with VNet-scoped subnet name
+
+        Example:
+            >>> emitter._resolve_subnet_reference(
+            ...     "/subscriptions/.../virtualNetworks/infra-vnet/subnets/AzureBastionSubnet",
+            ...     "bastion-host-1"
+            ... )
+            '${azurerm_subnet.infra_vnet_AzureBastionSubnet.id}'
+        """
+        if not subnet_id or "/subnets/" not in subnet_id:
+            logger.warning(
+                f"Resource '{resource_name}' has invalid subnet ID: {subnet_id}"
+            )
+            return "${azurerm_subnet.unknown_subnet.id}"
+
+        # Extract VNet name from ID
+        vnet_name = self._extract_resource_name_from_id(subnet_id, "virtualNetworks")
+        if vnet_name == "unknown":
+            logger.warning(
+                f"Resource '{resource_name}' subnet ID missing VNet segment: {subnet_id}"
+            )
+            # Fallback: use only subnet name (old behavior for compatibility)
+            subnet_name = self._extract_resource_name_from_id(subnet_id, "subnets")
+            if subnet_name != "unknown":
+                subnet_name_safe = self._sanitize_terraform_name(subnet_name)
+                return f"${{azurerm_subnet.{subnet_name_safe}.id}}"
+            return "${azurerm_subnet.unknown_subnet.id}"
+
+        # Extract subnet name from ID
+        subnet_name = self._extract_resource_name_from_id(subnet_id, "subnets")
+        if subnet_name == "unknown":
+            logger.warning(
+                f"Resource '{resource_name}' has invalid subnet name in ID: {subnet_id}"
+            )
+            return "${azurerm_subnet.unknown_subnet.id}"
+
+        # Construct VNet-scoped reference
+        vnet_name_safe = self._sanitize_terraform_name(vnet_name)
+        subnet_name_safe = self._sanitize_terraform_name(subnet_name)
+        scoped_subnet_name = f"{vnet_name_safe}_{subnet_name_safe}"
+
+        logger.debug(
+            f"Resolved subnet reference for '{resource_name}': "
+            f"VNet='{vnet_name}', Subnet='{subnet_name}' -> {scoped_subnet_name}"
+        )
+
+        return f"${{azurerm_subnet.{scoped_subnet_name}.id}}"
 
     def get_supported_resource_types(self) -> List[str]:
         """Get list of Azure resource types supported by Terraform provider.
