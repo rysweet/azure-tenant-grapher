@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Optional
 
 from ruamel.yaml import YAML
 
+from ..validation.address_space_validator import (
+    AddressSpaceValidator,
+)
 from .subset import SubsetFilter, SubsetSelector
 from .traverser import TenantGraph
 
@@ -108,6 +111,10 @@ class TransformationEngine:
         emitter: Any,
         out_dir: Path | str,
         subset_filter: Optional[SubsetFilter] = None,
+        validate_address_spaces: bool = True,
+        auto_renumber_conflicts: bool = False,
+        tenant_id: Optional[str] = None,
+        subscription_id: Optional[str] = None,
     ) -> List[str]:
         """Generate IaC templates from tenant graph.
 
@@ -116,6 +123,10 @@ class TransformationEngine:
             emitter: The IaCEmitter instance (e.g., BicepEmitter)
             out_dir: Output directory for templates (Path or str)
             subset_filter: Optional SubsetFilter for resource selection
+            validate_address_spaces: If True, validate VNet address spaces (default: True)
+            auto_renumber_conflicts: If True, auto-renumber conflicting address spaces (default: False)
+            tenant_id: Optional SOURCE Azure tenant ID for Neo4j operations
+            subscription_id: Optional TARGET subscription ID for resource deployment
 
         Returns:
             List of output file paths
@@ -133,7 +144,50 @@ class TransformationEngine:
             transformed_resources.append(transformed)
         filtered_graph.resources = transformed_resources
 
-        return emitter.emit(filtered_graph, out_dir)
+        # Validate VNet address spaces before generation (GAP-012)
+        if validate_address_spaces:
+            logger.info("Validating VNet address spaces for conflicts...")
+            validator = AddressSpaceValidator(auto_renumber=auto_renumber_conflicts)
+            validation_result = validator.validate_resources(
+                filtered_graph.resources, modify_in_place=auto_renumber_conflicts
+            )
+
+            # Log validation results
+            if validation_result.is_valid:
+                logger.info(
+                    f"Address space validation passed: {validation_result.vnets_checked} VNets checked"
+                )
+            else:
+                logger.warning(
+                    f"Address space validation found {len(validation_result.conflicts)} conflicts"
+                )
+                # Use rich formatted warnings (Issue #334)
+                for conflict in validation_result.conflicts:
+                    rich_warning = validator.format_conflict_warning(conflict)
+                    logger.warning(rich_warning)
+
+            # Log warnings
+            for warning in validation_result.warnings:
+                logger.warning(f"  - {warning}")
+
+            # Log auto-renumbering results
+            if validation_result.auto_renumbered:
+                logger.info(
+                    f"Auto-renumbered {len(validation_result.auto_renumbered)} VNets: "
+                    f"{', '.join(validation_result.auto_renumbered)}"
+                )
+
+        # Pass tenant_id and subscription_id to emitter if it supports them (use introspection)
+        import inspect
+
+        emit_signature = inspect.signature(emitter.emit)
+        emit_kwargs = {}
+        if "tenant_id" in emit_signature.parameters:
+            emit_kwargs["tenant_id"] = tenant_id
+        if "subscription_id" in emit_signature.parameters:
+            emit_kwargs["subscription_id"] = subscription_id
+
+        return emitter.emit(filtered_graph, out_dir, **emit_kwargs)
 
     def _matches_rule(self, resource_type: str, rule_pattern: str) -> bool:
         """Check if resource type matches rule pattern.
