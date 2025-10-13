@@ -7,7 +7,9 @@ from azure.identity import ClientSecretCredential
 from kiota_abstractions.base_request_configuration import RequestConfiguration
 from msgraph.generated.groups.groups_request_builder import GroupsRequestBuilder
 from msgraph.generated.models.o_data_errors.o_data_error import ODataError
-from msgraph.generated.service_principals.service_principals_request_builder import ServicePrincipalsRequestBuilder
+from msgraph.generated.service_principals.service_principals_request_builder import (
+    ServicePrincipalsRequestBuilder,
+)
 from msgraph.generated.users.users_request_builder import UsersRequestBuilder
 from msgraph.graph_service_client import GraphServiceClient
 
@@ -544,34 +546,42 @@ class AADGraphService:
 
         logger.info(f"Ingesting {len(users)} users and {len(groups)} groups")
 
-        # Upsert User nodes - Convert camelCase to snake_case for consistency
+        # Upsert User nodes with IaC-standard properties
         for user in users:
             user_id = user.get("id")
             if not user_id:
                 continue
+            display_name = user.get("displayName", user_id)
             props = {
                 "id": user_id,
-                "display_name": user.get("displayName"),  # Convert to snake_case
-                "user_principal_name": user.get(
-                    "userPrincipalName"
-                ),  # Convert to snake_case
+                "display_name": display_name,
+                "user_principal_name": user.get("userPrincipalName"),
                 "mail": user.get("mail"),
-                "type": "User",
+                "type": "Microsoft.Graph/users",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
             }
             if not dry_run:
                 db_ops.upsert_generic("User", "id", user_id, props)
 
-        # Upsert Group nodes - Convert camelCase to snake_case for consistency
+        # Upsert Group nodes with IaC-standard properties
         for group in groups:
             group_id = group.get("id")
             if not group_id:
                 continue
+            display_name = group.get("displayName", group_id)
             props = {
                 "id": group_id,
-                "display_name": group.get("displayName"),  # Convert to snake_case
+                "display_name": display_name,
                 "mail": group.get("mail"),
                 "description": group.get("description"),
-                "type": "IdentityGroup",
+                "type": "Microsoft.Graph/groups",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
             }
             if not dry_run:
                 db_ops.upsert_generic("IdentityGroup", "id", group_id, props)
@@ -645,47 +655,62 @@ class AADGraphService:
             f"{len(service_principals)} service principals"
         )
         
-        # Upsert User nodes
+        # Upsert User nodes with IaC-standard properties
         for user in users:
             user_id = user.get("id")
             if not user_id:
                 continue
+            display_name = user.get("displayName", user_id)
             props = {
                 "id": user_id,
-                "display_name": user.get("displayName"),
+                "display_name": display_name,
                 "user_principal_name": user.get("userPrincipalName"),
                 "mail": user.get("mail"),
-                "type": "User",
+                "type": "Microsoft.Graph/users",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
             }
             if not dry_run:
                 db_ops.upsert_generic("User", "id", user_id, props)
         
-        # Upsert Group nodes
+        # Upsert Group nodes with IaC-standard properties
         for group in groups:
             group_id = group.get("id")
             if not group_id:
                 continue
+            display_name = group.get("displayName", group_id)
             props = {
                 "id": group_id,
-                "display_name": group.get("displayName"),
+                "display_name": display_name,
                 "mail": group.get("mail"),
                 "description": group.get("description"),
-                "type": "IdentityGroup",
+                "type": "Microsoft.Graph/groups",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
             }
             if not dry_run:
                 db_ops.upsert_generic("IdentityGroup", "id", group_id, props)
         
-        # Upsert ServicePrincipal nodes
+        # Upsert ServicePrincipal nodes with IaC-standard properties
         for sp in service_principals:
             sp_id = sp.get("id")
             if not sp_id:
                 continue
+            display_name = sp.get("displayName", sp_id)
             props = {
                 "id": sp_id,
-                "display_name": sp.get("displayName"),
+                "display_name": display_name,
                 "app_id": sp.get("appId"),
                 "service_principal_type": sp.get("servicePrincipalType"),
-                "type": "ServicePrincipal",
+                "type": "Microsoft.Graph/servicePrincipals",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
             }
             if not dry_run:
                 db_ops.upsert_generic("ServicePrincipal", "id", sp_id, props)

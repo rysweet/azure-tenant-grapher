@@ -535,7 +535,10 @@ Instructions:
                                     u.userPrincipalName = $userPrincipalName,
                                     u.jobTitle = $jobTitle,
                                     u.mailNickname = $mailNickname,
-                                    u.type = 'Microsoft.Graph/users'
+                                    u.type = 'Microsoft.Graph/users',
+                                    u.name = $displayName,
+                                    u.location = 'global',
+                                    u.resourceGroup = 'identity-resources'
                                 """,
                                 {
                                     "id": user.id,
@@ -563,7 +566,10 @@ Instructions:
                                 """
                                 MERGE (g:Group:Resource {id: $id})
                                 SET g.displayName = $displayName,
-                                    g.type = 'Microsoft.Graph/groups'
+                                    g.type = 'Microsoft.Graph/groups',
+                                    g.name = $displayName,
+                                    g.location = 'global',
+                                    g.resourceGroup = 'identity-resources'
                                 """,
                                 {
                                     "id": group.id,
@@ -586,7 +592,10 @@ Instructions:
                                 """
                                 MERGE (sp:ServicePrincipal:Resource {id: $id})
                                 SET sp.displayName = $displayName,
-                                    sp.type = 'Microsoft.Graph/servicePrincipals'
+                                    sp.type = 'Microsoft.Graph/servicePrincipals',
+                                    sp.name = $displayName,
+                                    sp.location = 'global',
+                                    sp.resourceGroup = 'identity-resources'
                                 """,
                                 {
                                     "id": sp.id,
@@ -609,7 +618,10 @@ Instructions:
                                 """
                                 MERGE (mi:ManagedIdentity:Resource {id: $id})
                                 SET mi.displayName = $displayName,
-                                    mi.type = 'Microsoft.ManagedIdentity/managedIdentities'
+                                    mi.type = 'Microsoft.ManagedIdentity/managedIdentities',
+                                    mi.name = $displayName,
+                                    mi.location = 'global',
+                                    mi.resourceGroup = 'identity-resources'
                                 """,
                                 {
                                     "id": mi.id,
