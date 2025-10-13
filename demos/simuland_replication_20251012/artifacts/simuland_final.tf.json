@@ -1,0 +1,577 @@
+{
+  "terraform": {
+    "required_providers": {
+      "azurerm": {
+        "source": "hashicorp/azurerm",
+        "version": ">=3.0"
+      },
+      "random": {
+        "source": "hashicorp/random",
+        "version": ">=3.1"
+      },
+      "tls": {
+        "source": "hashicorp/tls",
+        "version": ">=4.0"
+      }
+    }
+  },
+  "provider": {
+    "azurerm": {
+      "features": {},
+      "resource_provider_registrations": "none",
+      "subscription_id": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+    }
+  },
+  "resource": {
+    "azurerm_network_security_group": {
+      "DC001_nsg": {
+        "name": "DC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "USER001_nsg": {
+        "name": "USER001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "WEB001_nsg": {
+        "name": "WEB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "USER002_nsg": {
+        "name": "USER002-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "DB001_nsg": {
+        "name": "DB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "DB001nsg109": {
+        "name": "DB001nsg109",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "GUEST002_nsg": {
+        "name": "GUEST002-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "GUEST001_nsg": {
+        "name": "GUEST001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "SEC001_nsg": {
+        "name": "SEC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      },
+      "SEC002_nsg": {
+        "name": "SEC002-nsg",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg"
+      }
+    },
+    "azurerm_public_ip": {
+      "DC001_vnet_ip": {
+        "name": "DC001-vnet-ip",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "allocation_method": "Static"
+      }
+    },
+    "azurerm_virtual_network": {
+      "DC001_vnet": {
+        "name": "DC001-vnet",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "address_space": [
+          "10.6.0.0/16"
+        ]
+      }
+    },
+    "azurerm_subnet": {
+      "DC001_vnet_default": {
+        "name": "default",
+        "resource_group_name": "simuland-rg",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.0.0/24"
+        ]
+      },
+      "DC001_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "simuland-rg",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.1.0/26"
+        ]
+      }
+    },
+    "azurerm_key_vault": {
+      "simKV160224hpcp4rein6": {
+        "name": "simKV160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "tenant_id": "c7674d41-af6c-46f5-89a5-d41495d2151e",
+        "sku_name": "standard"
+      },
+      "SimuLand": {
+        "name": "SimuLand",
+        "location": "eastus",
+        "resource_group_name": "simuland-rg",
+        "tenant_id": "c7674d41-af6c-46f5-89a5-d41495d2151e",
+        "sku_name": "standard"
+      }
+    },
+    "azurerm_bastion_host": {
+      "DC001_vnet_bastion": {
+        "name": "DC001-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.DC001_vnet_ip.id}"
+        }
+      }
+    },
+    "azurerm_storage_account": {
+      "cm160224hpcp4rein6": {
+        "name": "cm160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "tmp160224v7qxvc2ghd": {
+        "name": "tmp160224v7qxvc2ghd",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "exec160224hpcp4rein6": {
+        "name": "exec160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "simulandapia5ea": {
+        "name": "simulandapia5ea",
+        "location": "eastus",
+        "resource_group_name": "simuland-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      }
+    },
+    "azurerm_network_interface": {
+      "dc001104_z1": {
+        "name": "dc001104_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "user001120_z1": {
+        "name": "user001120_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "web001520_z1": {
+        "name": "web001520_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "srv001927_z1": {
+        "name": "srv001927_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "user002535_z1": {
+        "name": "user002535_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "db001939_z1": {
+        "name": "db001939_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "db001282_z1": {
+        "name": "db001282_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "guest002244_z1": {
+        "name": "guest002244_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "guest001815_z1": {
+        "name": "guest001815_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "sec002314_z1": {
+        "name": "sec002314_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "sec001195_z1": {
+        "name": "sec001195_z1",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      }
+    },
+    "azurerm_windows_virtual_machine": {
+      "DC001": {
+        "name": "DC001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "DC001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2022-datacenter-azure-edition-hotpatch",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.dc001104_z1.id}"
+        ],
+        "patch_mode": "AutomaticByPlatform"
+      },
+      "USER001": {
+        "name": "USER001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "USER001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.user001120_z1.id}"
+        ]
+      },
+      "WEB001": {
+        "name": "WEB001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "WEB001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2022-datacenter-azure-edition-hotpatch",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.web001520_z1.id}"
+        ],
+        "patch_mode": "AutomaticByPlatform"
+      },
+      "SRV001": {
+        "name": "SRV001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "SRV001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2022-datacenter-azure-edition",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.srv001927_z1.id}"
+        ]
+      },
+      "USER002": {
+        "name": "USER002",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "USER002",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.user002535_z1.id}"
+        ]
+      },
+      "DB001": {
+        "name": "DB001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "DB001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "MicrosoftWindowsServer",
+          "offer": "WindowsServer",
+          "sku": "2022-datacenter-azure-edition-hotpatch",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.db001282_z1.id}"
+        ],
+        "patch_mode": "AutomaticByPlatform"
+      },
+      "GUEST002": {
+        "name": "GUEST002",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "GUEST002",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest002244_z1.id}"
+        ]
+      },
+      "GUEST001": {
+        "name": "GUEST001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "GUEST001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest001815_z1.id}"
+        ]
+      },
+      "SEC001": {
+        "name": "SEC001",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "SEC001",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec001195_z1.id}"
+        ]
+      },
+      "SEC002": {
+        "name": "SEC002",
+        "location": "westus2",
+        "resource_group_name": "simuland-rg",
+        "size": "Standard_D2s_v3",
+        "admin_username": "SEC002",
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "microsoftwindowsdesktop",
+          "offer": "windows-11",
+          "sku": "win11-24h2-pro",
+          "version": "latest"
+        },
+        "admin_password": "ChangeMeAfterDeployment123!",
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec002314_z1.id}"
+        ]
+      }
+    },
+    "azurerm_windows_web_app": {
+      "simMgr160224hpcp4rein6": {
+        "name": "simMgr160224hpcp4rein6-092540",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "service_plan_id": "${azurerm_service_plan.default_plan_northcentralus.id}",
+        "site_config": {},
+        "tags": {
+          "hidden-related:/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverfarms/ASP-160224hpcp4rein6": "empty",
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f",
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/microsoft.insights/components/simAI160224hpcp4rein6",
+          "hidden-link: /app-insights-instrumentation-key": "bed2e111-aee6-4cdb-b629-b28ca2e5d673",
+          "hidden-link: /app-insights-conn-string": "InstrumentationKey=bed2e111-aee6-4cdb-b629-b28ca2e5d673;IngestionEndpoint=https://northcentralus-0.in.applicationinsights.azure.com/;LiveEndpoint=https://northcentralus.livediagnostics.monitor.azure.com/;ApplicationId=1623201e-bb7e-48fa-a0dd-13bef395ec8f"
+        }
+      },
+      "simuland": {
+        "name": "simuland-092540",
+        "location": "eastus",
+        "resource_group_name": "simuland-rg",
+        "service_plan_id": "${azurerm_service_plan.default_plan_eastus.id}",
+        "site_config": {},
+        "tags": {
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/simuland-api/providers/Microsoft.Insights/components/simuland"
+        }
+      }
+    },
+    "azurerm_resource_group": {
+      "simuland_rg": {
+        "name": "simuland-rg",
+        "location": "westus2"
+      }
+    },
+    "azurerm_service_plan": {
+      "default_plan_northcentralus": {
+        "name": "default-plan",
+        "location": "northcentralus",
+        "resource_group_name": "simuland-rg",
+        "os_type": "Windows",
+        "sku_name": "B1"
+      },
+      "default_plan_eastus": {
+        "name": "default-plan-eastus",
+        "location": "eastus",
+        "resource_group_name": "simuland-rg",
+        "os_type": "Windows",
+        "sku_name": "B1"
+      }
+    }
+  }
+}
