@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 class TerraformEmitter(IaCEmitter):
     """Emitter for generating Terraform templates."""
 
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize the TerraformEmitter.
+
+        Args:
+            config: Optional configuration dictionary
+        """
+        super().__init__(config)
+        # Track NSG associations to emit as separate resources
+        # Format: [(subnet_tf_name, nsg_tf_name, subnet_name, nsg_name)]
+        self._nsg_associations: List[tuple[str, str, str, str]] = []
+        # Track all resource names that will be emitted (for reference validation)
+        self._available_resources: Dict[str, set] = {}
+        # Track missing resource references for reporting
+        self._missing_references: List[Dict[str, str]] = []
+
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
@@ -102,7 +117,63 @@ class TerraformEmitter(IaCEmitter):
                 {"azuread": {}},
             ]
 
-        # Process resources
+        # Clear NSG associations and tracking from previous runs
+        self._nsg_associations = []
+        self._available_resources = {}
+        self._missing_references = []
+        # Track available subnets separately (needs VNet-scoped names)
+        self._available_subnets = set()
+
+        # First pass: Build index of available resources
+        logger.info("Building resource index for reference validation")
+        for resource in graph.resources:
+            azure_type = resource.get("type", "")
+            resource_name = resource.get("name", "")
+
+            # Handle simple type names for Azure AD resources
+            if azure_type.lower() in ("user", "aaduser"):
+                azure_type = "Microsoft.Graph/users"
+            elif azure_type.lower() in ("group", "aadgroup", "identitygroup"):
+                azure_type = "Microsoft.Graph/groups"
+            elif azure_type.lower() == "serviceprincipal":
+                azure_type = "Microsoft.Graph/servicePrincipals"
+            elif azure_type.lower() == "managedidentity":
+                azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+
+            # Get Terraform resource type
+            terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
+            if terraform_type:
+                if terraform_type not in self._available_resources:
+                    self._available_resources[terraform_type] = set()
+                safe_name = self._sanitize_terraform_name(resource_name)
+                self._available_resources[terraform_type].add(safe_name)
+
+                # For subnets, also track VNet-scoped names
+                if azure_type == "Microsoft.Network/subnets":
+                    subnet_id = resource.get("id", "")
+                    vnet_name = self._extract_resource_name_from_id(subnet_id, "virtualNetworks")
+                    if vnet_name != "unknown" and "/subnets/" in subnet_id:
+                        vnet_name_safe = self._sanitize_terraform_name(vnet_name)
+                        subnet_name_safe = safe_name
+                        scoped_subnet_name = f"{vnet_name_safe}_{subnet_name_safe}"
+                        self._available_subnets.add(scoped_subnet_name)
+
+            # Also track subnets from VNet properties (inline subnets)
+            if azure_type == "Microsoft.Network/virtualNetworks":
+                properties = self._parse_properties(resource)
+                subnets = properties.get("subnets", [])
+                vnet_safe_name = self._sanitize_terraform_name(resource_name)
+                for subnet in subnets:
+                    subnet_name = subnet.get("name")
+                    if subnet_name:
+                        subnet_safe_name = self._sanitize_terraform_name(subnet_name)
+                        scoped_subnet_name = f"{vnet_safe_name}_{subnet_safe_name}"
+                        self._available_subnets.add(scoped_subnet_name)
+
+        logger.debug(f"Resource index built: {sum(len(v) for v in self._available_resources.values())} resources tracked")
+        logger.debug(f"Subnet index built: {len(self._available_subnets)} subnets tracked")
+
+        # Second pass: Process resources with validation
         for resource in graph.resources:
             terraform_resource = self._convert_resource(resource, terraform_config)
             if terraform_resource:
@@ -115,10 +186,85 @@ class TerraformEmitter(IaCEmitter):
                     resource_config
                 )
 
+        # Emit NSG association resources after all resources are processed
+        if self._nsg_associations:
+            if "azurerm_subnet_network_security_group_association" not in terraform_config["resource"]:
+                terraform_config["resource"]["azurerm_subnet_network_security_group_association"] = {}
+
+            for subnet_tf_name, nsg_tf_name, subnet_name, nsg_name in self._nsg_associations:
+                # Association resource name: subnet_name + "_nsg_association"
+                assoc_name = f"{subnet_tf_name}_nsg_association"
+                terraform_config["resource"]["azurerm_subnet_network_security_group_association"][assoc_name] = {
+                    "subnet_id": f"${{azurerm_subnet.{subnet_tf_name}.id}}",
+                    "network_security_group_id": f"${{azurerm_network_security_group.{nsg_tf_name}.id}}",
+                }
+                logger.debug(
+                    f"Generated NSG association: {assoc_name} (Subnet: {subnet_name}, NSG: {nsg_name})"
+                )
+
         # Write main.tf.json
         output_file = out_dir / "main.tf.json"
         with open(output_file, "w") as f:
             json.dump(terraform_config, f, indent=2)
+
+        # Report summary of missing references
+        if self._missing_references:
+            # Separate by type
+            nic_refs = [r for r in self._missing_references if r.get("resource_type") == "network_interface"]
+            subnet_refs = [r for r in self._missing_references if r.get("resource_type") == "subnet"]
+
+            logger.warning(
+                f"\n{'=' * 80}\n"
+                f"MISSING RESOURCE REFERENCES DETECTED: {len(self._missing_references)} issue(s)\n"
+                f"{'=' * 80}"
+            )
+
+            if nic_refs:
+                logger.warning(f"\nMissing Network Interface References ({len(nic_refs)} issues):")
+                for ref in nic_refs:
+                    logger.warning(
+                        f"\n  VM '{ref['vm_name']}' references missing NIC:\n"
+                        f"    Missing NIC: {ref['missing_resource_name']}\n"
+                        f"    Azure ID: {ref['missing_resource_id']}\n"
+                        f"    VM ID: {ref['vm_id']}"
+                    )
+
+            if subnet_refs:
+                logger.warning(f"\nMissing Subnet References ({len(subnet_refs)} issues):")
+                # Group by VNet to make it easier to understand
+                subnets_by_vnet = {}
+                for ref in subnet_refs:
+                    vnet = ref.get("missing_vnet_name", "unknown")
+                    if vnet not in subnets_by_vnet:
+                        subnets_by_vnet[vnet] = []
+                    subnets_by_vnet[vnet].append(ref)
+
+                for vnet, refs in subnets_by_vnet.items():
+                    logger.warning(f"\n  VNet '{vnet}' (referenced by {len(refs)} resource(s)):")
+                    # Show first subnet details
+                    first_ref = refs[0]
+                    logger.warning(
+                        f"    Missing subnet: {first_ref['missing_resource_name']}\n"
+                        f"    Expected Terraform name: {first_ref['expected_terraform_name']}\n"
+                        f"    Azure ID: {first_ref['missing_resource_id']}"
+                    )
+                    # List all resources referencing this subnet
+                    logger.warning(f"    Resources referencing this subnet:")
+                    for ref in refs[:10]:  # Limit to first 10
+                        logger.warning(f"      - {ref['resource_name']}")
+                    if len(refs) > 10:
+                        logger.warning(f"      ... and {len(refs) - 10} more")
+
+            logger.warning(
+                f"\n{'=' * 80}\n"
+                f"These resources exist in resource properties but were not discovered/stored in Neo4j.\n"
+                f"This may indicate:\n"
+                f"  1. Parent resources (VNets) in different resource groups weren't fully discovered\n"
+                f"  2. Discovery service filtered these resources\n"
+                f"  3. Resources were deleted after dependent resources were created\n"
+                f"  4. Subnet extraction rule skipped subnets without address prefixes\n"
+                f"{'=' * 80}\n"
+            )
 
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"
@@ -273,6 +419,22 @@ class TerraformEmitter(IaCEmitter):
                     "address_prefixes": [address_prefix],
                 }
 
+                # Check for NSG association (store for later emission as separate resource)
+                nsg_info = subnet_props.get("networkSecurityGroup", {})
+                if nsg_info and "id" in nsg_info:
+                    nsg_name = self._extract_resource_name_from_id(
+                        nsg_info["id"], "networkSecurityGroups"
+                    )
+                    if nsg_name != "unknown":
+                        nsg_name_safe = self._sanitize_terraform_name(nsg_name)
+                        # Store association for later emission
+                        self._nsg_associations.append(
+                            (scoped_subnet_name, nsg_name_safe, subnet_name, nsg_name)
+                        )
+                        logger.debug(
+                            f"Tracked NSG association for inline subnet: {subnet_name} -> {nsg_name}"
+                        )
+
                 # Add to terraform config with scoped key
                 if "azurerm_subnet" not in terraform_config["resource"]:
                     terraform_config["resource"]["azurerm_subnet"] = {}
@@ -338,6 +500,7 @@ class TerraformEmitter(IaCEmitter):
 
             if nics:
                 nic_refs = []
+                missing_nics = []
                 for nic in nics:
                     nic_id = nic.get("id", "")
                     if nic_id:
@@ -346,10 +509,48 @@ class TerraformEmitter(IaCEmitter):
                             nic_id, "networkInterfaces"
                         )
                         if nic_name != "unknown":
-                            nic_name = self._sanitize_terraform_name(nic_name)
-                            nic_refs.append(
-                                f"${{azurerm_network_interface.{nic_name}.id}}"
-                            )
+                            nic_name_safe = self._sanitize_terraform_name(nic_name)
+
+                            # Validate that the NIC resource exists in the graph
+                            if self._validate_resource_reference(
+                                "azurerm_network_interface", nic_name_safe
+                            ):
+                                nic_refs.append(
+                                    f"${{azurerm_network_interface.{nic_name_safe}.id}}"
+                                )
+                            else:
+                                # Track missing NIC
+                                missing_nics.append({
+                                    "nic_name": nic_name,
+                                    "nic_id": nic_id,
+                                    "nic_terraform_name": nic_name_safe,
+                                })
+                                self._missing_references.append({
+                                    "vm_name": resource_name,
+                                    "vm_id": resource.get("id", ""),
+                                    "resource_type": "network_interface",
+                                    "missing_resource_name": nic_name,
+                                    "missing_resource_id": nic_id,
+                                })
+
+                if missing_nics:
+                    logger.error(
+                        f"VM '{resource_name}' references {len(missing_nics)} network interface(s) "
+                        f"that don't exist in Neo4j graph: {[n['nic_name'] for n in missing_nics]}"
+                    )
+                    # Log detailed information about missing NICs
+                    for missing_nic in missing_nics:
+                        logger.error(
+                            f"  Missing NIC: {missing_nic['nic_name']}\n"
+                            f"    Azure ID: {missing_nic['nic_id']}\n"
+                            f"    Expected Terraform name: {missing_nic['nic_terraform_name']}"
+                        )
+                    # Don't add invalid VM to output if all NICs are missing
+                    if not nic_refs:
+                        logger.error(
+                            f"Skipping VM '{resource_name}' - all referenced NICs are missing from graph"
+                        )
+                        return None
 
                 if nic_refs:
                     resource_config["network_interface_ids"] = nic_refs
@@ -518,16 +719,20 @@ class TerraformEmitter(IaCEmitter):
                 address_prefixes = ["10.0.0.0/24"]
             resource_config["address_prefixes"] = address_prefixes
 
-            # Optional: Network Security Group
+            # Check for NSG association (store for later emission as separate resource)
             nsg_info = properties.get("networkSecurityGroup", {})
             if nsg_info and "id" in nsg_info:
                 nsg_name = self._extract_resource_name_from_id(
                     nsg_info["id"], "networkSecurityGroups"
                 )
                 if nsg_name != "unknown":
-                    nsg_name = self._sanitize_terraform_name(nsg_name)
-                    resource_config["network_security_group_id"] = (
-                        f"${{azurerm_network_security_group.{nsg_name}.id}}"
+                    nsg_name_safe = self._sanitize_terraform_name(nsg_name)
+                    # Store association for later emission
+                    self._nsg_associations.append(
+                        (safe_name, nsg_name_safe, resource_name, nsg_name)
+                    )
+                    logger.debug(
+                        f"Tracked NSG association for standalone subnet: {resource_name} -> {nsg_name}"
                     )
 
             # Optional: Service Endpoints
@@ -676,11 +881,30 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
+    def _validate_resource_reference(
+        self, terraform_type: str, resource_name: str
+    ) -> bool:
+        """Validate that a referenced resource exists in the graph.
+
+        Args:
+            terraform_type: Terraform resource type (e.g., "azurerm_network_interface")
+            resource_name: Sanitized Terraform resource name
+
+        Returns:
+            True if resource exists, False otherwise
+        """
+        return (
+            terraform_type in self._available_resources
+            and resource_name in self._available_resources[terraform_type]
+        )
+
     def _resolve_subnet_reference(self, subnet_id: str, resource_name: str) -> str:
         """Resolve subnet reference to VNet-scoped Terraform resource name.
 
         Extracts both VNet and subnet names from Azure resource ID and constructs
         the scoped Terraform reference: ${azurerm_subnet.{vnet}_{subnet}.id}
+
+        Validates that the subnet exists in the graph and tracks missing references.
 
         Args:
             subnet_id: Azure subnet resource ID
@@ -729,6 +953,25 @@ class TerraformEmitter(IaCEmitter):
         vnet_name_safe = self._sanitize_terraform_name(vnet_name)
         subnet_name_safe = self._sanitize_terraform_name(subnet_name)
         scoped_subnet_name = f"{vnet_name_safe}_{subnet_name_safe}"
+
+        # Validate subnet exists in the graph
+        if scoped_subnet_name not in self._available_subnets:
+            logger.error(
+                f"Resource '{resource_name}' references subnet that doesn't exist in graph:\n"
+                f"  Subnet Terraform name: {scoped_subnet_name}\n"
+                f"  Subnet Azure name: {subnet_name}\n"
+                f"  VNet Azure name: {vnet_name}\n"
+                f"  Azure ID: {subnet_id}"
+            )
+            # Track missing subnet reference
+            self._missing_references.append({
+                "resource_name": resource_name,
+                "resource_type": "subnet",
+                "missing_resource_name": subnet_name,
+                "missing_resource_id": subnet_id,
+                "missing_vnet_name": vnet_name,
+                "expected_terraform_name": scoped_subnet_name,
+            })
 
         logger.debug(
             f"Resolved subnet reference for '{resource_name}': "
