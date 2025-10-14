@@ -25,13 +25,15 @@ logger = logging.getLogger(__name__)
 class TerraformEmitter(IaCEmitter):
     """Emitter for generating Terraform templates."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, resource_group_prefix: Optional[str] = None):
         """Initialize the TerraformEmitter.
 
         Args:
             config: Optional configuration dictionary
+            resource_group_prefix: Optional prefix to add to all resource group names (e.g., "ITERATION15_")
         """
         super().__init__(config)
+        self.resource_group_prefix = resource_group_prefix or ""
         # Track NSG associations to emit as separate resources
         # Format: [(subnet_tf_name, nsg_tf_name, subnet_name, nsg_name)]
         self._nsg_associations: List[tuple[str, str, str, str]] = []
@@ -72,28 +74,33 @@ class TerraformEmitter(IaCEmitter):
 
         Returns list of RG resource dictionaries with properties:
         - id: RG azure resource ID
-        - name: RG name
+        - name: RG name (with prefix applied)
         - location: Azure region
         - type: "Microsoft.Resources/resourceGroups"
+        - _original_rg_name: Original RG name before prefix (for mapping)
         """
         rg_map = {}
         for resource in resources:
             # Try both field names (resource_group and resourceGroup)
             rg_name = resource.get("resource_group") or resource.get("resourceGroup")
             if rg_name and rg_name not in rg_map:
+                # APPLY PREFIX HERE
+                prefixed_name = self._apply_rg_prefix(rg_name)
+
                 # Extract location from first resource in this RG
                 location = resource.get("location", "westus2")
                 subscription = resource.get("subscription_id") or resource.get("subscriptionId", "")
 
                 rg_map[rg_name] = {
-                    "id": f"/subscriptions/{subscription}/resourceGroups/{rg_name}",
-                    "name": rg_name,
+                    "id": f"/subscriptions/{subscription}/resourceGroups/{prefixed_name}",
+                    "name": prefixed_name,  # Prefixed name
                     "location": location,
                     "type": "Microsoft.Resources/resourceGroups",
                     "subscriptionId": subscription,
                     "subscription_id": subscription,
-                    "resourceGroup": rg_name,  # For compatibility
-                    "resource_group": rg_name,  # Self-reference
+                    "resourceGroup": prefixed_name,  # Prefixed
+                    "resource_group": prefixed_name,  # Prefixed
+                    "_original_rg_name": rg_name,  # Track original for mapping
                 }
 
         return list(rg_map.values())
@@ -220,6 +227,43 @@ class TerraformEmitter(IaCEmitter):
         logger.info("Extracting resource groups from discovered resources")
         rg_resources = self._extract_resource_groups(graph.resources)
         logger.info(f"Found {len(rg_resources)} unique resource groups")
+
+        # Build RG name mapping (original -> prefixed) for updating resource references
+        rg_name_mapping = {}
+        if self.resource_group_prefix:
+            for rg_resource in rg_resources:
+                original_rg = rg_resource.get("_original_rg_name")
+                prefixed_rg = rg_resource.get("name")
+                if original_rg and prefixed_rg:
+                    rg_name_mapping[original_rg] = prefixed_rg
+
+            logger.info(f"Resource group prefix: '{self.resource_group_prefix}'")
+            logger.info(f"Will transform {len(rg_name_mapping)} resource group names")
+
+            # Apply RG name transform to all resources
+            for resource in graph.resources:
+                # Update resource_group field
+                original_rg = resource.get("resource_group") or resource.get("resourceGroup")
+                if original_rg in rg_name_mapping:
+                    prefixed_rg = rg_name_mapping[original_rg]
+                    resource["resource_group"] = prefixed_rg
+                    resource["resourceGroup"] = prefixed_rg
+
+                # Update resource IDs containing RG names
+                resource_id = resource.get("id", "")
+                if "/resourceGroups/" in resource_id:
+                    # Extract and replace RG name in ID
+                    parts = resource_id.split("/resourceGroups/")
+                    if len(parts) == 2:
+                        after_rg = parts[1].split("/", 1)
+                        original_rg_in_id = after_rg[0]
+                        if original_rg_in_id in rg_name_mapping:
+                            prefixed_rg_in_id = rg_name_mapping[original_rg_in_id]
+                            rest_of_id = after_rg[1] if len(after_rg) > 1 else ""
+                            resource["id"] = (
+                                f"{parts[0]}/resourceGroups/{prefixed_rg_in_id}"
+                                f"{'/' + rest_of_id if rest_of_id else ''}"
+                            )
 
         # Add RG resources to the available resources index
         for rg_resource in rg_resources:
@@ -1005,6 +1049,33 @@ class TerraformEmitter(IaCEmitter):
             except json.JSONDecodeError:
                 return {}
         return properties_str
+
+    def _apply_rg_prefix(self, rg_name: str) -> str:
+        """Apply resource group prefix with validation.
+
+        Args:
+            rg_name: Original resource group name
+
+        Returns:
+            Prefixed name, validated against Azure limits
+
+        Raises:
+            ValueError: If prefixed name exceeds 90 characters
+        """
+        if not self.resource_group_prefix:
+            return rg_name
+
+        prefixed_name = f"{self.resource_group_prefix}{rg_name}"
+
+        # Validate Azure RG name length (90 chars max)
+        if len(prefixed_name) > 90:
+            raise ValueError(
+                f"Prefixed resource group name exceeds Azure limit (90 chars): "
+                f"'{prefixed_name}' ({len(prefixed_name)} chars). "
+                f"Original: '{rg_name}', Prefix: '{self.resource_group_prefix}'"
+            )
+
+        return prefixed_name
 
     def _extract_resource_name_from_id(
         self, resource_id: str, resource_type: str

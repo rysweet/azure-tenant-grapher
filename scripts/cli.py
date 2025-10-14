@@ -735,6 +735,10 @@ def generate_spec(
     default=True,
     help="Fail deployment if conflicts are detected (default: fail, Issue #336)",
 )
+@click.option(
+    "--resource-group-prefix",
+    help="Prefix to add to all resource group names (e.g., 'ITERATION15_') for non-destructive iterations",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -766,6 +770,7 @@ async def generate_iac(
     skip_conflict_check: bool,
     auto_cleanup: bool,
     fail_on_conflicts: bool,
+    resource_group_prefix: Optional[str],
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -823,6 +828,7 @@ async def generate_iac(
         skip_conflict_check=skip_conflict_check,
         auto_cleanup=auto_cleanup,
         fail_on_conflicts=fail_on_conflicts,
+        resource_group_prefix=resource_group_prefix,
     )
 
 
