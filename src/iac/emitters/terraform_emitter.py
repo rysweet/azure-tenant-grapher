@@ -12,6 +12,11 @@ from typing import Any, ClassVar, Dict, List, Optional
 from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
+from .private_endpoint_emitter import (
+    emit_private_dns_zone,
+    emit_private_dns_zone_vnet_link,
+    emit_private_endpoint,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +49,9 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/publicIPAddresses": "azurerm_public_ip",
         "Microsoft.Network/networkInterfaces": "azurerm_network_interface",
         "Microsoft.Network/bastionHosts": "azurerm_bastion_host",
+        "Microsoft.Network/privateEndpoints": "azurerm_private_endpoint",
+        "Microsoft.Network/privateDnsZones": "azurerm_private_dns_zone",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks": "azurerm_private_dns_zone_virtual_network_link",
         "Microsoft.Web/sites": "azurerm_app_service",
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
@@ -364,7 +372,7 @@ class TerraformEmitter(IaCEmitter):
         resource_config = {
             "name": resource_name,
             "location": location,
-            "resource_group_name": resource.get("resourceGroup", "default-rg"),
+            "resource_group_name": resource.get("resource_group", "default-rg"),
         }
 
         # Add tags if present
@@ -398,12 +406,20 @@ class TerraformEmitter(IaCEmitter):
                     continue  # Skip subnets without names
 
                 subnet_props = subnet.get("properties", {})
-                address_prefix = subnet_props.get("addressPrefix")
-                if not address_prefix:
+                # Handle both addressPrefix (singular) and addressPrefixes (array)
+                address_prefixes = (
+                    [subnet_props.get("addressPrefix")]
+                    if subnet_props.get("addressPrefix")
+                    else subnet_props.get("addressPrefixes", [])
+                )
+                if not address_prefixes or not address_prefixes[0]:
                     logger.warning(
-                        f"Subnet '{subnet_name}' in vnet '{resource_name}' has no addressPrefix, skipping"
+                        f"Subnet '{subnet_name}' in vnet '{resource_name}' has no addressPrefix or addressPrefixes, skipping"
                     )
                     continue
+
+                # Use first address prefix for subnet config
+                address_prefix = address_prefixes[0]
 
                 # Build VNet-scoped subnet resource name
                 # Pattern: {vnet_name}_{subnet_name}
@@ -414,7 +430,7 @@ class TerraformEmitter(IaCEmitter):
                 # Build subnet resource config (name field remains original Azure name)
                 subnet_config = {
                     "name": subnet_name,  # Azure resource name (unchanged)
-                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group", "default-rg"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_safe_name}.name}}",
                     "address_prefixes": [address_prefix],
                 }
@@ -687,7 +703,7 @@ class TerraformEmitter(IaCEmitter):
 
                 resource_config = {
                     "name": resource_name,  # Original Azure name
-                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group", "default-rg"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_name_safe}.name}}",
                 }
 
@@ -704,7 +720,7 @@ class TerraformEmitter(IaCEmitter):
                 safe_name = self._sanitize_terraform_name(resource_name)
                 resource_config = {
                     "name": resource_name,
-                    "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group", "default-rg"),
                     "virtual_network_name": "unknown_vnet",
                 }
 
@@ -822,8 +838,44 @@ class TerraformEmitter(IaCEmitter):
             resource_config = {
                 "name": resource_name,
                 "location": location,
-                "resource_group_name": resource.get("resourceGroup", "default-rg"),
+                "resource_group_name": resource.get("resource_group", "default-rg"),
             }
+        elif azure_type == "Microsoft.Network/privateEndpoints":
+            # Private Endpoint specific properties
+            # Ensure _available_subnets exists (for direct _convert_resource calls in tests)
+            available_subnets = getattr(self, "_available_subnets", set())
+            missing_references = getattr(self, "_missing_references", [])
+            resource_config = emit_private_endpoint(
+                resource,
+                sanitize_name_fn=self._sanitize_terraform_name,
+                extract_name_fn=self._extract_resource_name_from_id,
+                available_subnets=available_subnets,
+                missing_references=missing_references,
+            )
+        elif azure_type == "Microsoft.Network/privateDnsZones":
+            # Private DNS Zone specific properties
+            resource_config = emit_private_dns_zone(resource)
+        elif azure_type == "Microsoft.Network/privateDnsZones/virtualNetworkLinks":
+            # Private DNS Zone Virtual Network Link specific properties
+            # Need to build set of available VNets for validation
+            available_vnets = (
+                self._available_resources.get("azurerm_virtual_network", set())
+                if self._available_resources
+                else set()
+            )
+            missing_references = getattr(self, "_missing_references", [])
+            resource_config = emit_private_dns_zone_vnet_link(
+                resource,
+                sanitize_name_fn=self._sanitize_terraform_name,
+                extract_name_fn=self._extract_resource_name_from_id,
+                available_vnets=available_vnets,
+                missing_references=missing_references,
+            )
+            if resource_config is None:
+                # Invalid link configuration, skip it
+                return None
+            # Override safe_name with the link name from the config
+            safe_name = resource_config.get("name", safe_name)
 
         return terraform_type, safe_name, resource_config
 
