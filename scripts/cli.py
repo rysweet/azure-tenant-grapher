@@ -725,6 +725,16 @@ def generate_spec(
     default=True,
     help="Fail deployment if conflicts are detected (default: fail, Issue #336)",
 )
+@click.option(
+    "--skip-subnet-validation",
+    is_flag=True,
+    help="Skip subnet address space containment validation (not recommended, Issue #333)",
+)
+@click.option(
+    "--auto-fix-subnets",
+    is_flag=True,
+    help="Automatically fix subnet addresses that fall outside VNet address range (Issue #333)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -754,6 +764,8 @@ async def generate_iac(
     skip_conflict_check: bool,
     auto_cleanup: bool,
     fail_on_conflicts: bool,
+    skip_subnet_validation: bool,
+    auto_fix_subnets: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -800,6 +812,8 @@ async def generate_iac(
         location=location,
         skip_validation=skip_validation,
         preserve_rg_structure=preserve_rg_structure,
+        skip_subnet_validation=skip_subnet_validation,
+        auto_fix_subnets=auto_fix_subnets,
         domain_name=domain_name,
         naming_suffix=naming_suffix,
         skip_name_validation=skip_name_validation,

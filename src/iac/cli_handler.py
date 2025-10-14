@@ -56,6 +56,8 @@ async def generate_iac_command_handler(
     location: Optional[str] = None,
     skip_validation: bool = False,
     preserve_rg_structure: bool = False,
+    skip_subnet_validation: bool = False,
+    auto_fix_subnets: bool = False,
     domain_name: Optional[str] = None,
     naming_suffix: Optional[str] = None,
     skip_name_validation: bool = False,
@@ -84,6 +86,8 @@ async def generate_iac_command_handler(
         location: Target location/region for resource deployment
         skip_validation: Skip Terraform validation after generation
         preserve_rg_structure: Preserve source resource group structure in target deployment
+        skip_subnet_validation: Skip subnet containment validation (Issue #333)
+        auto_fix_subnets: Auto-fix subnet addresses outside VNet range (Issue #333)
         domain_name: Domain name for entities that require one
         naming_suffix: Optional custom naming suffix for conflict resolution
         skip_name_validation: Skip global name conflict validation
@@ -334,6 +338,8 @@ async def generate_iac_command_handler(
                 subset_filter=subset_filter_obj,
                 validate_address_spaces=not skip_address_space_validation,
                 auto_renumber_conflicts=auto_renumber_address_spaces,
+                validate_subnet_containment=not skip_subnet_validation,
+                auto_fix_subnets=auto_fix_subnets,
                 tenant_id=tenant_id,
                 subscription_id=subscription_id,
             )
