@@ -289,7 +289,7 @@ class TerraformEmitter(IaCEmitter):
 
                 # Add depends_on if resource has dependencies
                 if resource_dep.depends_on:
-                    resource_config["depends_on"] = sorted(list(resource_dep.depends_on))
+                    resource_config["depends_on"] = sorted(resource_dep.depends_on)
                     logger.debug(
                         f"Added dependencies for {resource_type}.{resource_name}: "
                         f"{resource_dep.depends_on}"
@@ -365,7 +365,7 @@ class TerraformEmitter(IaCEmitter):
                         f"    Azure ID: {first_ref['missing_resource_id']}"
                     )
                     # List all resources referencing this subnet
-                    logger.warning(f"    Resources referencing this subnet:")
+                    logger.warning("    Resources referencing this subnet:")
                     for ref in refs[:10]:  # Limit to first 10
                         logger.warning(f"      - {ref['resource_name']}")
                     if len(refs) > 10:
@@ -510,12 +510,24 @@ class TerraformEmitter(IaCEmitter):
                 }
             )
         elif azure_type == "Microsoft.Network/virtualNetworks":
-            resource_config["address_space"] = resource.get(
-                "address_space", ["10.0.0.0/16"]
-            )
+            # Parse properties first to extract address space
+            properties = self._parse_properties(resource)
+
+            # Extract address space from properties.addressSpace.addressPrefixes
+            address_space_obj = properties.get("addressSpace", {})
+            address_prefixes = address_space_obj.get("addressPrefixes", [])
+
+            # Fallback to default if not found
+            if not address_prefixes:
+                address_prefixes = ["10.0.0.0/16"]
+                logger.warning(
+                    f"VNet '{resource_name}' has no addressSpace in properties, "
+                    f"using fallback: {address_prefixes}"
+                )
+
+            resource_config["address_space"] = address_prefixes
 
             # Extract and emit subnets from vnet properties
-            properties = self._parse_properties(resource)
 
             subnets = properties.get("subnets", [])
             for subnet in subnets:
@@ -894,11 +906,26 @@ class TerraformEmitter(IaCEmitter):
                         "docker_image": site_config_props["linuxFxVersion"]
                     }
 
+            # Extract subscription ID from resource data (multiple fallback sources)
+            subscription_id = (
+                resource.get("subscription_id")
+                or resource.get("subscriptionId")
+                or self._extract_subscription_from_resource_id(resource.get("id", ""))
+                or "00000000-0000-0000-0000-000000000000"
+            )
+
+            # Build service plan ID with proper subscription
+            service_plan_id = resource.get("app_service_plan_id")
+            if not service_plan_id:
+                # Construct default service plan ID with actual subscription
+                resource_group = resource.get("resource_group", "default-rg")
+                service_plan_id = (
+                    f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}/"
+                    f"providers/Microsoft.Web/serverFarms/default-plan"
+                )
+
             resource_config.update({
-                "service_plan_id": resource.get(
-                    "app_service_plan_id",
-                    "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverFarms/default-plan",
-                ),
+                "service_plan_id": service_plan_id,
                 "site_config": site_config if site_config else {}
             })
         elif azure_type == "Microsoft.Sql/servers":
@@ -931,11 +958,34 @@ class TerraformEmitter(IaCEmitter):
                 }
             )
         elif azure_type == "Microsoft.KeyVault/vaults":
+            # Extract tenant_id from multiple sources with proper fallback
+            # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
+            properties = self._parse_properties(resource)
+
+            # Try to get tenant_id from resource data
+            tenant_id = (
+                resource.get("tenant_id")
+                or resource.get("tenantId")
+                or properties.get("tenantId")
+            )
+
+            # If still not found, use Terraform data source to get current tenant_id
+            # This ensures we use the actual Azure tenant ID from the environment
+            if not tenant_id or tenant_id == "00000000-0000-0000-0000-000000000000":
+                # Add data source for current client config if not already present
+                if "data" not in terraform_config:
+                    terraform_config["data"] = {}
+                if "azurerm_client_config" not in terraform_config["data"]:
+                    terraform_config["data"]["azurerm_client_config"] = {
+                        "current": {}
+                    }
+
+                # Use data source reference for tenant_id
+                tenant_id = "${data.azurerm_client_config.current.tenant_id}"
+
             resource_config.update(
                 {
-                    "tenant_id": resource.get(
-                        "tenant_id", "00000000-0000-0000-0000-000000000000"
-                    ),
+                    "tenant_id": tenant_id,
                     "sku_name": resource.get("sku_name", "standard"),
                 }
             )
@@ -1093,6 +1143,38 @@ class TerraformEmitter(IaCEmitter):
         if path_segment in resource_id:
             return resource_id.split(path_segment)[-1].split("/")[0]
         return "unknown"
+
+    def _extract_subscription_from_resource_id(self, resource_id: str) -> Optional[str]:
+        """Extract subscription ID from Azure resource ID.
+
+        Args:
+            resource_id: Full Azure resource ID
+                Format: /subscriptions/{subscription-id}/resourceGroups/{rg}/...
+
+        Returns:
+            Subscription ID or None if not found
+
+        Example:
+            >>> emitter._extract_subscription_from_resource_id(
+            ...     "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/rg/..."
+            ... )
+            '9b00bc5e-9abc-45de-9958-02a9d9277b16'
+        """
+        if not resource_id or "/subscriptions/" not in resource_id:
+            return None
+
+        try:
+            # Extract subscription ID: /subscriptions/{id}/...
+            parts = resource_id.split("/subscriptions/")
+            if len(parts) > 1:
+                # Get everything after /subscriptions/ and before next /
+                sub_id = parts[1].split("/")[0]
+                if sub_id:
+                    return sub_id
+        except (IndexError, AttributeError):
+            pass
+
+        return None
 
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
