@@ -131,8 +131,8 @@ class TransformationEngine:
             auto_fix_subnets: Automatically fix subnet addresses outside VNet range (Issue #333)
             validate_address_spaces: Validate VNet address spaces don't overlap (Issue #334)
             auto_renumber_conflicts: Auto-renumber conflicting VNet address spaces (Issue #334)
-            tenant_id: Optional tenant ID (for metadata)
-            subscription_id: Optional subscription ID (for metadata)
+            tenant_id: Optional SOURCE Azure tenant ID for Neo4j operations
+            subscription_id: Optional TARGET subscription ID for resource deployment
 
         Returns:
             List of output file paths
@@ -199,7 +199,7 @@ class TransformationEngine:
             if auto_fixed:
                 logger.info(f"✅ Auto-fixed subnets in {len(auto_fixed)} VNets")
 
-        # Validate VNet address spaces before generation (GAP-012)
+        # Validate VNet address spaces before generation (GAP-012, Issue #334)
         if validate_address_spaces:
             logger.info("Validating VNet address spaces for conflicts...")
             validator = AddressSpaceValidator(auto_renumber=auto_renumber_conflicts)
