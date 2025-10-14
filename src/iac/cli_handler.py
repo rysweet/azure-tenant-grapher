@@ -135,15 +135,67 @@ async def generate_iac_command_handler(
             RETURN n AS r, rels
             """
         elif resource_filters:
-            # Convert comma-separated filters to Cypher WHERE clause
+            # Parse resource_filters to support both type-based and property-based filtering
+            # Format examples:
+            #   - Type filter: "Microsoft.Network/virtualNetworks"
+            #   - Property filter: "resourceGroup=~'(?i).*(simuland|SimuLand).*'"
+            #   - Multiple filters: "Microsoft.Network/virtualNetworks,resourceGroup='myRG'"
+
             filters = [f.strip() for f in resource_filters.split(",")]
-            filter_conditions = [f"r.type = '{f}'" for f in filters]
+            filter_conditions = []
+
+            for f in filters:
+                if "=" in f:
+                    # Property-based filter (e.g., "resourceGroup=~'pattern'" or "resourceGroup='exact'")
+                    # Check for regex operator first
+                    is_regex = "=~" in f
+
+                    if is_regex:
+                        # Split on =~ for regex patterns
+                        prop_name, pattern = f.split("=~", 1)
+                        prop_name = prop_name.strip()
+                        pattern = pattern.strip()
+                    else:
+                        # Split on = for exact matches
+                        prop_name, pattern = f.split("=", 1)
+                        prop_name = prop_name.strip()
+                        pattern = pattern.strip()
+
+                    # Handle both resourceGroup and resource_group property names
+                    if prop_name.lower() in ("resourcegroup", "resource_group"):
+                        # Support both field names in Neo4j
+                        if is_regex:
+                            filter_conditions.append(
+                                f"(r.resource_group =~ {pattern} OR r.resourceGroup =~ {pattern})"
+                            )
+                        else:
+                            filter_conditions.append(
+                                f"(r.resource_group = {pattern} OR r.resourceGroup = {pattern})"
+                            )
+                    else:
+                        # Generic property filter
+                        if is_regex:
+                            filter_conditions.append(f"r.{prop_name} =~ {pattern}")
+                        else:
+                            filter_conditions.append(f"r.{prop_name} = {pattern}")
+                else:
+                    # Type-based filter (backward compatible)
+                    filter_conditions.append(f"r.type = '{f}'")
+
             filter_cypher = f"""
             MATCH (r:Resource)
             WHERE {" OR ".join(filter_conditions)}
             OPTIONAL MATCH (r)-[rel]->(t:Resource)
-            RETURN r, collect({{type:type(rel), target:t.id}}) AS rels
+            RETURN r, collect({{
+                type: type(rel),
+                target: t.id,
+                original_type: rel.original_type,
+                narrative_context: rel.narrative_context
+            }}) AS rels
             """
+
+            logger.info(f"Applying resource filters: {', '.join(filters)}")
+            logger.debug(f"Generated filter Cypher: {filter_cypher}")
 
         # Traverse graph
         graph = await traverser.traverse(filter_cypher)
