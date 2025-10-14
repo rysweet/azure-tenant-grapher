@@ -4524,7 +4524,7 @@
         ]
       }
     },
-    "azurerm_app_service": {
+    "azurerm_windows_web_app": {
       "simMgr160224hpcp4rein6": {
         "name": "simMgr160224hpcp4rein6",
         "location": "northcentralus",
@@ -4541,7 +4541,8 @@
           "hidden-link: /app-insights-instrumentation-key": "bed2e111-aee6-4cdb-b629-b28ca2e5d673",
           "hidden-link: /app-insights-conn-string": "InstrumentationKey=bed2e111-aee6-4cdb-b629-b28ca2e5d673;IngestionEndpoint=https://northcentralus-0.in.applicationinsights.azure.com/;LiveEndpoint=https://northcentralus.livediagnostics.monitor.azure.com/;ApplicationId=1623201e-bb7e-48fa-a0dd-13bef395ec8f"
         },
-        "app_service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan",
+        "service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverFarms/default-plan",
+        "site_config": {},
         "depends_on": [
           "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
         ]
@@ -4553,7 +4554,8 @@
         "tags": {
           "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/simuland-api/providers/Microsoft.Insights/components/simuland"
         },
-        "app_service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan",
+        "service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverFarms/default-plan",
+        "site_config": {},
         "depends_on": [
           "azurerm_resource_group.simuland_api"
         ]

@@ -53,7 +53,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/privateEndpoints": "azurerm_private_endpoint",
         "Microsoft.Network/privateDnsZones": "azurerm_private_dns_zone",
         "Microsoft.Network/privateDnsZones/virtualNetworkLinks": "azurerm_private_dns_zone_virtual_network_link",
-        "Microsoft.Web/sites": "azurerm_app_service",
+        # Note: Microsoft.Web/sites mapping handled dynamically in _convert_resource
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
@@ -180,8 +180,11 @@ class TerraformEmitter(IaCEmitter):
             elif azure_type.lower() == "managedidentity":
                 azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
-            # Get Terraform resource type
-            terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
+            # Get Terraform resource type (with dynamic handling for App Services)
+            if azure_type == "Microsoft.Web/sites":
+                terraform_type = self._get_app_service_terraform_type(resource)
+            else:
+                terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
             if terraform_type:
                 if terraform_type not in self._available_resources:
                     self._available_resources[terraform_type] = set()
@@ -411,8 +414,11 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type.lower() == "managedidentity":
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
-        # Get Terraform resource type
-        terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
+        # Get Terraform resource type (with dynamic handling for App Services)
+        if azure_type == "Microsoft.Web/sites":
+            terraform_type = self._get_app_service_terraform_type(resource)
+        else:
+            terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
 
         if not terraform_type:
             logger.warning(
@@ -826,14 +832,31 @@ class TerraformEmitter(IaCEmitter):
                     ep["service"] for ep in service_endpoints if "service" in ep
                 ]
         elif azure_type == "Microsoft.Web/sites":
-            resource_config.update(
-                {
-                    "app_service_plan_id": resource.get(
-                        "app_service_plan_id",
-                        "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan",
-                    )
-                }
-            )
+            # Modern App Service resources require site_config block
+            properties = self._parse_properties(resource)
+
+            # Determine if Linux or Windows based on kind property
+            kind = properties.get("kind", "").lower()
+            is_linux = "linux" in kind
+
+            # Build site_config block
+            site_config = {}
+            site_config_props = properties.get("siteConfig", {})
+
+            if is_linux:
+                # Linux-specific: linux_fx_version for runtime stack
+                if "linuxFxVersion" in site_config_props:
+                    site_config["application_stack"] = {
+                        "docker_image": site_config_props["linuxFxVersion"]
+                    }
+
+            resource_config.update({
+                "service_plan_id": resource.get(
+                    "app_service_plan_id",
+                    "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverFarms/default-plan",
+                ),
+                "site_config": site_config if site_config else {}
+            })
         elif azure_type == "Microsoft.Sql/servers":
             # Generate a unique password for each SQL server using Terraform's random_password resource
             password_resource_name = f"{safe_name}_password"
@@ -946,6 +969,25 @@ class TerraformEmitter(IaCEmitter):
             safe_name = resource_config.get("name", safe_name)
 
         return terraform_type, safe_name, resource_config
+
+    def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
+        """Determine correct App Service Terraform type based on OS.
+
+        Args:
+            resource: Azure Web App resource
+
+        Returns:
+            "azurerm_linux_web_app" or "azurerm_windows_web_app"
+        """
+        properties = self._parse_properties(resource)
+        kind = properties.get("kind", "").lower()
+
+        # Check kind property for Linux indicator
+        if "linux" in kind:
+            return "azurerm_linux_web_app"
+        else:
+            # Default to Windows if no clear Linux indicator
+            return "azurerm_windows_web_app"
 
     def _parse_properties(self, resource: Dict[str, Any]) -> Dict[str, Any]:
         """Parse properties JSON from resource.
