@@ -70,6 +70,7 @@ async def generate_iac_command_handler(
     skip_conflict_check: bool = False,
     auto_cleanup: bool = False,
     fail_on_conflicts: bool = True,
+    resource_group_prefix: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -99,6 +100,7 @@ async def generate_iac_command_handler(
         skip_conflict_check: Skip conflict detection (default: False)
         auto_cleanup: Automatically run cleanup script on conflicts (default: False)
         fail_on_conflicts: Fail deployment if conflicts detected (default: True)
+        resource_group_prefix: Prefix to add to all resource group names
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -318,7 +320,7 @@ async def generate_iac_command_handler(
         # Generate templates using new engine method if subset or RG is specified
         if subset_filter_obj or dest_rg or location or preserve_rg_structure:
             emitter_cls = get_emitter(format_type)
-            emitter = emitter_cls()
+            emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
             if output_path:
                 out_dir = Path(output_path)
             else:
@@ -364,7 +366,7 @@ async def generate_iac_command_handler(
 
         # Get emitter
         emitter_cls = get_emitter(format_type)
-        emitter = emitter_cls()
+        emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
 
         # Determine output directory
         if output_path:

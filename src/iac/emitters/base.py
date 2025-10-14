@@ -18,13 +18,15 @@ class IaCEmitter(ABC):
     template generation capabilities across different IaC formats.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: Optional[Dict[str, Any]] = None, resource_group_prefix: Optional[str] = None) -> None:
         """Initialize emitter with optional configuration.
 
         Args:
             config: Optional emitter-specific configuration
+            resource_group_prefix: Optional prefix to add to all resource group names (e.g., "ITERATION15_")
         """
         self.config = config or {}
+        self.resource_group_prefix = resource_group_prefix or ""
 
     @abstractmethod
     def emit(self, graph: TenantGraph, out_dir: Path) -> List[Path]:
