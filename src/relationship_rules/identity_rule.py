@@ -67,14 +67,57 @@ class IdentityRule(RelationshipRule):
             principal_type = props.get("principalType")
             role_def_id = props.get("roleDefinitionId")
 
-            # Upsert Identity node
+            # Upsert Identity node with IaC-standard properties
             if principal_id and principal_type:
                 label = PRINCIPAL_TYPE_TO_LABEL.get(principal_type, "Identity")
+                # Get display name if available (may not always be present)
+                display_name = props.get("principalName", principal_id)
+
+                # Build properties dict with IaC-standard fields
+                identity_props = {
+                    "id": principal_id,
+                    "principalType": principal_type,
+                }
+
+                # Add IaC-standard properties based on principal type
+                if principal_type == "User":
+                    identity_props.update({
+                        "type": "Microsoft.Graph/users",
+                        "name": display_name,
+                        "displayName": display_name,
+                        "location": "global",
+                        "resourceGroup": "identity-resources",
+                    })
+                elif principal_type == "ServicePrincipal":
+                    identity_props.update({
+                        "type": "Microsoft.Graph/servicePrincipals",
+                        "name": display_name,
+                        "displayName": display_name,
+                        "location": "global",
+                        "resourceGroup": "identity-resources",
+                    })
+                elif principal_type == "Group":
+                    identity_props.update({
+                        "type": "Microsoft.Graph/groups",
+                        "name": display_name,
+                        "displayName": display_name,
+                        "location": "global",
+                        "resourceGroup": "identity-resources",
+                    })
+                elif principal_type == "ManagedIdentity":
+                    identity_props.update({
+                        "type": "Microsoft.ManagedIdentity/managedIdentities",
+                        "name": display_name,
+                        "displayName": display_name,
+                        "location": "global",
+                        "resourceGroup": "identity-resources",
+                    })
+
                 db_ops.upsert_generic(
                     label,
                     "id",
                     principal_id,
-                    {"id": principal_id, "principalType": principal_type},
+                    identity_props,
                 )
                 # ASSIGNED_TO: RoleAssignment → Identity
                 db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, label, "id")
@@ -109,7 +152,7 @@ class IdentityRule(RelationshipRule):
                     "principalId"
                 )
                 if principal_id and rid:
-                    # Upsert ManagedIdentity node (system-assigned)
+                    # Upsert ManagedIdentity node (system-assigned) with IaC-standard properties
                     db_ops.upsert_generic(
                         MANAGED_IDENTITY,
                         "id",
@@ -118,6 +161,11 @@ class IdentityRule(RelationshipRule):
                             "id": principal_id,
                             "identityType": "SystemAssigned",
                             "resourceId": rid,
+                            "type": "Microsoft.ManagedIdentity/managedIdentities",
+                            "name": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                            "displayName": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
                         },
                     )
                     # USES_IDENTITY edge
@@ -135,7 +183,7 @@ class IdentityRule(RelationshipRule):
             ):
                 user_identities = identity.get("userAssignedIdentities", {})
                 for uai_id in user_identities:
-                    # Upsert ManagedIdentity node (user-assigned)
+                    # Upsert ManagedIdentity node (user-assigned) with IaC-standard properties
                     db_ops.upsert_generic(
                         MANAGED_IDENTITY,
                         "id",
@@ -143,6 +191,11 @@ class IdentityRule(RelationshipRule):
                         {
                             "id": uai_id,
                             "identityType": "UserAssigned",
+                            "type": "Microsoft.ManagedIdentity/managedIdentities",
+                            "name": uai_id.split("/")[-1] if "/" in uai_id else uai_id,
+                            "displayName": uai_id.split("/")[-1] if "/" in uai_id else uai_id,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
                         },
                     )
                     # USES_IDENTITY edge
@@ -160,6 +213,11 @@ class IdentityRule(RelationshipRule):
                         "id": principal_id,
                         "identityType": identity.get("type", "Unknown"),
                         "resourceId": rid,
+                        "type": "Microsoft.ManagedIdentity/managedIdentities",
+                        "name": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                        "displayName": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                        "location": "global",
+                        "resourceGroup": "identity-resources",
                     },
                 )
                 db_ops.create_generic_rel(

@@ -276,7 +276,8 @@ def test_subnet_name_extracted_correctly(
 ) -> None:
     """Verify subnet name is extracted from resource data.
 
-    Expected to FAIL: No handler implementation exists yet.
+    Note: Since Issue #332, subnet resource names are VNet-scoped to prevent collisions.
+    Terraform resource name: {vnet}_{subnet}, Azure name field: original subnet name.
     """
     terraform_config = {"resource": {}}
     result = terraform_emitter._convert_resource(
@@ -286,8 +287,10 @@ def test_subnet_name_extracted_correctly(
     assert result is not None
     _, resource_name, resource_config = result
 
+    # Azure resource name should be preserved
     assert resource_config["name"] == "default"
-    assert resource_name == "default"  # Sanitized name
+    # Terraform resource name should be VNet-scoped (test_vnet_default)
+    assert resource_name == "test_vnet_default"  # VNet-scoped sanitized name
 
 
 def test_resource_group_extracted_from_properties(
@@ -569,7 +572,7 @@ def test_full_subnet_resource_block_generated(
 ) -> None:
     """Verify complete Terraform JSON structure for subnet is generated.
 
-    Expected to FAIL: No handler implementation exists yet.
+    Note: Since Issue #332, subnet resource names are VNet-scoped.
     """
     graph = TenantGraph()
     graph.resources = [sample_standalone_subnet]
@@ -585,14 +588,14 @@ def test_full_subnet_resource_block_generated(
         assert "resource" in terraform_config
         assert "azurerm_subnet" in terraform_config["resource"]
 
-        # Check subnet resource
+        # Check subnet resource (VNet-scoped name: test_vnet_default)
         subnets = terraform_config["resource"]["azurerm_subnet"]
-        assert "default" in subnets
+        assert "test_vnet_default" in subnets
 
-        subnet = subnets["default"]
+        subnet = subnets["test_vnet_default"]
 
         # Verify all required fields
-        assert subnet["name"] == "default"
+        assert subnet["name"] == "default"  # Azure name preserved
         assert subnet["resource_group_name"] == "test-rg"
         assert "virtual_network_name" in subnet
         assert "address_prefixes" in subnet
@@ -608,8 +611,7 @@ def test_nic_references_generated_subnet_correctly(
 ) -> None:
     """Verify NIC can reference the generated subnet resource.
 
-    Expected to FAIL: Currently NICs reference subnets, but if the subnet
-    resource isn't generated, Terraform validation will fail.
+    Note: Since Issue #332, subnet references use VNet-scoped names.
     """
     graph = TenantGraph()
     graph.resources = [sample_standalone_subnet, sample_network_interface]
@@ -621,21 +623,21 @@ def test_nic_references_generated_subnet_correctly(
         with open(written_files[0]) as f:
             terraform_config = json.load(f)
 
-        # Verify subnet exists
+        # Verify subnet exists (VNet-scoped name)
         assert "azurerm_subnet" in terraform_config["resource"]
-        assert "default" in terraform_config["resource"]["azurerm_subnet"]
+        assert "test_vnet_default" in terraform_config["resource"]["azurerm_subnet"]
 
         # Verify NIC exists
         assert "azurerm_network_interface" in terraform_config["resource"]
 
-        # Verify NIC references the subnet
+        # Verify NIC references the subnet (with VNet-scoped name)
         nic = next(
             iter(terraform_config["resource"]["azurerm_network_interface"].values())
         )
         subnet_id = nic["ip_configuration"]["subnet_id"]
 
-        # Should be a Terraform reference
-        assert "${azurerm_subnet.default.id}" in subnet_id
+        # Should be a Terraform reference with VNet-scoped name
+        assert "${azurerm_subnet.test_vnet_default.id}" in subnet_id
 
 
 @pytest.mark.skipif(
@@ -729,29 +731,50 @@ def test_vnet_with_embedded_and_standalone_subnets(
 def test_subnet_nsg_associations(
     terraform_emitter: TerraformEmitter, sample_subnet_with_nsg: Dict[str, Any]
 ) -> None:
-    """Verify subnet with NSG association includes network_security_group_id.
+    """Verify subnet with NSG association generates separate association resource.
 
-    Expected to FAIL: No handler implementation exists yet.
-    Should extract NSG ID from properties and add to resource config.
+    Since azurerm v3.0+, NSG associations must be separate resources, not inline.
+    This test verifies the NSG association is tracked and will be emitted separately.
     """
-    terraform_config = {"resource": {}}
-    result = terraform_emitter._convert_resource(
-        sample_subnet_with_nsg, terraform_config
-    )
+    # Create a full graph to trigger the emit logic
+    graph = TenantGraph()
+    graph.resources = [
+        sample_subnet_with_nsg,
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "test-nsg",
+            "location": "eastus",
+            "resourceGroup": "test-rg",
+        }
+    ]
 
-    assert result is not None
-    _, _, resource_config = result
+    with tempfile.TemporaryDirectory() as temp_dir:
+        out_dir = Path(temp_dir)
+        written_files = terraform_emitter.emit(graph, out_dir)
 
-    # Should include NSG reference
-    assert "network_security_group_id" in resource_config
+        with open(written_files[0]) as f:
+            terraform_config = json.load(f)
 
-    nsg_id = resource_config["network_security_group_id"]
+        # Subnet should NOT have inline network_security_group_id (deprecated in v3.0+)
+        subnet = terraform_config["resource"]["azurerm_subnet"]["test_vnet_secure_subnet"]
+        assert "network_security_group_id" not in subnet, (
+            "Subnet should not have deprecated inline network_security_group_id"
+        )
 
-    # Should be a Terraform reference or raw ID
-    assert (
-        "networkSecurityGroups/test-nsg" in nsg_id
-        or "${azurerm_network_security_group" in nsg_id
-    )
+        # Should have separate NSG association resource
+        assert "azurerm_subnet_network_security_group_association" in terraform_config["resource"]
+
+        nsg_associations = terraform_config["resource"]["azurerm_subnet_network_security_group_association"]
+        assert len(nsg_associations) == 1
+
+        # Get the association resource
+        assoc = next(iter(nsg_associations.values()))
+
+        # Verify it references both subnet and NSG correctly
+        assert "subnet_id" in assoc
+        assert "${azurerm_subnet.test_vnet_secure_subnet.id}" in assoc["subnet_id"]
+        assert "network_security_group_id" in assoc
+        assert "${azurerm_network_security_group.test_nsg.id}" in assoc["network_security_group_id"]
 
 
 def test_subnet_service_endpoints(
@@ -792,8 +815,7 @@ def test_real_azure_subnet_data_generates_valid_terraform(
 ) -> None:
     """Test with realistic Azure subnet data from Neo4j.
 
-    Expected to FAIL: No handler implementation exists yet.
-    This simulates real data structure from Azure API.
+    Note: Since Issue #332, subnet resource names are VNet-scoped.
     """
     # Realistic subnet data as it would come from Azure API
     realistic_subnet = {
@@ -839,10 +861,11 @@ def test_real_azure_subnet_data_generates_valid_terraform(
         # Verify structure
         assert "azurerm_subnet" in terraform_config["resource"]
 
-        subnet = terraform_config["resource"]["azurerm_subnet"]["app_subnet"]
+        # VNet-scoped name: prod_vnet_app_subnet
+        subnet = terraform_config["resource"]["azurerm_subnet"]["prod_vnet_app_subnet"]
 
         # Verify all fields
-        assert subnet["name"] == "app-subnet"
+        assert subnet["name"] == "app-subnet"  # Azure name preserved
         assert subnet["resource_group_name"] == "production-rg"
         assert "10.10.1.0/24" in subnet["address_prefixes"]
         assert "service_endpoints" in subnet
