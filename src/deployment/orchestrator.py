@@ -4,7 +4,10 @@ import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
+
+if TYPE_CHECKING:
+    from src.deployment.deployment_dashboard import DeploymentDashboard
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +48,11 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
 
 
 def deploy_terraform(
-    iac_dir: Path, resource_group: str, location: str, dry_run: bool = False
+    iac_dir: Path,
+    resource_group: str,
+    location: str,
+    dry_run: bool = False,
+    dashboard: Optional["DeploymentDashboard"] = None,
 ) -> dict:
     """Deploy Terraform IaC.
 
@@ -54,6 +61,7 @@ def deploy_terraform(
         resource_group: Target resource group name
         location: Azure region
         dry_run: If True, only run plan without apply
+        dashboard: Optional deployment dashboard for real-time updates
 
     Returns:
         Deployment result dictionary
@@ -65,6 +73,10 @@ def deploy_terraform(
 
     # Initialize Terraform
     logger.debug("Running terraform init...")
+    if dashboard:
+        dashboard.update_phase("init")
+        dashboard.log_info("Initializing Terraform...")
+
     result = subprocess.run(
         ["terraform", "init"],
         cwd=iac_dir,
@@ -72,12 +84,27 @@ def deploy_terraform(
         text=True,
         check=False,
     )
+
+    if dashboard:
+        for line in result.stdout.splitlines():
+            dashboard.stream_terraform_output(line, level="info")
+        if result.stderr:
+            for line in result.stderr.splitlines():
+                dashboard.stream_terraform_output(line, level="warning")
+
     if result.returncode != 0:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"Terraform init failed: {result.stderr}")
         raise RuntimeError(f"Terraform init failed: {result.stderr}")
 
     if dry_run:
         # Plan only
         logger.info("Running terraform plan (dry-run mode)...")
+        if dashboard:
+            dashboard.update_phase("plan")
+            dashboard.log_info("Running terraform plan (dry-run)...")
+
         result = subprocess.run(
             ["terraform", "plan", "-input=false"],
             cwd=iac_dir,
@@ -85,8 +112,29 @@ def deploy_terraform(
             text=True,
             check=False,
         )
+
+        if dashboard:
+            for line in result.stdout.splitlines():
+                dashboard.stream_terraform_output(line, level="info")
+                # Parse resource counts from plan output
+                if "Plan:" in line:
+                    try:
+                        # Example: "Plan: 5 to add, 0 to change, 0 to destroy."
+                        parts = line.split("Plan:")[1].split(",")
+                        to_add = int(parts[0].strip().split()[0])
+                        dashboard.update_resource_counts(planned=to_add)
+                    except Exception:
+                        pass
+
         if result.returncode != 0:
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(f"Terraform plan failed: {result.stderr}")
             raise RuntimeError(f"Terraform plan failed: {result.stderr}")
+
+        if dashboard:
+            dashboard.update_phase("complete")
+            dashboard.log_info("Terraform plan completed successfully")
 
         return {
             "status": "planned",
@@ -96,6 +144,10 @@ def deploy_terraform(
 
     # Apply changes
     logger.info("Running terraform apply...")
+    if dashboard:
+        dashboard.update_phase("apply")
+        dashboard.log_info("Applying Terraform changes...")
+
     result = subprocess.run(
         ["terraform", "apply", "-auto-approve", "-input=false"],
         cwd=iac_dir,
@@ -104,8 +156,37 @@ def deploy_terraform(
         check=False,
     )
 
+    if dashboard:
+        resources_applied = 0
+        for line in result.stdout.splitlines():
+            dashboard.stream_terraform_output(line, level="info")
+            # Parse resource creation progress
+            if "Creating..." in line or "Created" in line:
+                resources_applied += 1
+                dashboard.update_resource_counts(applied=resources_applied)
+            elif "Apply complete!" in line:
+                try:
+                    # Example: "Apply complete! Resources: 5 added, 0 changed, 0 destroyed."
+                    parts = line.split("Resources:")[1].split(",")
+                    added = int(parts[0].strip().split()[0])
+                    dashboard.update_resource_counts(applied=added)
+                except Exception:
+                    pass
+
+        if result.stderr:
+            for line in result.stderr.splitlines():
+                dashboard.stream_terraform_output(line, level="warning")
+
     if result.returncode != 0:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"Terraform apply failed: {result.stderr}")
         raise RuntimeError(f"Terraform apply failed: {result.stderr}")
+
+    if dashboard:
+        dashboard.update_phase("complete")
+        dashboard.log_info("Terraform apply completed successfully")
+        dashboard.set_processing(False)
 
     return {
         "status": "deployed",
@@ -120,6 +201,7 @@ def deploy_bicep(
     location: str,
     subscription_id: Optional[str] = None,
     dry_run: bool = False,
+    dashboard: Optional["DeploymentDashboard"] = None,
 ) -> dict:
     """Deploy Bicep IaC.
 
@@ -129,6 +211,7 @@ def deploy_bicep(
         location: Azure region
         subscription_id: Optional subscription ID
         dry_run: If True, only validate without deploying
+        dashboard: Optional deployment dashboard for real-time updates
 
     Returns:
         Deployment result dictionary
@@ -138,9 +221,16 @@ def deploy_bicep(
     """
     logger.info(f"Deploying Bicep from {iac_dir}")
 
+    if dashboard:
+        dashboard.update_phase("init")
+        dashboard.log_info("Finding Bicep template...")
+
     # Find main bicep file (look for main.bicep or first .bicep file)
     bicep_files = list(iac_dir.glob("*.bicep"))
     if not bicep_files:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"No Bicep files found in {iac_dir}")
         raise RuntimeError(f"No Bicep files found in {iac_dir}")
 
     main_file = next(
@@ -150,6 +240,10 @@ def deploy_bicep(
     if dry_run:
         # Validate only
         logger.info(f"Validating Bicep template {main_file.name}...")
+        if dashboard:
+            dashboard.update_phase("plan")
+            dashboard.log_info(f"Validating Bicep template {main_file.name}...")
+
         cmd = [
             "az",
             "deployment",
@@ -165,8 +259,22 @@ def deploy_bicep(
 
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
+        if dashboard:
+            for line in result.stdout.splitlines():
+                dashboard.stream_terraform_output(line, level="info")
+            if result.stderr:
+                for line in result.stderr.splitlines():
+                    dashboard.stream_terraform_output(line, level="warning")
+
         if result.returncode != 0:
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(f"Bicep validation failed: {result.stderr}")
             raise RuntimeError(f"Bicep validation failed: {result.stderr}")
+
+        if dashboard:
+            dashboard.update_phase("complete")
+            dashboard.log_info("Bicep validation completed successfully")
 
         return {
             "status": "validated",
@@ -176,6 +284,10 @@ def deploy_bicep(
 
     # Deploy
     logger.info(f"Deploying Bicep template {main_file.name}...")
+    if dashboard:
+        dashboard.update_phase("apply")
+        dashboard.log_info(f"Deploying Bicep template {main_file.name}...")
+
     cmd = [
         "az",
         "deployment",
@@ -191,8 +303,23 @@ def deploy_bicep(
 
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
+    if dashboard:
+        for line in result.stdout.splitlines():
+            dashboard.stream_terraform_output(line, level="info")
+        if result.stderr:
+            for line in result.stderr.splitlines():
+                dashboard.stream_terraform_output(line, level="warning")
+
     if result.returncode != 0:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"Bicep deployment failed: {result.stderr}")
         raise RuntimeError(f"Bicep deployment failed: {result.stderr}")
+
+    if dashboard:
+        dashboard.update_phase("complete")
+        dashboard.log_info("Bicep deployment completed successfully")
+        dashboard.set_processing(False)
 
     return {
         "status": "deployed",
@@ -207,6 +334,7 @@ def deploy_arm(
     location: str,
     subscription_id: Optional[str] = None,
     dry_run: bool = False,
+    dashboard: Optional["DeploymentDashboard"] = None,
 ) -> dict:
     """Deploy ARM template IaC.
 
@@ -216,6 +344,7 @@ def deploy_arm(
         location: Azure region
         subscription_id: Optional subscription ID
         dry_run: If True, only validate without deploying
+        dashboard: Optional deployment dashboard for real-time updates
 
     Returns:
         Deployment result dictionary
@@ -224,6 +353,10 @@ def deploy_arm(
         RuntimeError: If az commands fail
     """
     logger.info(f"Deploying ARM template from {iac_dir}")
+
+    if dashboard:
+        dashboard.update_phase("init")
+        dashboard.log_info("Finding ARM template...")
 
     # Find ARM template file
     arm_files = []
@@ -237,6 +370,9 @@ def deploy_arm(
             continue
 
     if not arm_files:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"No ARM template files found in {iac_dir}")
         raise RuntimeError(f"No ARM template files found in {iac_dir}")
 
     template_file = arm_files[0]
@@ -244,6 +380,10 @@ def deploy_arm(
     if dry_run:
         # Validate only
         logger.info(f"Validating ARM template {template_file.name}...")
+        if dashboard:
+            dashboard.update_phase("plan")
+            dashboard.log_info(f"Validating ARM template {template_file.name}...")
+
         cmd = [
             "az",
             "deployment",
@@ -259,8 +399,22 @@ def deploy_arm(
 
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
+        if dashboard:
+            for line in result.stdout.splitlines():
+                dashboard.stream_terraform_output(line, level="info")
+            if result.stderr:
+                for line in result.stderr.splitlines():
+                    dashboard.stream_terraform_output(line, level="warning")
+
         if result.returncode != 0:
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(f"ARM validation failed: {result.stderr}")
             raise RuntimeError(f"ARM validation failed: {result.stderr}")
+
+        if dashboard:
+            dashboard.update_phase("complete")
+            dashboard.log_info("ARM validation completed successfully")
 
         return {
             "status": "validated",
@@ -270,6 +424,10 @@ def deploy_arm(
 
     # Deploy
     logger.info(f"Deploying ARM template {template_file.name}...")
+    if dashboard:
+        dashboard.update_phase("apply")
+        dashboard.log_info(f"Deploying ARM template {template_file.name}...")
+
     cmd = [
         "az",
         "deployment",
@@ -285,8 +443,23 @@ def deploy_arm(
 
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
+    if dashboard:
+        for line in result.stdout.splitlines():
+            dashboard.stream_terraform_output(line, level="info")
+        if result.stderr:
+            for line in result.stderr.splitlines():
+                dashboard.stream_terraform_output(line, level="warning")
+
     if result.returncode != 0:
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(f"ARM deployment failed: {result.stderr}")
         raise RuntimeError(f"ARM deployment failed: {result.stderr}")
+
+    if dashboard:
+        dashboard.update_phase("complete")
+        dashboard.log_info("ARM deployment completed successfully")
+        dashboard.set_processing(False)
 
     return {
         "status": "deployed",
@@ -303,6 +476,7 @@ def deploy_iac(
     subscription_id: Optional[str] = None,
     iac_format: Optional[IaCFormat] = None,
     dry_run: bool = False,
+    dashboard: Optional["DeploymentDashboard"] = None,
 ) -> dict:
     """Deploy IaC to target tenant.
 
@@ -314,6 +488,7 @@ def deploy_iac(
         subscription_id: Optional subscription ID for bicep/arm deployments
         iac_format: IaC format (auto-detected if None)
         dry_run: If True, plan/validate only without deploying
+        dashboard: Optional deployment dashboard for real-time updates
 
     Returns:
         Deployment result dictionary with status and output
@@ -380,10 +555,10 @@ def deploy_iac(
 
     # Deploy based on format
     if iac_format == "terraform":
-        return deploy_terraform(iac_dir, resource_group, location, dry_run)
+        return deploy_terraform(iac_dir, resource_group, location, dry_run, dashboard)
     elif iac_format == "bicep":
-        return deploy_bicep(iac_dir, resource_group, location, subscription_id, dry_run)
+        return deploy_bicep(iac_dir, resource_group, location, subscription_id, dry_run, dashboard)
     elif iac_format == "arm":
-        return deploy_arm(iac_dir, resource_group, location, subscription_id, dry_run)
+        return deploy_arm(iac_dir, resource_group, location, subscription_id, dry_run, dashboard)
     else:
         raise ValueError(f"Unsupported IaC format: {iac_format}")
