@@ -691,6 +691,50 @@ def generate_spec(
     is_flag=True,
     help="Automatically fix subnet addresses that fall outside VNet address range (Issue #333)",
 )
+@click.option(
+    "--preserve-rg-structure",
+    is_flag=True,
+    help="Preserve source resource group structure in target deployment (creates target RGs matching source structure)",
+)
+@click.option(
+    "--naming-suffix",
+    help="Custom naming suffix for resolving global name conflicts (default: random 6-char alphanumeric)",
+)
+@click.option(
+    "--skip-name-validation",
+    is_flag=True,
+    help="Skip global resource name conflict validation (for terraform format only)",
+)
+@click.option(
+    "--preserve-names",
+    is_flag=True,
+    help="Preserve original resource names; fail on conflicts instead of auto-fixing (for terraform format only)",
+)
+@click.option(
+    "--auto-purge-soft-deleted",
+    is_flag=True,
+    help="Automatically purge soft-deleted Key Vaults before deployment (for terraform format only, GAP-016)",
+)
+@click.option(
+    "--check-conflicts/--no-check-conflicts",
+    default=True,
+    help="Enable/disable pre-deployment conflict detection (default: enabled, Issue #336)",
+)
+@click.option(
+    "--skip-conflict-check",
+    is_flag=True,
+    help="Skip pre-deployment conflict detection (shorthand for --no-check-conflicts)",
+)
+@click.option(
+    "--auto-cleanup",
+    is_flag=True,
+    help="Automatically run cleanup script if conflicts are detected (Issue #336)",
+)
+@click.option(
+    "--fail-on-conflicts/--no-fail-on-conflicts",
+    default=True,
+    help="Fail deployment if conflicts are detected (default: fail, Issue #336)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -713,6 +757,15 @@ async def generate_iac(
     skip_validation: bool,
     skip_subnet_validation: bool,
     auto_fix_subnets: bool,
+    preserve_rg_structure: bool,
+    naming_suffix: Optional[str],
+    skip_name_validation: bool,
+    preserve_names: bool,
+    auto_purge_soft_deleted: bool,
+    check_conflicts: bool,
+    skip_conflict_check: bool,
+    auto_cleanup: bool,
+    fail_on_conflicts: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -760,8 +813,16 @@ async def generate_iac(
         skip_validation=skip_validation,
         skip_subnet_validation=skip_subnet_validation,
         auto_fix_subnets=auto_fix_subnets,
-        # aad_mode removed, now always manual by default
+        preserve_rg_structure=preserve_rg_structure,
         domain_name=domain_name,
+        naming_suffix=naming_suffix,
+        skip_name_validation=skip_name_validation,
+        preserve_names=preserve_names,
+        auto_purge_soft_deleted=auto_purge_soft_deleted,
+        check_conflicts=check_conflicts,
+        skip_conflict_check=skip_conflict_check,
+        auto_cleanup=auto_cleanup,
+        fail_on_conflicts=fail_on_conflicts,
     )
 
 

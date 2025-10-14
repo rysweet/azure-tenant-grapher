@@ -57,7 +57,19 @@ async def generate_iac_command_handler(
     skip_validation: bool = False,
     skip_subnet_validation: bool = False,
     auto_fix_subnets: bool = False,
+    preserve_rg_structure: bool = False,
     domain_name: Optional[str] = None,
+    naming_suffix: Optional[str] = None,
+    skip_name_validation: bool = False,
+    skip_address_space_validation: bool = False,
+    auto_renumber_address_spaces: bool = False,
+    preserve_names: bool = False,
+    auto_purge_soft_deleted: bool = False,
+    # Conflict detection parameters (Issue #336)
+    check_conflicts: bool = True,
+    skip_conflict_check: bool = False,
+    auto_cleanup: bool = False,
+    fail_on_conflicts: bool = True,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -75,7 +87,18 @@ async def generate_iac_command_handler(
         skip_validation: Skip Terraform validation after generation
         skip_subnet_validation: Skip subnet containment validation (Issue #333)
         auto_fix_subnets: Auto-fix subnet addresses outside VNet range (Issue #333)
+        preserve_rg_structure: Preserve source resource group structure in target deployment
         domain_name: Domain name for entities that require one
+        naming_suffix: Optional custom naming suffix for conflict resolution
+        skip_name_validation: Skip global name conflict validation
+        skip_address_space_validation: Skip VNet address space validation (GAP-012)
+        auto_renumber_address_spaces: Auto-renumber conflicting VNet address spaces (GAP-012)
+        preserve_names: Preserve original resource names; fail on conflicts (GAP-015)
+        auto_purge_soft_deleted: Auto-purge soft-deleted Key Vaults (GAP-016)
+        check_conflicts: Enable pre-deployment conflict detection (default: True)
+        skip_conflict_check: Skip conflict detection (default: False)
+        auto_cleanup: Automatically run cleanup script on conflicts (default: False)
+        fail_on_conflicts: Fail deployment if conflicts detected (default: True)
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -124,6 +147,165 @@ async def generate_iac_command_handler(
         graph = await traverser.traverse(filter_cypher)
         logger.info(f"Extracted {len(graph.resources)} resources")
 
+        # Get subscription ID early - needed for Key Vault handling AND tenant_id resolution (GAP-331)
+        import os
+
+        subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
+        if not subscription_id and graph.resources:
+            # Try to extract from first resource with subscription in ID
+            for resource in graph.resources:
+                resource_id = resource.get("id", "")
+                if "/subscriptions/" in resource_id:
+                    subscription_id = resource_id.split("/subscriptions/")[1].split(
+                        "/"
+                    )[0]
+                    logger.info(
+                        f"Extracted subscription ID from resource: {subscription_id}"
+                    )
+                    break
+
+        if subscription_id:
+            logger.info(f"Using target subscription: {subscription_id}")
+        else:
+            logger.warning(
+                "No subscription ID available. Key Vault tenant_id will use placeholder. "
+                "Set AZURE_SUBSCRIPTION_ID environment variable or ensure resource IDs contain subscription."
+            )
+
+        # Pre-deployment conflict detection (Issue #336)
+        should_check_conflicts = check_conflicts and not skip_conflict_check
+        if should_check_conflicts and subscription_id and not dry_run:
+            from .cleanup_integration import invoke_cleanup_script, parse_cleanup_result
+            from .conflict_detector import ConflictDetector
+
+            logger.info("Running pre-deployment conflict detection...")
+            click.echo("Checking for deployment conflicts...")
+
+            try:
+                # Initialize detector
+                detector = ConflictDetector(subscription_id)
+
+                # Detect conflicts
+                conflict_report = await detector.detect_conflicts(graph.resources)
+
+                # Display conflict report
+                click.echo(conflict_report.format_report())
+
+                # Handle conflicts
+                if conflict_report.has_conflicts:
+                    if auto_cleanup:
+                        click.echo("\nAttempting automatic cleanup...")
+                        try:
+                            cleanup_result = invoke_cleanup_script(
+                                subscription_id,
+                                dry_run=False,
+                                force=True,
+                            )
+                            parsed = parse_cleanup_result(cleanup_result)
+
+                            if parsed["success"]:
+                                click.echo(
+                                    f"Auto-cleanup completed: {len(parsed['resources_deleted'])} resources deleted"
+                                )
+                                # Re-run conflict check
+                                conflict_report = await detector.detect_conflicts(
+                                    graph.resources
+                                )
+                                if conflict_report.has_conflicts:
+                                    click.echo(
+                                        f"Warning: {len(conflict_report.conflicts)} conflicts remain after cleanup"
+                                    )
+                                else:
+                                    click.echo("All conflicts resolved")
+                            else:
+                                click.echo(
+                                    f"Auto-cleanup failed with {len(parsed['errors'])} errors"
+                                )
+                                if parsed["errors"]:
+                                    for error in parsed["errors"][:5]:  # Show first 5
+                                        click.echo(f"  • {error}")
+
+                        except Exception as e:
+                            logger.error(f"Auto-cleanup failed: {e}")
+                            click.echo(f"Auto-cleanup failed: {e}")
+
+                    if conflict_report.has_conflicts and fail_on_conflicts:
+                        click.echo("\nCannot proceed with deployment due to conflicts")
+                        click.echo("\nOptions:")
+                        click.echo("  1. Run: ./scripts/cleanup_target_subscription.sh")
+                        click.echo(
+                            "  2. Use: --auto-cleanup to run cleanup automatically"
+                        )
+                        click.echo(
+                            "  3. Use: --naming-suffix <suffix> to rename resources"
+                        )
+                        click.echo(
+                            "  4. Use: --skip-conflict-check to bypass (not recommended)"
+                        )
+                        return 1
+                    elif conflict_report.has_conflicts:
+                        click.echo(
+                            "\nWarning: Conflicts detected but continuing (fail_on_conflicts=False)"
+                        )
+                else:
+                    click.echo(
+                        "No conflicts detected, proceeding with IaC generation\n"
+                    )
+
+            except Exception as e:
+                logger.warning(f"Conflict detection failed: {e}")
+                click.echo(
+                    f"Warning: Conflict detection failed: {e}. Proceeding anyway..."
+                )
+        elif should_check_conflicts and not subscription_id:
+            logger.warning("AZURE_SUBSCRIPTION_ID not set, skipping conflict detection")
+        elif skip_conflict_check:
+            logger.info("Conflict detection skipped (--skip-conflict-check)")
+
+        # Handle Key Vault soft-delete conflicts (GAP-016 / GitHub issue #325)
+        # Always check for conflicts, optionally purge based on flag
+        from .keyvault_handler import KeyVaultHandler
+
+        vault_resources = [
+            r for r in graph.resources if r.get("type") == "Microsoft.KeyVault/vaults"
+        ]
+
+        if vault_resources:
+            logger.info(f"Found {len(vault_resources)} Key Vault resources")
+            vault_names = [r.get("name") for r in vault_resources if r.get("name")]
+
+            if vault_names and subscription_id:
+                handler = KeyVaultHandler()
+                try:
+                    name_mapping = handler.handle_vault_conflicts(
+                        vault_names,
+                        subscription_id,
+                        location=location,
+                        auto_purge=auto_purge_soft_deleted,
+                    )
+
+                    # Apply name mappings to resources
+                    if name_mapping:
+                        for resource in vault_resources:
+                            old_name = resource.get("name")
+                            if old_name in name_mapping:
+                                new_name = name_mapping[old_name]
+                                resource["name"] = new_name
+                                logger.warning(
+                                    f"Renamed Key Vault due to soft-delete conflict: "
+                                    f"{old_name} -> {new_name}"
+                                )
+                except Exception as e:
+                    logger.warning(
+                        f"Key Vault conflict handling failed: {e}. "
+                        f"Proceeding with original names."
+                    )
+            elif vault_names and not subscription_id:
+                logger.warning(
+                    "AZURE_SUBSCRIPTION_ID not set, skipping Key Vault "
+                    "soft-delete conflict check"
+                )
+
         # Apply transformations
         engine = TransformationEngine(rules_file, aad_mode="manual")
 
@@ -134,14 +316,21 @@ async def generate_iac_command_handler(
             logger.info(f"Using subset filter: {subset_filter_obj}")
 
         # Generate templates using new engine method if subset or RG is specified
-        if subset_filter_obj or dest_rg or location:
+        if subset_filter_obj or dest_rg or location or preserve_rg_structure:
             emitter_cls = get_emitter(format_type)
             emitter = emitter_cls()
             if output_path:
                 out_dir = Path(output_path)
             else:
                 out_dir = default_timestamped_dir()
-            # Pass RG and location to emitter if supported (BicepEmitter will need to accept these)
+
+            # Log RG preservation mode (GAP-017)
+            if preserve_rg_structure:
+                logger.info(
+                    "Preserving source resource group structure in target deployment"
+                )
+
+            # Pass RG, location, tenant_id, and subscription_id to engine.generate_iac (GAP-331)
             paths = engine.generate_iac(
                 graph,
                 emitter,
@@ -149,7 +338,10 @@ async def generate_iac_command_handler(
                 subset_filter=subset_filter_obj,
                 validate_subnet_containment=not skip_subnet_validation,
                 auto_fix_subnets=auto_fix_subnets,
+                validate_address_spaces=not skip_address_space_validation,
+                auto_renumber_conflicts=auto_renumber_address_spaces,
                 tenant_id=tenant_id,
+                subscription_id=subscription_id,
             )
             click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
             for path in paths:
@@ -180,8 +372,102 @@ async def generate_iac_command_handler(
         else:
             out_dir = default_timestamped_dir()
 
-        # Generate templates
-        paths = emitter.emit(graph, out_dir)
+        # Generate templates (pass preserve_rg_structure and tenant_id for Terraform emitter)
+        # Check if emitter supports preserve_rg_structure and tenant_id parameters
+        import inspect
+
+        emit_signature = inspect.signature(emitter.emit)
+
+        # Build kwargs for emit call based on supported parameters
+        emit_kwargs = {"domain_name": domain_name}
+        if "preserve_rg_structure" in emit_signature.parameters:
+            emit_kwargs["preserve_rg_structure"] = preserve_rg_structure
+        if "tenant_id" in emit_signature.parameters:
+            emit_kwargs["tenant_id"] = tenant_id
+        if "subscription_id" in emit_signature.parameters:
+            emit_kwargs["subscription_id"] = subscription_id
+        if "neo4j_driver" in emit_signature.parameters:
+            emit_kwargs["neo4j_driver"] = driver
+
+        paths = emitter.emit(graph, out_dir, **emit_kwargs)
+
+        # Validate and fix global name conflicts (GAP-014)
+        if format_type.lower() == "terraform" and not skip_name_validation:
+            from ..validation import NameConflictValidator
+
+            logger.info("🔍 Checking for global resource name conflicts...")
+
+            # Read generated Terraform config
+            terraform_file = out_dir / "main.tf.json"
+            if terraform_file.exists():
+                with open(terraform_file) as f:
+                    terraform_config = json.load(f)
+
+                # Initialize validator (GAP-015, GAP-016)
+                subscription_id = None  # TODO: Get from environment/config
+                validator = NameConflictValidator(
+                    subscription_id=subscription_id,
+                    naming_suffix=naming_suffix,
+                    preserve_names=preserve_names,
+                    auto_purge_soft_deleted=auto_purge_soft_deleted,
+                )
+
+                # Validate and auto-fix conflicts (respects preserve_names mode)
+                auto_fix = not preserve_names  # Don't auto-fix if preserving names
+                updated_config, validation_result = (
+                    validator.validate_and_fix_terraform(
+                        terraform_config, auto_fix=auto_fix
+                    )
+                )
+
+                # Report conflicts (GAP-015)
+                if validation_result.conflicts:
+                    if preserve_names:
+                        # In preserve-names mode, fail on conflicts
+                        click.echo(
+                            f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
+                        )
+                        for conflict in validation_result.conflicts:
+                            click.echo(
+                                f"   • {conflict.resource_type}: {conflict.original_name}"
+                            )
+                            click.echo(f"     Reason: {conflict.conflict_reason}")
+                        click.echo(
+                            "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
+                            "or use --naming-suffix to specify a custom suffix."
+                        )
+                        return 1
+                    else:
+                        # In auto-fix mode, show fixes
+                        click.echo(
+                            f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
+                        )
+                        for conflict in validation_result.conflicts:
+                            click.echo(
+                                f"   • {conflict.resource_type}: {conflict.original_name} "
+                                f"-> {conflict.suggested_name or 'N/A'}"
+                            )
+                            click.echo(f"     Reason: {conflict.conflict_reason}")
+
+                # Save updated config if changes were made
+                if validation_result.name_mappings:
+                    with open(terraform_file, "w") as f:
+                        json.dump(updated_config, f, indent=2)
+
+                    # Save name mappings with conflict reasons (GAP-015)
+                    validator.save_name_mappings(
+                        validation_result.name_mappings,
+                        out_dir,
+                        conflicts=validation_result.conflicts,
+                    )
+                    click.echo(
+                        f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
+                    )
+                    click.echo(
+                        f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
+                    )
+                else:
+                    click.echo("✅ No global name conflicts detected")
 
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
