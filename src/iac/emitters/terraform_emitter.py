@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
+from ..dependency_analyzer import DependencyAnalyzer
 from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
@@ -65,6 +66,37 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
         "Microsoft.ManagedIdentity/managedIdentities": "azurerm_user_assigned_identity",
     }
+
+    def _extract_resource_groups(self, resources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Extract unique resource groups from all resources.
+
+        Returns list of RG resource dictionaries with properties:
+        - id: RG azure resource ID
+        - name: RG name
+        - location: Azure region
+        - type: "Microsoft.Resources/resourceGroups"
+        """
+        rg_map = {}
+        for resource in resources:
+            # Try both field names (resource_group and resourceGroup)
+            rg_name = resource.get("resource_group") or resource.get("resourceGroup")
+            if rg_name and rg_name not in rg_map:
+                # Extract location from first resource in this RG
+                location = resource.get("location", "westus2")
+                subscription = resource.get("subscription_id") or resource.get("subscriptionId", "")
+
+                rg_map[rg_name] = {
+                    "id": f"/subscriptions/{subscription}/resourceGroups/{rg_name}",
+                    "name": rg_name,
+                    "location": location,
+                    "type": "Microsoft.Resources/resourceGroups",
+                    "subscriptionId": subscription,
+                    "subscription_id": subscription,
+                    "resourceGroup": rg_name,  # For compatibility
+                    "resource_group": rg_name,  # Self-reference
+                }
+
+        return list(rg_map.values())
 
     def emit(
         self, graph: TenantGraph, out_dir: Path, domain_name: Optional[str] = None
@@ -181,11 +213,40 @@ class TerraformEmitter(IaCEmitter):
         logger.debug(f"Resource index built: {sum(len(v) for v in self._available_resources.values())} resources tracked")
         logger.debug(f"Subnet index built: {len(self._available_subnets)} subnets tracked")
 
-        # Second pass: Process resources with validation
-        for resource in graph.resources:
+        # Extract and generate resource group resources
+        logger.info("Extracting resource groups from discovered resources")
+        rg_resources = self._extract_resource_groups(graph.resources)
+        logger.info(f"Found {len(rg_resources)} unique resource groups")
+
+        # Add RG resources to the available resources index
+        for rg_resource in rg_resources:
+            rg_name_sanitized = self._sanitize_terraform_name(rg_resource["name"])
+            if "azurerm_resource_group" not in self._available_resources:
+                self._available_resources["azurerm_resource_group"] = set()
+            self._available_resources["azurerm_resource_group"].add(rg_name_sanitized)
+
+        # Prepend RG resources to the resource list for dependency analysis
+        all_resources = rg_resources + graph.resources
+
+        # Analyze dependencies and sort resources by tier
+        logger.info("Analyzing resource dependencies and calculating tiers")
+        analyzer = DependencyAnalyzer()
+        resource_dependencies = analyzer.analyze(all_resources)
+
+        # Second pass: Process resources with validation (sorted by tier)
+        for resource_dep in resource_dependencies:
+            resource = resource_dep.resource
             terraform_resource = self._convert_resource(resource, terraform_config)
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
+
+                # Add depends_on if resource has dependencies
+                if resource_dep.depends_on:
+                    resource_config["depends_on"] = sorted(list(resource_dep.depends_on))
+                    logger.debug(
+                        f"Added dependencies for {resource_type}.{resource_name}: "
+                        f"{resource_dep.depends_on}"
+                    )
 
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
@@ -369,11 +430,18 @@ class TerraformEmitter(IaCEmitter):
         if not location or location.lower() == "none" or location.lower() == "null":
             location = "eastus"
 
-        resource_config = {
-            "name": resource_name,
-            "location": location,
-            "resource_group_name": resource.get("resource_group", "default-rg"),
-        }
+        # Resource groups don't have a resource_group_name field
+        if azure_type == "Microsoft.Resources/resourceGroups":
+            resource_config = {
+                "name": resource_name,
+                "location": location,
+            }
+        else:
+            resource_config = {
+                "name": resource_name,
+                "location": location,
+                "resource_group_name": resource.get("resource_group", "default-rg"),
+            }
 
         # Add tags if present
         if "tags" in resource:

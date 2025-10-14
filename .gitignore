@@ -256,3 +256,12 @@ Thumbs.db
 .claude/context/
 .claude/tools/
 .claude/workflow/
+
+# Terraform
+**/.terraform/*
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/.terraform.lock.hcl
+**/tfplan*
+**/*.tfplan
+demos/simuland_iteration3/demos/
