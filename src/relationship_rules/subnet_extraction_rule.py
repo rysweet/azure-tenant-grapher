@@ -150,12 +150,12 @@ class SubnetExtractionRule(RelationshipRule):
         # Extract subnet properties
         subnet_props = self._extract_subnet_properties(subnet)
 
-        # Validate required fields
+        # Store subnet even if address prefix is missing
+        # Private endpoint subnets may lack explicit address prefixes
         if not subnet_props.get("addressPrefix") and not subnet_props.get("addressPrefixes"):
             logger.warning(
-                f"Subnet {subnet_name} in VNet {vnet_id} has no address prefix, skipping"
+                f"Subnet {subnet_name} in VNet {vnet_id} has no address prefix - storing anyway (may be PE subnet)"
             )
-            return None
 
         # Build subnet resource
         subnet_resource = {
