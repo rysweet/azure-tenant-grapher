@@ -1358,12 +1358,36 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
             
+            # Get required resource IDs from properties or construct placeholders
+            rg_name = resource.get("resource_group", "unknown-rg")
+            subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+            
+            # Storage account ID (required)
+            storage_account_id = properties.get("storageAccount")
+            if not storage_account_id:
+                # Create placeholder - should be replaced with actual storage account reference
+                storage_account_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/mlworkspace{resource_name[:8]}"
+            
+            # Key Vault ID (required)
+            key_vault_id = properties.get("keyVault")
+            if not key_vault_id:
+                # Create placeholder
+                key_vault_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.KeyVault/vaults/mlworkspace{resource_name[:8]}"
+            
+            # Application Insights ID (required)
+            application_insights_id = properties.get("applicationInsights")
+            if not application_insights_id:
+                # Create placeholder
+                application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/components/mlworkspace{resource_name[:8]}"
+            
             resource_config.update({
                 "sku_name": sku.get("name", "Basic"),
                 "identity": {
                     "type": "SystemAssigned"
                 },
-                # Optional: Add storage account, key vault, app insights references if available
+                "storage_account_id": storage_account_id,
+                "key_vault_id": key_vault_id,
+                "application_insights_id": application_insights_id,
             })
         elif azure_type == "Microsoft.CognitiveServices/accounts":
             # Cognitive Services Account specific properties
