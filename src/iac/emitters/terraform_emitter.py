@@ -87,11 +87,11 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
         "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
-        "Microsoft.SecurityCopilot/capacities": "azurerm_security_center_workspace",  # Placeholder - may need custom handling
+        # Microsoft.SecurityCopilot/capacities - No Terraform support yet, will be skipped
         "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
-        "Microsoft.Resources/templateSpecs": "azurerm_resource_group_template_deployment",  # Best available mapping
-        "Microsoft.Resources/templateSpecs/versions": "azurerm_resource_group_template_deployment",  # Child resources - skip or handle specially
-        "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": "azurerm_machine_learning_compute_instance",  # Closest available
+        # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
+        # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
+        # Microsoft.MachineLearningServices/workspaces/serverlessEndpoints - No direct Terraform equivalent yet, will be skipped
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
@@ -1023,6 +1023,34 @@ class TerraformEmitter(IaCEmitter):
                     "administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
+        elif azure_type == "Microsoft.EventHub/namespaces":
+            # EventHub namespaces require sku argument
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Extract sku name, default to Standard if not found
+            sku_name = sku.get("name", "Standard") if sku else "Standard"
+            
+            resource_config["sku"] = sku_name
+            
+            # Optionally add capacity if present in sku
+            if sku and "capacity" in sku:
+                resource_config["capacity"] = sku["capacity"]
+                
+        elif azure_type == "Microsoft.Kusto/clusters":
+            # Kusto clusters require sku block
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Extract sku properties, use defaults if not found
+            sku_name = sku.get("name", "Dev(No SLA)_Standard_D11_v2") if sku else "Dev(No SLA)_Standard_D11_v2"
+            sku_capacity = sku.get("capacity", 1) if sku else 1
+            
+            resource_config["sku"] = {
+                "name": sku_name,
+                "capacity": sku_capacity
+            }
+            
         elif azure_type == "Microsoft.KeyVault/vaults":
             # Extract tenant_id from multiple sources with proper fallback
             # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
@@ -1164,8 +1192,12 @@ class TerraformEmitter(IaCEmitter):
             if vm_name != "unknown":
                 vm_name_safe = self._sanitize_terraform_name(vm_name)
                 
-                # Validate that the VM resource exists
-                if not self._validate_resource_reference("azurerm_linux_virtual_machine", vm_name_safe):
+                # Validate that the VM resource exists (could be Linux or Windows)
+                vm_exists = (
+                    self._validate_resource_reference("azurerm_linux_virtual_machine", vm_name_safe) or
+                    self._validate_resource_reference("azurerm_windows_virtual_machine", vm_name_safe)
+                )
+                if not vm_exists:
                     logger.warning(
                         f"VM Extension '{resource_name}' references VM '{vm_name}' "
                         f"that doesn't exist in the graph. Skipping extension."
@@ -1475,6 +1507,25 @@ class TerraformEmitter(IaCEmitter):
                 "log_progress": properties.get("logProgress", True),
                 "log_verbose": properties.get("logVerbose", False),
             })
+            
+            # Runbooks require either content, draft, or publish_content_link
+            # For now, provide a placeholder publish_content_link since we don't have the actual runbook content
+            publish_content_link = properties.get("publishContentLink", {})
+            if publish_content_link and "uri" in publish_content_link:
+                resource_config["publish_content_link"] = {
+                    "uri": publish_content_link["uri"]
+                }
+                # Add version if present
+                if "version" in publish_content_link:
+                    resource_config["publish_content_link"]["version"] = publish_content_link["version"]
+            else:
+                # Provide placeholder content for empty runbook
+                # This prevents validation errors but won't replicate actual runbook logic
+                logger.warning(
+                    f"Runbook '{runbook_name}' has no publishContentLink in properties. "
+                    "Using placeholder empty content. Actual runbook logic won't be replicated."
+                )
+                resource_config["content"] = "# Placeholder runbook content\n# Original runbook content not available in graph\n"
             
             # Override name to just be the runbook name (not accountname/runbookname)
             resource_config["name"] = runbook_name
