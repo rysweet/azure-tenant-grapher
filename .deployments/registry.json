@@ -4301,6 +4301,34 @@
       },
       "terraform_version": null,
       "state_backup": null
+    },
+    {
+      "id": "deploy-20251015-072236",
+      "directory": "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/demos/iteration98",
+      "tenant": "tenant-1",
+      "status": "active",
+      "deployed_at": "2025-10-15T07:22:36.826456",
+      "destroyed_at": null,
+      "resources": {
+        "Microsoft.Storage/storageAccounts": 1,
+        "Microsoft.Web/serverFarms": 1,
+        "microsoft.insights/components": 1,
+        "Microsoft.Web/sites": 1,
+        "microsoft.alertsmanagement/smartDetectorAlertRules": 1,
+        "Microsoft.Network/virtualNetworks": 2,
+        "Microsoft.Network/subnets": 4,
+        "Microsoft.Network/networkSecurityGroups": 14,
+        "Microsoft.Compute/virtualMachines": 15,
+        "Microsoft.KeyVault/vaults": 1,
+        "Microsoft.Network/networkInterfaces": 16,
+        "Microsoft.Compute/disks": 15,
+        "Microsoft.Network/publicIPAddresses": 1,
+        "Microsoft.Network/bastionHosts": 1,
+        "Microsoft.OperationalInsights/workspaces": 1,
+        "Microsoft.Compute/virtualMachines/extensions": 30
+      },
+      "terraform_version": null,
+      "state_backup": null
     }
   ]
 }
