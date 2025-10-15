@@ -65,6 +65,20 @@ class TerraformEmitter(IaCEmitter):
         "microsoft.insights/components": "azurerm_application_insights",
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
+        # DevTestLab resources
+        "microsoft.devtestlab/labs": "azurerm_dev_test_lab",
+        "Microsoft.DevTestLab/labs": "azurerm_dev_test_lab",
+        "Microsoft.DevTestLab/labs/virtualMachines": "azurerm_dev_test_linux_virtual_machine",
+        # Machine Learning and AI resources
+        "Microsoft.MachineLearningServices/workspaces": "azurerm_machine_learning_workspace",
+        "Microsoft.CognitiveServices/accounts": "azurerm_cognitive_account",
+        # Additional resource types found in scan
+        "Microsoft.Kusto/clusters": "azurerm_kusto_cluster",
+        "Microsoft.EventHub/namespaces": "azurerm_eventhub_namespace",
+        "Microsoft.Network/networkWatchers": "azurerm_network_watcher",
+        "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
+        "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
+        "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
