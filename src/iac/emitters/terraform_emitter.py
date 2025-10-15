@@ -79,6 +79,15 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
         "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
+        # Additional resource types found in full tenant scan
+        "microsoft.insights/actiongroups": "azurerm_monitor_action_group",
+        "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
+        "Microsoft.Search/searchServices": "azurerm_search_service",
+        "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
+        "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
+        "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
+        "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
+        "Microsoft.SecurityCopilot/capacities": "azurerm_security_center_workspace",  # Placeholder - may need custom handling
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
