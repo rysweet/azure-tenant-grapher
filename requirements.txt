@@ -18,6 +18,10 @@ azure-keyvault-secrets>=4.7.0
 azure-keyvault-keys>=4.8.0
 azure-keyvault-certificates>=4.7.0
 
+# Azure Storage data plane SDKs for plugin support
+azure-storage-blob>=12.19.0
+azure-storage-file-share>=12.15.0
+
 # Microsoft Graph SDK
 msgraph-core>=1.0.0
 

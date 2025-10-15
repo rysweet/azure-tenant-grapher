@@ -1,0 +1,18 @@
+{
+  "started_at": "2025-10-15T09:50:58.453382",
+  "current_iteration": 183,
+  "phases_completed": [
+    "scan_source"
+  ],
+  "errors": [
+    {
+      "phase": "generate_iac",
+      "iteration": 184,
+      "error": "Timeout"
+    }
+  ],
+  "metrics": {
+    "source_resources": 0
+  },
+  "last_updated": "2025-10-15T10:00:59.880520"
+}

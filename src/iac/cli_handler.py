@@ -71,6 +71,7 @@ async def generate_iac_command_handler(
     auto_cleanup: bool = False,
     fail_on_conflicts: bool = True,
     resource_group_prefix: Optional[str] = None,
+    target_subscription: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -98,6 +99,7 @@ async def generate_iac_command_handler(
         auto_purge_soft_deleted: Auto-purge soft-deleted Key Vaults (GAP-016)
         check_conflicts: Enable pre-deployment conflict detection (default: True)
         skip_conflict_check: Skip conflict detection (default: False)
+        target_subscription: Target Azure subscription ID (overrides auto-detection from resources)
         auto_cleanup: Automatically run cleanup script on conflicts (default: False)
         fail_on_conflicts: Fail deployment if conflicts detected (default: True)
         resource_group_prefix: Prefix to add to all resource group names
@@ -201,20 +203,25 @@ async def generate_iac_command_handler(
         graph = await traverser.traverse(filter_cypher)
         logger.info(f"Extracted {len(graph.resources)} resources")
 
-        # Get subscription ID early - needed for Key Vault handling AND tenant_id resolution (GAP-331)
+        # Determine target subscription ID
+        # Priority: 1) Explicit --target-subscription parameter
+        #           2) AZURE_SUBSCRIPTION_ID environment variable
+        #           3) Extract from resource IDs (source subscription)
         import os
 
-        subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
+        subscription_id = target_subscription or os.environ.get("AZURE_SUBSCRIPTION_ID")
+        
         if not subscription_id and graph.resources:
-            # Try to extract from first resource with subscription in ID
+            # Fallback: extract from first resource with subscription in ID (SOURCE subscription)
             for resource in graph.resources:
                 resource_id = resource.get("id", "")
                 if "/subscriptions/" in resource_id:
                     subscription_id = resource_id.split("/subscriptions/")[1].split(
                         "/"
                     )[0]
-                    logger.info(
-                        f"Extracted subscription ID from resource: {subscription_id}"
+                    logger.warning(
+                        f"No target subscription specified - using subscription from source resource: {subscription_id}. "
+                        f"Use --target-subscription to deploy to a different subscription."
                     )
                     break
 
@@ -223,7 +230,8 @@ async def generate_iac_command_handler(
         else:
             logger.warning(
                 "No subscription ID available. Key Vault tenant_id will use placeholder. "
-                "Set AZURE_SUBSCRIPTION_ID environment variable or ensure resource IDs contain subscription."
+                "Set AZURE_SUBSCRIPTION_ID environment variable, use --target-subscription parameter, "
+                "or ensure resource IDs contain subscription."
             )
 
         # Pre-deployment conflict detection (Issue #336)

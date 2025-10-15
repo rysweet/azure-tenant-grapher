@@ -161,9 +161,13 @@ class PluginRegistry:
         except ImportError as e:
             logger.warning(f"Could not import KeyVaultPlugin: {e}")
 
-        # Future plugins will be registered here
-        # from .storage_plugin import StoragePlugin
-        # cls.register_plugin(StoragePlugin())
+        try:
+            from .storage_plugin import StoragePlugin
+
+            cls.register_plugin(StoragePlugin())
+            logger.debug("Registered StoragePlugin")
+        except ImportError as e:
+            logger.warning(f"Could not import StoragePlugin: {e}")
 
         cls._initialized = True
         logger.info(

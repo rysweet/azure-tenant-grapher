@@ -633,6 +633,11 @@ def generate_spec(
     help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
 )
 @click.option(
+    "--target-subscription",
+    required=False,
+    help="Target Azure subscription ID for deployment (overrides auto-detection from source resources)",
+)
+@click.option(
     "--format",
     "format_type",
     default="terraform",
@@ -749,6 +754,7 @@ def generate_spec(
 async def generate_iac(
     ctx: click.Context,
     tenant_id: str,
+    target_subscription: Optional[str],
     format_type: str,
     output_path: Optional[str],
     rules_file: Optional[str],
@@ -806,6 +812,7 @@ async def generate_iac(
             sys.exit(1)
     await generate_iac_command_handler(
         tenant_id=tenant_id,
+        target_subscription=target_subscription,
         format_type=format_type,
         output_path=output_path,
         rules_file=rules_file,

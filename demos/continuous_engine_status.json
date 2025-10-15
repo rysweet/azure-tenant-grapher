@@ -1,0 +1,14 @@
+{
+  "iteration": 191,
+  "loop_count": 6,
+  "fidelity": {
+    "source_count": 410,
+    "target_count": 158,
+    "fidelity": 38.53658536585366,
+    "gap": 252,
+    "timestamp": "2025-10-15T17:39:12.893465"
+  },
+  "consecutive_passes": 2,
+  "active_workstreams": 3,
+  "timestamp": "2025-10-15T17:45:38.677644"
+}
