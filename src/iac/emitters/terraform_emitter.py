@@ -517,11 +517,31 @@ class TerraformEmitter(IaCEmitter):
             address_space_obj = properties.get("addressSpace", {})
             address_prefixes = address_space_obj.get("addressPrefixes", [])
 
-            # Fallback to default if not found
+            # Fallback 1: Try top-level addressSpace property (stored separately to avoid truncation)
+            if not address_prefixes and resource.get("addressSpace"):
+                try:
+                    # addressSpace is stored as JSON string
+                    address_space_str = resource.get("addressSpace")
+                    if isinstance(address_space_str, str):
+                        address_prefixes = json.loads(address_space_str)
+                        logger.debug(
+                            f"VNet '{resource_name}' using top-level addressSpace property: {address_prefixes}"
+                        )
+                    elif isinstance(address_space_str, list):
+                        address_prefixes = address_space_str
+                        logger.debug(
+                            f"VNet '{resource_name}' using top-level addressSpace property: {address_prefixes}"
+                        )
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(
+                        f"Failed to parse top-level addressSpace for VNet '{resource_name}': {e}"
+                    )
+
+            # Fallback 2: Use hardcoded default if still not found
             if not address_prefixes:
                 address_prefixes = ["10.0.0.0/16"]
                 logger.warning(
-                    f"VNet '{resource_name}' has no addressSpace in properties, "
+                    f"VNet '{resource_name}' has no addressSpace in properties or top-level field, "
                     f"using fallback: {address_prefixes}"
                 )
 

@@ -269,6 +269,36 @@ class DatabaseOperations:
             resource_data["llm_description"] = resource.get("llm_description", "")
             resource_data["processing_status"] = processing_status
 
+            # Extract critical VNet properties BEFORE serialization to avoid truncation
+            # This prevents Neo4j driver truncation issues for large properties (>5000 chars)
+            if resource_data.get("type") == "Microsoft.Network/virtualNetworks":
+                properties_raw = resource_data.get("properties")
+                if properties_raw:
+                    try:
+                        # If properties is already a dict, use it directly
+                        if isinstance(properties_raw, dict):
+                            props_dict = properties_raw
+                        elif isinstance(properties_raw, str):
+                            # If it's a JSON string, parse it
+                            props_dict = json.loads(properties_raw)
+                        else:
+                            props_dict = {}
+
+                        # Extract addressSpace as separate top-level property
+                        address_space = props_dict.get("addressSpace", {})
+                        if address_space:
+                            address_prefixes = address_space.get("addressPrefixes", [])
+                            if address_prefixes:
+                                # Store as JSON string for easy access in IaC generation
+                                resource_data["addressSpace"] = json.dumps(address_prefixes)
+                                logger.debug(
+                                    f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
+                                )
+                    except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                        logger.warning(
+                            f"Failed to extract addressSpace from VNet '{resource.get('name')}': {e}"
+                        )
+
             # Prevent empty properties from overwriting existing data
             # If properties is empty dict, remove it from update to preserve existing
             if resource_data.get("properties") == {}:
