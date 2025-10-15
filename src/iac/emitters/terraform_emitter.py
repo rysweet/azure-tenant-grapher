@@ -45,6 +45,8 @@ class TerraformEmitter(IaCEmitter):
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
+        "Microsoft.Compute/disks": "azurerm_managed_disk",
+        "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
         "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
         "Microsoft.Network/subnets": "azurerm_subnet",
@@ -56,8 +58,11 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/privateDnsZones": "azurerm_private_dns_zone",
         "Microsoft.Network/privateDnsZones/virtualNetworkLinks": "azurerm_private_dns_zone_virtual_network_link",
         # Note: Microsoft.Web/sites mapping handled dynamically in _convert_resource
+        "Microsoft.Web/serverFarms": "azurerm_service_plan",
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
+        "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
+        "microsoft.insights/components": "azurerm_application_insights",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
@@ -1081,6 +1086,123 @@ class TerraformEmitter(IaCEmitter):
                 return None
             # Override safe_name with the link name from the config
             safe_name = resource_config.get("name", safe_name)
+        elif azure_type == "Microsoft.Web/serverFarms":
+            # App Service Plan (Server Farm) specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Determine OS type from kind property
+            kind = properties.get("kind", "").lower()
+            os_type = "Linux" if "linux" in kind else "Windows"
+            
+            resource_config.update({
+                "os_type": os_type,
+                "sku_name": sku.get("name", "B1"),
+            })
+        elif azure_type == "Microsoft.Compute/disks":
+            # Managed Disk specific properties
+            properties = self._parse_properties(resource)
+            
+            # Get disk size and storage account type
+            disk_size_gb = properties.get("diskSizeGB", 30)
+            storage_account_type = properties.get("sku", {}).get("name", "Standard_LRS")
+            
+            resource_config.update({
+                "storage_account_type": storage_account_type,
+                "create_option": "Empty",
+                "disk_size_gb": disk_size_gb,
+            })
+        elif azure_type == "Microsoft.Compute/virtualMachines/extensions":
+            # VM Extension specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract parent VM name from extension ID
+            extension_id = resource.get("id", "")
+            vm_name = self._extract_resource_name_from_id(extension_id, "virtualMachines")
+            
+            if vm_name != "unknown":
+                vm_name_safe = self._sanitize_terraform_name(vm_name)
+                
+                # Validate that the VM resource exists
+                if not self._validate_resource_reference("azurerm_linux_virtual_machine", vm_name_safe):
+                    logger.warning(
+                        f"VM Extension '{resource_name}' references VM '{vm_name}' "
+                        f"that doesn't exist in the graph. Skipping extension."
+                    )
+                    return None
+                
+                # Get extension properties
+                publisher = properties.get("publisher", "Microsoft.Azure.Extensions")
+                extension_type = properties.get("type", "CustomScript")
+                type_handler_version = properties.get("typeHandlerVersion", "2.0")
+                
+                # IMPORTANT: VM extension names in Azure can contain "/" (e.g., "VM001/ExtensionName")
+                # but Terraform doesn't allow "/" in resource names. Extract just the extension name part.
+                extension_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+                
+                resource_config = {
+                    "name": extension_name,  # Use sanitized name without VM prefix
+                    "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                    "publisher": publisher,
+                    "type": extension_type,
+                    "type_handler_version": type_handler_version,
+                }
+                
+                # Add settings if present
+                if "settings" in properties:
+                    resource_config["settings"] = json.dumps(properties["settings"])
+            else:
+                logger.warning(
+                    f"VM Extension '{resource_name}' has no parent VM in ID: {extension_id}. Skipping."
+                )
+                return None
+        elif azure_type == "Microsoft.OperationalInsights/workspaces":
+            # Log Analytics Workspace specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Get SKU name and normalize to proper case (Azure returns lowercase but Terraform requires PascalCase)
+            sku_name = sku.get("name", "PerGB2018")
+            # Map lowercase variants to proper Terraform values
+            sku_mapping = {
+                "pergb2018": "PerGB2018",
+                "pernode": "PerNode",
+                "premium": "Premium",
+                "standalone": "Standalone",
+                "standard": "Standard",
+                "capacityreservation": "CapacityReservation",
+                "lacluster": "LACluster",
+                "unlimited": "Unlimited",
+            }
+            sku_name = sku_mapping.get(sku_name.lower(), sku_name)
+            
+            resource_config.update({
+                "sku": sku_name,
+                "retention_in_days": properties.get("retentionInDays", 30),
+            })
+        elif azure_type == "microsoft.insights/components":
+            # Application Insights specific properties
+            properties = self._parse_properties(resource)
+            
+            # Application Insights requires a workspace ID or uses legacy mode
+            application_type = properties.get("Application_Type", "web")
+            
+            resource_config.update({
+                "application_type": application_type,
+            })
+            
+            # Try to link to Log Analytics workspace if available
+            workspace_resource_id = properties.get("WorkspaceResourceId")
+            if workspace_resource_id:
+                workspace_name = self._extract_resource_name_from_id(
+                    workspace_resource_id, "workspaces"
+                )
+                if workspace_name != "unknown":
+                    workspace_name_safe = self._sanitize_terraform_name(workspace_name)
+                    if self._validate_resource_reference("azurerm_log_analytics_workspace", workspace_name_safe):
+                        resource_config["workspace_id"] = (
+                            f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}"
+                        )
 
         return terraform_type, safe_name, resource_config
 
