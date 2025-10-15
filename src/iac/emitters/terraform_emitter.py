@@ -1278,6 +1278,41 @@ class TerraformEmitter(IaCEmitter):
                 "sku": sku_name,
                 "retention_in_days": properties.get("retentionInDays", 30),
             })
+        elif azure_type == "Microsoft.OperationsManagement/solutions":
+            # Log Analytics Solution specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract solution name and workspace info
+            # Solution name format is typically "SolutionType(WorkspaceName)"
+            solution_full_name = resource.get("name", "")
+            if "(" in solution_full_name and ")" in solution_full_name:
+                solution_type = solution_full_name.split("(")[0]
+                workspace_name_from_solution = solution_full_name.split("(")[1].rstrip(")")
+            else:
+                solution_type = solution_full_name
+                workspace_name_from_solution = "unknown"
+            
+            # Get workspace resource ID from properties
+            workspace_resource_id = properties.get("workspaceResourceId", "")
+            workspace_name = self._extract_resource_name_from_id(workspace_resource_id, "workspaces") if workspace_resource_id else workspace_name_from_solution
+            workspace_name_safe = self._sanitize_terraform_name(workspace_name)
+            
+            # Get plan details from properties
+            plan = properties.get("plan", {})
+            publisher = plan.get("publisher", "Microsoft")
+            product = plan.get("product", solution_type)
+            
+            resource_config.update({
+                "solution_name": solution_type,
+                "resource_group_name": resource.get("resource_group", "unknown"),
+                "location": resource.get("location", "westus"),
+                "workspace_name": workspace_name,
+                "workspace_resource_id": workspace_resource_id if workspace_resource_id else f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}",
+                "plan": {
+                    "publisher": publisher,
+                    "product": product,
+                }
+            })
         elif azure_type == "microsoft.insights/components":
             # Application Insights specific properties
             properties = self._parse_properties(resource)
@@ -1606,18 +1641,65 @@ class TerraformEmitter(IaCEmitter):
             # Data Collection Rule - requires complex nested blocks
             properties = self._parse_properties(resource)
             
-            # Minimum viable configuration
-            resource_config.update({
-                "destinations": {
+            # Extract destinations from properties
+            destinations_prop = properties.get("destinations", {})
+            destinations_config = {}
+            
+            # Log Analytics destinations
+            if "logAnalytics" in destinations_prop:
+                log_analytics_list = []
+                for la_dest in destinations_prop["logAnalytics"]:
+                    workspace_resource_id = la_dest.get("workspaceResourceId", "")
+                    dest_name = la_dest.get("name", "default")
+                    if workspace_resource_id:
+                        log_analytics_list.append({
+                            "workspace_resource_id": workspace_resource_id,
+                            "name": dest_name
+                        })
+                if log_analytics_list:
+                    destinations_config["log_analytics"] = log_analytics_list
+            
+            # Azure Monitor Metrics destinations
+            if "azureMonitorMetrics" in destinations_prop:
+                am_dest = destinations_prop["azureMonitorMetrics"]
+                dest_name = am_dest.get("name", "azureMonitorMetrics-default")
+                destinations_config["azure_monitor_metrics"] = {
+                    "name": dest_name
+                }
+            
+            # Extract data flows from properties
+            data_flows_prop = properties.get("dataFlows", [])
+            data_flows_config = []
+            for flow in data_flows_prop:
+                flow_config = {
+                    "streams": flow.get("streams", ["Microsoft-Perf"]),
+                    "destinations": flow.get("destinations", ["default"])
+                }
+                # Add output_stream if present
+                if "outputStream" in flow:
+                    flow_config["output_stream"] = flow["outputStream"]
+                # Add transform_kql if present
+                if "transformKql" in flow:
+                    flow_config["transform_kql"] = flow["transformKql"]
+                data_flows_config.append(flow_config)
+            
+            # If no destinations or data_flows found, use minimal viable config
+            if not destinations_config:
+                destinations_config = {
                     "log_analytics": [{
                         "workspace_resource_id": "/subscriptions/placeholder/resourceGroups/placeholder/providers/Microsoft.OperationalInsights/workspaces/placeholder",
                         "name": "default"
                     }]
-                },
-                "data_flow": [{
+                }
+            if not data_flows_config:
+                data_flows_config = [{
                     "streams": ["Microsoft-Perf"],
                     "destinations": ["default"]
                 }]
+            
+            resource_config.update({
+                "destinations": destinations_config,
+                "data_flow": data_flows_config
             })
         elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
             # Entra ID User
