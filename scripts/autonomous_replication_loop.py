@@ -395,7 +395,23 @@ Do not stop until the gap is fixed.
         # Send notification
         self.send_imessage(f"🚀 Starting deployment of iteration {iteration_num}")
         
-        # Get subscription ID from Azure CLI
+        # Switch to TARGET tenant subscription (DefenderATEVET12)
+        TARGET_SUBSCRIPTION = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+        
+        print(f"Switching to target subscription: {TARGET_SUBSCRIPTION}")
+        try:
+            subprocess.run(
+                ["az", "account", "set", "--subscription", TARGET_SUBSCRIPTION],
+                capture_output=True,
+                timeout=30,
+                check=True
+            )
+        except Exception as e:
+            print(f"Failed to switch subscription: {e}")
+            self.send_imessage(f"❌ Failed to switch to target subscription")
+            return False
+        
+        # Get subscription ID from Azure CLI (should be target now)
         try:
             sub_result = subprocess.run(
                 ["az", "account", "show", "--query", "id", "-o", "tsv"],
@@ -404,15 +420,19 @@ Do not stop until the gap is fixed.
                 timeout=30
             )
             subscription_id = sub_result.stdout.strip()
+            print(f"Confirmed subscription: {subscription_id}")
+            
+            if subscription_id != TARGET_SUBSCRIPTION:
+                print(f"WARNING: Subscription mismatch! Expected {TARGET_SUBSCRIPTION}, got {subscription_id}")
+                self.send_imessage(f"⚠️ Subscription mismatch in deployment")
         except Exception as e:
             print(f"Failed to get subscription ID: {e}")
-            subscription_id = ""
+            subscription_id = TARGET_SUBSCRIPTION
         
         # Set up environment variables for Terraform
         env = os.environ.copy()
-        if subscription_id:
-            env["TF_VAR_subscription_id"] = subscription_id
-            print(f"Using subscription: {subscription_id}")
+        env["TF_VAR_subscription_id"] = subscription_id
+        print(f"Using subscription: {subscription_id}")
         
         try:
             # Terraform plan

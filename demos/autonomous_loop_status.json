@@ -1,9 +1,61 @@
 {
-  "last_iteration": 96,
+  "last_iteration": 97,
   "last_deployment": 0,
-  "consecutive_valid_iterations": 7,
-  "workstreams": [],
+  "consecutive_valid_iterations": 8,
+  "workstreams": [
+    {
+      "id": "ws_missing_resource_types_1760538012",
+      "gap": {
+        "type": "missing_resource_types",
+        "details": [
+          {
+            "resource_type": "Microsoft.Network/networkInterfaces",
+            "count": 50
+          },
+          {
+            "resource_type": "Microsoft.Compute/virtualMachines/extensions",
+            "count": 44
+          },
+          {
+            "resource_type": "Microsoft.Network/networkSecurityGroups",
+            "count": 43
+          },
+          {
+            "resource_type": "Microsoft.Compute/virtualMachines",
+            "count": 39
+          },
+          {
+            "resource_type": "Microsoft.Compute/disks",
+            "count": 39
+          },
+          {
+            "resource_type": "Microsoft.Automation/automationAccounts/runbooks",
+            "count": 29
+          },
+          {
+            "resource_type": "Microsoft.Network/subnets",
+            "count": 21
+          },
+          {
+            "resource_type": "Microsoft.KeyVault/vaults",
+            "count": 20
+          },
+          {
+            "resource_type": "Microsoft.Storage/storageAccounts",
+            "count": 16
+          },
+          {
+            "resource_type": "Microsoft.Network/virtualNetworks",
+            "count": 13
+          }
+        ],
+        "priority": "P0"
+      },
+      "started_at": "2025-10-15T14:20:12.054878",
+      "status": "running"
+    }
+  ],
   "gaps": [],
   "started_at": "2025-10-15T14:08:19.143294",
-  "updated_at": "2025-10-15T14:10:57.577068"
+  "updated_at": "2025-10-15T14:20:39.635326"
 }
