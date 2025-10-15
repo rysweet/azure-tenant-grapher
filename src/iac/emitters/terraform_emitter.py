@@ -1287,6 +1287,40 @@ class TerraformEmitter(IaCEmitter):
                     resource_config["action_group"] = {
                         "ids": formatted_ids
                     }
+        elif azure_type == "Microsoft.MachineLearningServices/workspaces":
+            # Machine Learning Workspace specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            resource_config.update({
+                "sku_name": sku.get("name", "Basic"),
+                "identity": {
+                    "type": "SystemAssigned"
+                },
+                # Optional: Add storage account, key vault, app insights references if available
+            })
+        elif azure_type == "Microsoft.CognitiveServices/accounts":
+            # Cognitive Services Account specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            kind = properties.get("kind", "OpenAI")
+            
+            resource_config.update({
+                "kind": kind,
+                "sku_name": sku.get("name", "S0"),
+            })
+            
+            # Add custom_subdomain_name if present
+            if properties.get("customSubDomainName"):
+                resource_config["custom_subdomain_name"] = properties["customSubDomainName"]
+        elif azure_type == "Microsoft.Automation/automationAccounts":
+            # Automation Account specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            resource_config.update({
+                "sku_name": sku.get("name", "Basic"),
+            })
         elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
             # Entra ID User
             # Users from Neo4j may have different property names than ARM resources
