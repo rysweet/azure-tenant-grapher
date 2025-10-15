@@ -1302,7 +1302,8 @@ class TerraformEmitter(IaCEmitter):
             publisher = plan.get("publisher", "Microsoft")
             product = plan.get("product", solution_type)
             
-            resource_config.update({
+            # For azurerm_log_analytics_solution, we don't use "name" - instead solution_name, workspace_name, workspace_resource_id
+            resource_config = {
                 "solution_name": solution_type,
                 "resource_group_name": resource.get("resource_group", "unknown"),
                 "location": resource.get("location", "westus"),
@@ -1312,7 +1313,7 @@ class TerraformEmitter(IaCEmitter):
                     "publisher": publisher,
                     "product": product,
                 }
-            })
+            }
         elif azure_type == "microsoft.insights/components":
             # Application Insights specific properties
             properties = self._parse_properties(resource)
