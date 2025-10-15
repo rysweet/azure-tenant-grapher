@@ -1377,8 +1377,8 @@ class TerraformEmitter(IaCEmitter):
             # Application Insights ID (required)
             application_insights_id = properties.get("applicationInsights")
             if not application_insights_id:
-                # Create placeholder
-                application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/components/mlworkspace{resource_name[:8]}"
+                # Create placeholder - note: provider must be Microsoft.Insights (capital M and I)
+                application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Insights/components/mlworkspace{resource_name[:8]}"
             
             resource_config.update({
                 "sku_name": sku.get("name", "Basic"),
