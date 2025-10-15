@@ -9,14 +9,11 @@ items including:
 
 The plugin integrates with the IaC generation process to ensure that Key Vault
 contents are preserved when deploying to new environments.
-
-Note: This is a stub implementation. Full Azure SDK integration will be added
-in a future iteration. The structure demonstrates the plugin architecture and
-provides a foundation for implementation.
 """
 
+import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .base_plugin import DataPlaneItem, DataPlanePlugin, ReplicationResult
 
@@ -27,7 +24,8 @@ class KeyVaultPlugin(DataPlanePlugin):
     """
     Data plane plugin for Azure Key Vault.
 
-    Discovers and replicates Key Vault secrets, keys, and certificates.
+    Discovers and replicates Key Vault secrets, keys, and certificates using
+    Azure SDK.
 
     Example:
         plugin = KeyVaultPlugin()
@@ -44,8 +42,7 @@ class KeyVaultPlugin(DataPlanePlugin):
         """
         Discover Key Vault secrets, keys, and certificates.
 
-        This is a stub implementation that demonstrates the structure.
-        Full implementation will use Azure SDK to:
+        Uses Azure SDK to:
         1. Authenticate to the Key Vault
         2. List all secrets, keys, and certificates
         3. Retrieve metadata (not values for security)
@@ -73,52 +70,170 @@ class KeyVaultPlugin(DataPlanePlugin):
         if not self.validate_resource(resource):
             raise ValueError(f"Invalid resource for KeyVaultPlugin: {resource}")
 
-        self.logger.info(
-            f"Discovering data plane items for Key Vault: {resource.get('name')}"
-        )
+        vault_name = resource.get("name", "unknown")
+        self.logger.info(f"Discovering data plane items for Key Vault: {vault_name}")
 
-        # TODO: Implement Azure SDK integration
-        # from azure.identity import DefaultAzureCredential
-        # from azure.keyvault.secrets import SecretClient
-        # from azure.keyvault.keys import KeyClient
-        # from azure.keyvault.certificates import CertificateClient
-        #
-        # vault_uri = resource.get("properties", {}).get("vaultUri")
-        # credential = DefaultAzureCredential()
-        #
-        # # Discover secrets
-        # secret_client = SecretClient(vault_url=vault_uri, credential=credential)
-        # secrets = secret_client.list_properties_of_secrets()
-        #
-        # # Discover keys
-        # key_client = KeyClient(vault_url=vault_uri, credential=credential)
-        # keys = key_client.list_properties_of_keys()
-        #
-        # # Discover certificates
-        # cert_client = CertificateClient(vault_url=vault_uri, credential=credential)
-        # certificates = cert_client.list_properties_of_certificates()
-
-        # Stub: Return empty list until Azure SDK integration is implemented
         items: List[DataPlaneItem] = []
 
-        # Example of what the implementation would look like:
-        # for secret_props in secrets:
-        #     items.append(DataPlaneItem(
-        #         name=secret_props.name,
-        #         item_type="secret",
-        #         properties={
-        #             "enabled": secret_props.enabled,
-        #             "content_type": secret_props.content_type,
-        #             "tags": secret_props.tags,
-        #         },
-        #         source_resource_id=resource["id"],
-        #         metadata={
-        #             "created_on": secret_props.created_on.isoformat(),
-        #             "updated_on": secret_props.updated_on.isoformat(),
-        #         }
-        #     ))
+        try:
+            # Import Azure SDK components
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.secrets import SecretClient
+            from azure.keyvault.keys import KeyClient
+            from azure.keyvault.certificates import CertificateClient
+            from azure.core.exceptions import AzureError, HttpResponseError
 
-        self.logger.info(f"Discovered {len(items)} data plane items in Key Vault")
+            # Parse vault URI from properties
+            properties = resource.get("properties", {})
+            if isinstance(properties, str):
+                try:
+                    properties = json.loads(properties)
+                except json.JSONDecodeError:
+                    properties = {}
+            
+            vault_uri = properties.get("vaultUri")
+            if not vault_uri:
+                # Construct vault URI from name
+                vault_uri = f"https://{vault_name}.vault.azure.net/"
+                self.logger.warning(
+                    f"vaultUri not found in properties, using constructed URI: {vault_uri}"
+                )
+
+            # Authenticate
+            credential = DefaultAzureCredential()
+
+            # Discover secrets
+            try:
+                secret_client = SecretClient(vault_url=vault_uri, credential=credential)
+                secrets = secret_client.list_properties_of_secrets()
+
+                for secret_props in secrets:
+                    # Skip if disabled
+                    if not secret_props.enabled:
+                        self.logger.debug(f"Skipping disabled secret: {secret_props.name}")
+                        continue
+
+                    items.append(
+                        DataPlaneItem(
+                            name=secret_props.name,
+                            item_type="secret",
+                            properties={
+                                "enabled": secret_props.enabled,
+                                "content_type": secret_props.content_type,
+                                "tags": secret_props.tags or {},
+                            },
+                            source_resource_id=resource["id"],
+                            metadata={
+                                "created_on": (
+                                    secret_props.created_on.isoformat()
+                                    if secret_props.created_on
+                                    else None
+                                ),
+                                "updated_on": (
+                                    secret_props.updated_on.isoformat()
+                                    if secret_props.updated_on
+                                    else None
+                                ),
+                                "recovery_level": secret_props.recovery_level,
+                            },
+                        )
+                    )
+            except (AzureError, HttpResponseError) as e:
+                self.logger.warning(f"Failed to discover secrets in {vault_name}: {e}")
+
+            # Discover keys
+            try:
+                key_client = KeyClient(vault_url=vault_uri, credential=credential)
+                keys = key_client.list_properties_of_keys()
+
+                for key_props in keys:
+                    if not key_props.enabled:
+                        self.logger.debug(f"Skipping disabled key: {key_props.name}")
+                        continue
+
+                    items.append(
+                        DataPlaneItem(
+                            name=key_props.name,
+                            item_type="key",
+                            properties={
+                                "enabled": key_props.enabled,
+                                "key_type": key_props.key_type,
+                                "tags": key_props.tags or {},
+                            },
+                            source_resource_id=resource["id"],
+                            metadata={
+                                "created_on": (
+                                    key_props.created_on.isoformat()
+                                    if key_props.created_on
+                                    else None
+                                ),
+                                "updated_on": (
+                                    key_props.updated_on.isoformat()
+                                    if key_props.updated_on
+                                    else None
+                                ),
+                                "recovery_level": key_props.recovery_level,
+                            },
+                        )
+                    )
+            except (AzureError, HttpResponseError) as e:
+                self.logger.warning(f"Failed to discover keys in {vault_name}: {e}")
+
+            # Discover certificates
+            try:
+                cert_client = CertificateClient(
+                    vault_url=vault_uri, credential=credential
+                )
+                certificates = cert_client.list_properties_of_certificates()
+
+                for cert_props in certificates:
+                    if not cert_props.enabled:
+                        self.logger.debug(
+                            f"Skipping disabled certificate: {cert_props.name}"
+                        )
+                        continue
+
+                    items.append(
+                        DataPlaneItem(
+                            name=cert_props.name,
+                            item_type="certificate",
+                            properties={
+                                "enabled": cert_props.enabled,
+                                "tags": cert_props.tags or {},
+                            },
+                            source_resource_id=resource["id"],
+                            metadata={
+                                "created_on": (
+                                    cert_props.created_on.isoformat()
+                                    if cert_props.created_on
+                                    else None
+                                ),
+                                "updated_on": (
+                                    cert_props.updated_on.isoformat()
+                                    if cert_props.updated_on
+                                    else None
+                                ),
+                                "thumbprint": cert_props.x509_thumbprint.hex()
+                                if cert_props.x509_thumbprint
+                                else None,
+                            },
+                        )
+                    )
+            except (AzureError, HttpResponseError) as e:
+                self.logger.warning(f"Failed to discover certificates in {vault_name}: {e}")
+
+        except ImportError as e:
+            self.logger.error(
+                f"Azure Key Vault SDK not installed. Install with: "
+                f"pip install azure-keyvault-secrets azure-keyvault-keys azure-keyvault-certificates. "
+                f"Error: {e}"
+            )
+        except Exception as e:
+            self.logger.error(f"Unexpected error discovering Key Vault items: {e}")
+
+        self.logger.info(
+            f"Discovered {len(items)} data plane items in Key Vault '{vault_name}'"
+        )
         return items
 
     def generate_replication_code(

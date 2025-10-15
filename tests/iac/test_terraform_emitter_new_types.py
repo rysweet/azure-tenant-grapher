@@ -375,8 +375,8 @@ class TestResourceTypeCount:
         """Verify we have all expected resource type mappings."""
         emitter = TerraformEmitter()
         
-        # Count should be at least 26 (21 original + 5 new types)
-        assert len(emitter.AZURE_TO_TERRAFORM_MAPPING) >= 26
+        # Count should be at least 27 (26 from previous + 1 new smartDetectorAlertRules)
+        assert len(emitter.AZURE_TO_TERRAFORM_MAPPING) >= 27
         
     def test_new_types_included_in_supported_types(self):
         """Verify new types appear in supported resource types list."""
@@ -388,3 +388,111 @@ class TestResourceTypeCount:
         assert "Microsoft.Compute/virtualMachines/extensions" in supported_types
         assert "Microsoft.OperationalInsights/workspaces" in supported_types
         assert "microsoft.insights/components" in supported_types
+
+
+class TestSmartDetectorAlertRuleMapping:
+    """Test Smart Detector Alert Rule mapping and conversion."""
+
+    def test_smart_detector_alert_rule_mapping(self):
+        """Test microsoft.alertsmanagement/smartDetectorAlertRules mapping."""
+        emitter = TerraformEmitter()
+        assert "microsoft.alertsmanagement/smartDetectorAlertRules" in emitter.AZURE_TO_TERRAFORM_MAPPING
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["microsoft.alertsmanagement/smartDetectorAlertRules"]
+            == "azurerm_monitor_smart_detector_alert_rule"
+        )
+
+    def test_smart_detector_alert_rule_conversion(self):
+        """Test converting a Smart Detector Alert Rule."""
+        emitter = TerraformEmitter()
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.alertsmanagement/smartDetectorAlertRules/failure-anomalies",
+            "name": "Failure Anomalies - test",
+            "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
+            "location": "global",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "description": "Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.",
+                "state": "Enabled",
+                "severity": "Sev3",
+                "frequency": "PT1M",
+                "detector": {
+                    "id": "FailureAnomaliesDetector",
+                    "name": "Failure Anomalies",
+                },
+                "scope": [
+                    "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+                ],
+                "actionGroups": {
+                    "groupIds": []
+                }
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        assert result is not None
+        terraform_type, safe_name, config = result
+
+        assert terraform_type == "azurerm_monitor_smart_detector_alert_rule"
+        assert config["name"] == "Failure Anomalies - test"
+        assert config["detector_type"] == "FailureAnomaliesDetector"
+        assert config["severity"] == "Sev3"  # Keep as "Sev3" format
+        assert config["frequency"] == "PT1M"
+        assert config["enabled"] is True
+        assert len(config["scope_resource_ids"]) == 1
+
+    def test_smart_detector_severity_mapping(self):
+        """Test severity stays in Azure format (Sev0-Sev4) for Terraform."""
+        emitter = TerraformEmitter()
+        
+        severity_tests = [
+            "Sev0",
+            "Sev1",
+            "Sev2",
+            "Sev3",
+            "Sev4",
+        ]
+        
+        for sev_str in severity_tests:
+            resource = {
+                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.alertsmanagement/smartDetectorAlertRules/test",
+                "name": "test-rule",
+                "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
+                "location": "global",
+                "resource_group": "test-rg",
+                "properties": json.dumps({
+                    "state": "Enabled",
+                    "severity": sev_str,
+                    "frequency": "PT1M",
+                    "detector": {"id": "FailureAnomaliesDetector"},
+                    "scope": [],
+                }),
+            }
+
+            result = emitter._convert_resource(resource, {"resource": {}})
+            assert result is not None
+            _, _, config = result
+            assert config["severity"] == sev_str  # Should keep original format
+
+    def test_smart_detector_disabled_state(self):
+        """Test that disabled alert rules are properly converted."""
+        emitter = TerraformEmitter()
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.alertsmanagement/smartDetectorAlertRules/test",
+            "name": "test-rule",
+            "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
+            "location": "global",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "state": "Disabled",
+                "severity": "Sev3",
+                "frequency": "PT1M",
+                "detector": {"id": "FailureAnomaliesDetector"},
+                "scope": [],
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        assert result is not None
+        _, _, config = result
+        assert config["enabled"] is False

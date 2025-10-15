@@ -63,6 +63,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
         "microsoft.insights/components": "azurerm_application_insights",
+        "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
@@ -490,6 +491,12 @@ class TerraformEmitter(IaCEmitter):
             resource_config = {
                 "name": resource_name,
                 "location": location,
+            }
+        # Smart Detector Alert Rules are global and don't have a location field
+        elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
+            resource_config = {
+                "name": resource_name,
+                "resource_group_name": resource.get("resource_group", "default-rg"),
             }
         else:
             resource_config = {
@@ -1203,6 +1210,61 @@ class TerraformEmitter(IaCEmitter):
                         resource_config["workspace_id"] = (
                             f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}"
                         )
+        elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
+            # Smart Detector Alert Rule specific properties
+            properties = self._parse_properties(resource)
+            
+            # Get detector configuration
+            detector = properties.get("detector", {})
+            detector_id = detector.get("id", "FailureAnomaliesDetector")
+            
+            # Get action groups (optional - smart detectors can work without action groups)
+            action_groups = properties.get("actionGroups", {})
+            action_group_ids = action_groups.get("groupIds", [])
+            
+            # Get scope (Application Insights resource IDs)
+            scope_resource_ids = properties.get("scope", [])
+            
+            # Keep severity in Azure format (Sev0-Sev4) - Terraform expects this format
+            severity = properties.get("severity", "Sev3")
+            
+            # Get frequency (check interval)
+            frequency = properties.get("frequency", "PT1M")
+            
+            resource_config.update({
+                "detector_type": detector_id,
+                "scope_resource_ids": scope_resource_ids if scope_resource_ids else [],
+                "severity": severity,  # Keep as "SevN" format
+                "frequency": frequency,
+                "description": properties.get("description", ""),
+                "enabled": properties.get("state", "Enabled") == "Enabled",
+            })
+            
+            # Add action group block if action groups exist
+            # Note: Action group IDs need to be formatted correctly for Terraform
+            if action_group_ids:
+                # Extract just the action group names from the full resource IDs
+                formatted_ids = []
+                for ag_id in action_group_ids:
+                    # Action group IDs come in format: /subscriptions/.../resourcegroups/.../providers/microsoft.insights/actiongroups/NAME
+                    # Terraform expects them in proper case format
+                    parts = ag_id.split('/')
+                    if len(parts) >= 9 and parts[-2].lower() == 'actiongroups':
+                        # Reconstruct with proper casing
+                        subscription_id = parts[2]
+                        rg_name = parts[4]
+                        ag_name = parts[8]
+                        formatted_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/actiongroups/{ag_name}"
+                        formatted_ids.append(formatted_id)
+                    else:
+                        # Use original if can't parse
+                        formatted_ids.append(ag_id)
+                        logger.warning(f"Could not parse action group ID: {ag_id}")
+                
+                if formatted_ids:
+                    resource_config["action_group"] = {
+                        "ids": formatted_ids
+                    }
 
         return terraform_type, safe_name, resource_config
 
