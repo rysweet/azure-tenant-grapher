@@ -1273,6 +1273,9 @@ class TerraformEmitter(IaCEmitter):
                 subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
                 lab_virtual_network_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
             
+            # Get gallery image reference from properties
+            gallery_image_ref = properties.get("galleryImageReference", {})
+            
             resource_config.update({
                 "lab_name": lab_name,
                 "size": size,
@@ -1282,6 +1285,13 @@ class TerraformEmitter(IaCEmitter):
                 "lab_virtual_network_id": lab_virtual_network_id,
                 # SSH key is required
                 "ssh_key": f"var.devtest_vm_ssh_key_{self._sanitize_terraform_name(vm_name)}",
+                # Gallery image reference is required (at least 1 block)
+                "gallery_image_reference": {
+                    "offer": gallery_image_ref.get("offer", "0001-com-ubuntu-server-jammy"),
+                    "publisher": gallery_image_ref.get("publisher", "Canonical"),
+                    "sku": gallery_image_ref.get("sku", "22_04-lts-gen2"),
+                    "version": gallery_image_ref.get("version", "latest"),
+                },
             })
             
             # Override name to just be the VM name (not labname/vmname)
@@ -1389,11 +1399,20 @@ class TerraformEmitter(IaCEmitter):
             # Automation Runbook specific properties
             properties = self._parse_properties(resource)
             
+            # Extract automation account name from resource name (format: "accountname/runbookname")
+            full_name = resource.get("name", "")
+            account_name = full_name.split("/")[0] if "/" in full_name else "unknown-account"
+            runbook_name = full_name.split("/")[1] if "/" in full_name else full_name
+            
             resource_config.update({
+                "automation_account_name": account_name,
                 "runbook_type": properties.get("runbookType", "PowerShell"),
                 "log_progress": properties.get("logProgress", True),
                 "log_verbose": properties.get("logVerbose", False),
             })
+            
+            # Override name to just be the runbook name (not accountname/runbookname)
+            resource_config["name"] = runbook_name
         elif azure_type == "Microsoft.Compute/sshPublicKeys":
             # SSH Public Key specific properties
             properties = self._parse_properties(resource)
