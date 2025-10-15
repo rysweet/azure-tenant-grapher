@@ -1389,6 +1389,47 @@ class TerraformEmitter(IaCEmitter):
                 "key_vault_id": key_vault_id,
                 "application_insights_id": application_insights_id,
             })
+        elif azure_type == "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints":
+            # ML Serverless Endpoints mapped to compute instance (closest available)
+            properties = self._parse_properties(resource)
+            
+            # Extract workspace name from resource name (format: "workspacename/serverlessEndpoints/endpointname")
+            full_name = resource.get("name", "")
+            parts = full_name.split("/")
+            if len(parts) >= 3:
+                workspace_name = parts[0]
+                endpoint_name = parts[2]
+            else:
+                workspace_name = "unknown-workspace"
+                endpoint_name = full_name
+            
+            # Get required properties
+            rg_name = resource.get("resource_group", "unknown-rg")
+            subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+            
+            # Construct workspace ID
+            machine_learning_workspace_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.MachineLearningServices/workspaces/{workspace_name}"
+            
+            resource_config.update({
+                "machine_learning_workspace_id": machine_learning_workspace_id,
+                "virtual_machine_size": properties.get("vmSize", "STANDARD_DS3_V2"),
+                # Compute instance expects "name" to be the instance name
+            })
+            
+            # Override name to just be the endpoint name
+            resource_config["name"] = endpoint_name
+            
+        elif azure_type in ["microsoft.insights/actiongroups", "Microsoft.Insights/actionGroups"]:
+            # Monitor Action Group specific properties  
+            properties = self._parse_properties(resource)
+            
+            # short_name is required (max 12 characters)
+            short_name = properties.get("groupShortName", resource_name[:12])
+            
+            resource_config.update({
+                "short_name": short_name,
+            })
+            
         elif azure_type == "Microsoft.CognitiveServices/accounts":
             # Cognitive Services Account specific properties
             properties = self._parse_properties(resource)
