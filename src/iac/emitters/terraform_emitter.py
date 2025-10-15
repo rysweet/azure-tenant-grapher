@@ -78,6 +78,9 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/networkWatchers": "azurerm_network_watcher",
         "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
         "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
+        "microsoft.insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",  # Lowercase variant
+        "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
+        "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Additional resource types found in full tenant scan
         "microsoft.insights/actiongroups": "azurerm_monitor_action_group",

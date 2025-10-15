@@ -71,23 +71,61 @@
 
 1. **Resource Coverage**: `resources_replicated / total_source_resources * 100%`
    - Target: 100%
-   - Current: Track in each iteration
+   - Current: Automated via Neo4j queries comparing subscription_id counts
+   - Method: `SELECT count(*) FROM Resource WHERE subscription_id = SOURCE_SUB vs TARGET_SUB`
 
 2. **Validation Pass Rate**: `successful_validations / total_iterations * 100%`
-   - Target: 100% (last 3 iterations)
-   - Current: Track continuously
+   - Target: 100% (last 3 consecutive iterations)
+   - Current: Automated via terraform validate -json
+   - Method: Check "valid": true in JSON output
 
 3. **Graph Node Parity**: `|target_nodes - source_nodes| / source_nodes * 100%`
    - Target: <5% (accounting for iteration prefixes and helper resources)
-   - Current: Query Neo4j
+   - Current: Automated via Neo4j subscription_id-based queries
+   - Method: Compare Resource node counts by subscription_id
 
 4. **Terraform Resource Success**: `successfully_applied / total_resources * 100%`
    - Target: 100%
-   - Current: Measure after terraform apply
+   - Current: Automated via terraform apply exit code and state file analysis
+   - Method: Check terraform.tfstate for successfully created resources
 
 5. **Property Completeness**: `properties_captured / total_properties * 100%`
    - Target: 100%
-   - Current: Check for truncation warnings
+   - Current: Automated via log analysis for truncation warnings
+   - Method: Grep logs for "WARNING.*truncat" or "ERROR.*5000 char"
+
+### Automated Objective Function
+
+The objective is considered **ACHIEVED** when:
+
+```python
+def objective_achieved() -> bool:
+    # Get metrics from Neo4j, terraform, and logs
+    fidelity = target_resources / source_resources * 100
+    validation_passed = terraform_validate_json["valid"] == True
+    deployment_success = terraform_apply_exitcode == 0
+    consecutive_passes = last_3_iterations_all_passed()
+    
+    return (
+        fidelity >= 95.0 and
+        validation_passed and
+        deployment_success and
+        consecutive_passes
+    )
+```
+
+### Current Baseline (2025-10-15 04:25 UTC)
+
+Based on Neo4j database inspection:
+- **Source (DefenderATEVET17)**: 410 resources in subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16
+- **Target (DefenderATEVET12)**: 158 resources in subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285  
+- **Current Fidelity**: 38.5% (158/410)
+- **Latest Iteration**: 98
+- **Validation Status**: Unknown (needs check)
+
+**Gap Analysis**:
+- Missing: 252 resources (61.5%)
+- Need to achieve: +252 resources = 410 total in target
 
 ### Qualitative Checks
 
