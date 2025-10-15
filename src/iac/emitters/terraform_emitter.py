@@ -149,7 +149,11 @@ class TerraformEmitter(IaCEmitter):
         return list(rg_map.values())
 
     def emit(
-        self, graph: TenantGraph, out_dir: Path, domain_name: Optional[str] = None
+        self, 
+        graph: TenantGraph, 
+        out_dir: Path, 
+        domain_name: Optional[str] = None,
+        subscription_id: Optional[str] = None
     ) -> List[Path]:
         """Generate Terraform template from tenant graph."""
         # If a domain name is specified, set it for all user account entities
@@ -199,7 +203,7 @@ class TerraformEmitter(IaCEmitter):
                 "subscription_id": {
                     "description": "Azure subscription ID for deployment",
                     "type": "string",
-                    "default": "",
+                    "default": subscription_id or "",
                 }
             },
             "resource": {},

@@ -1,0 +1,20 @@
+Timestamp: 2025-10-15 12:16:59.700126
+Error Type: unknown
+Error: Terraform plan failed: 
+Prompt:
+
+Fix the following unknown error found in iteration 200:
+
+Error: Terraform plan failed: 
+
+Instructions:
+1. Analyze the error and identify root cause in the atg codebase
+2. Fix the issue in the appropriate module (likely src/iac/emitters/terraform_emitter.py or related)
+3. Add tests for the fix
+4. Run tests to validate
+5. Commit your changes with a descriptive message
+
+Focus on making the minimal necessary changes to fix this specific error.
+Follow the development philosophy in .claude/context/PHILOSOPHY.md.
+Do not stop until the fix is complete and tested.
+
