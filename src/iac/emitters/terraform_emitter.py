@@ -1244,6 +1244,49 @@ class TerraformEmitter(IaCEmitter):
                         resource_config["workspace_id"] = (
                             f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}"
                         )
+        elif azure_type == "Microsoft.DevTestLab/labs/virtualMachines":
+            # DevTest Lab Virtual Machine specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract lab name from the resource name (format: "labname/vmname")
+            full_name = resource.get("name", "")
+            lab_name = full_name.split("/")[0] if "/" in full_name else "unknown-lab"
+            vm_name = full_name.split("/")[1] if "/" in full_name else full_name
+            
+            # Get size from properties
+            size = properties.get("size", "Standard_B2s")
+            
+            # Get username from properties (osProfile or galleryImageReference)
+            username = properties.get("userName", "labuser")
+            
+            # Get storage type
+            storage_type = properties.get("storageType", "Standard")
+            
+            # Get subnet info from properties
+            lab_subnet_name = properties.get("labSubnetName", "default")
+            
+            # Try to get virtual network ID from properties
+            lab_virtual_network_id = properties.get("labVirtualNetworkId")
+            if not lab_virtual_network_id:
+                # Construct it from resource group and lab name
+                rg_name = resource.get("resource_group", "unknown-rg")
+                subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+                lab_virtual_network_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
+            
+            resource_config.update({
+                "lab_name": lab_name,
+                "size": size,
+                "username": username,
+                "storage_type": storage_type,
+                "lab_subnet_name": lab_subnet_name,
+                "lab_virtual_network_id": lab_virtual_network_id,
+                # SSH key is required
+                "ssh_key": f"var.devtest_vm_ssh_key_{self._sanitize_terraform_name(vm_name)}",
+            })
+            
+            # Override name to just be the VM name (not labname/vmname)
+            resource_config["name"] = vm_name
+            
         elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
             # Smart Detector Alert Rule specific properties
             properties = self._parse_properties(resource)
