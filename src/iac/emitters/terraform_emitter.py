@@ -1192,15 +1192,21 @@ class TerraformEmitter(IaCEmitter):
             if vm_name != "unknown":
                 vm_name_safe = self._sanitize_terraform_name(vm_name)
                 
-                # Validate that the VM resource exists (could be Linux or Windows)
-                vm_exists = (
-                    self._validate_resource_reference("azurerm_linux_virtual_machine", vm_name_safe) or
-                    self._validate_resource_reference("azurerm_windows_virtual_machine", vm_name_safe)
-                )
+                # Validate that the VM resource exists in the generated Terraform config
+                # (not just in _available_resources, which may include VMs that were later skipped)
+                vm_exists = False
+                for vm_type in ["azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine"]:
+                    if (vm_type in terraform_config.get("resource", {}) and 
+                        vm_name_safe in terraform_config["resource"][vm_type]):
+                        vm_exists = True
+                        # Use the actual VM type found
+                        vm_terraform_type = vm_type
+                        break
+                
                 if not vm_exists:
                     logger.warning(
                         f"VM Extension '{resource_name}' references VM '{vm_name}' "
-                        f"that doesn't exist in the graph. Skipping extension."
+                        f"that doesn't exist in the generated Terraform config (may have been skipped due to missing dependencies). Skipping extension."
                     )
                     return None
                 
@@ -1215,7 +1221,7 @@ class TerraformEmitter(IaCEmitter):
                 
                 resource_config = {
                     "name": extension_name,  # Use sanitized name without VM prefix
-                    "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                    "virtual_machine_id": f"${{{vm_terraform_type}.{vm_name_safe}.id}}",
                     "publisher": publisher,
                     "type": extension_type,
                     "type_handler_version": type_handler_version,
@@ -1560,8 +1566,9 @@ class TerraformEmitter(IaCEmitter):
                     "time": daily_recurrence_time
                 },
                 # notification_settings block is required
+                # Note: "enabled" field is not valid in azurerm_dev_test_schedule
+                # Status is controlled by the task_type and schedule presence
                 "notification_settings": {
-                    "enabled": properties.get("notificationSettings", {}).get("status", "Disabled") == "Enabled",
                     "time_in_minutes": properties.get("notificationSettings", {}).get("timeInMinutes", 30),
                 },
             })
