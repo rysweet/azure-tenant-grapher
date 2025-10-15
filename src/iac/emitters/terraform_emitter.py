@@ -1642,7 +1642,7 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update({
                 "public_key": properties.get("publicKey", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... placeholder"),
             })
-        elif azure_type == "Microsoft.Insights/dataCollectionRules":
+        elif azure_type in ["Microsoft.Insights/dataCollectionRules", "microsoft.insights/dataCollectionRules"]:
             # Data Collection Rule - requires complex nested blocks
             properties = self._parse_properties(resource)
             
