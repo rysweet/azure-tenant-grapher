@@ -186,7 +186,18 @@ class TerraformEmitter(IaCEmitter):
                 }
             },
             "provider": {
-                "azurerm": {"features": {}, "resource_provider_registrations": "none"}
+                "azurerm": {
+                    "features": {},
+                    "resource_provider_registrations": "none",
+                    "subscription_id": "${var.subscription_id}",
+                }
+            },
+            "variable": {
+                "subscription_id": {
+                    "description": "Azure subscription ID for deployment",
+                    "type": "string",
+                    "default": "",
+                }
             },
             "resource": {},
         }
@@ -200,7 +211,12 @@ class TerraformEmitter(IaCEmitter):
             }
             # Convert provider to list format for multiple providers
             terraform_config["provider"] = [
-                {"azurerm": {"features": {}}},
+                {
+                    "azurerm": {
+                        "features": {},
+                        "subscription_id": "${var.subscription_id}",
+                    }
+                },
                 {"azuread": {}},
             ]
 
