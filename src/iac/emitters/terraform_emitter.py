@@ -1334,6 +1334,31 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update({
                 "sku_name": sku.get("name", "Basic"),
             })
+        elif azure_type == "Microsoft.Search/searchServices":
+            # Search Service specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            resource_config.update({
+                "sku": sku.get("name", "standard"),
+            })
+        elif azure_type == "Microsoft.Insights/dataCollectionRules":
+            # Data Collection Rule - requires complex nested blocks
+            properties = self._parse_properties(resource)
+            
+            # Minimum viable configuration
+            resource_config.update({
+                "destinations": {
+                    "log_analytics": [{
+                        "workspace_resource_id": "/subscriptions/placeholder/resourceGroups/placeholder/providers/Microsoft.OperationalInsights/workspaces/placeholder",
+                        "name": "default"
+                    }]
+                },
+                "data_flow": [{
+                    "streams": ["Microsoft-Perf"],
+                    "destinations": ["default"]
+                }]
+            })
         elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
             # Entra ID User
             # Users from Neo4j may have different property names than ARM resources
