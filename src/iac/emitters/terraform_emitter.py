@@ -88,6 +88,10 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
         "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
         "Microsoft.SecurityCopilot/capacities": "azurerm_security_center_workspace",  # Placeholder - may need custom handling
+        "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
+        "Microsoft.Resources/templateSpecs": "azurerm_resource_group_template_deployment",  # Best available mapping
+        "Microsoft.Resources/templateSpecs/versions": "azurerm_resource_group_template_deployment",  # Child resources - skip or handle specially
+        "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": "azurerm_machine_learning_compute_instance",  # Closest available
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
