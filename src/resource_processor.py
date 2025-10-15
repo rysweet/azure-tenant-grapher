@@ -50,7 +50,18 @@ def serialize_value(value: Any, max_json_length: int = 5000) -> Any:
         try:
             s = json.dumps(value, default=str, ensure_ascii=False)
             if len(s) > max_json_length:
+                # Log warning when truncating to help identify large properties
+                logger.warning(
+                    f"Property value truncated: size={len(s)} chars (max={max_json_length}). "
+                    f"Preview: {s[:200]}..."
+                )
                 s = s[:max_json_length] + "...(truncated)"
+            # Warn if approaching truncation limit (>80% of max)
+            elif len(s) > max_json_length * 0.8:
+                logger.info(
+                    f"Large property detected: size={len(s)} chars "
+                    f"({int((len(s)/max_json_length)*100)}% of max {max_json_length})"
+                )
             return s
         except Exception:
             return str(value)  # type: ignore[misc]
