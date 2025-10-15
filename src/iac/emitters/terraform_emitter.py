@@ -69,10 +69,17 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
         "Microsoft.AAD/ServicePrincipal": "azuread_service_principal",
+        "Microsoft.AAD/Application": "azuread_application",
         "Microsoft.Graph/users": "azuread_user",
         "Microsoft.Graph/groups": "azuread_group",
         "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
+        "Microsoft.Graph/applications": "azuread_application",
         "Microsoft.ManagedIdentity/managedIdentities": "azurerm_user_assigned_identity",
+        # Neo4j label-based mappings for Entra ID
+        "User": "azuread_user",
+        "Group": "azuread_group",
+        "ServicePrincipal": "azuread_service_principal",
+        "Application": "azuread_application",
     }
 
     def _extract_resource_groups(self, resources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -1266,6 +1273,68 @@ class TerraformEmitter(IaCEmitter):
                     resource_config["action_group"] = {
                         "ids": formatted_ids
                     }
+        elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
+            # Entra ID User
+            # Users from Neo4j may have different property names than ARM resources
+            user_principal_name = resource.get("userPrincipalName") or resource.get("name", "unknown")
+            display_name = resource.get("displayName") or resource.get("display_name") or user_principal_name
+            mail_nickname = resource.get("mailNickname") or resource.get("mail_nickname") or user_principal_name.split("@")[0]
+            
+            resource_config = {
+                "user_principal_name": user_principal_name,
+                "display_name": display_name,
+                "mail_nickname": mail_nickname,
+                # Password must be set via variable - never hardcode
+                "password": f"var.azuread_user_password_{self._sanitize_terraform_name(user_principal_name)}",
+                "force_password_change": True,
+            }
+            
+            # Optionally add other properties if present
+            if resource.get("accountEnabled") is not None:
+                resource_config["account_enabled"] = resource.get("accountEnabled")
+                
+        elif azure_type in ["Group", "Microsoft.AAD/Group", "Microsoft.Graph/groups"]:
+            # Entra ID Group
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            mail_enabled = resource.get("mailEnabled", False)
+            security_enabled = resource.get("securityEnabled", True)
+            
+            resource_config = {
+                "display_name": display_name,
+                "mail_enabled": mail_enabled,
+                "security_enabled": security_enabled,
+            }
+            
+            # Add description if present
+            if resource.get("description"):
+                resource_config["description"] = resource.get("description")
+                
+        elif azure_type in ["ServicePrincipal", "Microsoft.AAD/ServicePrincipal", "Microsoft.Graph/servicePrincipals"]:
+            # Entra ID Service Principal
+            app_id = resource.get("appId") or resource.get("application_id") or "00000000-0000-0000-0000-000000000000"
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            
+            resource_config = {
+                "application_id": app_id,
+                # Note: In real scenario, this would reference an azuread_application resource
+                # For now, use the app_id directly
+            }
+            
+            # Add optional properties
+            if resource.get("accountEnabled") is not None:
+                resource_config["account_enabled"] = resource.get("accountEnabled")
+                
+        elif azure_type in ["Application", "Microsoft.AAD/Application", "Microsoft.Graph/applications"]:
+            # Entra ID Application
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            
+            resource_config = {
+                "display_name": display_name,
+            }
+            
+            # Add sign_in_audience if present
+            sign_in_audience = resource.get("signInAudience", "AzureADMyOrg")
+            resource_config["sign_in_audience"] = sign_in_audience
 
         return terraform_type, safe_name, resource_config
 
