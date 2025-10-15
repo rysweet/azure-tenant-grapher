@@ -388,6 +388,25 @@ Do not stop until the gap is fixed.
         # Send notification
         self.send_imessage(f"🚀 Starting deployment of iteration {iteration_num}")
         
+        # Get subscription ID from Azure CLI
+        try:
+            sub_result = subprocess.run(
+                ["az", "account", "show", "--query", "id", "-o", "tsv"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            subscription_id = sub_result.stdout.strip()
+        except Exception as e:
+            print(f"Failed to get subscription ID: {e}")
+            subscription_id = ""
+        
+        # Set up environment variables for Terraform
+        env = os.environ.copy()
+        if subscription_id:
+            env["TF_VAR_subscription_id"] = subscription_id
+            print(f"Using subscription: {subscription_id}")
+        
         try:
             # Terraform plan
             print("Running terraform plan...")
@@ -396,7 +415,8 @@ Do not stop until the gap is fixed.
                 cwd=iter_dir,
                 capture_output=True,
                 text=True,
-                timeout=600
+                timeout=600,
+                env=env
             )
             
             if plan_result.returncode != 0:
@@ -412,7 +432,8 @@ Do not stop until the gap is fixed.
                 cwd=iter_dir,
                 capture_output=True,
                 text=True,
-                timeout=3600  # 1 hour
+                timeout=3600,  # 1 hour
+                env=env
             )
             
             success = apply_result.returncode == 0
