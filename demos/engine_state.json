@@ -1,6 +1,6 @@
 {
   "started_at": "2025-10-15T07:00:41.887781",
-  "last_updated": "2025-10-15T07:11:02.112245",
+  "last_updated": "2025-10-15T07:17:33.176344",
   "phases": {
     "source_scanned": true,
     "target_scanned": false,
@@ -12,10 +12,10 @@
   "metrics": {
     "source_resources": 410,
     "target_resources": 0,
-    "iterations_generated": 112,
+    "iterations_generated": 124,
     "iterations_validated": 0,
     "iterations_deployed": 0
   },
-  "current_iteration": 112,
+  "current_iteration": 124,
   "errors": []
 }
