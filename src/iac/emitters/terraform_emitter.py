@@ -1342,6 +1342,22 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update({
                 "sku": sku.get("name", "standard"),
             })
+        elif azure_type == "Microsoft.Automation/automationAccounts/runbooks":
+            # Automation Runbook specific properties
+            properties = self._parse_properties(resource)
+            
+            resource_config.update({
+                "runbook_type": properties.get("runbookType", "PowerShell"),
+                "log_progress": properties.get("logProgress", True),
+                "log_verbose": properties.get("logVerbose", False),
+            })
+        elif azure_type == "Microsoft.Compute/sshPublicKeys":
+            # SSH Public Key specific properties
+            properties = self._parse_properties(resource)
+            
+            resource_config.update({
+                "public_key": properties.get("publicKey", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... placeholder"),
+            })
         elif azure_type == "Microsoft.Insights/dataCollectionRules":
             # Data Collection Rule - requires complex nested blocks
             properties = self._parse_properties(resource)
