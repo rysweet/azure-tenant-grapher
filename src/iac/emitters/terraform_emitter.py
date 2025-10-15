@@ -1243,23 +1243,24 @@ class TerraformEmitter(IaCEmitter):
             # Add action group block if action groups exist
             # Note: Action group IDs need to be formatted correctly for Terraform
             if action_group_ids:
-                # Extract just the action group names from the full resource IDs
+                # Extract and format action group IDs
                 formatted_ids = []
                 for ag_id in action_group_ids:
-                    # Action group IDs come in format: /subscriptions/.../resourcegroups/.../providers/microsoft.insights/actiongroups/NAME
-                    # Terraform expects them in proper case format
+                    # Action group IDs come in various casings from Azure
+                    # Terraform requires: /subscriptions/{sid}/resourceGroups/{rg}/providers/microsoft.insights/actionGroups/{name}
+                    # Note the capital 'G' in actionGroups
                     parts = ag_id.split('/')
-                    if len(parts) >= 9 and parts[-2].lower() == 'actiongroups':
+                    if len(parts) >= 9:
                         # Reconstruct with proper casing
                         subscription_id = parts[2]
                         rg_name = parts[4]
-                        ag_name = parts[8]
-                        formatted_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/actiongroups/{ag_name}"
+                        ag_name = parts[8] if len(parts) > 8 else ""
+                        formatted_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/actionGroups/{ag_name}"
                         formatted_ids.append(formatted_id)
+                        logger.debug(f"Formatted action group ID: {formatted_id}")
                     else:
                         # Use original if can't parse
-                        formatted_ids.append(ag_id)
-                        logger.warning(f"Could not parse action group ID: {ag_id}")
+                        logger.warning(f"Could not parse action group ID (unexpected format): {ag_id}")
                 
                 if formatted_ids:
                     resource_config["action_group"] = {
