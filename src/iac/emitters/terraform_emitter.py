@@ -1437,6 +1437,46 @@ class TerraformEmitter(IaCEmitter):
             
             # Override name to just be the runbook name (not accountname/runbookname)
             resource_config["name"] = runbook_name
+        elif azure_type == "Microsoft.DevTestLab/schedules":
+            # DevTest Lab Schedule specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract lab name from resource name if format is "labname/schedules/schedulename"
+            full_name = resource.get("name", "")
+            parts = full_name.split("/")
+            if len(parts) >= 3:
+                lab_name = parts[0]
+                schedule_name = parts[2]
+            else:
+                lab_name = "unknown-lab"
+                schedule_name = full_name
+            
+            # Get task type (shutdown, startup, etc.)
+            task_type = properties.get("taskType", "LabVmsShutdownTask")
+            
+            # Get time zone ID
+            time_zone_id = properties.get("timeZoneId", "UTC")
+            
+            # Get daily recurrence time
+            daily_recurrence_time = properties.get("dailyRecurrence", {}).get("time", "1900")
+            
+            resource_config.update({
+                "lab_name": lab_name,
+                "task_type": task_type,
+                "time_zone_id": time_zone_id,
+                "daily_recurrence": {
+                    "time": daily_recurrence_time
+                },
+                # notification_settings block is required
+                "notification_settings": {
+                    "enabled": properties.get("notificationSettings", {}).get("status", "Disabled") == "Enabled",
+                    "time_in_minutes": properties.get("notificationSettings", {}).get("timeInMinutes", 30),
+                },
+            })
+            
+            # Override name to just be the schedule name
+            resource_config["name"] = schedule_name
+            
         elif azure_type == "Microsoft.Compute/sshPublicKeys":
             # SSH Public Key specific properties
             properties = self._parse_properties(resource)
