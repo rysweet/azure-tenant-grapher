@@ -1688,19 +1688,21 @@ class TerraformEmitter(IaCEmitter):
                     flow_config["transform_kql"] = flow["transformKql"]
                 data_flows_config.append(flow_config)
             
-            # If no destinations or data_flows found, use minimal viable config
+            # If no destinations or data_flows found, skip this DCR
+            # DCRs without destinations are incomplete and can't be deployed
             if not destinations_config:
-                destinations_config = {
-                    "log_analytics": [{
-                        "workspace_resource_id": "/subscriptions/placeholder/resourceGroups/placeholder/providers/Microsoft.OperationalInsights/workspaces/placeholder",
-                        "name": "default"
-                    }]
-                }
+                logger.warning(
+                    f"Data Collection Rule '{resource_name}' has no destinations in properties. "
+                    f"Skipping this DCR as it cannot be deployed without a valid Log Analytics workspace. "
+                    f"This may indicate incomplete data in the graph or a DCR that was being configured."
+                )
+                return None
             if not data_flows_config:
-                data_flows_config = [{
-                    "streams": ["Microsoft-Perf"],
-                    "destinations": ["default"]
-                }]
+                logger.warning(
+                    f"Data Collection Rule '{resource_name}' has no dataFlows in properties. "
+                    f"Skipping this DCR as it cannot be deployed without data flow configuration."
+                )
+                return None
             
             resource_config.update({
                 "destinations": destinations_config,
