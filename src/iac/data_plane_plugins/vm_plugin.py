@@ -127,7 +127,8 @@ class VirtualMachinePlugin(DataPlanePlugin):
                             properties={
                                 "publisher": ext.publisher or "unknown",
                                 "type": ext.type_handler_version or "unknown",
-                                "type_handler_version": ext.type_handler_version or "unknown",
+                                "type_handler_version": ext.type_handler_version
+                                or "unknown",
                                 "auto_upgrade_minor_version": ext.auto_upgrade_minor_version,
                                 "settings": ext_dict.get("settings", {}),
                                 "provisioning_state": ext.provisioning_state,
@@ -177,7 +178,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
                                     "caching": disk.caching or "None",
                                     "create_option": disk.create_option or "Attach",
                                     "managed_disk_id": (
-                                        disk.managed_disk.id if disk.managed_disk else None
+                                        disk.managed_disk.id
+                                        if disk.managed_disk
+                                        else None
                                     ),
                                 },
                                 source_resource_id=resource["id"],
@@ -208,7 +211,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
                 f"pip install azure-mgmt-compute. Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering VM items: {e}", exc_info=True)
+            self.logger.error(
+                f"Unexpected error discovering VM items: {e}", exc_info=True
+            )
 
         self.logger.info(f"Discovered {len(items)} data plane items for VM '{vm_name}'")
         return items
@@ -345,15 +350,15 @@ class VirtualMachinePlugin(DataPlanePlugin):
                         f'resource "azurerm_managed_disk" "{resource_name}" {{',
                         f'  name                 = "{item.name}"',
                         "  # TODO: Set location and resource group",
-                        '  location             = azurerm_resource_group.REPLACE_ME.location',
+                        "  location             = azurerm_resource_group.REPLACE_ME.location",
                         "  resource_group_name  = azurerm_resource_group.REPLACE_ME.name",
                         "",
                         '  storage_account_type = "Premium_LRS"  # TODO: Match source disk SKU',
                         '  create_option        = "Empty"',
-                        f'  disk_size_gb         = {item.properties.get("disk_size_gb", 128)}',
+                        f"  disk_size_gb         = {item.properties.get('disk_size_gb', 128)}",
                         "",
                         "  # Caching configuration",
-                        f'  # Original caching: {item.properties.get("caching", "None")}',
+                        f"  # Original caching: {item.properties.get('caching', 'None')}",
                         "  # Set in VM data disk attachment",
                         "",
                         "}",
@@ -361,7 +366,7 @@ class VirtualMachinePlugin(DataPlanePlugin):
                         f'resource "azurerm_virtual_machine_data_disk_attachment" "{resource_name}_attach" {{',
                         f"  managed_disk_id    = azurerm_managed_disk.{resource_name}.id",
                         "  virtual_machine_id = azurerm_virtual_machine.REPLACE_ME.id",
-                        f'  lun                = {item.properties.get("lun", 0)}',
+                        f"  lun                = {item.properties.get('lun', 0)}",
                         f'  caching            = "{item.properties.get("caching", "None")}"',
                         "}",
                         "",
@@ -460,7 +465,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
                 target_resource.get("id", "")
             )
 
-            if not all([source_subscription_id, source_rg, target_subscription_id, target_rg]):
+            if not all(
+                [source_subscription_id, source_rg, target_subscription_id, target_rg]
+            ):
                 errors.append("Could not parse resource IDs")
                 return ReplicationResult(
                     success=False,
@@ -495,7 +502,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
             )
 
             # Replicate VM extensions
-            extensions = [item for item in source_items if item.item_type == "vm_extension"]
+            extensions = [
+                item for item in source_items if item.item_type == "vm_extension"
+            ]
 
             for ext_item in extensions:
                 try:
@@ -567,7 +576,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
                     errors.append(error_msg)
 
             # Handle data disks
-            data_disks = [item for item in source_items if item.item_type == "data_disk"]
+            data_disks = [
+                item for item in source_items if item.item_type == "data_disk"
+            ]
 
             if data_disks:
                 if mode == ReplicationMode.TEMPLATE:
@@ -585,8 +596,10 @@ class VirtualMachinePlugin(DataPlanePlugin):
         except ImportError as e:
             errors.append(f"Azure SDK not available: {e}")
         except Exception as e:
-            self.logger.error(f"Unexpected error during replication: {e}", exc_info=True)
-            errors.append(f"Unexpected error: {str(e)}")
+            self.logger.error(
+                f"Unexpected error during replication: {e}", exc_info=True
+            )
+            errors.append(f"Unexpected error: {e!s}")
 
         # Build result
         success = len(errors) == 0
@@ -685,7 +698,9 @@ class VirtualMachinePlugin(DataPlanePlugin):
 
         return extension_time + disk_time
 
-    def _parse_resource_id(self, resource_id: str) -> tuple[Optional[str], Optional[str]]:
+    def _parse_resource_id(
+        self, resource_id: str
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Parse Azure resource ID to extract subscription and resource group.
 

@@ -210,7 +210,7 @@ async def generate_iac_command_handler(
         import os
 
         subscription_id = target_subscription or os.environ.get("AZURE_SUBSCRIPTION_ID")
-        
+
         if not subscription_id and graph.resources:
             # Fallback: extract from first resource with subscription in ID (SOURCE subscription)
             for resource in graph.resources:

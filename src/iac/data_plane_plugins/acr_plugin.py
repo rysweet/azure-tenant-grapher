@@ -23,11 +23,11 @@ size warnings and progress tracking for replication operations.
 
 import json
 import logging
-import time
-from typing import Any, Dict, List, Optional
-
 import sys
-sys.path.insert(0, '/home/azureuser/src/azure-tenant-grapher/src/iac/plugins')
+import time
+from typing import Any, Dict, List
+
+sys.path.insert(0, "/home/azureuser/src/azure-tenant-grapher/src/iac/plugins")
 from base_plugin import (
     DataPlaneItem,
     DataPlanePlugin,
@@ -133,19 +133,23 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             >>> len(items)  # Returns count of repositories
         """
         if not self.validate_resource(resource):
-            raise ValueError(f"Invalid resource for ContainerRegistryPlugin: {resource}")
+            raise ValueError(
+                f"Invalid resource for ContainerRegistryPlugin: {resource}"
+            )
 
         registry_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for Container Registry: {registry_name}")
+        self.logger.info(
+            f"Discovering data plane items for Container Registry: {registry_name}"
+        )
 
         items: List[DataPlaneItem] = []
         total_size_bytes = 0
 
         try:
             # Import Azure SDK components
-            from azure.identity import DefaultAzureCredential
             from azure.containerregistry import ContainerRegistryClient
             from azure.core.exceptions import AzureError, HttpResponseError
+            from azure.identity import DefaultAzureCredential
 
             # Parse registry properties
             properties = resource.get("properties", {})
@@ -170,7 +174,9 @@ class ContainerRegistryPlugin(DataPlanePlugin):
 
             # Create Container Registry client
             try:
-                client = ContainerRegistryClient(endpoint=endpoint, credential=credential)
+                client = ContainerRegistryClient(
+                    endpoint=endpoint, credential=credential
+                )
 
                 # List repositories
                 repositories = client.list_repository_names()
@@ -204,7 +210,7 @@ class ContainerRegistryPlugin(DataPlanePlugin):
 
                                 # Try to get architecture info from manifest
                                 # Note: This requires additional API call which may not always work
-                                if hasattr(manifest, 'architecture'):
+                                if hasattr(manifest, "architecture"):
                                     architectures.append(manifest.architecture)
                                 else:
                                     architectures.append("unknown")
@@ -214,14 +220,20 @@ class ContainerRegistryPlugin(DataPlanePlugin):
                                     f"Could not get manifest details for {repo_name}:{tag.name}: {e}"
                                 )
 
-                            tag_details.append({
-                                "tag": tag.name,
-                                "size_bytes": manifest_size,
-                                "digest": digest,
-                                "architectures": architectures,
-                                "created_on": tag.created_on.isoformat() if tag.created_on else None,
-                                "last_updated": tag.last_updated_on.isoformat() if tag.last_updated_on else None,
-                            })
+                            tag_details.append(
+                                {
+                                    "tag": tag.name,
+                                    "size_bytes": manifest_size,
+                                    "digest": digest,
+                                    "architectures": architectures,
+                                    "created_on": tag.created_on.isoformat()
+                                    if tag.created_on
+                                    else None,
+                                    "last_updated": tag.last_updated_on.isoformat()
+                                    if tag.last_updated_on
+                                    else None,
+                                }
+                            )
 
                             total_size_bytes += manifest_size
 
@@ -231,36 +243,48 @@ class ContainerRegistryPlugin(DataPlanePlugin):
                                 name=repo_name,
                                 item_type="repository",
                                 properties={
-                                    "tag_count": repo_props.tag_count if hasattr(repo_props, 'tag_count') else len(tags),
-                                    "manifest_count": repo_props.manifest_count if hasattr(repo_props, 'manifest_count') else len(tags),
+                                    "tag_count": repo_props.tag_count
+                                    if hasattr(repo_props, "tag_count")
+                                    else len(tags),
+                                    "manifest_count": repo_props.manifest_count
+                                    if hasattr(repo_props, "manifest_count")
+                                    else len(tags),
                                     "tags": tags,
                                 },
                                 source_resource_id=resource["id"],
                                 metadata={
                                     "created_on": (
                                         repo_props.created_on.isoformat()
-                                        if hasattr(repo_props, 'created_on') and repo_props.created_on
+                                        if hasattr(repo_props, "created_on")
+                                        and repo_props.created_on
                                         else None
                                     ),
                                     "last_updated": (
                                         repo_props.last_updated_on.isoformat()
-                                        if hasattr(repo_props, 'last_updated_on') and repo_props.last_updated_on
+                                        if hasattr(repo_props, "last_updated_on")
+                                        and repo_props.last_updated_on
                                         else None
                                     ),
                                     "tag_details": tag_details,
                                     "registry_name": registry_name,
                                     "login_server": login_server,
                                 },
-                                size_bytes=sum(td.get("size_bytes", 0) for td in tag_details),
+                                size_bytes=sum(
+                                    td.get("size_bytes", 0) for td in tag_details
+                                ),
                             )
                         )
 
                     except (AzureError, HttpResponseError) as e:
-                        self.logger.warning(f"Failed to discover tags for repository {repo_name}: {e}")
+                        self.logger.warning(
+                            f"Failed to discover tags for repository {repo_name}: {e}"
+                        )
                         continue
 
             except (AzureError, HttpResponseError) as e:
-                self.logger.error(f"Failed to connect to Container Registry {registry_name}: {e}")
+                self.logger.error(
+                    f"Failed to connect to Container Registry {registry_name}: {e}"
+                )
                 # Return empty list but log the error
                 return []
 
@@ -272,7 +296,9 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             )
             return []
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering Container Registry items: {e}")
+            self.logger.error(
+                f"Unexpected error discovering Container Registry items: {e}"
+            )
             return []
 
         # Log size warnings
@@ -359,34 +385,42 @@ class ContainerRegistryPlugin(DataPlanePlugin):
         total_size = sum(item.size_bytes or 0 for item in items)
         total_images = sum(len(item.properties.get("tags", [])) for item in items)
 
-        code_lines.extend([
-            f"# Total Repositories: {len(items)}",
-            f"# Total Images/Tags: {total_images}",
-            f"# Estimated Total Size: {self._format_size(total_size)}",
-            "",
-        ])
+        code_lines.extend(
+            [
+                f"# Total Repositories: {len(items)}",
+                f"# Total Images/Tags: {total_images}",
+                f"# Estimated Total Size: {self._format_size(total_size)}",
+                "",
+            ]
+        )
 
         # Add size warnings
         if total_size >= self.SIZE_WARNING_100GB:
-            code_lines.extend([
-                "# ⚠️  EXTREMELY LARGE REGISTRY (100GB+)",
-                "# Manual or selective replication is strongly recommended.",
-                "# Consider using ACR geo-replication instead of full copy.",
-                "",
-            ])
+            code_lines.extend(
+                [
+                    "# ⚠️  EXTREMELY LARGE REGISTRY (100GB+)",
+                    "# Manual or selective replication is strongly recommended.",
+                    "# Consider using ACR geo-replication instead of full copy.",
+                    "",
+                ]
+            )
         elif total_size >= self.SIZE_WARNING_50GB:
-            code_lines.extend([
-                "# ⚠️  VERY LARGE REGISTRY (50GB+)",
-                "# Full replication will take significant time and bandwidth.",
-                "# Consider selective replication or ACR Tasks.",
-                "",
-            ])
+            code_lines.extend(
+                [
+                    "# ⚠️  VERY LARGE REGISTRY (50GB+)",
+                    "# Full replication will take significant time and bandwidth.",
+                    "# Consider selective replication or ACR Tasks.",
+                    "",
+                ]
+            )
         elif total_size >= self.SIZE_WARNING_10GB:
-            code_lines.extend([
-                "# ⚠️  LARGE REGISTRY (10GB+)",
-                "# Replication may take considerable time.",
-                "",
-            ])
+            code_lines.extend(
+                [
+                    "# ⚠️  LARGE REGISTRY (10GB+)",
+                    "# Replication may take considerable time.",
+                    "",
+                ]
+            )
 
         # Document each repository
         code_lines.append("# Repository Inventory")
@@ -398,11 +432,13 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             repo_size = item.size_bytes or 0
             tag_details = item.metadata.get("tag_details", []) if item.metadata else []
 
-            code_lines.extend([
-                f"# Repository: {repo_name}",
-                f"#   Tags: {len(tags)}",
-                f"#   Size: {self._format_size(repo_size)}",
-            ])
+            code_lines.extend(
+                [
+                    f"# Repository: {repo_name}",
+                    f"#   Tags: {len(tags)}",
+                    f"#   Size: {self._format_size(repo_size)}",
+                ]
+            )
 
             # List first 10 tags
             for tag in tags[:10]:
@@ -422,56 +458,60 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             code_lines.append("")
 
         # Generate replication script template
-        code_lines.extend([
-            "# Example Replication Script",
-            "# Uncomment and customize for your target registry",
-            "",
-            "# locals {",
-            "#   source_registry = \"SOURCE_REGISTRY.azurecr.io\"",
-            "#   target_registry = \"TARGET_REGISTRY.azurecr.io\"",
-            "#   repositories = [",
-        ])
+        code_lines.extend(
+            [
+                "# Example Replication Script",
+                "# Uncomment and customize for your target registry",
+                "",
+                "# locals {",
+                '#   source_registry = "SOURCE_REGISTRY.azurecr.io"',
+                '#   target_registry = "TARGET_REGISTRY.azurecr.io"',
+                "#   repositories = [",
+            ]
+        )
 
         for item in items:
             code_lines.append(f'#     "{item.name}",')
 
-        code_lines.extend([
-            "#   ]",
-            "# }",
-            "",
-            "# # Option 1: Using ACR Import (recommended)",
-            "# resource \"null_resource\" \"acr_image_import\" {",
-            "#   for_each = toset(local.repositories)",
-            "#",
-            "#   provisioner \"local-exec\" {",
-            "#     command = <<-EOT",
-            "#       az acr import \\",
-            "#         --name ${local.target_registry} \\",
-            "#         --source ${local.source_registry}/${each.value}:latest \\",
-            "#         --image ${each.value}:latest",
-            "#     EOT",
-            "#   }",
-            "#",
-            "#   depends_on = [azurerm_container_registry.target]",
-            "# }",
-            "",
-            "# # Option 2: Using Docker CLI",
-            "# resource \"null_resource\" \"acr_docker_copy\" {",
-            "#   for_each = toset(local.repositories)",
-            "#",
-            "#   provisioner \"local-exec\" {",
-            "#     command = <<-EOT",
-            "#       docker pull ${local.source_registry}/${each.value}:latest",
-            "#       docker tag ${local.source_registry}/${each.value}:latest \\",
-            "#         ${local.target_registry}/${each.value}:latest",
-            "#       docker push ${local.target_registry}/${each.value}:latest",
-            "#     EOT",
-            "#   }",
-            "#",
-            "#   depends_on = [azurerm_container_registry.target]",
-            "# }",
-            "",
-        ])
+        code_lines.extend(
+            [
+                "#   ]",
+                "# }",
+                "",
+                "# # Option 1: Using ACR Import (recommended)",
+                '# resource "null_resource" "acr_image_import" {',
+                "#   for_each = toset(local.repositories)",
+                "#",
+                '#   provisioner "local-exec" {',
+                "#     command = <<-EOT",
+                "#       az acr import \\",
+                "#         --name ${local.target_registry} \\",
+                "#         --source ${local.source_registry}/${each.value}:latest \\",
+                "#         --image ${each.value}:latest",
+                "#     EOT",
+                "#   }",
+                "#",
+                "#   depends_on = [azurerm_container_registry.target]",
+                "# }",
+                "",
+                "# # Option 2: Using Docker CLI",
+                '# resource "null_resource" "acr_docker_copy" {',
+                "#   for_each = toset(local.repositories)",
+                "#",
+                '#   provisioner "local-exec" {',
+                "#     command = <<-EOT",
+                "#       docker pull ${local.source_registry}/${each.value}:latest",
+                "#       docker tag ${local.source_registry}/${each.value}:latest \\",
+                "#         ${local.target_registry}/${each.value}:latest",
+                "#       docker push ${local.target_registry}/${each.value}:latest",
+                "#     EOT",
+                "#   }",
+                "#",
+                "#   depends_on = [azurerm_container_registry.target]",
+                "# }",
+                "",
+            ]
+        )
 
         return "\n".join(code_lines)
 
@@ -640,12 +680,14 @@ class ContainerRegistryPlugin(DataPlanePlugin):
                 target_login_server,
             )
 
-            warnings.extend([
-                f"Replication mode: Generated commands for {len(replication_commands)} images.",
-                "Actual image replication requires running the generated script.",
-                "See replication script for detailed instructions.",
-                f"Estimated data transfer: {self._format_size(total_size)}",
-            ])
+            warnings.extend(
+                [
+                    f"Replication mode: Generated commands for {len(replication_commands)} images.",
+                    "Actual image replication requires running the generated script.",
+                    "See replication script for detailed instructions.",
+                    f"Estimated data transfer: {self._format_size(total_size)}",
+                ]
+            )
 
             # Add size-specific warnings
             if total_size >= self.SIZE_WARNING_100GB:
@@ -657,7 +699,9 @@ class ContainerRegistryPlugin(DataPlanePlugin):
                     "VERY LARGE REGISTRY: Full replication will take significant time."
                 )
 
-            self.logger.info(f"Generated replication script with {len(replication_commands)} commands")
+            self.logger.info(
+                f"Generated replication script with {len(replication_commands)} commands"
+            )
 
             if self.progress_reporter:
                 result = ReplicationResult(
@@ -681,9 +725,7 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             )
 
     def estimate_operation_time(
-        self,
-        items: List[DataPlaneItem],
-        mode: ReplicationMode
+        self, items: List[DataPlaneItem], mode: ReplicationMode
     ) -> float:
         """
         Estimate time required for Container Registry replication.
@@ -804,28 +846,34 @@ class ContainerRegistryPlugin(DataPlanePlugin):
             tags = item.properties.get("tags", [])
             repo_size = item.size_bytes or 0
 
-            lines.extend([
-                f"# Repository: {repo_name} ({self._format_size(repo_size)})",
-                f"echo 'Replicating repository: {repo_name}'",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"# Repository: {repo_name} ({self._format_size(repo_size)})",
+                    f"echo 'Replicating repository: {repo_name}'",
+                    "",
+                ]
+            )
 
             for tag in tags:
-                lines.extend([
-                    f"echo '  Importing {repo_name}:{tag}...'",
-                    f"az acr import \\",
-                    f"  --name $TARGET_REGISTRY \\",
-                    f"  --source $SOURCE_LOGIN_SERVER/{repo_name}:{tag} \\",
-                    f"  --image {repo_name}:{tag} \\",
-                    f"  --force",
-                    "",
-                ])
+                lines.extend(
+                    [
+                        f"echo '  Importing {repo_name}:{tag}...'",
+                        "az acr import \\",
+                        "  --name $TARGET_REGISTRY \\",
+                        f"  --source $SOURCE_LOGIN_SERVER/{repo_name}:{tag} \\",
+                        f"  --image {repo_name}:{tag} \\",
+                        "  --force",
+                        "",
+                    ]
+                )
 
-        lines.extend([
-            "echo",
-            "echo 'Container Registry replication completed!'",
-            f"echo 'Replicated {len(items)} repositories'",
-            "",
-        ])
+        lines.extend(
+            [
+                "echo",
+                "echo 'Container Registry replication completed!'",
+                f"echo 'Replicated {len(items)} repositories'",
+                "",
+            ]
+        )
 
         return "\n".join(lines)

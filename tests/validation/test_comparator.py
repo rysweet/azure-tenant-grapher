@@ -1,6 +1,5 @@
 """Tests for graph comparator module."""
 
-
 from src.validation.comparator import (
     ComparisonResult,
     compare_filtered_graphs,
@@ -15,7 +14,11 @@ class TestCompareGraphs:
         """Test comparison of identical graphs returns 100% similarity."""
         resources = [
             {"id": "res1", "type": "Microsoft.Compute/virtualMachines", "name": "vm1"},
-            {"id": "res2", "type": "Microsoft.Network/virtualNetworks", "name": "vnet1"},
+            {
+                "id": "res2",
+                "type": "Microsoft.Network/virtualNetworks",
+                "name": "vnet1",
+            },
         ]
 
         result = compare_graphs(resources, resources)
@@ -116,8 +119,14 @@ class TestCompareGraphs:
 
     def test_resources_without_type(self):
         """Test handling of resources without type attribute."""
-        source = [{"id": "res1"}, {"id": "res2", "type": "Microsoft.Compute/virtualMachines"}]
-        target = [{"id": "res1"}, {"id": "res2", "type": "Microsoft.Compute/virtualMachines"}]
+        source = [
+            {"id": "res1"},
+            {"id": "res2", "type": "Microsoft.Compute/virtualMachines"},
+        ]
+        target = [
+            {"id": "res1"},
+            {"id": "res2", "type": "Microsoft.Compute/virtualMachines"},
+        ]
 
         result = compare_graphs(source, target)
 
@@ -140,7 +149,9 @@ class TestCompareFilteredGraphs:
             {"id": "res4", "type": "VM", "resourceGroup": "RG3"},
         ]
 
-        result = compare_filtered_graphs(source, target, "resourceGroup=RG1", "resourceGroup=RG1")
+        result = compare_filtered_graphs(
+            source, target, "resourceGroup=RG1", "resourceGroup=RG1"
+        )
 
         assert result.source_resource_count == 1
         assert result.target_resource_count == 1
@@ -172,7 +183,9 @@ class TestCompareFilteredGraphs:
         source = [{"id": "res1", "type": "VM", "location": "eastus"}]
         target = [{"id": "res2", "type": "VM", "location": "westus"}]
 
-        result = compare_filtered_graphs(source, target, "location=westus", "location=eastus")
+        result = compare_filtered_graphs(
+            source, target, "location=westus", "location=eastus"
+        )
 
         assert result.source_resource_count == 0
         assert result.target_resource_count == 0

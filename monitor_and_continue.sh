@@ -12,7 +12,7 @@ echo "Start time: $(date)" | tee -a "$LOG_FILE"
 while true; do
     if [ -z "$SCAN_PID" ] || ! kill -0 "$SCAN_PID" 2>/dev/null; then
         echo "Scan process completed at $(date)" | tee -a "$LOG_FILE"
-        
+
         # Check if Neo4j has data
         RESOURCE_COUNT=$(uv run python -c "
 import sys
@@ -31,12 +31,12 @@ with driver.session() as session:
     result = session.run('MATCH (r:Resource) RETURN count(r) as count')
     count = result.single()['count']
     print(count)
-    
+
 driver.close()
 " 2>/dev/null)
-        
+
         echo "Resources discovered: $RESOURCE_COUNT" | tee -a "$LOG_FILE"
-        
+
         if [ "$RESOURCE_COUNT" -gt 0 ]; then
             echo "✅ Scan successful! Proceeding to next phase..." | tee -a "$LOG_FILE"
             ~/.local/bin/imessR "✅ Tenant scan COMPLETE! Discovered $RESOURCE_COUNT resources. Proceeding immediately to parallel agent execution."
@@ -47,7 +47,7 @@ driver.close()
             exit 1
         fi
     fi
-    
+
     # Check every 2 minutes
     sleep 120
     echo "Still scanning... $(date)" | tee -a "$LOG_FILE"

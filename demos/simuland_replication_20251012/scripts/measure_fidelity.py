@@ -20,9 +20,9 @@ Usage:
 import argparse
 import json
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 try:
     from neo4j import GraphDatabase
@@ -35,6 +35,7 @@ except ImportError:
 @dataclass
 class ResourceCountMetrics:
     """Metrics for resource count comparison."""
+
     source_count: int
     target_count: int
     matched: int
@@ -46,6 +47,7 @@ class ResourceCountMetrics:
 @dataclass
 class ConfigurationMetrics:
     """Metrics for configuration comparison."""
+
     total_properties: int
     matched_properties: int
     different_properties: int
@@ -56,6 +58,7 @@ class ConfigurationMetrics:
 @dataclass
 class RelationshipMetrics:
     """Metrics for relationship comparison."""
+
     source_count: int
     target_count: int
     matched: int
@@ -67,6 +70,7 @@ class RelationshipMetrics:
 @dataclass
 class FidelityReport:
     """Complete fidelity report."""
+
     timestamp: str
     source_tenant: str
     target_tenant: str
@@ -91,13 +95,13 @@ class ResourceCountFidelityCalculator:
             # Count source resources
             source_count = session.run(
                 "MATCH (r:Resource) WHERE r.tenant_id = $tenant_id RETURN count(r) AS count",
-                tenant_id=source_tenant
+                tenant_id=source_tenant,
             ).single()["count"]
 
             # Count target resources
             target_count = session.run(
                 "MATCH (r:Resource) WHERE r.tenant_id = $tenant_id RETURN count(r) AS count",
-                tenant_id=target_tenant
+                tenant_id=target_tenant,
             ).single()["count"]
 
             # Find matched resources (same name and type in both tenants)
@@ -110,7 +114,7 @@ class ResourceCountFidelityCalculator:
                 RETURN count(target) AS count
                 """,
                 source_tenant=source_tenant,
-                target_tenant=target_tenant
+                target_tenant=target_tenant,
             ).single()["count"]
 
             missing = source_count - matched
@@ -123,7 +127,7 @@ class ResourceCountFidelityCalculator:
                 matched=matched,
                 missing=missing,
                 extra=extra,
-                fidelity=fidelity
+                fidelity=fidelity,
             )
 
 
@@ -137,29 +141,41 @@ class ConfigurationFidelityCalculator:
         """Calculate configuration fidelity."""
         with self.driver.session() as session:
             # Compare VM configurations
-            vm_config_results = self._compare_vm_configs(session, source_tenant, target_tenant)
+            vm_config_results = self._compare_vm_configs(
+                session, source_tenant, target_tenant
+            )
 
             # Compare VNet configurations
-            vnet_config_results = self._compare_vnet_configs(session, source_tenant, target_tenant)
+            vnet_config_results = self._compare_vnet_configs(
+                session, source_tenant, target_tenant
+            )
 
             # Combine results
             total_properties = vm_config_results["total"] + vnet_config_results["total"]
-            matched_properties = vm_config_results["matched"] + vnet_config_results["matched"]
+            matched_properties = (
+                vm_config_results["matched"] + vnet_config_results["matched"]
+            )
             different_properties = total_properties - matched_properties
 
-            differences = vm_config_results["differences"] + vnet_config_results["differences"]
+            differences = (
+                vm_config_results["differences"] + vnet_config_results["differences"]
+            )
 
-            fidelity = matched_properties / total_properties if total_properties > 0 else 1.0
+            fidelity = (
+                matched_properties / total_properties if total_properties > 0 else 1.0
+            )
 
             return ConfigurationMetrics(
                 total_properties=total_properties,
                 matched_properties=matched_properties,
                 different_properties=different_properties,
                 fidelity=fidelity,
-                differences=differences
+                differences=differences,
             )
 
-    def _compare_vm_configs(self, session, source_tenant: str, target_tenant: str) -> Dict[str, Any]:
+    def _compare_vm_configs(
+        self, session, source_tenant: str, target_tenant: str
+    ) -> Dict[str, Any]:
         """Compare VM configurations."""
         results = session.run(
             """
@@ -177,7 +193,7 @@ class ConfigurationFidelityCalculator:
                 target_vm.properties.storageProfile.imageReference.publisher AS target_publisher
             """,
             source_tenant=source_tenant,
-            target_tenant=target_tenant
+            target_tenant=target_tenant,
         )
 
         total = 0
@@ -190,44 +206,48 @@ class ConfigurationFidelityCalculator:
             if record["source_vm_size"] == record["target_vm_size"]:
                 matched += 1
             else:
-                differences.append({
-                    "resource": record["vm_name"],
-                    "property": "vm_size",
-                    "source": record["source_vm_size"],
-                    "target": record["target_vm_size"]
-                })
+                differences.append(
+                    {
+                        "resource": record["vm_name"],
+                        "property": "vm_size",
+                        "source": record["source_vm_size"],
+                        "target": record["target_vm_size"],
+                    }
+                )
 
             # Check OS SKU
             total += 1
             if record["source_os_sku"] == record["target_os_sku"]:
                 matched += 1
             else:
-                differences.append({
-                    "resource": record["vm_name"],
-                    "property": "os_sku",
-                    "source": record["source_os_sku"],
-                    "target": record["target_os_sku"]
-                })
+                differences.append(
+                    {
+                        "resource": record["vm_name"],
+                        "property": "os_sku",
+                        "source": record["source_os_sku"],
+                        "target": record["target_os_sku"],
+                    }
+                )
 
             # Check publisher
             total += 1
             if record["source_publisher"] == record["target_publisher"]:
                 matched += 1
             else:
-                differences.append({
-                    "resource": record["vm_name"],
-                    "property": "os_publisher",
-                    "source": record["source_publisher"],
-                    "target": record["target_publisher"]
-                })
+                differences.append(
+                    {
+                        "resource": record["vm_name"],
+                        "property": "os_publisher",
+                        "source": record["source_publisher"],
+                        "target": record["target_publisher"],
+                    }
+                )
 
-        return {
-            "total": total,
-            "matched": matched,
-            "differences": differences
-        }
+        return {"total": total, "matched": matched, "differences": differences}
 
-    def _compare_vnet_configs(self, session, source_tenant: str, target_tenant: str) -> Dict[str, Any]:
+    def _compare_vnet_configs(
+        self, session, source_tenant: str, target_tenant: str
+    ) -> Dict[str, Any]:
         """Compare VNet configurations."""
         results = session.run(
             """
@@ -241,7 +261,7 @@ class ConfigurationFidelityCalculator:
                 target_vnet.properties.addressSpace.addressPrefixes[0] AS target_address_space
             """,
             source_tenant=source_tenant,
-            target_tenant=target_tenant
+            target_tenant=target_tenant,
         )
 
         total = 0
@@ -253,18 +273,16 @@ class ConfigurationFidelityCalculator:
             if record["source_address_space"] == record["target_address_space"]:
                 matched += 1
             else:
-                differences.append({
-                    "resource": record["vnet_name"],
-                    "property": "address_space",
-                    "source": record["source_address_space"],
-                    "target": record["target_address_space"]
-                })
+                differences.append(
+                    {
+                        "resource": record["vnet_name"],
+                        "property": "address_space",
+                        "source": record["source_address_space"],
+                        "target": record["target_address_space"],
+                    }
+                )
 
-        return {
-            "total": total,
-            "matched": matched,
-            "differences": differences
-        }
+        return {"total": total, "matched": matched, "differences": differences}
 
 
 class RelationshipFidelityCalculator:
@@ -283,7 +301,7 @@ class RelationshipFidelityCalculator:
                 WHERE source.tenant_id = $tenant_id
                 RETURN count(r) AS count
                 """,
-                tenant_id=source_tenant
+                tenant_id=source_tenant,
             ).single()["count"]
 
             # Count target relationships
@@ -293,7 +311,7 @@ class RelationshipFidelityCalculator:
                 WHERE target.tenant_id = $tenant_id
                 RETURN count(r) AS count
                 """,
-                tenant_id=target_tenant
+                tenant_id=target_tenant,
             ).single()["count"]
 
             # Estimate matched relationships
@@ -311,7 +329,7 @@ class RelationshipFidelityCalculator:
                 matched=matched,
                 missing=missing,
                 extra=extra,
-                fidelity=fidelity
+                fidelity=fidelity,
             )
 
 
@@ -337,9 +355,9 @@ class FidelityReportGenerator:
 
         # Calculate overall fidelity (weighted average)
         overall_fidelity = (
-            resource_metrics.fidelity * 0.4 +
-            config_metrics.fidelity * 0.4 +
-            relationship_metrics.fidelity * 0.2
+            resource_metrics.fidelity * 0.4
+            + config_metrics.fidelity * 0.4
+            + relationship_metrics.fidelity * 0.2
         )
 
         return FidelityReport(
@@ -352,16 +370,18 @@ class FidelityReportGenerator:
             overall_fidelity=overall_fidelity,
             resource_metrics=resource_metrics,
             configuration_metrics=config_metrics,
-            relationship_metrics=relationship_metrics
+            relationship_metrics=relationship_metrics,
         )
 
-    def export_json(self, report: FidelityReport, output_file: Optional[str] = None) -> str:
+    def export_json(
+        self, report: FidelityReport, output_file: Optional[str] = None
+    ) -> str:
         """Export report as JSON."""
         report_dict = asdict(report)
         json_str = json.dumps(report_dict, indent=2)
 
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 f.write(json_str)
             print(f"Report saved to: {output_file}")
 
@@ -404,8 +424,10 @@ class FidelityReportGenerator:
         if cm.differences:
             print(f"\nConfiguration Differences ({len(cm.differences)}):")
             for diff in cm.differences[:5]:  # Show first 5
-                print(f"  - {diff['resource']}.{diff['property']}: "
-                      f"{diff.get('source', 'N/A')} -> {diff.get('target', 'N/A')}")
+                print(
+                    f"  - {diff['resource']}.{diff['property']}: "
+                    f"{diff.get('source', 'N/A')} -> {diff.get('target', 'N/A')}"
+                )
             if len(cm.differences) > 5:
                 print(f"  ... and {len(cm.differences) - 5} more")
 
@@ -458,7 +480,7 @@ Examples:
       --source-tenant SOURCE_TENANT_ID \\
       --target-tenant TARGET_TENANT_ID \\
       --output fidelity_report.json
-        """
+        """,
     )
 
     parser.add_argument("--neo4j-uri", required=True, help="Neo4j connection URI")
@@ -473,9 +495,7 @@ Examples:
     # Generate report
     print("Connecting to Neo4j...")
     generator = FidelityReportGenerator(
-        args.neo4j_uri,
-        args.neo4j_user,
-        args.neo4j_password
+        args.neo4j_uri, args.neo4j_user, args.neo4j_password
     )
 
     try:

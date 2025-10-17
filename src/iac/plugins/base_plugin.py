@@ -23,15 +23,17 @@ logger = logging.getLogger(__name__)
 
 class ReplicationMode(Enum):
     """Data plane replication modes."""
-    TEMPLATE = "template"      # Structure only, no data
+
+    TEMPLATE = "template"  # Structure only, no data
     REPLICATION = "replication"  # Full data copy
 
 
 @dataclass
 class Permission:
     """Azure RBAC permission requirement."""
-    scope: str                # "resource" | "resource_group" | "subscription"
-    actions: List[str]        # E.g., ["Microsoft.KeyVault/vaults/secrets/getSecret"]
+
+    scope: str  # "resource" | "resource_group" | "subscription"
+    actions: List[str]  # E.g., ["Microsoft.KeyVault/vaults/secrets/getSecret"]
     not_actions: List[str] = field(default_factory=list)
     data_actions: List[str] = field(default_factory=list)
     description: str = ""
@@ -39,13 +41,17 @@ class Permission:
 
 class ProgressReporter(Protocol):
     """Protocol for progress reporting (duck typing)."""
+
     def report_discovery(self, resource_id: str, item_count: int) -> None: ...
-    def report_replication_progress(self, item_name: str, progress_pct: float) -> None: ...
+    def report_replication_progress(
+        self, item_name: str, progress_pct: float
+    ) -> None: ...
     def report_completion(self, result: "ReplicationResult") -> None: ...
 
 
 class CredentialProvider(Protocol):
     """Protocol for credential provision (duck typing)."""
+
     def get_credential(self) -> Any: ...
     def get_connection_string(self, resource_id: str) -> Optional[str]: ...
 
@@ -69,7 +75,7 @@ class ReplicationResult:
     success: bool
     items_discovered: int
     items_replicated: int
-    items_skipped: int = 0    # Track skipped items
+    items_skipped: int = 0  # Track skipped items
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     duration_seconds: float = 0.0  # Timing information
@@ -261,9 +267,7 @@ class DataPlanePlugin(ABC):
         return []
 
     def discover_with_mode(
-        self,
-        resource: Dict[str, Any],
-        mode: ReplicationMode
+        self, resource: Dict[str, Any], mode: ReplicationMode
     ) -> List[DataPlaneItem]:
         """
         Discover data plane items with mode awareness.
@@ -324,9 +328,7 @@ class DataPlanePlugin(ABC):
         return True
 
     def estimate_operation_time(
-        self,
-        items: List[DataPlaneItem],
-        mode: ReplicationMode
+        self, items: List[DataPlaneItem], mode: ReplicationMode
     ) -> float:
         """
         Estimate time required for replication operation.

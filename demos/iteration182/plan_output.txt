@@ -1,0 +1,1903 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform planned the following actions, but then encountered a problem:
+
+[1m  # random_password.jempurviewsynapse1_password[0m will be created
+[0m  [32m+[0m[0m resource "random_password" "jempurviewsynapse1_password" {
+      [32m+[0m[0m bcrypt_hash      = (sensitive value)
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m length           = 20
+      [32m+[0m[0m lower            = true
+      [32m+[0m[0m min_lower        = 1
+      [32m+[0m[0m min_numeric      = 1
+      [32m+[0m[0m min_special      = 1
+      [32m+[0m[0m min_upper        = 1
+      [32m+[0m[0m number           = true
+      [32m+[0m[0m numeric          = true
+      [32m+[0m[0m override_special = "!@#$%&*()-_=+[]{}<>:?"
+      [32m+[0m[0m result           = (sensitive value)
+      [32m+[0m[0m special          = true
+      [32m+[0m[0m upper            = true
+    }
+
+[1m  # random_password.purviewmetabasedemo2_password[0m will be created
+[0m  [32m+[0m[0m resource "random_password" "purviewmetabasedemo2_password" {
+      [32m+[0m[0m bcrypt_hash      = (sensitive value)
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m length           = 20
+      [32m+[0m[0m lower            = true
+      [32m+[0m[0m min_lower        = 1
+      [32m+[0m[0m min_numeric      = 1
+      [32m+[0m[0m min_special      = 1
+      [32m+[0m[0m min_upper        = 1
+      [32m+[0m[0m number           = true
+      [32m+[0m[0m numeric          = true
+      [32m+[0m[0m override_special = "!@#$%&*()-_=+[]{}<>:?"
+      [32m+[0m[0m result           = (sensitive value)
+      [32m+[0m[0m special          = true
+      [32m+[0m[0m upper            = true
+    }
+
+[1m  # random_password.purviewmetabasedemosqldb_password[0m will be created
+[0m  [32m+[0m[0m resource "random_password" "purviewmetabasedemosqldb_password" {
+      [32m+[0m[0m bcrypt_hash      = (sensitive value)
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m length           = 20
+      [32m+[0m[0m lower            = true
+      [32m+[0m[0m min_lower        = 1
+      [32m+[0m[0m min_numeric      = 1
+      [32m+[0m[0m min_special      = 1
+      [32m+[0m[0m min_upper        = 1
+      [32m+[0m[0m number           = true
+      [32m+[0m[0m numeric          = true
+      [32m+[0m[0m override_special = "!@#$%&*()-_=+[]{}<>:?"
+      [32m+[0m[0m result           = (sensitive value)
+      [32m+[0m[0m special          = true
+      [32m+[0m[0m upper            = true
+    }
+
+[1m  # random_password.sql_simserv_dev_1q226s_password[0m will be created
+[0m  [32m+[0m[0m resource "random_password" "sql_simserv_dev_1q226s_password" {
+      [32m+[0m[0m bcrypt_hash      = (sensitive value)
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m length           = 20
+      [32m+[0m[0m lower            = true
+      [32m+[0m[0m min_lower        = 1
+      [32m+[0m[0m min_numeric      = 1
+      [32m+[0m[0m min_special      = 1
+      [32m+[0m[0m min_upper        = 1
+      [32m+[0m[0m number           = true
+      [32m+[0m[0m numeric          = true
+      [32m+[0m[0m override_special = "!@#$%&*()-_=+[]{}<>:?"
+      [32m+[0m[0m result           = (sensitive value)
+      [32m+[0m[0m special          = true
+      [32m+[0m[0m upper            = true
+    }
+
+[1m  # tls_private_key.APP001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "APP001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.AstroAI_HD_DC001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "AstroAI_HD_DC001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.CS_Test1_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "CS_Test1_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.DB001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "DB001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.DC001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "DC001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.DC01_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "DC01_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.DynamicIPVM_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "DynamicIPVM_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.EntraVM_001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "EntraVM_001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.GUEST001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "GUEST001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.GUEST002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "GUEST002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.HR001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "HR001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.HR002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "HR002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.IT001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "IT001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.IT002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "IT002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.Nexus_1_h3d_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "Nexus_1_h3d_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.R10S4VM1OCT6_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "R10S4VM1OCT6_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.RavenVm001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "RavenVm001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.S005_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "S005_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.SEC001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "SEC001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.SEC002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "SEC002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.SRV001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "SRV001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.Server01_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "Server01_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.UBUNTU001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "UBUNTU001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.UBUNTU002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "UBUNTU002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.UBUNTU003_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "UBUNTU003_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER003_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER003_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER1_Test_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER1_Test_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER2_TEST_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER2_TEST_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.USER6_TEST_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "USER6_TEST_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WEB001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WEB001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WORKSTATION5_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WORKSTATION5_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WORKSTATION6_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WORKSTATION6_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WORKSTATION7_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WORKSTATION7_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WORKSTATION8_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WORKSTATION8_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.WORKSTATION9_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "WORKSTATION9_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.ajaye_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "ajaye_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.aks_nodepool3_41086223_vms13_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "aks_nodepool3_41086223_vms13_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.alecsolway_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "alecsolway_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.andyye_windows11_vm2_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "andyye_windows11_vm2_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.andyye_windows11_vm3_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "andyye_windows11_vm3_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.andyye_windows_server_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "andyye_windows_server_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.anjelpatel_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "anjelpatel_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.arjunc_cti_vm_3_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "arjunc_cti_vm_3_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.arjunc_cti_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "arjunc_cti_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.arjunc_test_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "arjunc_test_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12ads001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12ads001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12android_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12android_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12apache001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12apache001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl000_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl000_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl003_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl003_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl004_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl004_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12cl005_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12cl005_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12ct001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12ct001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12ex001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12ex001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12ex002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12ex002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12fs001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12fs001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12rdg001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12rdg001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12sql001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12sql001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12ubuntu001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12ubuntu001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet12win001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet12win001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17ads001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17ads001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl000_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl000_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl003_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl003_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl004_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl004_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17cl005_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17cl005_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17ct001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17ct001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17ex001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17ex001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17ex002_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17ex002_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17fs001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17fs001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17kal001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17kal001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17rdg001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17rdg001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17sql001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17sql001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17ubuntu001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17ubuntu001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.atevet17win001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "atevet17win001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_20251014_162907_01_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_20251014_162907_01_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_20251014_162907_02_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_20251014_162907_02_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_20251014_162907_03_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_20251014_162907_03_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760036626_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760036626_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760323185_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760323185_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760498528_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760498528_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760499663_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760499663_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760499707_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760499707_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760500129_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760500129_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760500248_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760500248_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760500420_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760500420_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760500610_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760500610_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.azlin_vm_1760506379_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "azlin_vm_1760506379_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.bs3_langfuse_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "bs3_langfuse_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.c2server_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "c2server_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.cbiringa_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "cbiringa_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.cseifert_windows_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "cseifert_windows_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.csiska_01_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "csiska_01_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.csiska_02_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "csiska_02_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.csiska_03_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "csiska_03_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.ctibench_report_10_scenario_1_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "ctibench_report_10_scenario_1_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.ctibench_report_10_scenario_3_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "ctibench_report_10_scenario_3_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.dayan_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "dayan_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.djulienne_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "djulienne_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.implant_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "implant_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.kali01_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "kali01_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.klakkaraju_abvm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "klakkaraju_abvm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.liminyang_vm_atevet_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "liminyang_vm_atevet_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.liminyang_vm_test_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "liminyang_vm_test_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.m003_vm_001_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "m003_vm_001_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.m003vmtest_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "m003vmtest_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.nkumankumah_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "nkumankumah_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.rotrevino_windows_11_pro_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "rotrevino_windows_11_pro_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.s002vmbicep_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "s002vmbicep_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.s003vmbicep_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "s003vmbicep_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.s004vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "s004vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.s004vmbicep_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "s004vmbicep_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.s005_vm_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "s005_vm_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.svesal_MAIDAP_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "svesal_MAIDAP_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.tianweichen_MAIDAP_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "tianweichen_MAIDAP_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1m  # tls_private_key.zixiaochen_AB_ssh_key[0m will be created
+[0m  [32m+[0m[0m resource "tls_private_key" "zixiaochen_AB_ssh_key" {
+      [32m+[0m[0m algorithm                     = "RSA"
+      [32m+[0m[0m ecdsa_curve                   = "P224"
+      [32m+[0m[0m id                            = (known after apply)
+      [32m+[0m[0m private_key_openssh           = (sensitive value)
+      [32m+[0m[0m private_key_pem               = (sensitive value)
+      [32m+[0m[0m private_key_pem_pkcs8         = (sensitive value)
+      [32m+[0m[0m public_key_fingerprint_md5    = (known after apply)
+      [32m+[0m[0m public_key_fingerprint_sha256 = (known after apply)
+      [32m+[0m[0m public_key_openssh            = (known after apply)
+      [32m+[0m[0m public_key_pem                = (known after apply)
+      [32m+[0m[0m rsa_bits                      = 4096
+    }
+
+[1mPlan:[0m 125 to add, 0 to change, 0 to destroy.
+[0m[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1munable to build authorizer for Resource Manager API: could not configure AzureCli Authorizer: the provided subscription ID "c190c55a-9ab2-4b1e-92c4-cc8b1a032285" is not known by Azure CLI[0m
+[31m│[0m [0m
+[31m│[0m [0m[0m  with provider["registry.terraform.io/hashicorp/azurerm"],
+[31m│[0m [0m  on main.tf.json line 23, in provider.azurerm:
+[31m│[0m [0m  23:     [4m}[0m[0m
+[31m│[0m [0m
+[31m╵[0m[0m

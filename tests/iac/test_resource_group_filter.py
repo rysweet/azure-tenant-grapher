@@ -19,9 +19,24 @@ async def test_resource_group_regex_filter(monkeypatch: pytest.MonkeyPatch) -> N
     # Create mock records with different resource groups
     mock_records = []
     test_resources = [
-        {"id": "vm-1", "type": "Microsoft.Compute/virtualMachines", "name": "vm-1", "resourceGroup": "simuland"},
-        {"id": "vm-2", "type": "Microsoft.Compute/virtualMachines", "name": "vm-2", "resourceGroup": "simuland_api"},
-        {"id": "vm-3", "type": "Microsoft.Compute/virtualMachines", "name": "vm-3", "resourceGroup": "production"},
+        {
+            "id": "vm-1",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "vm-1",
+            "resourceGroup": "simuland",
+        },
+        {
+            "id": "vm-2",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "vm-2",
+            "resourceGroup": "simuland_api",
+        },
+        {
+            "id": "vm-3",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "vm-3",
+            "resourceGroup": "production",
+        },
     ]
 
     for resource in test_resources:
@@ -97,7 +112,9 @@ async def test_resource_group_regex_filter(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_resource_group_exact_match_filter(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_resource_group_exact_match_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that exact resource group name filtering works correctly."""
     # Mock Neo4j driver and session
     mock_driver = MagicMock()
@@ -128,7 +145,11 @@ async def test_resource_group_exact_match_filter(monkeypatch: pytest.MonkeyPatch
     # Mock the GraphTraverser
     mock_graph = MagicMock()
     mock_graph.resources = [
-        {"id": "vm-1", "type": "Microsoft.Compute/virtualMachines", "resourceGroup": "simuland"}
+        {
+            "id": "vm-1",
+            "type": "Microsoft.Compute/virtualMachines",
+            "resourceGroup": "simuland",
+        }
     ]
 
     mock_traverser = MagicMock()
@@ -183,7 +204,9 @@ async def test_resource_group_exact_match_filter(monkeypatch: pytest.MonkeyPatch
 
 
 @pytest.mark.asyncio
-async def test_mixed_type_and_resource_group_filters(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_mixed_type_and_resource_group_filters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that type and resource group filters can be combined."""
     # Mock Neo4j driver and session
     mock_driver = MagicMock()
@@ -214,7 +237,11 @@ async def test_mixed_type_and_resource_group_filters(monkeypatch: pytest.MonkeyP
     # Mock the GraphTraverser
     mock_graph = MagicMock()
     mock_graph.resources = [
-        {"id": "vnet-1", "type": "Microsoft.Network/virtualNetworks", "resourceGroup": "simuland"}
+        {
+            "id": "vnet-1",
+            "type": "Microsoft.Network/virtualNetworks",
+            "resourceGroup": "simuland",
+        }
     ]
 
     mock_traverser = MagicMock()

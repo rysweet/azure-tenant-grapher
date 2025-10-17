@@ -194,9 +194,7 @@ class TestSoftDeletedVaultDetection:
 
         assert report.has_conflicts
         assert report.soft_deleted_vaults_found == 1
-        assert (
-            report.conflicts[0].conflict_type == ConflictType.SOFT_DELETED_KEYVAULT
-        )
+        assert report.conflicts[0].conflict_type == ConflictType.SOFT_DELETED_KEYVAULT
         assert "purge" in report.conflicts[0].remediation_actions[0].lower()
 
     @pytest.mark.asyncio
@@ -286,9 +284,7 @@ class TestLockedResourceGroupDetection:
 
         assert report.has_conflicts
         assert report.locked_rgs_found == 1
-        assert (
-            report.conflicts[0].conflict_type == ConflictType.LOCKED_RESOURCE_GROUP
-        )
+        assert report.conflicts[0].conflict_type == ConflictType.LOCKED_RESOURCE_GROUP
         assert report.conflicts[0].lock_type == "CanNotDelete"
 
     @pytest.mark.asyncio
@@ -498,14 +494,10 @@ class TestErrorHandling:
         mock_resource_client.resources.list.return_value = [mock_resource]
 
         # Setup: Vault check fails
-        mock_keyvault_client.vaults.list_deleted.side_effect = AzureError(
-            "API error"
-        )
+        mock_keyvault_client.vaults.list_deleted.side_effect = AzureError("API error")
 
         # Setup: Lock check succeeds
-        mock_lock_client.management_locks.list_at_resource_group_level.return_value = (
-            []
-        )
+        mock_lock_client.management_locks.list_at_resource_group_level.return_value = []
 
         planned = [
             {

@@ -53,7 +53,7 @@
 ### 4. Database State
 **Neo4j Resources (as of last check):**
 - Source (DefenderATEVET17): 410 resources
-- Target (DefenderATEVET12): 158 resources  
+- Target (DefenderATEVET12): 158 resources
 - Coverage: 38.5% (scan in progress, will increase)
 
 **Resource Types in Source:**

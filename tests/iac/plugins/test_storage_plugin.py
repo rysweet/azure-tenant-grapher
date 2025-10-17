@@ -5,13 +5,11 @@ Tests core functionality without requiring Azure SDK to be installed.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
 
 from src.iac.plugins.base_plugin import (
     DataPlaneItem,
-    ReplicationMode,
-    ReplicationResult,
     Permission,
+    ReplicationMode,
 )
 from src.iac.plugins.storage_plugin import StoragePlugin
 
@@ -132,7 +130,9 @@ class TestStoragePermissions:
         replication_perms = plugin.get_required_permissions(ReplicationMode.REPLICATION)
 
         # Replication should have more data actions
-        assert len(replication_perms[0].data_actions) > len(template_perms[0].data_actions)
+        assert len(replication_perms[0].data_actions) > len(
+            template_perms[0].data_actions
+        )
 
 
 class TestStorageCodeGeneration:
@@ -383,8 +383,12 @@ class TestStorageOperationTimeEstimation:
             )
         ]
 
-        small_time = plugin.estimate_operation_time(small_items, ReplicationMode.REPLICATION)
-        large_time = plugin.estimate_operation_time(large_items, ReplicationMode.REPLICATION)
+        small_time = plugin.estimate_operation_time(
+            small_items, ReplicationMode.REPLICATION
+        )
+        large_time = plugin.estimate_operation_time(
+            large_items, ReplicationMode.REPLICATION
+        )
 
         assert large_time > small_time
 

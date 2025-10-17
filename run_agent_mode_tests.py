@@ -11,7 +11,6 @@ import asyncio
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 
@@ -20,6 +19,7 @@ def check_dependencies():
     try:
         import pytest
         import websockets
+
         print("✓ Required Python packages installed")
     except ImportError as e:
         print(f"✗ Missing required package: {e}")
@@ -30,7 +30,7 @@ def check_dependencies():
     result = subprocess.run(
         ["docker", "ps", "--filter", "name=neo4j", "--format", "{{.Names}}"],
         capture_output=True,
-        text=True
+        text=True,
     )
     if "neo4j" in result.stdout:
         print("✓ Neo4j container is running")
@@ -54,11 +54,13 @@ def run_python_tests(args):
         cmd.append(f"-k={args.test}")
 
     if args.coverage:
-        cmd.extend([
-            "--cov=src.services.mcp_integration",
-            "--cov-report=html",
-            "--cov-report=term"
-        ])
+        cmd.extend(
+            [
+                "--cov=src.services.mcp_integration",
+                "--cov-report=html",
+                "--cov-report=term",
+            ]
+        )
 
     if args.markers:
         cmd.append(f"-m={args.markers}")
@@ -105,8 +107,9 @@ def run_ui_tests(args):
 
 async def start_mock_mcp_server(port=8080):
     """Start a simple mock MCP server for testing."""
-    import websockets
     import json
+
+    import websockets
 
     async def handle_connection(websocket, path):
         try:
@@ -117,7 +120,7 @@ async def start_mock_mcp_server(port=8080):
                 response = {
                     "type": "response",
                     "id": data.get("id"),
-                    "result": {"status": "ok", "echo": data}
+                    "result": {"status": "ok", "echo": data},
                 }
 
                 await websocket.send(json.dumps(response))
@@ -152,64 +155,34 @@ Examples:
 
   # Start mock MCP server
   python run_agent_mode_tests.py --mock-server
-        """
+        """,
     )
 
+    parser.add_argument("-t", "--test", help="Run specific test by name pattern")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     parser.add_argument(
-        "-t", "--test",
-        help="Run specific test by name pattern"
+        "--coverage", action="store_true", help="Generate coverage report"
+    )
+    parser.add_argument("-m", "--markers", help="Run tests with specific markers")
+    parser.add_argument("--junit", help="Generate JUnit XML report")
+    parser.add_argument(
+        "--pdb", action="store_true", help="Drop into debugger on failures"
     )
     parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output"
+        "--ui", action="store_true", help="Run UI tests instead of Python tests"
     )
+    parser.add_argument("--scenario", help="Run specific UI test scenario")
     parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="Generate coverage report"
+        "--headless", action="store_true", help="Run UI tests in headless mode"
     )
+    parser.add_argument("--video", action="store_true", help="Record video of UI tests")
     parser.add_argument(
-        "-m", "--markers",
-        help="Run tests with specific markers"
-    )
-    parser.add_argument(
-        "--junit",
-        help="Generate JUnit XML report"
-    )
-    parser.add_argument(
-        "--pdb",
-        action="store_true",
-        help="Drop into debugger on failures"
-    )
-    parser.add_argument(
-        "--ui",
-        action="store_true",
-        help="Run UI tests instead of Python tests"
-    )
-    parser.add_argument(
-        "--scenario",
-        help="Run specific UI test scenario"
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Run UI tests in headless mode"
-    )
-    parser.add_argument(
-        "--video",
-        action="store_true",
-        help="Record video of UI tests"
-    )
-    parser.add_argument(
-        "--mock-server",
-        action="store_true",
-        help="Start mock MCP server for testing"
+        "--mock-server", action="store_true", help="Start mock MCP server for testing"
     )
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="Only check dependencies, don't run tests"
+        help="Only check dependencies, don't run tests",
     )
 
     args = parser.parse_args()

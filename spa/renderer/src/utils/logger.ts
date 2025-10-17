@@ -45,9 +45,9 @@ class BrowserConsoleTransport {
     const levelName = LogLevel[entry.level];
     const style = this.styles[entry.level];
     const component = entry.component ? `[${entry.component}]` : '';
-    
+
     const prefix = `%c[${entry.timestamp}] ${levelName} ${component}`;
-    
+
     if (entry.metadata) {
       console.log(`${prefix} ${entry.message}`, style, entry.metadata);
     } else {
@@ -164,7 +164,7 @@ export function initializeFrontendLogger(): FrontendWebSocketTransport {
   if (!wsTransport) {
     wsTransport = new FrontendWebSocketTransport();
   }
-  
+
   return wsTransport;
 }
 
@@ -182,7 +182,7 @@ export function initializeRendererLogger(): void {
   // Set log level based on environment or localStorage
   const savedLevel = localStorage.getItem('logLevel');
   const logLevel = savedLevel || (process.env.NODE_ENV === 'development' ? 'debug' : 'info');
-  
+
   switch (logLevel.toLowerCase()) {
     case 'debug':
       logger.setLevel(LogLevel.DEBUG);
@@ -199,7 +199,7 @@ export function initializeRendererLogger(): void {
 
   // Add browser console transport with styling
   logger.addTransport(new BrowserConsoleTransport());
-  
+
   // Add memory transport for UI display
   logger.addTransport(memoryTransport);
 

@@ -715,7 +715,7 @@ class Relationship(BaseModel):
         None, description="Additional relationship attributes.", alias="attributes"
     )
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     def normalize_relationship_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize field names from various LLM outputs."""
         # Make a copy to avoid modifying the original

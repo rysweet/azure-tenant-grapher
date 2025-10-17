@@ -10,6 +10,7 @@ Set up test credentials via:
 """
 
 import os
+
 import pytest
 from azure.core.exceptions import ClientAuthenticationError
 
@@ -17,7 +18,6 @@ from src.iac.data_plane_plugins.credential_provider import (
     CredentialConfig,
     CredentialProvider,
 )
-
 
 # Mark all tests in this file as integration tests
 pytestmark = pytest.mark.integration
@@ -37,7 +37,9 @@ def has_azure_credentials():
 
     # For integration tests, we need explicit credentials
     if not has_explicit:
-        pytest.skip("Azure credentials not configured (requires AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)")
+        pytest.skip(
+            "Azure credentials not configured (requires AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)"
+        )
 
     return True
 

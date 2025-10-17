@@ -36,21 +36,21 @@ check_validation() {
         echo "NOT_EXIST"
         return
     fi
-    
+
     cd "$iter_dir" || return
-    
+
     # Run terraform validate
     if ! terraform init -backend=false > /dev/null 2>&1; then
         echo "INIT_FAILED"
         return
     fi
-    
+
     if terraform validate -json 2>/dev/null | jq -r '.valid' 2>/dev/null | grep -q "true"; then
         echo "PASS"
     else
         echo "FAIL"
     fi
-    
+
     cd "$REPO_ROOT" || return
 }
 
@@ -59,21 +59,21 @@ send_message "🔄 Persistent monitor started. Will check status every 2 minutes
 iteration_count=0
 while true; do
     iteration_count=$((iteration_count + 1))
-    
+
     # Get latest iteration
     latest=$(get_latest_iteration)
     iter_dir="demos/iteration${latest}"
-    
+
     # Check validation status
     validation=$(check_validation "$iter_dir")
-    
+
     # Check if terraform is running
     if check_terraform_running; then
         terraform_status="RUNNING"
     else
         terraform_status="IDLE"
     fi
-    
+
     # Get Neo4j stats
     source_count=$(uv run python -c "
 import os
@@ -92,7 +92,7 @@ with driver.session() as session:
     print(result.single()['count'])
 driver.close()
 " 2>/dev/null || echo "0")
-    
+
     target_count=$(uv run python -c "
 import os
 from neo4j import GraphDatabase
@@ -110,30 +110,30 @@ with driver.session() as session:
     print(result.single()['count'])
 driver.close()
 " 2>/dev/null || echo "0")
-    
+
     # Calculate fidelity
     if [ "$source_count" -gt 0 ]; then
         fidelity=$(echo "scale=1; ($target_count * 100) / $source_count" | bc)
     else
         fidelity="0.0"
     fi
-    
+
     # Log status
     timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
     echo "[$timestamp] Check #$iteration_count: Iteration $latest, Validation: $validation, Terraform: $terraform_status, Fidelity: ${fidelity}% ($target_count/$source_count)"
-    
+
     # Send periodic updates (every 10 checks = ~20 minutes)
     if [ $((iteration_count % 10)) -eq 0 ]; then
         send_message "Status check #$iteration_count: Latest iteration $latest, Validation: $validation, Terraform: $terraform_status, Fidelity: ${fidelity}% ($target_count/$source_count resources)"
     fi
-    
+
     # Check if objective achieved
     if [ "$validation" = "PASS" ] && [ "$(echo "$fidelity > 95" | bc)" -eq 1 ]; then
         send_message "🎉 OBJECTIVE ACHIEVED! Validation: PASS, Fidelity: ${fidelity}%. Monitor stopping."
         echo "OBJECTIVE ACHIEVED!"
         break
     fi
-    
+
     # Sleep for 2 minutes
     sleep 120
 done

@@ -39,13 +39,17 @@ def mock_neo4j_session():
 class TestJobCreation:
     """Tests for deployment job creation."""
 
-    def test_create_job_basic(self, job_tracker, mock_session_manager, mock_neo4j_session):
+    def test_create_job_basic(
+        self, job_tracker, mock_session_manager, mock_neo4j_session
+    ):
         """Test basic job creation with minimal parameters."""
         # Setup mock
         mock_result = MagicMock()
         mock_result.single.return_value = {"job_id": "test-job-id"}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         job_id = job_tracker.create_job(
@@ -70,7 +74,9 @@ class TestJobCreation:
         mock_result = MagicMock()
         mock_result.single.return_value = {"job_id": "test-job-id"}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         metadata = {"user": "test-user", "source": "cli"}
 
@@ -108,7 +114,9 @@ class TestJobCreation:
             return mock_result
 
         mock_neo4j_session.run.side_effect = run_side_effect
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         job_id = job_tracker.create_job(
@@ -134,7 +142,9 @@ class TestJobCreation:
         mock_result = MagicMock()
         mock_result.single.return_value = None
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute and verify exception
         with pytest.raises(Neo4jQueryError) as exc_info:
@@ -150,7 +160,9 @@ class TestJobCreation:
         """Test that Neo4j errors are properly wrapped and raised."""
         # Setup mock to raise Neo4jError
         mock_neo4j_session.run.side_effect = ServiceUnavailable("Database unavailable")
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute and verify exception
         with pytest.raises((Neo4jQueryError, Neo4jConnectionError, ServiceUnavailable)):
@@ -171,7 +183,9 @@ class TestJobUpdate:
         mock_result = MagicMock()
         mock_result.single.return_value = {"job_id": "job-123"}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         result = job_tracker.update_job(
@@ -196,7 +210,9 @@ class TestJobUpdate:
         mock_result = MagicMock()
         mock_result.single.return_value = {"job_id": "job-123"}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         metadata = {"resources_count": 42}
 
@@ -225,7 +241,9 @@ class TestJobUpdate:
         mock_result = MagicMock()
         mock_result.single.return_value = None
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         result = job_tracker.update_job(
@@ -244,7 +262,9 @@ class TestJobUpdate:
         mock_result = MagicMock()
         mock_result.single.return_value = {"job_id": "job-123"}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         result = job_tracker.update_job(
@@ -281,7 +301,9 @@ class TestJobRetrieval:
         mock_result = MagicMock()
         mock_result.single.return_value = {"job": mock_node}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         job = job_tracker.get_job("job-123")
@@ -301,7 +323,9 @@ class TestJobRetrieval:
         mock_result = MagicMock()
         mock_result.single.return_value = None
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         job = job_tracker.get_job("non-existent-job")
@@ -321,7 +345,9 @@ class TestResourceLinking:
         mock_result = MagicMock()
         mock_result.single.return_value = {"relationships_created": 3}
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         resource_ids = ["resource-1", "resource-2", "resource-3"]
 
@@ -363,7 +389,9 @@ class TestResourceLinking:
         mock_result = MagicMock()
         mock_result.single.return_value = None
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         count = job_tracker.link_deployed_resources(
@@ -399,12 +427,16 @@ class TestJobHistory:
         ]
 
         mock_result = MagicMock()
-        mock_result.__iter__.return_value = iter([
-            {"job": mock_node1},
-            {"job": mock_node2},
-        ])
+        mock_result.__iter__.return_value = iter(
+            [
+                {"job": mock_node1},
+                {"job": mock_node2},
+            ]
+        )
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         jobs = job_tracker.get_job_history(tenant_id="tenant-123", limit=10)
@@ -427,7 +459,9 @@ class TestJobHistory:
         mock_result = MagicMock()
         mock_result.__iter__.return_value = iter([])
         mock_neo4j_session.run.return_value = mock_result
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute
         jobs = job_tracker.get_job_history(tenant_id="tenant-123", limit=10)
@@ -467,13 +501,13 @@ class TestErrorHandling:
         def run_side_effect(query, parameters=None):
             mock_result = MagicMock()
             call_count[0] += 1
-            mock_result.single.return_value = {
-                "job_id": f"job-{call_count[0]}"
-            }
+            mock_result.single.return_value = {"job_id": f"job-{call_count[0]}"}
             return mock_result
 
         mock_neo4j_session.run.side_effect = run_side_effect
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # Execute multiple creates
         job_ids = set()
@@ -495,6 +529,7 @@ class TestIntegrationPatterns:
         self, job_tracker, mock_session_manager, mock_neo4j_session
     ):
         """Test a typical job lifecycle: create -> update -> complete."""
+
         # Setup mocks for multiple operations
         def run_side_effect(query, parameters=None):
             mock_result = MagicMock()
@@ -512,7 +547,9 @@ class TestIntegrationPatterns:
             return mock_result
 
         mock_neo4j_session.run.side_effect = run_side_effect
-        mock_session_manager.session.return_value.__enter__.return_value = mock_neo4j_session
+        mock_session_manager.session.return_value.__enter__.return_value = (
+            mock_neo4j_session
+        )
 
         # 1. Create job
         job_id = job_tracker.create_job(

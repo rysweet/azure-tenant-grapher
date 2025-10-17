@@ -9,17 +9,18 @@ Tests cover:
 - Size warnings and progress tracking
 """
 
-import json
-import pytest
-from datetime import datetime
-from unittest.mock import Mock, MagicMock, patch, call
-from typing import Any, Dict, List
-
 import sys
-sys.path.insert(0, '/home/azureuser/src/azure-tenant-grapher/src/iac/data_plane_plugins')
-sys.path.insert(0, '/home/azureuser/src/azure-tenant-grapher/src/iac/plugins')
+from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
+
+sys.path.insert(
+    0, "/home/azureuser/src/azure-tenant-grapher/src/iac/data_plane_plugins"
+)
+sys.path.insert(0, "/home/azureuser/src/azure-tenant-grapher/src/iac/plugins")
 from acr_plugin import ContainerRegistryPlugin
-from base_plugin import DataPlaneItem, ReplicationMode, ReplicationResult
+from base_plugin import DataPlaneItem, ReplicationMode
 
 
 class TestContainerRegistryPlugin:
@@ -40,8 +41,8 @@ class TestContainerRegistryPlugin:
             "properties": {
                 "loginServer": "testacr.azurecr.io",
                 "adminUserEnabled": False,
-                "sku": {"name": "Standard"}
-            }
+                "sku": {"name": "Standard"},
+            },
         }
 
     @pytest.fixture
@@ -57,28 +58,34 @@ class TestContainerRegistryPlugin:
     @pytest.fixture
     def mock_tag_properties(self):
         """Mock tag properties."""
+
         def create_tag(name: str):
             mock_tag = Mock()
             mock_tag.name = name
             mock_tag.created_on = datetime(2024, 1, 5, 12, 0, 0)
             mock_tag.last_updated_on = datetime(2024, 1, 10, 12, 0, 0)
             return mock_tag
+
         return create_tag
 
     @pytest.fixture
     def mock_manifest_properties(self):
         """Mock manifest properties."""
+
         def create_manifest(size: int = 1048576):
             mock_manifest = Mock()
             mock_manifest.size = size
             mock_manifest.digest = "sha256:abcd1234"
             mock_manifest.architecture = "linux/amd64"
             return mock_manifest
+
         return create_manifest
 
     def test_supported_resource_type(self, plugin):
         """Test that plugin reports correct resource type."""
-        assert plugin.supported_resource_type == "Microsoft.ContainerRegistry/registries"
+        assert (
+            plugin.supported_resource_type == "Microsoft.ContainerRegistry/registries"
+        )
 
     def test_plugin_name(self, plugin):
         """Test plugin name property."""
@@ -93,16 +100,13 @@ class TestContainerRegistryPlugin:
         resource = {
             "id": "/subscriptions/test/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "kv"
+            "name": "kv",
         }
         assert plugin.validate_resource(resource) is False
 
     def test_validate_resource_missing_id(self, plugin):
         """Test resource validation with missing ID."""
-        resource = {
-            "type": "Microsoft.ContainerRegistry/registries",
-            "name": "testacr"
-        }
+        resource = {"type": "Microsoft.ContainerRegistry/registries", "name": "testacr"}
         assert plugin.validate_resource(resource) is False
 
     def test_validate_resource_empty(self, plugin):
@@ -116,7 +120,10 @@ class TestContainerRegistryPlugin:
 
         assert len(perms) == 1
         assert "Microsoft.ContainerRegistry/registries/read" in perms[0].actions
-        assert "Microsoft.ContainerRegistry/registries/metadata/read" in perms[0].data_actions
+        assert (
+            "Microsoft.ContainerRegistry/registries/metadata/read"
+            in perms[0].data_actions
+        )
         assert perms[0].scope == "resource"
 
     def test_get_required_permissions_replication_mode(self, plugin):
@@ -125,18 +132,21 @@ class TestContainerRegistryPlugin:
 
         assert len(perms) == 1
         assert "Microsoft.ContainerRegistry/registries/read" in perms[0].actions
-        assert "Microsoft.ContainerRegistry/registries/importImage/action" in perms[0].actions
-        assert "Microsoft.ContainerRegistry/registries/pull/read" in perms[0].data_actions
-        assert "Microsoft.ContainerRegistry/registries/push/write" in perms[0].data_actions
+        assert (
+            "Microsoft.ContainerRegistry/registries/importImage/action"
+            in perms[0].actions
+        )
+        assert (
+            "Microsoft.ContainerRegistry/registries/pull/read" in perms[0].data_actions
+        )
+        assert (
+            "Microsoft.ContainerRegistry/registries/push/write" in perms[0].data_actions
+        )
 
-    @patch('azure.containerregistry.ContainerRegistryClient')
-    @patch('azure.identity.DefaultAzureCredential')
+    @patch("azure.containerregistry.ContainerRegistryClient")
+    @patch("azure.identity.DefaultAzureCredential")
     def test_discover_empty_registry(
-        self,
-        mock_credential,
-        mock_client_class,
-        plugin,
-        sample_registry_resource
+        self, mock_credential, mock_client_class, plugin, sample_registry_resource
     ):
         """Test discovery with registry that has no repositories."""
         # Setup mock client
@@ -151,8 +161,8 @@ class TestContainerRegistryPlugin:
         assert len(items) == 0
         mock_client.list_repository_names.assert_called_once()
 
-    @patch('azure.containerregistry.ContainerRegistryClient')
-    @patch('azure.identity.DefaultAzureCredential')
+    @patch("azure.containerregistry.ContainerRegistryClient")
+    @patch("azure.identity.DefaultAzureCredential")
     def test_discover_single_repository(
         self,
         mock_credential,
@@ -161,7 +171,7 @@ class TestContainerRegistryPlugin:
         sample_registry_resource,
         mock_repository_properties,
         mock_tag_properties,
-        mock_manifest_properties
+        mock_manifest_properties,
     ):
         """Test discovery with single repository and multiple tags."""
         # Setup mock client
@@ -170,11 +180,17 @@ class TestContainerRegistryPlugin:
         mock_client.get_repository_properties.return_value = mock_repository_properties
 
         # Setup tag mocks
-        tags = [mock_tag_properties("v1.0"), mock_tag_properties("v1.1"), mock_tag_properties("latest")]
+        tags = [
+            mock_tag_properties("v1.0"),
+            mock_tag_properties("v1.1"),
+            mock_tag_properties("latest"),
+        ]
         mock_client.list_tag_properties.return_value = iter(tags)
 
         # Setup manifest mocks
-        mock_client.get_manifest_properties.return_value = mock_manifest_properties(1048576)
+        mock_client.get_manifest_properties.return_value = mock_manifest_properties(
+            1048576
+        )
 
         mock_client_class.return_value = mock_client
 
@@ -196,8 +212,8 @@ class TestContainerRegistryPlugin:
         # Verify size is calculated
         assert items[0].size_bytes == 3 * 1048576  # 3 tags * 1MB each
 
-    @patch('azure.containerregistry.ContainerRegistryClient')
-    @patch('azure.identity.DefaultAzureCredential')
+    @patch("azure.containerregistry.ContainerRegistryClient")
+    @patch("azure.identity.DefaultAzureCredential")
     def test_discover_multiple_repositories(
         self,
         mock_credential,
@@ -206,7 +222,7 @@ class TestContainerRegistryPlugin:
         sample_registry_resource,
         mock_repository_properties,
         mock_tag_properties,
-        mock_manifest_properties
+        mock_manifest_properties,
     ):
         """Test discovery with multiple repositories."""
         # Setup mock client
@@ -231,7 +247,9 @@ class TestContainerRegistryPlugin:
                 return iter([mock_tag_properties("latest")])
 
         mock_client.list_tag_properties.side_effect = list_tags
-        mock_client.get_manifest_properties.return_value = mock_manifest_properties(2097152)
+        mock_client.get_manifest_properties.return_value = mock_manifest_properties(
+            2097152
+        )
 
         mock_client_class.return_value = mock_client
 
@@ -253,8 +271,8 @@ class TestContainerRegistryPlugin:
         app2_item = next(item for item in items if item.name == "app2")
         assert len(app2_item.properties["tags"]) == 1
 
-    @patch('azure.containerregistry.ContainerRegistryClient')
-    @patch('azure.identity.DefaultAzureCredential')
+    @patch("azure.containerregistry.ContainerRegistryClient")
+    @patch("azure.identity.DefaultAzureCredential")
     def test_discover_with_progress_reporter(
         self,
         mock_credential,
@@ -262,7 +280,7 @@ class TestContainerRegistryPlugin:
         sample_registry_resource,
         mock_repository_properties,
         mock_tag_properties,
-        mock_manifest_properties
+        mock_manifest_properties,
     ):
         """Test discovery with progress reporting."""
         # Create plugin with progress reporter
@@ -273,7 +291,9 @@ class TestContainerRegistryPlugin:
         mock_client = Mock()
         mock_client.list_repository_names.return_value = iter(["app1", "app2"])
         mock_client.get_repository_properties.return_value = mock_repository_properties
-        mock_client.list_tag_properties.return_value = iter([mock_tag_properties("latest")])
+        mock_client.list_tag_properties.return_value = iter(
+            [mock_tag_properties("latest")]
+        )
         mock_client.get_manifest_properties.return_value = mock_manifest_properties()
         mock_client_class.return_value = mock_client
 
@@ -286,21 +306,19 @@ class TestContainerRegistryPlugin:
         assert call_args[0] == sample_registry_resource["id"]
         assert call_args[1] == 2  # 2 repositories
 
-    @patch('azure.containerregistry.ContainerRegistryClient')
-    @patch('azure.identity.DefaultAzureCredential')
+    @patch("azure.containerregistry.ContainerRegistryClient")
+    @patch("azure.identity.DefaultAzureCredential")
     def test_discover_handles_sdk_errors(
-        self,
-        mock_credential,
-        mock_client_class,
-        plugin,
-        sample_registry_resource
+        self, mock_credential, mock_client_class, plugin, sample_registry_resource
     ):
         """Test discovery handles Azure SDK errors gracefully."""
         from azure.core.exceptions import HttpResponseError
 
         # Setup mock client to raise error
         mock_client = Mock()
-        mock_client.list_repository_names.side_effect = HttpResponseError("Authentication failed")
+        mock_client.list_repository_names.side_effect = HttpResponseError(
+            "Authentication failed"
+        )
         mock_client_class.return_value = mock_client
 
         # Execute discovery - should not raise, but return empty list
@@ -311,7 +329,7 @@ class TestContainerRegistryPlugin:
 
     def test_discover_without_azure_sdk(self, plugin, sample_registry_resource):
         """Test discovery when Azure SDK is not installed."""
-        with patch.dict('sys.modules', {'azure.containerregistry': None}):
+        with patch.dict("sys.modules", {"azure.containerregistry": None}):
             # This should handle ImportError gracefully
             items = plugin.discover(sample_registry_resource)
             assert len(items) == 0
@@ -328,20 +346,17 @@ class TestContainerRegistryPlugin:
             DataPlaneItem(
                 name="myapp",
                 item_type="repository",
-                properties={
-                    "tag_count": 2,
-                    "tags": ["v1.0", "latest"]
-                },
+                properties={"tag_count": 2, "tags": ["v1.0", "latest"]},
                 source_resource_id="/subscriptions/test/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/acr",
                 metadata={
                     "registry_name": "testacr",
                     "login_server": "testacr.azurecr.io",
                     "tag_details": [
                         {"tag": "v1.0", "size_bytes": 1048576},
-                        {"tag": "latest", "size_bytes": 1048576}
-                    ]
+                        {"tag": "latest", "size_bytes": 1048576},
+                    ],
                 },
-                size_bytes=2097152
+                size_bytes=2097152,
             )
         ]
 
@@ -367,7 +382,7 @@ class TestContainerRegistryPlugin:
                 properties={"tag_count": 1, "tags": ["latest"]},
                 source_resource_id="/subscriptions/test/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/acr",
                 metadata={},
-                size_bytes=large_size // 10
+                size_bytes=large_size // 10,
             )
             for i in range(10)
         ]
@@ -385,7 +400,7 @@ class TestContainerRegistryPlugin:
                 item_type="repository",
                 properties={},
                 source_resource_id="/test",
-                metadata={}
+                metadata={},
             )
         ]
 
@@ -397,7 +412,7 @@ class TestContainerRegistryPlugin:
         target_resource = sample_registry_resource.copy()
         target_resource["name"] = "targetacr"
 
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             # Mock discovery to return sample items
             mock_discover.return_value = [
                 DataPlaneItem(
@@ -406,14 +421,12 @@ class TestContainerRegistryPlugin:
                     properties={"tags": ["v1.0"]},
                     source_resource_id=sample_registry_resource["id"],
                     metadata={},
-                    size_bytes=1048576
+                    size_bytes=1048576,
                 )
             ]
 
             result = plugin.replicate_with_mode(
-                sample_registry_resource,
-                target_resource,
-                ReplicationMode.TEMPLATE
+                sample_registry_resource, target_resource, ReplicationMode.TEMPLATE
             )
 
             # Verify result
@@ -428,7 +441,7 @@ class TestContainerRegistryPlugin:
         target_resource = sample_registry_resource.copy()
         target_resource["name"] = "targetacr"
 
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             # Mock discovery to return sample items
             mock_discover.return_value = [
                 DataPlaneItem(
@@ -437,14 +450,12 @@ class TestContainerRegistryPlugin:
                     properties={"tags": ["v1.0", "latest"]},
                     source_resource_id=sample_registry_resource["id"],
                     metadata={},
-                    size_bytes=2097152
+                    size_bytes=2097152,
                 )
             ]
 
             result = plugin.replicate_with_mode(
-                sample_registry_resource,
-                target_resource,
-                ReplicationMode.REPLICATION
+                sample_registry_resource, target_resource, ReplicationMode.REPLICATION
             )
 
             # Verify result
@@ -462,7 +473,7 @@ class TestContainerRegistryPlugin:
         target_resource = sample_registry_resource.copy()
         target_resource["name"] = "targetacr"
 
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             mock_discover.return_value = [
                 DataPlaneItem(
                     name="app1",
@@ -470,14 +481,12 @@ class TestContainerRegistryPlugin:
                     properties={"tags": ["v1.0"]},
                     source_resource_id=sample_registry_resource["id"],
                     metadata={},
-                    size_bytes=1048576
+                    size_bytes=1048576,
                 )
             ]
 
             result = plugin.replicate_with_mode(
-                sample_registry_resource,
-                target_resource,
-                ReplicationMode.TEMPLATE
+                sample_registry_resource, target_resource, ReplicationMode.TEMPLATE
             )
 
             # Verify progress was reported
@@ -488,13 +497,11 @@ class TestContainerRegistryPlugin:
         target_resource = sample_registry_resource.copy()
         target_resource["name"] = "targetacr"
 
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             mock_discover.side_effect = Exception("Connection timeout")
 
             result = plugin.replicate_with_mode(
-                sample_registry_resource,
-                target_resource,
-                ReplicationMode.TEMPLATE
+                sample_registry_resource, target_resource, ReplicationMode.TEMPLATE
             )
 
             # Verify error handling
@@ -510,9 +517,7 @@ class TestContainerRegistryPlugin:
 
         with pytest.raises(ValueError, match="Invalid source resource"):
             plugin.replicate_with_mode(
-                invalid_source,
-                target_resource,
-                ReplicationMode.TEMPLATE
+                invalid_source, target_resource, ReplicationMode.TEMPLATE
             )
 
     def test_replicate_invalid_target(self, plugin, sample_registry_resource):
@@ -521,9 +526,7 @@ class TestContainerRegistryPlugin:
 
         with pytest.raises(ValueError, match="Invalid target resource"):
             plugin.replicate_with_mode(
-                sample_registry_resource,
-                invalid_target,
-                ReplicationMode.TEMPLATE
+                sample_registry_resource, invalid_target, ReplicationMode.TEMPLATE
             )
 
     def test_estimate_operation_time_template(self, plugin):
@@ -534,7 +537,7 @@ class TestContainerRegistryPlugin:
                 item_type="repository",
                 properties={},
                 source_resource_id="/test",
-                metadata={}
+                metadata={},
             )
             for i in range(5)
         ]
@@ -554,7 +557,7 @@ class TestContainerRegistryPlugin:
                 properties={"tags": ["v1.0", "v2.0"]},
                 source_resource_id="/test",
                 metadata={},
-                size_bytes=10 * 1024 * 1024  # 10MB
+                size_bytes=10 * 1024 * 1024,  # 10MB
             )
         ]
 
@@ -575,6 +578,7 @@ class TestContainerRegistryPlugin:
     def test_log_size_warnings(self, plugin, caplog):
         """Test size warning logging."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         # Test 100GB warning
@@ -603,7 +607,7 @@ class TestContainerRegistryPlugin:
                 properties={"tags": ["v1.0", "latest"]},
                 source_resource_id="/test",
                 metadata={},
-                size_bytes=2097152
+                size_bytes=2097152,
             ),
             DataPlaneItem(
                 name="app2",
@@ -611,8 +615,8 @@ class TestContainerRegistryPlugin:
                 properties={"tags": ["v2.0"]},
                 source_resource_id="/test",
                 metadata={},
-                size_bytes=1048576
-            )
+                size_bytes=1048576,
+            ),
         ]
 
         script = plugin._generate_replication_script(
@@ -620,7 +624,7 @@ class TestContainerRegistryPlugin:
             "targetacr",
             items,
             "sourceacr.azurecr.io",
-            "targetacr.azurecr.io"
+            "targetacr.azurecr.io",
         )
 
         # Verify script content
@@ -661,7 +665,7 @@ class TestContainerRegistryPluginIntegration:
             "id": "/subscriptions/test/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/myacr",
             "type": "Microsoft.ContainerRegistry/registries",
             "name": "myacr",
-            "properties": {"loginServer": "myacr.azurecr.io"}
+            "properties": {"loginServer": "myacr.azurecr.io"},
         }
 
         # 1. Check permissions
@@ -669,7 +673,7 @@ class TestContainerRegistryPluginIntegration:
         assert len(perms) > 0
 
         # 2. Discover (mocked)
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             mock_discover.return_value = [
                 DataPlaneItem(
                     name="webapp",
@@ -677,7 +681,7 @@ class TestContainerRegistryPluginIntegration:
                     properties={"tags": ["v1.0", "v1.1", "latest"]},
                     source_resource_id=resource["id"],
                     metadata={"registry_name": "myacr"},
-                    size_bytes=3145728
+                    size_bytes=3145728,
                 )
             ]
 
@@ -692,10 +696,12 @@ class TestContainerRegistryPluginIntegration:
         target = resource.copy()
         target["name"] = "targetacr"
 
-        with patch.object(plugin, 'discover') as mock_discover:
+        with patch.object(plugin, "discover") as mock_discover:
             mock_discover.return_value = items
 
-            result = plugin.replicate_with_mode(resource, target, ReplicationMode.TEMPLATE)
+            result = plugin.replicate_with_mode(
+                resource, target, ReplicationMode.TEMPLATE
+            )
 
         assert result.success is True
         assert result.items_discovered == 1
@@ -706,7 +712,7 @@ class TestContainerRegistryPluginIntegration:
             "id": "/subscriptions/test/resourceGroups/rg/providers/Microsoft.ContainerRegistry/registries/largacr",
             "type": "Microsoft.ContainerRegistry/registries",
             "name": "largeacr",
-            "properties": {"loginServer": "largeacr.azurecr.io"}
+            "properties": {"loginServer": "largeacr.azurecr.io"},
         }
 
         # Simulate 100 repositories
@@ -717,7 +723,7 @@ class TestContainerRegistryPluginIntegration:
                 properties={"tags": ["latest", f"v{i}.0"]},
                 source_resource_id=resource["id"],
                 metadata={},
-                size_bytes=524288000  # 500MB each
+                size_bytes=524288000,  # 500MB each
             )
             for i in range(100)
         ]

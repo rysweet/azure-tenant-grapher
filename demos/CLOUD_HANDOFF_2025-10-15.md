@@ -1,6 +1,6 @@
 # Azure Tenant Grapher - Cloud Migration Handoff
-**Generated**: 2025-10-15 20:13 UTC  
-**Context**: Migrating autonomous replication system to cloud environment  
+**Generated**: 2025-10-15 20:13 UTC
+**Context**: Migrating autonomous replication system to cloud environment
 **Critical**: Previous local sessions failed to maintain persistence
 
 ---
@@ -63,8 +63,8 @@ while not objective_achieved():
   - Subscription ID: `9b00bc5e-9abc-45de-9958-02a9d9277b16`
   - Resources: 410 total
   - Status: Fully scanned into Neo4j
-  
-- **Target**: DefenderATEVET12  
+
+- **Target**: DefenderATEVET12
   - Subscription ID: `c190c55a-9ab2-4b1e-92c4-cc8b1a032285`
   - Resources: 158 pre-existing + deployments
   - Credentials: Available via `az account show`
@@ -180,55 +180,55 @@ def check_objective_achieved():
 def get_next_iteration_number():
     """Find highest iteration number + 1"""
     demos = Path("demos")
-    iterations = [int(d.name.replace("iteration", "")) 
-                  for d in demos.glob("iteration*") 
+    iterations = [int(d.name.replace("iteration", ""))
+                  for d in demos.glob("iteration*")
                   if d.name.replace("iteration", "").isdigit()]
     return max(iterations) + 1 if iterations else 1
 
 def main():
     print("🚀 Starting autonomous replication loop...")
     print("⚠️  This session will NOT stop until objective is achieved")
-    
+
     iteration = get_next_iteration_number()
-    
+
     while True:
         try:
             # Check if we're done
             if check_objective_achieved():
                 print("✅ OBJECTIVE ACHIEVED - Stopping")
-                subprocess.run(['~/.local/bin/imessR', 
+                subprocess.run(['~/.local/bin/imessR',
                               '✅ OBJECTIVE ACHIEVED - 100% fidelity reached'])
                 break
-            
+
             print(f"\n{'='*60}")
             print(f"ITERATION {iteration}")
             print(f"{'='*60}")
-            
+
             # Generate IaC
             print(f"Generating IaC...")
             # ... run atg generate-iac
-            
+
             # Validate
             print(f"Validating...")
             # ... run terraform validate
-            
+
             # Deploy
             print(f"Deploying...")
             # ... run terraform apply with timeout
-            
+
             # Rescan
             print(f"Rescanning target tenant...")
             # ... run atg scan
-            
+
             # Calculate fidelity
             print(f"Checking fidelity...")
             # ... query Neo4j
-            
+
             iteration += 1
-            
+
             # Keep session alive
             time.sleep(60)
-            
+
         except KeyboardInterrupt:
             print("\n⚠️  Interrupted by user")
             break
@@ -347,7 +347,7 @@ RETURN count(r) as count
 """
 source_count = g.evaluate(source_query)
 
-# Target tenant  
+# Target tenant
 target_query = """
 MATCH (r:Resource)
 WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
@@ -570,7 +570,7 @@ The objective is clear, the tools are built, the patterns are established. What'
 
 ---
 
-**Last Updated**: 2025-10-15 20:13 UTC  
-**Document**: CLOUD_HANDOFF_2025-10-15.md  
-**Previous Session Duration**: ~10 hours over multiple attempts (all stopped prematurely)  
+**Last Updated**: 2025-10-15 20:13 UTC
+**Document**: CLOUD_HANDOFF_2025-10-15.md
+**Previous Session Duration**: ~10 hours over multiple attempts (all stopped prematurely)
 **Next Session Goal**: Complete autonomous operation until 100% objective achieved

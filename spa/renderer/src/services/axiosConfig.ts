@@ -10,12 +10,12 @@ axios.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Add request timestamp for tracking
     (config as any).metadata = { startTime: new Date() };
-    
+
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
       // Console log removed
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -31,7 +31,7 @@ axios.interceptors.response.use(
     const startTime = (response.config as any).metadata?.startTime;
     if (startTime) {
       const duration = new Date().getTime() - new Date(startTime).getTime();
-      
+
       // Log slow requests
       if (duration > 5000) {
         errorService.logWarning(`Slow request detected: ${response.config.url} took ${duration}ms`, {
@@ -41,7 +41,7 @@ axios.interceptors.response.use(
         });
       }
     }
-    
+
     return response;
   },
   (error: AxiosError) => {
@@ -77,7 +77,7 @@ axios.interceptors.response.use(
       // Server responded with error status
       const status = (error as any).response.status;
       const message = (error as any).response?.data?.message || (error as any).message;
-      
+
       if (status >= 500) {
         errorService.logError(
           `Server error (${status}): ${message}`,

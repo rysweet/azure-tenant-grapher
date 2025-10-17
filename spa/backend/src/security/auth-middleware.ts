@@ -52,7 +52,7 @@ export class AuthMiddleware {
   static createSession(userId: string, clientId: string, ipAddress: string, userAgent?: string): string {
     const token = this.generateToken();
     const now = new Date();
-    
+
     const session: SessionInfo = {
       token,
       userId,
@@ -66,9 +66,9 @@ export class AuthMiddleware {
 
     // Clean up old sessions for this user
     this.cleanupUserSessions(userId);
-    
+
     activeSessions.set(token, session);
-    
+
     logger.info('Session created', {
       userId,
       clientId,
@@ -83,13 +83,13 @@ export class AuthMiddleware {
    */
   static validateToken(token: string): SessionInfo | null {
     const session = activeSessions.get(token);
-    
+
     if (!session) {
       return null;
     }
 
     const now = new Date();
-    
+
     // Check if token has expired
     if (session.expiresAt < now) {
       activeSessions.delete(token);
@@ -99,7 +99,7 @@ export class AuthMiddleware {
 
     // Update last activity
     session.lastActivity = now;
-    
+
     return session;
   }
 
@@ -109,7 +109,7 @@ export class AuthMiddleware {
   static async authenticate(socket: Socket, next: (err?: ExtendedError) => void) {
     try {
       const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
         logger.warn('WebSocket connection attempt without token', {
           address: socket.handshake.address
@@ -118,7 +118,7 @@ export class AuthMiddleware {
       }
 
       const session = AuthMiddleware.validateToken(token);
-      
+
       if (!session) {
         logger.warn('WebSocket connection attempt with invalid token', {
           address: socket.handshake.address,
@@ -172,7 +172,7 @@ export class AuthMiddleware {
 
     // Check if we're still in the same window
     const windowAge = now.getTime() - userRateLimit.windowStart.getTime();
-    
+
     if (windowAge > CONFIG.RATE_LIMIT_WINDOW_MS) {
       // New window
       userRateLimit.requests = 1;
@@ -209,7 +209,7 @@ export class AuthMiddleware {
 
       isAlive = false;
       socket.emit('ping');
-      
+
       heartbeatTimeout = setTimeout(() => {
         if (!isAlive) {
           logger.warn('Client failed to respond to ping', {
@@ -253,7 +253,7 @@ export class AuthMiddleware {
    */
   static revokeToken(token: string): boolean {
     const session = activeSessions.get(token);
-    
+
     if (session) {
       activeSessions.delete(token);
       logger.info('Token revoked', {
@@ -262,7 +262,7 @@ export class AuthMiddleware {
       });
       return true;
     }
-    
+
     return false;
   }
 
@@ -271,7 +271,7 @@ export class AuthMiddleware {
    */
   static revokeUserTokens(userId: string): number {
     let count = 0;
-    
+
     for (const [token, session] of activeSessions.entries()) {
       if (session.userId === userId) {
         activeSessions.delete(token);
@@ -306,7 +306,7 @@ export class AuthMiddleware {
 
     // Also clean up old rate limit entries
     const rateLimitCutoff = new Date(now.getTime() - CONFIG.RATE_LIMIT_WINDOW_MS * 2);
-    
+
     for (const [userId, info] of rateLimitStore.entries()) {
       if (info.windowStart < rateLimitCutoff) {
         rateLimitStore.delete(userId);
@@ -319,7 +319,7 @@ export class AuthMiddleware {
    */
   private static cleanupUserSessions(userId: string) {
     const userSessions: Array<[string, SessionInfo]> = [];
-    
+
     for (const [token, session] of activeSessions.entries()) {
       if (session.userId === userId) {
         userSessions.push([token, session]);
@@ -329,9 +329,9 @@ export class AuthMiddleware {
     // If user has too many sessions, remove the oldest ones
     if (userSessions.length >= CONFIG.MAX_SESSIONS_PER_USER) {
       userSessions.sort((a, b) => a[1].createdAt.getTime() - b[1].createdAt.getTime());
-      
+
       const toRemove = userSessions.length - CONFIG.MAX_SESSIONS_PER_USER + 1;
-      
+
       for (let i = 0; i < toRemove; i++) {
         activeSessions.delete(userSessions[i][0]);
         logger.info('Removed old session due to limit', {
@@ -348,7 +348,7 @@ export class AuthMiddleware {
   static getStats() {
     const now = new Date();
     const sessions = Array.from(activeSessions.values());
-    
+
     return {
       totalSessions: sessions.length,
       activeSessions: sessions.filter(s => s.lastActivity > new Date(now.getTime() - 5 * 60 * 1000)).length,

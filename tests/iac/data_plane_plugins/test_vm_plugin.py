@@ -5,18 +5,16 @@ These tests mock the Azure SDK to verify plugin behavior without
 requiring actual Azure resources.
 """
 
+from typing import Any, Dict
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from typing import Any, Dict, List
 
 from src.iac.data_plane_plugins.vm_plugin import VirtualMachinePlugin
 from src.iac.plugins.base_plugin import (
     DataPlaneItem,
     ReplicationMode,
-    ReplicationResult,
-    Permission,
 )
-
 
 # ============ FIXTURES ============
 
@@ -136,7 +134,12 @@ def test_validate_resource_none(vm_plugin):
 @patch("azure.mgmt.compute.ComputeManagementClient")
 @patch("azure.identity.DefaultAzureCredential")
 def test_discover_success(
-    mock_credential, mock_compute_client, vm_plugin, vm_resource, mock_extension, mock_data_disk
+    mock_credential,
+    mock_compute_client,
+    vm_plugin,
+    vm_resource,
+    mock_extension,
+    mock_data_disk,
 ):
     """Test successful discovery of VM extensions and data disks."""
     # Setup mocks
@@ -225,8 +228,8 @@ def test_discover_with_azure_error(
     mock_compute_client.return_value = mock_client_instance
 
     # Mock Azure error during extension listing
-    mock_client_instance.virtual_machine_extensions.list.side_effect = HttpResponseError(
-        "VM not found"
+    mock_client_instance.virtual_machine_extensions.list.side_effect = (
+        HttpResponseError("VM not found")
     )
 
     # Mock successful data disk retrieval
@@ -385,7 +388,10 @@ def test_generate_replication_code_unsupported_format():
     plugin = VirtualMachinePlugin()
     items = [
         DataPlaneItem(
-            name="test", item_type="vm_extension", properties={}, source_resource_id="/test"
+            name="test",
+            item_type="vm_extension",
+            properties={},
+            source_resource_id="/test",
         )
     ]
 
@@ -421,7 +427,9 @@ def test_replicate_with_mode_template(
     target_vm["name"] = "target-vm"
     target_vm["id"] = target_vm["id"].replace("test-vm", "target-vm")
 
-    result = vm_plugin.replicate_with_mode(vm_resource, target_vm, ReplicationMode.TEMPLATE)
+    result = vm_plugin.replicate_with_mode(
+        vm_resource, target_vm, ReplicationMode.TEMPLATE
+    )
 
     # Assertions
     assert result.success is True
@@ -453,9 +461,7 @@ def test_replicate_with_mode_replication(
     # Mock extension creation
     mock_poller = Mock()
     mock_poller.result.return_value = None
-    mock_client_instance.virtual_machine_extensions.begin_create_or_update.return_value = (
-        mock_poller
-    )
+    mock_client_instance.virtual_machine_extensions.begin_create_or_update.return_value = mock_poller
 
     # Execute replication in full mode
     target_vm = vm_resource.copy()
@@ -530,7 +536,9 @@ def test_replicate_with_progress_reporter(
     target_vm["name"] = "target-vm"
     target_vm["id"] = target_vm["id"].replace("test-vm", "target-vm")
 
-    result = vm_plugin.replicate_with_mode(vm_resource, target_vm, ReplicationMode.TEMPLATE)
+    result = vm_plugin.replicate_with_mode(
+        vm_resource, target_vm, ReplicationMode.TEMPLATE
+    )
 
     # Verify progress reporting
     assert mock_progress.report_replication_progress.called
@@ -548,7 +556,9 @@ def test_get_required_permissions_template_mode():
 
     assert len(perms) > 0
     assert any("Microsoft.Compute/virtualMachines/read" in p.actions for p in perms)
-    assert any("Microsoft.Compute/virtualMachines/extensions/read" in p.actions for p in perms)
+    assert any(
+        "Microsoft.Compute/virtualMachines/extensions/read" in p.actions for p in perms
+    )
 
 
 def test_get_required_permissions_replication_mode():
@@ -558,7 +568,9 @@ def test_get_required_permissions_replication_mode():
 
     assert len(perms) > 0
     assert any("Microsoft.Compute/virtualMachines/read" in p.actions for p in perms)
-    assert any("Microsoft.Compute/virtualMachines/extensions/write" in p.actions for p in perms)
+    assert any(
+        "Microsoft.Compute/virtualMachines/extensions/write" in p.actions for p in perms
+    )
     assert any("Microsoft.Compute/snapshots/write" in p.actions for p in perms)
 
 
@@ -612,7 +624,9 @@ def test_sanitize_name():
     assert plugin._sanitize_name("my-extension") == "my_extension"
     assert plugin._sanitize_name("extension.v1.0") == "extension_v1_0"
     assert plugin._sanitize_name("Extension With Spaces") == "extension_with_spaces"
-    assert plugin._sanitize_name("123-starts-with-number") == "vm_123_starts_with_number"
+    assert (
+        plugin._sanitize_name("123-starts-with-number") == "vm_123_starts_with_number"
+    )
 
 
 # ============ TIME ESTIMATION TESTS ============
@@ -623,7 +637,10 @@ def test_estimate_operation_time_template_mode():
     plugin = VirtualMachinePlugin()
     items = [
         DataPlaneItem(
-            name="ext1", item_type="vm_extension", properties={}, source_resource_id="/test"
+            name="ext1",
+            item_type="vm_extension",
+            properties={},
+            source_resource_id="/test",
         )
         for _ in range(5)
     ]
@@ -639,10 +656,16 @@ def test_estimate_operation_time_replication_mode():
     # 2 extensions + 1 data disk (100GB)
     items = [
         DataPlaneItem(
-            name="ext1", item_type="vm_extension", properties={}, source_resource_id="/test"
+            name="ext1",
+            item_type="vm_extension",
+            properties={},
+            source_resource_id="/test",
         ),
         DataPlaneItem(
-            name="ext2", item_type="vm_extension", properties={}, source_resource_id="/test"
+            name="ext2",
+            item_type="vm_extension",
+            properties={},
+            source_resource_id="/test",
         ),
         DataPlaneItem(
             name="disk1",
@@ -670,7 +693,9 @@ def test_estimate_operation_time_no_items():
 
 @patch("azure.mgmt.compute.ComputeManagementClient")
 @patch("azure.identity.DefaultAzureCredential")
-def test_discover_with_malformed_resource_id(mock_credential, mock_compute_client, vm_plugin):
+def test_discover_with_malformed_resource_id(
+    mock_credential, mock_compute_client, vm_plugin
+):
     """Test discovery handles malformed resource ID gracefully."""
     malformed_resource = {
         "id": "not-a-valid-resource-id",
@@ -705,7 +730,9 @@ def test_replicate_with_no_discovered_items(
 
     # Execute replication
     target_vm = vm_resource.copy()
-    result = vm_plugin.replicate_with_mode(vm_resource, target_vm, ReplicationMode.TEMPLATE)
+    result = vm_plugin.replicate_with_mode(
+        vm_resource, target_vm, ReplicationMode.TEMPLATE
+    )
 
     # Should succeed with warning
     assert result.success is True

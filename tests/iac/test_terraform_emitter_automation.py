@@ -6,7 +6,7 @@ This module tests the Azure Automation resource types:
 """
 
 import json
-import pytest
+
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 
 
@@ -16,9 +16,14 @@ class TestAutomationResourceMappings:
     def test_automation_account_mapping(self):
         """Test Microsoft.Automation/automationAccounts mapping."""
         emitter = TerraformEmitter()
-        assert "Microsoft.Automation/automationAccounts" in emitter.AZURE_TO_TERRAFORM_MAPPING
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Automation/automationAccounts"]
+            "Microsoft.Automation/automationAccounts"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING[
+                "Microsoft.Automation/automationAccounts"
+            ]
             == "azurerm_automation_account"
         )
 
@@ -49,13 +54,15 @@ class TestAutomationAccountConversion:
             "type": "Microsoft.Automation/automationAccounts",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "sku": {
-                    "name": "Basic",
-                    "capacity": None,
-                    "family": None,
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "Basic",
+                        "capacity": None,
+                        "family": None,
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -78,11 +85,13 @@ class TestAutomationAccountConversion:
             "type": "Microsoft.Automation/automationAccounts",
             "location": "westus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "sku": {
-                    "name": "Free",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "Free",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -101,15 +110,19 @@ class TestAutomationAccountConversion:
             "type": "Microsoft.Automation/automationAccounts",
             "location": "eastus",
             "resource_group": "test-rg",
-            "tags": json.dumps({
-                "Environment": "Production",
-                "Team": "DevOps",
-            }),
-            "properties": json.dumps({
-                "sku": {
-                    "name": "Basic",
-                },
-            }),
+            "tags": json.dumps(
+                {
+                    "Environment": "Production",
+                    "Team": "DevOps",
+                }
+            ),
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "Basic",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -133,15 +146,17 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "PowerShell",
-                "logProgress": True,
-                "logVerbose": False,
-                "publishContentLink": {
-                    "uri": "https://example.com/runbook.ps1",
-                    "version": "1.0.0.0",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "PowerShell",
+                    "logProgress": True,
+                    "logVerbose": False,
+                    "publishContentLink": {
+                        "uri": "https://example.com/runbook.ps1",
+                        "version": "1.0.0.0",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -158,7 +173,9 @@ class TestAutomationRunbookConversion:
         assert config["log_progress"] is True
         assert config["log_verbose"] is False
         assert "publish_content_link" in config
-        assert config["publish_content_link"]["uri"] == "https://example.com/runbook.ps1"
+        assert (
+            config["publish_content_link"]["uri"] == "https://example.com/runbook.ps1"
+        )
         assert config["publish_content_link"]["version"] == "1.0.0.0"
 
     def test_runbook_without_content_link(self):
@@ -170,11 +187,13 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "PowerShell",
-                "logProgress": False,
-                "logVerbose": False,
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "PowerShell",
+                    "logProgress": False,
+                    "logVerbose": False,
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -197,14 +216,16 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "westus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "Python3",
-                "logProgress": True,
-                "logVerbose": True,
-                "publishContentLink": {
-                    "uri": "https://example.com/runbook.py",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "Python3",
+                    "logProgress": True,
+                    "logVerbose": True,
+                    "publishContentLink": {
+                        "uri": "https://example.com/runbook.py",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -224,14 +245,16 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "eastus2",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "GraphPowerShell",
-                "logProgress": False,
-                "logVerbose": False,
-                "publishContentLink": {
-                    "uri": "https://example.com/graph-runbook.json",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "GraphPowerShell",
+                    "logProgress": False,
+                    "logVerbose": False,
+                    "publishContentLink": {
+                        "uri": "https://example.com/graph-runbook.json",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -249,14 +272,16 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "centralus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "PowerShellWorkflow",
-                "logProgress": True,
-                "logVerbose": False,
-                "publishContentLink": {
-                    "uri": "https://example.com/workflow.ps1",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "PowerShellWorkflow",
+                    "logProgress": True,
+                    "logVerbose": False,
+                    "publishContentLink": {
+                        "uri": "https://example.com/workflow.ps1",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -274,14 +299,16 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "runbookType": "PowerShell",
-                "logProgress": False,
-                "logVerbose": False,
-                "publishContentLink": {
-                    "uri": "https://example.com/runbook.ps1",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "runbookType": "PowerShell",
+                    "logProgress": False,
+                    "logVerbose": False,
+                    "publishContentLink": {
+                        "uri": "https://example.com/runbook.ps1",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -303,18 +330,22 @@ class TestAutomationRunbookConversion:
             "type": "Microsoft.Automation/automationAccounts/runbooks",
             "location": "eastus",
             "resource_group": "test-rg",
-            "tags": json.dumps({
-                "Purpose": "Backup",
-                "Schedule": "Daily",
-            }),
-            "properties": json.dumps({
-                "runbookType": "PowerShell",
-                "logProgress": False,
-                "logVerbose": False,
-                "publishContentLink": {
-                    "uri": "https://example.com/backup.ps1",
-                },
-            }),
+            "tags": json.dumps(
+                {
+                    "Purpose": "Backup",
+                    "Schedule": "Daily",
+                }
+            ),
+            "properties": json.dumps(
+                {
+                    "runbookType": "PowerShell",
+                    "logProgress": False,
+                    "logVerbose": False,
+                    "publishContentLink": {
+                        "uri": "https://example.com/backup.ps1",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})

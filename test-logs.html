@@ -68,14 +68,14 @@
 <body>
     <h1>Log WebSocket Test</h1>
     <div id="status" class="disconnected">Disconnected</div>
-    
+
     <div>
         <button onclick="connect()">Connect</button>
         <button onclick="disconnect()">Disconnect</button>
         <button onclick="clearLogs()">Clear Logs</button>
         <button onclick="testBackendLog()">Test Backend Log</button>
     </div>
-    
+
     <div id="logs"></div>
 
     <script>
@@ -103,16 +103,16 @@
             };
             const level = levelMap[entry.level] || 'info';
             logDiv.className = `log-entry log-${level}`;
-            
+
             const timestamp = new Date(entry.timestamp).toLocaleTimeString();
             const component = entry.component ? `[${entry.component}]` : '';
-            
+
             logDiv.textContent = `[${timestamp}] ${level.toUpperCase()} ${component} ${entry.message}`;
-            
+
             if (entry.metadata) {
                 logDiv.textContent += '\n  ' + JSON.stringify(entry.metadata, null, 2);
             }
-            
+
             logsDiv.appendChild(logDiv);
             logsDiv.scrollTop = logsDiv.scrollHeight;
         }
@@ -139,7 +139,7 @@
                 try {
                     const data = JSON.parse(event.data);
                     console.log('Received message:', data);
-                    
+
                     if (data.type === 'log-batch' && Array.isArray(data.entries)) {
                         data.entries.forEach(entry => addLog(entry));
                     }

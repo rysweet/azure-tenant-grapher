@@ -92,7 +92,9 @@ class DeploymentJobTracker:
                 CREATE (job:DeploymentJob $properties)
                 RETURN job.job_id as job_id
                 """
-                result = session.run(create_query, parameters={"properties": job_properties})
+                result = session.run(
+                    create_query, parameters={"properties": job_properties}
+                )
                 record = result.single()
 
                 if not record:
@@ -145,9 +147,13 @@ class DeploymentJobTracker:
                 },
             ) from e
         except Exception as e:
-            self._logger.exception("Unexpected error creating deployment job", error=str(e))
+            self._logger.exception(
+                "Unexpected error creating deployment job", error=str(e)
+            )
             # Provide a default query string for the error case
-            error_query = "CREATE (job:DeploymentJob $properties) RETURN job.job_id as job_id"
+            error_query = (
+                "CREATE (job:DeploymentJob $properties) RETURN job.job_id as job_id"
+            )
             raise Neo4jQueryError(
                 f"Failed to create deployment job: {e}",
                 query=error_query,
@@ -227,7 +233,9 @@ class DeploymentJobTracker:
                 },
             ) from e
         except Exception as e:
-            self._logger.exception("Unexpected error updating deployment job", error=str(e))
+            self._logger.exception(
+                "Unexpected error updating deployment job", error=str(e)
+            )
             raise Neo4jQueryError(
                 f"Failed to update deployment job: {e}",
                 query="update_job",
@@ -279,7 +287,9 @@ class DeploymentJobTracker:
                 },
             ) from e
         except Exception as e:
-            self._logger.exception("Unexpected error retrieving deployment job", error=str(e))
+            self._logger.exception(
+                "Unexpected error retrieving deployment job", error=str(e)
+            )
             raise Neo4jQueryError(
                 f"Failed to retrieve deployment job: {e}",
                 query="get_job",
@@ -287,9 +297,7 @@ class DeploymentJobTracker:
                 cause=e,
             ) from e
 
-    def link_deployed_resources(
-        self, job_id: str, resource_ids: list[str]
-    ) -> int:
+    def link_deployed_resources(self, job_id: str, resource_ids: list[str]) -> int:
         """
         Create DEPLOYED relationships between a job and resources.
 
@@ -360,9 +368,7 @@ class DeploymentJobTracker:
                 cause=e,
             ) from e
 
-    def get_job_history(
-        self, tenant_id: str, limit: int = 10
-    ) -> list[dict[str, Any]]:
+    def get_job_history(self, tenant_id: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get deployment job history for a tenant.
 
@@ -376,9 +382,7 @@ class DeploymentJobTracker:
         Raises:
             Neo4jQueryError: If query fails
         """
-        self._logger.debug(
-            "Retrieving job history", tenant_id=tenant_id, limit=limit
-        )
+        self._logger.debug("Retrieving job history", tenant_id=tenant_id, limit=limit)
 
         try:
             with self.session_manager.session() as session:
@@ -414,7 +418,9 @@ class DeploymentJobTracker:
                 },
             ) from e
         except Exception as e:
-            self._logger.exception("Unexpected error retrieving job history", error=str(e))
+            self._logger.exception(
+                "Unexpected error retrieving job history", error=str(e)
+            )
             raise Neo4jQueryError(
                 f"Failed to retrieve job history: {e}",
                 query="get_job_history",

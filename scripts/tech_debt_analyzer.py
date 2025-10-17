@@ -5,17 +5,17 @@ Comprehensive detection and reporting of technical debt patterns
 """
 
 import json
-import re
 import subprocess
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class Severity(Enum):
     """Issue severity levels"""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -24,6 +24,7 @@ class Severity(Enum):
 
 class Category(Enum):
     """Technical debt categories"""
+
     STUB = "stub"
     TODO = "todo"
     EXCEPTION = "swallowed_exception"
@@ -34,6 +35,7 @@ class Category(Enum):
 @dataclass
 class Issue:
     """Represents a single technical debt issue"""
+
     id: str
     category: Category
     severity: Severity
@@ -61,13 +63,14 @@ class Issue:
             "context": self.context,
             "recommendation": self.recommendation,
             "is_production": self.is_production,
-            "estimated_effort_hours": self.estimated_effort_hours
+            "estimated_effort_hours": self.estimated_effort_hours,
         }
 
 
 @dataclass
 class ScanResult:
     """Complete scan results"""
+
     scan_metadata: Dict[str, Any] = field(default_factory=dict)
     issues: List[Issue] = field(default_factory=list)
     false_positives: List[Dict[str, Any]] = field(default_factory=list)
@@ -81,7 +84,7 @@ class ScanResult:
             "issues": [issue.to_dict() for issue in self.issues],
             "false_positives": self.false_positives,
             "acceptable_exceptions": self.acceptable_exceptions,
-            "summary": self.summary
+            "summary": self.summary,
         }
 
 
@@ -107,7 +110,7 @@ class TechnicalDebtAnalyzer:
             "*.spec.ts",
             "__tests__/",
             "examples/",
-            "demos/"
+            "demos/",
         ]
 
     def _load_patterns(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -120,7 +123,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "Function with pass-only body",
                     "recommendation": "Implement function logic or mark as abstract",
-                    "effort": 2.0
+                    "effort": 2.0,
                 },
                 {
                     "id": "PY-STUB-002",
@@ -128,7 +131,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "NotImplementedError in production code",
                     "recommendation": "Implement missing functionality",
-                    "effort": 4.0
+                    "effort": 4.0,
                 },
                 {
                     "id": "PY-STUB-004",
@@ -136,8 +139,8 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "Ellipsis stub implementation",
                     "recommendation": "Implement or remove stub",
-                    "effort": 2.0
-                }
+                    "effort": 2.0,
+                },
             ],
             "typescript_stubs": [
                 {
@@ -146,7 +149,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "Empty function implementation",
                     "recommendation": "Implement function body",
-                    "effort": 2.0
+                    "effort": 2.0,
                 },
                 {
                     "id": "TS-STUB-002",
@@ -154,8 +157,8 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.MEDIUM,
                     "description": "Arrow function returning undefined",
                     "recommendation": "Implement proper return value",
-                    "effort": 1.0
-                }
+                    "effort": 1.0,
+                },
             ],
             "todos": [
                 {
@@ -164,7 +167,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "TODO comment",
                     "recommendation": "Convert to GitHub issue or implement",
-                    "effort": 0.5
+                    "effort": 0.5,
                 },
                 {
                     "id": "TODO-002",
@@ -172,7 +175,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "FIXME comment indicating broken code",
                     "recommendation": "Fix immediately",
-                    "effort": 2.0
+                    "effort": 2.0,
                 },
                 {
                     "id": "TODO-003",
@@ -180,7 +183,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "HACK comment",
                     "recommendation": "Replace with proper implementation",
-                    "effort": 3.0
+                    "effort": 3.0,
                 },
                 {
                     "id": "TODO-004",
@@ -188,7 +191,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "XXX warning comment",
                     "recommendation": "Address issue or convert to tracked item",
-                    "effort": 1.0
+                    "effort": 1.0,
                 },
                 {
                     "id": "TODO-005",
@@ -196,8 +199,8 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Temporary code in production",
                     "recommendation": "Remove or make permanent with proper implementation",
-                    "effort": 4.0
-                }
+                    "effort": 4.0,
+                },
             ],
             "python_exceptions": [
                 {
@@ -206,7 +209,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Exception swallowed with pass",
                     "recommendation": "Add logging and proper error handling",
-                    "effort": 1.0
+                    "effort": 1.0,
                 },
                 {
                     "id": "PY-EXCEPT-002",
@@ -214,7 +217,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Bare except clause",
                     "recommendation": "Specify exception type",
-                    "effort": 0.5
+                    "effort": 0.5,
                 },
                 {
                     "id": "PY-EXCEPT-004",
@@ -222,8 +225,8 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Exception handler with TODO",
                     "recommendation": "Implement error handling",
-                    "effort": 2.0
-                }
+                    "effort": 2.0,
+                },
             ],
             "typescript_exceptions": [
                 {
@@ -232,7 +235,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Empty catch block",
                     "recommendation": "Add error logging and handling",
-                    "effort": 1.0
+                    "effort": 1.0,
                 },
                 {
                     "id": "TS-EXCEPT-003",
@@ -240,8 +243,8 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Catch block with TODO",
                     "recommendation": "Implement error handling",
-                    "effort": 2.0
-                }
+                    "effort": 2.0,
+                },
             ],
             "fakes": [
                 {
@@ -250,7 +253,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.CRITICAL,
                     "description": "Mock decorator in production code",
                     "recommendation": "Remove mocking from production",
-                    "effort": 4.0
+                    "effort": 4.0,
                 },
                 {
                     "id": "PY-FAKE-002",
@@ -258,7 +261,7 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "Hardcoded mock/fake data",
                     "recommendation": "Replace with real data or configuration",
-                    "effort": 2.0
+                    "effort": 2.0,
                 },
                 {
                     "id": "PY-FAKE-003",
@@ -266,9 +269,9 @@ class TechnicalDebtAnalyzer:
                     "severity": Severity.HIGH,
                     "description": "Function with fake/mock name",
                     "recommendation": "Implement real functionality",
-                    "effort": 4.0
-                }
-            ]
+                    "effort": 4.0,
+                },
+            ],
         }
 
     def _run_ripgrep(
@@ -277,7 +280,7 @@ class TechnicalDebtAnalyzer:
         file_types: Optional[List[str]] = None,
         paths: Optional[List[Path]] = None,
         multiline: bool = False,
-        case_insensitive: bool = False
+        case_insensitive: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Run ripgrep and parse results
@@ -307,10 +310,7 @@ class TechnicalDebtAnalyzer:
 
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=self.project_root
+                cmd, capture_output=True, text=True, cwd=self.project_root
             )
 
             matches = []
@@ -319,12 +319,18 @@ class TechnicalDebtAnalyzer:
                     data = json.loads(line)
                     if data.get("type") == "match":
                         match_data = data.get("data", {})
-                        matches.append({
-                            "file": match_data.get("path", {}).get("text", ""),
-                            "line": match_data.get("line_number", 0),
-                            "column": match_data.get("submatches", [{}])[0].get("start", 0),
-                            "text": match_data.get("lines", {}).get("text", "").strip()
-                        })
+                        matches.append(
+                            {
+                                "file": match_data.get("path", {}).get("text", ""),
+                                "line": match_data.get("line_number", 0),
+                                "column": match_data.get("submatches", [{}])[0].get(
+                                    "start", 0
+                                ),
+                                "text": match_data.get("lines", {})
+                                .get("text", "")
+                                .strip(),
+                            }
+                        )
                 except json.JSONDecodeError:
                     continue
 
@@ -339,16 +345,21 @@ class TechnicalDebtAnalyzer:
     def _is_production_file(self, file_path: str) -> bool:
         """Determine if file is production code (not test/example)"""
         test_indicators = [
-            "/tests/", "/test/", "test_", "_test.", ".test.", ".spec.",
-            "/examples/", "/demos/", "/fixtures/", "conftest.py"
+            "/tests/",
+            "/test/",
+            "test_",
+            "_test.",
+            ".test.",
+            ".spec.",
+            "/examples/",
+            "/demos/",
+            "/fixtures/",
+            "conftest.py",
         ]
         return not any(indicator in file_path for indicator in test_indicators)
 
     def _create_issue(
-        self,
-        match: Dict[str, Any],
-        pattern: Dict[str, Any],
-        category: Category
+        self, match: Dict[str, Any], pattern: Dict[str, Any], category: Category
     ) -> Issue:
         """Create an Issue object from a match and pattern"""
         self.issue_counter += 1
@@ -365,7 +376,7 @@ class TechnicalDebtAnalyzer:
             context=pattern["description"],
             recommendation=pattern["recommendation"],
             is_production=self._is_production_file(match["file"]),
-            estimated_effort_hours=pattern["effort"]
+            estimated_effort_hours=pattern["effort"],
         )
 
     def scan_python_stubs(self):
@@ -375,7 +386,7 @@ class TechnicalDebtAnalyzer:
                 pattern=pattern["pattern"],
                 file_types=["py"],
                 paths=[self.project_root / "src"],
-                multiline="\\n" in pattern["pattern"]
+                multiline="\\n" in pattern["pattern"],
             )
 
             for match in matches:
@@ -390,7 +401,7 @@ class TechnicalDebtAnalyzer:
                 pattern=pattern["pattern"],
                 file_types=["ts"],
                 paths=[self.project_root / "spa"],
-                multiline="\\{" in pattern["pattern"]
+                multiline="\\{" in pattern["pattern"],
             )
 
             for match in matches:
@@ -405,7 +416,7 @@ class TechnicalDebtAnalyzer:
                 pattern=pattern["pattern"],
                 file_types=["py", "ts", "js"],
                 paths=[self.project_root / "src", self.project_root / "spa"],
-                case_insensitive=True
+                case_insensitive=True,
             )
 
             for match in matches:
@@ -419,7 +430,7 @@ class TechnicalDebtAnalyzer:
                 pattern=pattern["pattern"],
                 file_types=["py"],
                 paths=[self.project_root / "src"],
-                multiline="\\n" in pattern["pattern"]
+                multiline="\\n" in pattern["pattern"],
             )
 
             for match in matches:
@@ -434,7 +445,7 @@ class TechnicalDebtAnalyzer:
                 pattern=pattern["pattern"],
                 file_types=["ts"],
                 paths=[self.project_root / "spa"],
-                multiline=True
+                multiline=True,
             )
 
             for match in matches:
@@ -448,7 +459,7 @@ class TechnicalDebtAnalyzer:
             matches = self._run_ripgrep(
                 pattern=pattern["pattern"],
                 file_types=["py"],
-                paths=[self.project_root / "src"]
+                paths=[self.project_root / "src"],
             )
 
             for match in matches:
@@ -484,11 +495,7 @@ class TechnicalDebtAnalyzer:
         # Get metadata
         metadata = self._get_scan_metadata()
 
-        result = ScanResult(
-            scan_metadata=metadata,
-            issues=self.issues,
-            summary=summary
-        )
+        result = ScanResult(scan_metadata=metadata, issues=self.issues, summary=summary)
 
         print(f"\nScan complete. Found {len(self.issues)} issues.")
         return result
@@ -498,18 +505,24 @@ class TechnicalDebtAnalyzer:
         total = len(self.issues)
 
         by_severity = {
-            "critical": len([i for i in self.issues if i.severity == Severity.CRITICAL]),
+            "critical": len(
+                [i for i in self.issues if i.severity == Severity.CRITICAL]
+            ),
             "high": len([i for i in self.issues if i.severity == Severity.HIGH]),
             "medium": len([i for i in self.issues if i.severity == Severity.MEDIUM]),
-            "low": len([i for i in self.issues if i.severity == Severity.LOW])
+            "low": len([i for i in self.issues if i.severity == Severity.LOW]),
         }
 
         by_category = {
             "stubs": len([i for i in self.issues if i.category == Category.STUB]),
             "todos": len([i for i in self.issues if i.category == Category.TODO]),
-            "swallowed_exceptions": len([i for i in self.issues if i.category == Category.EXCEPTION]),
+            "swallowed_exceptions": len(
+                [i for i in self.issues if i.category == Category.EXCEPTION]
+            ),
             "fake_apis": len([i for i in self.issues if i.category == Category.FAKE]),
-            "unimplemented": len([i for i in self.issues if i.category == Category.UNIMPLEMENTED])
+            "unimplemented": len(
+                [i for i in self.issues if i.category == Category.UNIMPLEMENTED]
+            ),
         }
 
         production_issues = len([i for i in self.issues if i.is_production])
@@ -521,7 +534,7 @@ class TechnicalDebtAnalyzer:
             "test_issues": total - production_issues,
             "by_severity": by_severity,
             "by_category": by_category,
-            "estimated_total_effort_hours": round(total_effort, 1)
+            "estimated_total_effort_hours": round(total_effort, 1),
         }
 
     def _get_scan_metadata(self) -> Dict[str, Any]:
@@ -529,7 +542,7 @@ class TechnicalDebtAnalyzer:
         metadata = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "scanner_version": "1.0.0",
-            "codebase_root": str(self.project_root)
+            "codebase_root": str(self.project_root),
         }
 
         try:
@@ -538,14 +551,14 @@ class TechnicalDebtAnalyzer:
                 ["git", "rev-parse", "HEAD"],
                 capture_output=True,
                 text=True,
-                cwd=self.project_root
+                cwd=self.project_root,
             ).stdout.strip()
 
             branch = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 capture_output=True,
                 text=True,
-                cwd=self.project_root
+                cwd=self.project_root,
             ).stdout.strip()
 
             metadata["commit_sha"] = commit
@@ -592,21 +605,25 @@ def main():
         f.write(f"Total Issues:       {result.summary['total_issues']}\n")
         f.write(f"Production Issues:  {result.summary['production_issues']}\n")
         f.write(f"Test Issues:        {result.summary['test_issues']}\n")
-        f.write(f"Estimated Effort:   {result.summary['estimated_total_effort_hours']} hours\n\n")
+        f.write(
+            f"Estimated Effort:   {result.summary['estimated_total_effort_hours']} hours\n\n"
+        )
 
         f.write("BY SEVERITY\n")
         f.write("-" * 60 + "\n")
-        for severity, count in result.summary['by_severity'].items():
+        for severity, count in result.summary["by_severity"].items():
             f.write(f"{severity.upper():12} {count:3d}\n")
 
         f.write("\nBY CATEGORY\n")
         f.write("-" * 60 + "\n")
-        for category, count in result.summary['by_category'].items():
+        for category, count in result.summary["by_category"].items():
             f.write(f"{category:25} {count:3d}\n")
 
-        if result.summary['by_severity']['critical'] > 0:
+        if result.summary["by_severity"]["critical"] > 0:
             f.write("\n" + "!" * 60 + "\n")
-            f.write(f"WARNING: {result.summary['by_severity']['critical']} CRITICAL issues found!\n")
+            f.write(
+                f"WARNING: {result.summary['by_severity']['critical']} CRITICAL issues found!\n"
+            )
             f.write("!" * 60 + "\n")
 
     print(f"Summary report: {summary_file}")
@@ -624,8 +641,10 @@ def main():
     print("=" * 60)
 
     # Exit code based on critical issues
-    if result.summary['by_severity']['critical'] > 0:
-        print(f"\nERROR: {result.summary['by_severity']['critical']} critical issues found!")
+    if result.summary["by_severity"]["critical"] > 0:
+        print(
+            f"\nERROR: {result.summary['by_severity']['critical']} critical issues found!"
+        )
         return 1
     return 0
 

@@ -40,7 +40,9 @@ class BackgroundDeploymentManager:
         self.jobs_dir = jobs_dir or Path.cwd() / ".deployments" / "jobs"
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         self._logger = logger.bind(component="BackgroundDeploymentManager")
-        self._logger.info("Initialized background deployment manager", jobs_dir=str(self.jobs_dir))
+        self._logger.info(
+            "Initialized background deployment manager", jobs_dir=str(self.jobs_dir)
+        )
 
     def spawn_deployment(
         self,
@@ -217,7 +219,9 @@ class BackgroundDeploymentManager:
 
         except Exception as e:
             # Cleanup on failure
-            self._logger.exception("Failed to spawn deployment process", job_id=job_id, error=str(e))
+            self._logger.exception(
+                "Failed to spawn deployment process", job_id=job_id, error=str(e)
+            )
 
             # Update status to failed
             error_status = {
@@ -283,7 +287,10 @@ class BackgroundDeploymentManager:
                     try:
                         with open(log_file) as f:
                             log_content = f.read()
-                            has_error = "error" in log_content.lower() or "failed" in log_content.lower()
+                            has_error = (
+                                "error" in log_content.lower()
+                                or "failed" in log_content.lower()
+                            )
                     except Exception:
                         pass
 
@@ -301,7 +308,9 @@ class BackgroundDeploymentManager:
 
         return status
 
-    def list_deployments(self, status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_deployments(
+        self, status_filter: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         List all deployment jobs with optional status filtering.
 
@@ -393,7 +402,9 @@ class BackgroundDeploymentManager:
         if not log_file.exists():
             raise ValueError(f"Log file for job {job_id} not found")
 
-        self._logger.debug("Streaming logs", job_id=job_id, follow=follow, tail_lines=tail_lines)
+        self._logger.debug(
+            "Streaming logs", job_id=job_id, follow=follow, tail_lines=tail_lines
+        )
 
         # Read existing content
         with open(log_file) as f:
@@ -477,6 +488,7 @@ class BackgroundDeploymentManager:
             if sys.platform == "win32":
                 # Windows: use taskkill
                 import subprocess
+
                 cmd = ["taskkill", "/F" if force else "/T", "/PID", str(pid)]
                 result = subprocess.run(cmd, capture_output=True, check=False)
                 success = result.returncode == 0
@@ -500,7 +512,9 @@ class BackgroundDeploymentManager:
                 if pid_file.exists():
                     pid_file.unlink()
 
-                self._logger.info("Successfully cancelled deployment", job_id=job_id, pid=pid)
+                self._logger.info(
+                    "Successfully cancelled deployment", job_id=job_id, pid=pid
+                )
 
             return success
 
@@ -520,7 +534,9 @@ class BackgroundDeploymentManager:
             return False
 
         except Exception as e:
-            self._logger.exception("Failed to cancel deployment", job_id=job_id, error=str(e))
+            self._logger.exception(
+                "Failed to cancel deployment", job_id=job_id, error=str(e)
+            )
             return False
 
     def _check_pid(self, pid: int) -> bool:
@@ -592,6 +608,7 @@ class BackgroundDeploymentManager:
                     # Only cleanup completed/failed jobs
                     if status.get("status") in ("completed", "failed", "cancelled"):
                         import shutil
+
                         shutil.rmtree(job_dir)
                         cleaned += 1
                         self._logger.info("Cleaned up old job", job_id=job_dir.name)
