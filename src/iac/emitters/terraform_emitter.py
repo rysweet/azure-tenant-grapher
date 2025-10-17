@@ -256,6 +256,17 @@ class TerraformEmitter(IaCEmitter):
             else:
                 terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
             if terraform_type:
+                # Skip NICs without ip_configurations - they will be skipped during generation
+                if azure_type == "Microsoft.Network/networkInterfaces":
+                    properties = self._parse_properties(resource)
+                    ip_configs = properties.get("ipConfigurations", [])
+                    if not ip_configs:
+                        logger.debug(
+                            f"Excluding NIC '{resource_name}' from resource index - "
+                            "missing ip_configurations (will be skipped during generation)"
+                        )
+                        continue
+
                 if terraform_type not in self._available_resources:
                     self._available_resources[terraform_type] = set()
                 safe_name = self._sanitize_terraform_name(resource_name)
@@ -691,45 +702,8 @@ class TerraformEmitter(IaCEmitter):
                 )
 
         elif azure_type == "Microsoft.Compute/virtualMachines":
-            # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
-            ssh_key_resource_name = f"{safe_name}_ssh_key"
-
-            # Add the tls_private_key resource to terraform config
-            if "resource" not in terraform_config:
-                terraform_config["resource"] = {}
-            if "tls_private_key" not in terraform_config["resource"]:
-                terraform_config["resource"]["tls_private_key"] = {}
-
-            terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
-                "algorithm": "RSA",
-                "rsa_bits": 4096,
-            }
-
-            # Ensure required VM properties with SSH key authentication
-            resource_config.update(
-                {
-                    "size": resource.get("size", "Standard_B2s"),
-                    "admin_username": resource.get("admin_username", "azureuser"),
-                    "admin_ssh_key": {
-                        "username": resource.get("admin_username", "azureuser"),
-                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
-                    },
-                    "os_disk": {
-                        "caching": "ReadWrite",
-                        "storage_account_type": "Standard_LRS",
-                    },
-                    "source_image_reference": {
-                        "publisher": "Canonical",
-                        "offer": "0001-com-ubuntu-server-jammy",
-                        "sku": "22_04-lts",
-                        "version": "latest",
-                    },
-                }
-            )
-
-            # Add network_interface_ids by parsing VM properties
+            # Validate network interfaces FIRST before creating any resources
             properties = self._parse_properties(resource)
-
             network_profile = properties.get("networkProfile", {})
             nics = network_profile.get("networkInterfaces", [])
 
@@ -769,23 +743,19 @@ class TerraformEmitter(IaCEmitter):
                                 })
 
                 if missing_nics:
-                    logger.error(
-                        f"VM '{resource_name}' references {len(missing_nics)} network interface(s) "
-                        f"that don't exist in Neo4j graph: {[n['nic_name'] for n in missing_nics]}"
-                    )
                     # Log detailed information about missing NICs
                     for missing_nic in missing_nics:
-                        logger.error(
-                            f"  Missing NIC: {missing_nic['nic_name']}\n"
+                        logger.warning(
+                            f"Skipping VM '{resource_name}' because NIC '{missing_nic['nic_name']}' was removed\n"
                             f"    Azure ID: {missing_nic['nic_id']}\n"
                             f"    Expected Terraform name: {missing_nic['nic_terraform_name']}"
                         )
-                    # Don't add invalid VM to output if all NICs are missing
-                    if not nic_refs:
-                        logger.error(
-                            f"Skipping VM '{resource_name}' - all referenced NICs are missing from graph"
-                        )
-                        return None
+                    # Cascade deletion: Skip VM if any NIC is missing
+                    logger.warning(
+                        f"VM '{resource_name}' references {len(missing_nics)} network interface(s) "
+                        f"that were removed: {[n['nic_name'] for n in missing_nics]}"
+                    )
+                    return None
 
                 if nic_refs:
                     resource_config["network_interface_ids"] = nic_refs
@@ -794,6 +764,42 @@ class TerraformEmitter(IaCEmitter):
                     f"VM '{resource_name}' has no network interfaces in properties. "
                     "Generated Terraform may be invalid."
                 )
+
+            # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
+            ssh_key_resource_name = f"{safe_name}_ssh_key"
+
+            # Add the tls_private_key resource to terraform config
+            if "resource" not in terraform_config:
+                terraform_config["resource"] = {}
+            if "tls_private_key" not in terraform_config["resource"]:
+                terraform_config["resource"]["tls_private_key"] = {}
+
+            terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
+                "algorithm": "RSA",
+                "rsa_bits": 4096,
+            }
+
+            # Ensure required VM properties with SSH key authentication
+            resource_config.update(
+                {
+                    "size": resource.get("size", "Standard_B2s"),
+                    "admin_username": resource.get("admin_username", "azureuser"),
+                    "admin_ssh_key": {
+                        "username": resource.get("admin_username", "azureuser"),
+                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
+                    },
+                    "os_disk": {
+                        "caching": "ReadWrite",
+                        "storage_account_type": "Standard_LRS",
+                    },
+                    "source_image_reference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts",
+                        "version": "latest",
+                    },
+                }
+            )
         elif azure_type == "Microsoft.Network/publicIPAddresses":
             resource_config["allocation_method"] = resource.get(
                 "allocation_method", "Static"
@@ -825,18 +831,43 @@ class TerraformEmitter(IaCEmitter):
                     public_ip_id, "publicIPAddresses"
                 )
 
-                # Build IP configuration block
+                # Build IP configuration block (public_ip_address_id is REQUIRED for Bastion Host)
                 ip_config_block = {
                     "name": ip_config_name,
                     "subnet_id": subnet_reference,  # Always set (even if placeholder)
                 }
 
-                # Add public IP reference if found
+                # Add public IP reference - REQUIRED for Bastion Host
                 if public_ip_name != "unknown":
-                    public_ip_name = self._sanitize_terraform_name(public_ip_name)
-                    ip_config_block["public_ip_address_id"] = (
-                        f"${{azurerm_public_ip.{public_ip_name}.id}}"
+                    public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
+                    # Validate that the public IP exists in the graph
+                    if self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+                        ip_config_block["public_ip_address_id"] = (
+                            f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                        )
+                    else:
+                        logger.error(
+                            f"Bastion Host '{resource_name}' references public IP '{public_ip_name}' "
+                            f"that doesn't exist in Neo4j graph. Azure ID: {public_ip_id}"
+                        )
+                        # Add placeholder to satisfy Terraform syntax
+                        ip_config_block["public_ip_address_id"] = (
+                            f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                        )
+                        self._missing_references.append({
+                            "resource_name": resource_name,
+                            "resource_type": "public_ip",
+                            "missing_resource_name": public_ip_name,
+                            "missing_resource_id": public_ip_id,
+                        })
+                else:
+                    # No public IP found in properties - this is a critical error
+                    logger.error(
+                        f"Bastion Host '{resource_name}' has no publicIPAddress in ip_configuration properties. "
+                        f"Bastion Hosts require a public IP. This resource is missing critical data from Neo4j and will fail validation."
                     )
+                    # Skip this bastion host - it cannot be deployed without a public IP
+                    return None
 
                 resource_config["ip_configuration"] = ip_config_block
 
@@ -900,10 +931,14 @@ class TerraformEmitter(IaCEmitter):
                         f"Generated Terraform may be invalid."
                     )
             else:
-                logger.warning(
+                # NICs without ipConfigurations in properties are missing critical data from Neo4j
+                # Skip these NICs entirely - they cannot be deployed without subnet information
+                logger.error(
                     f"NIC '{resource_name}' has no ip_configurations in properties. "
-                    "Generated Terraform may be invalid."
+                    "This NIC is missing critical subnet configuration data from Neo4j. "
+                    "Skipping this NIC as it cannot be deployed without ip_configuration block."
                 )
+                return None
         elif azure_type == "Microsoft.Network/subnets":
             properties = self._parse_properties(resource)
 
@@ -1464,18 +1499,27 @@ class TerraformEmitter(IaCEmitter):
             if not storage_account_id:
                 # Create placeholder - should be replaced with actual storage account reference
                 storage_account_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/mlworkspace{resource_name[:8]}"
-            
+            else:
+                # Normalize casing in resource ID
+                storage_account_id = self._normalize_resource_id(storage_account_id)
+
             # Key Vault ID (required)
             key_vault_id = properties.get("keyVault")
             if not key_vault_id:
                 # Create placeholder
                 key_vault_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.KeyVault/vaults/mlworkspace{resource_name[:8]}"
-            
+            else:
+                # Normalize casing in resource ID (Microsoft.Keyvault -> Microsoft.KeyVault)
+                key_vault_id = self._normalize_resource_id(key_vault_id)
+
             # Application Insights ID (required)
             application_insights_id = properties.get("applicationInsights")
             if not application_insights_id:
                 # Create placeholder - note: provider must be Microsoft.Insights (capital M and I)
                 application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Insights/components/mlworkspace{resource_name[:8]}"
+            else:
+                # Normalize casing in resource ID (Microsoft.insights -> Microsoft.Insights)
+                application_insights_id = self._normalize_resource_id(application_insights_id)
             
             resource_config.update({
                 "sku_name": sku.get("name", "Basic"),
@@ -1835,6 +1879,52 @@ class TerraformEmitter(IaCEmitter):
             )
 
         return prefixed_name
+
+    def _normalize_resource_id(self, resource_id: str) -> str:
+        """Normalize Azure resource ID by fixing provider namespace casing.
+
+        Azure resource IDs use inconsistent casing for provider namespaces.
+        Terraform requires correct casing (PascalCase for provider namespaces).
+
+        Args:
+            resource_id: Azure resource ID with potentially incorrect casing
+
+        Returns:
+            Normalized resource ID with correct provider namespace casing
+
+        Example:
+            >>> emitter._normalize_resource_id(
+            ...     "/subscriptions/.../providers/Microsoft.Keyvault/vaults/vault1"
+            ... )
+            '/subscriptions/.../providers/Microsoft.KeyVault/vaults/vault1'
+        """
+        if not resource_id:
+            return resource_id
+
+        # Map of incorrect casing to correct casing for provider namespaces
+        provider_casing_map = {
+            "Microsoft.Keyvault": "Microsoft.KeyVault",
+            "microsoft.keyvault": "Microsoft.KeyVault",
+            "Microsoft.insights": "Microsoft.Insights",
+            "microsoft.insights": "Microsoft.Insights",
+            "Microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalInsights": "Microsoft.OperationalInsights",
+        }
+
+        normalized_id = resource_id
+        for incorrect, correct in provider_casing_map.items():
+            # Use case-insensitive replacement in the provider segment
+            # Format: /providers/Microsoft.Keyvault/ or /providers/microsoft.insights/
+            incorrect_segment = f"/providers/{incorrect}/"
+            correct_segment = f"/providers/{correct}/"
+            # Case-insensitive search and replace
+            import re
+            pattern = re.compile(re.escape(incorrect_segment), re.IGNORECASE)
+            normalized_id = pattern.sub(correct_segment, normalized_id)
+
+        return normalized_id
 
     def _extract_resource_name_from_id(
         self, resource_id: str, resource_type: str
