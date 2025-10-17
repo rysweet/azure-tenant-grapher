@@ -980,6 +980,96 @@ async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     await agent_mode_command_handler(ctx, question)
 
 
+@cli.command("monitor")
+@click.option(
+    "--subscription-id",
+    help="Filter by subscription ID",
+)
+@click.option(
+    "--interval",
+    default=30,
+    type=int,
+    help="Check interval in seconds (default: 30)",
+)
+@click.option(
+    "--watch",
+    is_flag=True,
+    help="Continuous monitoring mode (like watch command)",
+)
+@click.option(
+    "--detect-stabilization",
+    is_flag=True,
+    help="Exit when database metrics have stabilized",
+)
+@click.option(
+    "--threshold",
+    default=3,
+    type=int,
+    help="Number of identical checks to consider stable (default: 3)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["json", "table", "compact"]),
+    default="compact",
+    help="Output format (default: compact)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def monitor(
+    ctx: click.Context,
+    subscription_id: Optional[str],
+    interval: int,
+    watch: bool,
+    detect_stabilization: bool,
+    threshold: int,
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Monitor Neo4j database resource counts and relationships.
+
+    This command queries the Neo4j database to display current resource counts,
+    relationships, resource groups, and resource types. It can run once or
+    continuously monitor the database.
+
+    Examples:
+
+        # Single check
+        atg monitor
+
+        # Single check for specific subscription
+        atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+
+        # Watch mode with 60 second interval
+        atg monitor --watch --interval 60
+
+        # Detect when database has stabilized
+        atg monitor --watch --detect-stabilization --threshold 3
+
+        # JSON output format
+        atg monitor --format json
+
+        # Table output format with watch
+        atg monitor --watch --format table
+    """
+    from src.cli_commands import monitor_command_handler
+
+    await monitor_command_handler(
+        subscription_id=subscription_id,
+        interval=interval,
+        watch=watch,
+        detect_stabilization=detect_stabilization,
+        threshold=threshold,
+        format_type=format_type,
+        no_container=no_container,
+    )
+
+
 @cli.command("mcp-query")
 @click.argument("query")
 @click.option(
