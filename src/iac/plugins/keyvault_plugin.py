@@ -346,27 +346,96 @@ class KeyVaultPlugin(DataPlanePlugin):
                     ]
                 )
 
-        # Generate code for keys (placeholder)
+        # Generate code for keys
         if keys:
-            code_lines.extend(
-                [
-                    "# Keys",
-                    "# TODO: Implement key replication code",
-                    f"# Found {len(keys)} keys: {', '.join(k.name for k in keys)}",
-                    "",
-                ]
-            )
+            code_lines.append("# Keys")
+            for item in keys:
+                resource_name = self._sanitize_name(item.name)
+                code_lines.extend(
+                    [
+                        f'resource "azurerm_key_vault_key" "{resource_name}" {{',
+                        f'  name         = "{item.name}"',
+                        "  # TODO: Reference your Key Vault resource here",
+                        "  key_vault_id = azurerm_key_vault.REPLACE_ME.id",
+                        "",
+                        f'  key_type = "{item.properties.get("key_type", "RSA")}"',
+                        "  key_size = 2048",
+                        "",
+                        "  key_opts = [",
+                        '    "decrypt",',
+                        '    "encrypt",',
+                        '    "sign",',
+                        '    "unwrapKey",',
+                        '    "verify",',
+                        '    "wrapKey",',
+                        "  ]",
+                        "",
+                    ]
+                )
 
-        # Generate code for certificates (placeholder)
+                if item.properties.get("tags"):
+                    code_lines.append("  tags = {")
+                    for key, value in item.properties["tags"].items():
+                        code_lines.append(f'    "{key}" = "{value}"')
+                    code_lines.append("  }")
+
+                code_lines.append("}")
+                code_lines.append("")
+
+        # Generate code for certificates
         if certificates:
-            code_lines.extend(
-                [
-                    "# Certificates",
-                    "# TODO: Implement certificate replication code",
-                    f"# Found {len(certificates)} certificates: {', '.join(c.name for c in certificates)}",
-                    "",
-                ]
-            )
+            code_lines.append("# Certificates")
+            for item in certificates:
+                resource_name = self._sanitize_name(item.name)
+                code_lines.extend(
+                    [
+                        f'resource "azurerm_key_vault_certificate" "{resource_name}" {{',
+                        f'  name         = "{item.name}"',
+                        "  # TODO: Reference your Key Vault resource here",
+                        "  key_vault_id = azurerm_key_vault.REPLACE_ME.id",
+                        "",
+                        "  certificate_policy {",
+                        "    issuer_parameters {",
+                        '      name = "Self"',
+                        "    }",
+                        "",
+                        "    key_properties {",
+                        '      exportable = true',
+                        '      key_type   = "RSA"',
+                        "      key_size   = 2048",
+                        "      reuse_key  = true",
+                        "    }",
+                        "",
+                        "    secret_properties {",
+                        '      content_type = "application/x-pkcs12"',
+                        "    }",
+                        "",
+                        "    x509_certificate_properties {",
+                        f'      subject            = "CN={item.name}"',
+                        "      validity_in_months = 12",
+                        "",
+                        "      key_usage = [",
+                        '        "cRLSign",',
+                        '        "dataEncipherment",',
+                        '        "digitalSignature",',
+                        '        "keyAgreement",',
+                        '        "keyCertSign",',
+                        '        "keyEncipherment",',
+                        "      ]",
+                        "    }",
+                        "  }",
+                        "",
+                    ]
+                )
+
+                if item.properties.get("tags"):
+                    code_lines.append("  tags = {")
+                    for key, value in item.properties["tags"].items():
+                        code_lines.append(f'    "{key}" = "{value}"')
+                    code_lines.append("  }")
+
+                code_lines.append("}")
+                code_lines.append("")
 
         return "\n".join(code_lines)
 

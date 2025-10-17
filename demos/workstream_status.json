@@ -1,0 +1,29 @@
+{
+  "workstreams": {
+    "full_scan": {
+      "status": "failed",
+      "start_time": "2025-10-14T23:03:45.770165",
+      "progress": [],
+      "error": "Usage: atg scan [OPTIONS]\nTry 'atg scan --help' for help.\n\nError: No such option: --include-entra-id\n"
+    },
+    "entra_id_mapping": {
+      "status": "pending_implementation",
+      "start_time": "2025-10-14T23:03:45.770332",
+      "progress": [],
+      "note": "Entra ID mapping needs implementation in terraform_emitter.py"
+    },
+    "data_plane_plugins": {
+      "status": "infrastructure_created",
+      "start_time": "2025-10-14T23:03:45.770484",
+      "progress": [],
+      "end_time": "2025-10-14T23:03:45.812144"
+    },
+    "deploy_iteration": {
+      "status": "pending_credentials",
+      "start_time": "2025-10-14T23:03:45.770697",
+      "progress": [],
+      "note": "Set ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID, ARM_SUBSCRIPTION_ID"
+    }
+  },
+  "start_time": "2025-10-14T23:03:45.590509"
+}

@@ -1,0 +1,1204 @@
+{
+  "terraform": {
+    "required_providers": {
+      "azurerm": {
+        "source": "hashicorp/azurerm",
+        "version": ">=3.0"
+      },
+      "random": {
+        "source": "hashicorp/random",
+        "version": ">=3.1"
+      },
+      "tls": {
+        "source": "hashicorp/tls",
+        "version": ">=4.0"
+      }
+    }
+  },
+  "provider": {
+    "azurerm": {
+      "features": {},
+      "resource_provider_registrations": "none",
+      "subscription_id": "${var.subscription_id}"
+    }
+  },
+  "variable": {
+    "subscription_id": {
+      "description": "Azure subscription ID for deployment",
+      "type": "string",
+      "default": ""
+    }
+  },
+  "resource": {
+    "azurerm_resource_group": {
+      "ITERATION98_simuland_api": {
+        "name": "ITERATION98_simuland-api",
+        "location": "eastus"
+      },
+      "ITERATION98_SimuLand": {
+        "name": "ITERATION98_SimuLand",
+        "location": "westus2"
+      },
+      "ITERATION98_SIMULAND": {
+        "name": "ITERATION98_SIMULAND",
+        "location": "westus2"
+      },
+      "ITERATION98_simuland": {
+        "name": "ITERATION98_simuland",
+        "location": "westus2"
+      }
+    },
+    "azurerm_virtual_network": {
+      "DC001_vnet": {
+        "name": "DC001-vnet",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "address_space": [
+          "10.6.0.0/16"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "Ubuntu_vnet": {
+        "name": "Ubuntu-vnet",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "address_space": [
+          "10.8.0.0/16"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_network_security_group": {
+      "DC001_nsg": {
+        "name": "DC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "IT001_nsg": {
+        "name": "IT001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "IT002_nsg": {
+        "name": "IT002-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "USER001_nsg": {
+        "name": "USER001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "WEB001_nsg": {
+        "name": "WEB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "USER002_nsg": {
+        "name": "USER002-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "HR001_nsg": {
+        "name": "HR001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "DB001_nsg": {
+        "name": "DB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "DB001nsg109": {
+        "name": "DB001nsg109",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "GUEST002_nsg": {
+        "name": "GUEST002-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "GUEST001_nsg": {
+        "name": "GUEST001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "SEC001_nsg": {
+        "name": "SEC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "SEC002_nsg": {
+        "name": "SEC002-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "HR002_nsg": {
+        "name": "HR002-nsg",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_subnet": {
+      "Ubuntu_vnet_default": {
+        "name": "default",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "virtual_network_name": "${azurerm_virtual_network.Ubuntu_vnet.name}",
+        "address_prefixes": [
+          "10.8.0.0/24"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "Ubuntu_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "virtual_network_name": "${azurerm_virtual_network.Ubuntu_vnet.name}",
+        "address_prefixes": [
+          "10.8.1.0/26"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "DC001_vnet_default": {
+        "name": "default",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.0.0/24"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "DC001_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.1.0/26"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_public_ip": {
+      "DC001_vnet_ip": {
+        "name": "DC001-vnet-ip",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "allocation_method": "Static",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_storage_account": {
+      "simulandapia5ea": {
+        "name": "simulandapia5ea",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_simuland-api",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_simuland_api"
+        ]
+      }
+    },
+    "azurerm_service_plan": {
+      "ASP_simulandapi_b3ed": {
+        "name": "ASP-simulandapi-b3ed",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_simuland-api",
+        "os_type": "Windows",
+        "sku_name": "B1",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_simuland_api"
+        ]
+      }
+    },
+    "azurerm_application_insights": {
+      "simuland": {
+        "name": "simuland",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_simuland-api",
+        "application_type": "web",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_simuland_api"
+        ]
+      }
+    },
+    "azurerm_monitor_smart_detector_alert_rule": {
+      "Failure_Anomalies___simuland": {
+        "name": "Failure Anomalies - simuland",
+        "resource_group_name": "ITERATION98_simuland-api",
+        "detector_type": "FailureAnomaliesDetector",
+        "scope_resource_ids": [
+          "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourcegroups/simuland-api/providers/microsoft.insights/components/simuland"
+        ],
+        "severity": "Sev3",
+        "frequency": "PT1M",
+        "description": "Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.",
+        "enabled": true,
+        "action_group": {
+          "ids": [
+            "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/artbas-160224hpcp4rein6/providers/microsoft.insights/actionGroups/application insights smart detection"
+          ]
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_simuland_api"
+        ]
+      }
+    },
+    "azurerm_key_vault": {
+      "SimuLand": {
+        "name": "SimuLand",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "tenant_id": "3cd87a41-1f61-4aef-a212-cefdecd9a2d1",
+        "sku_name": "standard",
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_managed_disk": {
+      "DC001_OsDisk_1_9e73237f796e47e78c6ec98d9d4558e3": {
+        "name": "DC001_OsDisk_1_9e73237f796e47e78c6ec98d9d4558e3",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "IT001_OsDisk_1_866626a6c2d94d6b910414675fcac09b": {
+        "name": "IT001_OsDisk_1_866626a6c2d94d6b910414675fcac09b",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "IT002_OsDisk_1_61260c86fef243f19c51d7c540428f48": {
+        "name": "IT002_OsDisk_1_61260c86fef243f19c51d7c540428f48",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "USER001_OsDisk_1_1101a7f0cc8c4d3daea12b4cfa22f91b": {
+        "name": "USER001_OsDisk_1_1101a7f0cc8c4d3daea12b4cfa22f91b",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "WEB001_OsDisk_1_479aee38f8f54b87a5eae145055168bd": {
+        "name": "WEB001_OsDisk_1_479aee38f8f54b87a5eae145055168bd",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "SRV001_OsDisk_1_9b0ee7b4112645f5ba04b7b3284f4f68": {
+        "name": "SRV001_OsDisk_1_9b0ee7b4112645f5ba04b7b3284f4f68",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "USER002_OsDisk_1_1cd8de93f7924ccbb471e0e1a9b2a935": {
+        "name": "USER002_OsDisk_1_1cd8de93f7924ccbb471e0e1a9b2a935",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "HR001_OsDisk_1_1e347c5f1c074252876edb0f27be4d22": {
+        "name": "HR001_OsDisk_1_1e347c5f1c074252876edb0f27be4d22",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "DB001_OsDisk_1_2b773a89412c4ebb92b07a52f6e78a31": {
+        "name": "DB001_OsDisk_1_2b773a89412c4ebb92b07a52f6e78a31",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "APP001_OsDisk_1_838a2b24fe684d83bdf7c2507fd164f9": {
+        "name": "APP001_OsDisk_1_838a2b24fe684d83bdf7c2507fd164f9",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "GUEST002_OsDisk_1_0999b0e3e3ba4056b2053ce348140838": {
+        "name": "GUEST002_OsDisk_1_0999b0e3e3ba4056b2053ce348140838",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "GUEST001_OsDisk_1_17187721248746d0ba54bb1f57442b87": {
+        "name": "GUEST001_OsDisk_1_17187721248746d0ba54bb1f57442b87",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "SEC002_OsDisk_1_7c82f2de6e9849ff92300bb66a204a17": {
+        "name": "SEC002_OsDisk_1_7c82f2de6e9849ff92300bb66a204a17",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "HR002_OsDisk_1_d8256f5470f24a7ba88ca52198779bcb": {
+        "name": "HR002_OsDisk_1_d8256f5470f24a7ba88ca52198779bcb",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "SEC001_OsDisk_1_911573a9b67e47149b6717c99668d8fa": {
+        "name": "SEC001_OsDisk_1_911573a9b67e47149b6717c99668d8fa",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "storage_account_type": "Standard_LRS",
+        "create_option": "Empty",
+        "disk_size_gb": 127,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      }
+    },
+    "azurerm_log_analytics_workspace": {
+      "SimuLand_0x0_Analytics": {
+        "name": "SimuLand-0x0-Analytics",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "sku": "PerGB2018",
+        "retention_in_days": 30,
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_network_interface": {
+      "dc001104_z1": {
+        "name": "dc001104_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "it001244_z1": {
+        "name": "it001244_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "it002397_z1": {
+        "name": "it002397_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "user001120_z1": {
+        "name": "user001120_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "web001520_z1": {
+        "name": "web001520_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "srv001927_z1": {
+        "name": "srv001927_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "user002535_z1": {
+        "name": "user002535_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "hr001136_z1": {
+        "name": "hr001136_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "db001939_z1": {
+        "name": "db001939_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "db001282_z1": {
+        "name": "db001282_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "app001461_z1": {
+        "name": "app001461_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "guest002244_z1": {
+        "name": "guest002244_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "guest001815_z1": {
+        "name": "guest001815_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "sec002314_z1": {
+        "name": "sec002314_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "hr002277_z1": {
+        "name": "hr002277_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "sec001195_z1": {
+        "name": "sec001195_z1",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_bastion_host": {
+      "DC001_vnet_bastion": {
+        "name": "DC001-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.DC001_vnet_ip.id}"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      }
+    },
+    "azurerm_windows_web_app": {
+      "simuland": {
+        "name": "simuland",
+        "location": "eastus",
+        "resource_group_name": "ITERATION98_simuland-api",
+        "tags": {
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/simuland-api/providers/Microsoft.Insights/components/simuland"
+        },
+        "service_plan_id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ITERATION98_simuland-api/providers/Microsoft.Web/serverFarms/default-plan",
+        "site_config": {},
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_simuland_api"
+        ]
+      }
+    },
+    "tls_private_key": {
+      "DC001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "IT001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "IT002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "USER001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "WEB001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SRV001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "USER002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "HR001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "DB001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "APP001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "GUEST002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "GUEST001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SEC001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SEC002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "HR002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      }
+    },
+    "azurerm_linux_virtual_machine": {
+      "DC001": {
+        "name": "DC001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "DC001",
+        "admin_ssh_key": {
+          "username": "DC001",
+          "public_key": "${tls_private_key.DC001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.dc001104_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "IT001": {
+        "name": "IT001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "IT001",
+        "admin_ssh_key": {
+          "username": "IT001",
+          "public_key": "${tls_private_key.IT001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.it001244_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "IT002": {
+        "name": "IT002",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "IT002",
+        "admin_ssh_key": {
+          "username": "IT002",
+          "public_key": "${tls_private_key.IT002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.it002397_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "USER001": {
+        "name": "USER001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "USER001",
+        "admin_ssh_key": {
+          "username": "USER001",
+          "public_key": "${tls_private_key.USER001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.user001120_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "WEB001": {
+        "name": "WEB001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "size": "Standard_B2s",
+        "admin_username": "WEB001",
+        "admin_ssh_key": {
+          "username": "WEB001",
+          "public_key": "${tls_private_key.WEB001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.web001520_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      },
+      "SRV001": {
+        "name": "SRV001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "SRV001",
+        "admin_ssh_key": {
+          "username": "SRV001",
+          "public_key": "${tls_private_key.SRV001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.srv001927_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "USER002": {
+        "name": "USER002",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "USER002",
+        "admin_ssh_key": {
+          "username": "USER002",
+          "public_key": "${tls_private_key.USER002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.user002535_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "HR001": {
+        "name": "HR001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "HR001",
+        "admin_ssh_key": {
+          "username": "HR001",
+          "public_key": "${tls_private_key.HR001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.hr001136_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "DB001": {
+        "name": "DB001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "DB001",
+        "admin_ssh_key": {
+          "username": "DB001",
+          "public_key": "${tls_private_key.DB001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.db001282_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "APP001": {
+        "name": "APP001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "APP001",
+        "admin_ssh_key": {
+          "username": "APP001",
+          "public_key": "${tls_private_key.APP001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.app001461_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "GUEST002": {
+        "name": "GUEST002",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "GUEST002",
+        "admin_ssh_key": {
+          "username": "GUEST002",
+          "public_key": "${tls_private_key.GUEST002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest002244_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "GUEST001": {
+        "name": "GUEST001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "GUEST001",
+        "admin_ssh_key": {
+          "username": "GUEST001",
+          "public_key": "${tls_private_key.GUEST001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest001815_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "SEC001": {
+        "name": "SEC001",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "SEC001",
+        "admin_ssh_key": {
+          "username": "SEC001",
+          "public_key": "${tls_private_key.SEC001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec001195_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "SEC002": {
+        "name": "SEC002",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SimuLand",
+        "size": "Standard_B2s",
+        "admin_username": "SEC002",
+        "admin_ssh_key": {
+          "username": "SEC002",
+          "public_key": "${tls_private_key.SEC002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec002314_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SimuLand"
+        ]
+      },
+      "HR002": {
+        "name": "HR002",
+        "location": "westus2",
+        "resource_group_name": "ITERATION98_SIMULAND",
+        "size": "Standard_B2s",
+        "admin_username": "HR002",
+        "admin_ssh_key": {
+          "username": "HR002",
+          "public_key": "${tls_private_key.HR002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.hr002277_z1.id}"
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ITERATION98_SIMULAND"
+        ]
+      }
+    }
+  }
+}

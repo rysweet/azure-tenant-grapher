@@ -65,14 +65,51 @@ class TerraformEmitter(IaCEmitter):
         "microsoft.insights/components": "azurerm_application_insights",
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
+        # DevTestLab resources
+        "microsoft.devtestlab/labs": "azurerm_dev_test_lab",
+        "Microsoft.DevTestLab/labs": "azurerm_dev_test_lab",
+        "Microsoft.DevTestLab/labs/virtualMachines": "azurerm_dev_test_linux_virtual_machine",
+        # Machine Learning and AI resources
+        "Microsoft.MachineLearningServices/workspaces": "azurerm_machine_learning_workspace",
+        "Microsoft.CognitiveServices/accounts": "azurerm_cognitive_account",
+        # Additional resource types found in scan
+        "Microsoft.Kusto/clusters": "azurerm_kusto_cluster",
+        "Microsoft.EventHub/namespaces": "azurerm_eventhub_namespace",
+        "Microsoft.Network/networkWatchers": "azurerm_network_watcher",
+        "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
+        "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
+        "microsoft.insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",  # Lowercase variant
+        "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
+        "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
+        "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
+        # Additional resource types found in full tenant scan
+        "microsoft.insights/actiongroups": "azurerm_monitor_action_group",
+        "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
+        "Microsoft.Search/searchServices": "azurerm_search_service",
+        "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
+        "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
+        "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
+        "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
+        # Microsoft.SecurityCopilot/capacities - No Terraform support yet, will be skipped
+        "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
+        # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
+        # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
+        # Microsoft.MachineLearningServices/workspaces/serverlessEndpoints - No direct Terraform equivalent yet, will be skipped
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
         "Microsoft.AAD/ServicePrincipal": "azuread_service_principal",
+        "Microsoft.AAD/Application": "azuread_application",
         "Microsoft.Graph/users": "azuread_user",
         "Microsoft.Graph/groups": "azuread_group",
         "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
+        "Microsoft.Graph/applications": "azuread_application",
         "Microsoft.ManagedIdentity/managedIdentities": "azurerm_user_assigned_identity",
+        # Neo4j label-based mappings for Entra ID
+        "User": "azuread_user",
+        "Group": "azuread_group",
+        "ServicePrincipal": "azuread_service_principal",
+        "Application": "azuread_application",
     }
 
     def _extract_resource_groups(self, resources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -112,7 +149,11 @@ class TerraformEmitter(IaCEmitter):
         return list(rg_map.values())
 
     def emit(
-        self, graph: TenantGraph, out_dir: Path, domain_name: Optional[str] = None
+        self, 
+        graph: TenantGraph, 
+        out_dir: Path, 
+        domain_name: Optional[str] = None,
+        subscription_id: Optional[str] = None
     ) -> List[Path]:
         """Generate Terraform template from tenant graph."""
         # If a domain name is specified, set it for all user account entities
@@ -152,7 +193,18 @@ class TerraformEmitter(IaCEmitter):
                 }
             },
             "provider": {
-                "azurerm": {"features": {}, "resource_provider_registrations": "none"}
+                "azurerm": {
+                    "features": {},
+                    "resource_provider_registrations": "none",
+                    "subscription_id": "${var.subscription_id}",
+                }
+            },
+            "variable": {
+                "subscription_id": {
+                    "description": "Azure subscription ID for deployment",
+                    "type": "string",
+                    "default": subscription_id or "",
+                }
             },
             "resource": {},
         }
@@ -166,7 +218,12 @@ class TerraformEmitter(IaCEmitter):
             }
             # Convert provider to list format for multiple providers
             terraform_config["provider"] = [
-                {"azurerm": {"features": {}}},
+                {
+                    "azurerm": {
+                        "features": {},
+                        "subscription_id": "${var.subscription_id}",
+                    }
+                },
                 {"azuread": {}},
             ]
 
@@ -199,6 +256,17 @@ class TerraformEmitter(IaCEmitter):
             else:
                 terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
             if terraform_type:
+                # Skip NICs without ip_configurations - they will be skipped during generation
+                if azure_type == "Microsoft.Network/networkInterfaces":
+                    properties = self._parse_properties(resource)
+                    ip_configs = properties.get("ipConfigurations", [])
+                    if not ip_configs:
+                        logger.debug(
+                            f"Excluding NIC '{resource_name}' from resource index - "
+                            "missing ip_configurations (will be skipped during generation)"
+                        )
+                        continue
+
                 if terraform_type not in self._available_resources:
                     self._available_resources[terraform_type] = set()
                 safe_name = self._sanitize_terraform_name(resource_name)
@@ -634,45 +702,8 @@ class TerraformEmitter(IaCEmitter):
                 )
 
         elif azure_type == "Microsoft.Compute/virtualMachines":
-            # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
-            ssh_key_resource_name = f"{safe_name}_ssh_key"
-
-            # Add the tls_private_key resource to terraform config
-            if "resource" not in terraform_config:
-                terraform_config["resource"] = {}
-            if "tls_private_key" not in terraform_config["resource"]:
-                terraform_config["resource"]["tls_private_key"] = {}
-
-            terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
-                "algorithm": "RSA",
-                "rsa_bits": 4096,
-            }
-
-            # Ensure required VM properties with SSH key authentication
-            resource_config.update(
-                {
-                    "size": resource.get("size", "Standard_B2s"),
-                    "admin_username": resource.get("admin_username", "azureuser"),
-                    "admin_ssh_key": {
-                        "username": resource.get("admin_username", "azureuser"),
-                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
-                    },
-                    "os_disk": {
-                        "caching": "ReadWrite",
-                        "storage_account_type": "Standard_LRS",
-                    },
-                    "source_image_reference": {
-                        "publisher": "Canonical",
-                        "offer": "0001-com-ubuntu-server-jammy",
-                        "sku": "22_04-lts",
-                        "version": "latest",
-                    },
-                }
-            )
-
-            # Add network_interface_ids by parsing VM properties
+            # Validate network interfaces FIRST before creating any resources
             properties = self._parse_properties(resource)
-
             network_profile = properties.get("networkProfile", {})
             nics = network_profile.get("networkInterfaces", [])
 
@@ -712,23 +743,19 @@ class TerraformEmitter(IaCEmitter):
                                 })
 
                 if missing_nics:
-                    logger.error(
-                        f"VM '{resource_name}' references {len(missing_nics)} network interface(s) "
-                        f"that don't exist in Neo4j graph: {[n['nic_name'] for n in missing_nics]}"
-                    )
                     # Log detailed information about missing NICs
                     for missing_nic in missing_nics:
-                        logger.error(
-                            f"  Missing NIC: {missing_nic['nic_name']}\n"
+                        logger.warning(
+                            f"Skipping VM '{resource_name}' because NIC '{missing_nic['nic_name']}' was removed\n"
                             f"    Azure ID: {missing_nic['nic_id']}\n"
                             f"    Expected Terraform name: {missing_nic['nic_terraform_name']}"
                         )
-                    # Don't add invalid VM to output if all NICs are missing
-                    if not nic_refs:
-                        logger.error(
-                            f"Skipping VM '{resource_name}' - all referenced NICs are missing from graph"
-                        )
-                        return None
+                    # Cascade deletion: Skip VM if any NIC is missing
+                    logger.warning(
+                        f"VM '{resource_name}' references {len(missing_nics)} network interface(s) "
+                        f"that were removed: {[n['nic_name'] for n in missing_nics]}"
+                    )
+                    return None
 
                 if nic_refs:
                     resource_config["network_interface_ids"] = nic_refs
@@ -737,6 +764,42 @@ class TerraformEmitter(IaCEmitter):
                     f"VM '{resource_name}' has no network interfaces in properties. "
                     "Generated Terraform may be invalid."
                 )
+
+            # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
+            ssh_key_resource_name = f"{safe_name}_ssh_key"
+
+            # Add the tls_private_key resource to terraform config
+            if "resource" not in terraform_config:
+                terraform_config["resource"] = {}
+            if "tls_private_key" not in terraform_config["resource"]:
+                terraform_config["resource"]["tls_private_key"] = {}
+
+            terraform_config["resource"]["tls_private_key"][ssh_key_resource_name] = {
+                "algorithm": "RSA",
+                "rsa_bits": 4096,
+            }
+
+            # Ensure required VM properties with SSH key authentication
+            resource_config.update(
+                {
+                    "size": resource.get("size", "Standard_B2s"),
+                    "admin_username": resource.get("admin_username", "azureuser"),
+                    "admin_ssh_key": {
+                        "username": resource.get("admin_username", "azureuser"),
+                        "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
+                    },
+                    "os_disk": {
+                        "caching": "ReadWrite",
+                        "storage_account_type": "Standard_LRS",
+                    },
+                    "source_image_reference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts",
+                        "version": "latest",
+                    },
+                }
+            )
         elif azure_type == "Microsoft.Network/publicIPAddresses":
             resource_config["allocation_method"] = resource.get(
                 "allocation_method", "Static"
@@ -768,18 +831,43 @@ class TerraformEmitter(IaCEmitter):
                     public_ip_id, "publicIPAddresses"
                 )
 
-                # Build IP configuration block
+                # Build IP configuration block (public_ip_address_id is REQUIRED for Bastion Host)
                 ip_config_block = {
                     "name": ip_config_name,
                     "subnet_id": subnet_reference,  # Always set (even if placeholder)
                 }
 
-                # Add public IP reference if found
+                # Add public IP reference - REQUIRED for Bastion Host
                 if public_ip_name != "unknown":
-                    public_ip_name = self._sanitize_terraform_name(public_ip_name)
-                    ip_config_block["public_ip_address_id"] = (
-                        f"${{azurerm_public_ip.{public_ip_name}.id}}"
+                    public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
+                    # Validate that the public IP exists in the graph
+                    if self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+                        ip_config_block["public_ip_address_id"] = (
+                            f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                        )
+                    else:
+                        logger.error(
+                            f"Bastion Host '{resource_name}' references public IP '{public_ip_name}' "
+                            f"that doesn't exist in Neo4j graph. Azure ID: {public_ip_id}"
+                        )
+                        # Add placeholder to satisfy Terraform syntax
+                        ip_config_block["public_ip_address_id"] = (
+                            f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                        )
+                        self._missing_references.append({
+                            "resource_name": resource_name,
+                            "resource_type": "public_ip",
+                            "missing_resource_name": public_ip_name,
+                            "missing_resource_id": public_ip_id,
+                        })
+                else:
+                    # No public IP found in properties - this is a critical error
+                    logger.error(
+                        f"Bastion Host '{resource_name}' has no publicIPAddress in ip_configuration properties. "
+                        f"Bastion Hosts require a public IP. This resource is missing critical data from Neo4j and will fail validation."
                     )
+                    # Skip this bastion host - it cannot be deployed without a public IP
+                    return None
 
                 resource_config["ip_configuration"] = ip_config_block
 
@@ -843,10 +931,14 @@ class TerraformEmitter(IaCEmitter):
                         f"Generated Terraform may be invalid."
                     )
             else:
-                logger.warning(
+                # NICs without ipConfigurations in properties are missing critical data from Neo4j
+                # Skip these NICs entirely - they cannot be deployed without subnet information
+                logger.error(
                     f"NIC '{resource_name}' has no ip_configurations in properties. "
-                    "Generated Terraform may be invalid."
+                    "This NIC is missing critical subnet configuration data from Neo4j. "
+                    "Skipping this NIC as it cannot be deployed without ip_configuration block."
                 )
+                return None
         elif azure_type == "Microsoft.Network/subnets":
             properties = self._parse_properties(resource)
 
@@ -989,6 +1081,34 @@ class TerraformEmitter(IaCEmitter):
                     "administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
+        elif azure_type == "Microsoft.EventHub/namespaces":
+            # EventHub namespaces require sku argument
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Extract sku name, default to Standard if not found
+            sku_name = sku.get("name", "Standard") if sku else "Standard"
+            
+            resource_config["sku"] = sku_name
+            
+            # Optionally add capacity if present in sku
+            if sku and "capacity" in sku:
+                resource_config["capacity"] = sku["capacity"]
+                
+        elif azure_type == "Microsoft.Kusto/clusters":
+            # Kusto clusters require sku block
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Extract sku properties, use defaults if not found
+            sku_name = sku.get("name", "Dev(No SLA)_Standard_D11_v2") if sku else "Dev(No SLA)_Standard_D11_v2"
+            sku_capacity = sku.get("capacity", 1) if sku else 1
+            
+            resource_config["sku"] = {
+                "name": sku_name,
+                "capacity": sku_capacity
+            }
+            
         elif azure_type == "Microsoft.KeyVault/vaults":
             # Extract tenant_id from multiple sources with proper fallback
             # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
@@ -1130,11 +1250,21 @@ class TerraformEmitter(IaCEmitter):
             if vm_name != "unknown":
                 vm_name_safe = self._sanitize_terraform_name(vm_name)
                 
-                # Validate that the VM resource exists
-                if not self._validate_resource_reference("azurerm_linux_virtual_machine", vm_name_safe):
+                # Validate that the VM resource exists in the generated Terraform config
+                # (not just in _available_resources, which may include VMs that were later skipped)
+                vm_exists = False
+                for vm_type in ["azurerm_linux_virtual_machine", "azurerm_windows_virtual_machine"]:
+                    if (vm_type in terraform_config.get("resource", {}) and 
+                        vm_name_safe in terraform_config["resource"][vm_type]):
+                        vm_exists = True
+                        # Use the actual VM type found
+                        vm_terraform_type = vm_type
+                        break
+                
+                if not vm_exists:
                     logger.warning(
                         f"VM Extension '{resource_name}' references VM '{vm_name}' "
-                        f"that doesn't exist in the graph. Skipping extension."
+                        f"that doesn't exist in the generated Terraform config (may have been skipped due to missing dependencies). Skipping extension."
                     )
                     return None
                 
@@ -1149,7 +1279,7 @@ class TerraformEmitter(IaCEmitter):
                 
                 resource_config = {
                     "name": extension_name,  # Use sanitized name without VM prefix
-                    "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                    "virtual_machine_id": f"${{{vm_terraform_type}.{vm_name_safe}.id}}",
                     "publisher": publisher,
                     "type": extension_type,
                     "type_handler_version": type_handler_version,
@@ -1187,6 +1317,42 @@ class TerraformEmitter(IaCEmitter):
                 "sku": sku_name,
                 "retention_in_days": properties.get("retentionInDays", 30),
             })
+        elif azure_type == "Microsoft.OperationsManagement/solutions":
+            # Log Analytics Solution specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract solution name and workspace info
+            # Solution name format is typically "SolutionType(WorkspaceName)"
+            solution_full_name = resource.get("name", "")
+            if "(" in solution_full_name and ")" in solution_full_name:
+                solution_type = solution_full_name.split("(")[0]
+                workspace_name_from_solution = solution_full_name.split("(")[1].rstrip(")")
+            else:
+                solution_type = solution_full_name
+                workspace_name_from_solution = "unknown"
+            
+            # Get workspace resource ID from properties
+            workspace_resource_id = properties.get("workspaceResourceId", "")
+            workspace_name = self._extract_resource_name_from_id(workspace_resource_id, "workspaces") if workspace_resource_id else workspace_name_from_solution
+            workspace_name_safe = self._sanitize_terraform_name(workspace_name)
+            
+            # Get plan details from properties
+            plan = properties.get("plan", {})
+            publisher = plan.get("publisher", "Microsoft")
+            product = plan.get("product", solution_type)
+            
+            # For azurerm_log_analytics_solution, we don't use "name" - instead solution_name, workspace_name, workspace_resource_id
+            resource_config = {
+                "solution_name": solution_type,
+                "resource_group_name": resource.get("resource_group", "unknown"),
+                "location": resource.get("location", "westus"),
+                "workspace_name": workspace_name,
+                "workspace_resource_id": workspace_resource_id if workspace_resource_id else f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}",
+                "plan": {
+                    "publisher": publisher,
+                    "product": product,
+                }
+            }
         elif azure_type == "microsoft.insights/components":
             # Application Insights specific properties
             properties = self._parse_properties(resource)
@@ -1210,6 +1376,59 @@ class TerraformEmitter(IaCEmitter):
                         resource_config["workspace_id"] = (
                             f"${{azurerm_log_analytics_workspace.{workspace_name_safe}.id}}"
                         )
+        elif azure_type == "Microsoft.DevTestLab/labs/virtualMachines":
+            # DevTest Lab Virtual Machine specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract lab name from the resource name (format: "labname/vmname")
+            full_name = resource.get("name", "")
+            lab_name = full_name.split("/")[0] if "/" in full_name else "unknown-lab"
+            vm_name = full_name.split("/")[1] if "/" in full_name else full_name
+            
+            # Get size from properties
+            size = properties.get("size", "Standard_B2s")
+            
+            # Get username from properties (osProfile or galleryImageReference)
+            username = properties.get("userName", "labuser")
+            
+            # Get storage type
+            storage_type = properties.get("storageType", "Standard")
+            
+            # Get subnet info from properties
+            lab_subnet_name = properties.get("labSubnetName", "default")
+            
+            # Try to get virtual network ID from properties
+            lab_virtual_network_id = properties.get("labVirtualNetworkId")
+            if not lab_virtual_network_id:
+                # Construct it from resource group and lab name
+                rg_name = resource.get("resource_group", "unknown-rg")
+                subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+                lab_virtual_network_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
+            
+            # Get gallery image reference from properties
+            gallery_image_ref = properties.get("galleryImageReference", {})
+            
+            resource_config.update({
+                "lab_name": lab_name,
+                "size": size,
+                "username": username,
+                "storage_type": storage_type,
+                "lab_subnet_name": lab_subnet_name,
+                "lab_virtual_network_id": lab_virtual_network_id,
+                # SSH key is required
+                "ssh_key": f"var.devtest_vm_ssh_key_{self._sanitize_terraform_name(vm_name)}",
+                # Gallery image reference is required (at least 1 block)
+                "gallery_image_reference": {
+                    "offer": gallery_image_ref.get("offer", "0001-com-ubuntu-server-jammy"),
+                    "publisher": gallery_image_ref.get("publisher", "Canonical"),
+                    "sku": gallery_image_ref.get("sku", "22_04-lts-gen2"),
+                    "version": gallery_image_ref.get("version", "latest"),
+                },
+            })
+            
+            # Override name to just be the VM name (not labname/vmname)
+            resource_config["name"] = vm_name
+            
         elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
             # Smart Detector Alert Rule specific properties
             properties = self._parse_properties(resource)
@@ -1266,6 +1485,335 @@ class TerraformEmitter(IaCEmitter):
                     resource_config["action_group"] = {
                         "ids": formatted_ids
                     }
+        elif azure_type == "Microsoft.MachineLearningServices/workspaces":
+            # Machine Learning Workspace specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            # Get required resource IDs from properties or construct placeholders
+            rg_name = resource.get("resource_group", "unknown-rg")
+            subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+            
+            # Storage account ID (required)
+            storage_account_id = properties.get("storageAccount")
+            if not storage_account_id:
+                # Create placeholder - should be replaced with actual storage account reference
+                storage_account_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/mlworkspace{resource_name[:8]}"
+            else:
+                # Normalize casing in resource ID
+                storage_account_id = self._normalize_resource_id(storage_account_id)
+
+            # Key Vault ID (required)
+            key_vault_id = properties.get("keyVault")
+            if not key_vault_id:
+                # Create placeholder
+                key_vault_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.KeyVault/vaults/mlworkspace{resource_name[:8]}"
+            else:
+                # Normalize casing in resource ID (Microsoft.Keyvault -> Microsoft.KeyVault)
+                key_vault_id = self._normalize_resource_id(key_vault_id)
+
+            # Application Insights ID (required)
+            application_insights_id = properties.get("applicationInsights")
+            if not application_insights_id:
+                # Create placeholder - note: provider must be Microsoft.Insights (capital M and I)
+                application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Insights/components/mlworkspace{resource_name[:8]}"
+            else:
+                # Normalize casing in resource ID (Microsoft.insights -> Microsoft.Insights)
+                application_insights_id = self._normalize_resource_id(application_insights_id)
+            
+            resource_config.update({
+                "sku_name": sku.get("name", "Basic"),
+                "identity": {
+                    "type": "SystemAssigned"
+                },
+                "storage_account_id": storage_account_id,
+                "key_vault_id": key_vault_id,
+                "application_insights_id": application_insights_id,
+            })
+        elif azure_type == "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints":
+            # ML Serverless Endpoints mapped to compute instance (closest available)
+            properties = self._parse_properties(resource)
+            
+            # Extract workspace name from resource name (format: "workspacename/serverlessEndpoints/endpointname")
+            full_name = resource.get("name", "")
+            parts = full_name.split("/")
+            if len(parts) >= 3:
+                workspace_name = parts[0]
+                endpoint_name = parts[2]
+            else:
+                workspace_name = "unknown-workspace"
+                endpoint_name = full_name
+            
+            # Get required properties
+            rg_name = resource.get("resource_group", "unknown-rg")
+            subscription_id = resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
+            
+            # Construct workspace ID
+            machine_learning_workspace_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.MachineLearningServices/workspaces/{workspace_name}"
+            
+            resource_config.update({
+                "machine_learning_workspace_id": machine_learning_workspace_id,
+                "virtual_machine_size": properties.get("vmSize", "STANDARD_DS3_V2"),
+                # Compute instance expects "name" to be the instance name
+            })
+            
+            # Override name to just be the endpoint name
+            resource_config["name"] = endpoint_name
+            
+        elif azure_type in ["microsoft.insights/actiongroups", "Microsoft.Insights/actionGroups"]:
+            # Monitor Action Group specific properties  
+            properties = self._parse_properties(resource)
+            
+            # short_name is required (max 12 characters)
+            short_name = properties.get("groupShortName", resource_name[:12])
+            
+            resource_config.update({
+                "short_name": short_name,
+            })
+            
+        elif azure_type == "Microsoft.CognitiveServices/accounts":
+            # Cognitive Services Account specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            kind = properties.get("kind", "OpenAI")
+            
+            resource_config.update({
+                "kind": kind,
+                "sku_name": sku.get("name", "S0"),
+            })
+            
+            # Add custom_subdomain_name if present
+            if properties.get("customSubDomainName"):
+                resource_config["custom_subdomain_name"] = properties["customSubDomainName"]
+        elif azure_type == "Microsoft.Automation/automationAccounts":
+            # Automation Account specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            resource_config.update({
+                "sku_name": sku.get("name", "Basic"),
+            })
+        elif azure_type == "Microsoft.Search/searchServices":
+            # Search Service specific properties
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            
+            resource_config.update({
+                "sku": sku.get("name", "standard"),
+            })
+        elif azure_type == "Microsoft.Automation/automationAccounts/runbooks":
+            # Automation Runbook specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract automation account name from resource name (format: "accountname/runbookname")
+            full_name = resource.get("name", "")
+            account_name = full_name.split("/")[0] if "/" in full_name else "unknown-account"
+            runbook_name = full_name.split("/")[1] if "/" in full_name else full_name
+            
+            resource_config.update({
+                "automation_account_name": account_name,
+                "runbook_type": properties.get("runbookType", "PowerShell"),
+                "log_progress": properties.get("logProgress", True),
+                "log_verbose": properties.get("logVerbose", False),
+            })
+            
+            # Runbooks require either content, draft, or publish_content_link
+            # For now, provide a placeholder publish_content_link since we don't have the actual runbook content
+            publish_content_link = properties.get("publishContentLink", {})
+            if publish_content_link and "uri" in publish_content_link:
+                resource_config["publish_content_link"] = {
+                    "uri": publish_content_link["uri"]
+                }
+                # Add version if present
+                if "version" in publish_content_link:
+                    resource_config["publish_content_link"]["version"] = publish_content_link["version"]
+            else:
+                # Provide placeholder content for empty runbook
+                # This prevents validation errors but won't replicate actual runbook logic
+                logger.warning(
+                    f"Runbook '{runbook_name}' has no publishContentLink in properties. "
+                    "Using placeholder empty content. Actual runbook logic won't be replicated."
+                )
+                resource_config["content"] = "# Placeholder runbook content\n# Original runbook content not available in graph\n"
+            
+            # Override name to just be the runbook name (not accountname/runbookname)
+            resource_config["name"] = runbook_name
+        elif azure_type == "Microsoft.DevTestLab/schedules":
+            # DevTest Lab Schedule specific properties
+            properties = self._parse_properties(resource)
+            
+            # Extract lab name from resource name if format is "labname/schedules/schedulename"
+            full_name = resource.get("name", "")
+            parts = full_name.split("/")
+            if len(parts) >= 3:
+                lab_name = parts[0]
+                schedule_name = parts[2]
+            else:
+                lab_name = "unknown-lab"
+                schedule_name = full_name
+            
+            # Get task type (shutdown, startup, etc.)
+            task_type = properties.get("taskType", "LabVmsShutdownTask")
+            
+            # Get time zone ID
+            time_zone_id = properties.get("timeZoneId", "UTC")
+            
+            # Get daily recurrence time
+            daily_recurrence_time = properties.get("dailyRecurrence", {}).get("time", "1900")
+            
+            resource_config.update({
+                "lab_name": lab_name,
+                "task_type": task_type,
+                "time_zone_id": time_zone_id,
+                "daily_recurrence": {
+                    "time": daily_recurrence_time
+                },
+                # notification_settings block is required
+                # Note: "enabled" field is not valid in azurerm_dev_test_schedule
+                # Status is controlled by the task_type and schedule presence
+                "notification_settings": {
+                    "time_in_minutes": properties.get("notificationSettings", {}).get("timeInMinutes", 30),
+                },
+            })
+            
+            # Override name to just be the schedule name
+            resource_config["name"] = schedule_name
+            
+        elif azure_type == "Microsoft.Compute/sshPublicKeys":
+            # SSH Public Key specific properties
+            properties = self._parse_properties(resource)
+            
+            resource_config.update({
+                "public_key": properties.get("publicKey", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... placeholder"),
+            })
+        elif azure_type in ["Microsoft.Insights/dataCollectionRules", "microsoft.insights/dataCollectionRules"]:
+            # Data Collection Rule - requires complex nested blocks
+            properties = self._parse_properties(resource)
+            
+            # Extract destinations from properties
+            destinations_prop = properties.get("destinations", {})
+            destinations_config = {}
+            
+            # Log Analytics destinations
+            if "logAnalytics" in destinations_prop:
+                log_analytics_list = []
+                for la_dest in destinations_prop["logAnalytics"]:
+                    workspace_resource_id = la_dest.get("workspaceResourceId", "")
+                    dest_name = la_dest.get("name", "default")
+                    if workspace_resource_id:
+                        log_analytics_list.append({
+                            "workspace_resource_id": workspace_resource_id,
+                            "name": dest_name
+                        })
+                if log_analytics_list:
+                    destinations_config["log_analytics"] = log_analytics_list
+            
+            # Azure Monitor Metrics destinations
+            if "azureMonitorMetrics" in destinations_prop:
+                am_dest = destinations_prop["azureMonitorMetrics"]
+                dest_name = am_dest.get("name", "azureMonitorMetrics-default")
+                destinations_config["azure_monitor_metrics"] = {
+                    "name": dest_name
+                }
+            
+            # Extract data flows from properties
+            data_flows_prop = properties.get("dataFlows", [])
+            data_flows_config = []
+            for flow in data_flows_prop:
+                flow_config = {
+                    "streams": flow.get("streams", ["Microsoft-Perf"]),
+                    "destinations": flow.get("destinations", ["default"])
+                }
+                # Add output_stream if present
+                if "outputStream" in flow:
+                    flow_config["output_stream"] = flow["outputStream"]
+                # Add transform_kql if present
+                if "transformKql" in flow:
+                    flow_config["transform_kql"] = flow["transformKql"]
+                data_flows_config.append(flow_config)
+            
+            # If no destinations or data_flows found, skip this DCR
+            # DCRs without destinations are incomplete and can't be deployed
+            if not destinations_config:
+                logger.warning(
+                    f"Data Collection Rule '{resource_name}' has no destinations in properties. "
+                    f"Skipping this DCR as it cannot be deployed without a valid Log Analytics workspace. "
+                    f"This may indicate incomplete data in the graph or a DCR that was being configured."
+                )
+                return None
+            if not data_flows_config:
+                logger.warning(
+                    f"Data Collection Rule '{resource_name}' has no dataFlows in properties. "
+                    f"Skipping this DCR as it cannot be deployed without data flow configuration."
+                )
+                return None
+            
+            resource_config.update({
+                "destinations": destinations_config,
+                "data_flow": data_flows_config
+            })
+        elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
+            # Entra ID User
+            # Users from Neo4j may have different property names than ARM resources
+            user_principal_name = resource.get("userPrincipalName") or resource.get("name", "unknown")
+            display_name = resource.get("displayName") or resource.get("display_name") or user_principal_name
+            mail_nickname = resource.get("mailNickname") or resource.get("mail_nickname") or user_principal_name.split("@")[0]
+            
+            resource_config = {
+                "user_principal_name": user_principal_name,
+                "display_name": display_name,
+                "mail_nickname": mail_nickname,
+                # Password must be set via variable - never hardcode
+                "password": f"var.azuread_user_password_{self._sanitize_terraform_name(user_principal_name)}",
+                "force_password_change": True,
+            }
+            
+            # Optionally add other properties if present
+            if resource.get("accountEnabled") is not None:
+                resource_config["account_enabled"] = resource.get("accountEnabled")
+                
+        elif azure_type in ["Group", "Microsoft.AAD/Group", "Microsoft.Graph/groups"]:
+            # Entra ID Group
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            mail_enabled = resource.get("mailEnabled", False)
+            security_enabled = resource.get("securityEnabled", True)
+            
+            resource_config = {
+                "display_name": display_name,
+                "mail_enabled": mail_enabled,
+                "security_enabled": security_enabled,
+            }
+            
+            # Add description if present
+            if resource.get("description"):
+                resource_config["description"] = resource.get("description")
+                
+        elif azure_type in ["ServicePrincipal", "Microsoft.AAD/ServicePrincipal", "Microsoft.Graph/servicePrincipals"]:
+            # Entra ID Service Principal
+            app_id = resource.get("appId") or resource.get("application_id") or "00000000-0000-0000-0000-000000000000"
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            
+            resource_config = {
+                "application_id": app_id,
+                # Note: In real scenario, this would reference an azuread_application resource
+                # For now, use the app_id directly
+            }
+            
+            # Add optional properties
+            if resource.get("accountEnabled") is not None:
+                resource_config["account_enabled"] = resource.get("accountEnabled")
+                
+        elif azure_type in ["Application", "Microsoft.AAD/Application", "Microsoft.Graph/applications"]:
+            # Entra ID Application
+            display_name = resource.get("displayName") or resource.get("display_name") or resource.get("name", "unknown")
+            
+            resource_config = {
+                "display_name": display_name,
+            }
+            
+            # Add sign_in_audience if present
+            sign_in_audience = resource.get("signInAudience", "AzureADMyOrg")
+            resource_config["sign_in_audience"] = sign_in_audience
 
         return terraform_type, safe_name, resource_config
 
@@ -1331,6 +1879,52 @@ class TerraformEmitter(IaCEmitter):
             )
 
         return prefixed_name
+
+    def _normalize_resource_id(self, resource_id: str) -> str:
+        """Normalize Azure resource ID by fixing provider namespace casing.
+
+        Azure resource IDs use inconsistent casing for provider namespaces.
+        Terraform requires correct casing (PascalCase for provider namespaces).
+
+        Args:
+            resource_id: Azure resource ID with potentially incorrect casing
+
+        Returns:
+            Normalized resource ID with correct provider namespace casing
+
+        Example:
+            >>> emitter._normalize_resource_id(
+            ...     "/subscriptions/.../providers/Microsoft.Keyvault/vaults/vault1"
+            ... )
+            '/subscriptions/.../providers/Microsoft.KeyVault/vaults/vault1'
+        """
+        if not resource_id:
+            return resource_id
+
+        # Map of incorrect casing to correct casing for provider namespaces
+        provider_casing_map = {
+            "Microsoft.Keyvault": "Microsoft.KeyVault",
+            "microsoft.keyvault": "Microsoft.KeyVault",
+            "Microsoft.insights": "Microsoft.Insights",
+            "microsoft.insights": "Microsoft.Insights",
+            "Microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalInsights": "Microsoft.OperationalInsights",
+        }
+
+        normalized_id = resource_id
+        for incorrect, correct in provider_casing_map.items():
+            # Use case-insensitive replacement in the provider segment
+            # Format: /providers/Microsoft.Keyvault/ or /providers/microsoft.insights/
+            incorrect_segment = f"/providers/{incorrect}/"
+            correct_segment = f"/providers/{correct}/"
+            # Case-insensitive search and replace
+            import re
+            pattern = re.compile(re.escape(incorrect_segment), re.IGNORECASE)
+            normalized_id = pattern.sub(correct_segment, normalized_id)
+
+        return normalized_id
 
     def _extract_resource_name_from_id(
         self, resource_id: str, resource_type: str
