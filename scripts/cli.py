@@ -1119,6 +1119,84 @@ async def mcp_query(
     )
 
 
+@cli.command("fidelity")
+@click.option(
+    "--source-subscription",
+    required=True,
+    help="Source subscription ID to compare from",
+)
+@click.option(
+    "--target-subscription",
+    required=True,
+    help="Target subscription ID to compare to",
+)
+@click.option(
+    "--track",
+    is_flag=True,
+    help="Track fidelity metrics to demos/fidelity_history.jsonl",
+)
+@click.option(
+    "--output",
+    help="Export fidelity metrics to JSON file",
+)
+@click.option(
+    "--check-objective",
+    help="Path to OBJECTIVE.md file for compliance checking",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def fidelity(
+    ctx: click.Context,
+    source_subscription: str,
+    target_subscription: str,
+    track: bool,
+    output: Optional[str],
+    check_objective: Optional[str],
+    no_container: bool,
+) -> None:
+    """Calculate and track resource replication fidelity between subscriptions.
+
+    This command compares resource counts, types, and relationships between a source
+    and target subscription to measure replication fidelity.
+
+    Examples:
+
+        # Calculate current fidelity
+        atg fidelity --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \\
+                     --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+
+        # Track fidelity over time
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --track
+
+        # Export to JSON
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --output fidelity_report.json
+
+        # Check against objective
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --check-objective demos/OBJECTIVE.md
+    """
+    from src.cli_commands import fidelity_command_handler
+
+    await fidelity_command_handler(
+        source_subscription=source_subscription,
+        target_subscription=target_subscription,
+        track=track,
+        output=output,
+        check_objective=check_objective,
+        no_container=no_container,
+    )
+
+
 @cli.command("backup")
 @click.option(
     "--path",
