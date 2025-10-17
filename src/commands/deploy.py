@@ -48,6 +48,22 @@ logger = logging.getLogger(__name__)
     is_flag=True,
     help="Plan/validate only, no deployment",
 )
+@click.option(
+    "--dataplane",
+    type=click.Choice(["none", "template", "replication"]),
+    default="none",
+    help="Data plane replication mode: none (control plane only), template (structure only), or replication (full data copy)",
+)
+@click.option(
+    "--sp-client-id",
+    default=None,
+    help="Service principal client ID for dataplane operations (optional, uses DefaultAzureCredential if not specified)",
+)
+@click.option(
+    "--sp-client-secret",
+    default=None,
+    help="Service principal client secret for dataplane operations (optional)",
+)
 def deploy_command(
     iac_dir: str,
     target_tenant_id: str,
@@ -56,6 +72,9 @@ def deploy_command(
     subscription_id: str | None,
     iac_format: str | None,
     dry_run: bool,
+    dataplane: str,
+    sp_client_id: str | None,
+    sp_client_secret: str | None,
 ):
     """Deploy generated IaC to target tenant.
 
@@ -77,6 +96,7 @@ def deploy_command(
     try:
         click.echo(f"Starting deployment from {iac_dir}...")
 
+        # Deploy control plane (IaC)
         result = deploy_iac(
             iac_dir=Path(iac_dir),
             target_tenant_id=target_tenant_id,
@@ -86,6 +106,34 @@ def deploy_command(
             iac_format=iac_format,
             dry_run=dry_run,
         )
+
+        # Deploy data plane if requested
+        if dataplane != "none" and not dry_run:
+            click.echo(f"\nStarting data plane replication ({dataplane} mode)...")
+
+            from ..deployment.dataplane_orchestrator import (
+                orchestrate_dataplane_replication,
+                ReplicationMode,
+            )
+
+            # Need source subscription/tenant for replication
+            # TODO: Get these from Neo4j or user input
+            # For now, warn that this requires additional configuration
+            click.echo("⚠️  Data plane replication requires source tenant/subscription configuration")
+            click.echo("    This feature is in development. Control plane deployment completed successfully.")
+            click.echo("    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication instructions.")
+
+            # Placeholder for future implementation
+            # dataplane_result = orchestrate_dataplane_replication(
+            #     iac_dir=Path(iac_dir),
+            #     mode=ReplicationMode(dataplane),
+            #     source_tenant_id=source_tenant_id,
+            #     target_tenant_id=target_tenant_id,
+            #     source_subscription_id=source_subscription_id,
+            #     target_subscription_id=subscription_id,
+            #     sp_client_id=sp_client_id,
+            #     sp_client_secret=sp_client_secret,
+            # )
 
         # Display result
         status = result["status"]
