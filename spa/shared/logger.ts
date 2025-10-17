@@ -133,7 +133,7 @@ export class Logger {
   private sanitizeMetadata(metadata: Record<string, any>): Record<string, any> {
     const sanitized: Record<string, any> = {};
     const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth'];
-    
+
     for (const [key, value] of Object.entries(metadata)) {
       if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
         sanitized[key] = '***';
@@ -143,7 +143,7 @@ export class Logger {
         sanitized[key] = value;
       }
     }
-    
+
     return sanitized;
   }
 

@@ -57,7 +57,7 @@ export class ResourceManager {
     if (this.isDisposed) return;
 
     target.addEventListener(event, handler, options);
-    
+
     this.resources.set(id, {
       cleanup: () => target.removeEventListener(event, handler, options),
       type: 'listener',
@@ -111,7 +111,7 @@ export class ResourceManager {
     }
 
     this.cleanupQueue.add(callback);
-    
+
     // Return unregister function
     return () => {
       this.cleanupQueue.delete(callback);
@@ -158,7 +158,7 @@ export class ResourceManager {
 
     for (const resource of this.resources.values()) {
       byType[resource.type] = (byType[resource.type] || 0) + 1;
-      
+
       if (oldestResource === null || resource.created < oldestResource) {
         oldestResource = resource.created;
       }
@@ -187,23 +187,23 @@ export class ResourceManager {
    */
   async dispose(): Promise<void> {
     if (this.isDisposed) return;
-    
+
     this.isDisposed = true;
 
     // Execute all cleanup callbacks
     const cleanupPromises: Promise<void>[] = [];
-    
+
     for (const callback of this.cleanupQueue) {
       cleanupPromises.push(this.executeCleanup(callback));
     }
-    
+
     // Clean up all registered resources
     for (const resource of this.resources.values()) {
       cleanupPromises.push(this.executeCleanup(resource.cleanup));
     }
 
     await Promise.all(cleanupPromises);
-    
+
     this.resources.clear();
     this.cleanupQueue.clear();
   }
@@ -221,14 +221,14 @@ export class ResourceManager {
  */
 export function useResourceManager(): ResourceManager {
   const managerRef = React.useRef<ResourceManager>();
-  
+
   if (!managerRef.current) {
     managerRef.current = new ResourceManager();
   }
 
   React.useEffect(() => {
     const manager = managerRef.current;
-    
+
     return () => {
       if (manager) {
         void manager.dispose();

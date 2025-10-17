@@ -32,7 +32,7 @@ class RateLimiter {
     maxRequests: 100,     // 100 requests per minute
     message: 'Too many requests, please try again later'
   };
-  
+
   // Specific limits for different operations
   private readonly limits: Map<string, RateLimitConfig> = new Map([
     ['api:execute', { windowMs: 60000, maxRequests: 10 }],  // 10 executions per minute
@@ -67,7 +67,7 @@ class RateLimiter {
   checkLimit(clientId: string, operation: string): boolean {
     const config = this.limits.get(operation) || this.defaultConfig;
     const now = Date.now();
-    
+
     // Get or create client tracker
     let tracker = this.clients.get(clientId);
     if (!tracker) {
@@ -109,10 +109,10 @@ class RateLimiter {
   middleware(operation: string) {
     return (req: Request, res: Response, next: NextFunction) => {
       const clientId = this.getClientId(req);
-      
+
       if (!this.checkLimit(clientId, operation)) {
         const config = this.limits.get(operation) || this.defaultConfig;
-        res.status(429).json({ 
+        res.status(429).json({
           error: config.message || 'Too many requests',
           retryAfter: Math.ceil(config.windowMs / 1000) // Retry-After in seconds
         });
@@ -149,7 +149,7 @@ class RateLimiter {
       const hasRecentRequests = tracker.requests.some(
         timestamp => (now - timestamp) < maxAge
       );
-      
+
       if (!hasRecentRequests && !tracker.blocked) {
         this.clients.delete(clientId);
       }

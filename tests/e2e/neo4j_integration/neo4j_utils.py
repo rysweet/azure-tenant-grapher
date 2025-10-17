@@ -10,8 +10,8 @@ import logging
 import random
 import string
 import time
-from typing import Dict, List, Any, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List, Optional, Tuple
 
 from neo4j import Driver, Session, Transaction
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
@@ -39,9 +39,11 @@ def generate_random_data(size: int = 100) -> List[Dict[str, Any]]:
             "tags": {
                 "env": random.choice(["prod", "dev", "test"]),
                 "team": random.choice(["alpha", "beta", "gamma"]),
-                "priority": random.choice(["high", "medium", "low"])
+                "priority": random.choice(["high", "medium", "low"]),
             },
-            "description": ' '.join(random.choices(string.ascii_letters + string.digits, k=50))
+            "description": " ".join(
+                random.choices(string.ascii_letters + string.digits, k=50)
+            ),
         }
         data.append(record)
     return data
@@ -101,7 +103,7 @@ def bulk_insert_nodes(
     session: Session,
     data: List[Dict[str, Any]],
     batch_size: int = 100,
-    label: str = "TestNode"
+    label: str = "TestNode",
 ) -> int:
     """
     Bulk insert nodes into Neo4j.
@@ -118,7 +120,7 @@ def bulk_insert_nodes(
     total_inserted = 0
 
     for i in range(0, len(data), batch_size):
-        batch = data[i:i + batch_size]
+        batch = data[i : i + batch_size]
         query = f"""
         UNWIND $batch AS node
         CREATE (n:{label})
@@ -133,9 +135,7 @@ def bulk_insert_nodes(
 
 
 def concurrent_write_test(
-    driver: Driver,
-    num_threads: int = 10,
-    writes_per_thread: int = 100
+    driver: Driver, num_threads: int = 10, writes_per_thread: int = 100
 ) -> Dict[str, Any]:
     """
     Test concurrent write operations.
@@ -153,7 +153,7 @@ def concurrent_write_test(
         "successful_writes": 0,
         "failed_writes": 0,
         "conflicts": 0,
-        "duration": 0
+        "duration": 0,
     }
 
     def write_task(thread_id: int) -> Tuple[int, int, int]:
@@ -184,10 +184,7 @@ def concurrent_write_test(
     start_time = time.time()
 
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        futures = [
-            executor.submit(write_task, i)
-            for i in range(num_threads)
-        ]
+        futures = [executor.submit(write_task, i) for i in range(num_threads)]
 
         for future in as_completed(futures):
             successful, failed, conflicts = future.result()
@@ -205,7 +202,7 @@ def measure_query_performance(
     session: Session,
     query: str,
     params: Optional[Dict[str, Any]] = None,
-    iterations: int = 100
+    iterations: int = 100,
 ) -> Dict[str, float]:
     """
     Measure query performance statistics.
@@ -235,7 +232,7 @@ def measure_query_performance(
         "avg_ms": sum(times) / len(times),
         "median_ms": times[len(times) // 2],
         "p95_ms": times[int(len(times) * 0.95)],
-        "p99_ms": times[int(len(times) * 0.99)]
+        "p99_ms": times[int(len(times) * 0.99)],
     }
 
 
@@ -266,13 +263,13 @@ def create_backup(driver: Driver, backup_path: str) -> bool:
                         "type": record["r"].type,
                         "properties": dict(record["r"]),
                         "start": record["r"].start_node.id,
-                        "end": record["r"].end_node.id
+                        "end": record["r"].end_node.id,
                     }
                     for record in rels_result
-                ]
+                ],
             }
 
-            with open(backup_path, 'w') as f:
+            with open(backup_path, "w") as f:
                 json.dump(backup_data, f, indent=2, default=str)
 
             return True
@@ -293,7 +290,7 @@ def restore_backup(driver: Driver, backup_path: str) -> bool:
         True if restore successful
     """
     try:
-        with open(backup_path, 'r') as f:
+        with open(backup_path) as f:
             backup_data = json.load(f)
 
         with driver.session() as session:
@@ -309,16 +306,20 @@ def restore_backup(driver: Driver, backup_path: str) -> bool:
 
             # Restore relationships
             for rel_data in backup_data["relationships"]:
-                query = """
+                query = (
+                    """
                 MATCH (a) WHERE id(a) = $start_id
                 MATCH (b) WHERE id(b) = $end_id
-                CREATE (a)-[r:""" + rel_data["type"] + """ $props]->(b)
+                CREATE (a)-[r:"""
+                    + rel_data["type"]
+                    + """ $props]->(b)
                 """
+                )
                 session.run(
                     query,
                     start_id=rel_data["start"],
                     end_id=rel_data["end"],
-                    props=rel_data["properties"]
+                    props=rel_data["properties"],
                 )
 
             return True
@@ -337,6 +338,7 @@ def verify_transaction_isolation(driver: Driver) -> bool:
     Returns:
         True if transaction isolation is properly maintained
     """
+
     def transaction1(tx: Transaction) -> None:
         tx.run("CREATE (n:IsolationTest {id: 1, value: 'initial'})")
         time.sleep(2)  # Hold transaction open
@@ -370,9 +372,7 @@ def verify_transaction_isolation(driver: Driver) -> bool:
 
 
 def stress_test_connections(
-    driver: Driver,
-    num_connections: int = 100,
-    operations_per_connection: int = 10
+    driver: Driver, num_connections: int = 100, operations_per_connection: int = 10
 ) -> Dict[str, Any]:
     """
     Stress test Neo4j with multiple concurrent connections.
@@ -390,7 +390,7 @@ def stress_test_connections(
         "successful_operations": 0,
         "failed_operations": 0,
         "connection_errors": 0,
-        "duration": 0
+        "duration": 0,
     }
 
     def connection_task(conn_id: int) -> Tuple[int, int, int]:
@@ -426,10 +426,7 @@ def stress_test_connections(
     start_time = time.time()
 
     with ThreadPoolExecutor(max_workers=num_connections) as executor:
-        futures = [
-            executor.submit(connection_task, i)
-            for i in range(num_connections)
-        ]
+        futures = [executor.submit(connection_task, i) for i in range(num_connections)]
 
         for future in as_completed(futures):
             successful, failed, conn_errors = future.result()

@@ -65,7 +65,7 @@ class ErrorBoundary extends Component<Props, State> {
     // Try automatic recovery strategies first
     if (!this.props.isolate) {
       const recoveryResult = await errorRecoveryService.attemptRecovery(error);
-      
+
       if (recoveryResult.success) {
         // Successfully recovered using recovery strategy
         this.handleReset();
@@ -136,14 +136,14 @@ class ErrorBoundary extends Component<Props, State> {
 
   private scheduleAutoRecovery = (delay: number) => {
     this.setState({ isRecovering: true });
-    
+
     const timeoutId = setTimeout(() => {
       if (this.state.hasError) {
         // Attempting auto-recovery after delay
         this.handleReset();
       }
     }, delay);
-    
+
     this.resetTimeoutId = timeoutId;
     this.resourceManager.registerTimer('auto-recovery', timeoutId);
   };
@@ -165,7 +165,7 @@ class ErrorBoundary extends Component<Props, State> {
       }
     });
     this.cleanupCallbacks.clear();
-    
+
     // Clean up any old resources to prevent memory leaks
     this.resourceManager.cleanupOldResources(60000); // Clean up resources older than 1 minute
   };
@@ -180,10 +180,10 @@ class ErrorBoundary extends Component<Props, State> {
   public componentWillUnmount() {
     // Clear any pending auto-recovery
     this.clearAutoRecovery();
-    
+
     // Perform cleanup to prevent memory leaks
     this.performCleanup();
-    
+
     // Dispose resource manager
     void this.resourceManager.dispose();
   }
@@ -202,12 +202,12 @@ class ErrorBoundary extends Component<Props, State> {
 
       return (
         <Box sx={{ p: 3, maxWidth: '100%', overflow: 'auto' }}>
-          <Alert 
-            severity="error" 
-            sx={{ 
-              '& .MuiAlert-message': { 
-                width: '100%' 
-              } 
+          <Alert
+            severity="error"
+            sx={{
+              '& .MuiAlert-message': {
+                width: '100%'
+              }
             }}
           >
             <Stack spacing={2}>

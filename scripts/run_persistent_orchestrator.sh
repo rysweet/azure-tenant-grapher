@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Persistent Orchestrator Runner
-# 
+#
 # This script ensures the autonomous orchestrator keeps running until the objective is achieved.
 # It will restart the orchestrator if it crashes and send status updates.
 #
@@ -44,13 +44,13 @@ max_attempts=100
 
 while [ $attempt -le $max_attempts ]; do
     log "Attempt $attempt/$max_attempts: Starting orchestrator..."
-    
+
     # Run the orchestrator
     cd "$REPO_ROOT"
     if python3 "$SCRIPT_PATH"; then
         log "Orchestrator completed successfully!"
         send_message "✅ Replication orchestrator completed successfully!"
-        
+
         # Check if objective was achieved
         if [ -f "$STATUS_FILE" ]; then
             if grep -q '"objective_achieved": true' "$STATUS_FILE" 2>/dev/null; then
@@ -59,7 +59,7 @@ while [ $attempt -le $max_attempts ]; do
                 exit 0
             fi
         fi
-        
+
         log "Orchestrator finished but objective not achieved. Restarting in 60 seconds..."
         sleep 60
     else
@@ -68,7 +68,7 @@ while [ $attempt -le $max_attempts ]; do
         send_message "⚠️ Orchestrator crashed (exit $exit_code). Restarting..."
         sleep 30
     fi
-    
+
     attempt=$((attempt + 1))
 done
 

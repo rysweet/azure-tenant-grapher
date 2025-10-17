@@ -99,14 +99,18 @@ def generate_markdown_report(
 
     if result.similarity_score >= 95:
         report += "**COMPLETE**: Deployment is complete and matches source.\n\n"
-        report += "The target deployment successfully replicates the source configuration. "
+        report += (
+            "The target deployment successfully replicates the source configuration. "
+        )
         report += "All resource types are present in expected quantities.\n"
     elif result.similarity_score >= 80:
         report += "**MOSTLY COMPLETE**: Deployment is mostly complete with minor discrepancies.\n\n"
         report += "The target deployment is largely successful but has some differences from the source. "
         report += "Review the missing/extra resources sections above to determine if these differences are intentional.\n"
     elif result.similarity_score >= 50:
-        report += "**INCOMPLETE**: Deployment has significant differences from source.\n\n"
+        report += (
+            "**INCOMPLETE**: Deployment has significant differences from source.\n\n"
+        )
         report += "The target deployment differs substantially from the source. "
         report += "This may indicate an incomplete deployment or intentional configuration differences. "
         report += "Please review the comparison details carefully.\n"

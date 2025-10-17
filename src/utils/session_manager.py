@@ -115,7 +115,7 @@ class Neo4jSessionManager:
         try:
             if not self.config.uri:
                 raise Neo4jConnectionError("Neo4j URI is not configured")
-            
+
             logger.debug(f"Connecting to Neo4j at {self.config.uri}")
 
             self._driver = GraphDatabase.driver(

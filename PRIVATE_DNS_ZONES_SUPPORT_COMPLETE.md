@@ -207,13 +207,13 @@ To resolve the missing resources issue:
 
 ## Summary
 
-✅ **Mapping**: Complete  
-✅ **Emission Logic**: Complete  
-✅ **Helper Functions**: Complete  
-✅ **Dependency Analysis**: Complete  
-✅ **Virtual Network Links**: Complete  
-✅ **Tests**: Complete (27 tests passing)  
-✅ **Documentation**: Complete  
+✅ **Mapping**: Complete
+✅ **Emission Logic**: Complete
+✅ **Helper Functions**: Complete
+✅ **Dependency Analysis**: Complete
+✅ **Virtual Network Links**: Complete
+✅ **Tests**: Complete (27 tests passing)
+✅ **Documentation**: Complete
 
 **The Terraform emission support for Microsoft.Network/privateDnsZones is fully implemented and tested.**
 
@@ -221,6 +221,6 @@ The issue of missing resources is a **discovery/storage problem**, not an emissi
 
 ---
 
-**Generated**: 2025-10-15  
-**Status**: COMPLETE  
+**Generated**: 2025-10-15
+**Status**: COMPLETE
 **Test Coverage**: 27 passing tests

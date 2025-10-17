@@ -35,10 +35,8 @@ class TestVNetAddressSpaceExtraction:
 
         # Mock VNet resource with addressSpace in properties JSON
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.8.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.8.0.0/16"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -65,7 +63,9 @@ class TestVNetAddressSpaceExtraction:
             ]
 
             # Verify address space was extracted correctly
-            assert "address_space" in vnet_resource, "VNet should have address_space field"
+            assert "address_space" in vnet_resource, (
+                "VNet should have address_space field"
+            )
             assert isinstance(vnet_resource["address_space"], list), (
                 "address_space should be a list"
             )
@@ -73,7 +73,9 @@ class TestVNetAddressSpaceExtraction:
                 "address_space should match properties.addressSpace.addressPrefixes"
             )
 
-    def test_vnet_with_missing_address_space(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_vnet_with_missing_address_space(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test VNet with properties but missing addressSpace.
 
         When addressSpace is completely missing from properties, emitter should:
@@ -122,10 +124,13 @@ class TestVNetAddressSpaceExtraction:
 
             # Verify warning was logged
             warning_logs = [
-                record for record in caplog.records
+                record
+                for record in caplog.records
                 if record.levelname == "WARNING" and "vnet-no-address" in record.message
             ]
-            assert len(warning_logs) > 0, "Should log WARNING when addressSpace is missing"
+            assert len(warning_logs) > 0, (
+                "Should log WARNING when addressSpace is missing"
+            )
             assert "no addressSpace in properties" in warning_logs[0].message, (
                 "Warning should mention missing addressSpace"
             )
@@ -133,7 +138,9 @@ class TestVNetAddressSpaceExtraction:
                 "Warning should mention fallback"
             )
 
-    def test_vnet_with_empty_address_prefixes(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_vnet_with_empty_address_prefixes(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test VNet with addressSpace but empty addressPrefixes array.
 
         When addressPrefixes exists but is empty [], emitter should:
@@ -148,7 +155,7 @@ class TestVNetAddressSpaceExtraction:
             "addressSpace": {
                 "addressPrefixes": []  # Empty array
             },
-            "subnets": []
+            "subnets": [],
         }
 
         graph.resources = [
@@ -182,10 +189,14 @@ class TestVNetAddressSpaceExtraction:
 
             # Verify warning
             warning_logs = [
-                record for record in caplog.records
-                if record.levelname == "WARNING" and "vnet-empty-prefixes" in record.message
+                record
+                for record in caplog.records
+                if record.levelname == "WARNING"
+                and "vnet-empty-prefixes" in record.message
             ]
-            assert len(warning_logs) > 0, "Should log WARNING when addressPrefixes is empty"
+            assert len(warning_logs) > 0, (
+                "Should log WARNING when addressPrefixes is empty"
+            )
 
     def test_vnet_with_multiple_address_prefixes(self) -> None:
         """Test VNet with multiple address prefixes.
@@ -198,10 +209,8 @@ class TestVNetAddressSpaceExtraction:
 
         # Mock VNet with multiple address spaces
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.0.0.0/16", "10.1.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.0.0.0/16", "10.1.0.0/16"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -241,10 +250,8 @@ class TestVNetAddressSpaceExtraction:
 
         # Properties as dict instead of JSON string
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["192.168.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["192.168.0.0/16"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -273,7 +280,9 @@ class TestVNetAddressSpaceExtraction:
                 "Should parse addressSpace from dict properties"
             )
 
-    def test_vnet_with_malformed_properties_json(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_vnet_with_malformed_properties_json(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test VNet with malformed properties JSON.
 
         When properties JSON is invalid, _parse_properties returns empty dict,
@@ -313,12 +322,15 @@ class TestVNetAddressSpaceExtraction:
 
             # Should log warning about missing addressSpace (result of empty parsed properties)
             warning_logs = [
-                record for record in caplog.records
+                record
+                for record in caplog.records
                 if record.levelname == "WARNING" and "vnet-bad-json" in record.message
             ]
             assert len(warning_logs) > 0, "Should log WARNING for malformed properties"
 
-    def test_vnet_with_no_properties_field(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_vnet_with_no_properties_field(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test VNet with no properties field at all.
 
         When properties field is missing entirely, _parse_properties returns empty dict.
@@ -357,10 +369,13 @@ class TestVNetAddressSpaceExtraction:
 
             # Should log warning
             warning_logs = [
-                record for record in caplog.records
+                record
+                for record in caplog.records
                 if record.levelname == "WARNING" and "vnet-no-props" in record.message
             ]
-            assert len(warning_logs) > 0, "Should log WARNING when properties is missing"
+            assert len(warning_logs) > 0, (
+                "Should log WARNING when properties is missing"
+            )
 
 
 class TestVNetAddressSpaceEdgeCases:
@@ -375,10 +390,8 @@ class TestVNetAddressSpaceEdgeCases:
         graph = TenantGraph()
 
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.0.0.0/16", "fd00:db8:deca::/48"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.0.0.0/16", "fd00:db8:deca::/48"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -416,10 +429,8 @@ class TestVNetAddressSpaceEdgeCases:
         graph = TenantGraph()
 
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.0.0.0/8"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.0.0.0/8"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -454,10 +465,8 @@ class TestVNetAddressSpaceEdgeCases:
         graph = TenantGraph()
 
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.0.0.0/29"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.0.0.0/29"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -492,24 +501,18 @@ class TestVNetAddressSpaceEdgeCases:
         graph = TenantGraph()
 
         vnet1_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.0.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+            "subnets": [],
         }
 
         vnet2_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["172.16.0.0/12"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["172.16.0.0/12"]},
+            "subnets": [],
         }
 
         vnet3_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["192.168.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["192.168.0.0/16"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -576,7 +579,7 @@ class TestVNetAddressSpaceRegression:
             "addressSpace": {
                 "addressPrefixes": ["10.8.0.0/16"]  # Custom address space
             },
-            "subnets": []
+            "subnets": [],
         }
 
         graph.resources = [
@@ -611,7 +614,9 @@ class TestVNetAddressSpaceRegression:
                 "VNet should use actual addressSpace from properties, not hardcoded default"
             )
 
-    def test_regression_no_warning_for_valid_address_space(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_regression_no_warning_for_valid_address_space(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """REGRESSION: Ensure no warning is logged when addressSpace is valid.
 
         Before the fix, even valid VNets might log warnings because the parsing
@@ -621,10 +626,8 @@ class TestVNetAddressSpaceRegression:
         graph = TenantGraph()
 
         vnet_properties = {
-            "addressSpace": {
-                "addressPrefixes": ["10.5.0.0/16"]
-            },
-            "subnets": []
+            "addressSpace": {"addressPrefixes": ["10.5.0.0/16"]},
+            "subnets": [],
         }
 
         graph.resources = [
@@ -646,7 +649,8 @@ class TestVNetAddressSpaceRegression:
 
             # Check for warnings about this VNet
             vnet_warnings = [
-                record for record in caplog.records
+                record
+                for record in caplog.records
                 if record.levelname == "WARNING"
                 and "valid-vnet" in record.message
                 and "addressSpace" in record.message

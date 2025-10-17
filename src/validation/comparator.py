@@ -102,7 +102,9 @@ def compare_graphs(
         similarity = 0.0
     else:
         # Simple count-based similarity
-        similarity = (min(source_count, target_count) / max(source_count, target_count)) * 100
+        similarity = (
+            min(source_count, target_count) / max(source_count, target_count)
+        ) * 100
 
     logger.info(f"Comparison complete: {similarity:.1f}% similarity")
 
@@ -142,7 +144,9 @@ def compare_filtered_graphs(
         >>> result = compare_filtered_graphs(source, target, "resourceGroup=RG1", "resourceGroup=RG2")
     """
 
-    def apply_filter(resources: List[Dict[str, Any]], filter_str: str | None) -> List[Dict[str, Any]]:
+    def apply_filter(
+        resources: List[Dict[str, Any]], filter_str: str | None
+    ) -> List[Dict[str, Any]]:
         """Apply filter string to resources."""
         if not filter_str:
             return resources
@@ -150,7 +154,9 @@ def compare_filtered_graphs(
         try:
             key, value = filter_str.split("=", 1)
             filtered = [r for r in resources if r.get(key) == value]
-            logger.info(f"Filter '{filter_str}' matched {len(filtered)}/{len(resources)} resources")
+            logger.info(
+                f"Filter '{filter_str}' matched {len(filtered)}/{len(resources)} resources"
+            )
             return filtered
         except ValueError:
             logger.warning(f"Invalid filter format: {filter_str}. Expected key=value")

@@ -5,12 +5,8 @@ Tests validate subnet address range validation, overlap detection,
 and auto-fix functionality.
 """
 
-import pytest
-
 from src.iac.validators.subnet_validator import (
-    SubnetValidationIssue,
     SubnetValidator,
-    ValidationResult,
 )
 
 
@@ -106,8 +102,14 @@ class TestSubnetValidator:
         validator = SubnetValidator(auto_fix=False)
 
         subnets = [
-            {"name": "subnet1", "address_prefixes": ["10.0.0.0/23"]},  # 10.0.0.0 - 10.0.1.255
-            {"name": "subnet2", "address_prefixes": ["10.0.1.0/24"]},  # 10.0.1.0 - 10.0.1.255 (overlaps)
+            {
+                "name": "subnet1",
+                "address_prefixes": ["10.0.0.0/23"],
+            },  # 10.0.0.0 - 10.0.1.255
+            {
+                "name": "subnet2",
+                "address_prefixes": ["10.0.1.0/24"],
+            },  # 10.0.1.0 - 10.0.1.255 (overlaps)
         ]
 
         result = validator.validate_vnet_subnets(
@@ -125,7 +127,10 @@ class TestSubnetValidator:
         validator = SubnetValidator(auto_fix=False)
 
         subnets = [
-            {"name": "tiny-subnet", "address_prefixes": ["10.0.1.0/29"]},  # Only 8 addresses
+            {
+                "name": "tiny-subnet",
+                "address_prefixes": ["10.0.1.0/29"],
+            },  # Only 8 addresses
         ]
 
         result = validator.validate_vnet_subnets(
@@ -136,7 +141,9 @@ class TestSubnetValidator:
 
         # Should pass validation but have a warning
         assert result.valid is True
-        insufficient_issues = [i for i in result.issues if i.issue_type == "insufficient_space"]
+        insufficient_issues = [
+            i for i in result.issues if i.issue_type == "insufficient_space"
+        ]
         assert len(insufficient_issues) == 1
         assert "16 addresses" in insufficient_issues[0].message
 
@@ -181,7 +188,10 @@ class TestSubnetValidator:
         validator = SubnetValidator(auto_fix=False)
 
         subnets = [
-            {"name": "multi-prefix", "address_prefixes": ["10.0.1.0/24", "10.0.2.0/24"]},
+            {
+                "name": "multi-prefix",
+                "address_prefixes": ["10.0.1.0/24", "10.0.2.0/24"],
+            },
         ]
 
         result = validator.validate_vnet_subnets(

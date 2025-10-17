@@ -60,7 +60,7 @@ def serialize_value(value: Any, max_json_length: int = 5000) -> Any:
             elif len(s) > max_json_length * 0.8:
                 logger.info(
                     f"Large property detected: size={len(s)} chars "
-                    f"({int((len(s)/max_json_length)*100)}% of max {max_json_length})"
+                    f"({int((len(s) / max_json_length) * 100)}% of max {max_json_length})"
                 )
             return s
         except Exception:
@@ -301,7 +301,9 @@ class DatabaseOperations:
                             address_prefixes = address_space.get("addressPrefixes", [])
                             if address_prefixes:
                                 # Store as JSON string for easy access in IaC generation
-                                resource_data["addressSpace"] = json.dumps(address_prefixes)
+                                resource_data["addressSpace"] = json.dumps(
+                                    address_prefixes
+                                )
                                 logger.debug(
                                     f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
                                 )

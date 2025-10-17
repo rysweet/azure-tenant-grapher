@@ -10,15 +10,12 @@ import json
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, Mock, patch
 
 import jwt
 import pytest
-
 from tests.e2e.auth_security.security_utils import (
     AuditLogger,
     EncryptionHelper,
-    MockAzureADClient,
     TokenValidator,
 )
 
@@ -35,10 +32,7 @@ class TokenManager:
         self.audit_logger = AuditLogger()
 
     def generate_token(
-        self,
-        user_id: str,
-        scopes: list = None,
-        expires_in: int = 3600
+        self, user_id: str, scopes: list = None, expires_in: int = 3600
     ) -> Dict[str, Any]:
         """Generate new access and refresh tokens."""
         import secrets
@@ -56,7 +50,7 @@ class TokenManager:
             "expires_at": expiry_time.isoformat(),
             "user_id": user_id,
             "scopes": scopes or ["read"],
-            "issued_at": datetime.now(timezone.utc).isoformat()
+            "issued_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Store tokens
@@ -69,7 +63,7 @@ class TokenManager:
             user_id=user_id,
             success=True,
             method="token_generation",
-            ip_address="127.0.0.1"
+            ip_address="127.0.0.1",
         )
 
         return token_data
@@ -104,8 +98,7 @@ class TokenManager:
 
         # Generate new tokens
         new_token_data = self.generate_token(
-            user_id=old_token_data["user_id"],
-            scopes=old_token_data["scopes"]
+            user_id=old_token_data["user_id"], scopes=old_token_data["scopes"]
         )
 
         # Revoke old tokens
@@ -144,10 +137,7 @@ class TestTokenManagement:
         """Test secure token generation."""
         manager = TokenManager()
 
-        token_data = manager.generate_token(
-            user_id="user123",
-            scopes=["read", "write"]
-        )
+        token_data = manager.generate_token(user_id="user123", scopes=["read", "write"])
 
         # Verify token structure
         assert "access_token" in token_data
@@ -194,7 +184,9 @@ class TestTokenManagement:
         time.sleep(2)
 
         # Manually set expiry to past for testing
-        manager.token_expiry[access_token] = datetime.now(timezone.utc) - timedelta(seconds=1)
+        manager.token_expiry[access_token] = datetime.now(timezone.utc) - timedelta(
+            seconds=1
+        )
 
         # Token should be expired
         is_valid, error = manager.validate_token(access_token)
@@ -290,12 +282,12 @@ class TestTokenManagement:
         valid_token = create_test_token()
 
         # Tamper with the token by modifying payload
-        parts = valid_token.split('.')
-        payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=='))
+        parts = valid_token.split(".")
+        payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=="))
         payload["admin"] = True  # Add unauthorized claim
-        tampered_payload = base64.urlsafe_b64encode(
-            json.dumps(payload).encode()
-        ).decode().rstrip('=')
+        tampered_payload = (
+            base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
+        )
 
         tampered_token = f"{parts[0]}.{tampered_payload}.{parts[2]}"
 
@@ -352,7 +344,7 @@ class TestTokenManagement:
         # Validate tokens concurrently
         validation_threads = []
         for i in range(3):
-            tokens_subset = results["generated"][i*10:(i+1)*10]
+            tokens_subset = results["generated"][i * 10 : (i + 1) * 10]
             t = threading.Thread(target=validate_tokens, args=(tokens_subset,))
             validation_threads.append(t)
             t.start()
@@ -363,7 +355,9 @@ class TestTokenManagement:
         # Verify results
         assert len(results["generated"]) == 50  # 5 users * 10 tokens
         assert len(results["errors"]) == 0
-        assert all(valid for _, valid in results["validated"][:30])  # First 30 should be valid
+        assert all(
+            valid for _, valid in results["validated"][:30]
+        )  # First 30 should be valid
 
     def test_token_scope_enforcement(self):
         """Test that token scopes are properly enforced."""
@@ -372,7 +366,9 @@ class TestTokenManagement:
         # Generate tokens with different scopes
         read_token = manager.generate_token("user1", scopes=["read"])
         write_token = manager.generate_token("user2", scopes=["read", "write"])
-        admin_token = manager.generate_token("admin", scopes=["read", "write", "delete", "admin"])
+        admin_token = manager.generate_token(
+            "admin", scopes=["read", "write", "delete", "admin"]
+        )
 
         # Verify scopes are stored correctly
         assert manager.tokens[read_token["access_token"]]["scopes"] == ["read"]
@@ -385,6 +381,7 @@ class TestTokenManagement:
 
         for _ in range(100):
             import uuid
+
             token = create_test_token(claims={"jti": str(uuid.uuid4())})
             decoded = jwt.decode(token, options={"verify_signature": False})
 
@@ -409,16 +406,16 @@ class TestTokenManagement:
             claims={"iss": "https://evil.example.com/"}
         )
 
-        decoded = jwt.decode(untrusted_issuer_token, options={"verify_signature": False})
+        decoded = jwt.decode(
+            untrusted_issuer_token, options={"verify_signature": False}
+        )
         assert "evil.example.com" in decoded["iss"]
 
     def test_token_nbf_validation(self, create_test_token):
         """Test 'not before' (nbf) claim validation."""
         # Token not valid yet
         future_time = datetime.now(timezone.utc) + timedelta(hours=1)
-        future_token = create_test_token(
-            claims={"nbf": int(future_time.timestamp())}
-        )
+        future_token = create_test_token(claims={"nbf": int(future_time.timestamp())})
 
         decoded = jwt.decode(future_token, options={"verify_signature": False})
         nbf_time = datetime.fromtimestamp(decoded["nbf"], tz=timezone.utc)
@@ -446,8 +443,7 @@ class TestTokenManagement:
 
         # Generate sensitive token
         token_data = manager.generate_token(
-            "admin_user",
-            scopes=["admin", "delete_all"]
+            "admin_user", scopes=["admin", "delete_all"]
         )
 
         # Encrypt for storage
@@ -468,14 +464,14 @@ class TestTokenManagement:
             token_data = manager.generate_token(f"user{i}", expires_in=1)
             expired_tokens.append(token_data["access_token"])
             # Set to expired
-            manager.token_expiry[token_data["access_token"]] = (
-                datetime.now(timezone.utc) - timedelta(seconds=1)
-            )
+            manager.token_expiry[token_data["access_token"]] = datetime.now(
+                timezone.utc
+            ) - timedelta(seconds=1)
 
         # Generate valid tokens
         valid_tokens = []
         for i in range(5):
-            token_data = manager.generate_token(f"user{i+5}", expires_in=3600)
+            token_data = manager.generate_token(f"user{i + 5}", expires_in=3600)
             valid_tokens.append(token_data["access_token"])
 
         # Implement cleanup method
@@ -515,6 +511,7 @@ class TestTokenManagement:
 
             def _generate_fingerprint(self, client_id: str) -> str:
                 import hashlib
+
                 return hashlib.sha256(f"{client_id}".encode()).hexdigest()[:16]
 
             def validate_token_with_client(self, access_token: str, client_id: str):

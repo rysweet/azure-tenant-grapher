@@ -12,10 +12,7 @@ from src.iac.traverser import TenantGraph
 def create_vnet(name: str, subnet_names: list) -> dict:
     """Create mock VNet resource."""
     subnets = [
-        {
-            "name": subnet_name,
-            "properties": {"addressPrefix": f"10.0.{i}.0/24"}
-        }
+        {"name": subnet_name, "properties": {"addressPrefix": f"10.0.{i}.0/24"}}
         for i, subnet_name in enumerate(subnet_names)
     ]
 
@@ -26,10 +23,9 @@ def create_vnet(name: str, subnet_names: list) -> dict:
         "location": "eastus",
         "resourceGroup": "test-rg",
         "address_space": ["10.0.0.0/16"],
-        "properties": json.dumps({
-            "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
-            "subnets": subnets
-        })
+        "properties": json.dumps(
+            {"addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}, "subnets": subnets}
+        ),
     }
 
 
@@ -57,20 +53,26 @@ def test_vnet_scoped_naming():
 
     print(f"Generated subnets: {list(subnets.keys())}")
 
-    assert "infra_vnet_AzureBastionSubnet" in subnets, \
+    assert "infra_vnet_AzureBastionSubnet" in subnets, (
         "Should have VNet-scoped subnet: infra_vnet_AzureBastionSubnet"
-    assert "attack_vnet_AzureBastionSubnet" in subnets, \
+    )
+    assert "attack_vnet_AzureBastionSubnet" in subnets, (
         "Should have VNet-scoped subnet: attack_vnet_AzureBastionSubnet"
-    assert len(subnets) == 2, \
-        f"Expected 2 distinct subnets, got {len(subnets)}"
+    )
+    assert len(subnets) == 2, f"Expected 2 distinct subnets, got {len(subnets)}"
 
     # Verify Azure names are preserved
     assert subnets["infra_vnet_AzureBastionSubnet"]["name"] == "AzureBastionSubnet"
     assert subnets["attack_vnet_AzureBastionSubnet"]["name"] == "AzureBastionSubnet"
 
     # Verify VNet references are correct
-    assert "infra_vnet" in subnets["infra_vnet_AzureBastionSubnet"]["virtual_network_name"]
-    assert "attack_vnet" in subnets["attack_vnet_AzureBastionSubnet"]["virtual_network_name"]
+    assert (
+        "infra_vnet" in subnets["infra_vnet_AzureBastionSubnet"]["virtual_network_name"]
+    )
+    assert (
+        "attack_vnet"
+        in subnets["attack_vnet_AzureBastionSubnet"]["virtual_network_name"]
+    )
 
     print("✓ All tests passed!")
     return True

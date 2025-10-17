@@ -56,7 +56,7 @@ This document summarizes the comprehensive security fixes implemented for Azure 
 ## 4. Server Integration
 
 ### Updated Files:
-- **`spa/backend/src/server.ts`**: 
+- **`spa/backend/src/server.ts`**:
   - Added authentication endpoints (`/api/auth/token`, `/api/auth/stats`)
   - Integrated input validation for command execution
   - Added WebSocket authentication middleware
@@ -167,7 +167,7 @@ POST /api/execute
      body: JSON.stringify({ userId: 'user-id' })
    });
    const { token } = await response.json();
-   
+
    const socket = io({
      auth: { token }
    });

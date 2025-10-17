@@ -10,12 +10,9 @@ import asyncio
 import logging
 import os
 import subprocess
-import signal
 import time
 from pathlib import Path
-from typing import Optional, Dict, List, Any
-import psutil
-import json
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +20,13 @@ logger = logging.getLogger(__name__)
 class ServiceProcess:
     """Represents a managed service process."""
 
-    def __init__(self, name: str, command: List[str], cwd: Optional[str] = None, env: Optional[Dict] = None):
+    def __init__(
+        self,
+        name: str,
+        command: List[str],
+        cwd: Optional[str] = None,
+        env: Optional[Dict] = None,
+    ):
         self.name = name
         self.command = command
         self.cwd = cwd
@@ -69,7 +72,7 @@ class ServiceManager:
         cwd: Optional[str] = None,
         env: Optional[Dict] = None,
         health_check_url: Optional[str] = None,
-        startup_timeout: Optional[int] = None
+        startup_timeout: Optional[int] = None,
     ) -> bool:
         """
         Start a service process.
@@ -107,7 +110,7 @@ class ServiceManager:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
             )
 
             service.pid = service.process.pid
@@ -217,12 +220,7 @@ class ServiceManager:
         await asyncio.sleep(1)
 
         # Start the service
-        return await self.start_service(
-            name,
-            service.command,
-            service.cwd,
-            service.env
-        )
+        return await self.start_service(name, service.command, service.cwd, service.env)
 
     def check_service(self, name: str) -> bool:
         """
@@ -320,7 +318,7 @@ class ServiceManager:
 
         try:
             # Read stdout
-            for line in iter(service.process.stdout.readline, ''):
+            for line in iter(service.process.stdout.readline, ""):
                 if line:
                     service.logs.append(f"[STDOUT] {line.strip()}")
                     logger.debug(f"{service.name}: {line.strip()}")
@@ -339,7 +337,7 @@ class ServiceManager:
             "total": len(self.services),
             "running": 0,
             "stopped": 0,
-            "services": {}
+            "services": {},
         }
 
         for name, service in self.services.items():
@@ -354,7 +352,7 @@ class ServiceManager:
                 "pid": service.pid,
                 "uptime": time.time() - service.start_time if service.start_time else 0,
                 "command": " ".join(service.command),
-                "log_count": len(service.logs)
+                "log_count": len(service.logs),
             }
 
         return status
@@ -394,7 +392,7 @@ class ServiceManager:
         for name, service in self.services.items():
             if service.logs:
                 log_file = output_path / f"{name}_{int(time.time())}.log"
-                with open(log_file, 'w') as f:
+                with open(log_file, "w") as f:
                     f.write("\n".join(service.logs))
                 log_files[name] = str(log_file)
                 logger.info(f"Exported logs for {name} to {log_file}")

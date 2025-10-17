@@ -66,7 +66,7 @@ export class Neo4jService {
     try {
       // Get credentials securely from credential manager
       const { uri, username, password } = CredentialManager.getNeo4jCredentials();
-      
+
       // Validate credentials before use
       if (!CredentialManager.validateCredentials({ uri, username, password })) {
         throw new Error('Invalid Neo4j password format');
@@ -97,7 +97,7 @@ export class Neo4jService {
     } catch (error) {
       this.connectionAttempts++;
       console.error('Failed to connect to Neo4j (attempt', this.connectionAttempts, '):', error);
-      
+
       if (this.connectionAttempts < this.maxConnectionAttempts) {
         // Retry connection after delay
         setTimeout(() => this.connect(), 5000);
@@ -521,7 +521,7 @@ export class Neo4jService {
    */
   private sanitizeProperties(props: Record<string, any>): Record<string, any> {
     const sanitized: Record<string, any> = {};
-    
+
     for (const [key, value] of Object.entries(props)) {
       if (typeof value === 'string') {
         sanitized[key] = this.sanitizeString(value);
@@ -531,7 +531,7 @@ export class Neo4jService {
         sanitized[key] = value;
       }
     }
-    
+
     return sanitized;
   }
 

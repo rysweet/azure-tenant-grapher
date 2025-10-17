@@ -866,7 +866,7 @@ export const GraphVisualization: React.FC = () => {
 
                   // Get selected node IDs and details
                   const nodeIds = Array.from(selectedNodesForExport);
-                  
+
                   // Map node IDs to include resource names for ResourceGroup nodes
                   const nodeDetails = nodeIds.map(nodeId => {
                     const node = graphData?.nodes.find(n => n.id === nodeId);

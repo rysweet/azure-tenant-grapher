@@ -54,53 +54,53 @@ max_attempts=200
 
 while [ $attempt -le $max_attempts ]; do
     log "Attempt $attempt/$max_attempts: Launching master engine..."
-    
+
     # Check if objective already achieved
     if check_objective; then
         log "🎉 OBJECTIVE ALREADY ACHIEVED! Exiting."
         send_msg "🎉 Objective already achieved!"
         exit 0
     fi
-    
+
     # Run the engine
     cd "$REPO_ROOT"
-    
+
     # Load environment
     if [ -f ".env" ]; then
         set -a
         source .env
         set +a
     fi
-    
+
     # Run engine
     if python3 "$ENGINE_SCRIPT"; then
         log "Engine completed normally"
-        
+
         # Check if objective was achieved
         if check_objective; then
             log "🎉 OBJECTIVE ACHIEVED! Exiting successfully."
             send_msg "🎉 OBJECTIVE ACHIEVED! Tenant replication complete!"
             exit 0
         fi
-        
+
         log "Engine finished but objective not achieved. Restarting in 30 seconds..."
         send_msg "🔄 Engine finished cycle $attempt. Restarting..."
         sleep 30
     else
         exit_code=$?
         log "Engine exited with code $exit_code"
-        
+
         if [ $exit_code -eq 130 ]; then
             log "Engine interrupted by user (SIGINT). Exiting."
             send_msg "⏸️ Engine stopped by user"
             exit 130
         fi
-        
+
         log "Restarting engine in 30 seconds..."
         send_msg "⚠️ Engine crashed (exit $exit_code). Restarting..."
         sleep 30
     fi
-    
+
     attempt=$((attempt + 1))
 done
 

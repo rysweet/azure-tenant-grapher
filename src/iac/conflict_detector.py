@@ -413,9 +413,7 @@ class ConflictDetector:
             logger.error(f"Error checking resource group locks: {e}")
             report.warnings.append(f"Failed to check RG locks: {e!s}")
 
-    def _extract_resource_groups(
-        self, resources: List[Dict[str, Any]]
-    ) -> Set[str]:
+    def _extract_resource_groups(self, resources: List[Dict[str, Any]]) -> Set[str]:
         """Extract unique resource group names from planned resources."""
         rgs = set()
         for resource in resources:
