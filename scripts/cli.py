@@ -980,6 +980,96 @@ async def agent_mode(ctx: click.Context, question: Optional[str]) -> None:
     await agent_mode_command_handler(ctx, question)
 
 
+@cli.command("monitor")
+@click.option(
+    "--subscription-id",
+    help="Filter by subscription ID",
+)
+@click.option(
+    "--interval",
+    default=30,
+    type=int,
+    help="Check interval in seconds (default: 30)",
+)
+@click.option(
+    "--watch",
+    is_flag=True,
+    help="Continuous monitoring mode (like watch command)",
+)
+@click.option(
+    "--detect-stabilization",
+    is_flag=True,
+    help="Exit when database metrics have stabilized",
+)
+@click.option(
+    "--threshold",
+    default=3,
+    type=int,
+    help="Number of identical checks to consider stable (default: 3)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["json", "table", "compact"]),
+    default="compact",
+    help="Output format (default: compact)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def monitor(
+    ctx: click.Context,
+    subscription_id: Optional[str],
+    interval: int,
+    watch: bool,
+    detect_stabilization: bool,
+    threshold: int,
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Monitor Neo4j database resource counts and relationships.
+
+    This command queries the Neo4j database to display current resource counts,
+    relationships, resource groups, and resource types. It can run once or
+    continuously monitor the database.
+
+    Examples:
+
+        # Single check
+        atg monitor
+
+        # Single check for specific subscription
+        atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
+
+        # Watch mode with 60 second interval
+        atg monitor --watch --interval 60
+
+        # Detect when database has stabilized
+        atg monitor --watch --detect-stabilization --threshold 3
+
+        # JSON output format
+        atg monitor --format json
+
+        # Table output format with watch
+        atg monitor --watch --format table
+    """
+    from src.cli_commands import monitor_command_handler
+
+    await monitor_command_handler(
+        subscription_id=subscription_id,
+        interval=interval,
+        watch=watch,
+        detect_stabilization=detect_stabilization,
+        threshold=threshold,
+        format_type=format_type,
+        no_container=no_container,
+    )
+
+
 @cli.command("mcp-query")
 @click.argument("query")
 @click.option(
@@ -1026,6 +1116,84 @@ async def mcp_query(
         use_fallback=not no_fallback,
         output_format=format,
         debug=debug,
+    )
+
+
+@cli.command("fidelity")
+@click.option(
+    "--source-subscription",
+    required=True,
+    help="Source subscription ID to compare from",
+)
+@click.option(
+    "--target-subscription",
+    required=True,
+    help="Target subscription ID to compare to",
+)
+@click.option(
+    "--track",
+    is_flag=True,
+    help="Track fidelity metrics to demos/fidelity_history.jsonl",
+)
+@click.option(
+    "--output",
+    help="Export fidelity metrics to JSON file",
+)
+@click.option(
+    "--check-objective",
+    help="Path to OBJECTIVE.md file for compliance checking",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def fidelity(
+    ctx: click.Context,
+    source_subscription: str,
+    target_subscription: str,
+    track: bool,
+    output: Optional[str],
+    check_objective: Optional[str],
+    no_container: bool,
+) -> None:
+    """Calculate and track resource replication fidelity between subscriptions.
+
+    This command compares resource counts, types, and relationships between a source
+    and target subscription to measure replication fidelity.
+
+    Examples:
+
+        # Calculate current fidelity
+        atg fidelity --source-subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16 \\
+                     --target-subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
+
+        # Track fidelity over time
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --track
+
+        # Export to JSON
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --output fidelity_report.json
+
+        # Check against objective
+        atg fidelity --source-subscription SOURCE_ID \\
+                     --target-subscription TARGET_ID \\
+                     --check-objective demos/OBJECTIVE.md
+    """
+    from src.cli_commands import fidelity_command_handler
+
+    await fidelity_command_handler(
+        source_subscription=source_subscription,
+        target_subscription=target_subscription,
+        track=track,
+        output=output,
+        check_objective=check_objective,
+        no_container=no_container,
     )
 
 
