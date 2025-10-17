@@ -13,10 +13,9 @@ The plugin integrates with the IaC generation process to ensure that API
 Management configurations are preserved when deploying to new environments.
 """
 
-import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .base_plugin import (
     DataPlaneItem,
@@ -80,15 +79,17 @@ class APIMPlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for APIMPlugin: {resource}")
 
         service_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for APIM service: {service_name}")
+        self.logger.info(
+            f"Discovering data plane items for APIM service: {service_name}"
+        )
 
         items: List[DataPlaneItem] = []
 
         try:
             # Import Azure SDK components
+            from azure.core.exceptions import AzureError, HttpResponseError
             from azure.identity import DefaultAzureCredential
             from azure.mgmt.apimanagement import ApiManagementClient
-            from azure.core.exceptions import AzureError, HttpResponseError
 
             # Parse resource ID to get subscription and resource group
             resource_id = resource.get("id", "")
@@ -188,7 +189,9 @@ class APIMPlugin(DataPlanePlugin):
                         )
                     )
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover products in {service_name}: {e}")
+                self.logger.warning(
+                    f"Failed to discover products in {service_name}: {e}"
+                )
 
             # Discover Backends
             try:
@@ -203,7 +206,9 @@ class APIMPlugin(DataPlanePlugin):
                                 "title": backend.title,
                                 "description": backend.description,
                                 "url": backend.url,
-                                "protocol": str(backend.protocol) if backend.protocol else None,
+                                "protocol": str(backend.protocol)
+                                if backend.protocol
+                                else None,
                                 "resource_id": backend.resource_id,
                             },
                             source_resource_id=resource["id"],
@@ -211,7 +216,9 @@ class APIMPlugin(DataPlanePlugin):
                         )
                     )
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover backends in {service_name}: {e}")
+                self.logger.warning(
+                    f"Failed to discover backends in {service_name}: {e}"
+                )
 
             # Discover Named Values (secrets/configuration)
             try:
@@ -293,9 +300,7 @@ class APIMPlugin(DataPlanePlugin):
         if output_format.lower() != "terraform":
             raise ValueError("Only Terraform format is currently supported")
 
-        self.logger.info(
-            f"Generating {output_format} code for {len(items)} APIM items"
-        )
+        self.logger.info(f"Generating {output_format} code for {len(items)} APIM items")
 
         if not items:
             return "# No API Management data plane items to replicate\n"
@@ -325,11 +330,11 @@ class APIMPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_api_management_api" "{resource_name}" {{',
                         f'  name                = "{item.name}"',
-                        f'  resource_group_name = var.resource_group_name',
-                        f'  api_management_name = var.api_management_name',
+                        "  resource_group_name = var.resource_group_name",
+                        "  api_management_name = var.api_management_name",
                         f'  display_name        = "{item.properties.get("display_name", item.name)}"',
                         f'  path                = "{item.properties.get("path", "")}"',
-                        f'  revision            = "1"',
+                        '  revision            = "1"',
                         "",
                     ]
                 )
@@ -344,7 +349,9 @@ class APIMPlugin(DataPlanePlugin):
                     code_lines.append("")
 
                 # Add subscription requirement
-                subscription_required = item.properties.get("subscription_required", True)
+                subscription_required = item.properties.get(
+                    "subscription_required", True
+                )
                 code_lines.append(
                     f"  subscription_required = {str(subscription_required).lower()}"
                 )
@@ -366,12 +373,12 @@ class APIMPlugin(DataPlanePlugin):
                 code_lines.extend(
                     [
                         f'resource "azurerm_api_management_api_policy" "{resource_name}" {{',
-                        f'  api_name            = azurerm_api_management_api.{self._sanitize_name(api_name)}.name',
-                        f'  api_management_name = var.api_management_name',
-                        f'  resource_group_name = var.resource_group_name',
+                        f"  api_name            = azurerm_api_management_api.{self._sanitize_name(api_name)}.name",
+                        "  api_management_name = var.api_management_name",
+                        "  resource_group_name = var.resource_group_name",
                         "",
                         "  # IMPORTANT: Update the XML policy content below",
-                        '  xml_content = <<XML',
+                        "  xml_content = <<XML",
                         item.properties.get("policy_content", "<policies></policies>"),
                         "XML",
                         "}",
@@ -388,16 +395,18 @@ class APIMPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_api_management_product" "{resource_name}" {{',
                         f'  product_id          = "{item.name}"',
-                        f'  api_management_name = var.api_management_name',
-                        f'  resource_group_name = var.resource_group_name',
+                        "  api_management_name = var.api_management_name",
+                        "  resource_group_name = var.resource_group_name",
                         f'  display_name        = "{item.properties.get("display_name", item.name)}"',
-                        f'  published           = true',
+                        "  published           = true",
                         "",
                     ]
                 )
 
                 # Add subscription requirement
-                subscription_required = item.properties.get("subscription_required", True)
+                subscription_required = item.properties.get(
+                    "subscription_required", True
+                )
                 code_lines.append(
                     f"  subscription_required = {str(subscription_required).lower()}"
                 )
@@ -425,8 +434,8 @@ class APIMPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_api_management_backend" "{resource_name}" {{',
                         f'  name                = "{item.name}"',
-                        f'  api_management_name = var.api_management_name',
-                        f'  resource_group_name = var.resource_group_name',
+                        "  api_management_name = var.api_management_name",
+                        "  resource_group_name = var.resource_group_name",
                         f'  url                 = "{item.properties.get("url", "")}"',
                         f'  protocol            = "{item.properties.get("protocol", "http")}"',
                         "",
@@ -461,8 +470,8 @@ class APIMPlugin(DataPlanePlugin):
                     [
                         f'resource "azurerm_api_management_named_value" "{resource_name}" {{',
                         f'  name                = "{item.name}"',
-                        f'  api_management_name = var.api_management_name',
-                        f'  resource_group_name = var.resource_group_name',
+                        "  api_management_name = var.api_management_name",
+                        "  resource_group_name = var.resource_group_name",
                         f'  display_name        = "{item.properties.get("display_name", item.name)}"',
                         "",
                     ]
@@ -472,13 +481,13 @@ class APIMPlugin(DataPlanePlugin):
                 if is_secret:
                     code_lines.extend(
                         [
-                            f'  value  = var.apim_named_value_{resource_name}  # Secret value',
+                            f"  value  = var.apim_named_value_{resource_name}  # Secret value",
                             "  secret = true",
                         ]
                     )
                 else:
                     code_lines.append(
-                        f'  value  = var.apim_named_value_{resource_name}'
+                        f"  value  = var.apim_named_value_{resource_name}"
                     )
 
                 # Add tags if available
@@ -501,15 +510,15 @@ class APIMPlugin(DataPlanePlugin):
                 code_lines.extend(
                     [
                         f'variable "apim_named_value_{resource_name}" {{',
-                        f'  description = "Value for named value \'{item.name}\'"',
-                        '  type        = string',
+                        f"  description = \"Value for named value '{item.name}'\"",
+                        "  type        = string",
                     ]
                 )
 
                 if is_secret:
                     code_lines.append("  sensitive   = true")
 
-                code_lines.extend(["}",""])
+                code_lines.extend(["}", ""])
 
         # Add common variables
         code_lines.extend(
@@ -517,12 +526,12 @@ class APIMPlugin(DataPlanePlugin):
                 "# Common variables",
                 'variable "resource_group_name" {',
                 '  description = "Resource group name"',
-                '  type        = string',
+                "  type        = string",
                 "}",
                 "",
                 'variable "api_management_name" {',
                 '  description = "API Management service name"',
-                '  type        = string',
+                "  type        = string",
                 "}",
                 "",
             ]
@@ -681,7 +690,9 @@ class APIMPlugin(DataPlanePlugin):
             items = self.discover(source_resource)
 
             if self.progress_reporter:
-                self.progress_reporter.report_discovery(source_resource["id"], len(items))
+                self.progress_reporter.report_discovery(
+                    source_resource["id"], len(items)
+                )
 
             if mode == ReplicationMode.TEMPLATE:
                 # Template mode: Create structures only
@@ -704,7 +715,7 @@ class APIMPlugin(DataPlanePlugin):
 
         except Exception as e:
             duration = time.time() - start_time
-            error_msg = f"Failed to replicate APIM service: {str(e)}"
+            error_msg = f"Failed to replicate APIM service: {e!s}"
             self.logger.error(error_msg)
 
             return ReplicationResult(
@@ -734,15 +745,12 @@ class APIMPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
+        from azure.core.exceptions import AzureError, HttpResponseError
         from azure.identity import DefaultAzureCredential
         from azure.mgmt.apimanagement import ApiManagementClient
         from azure.mgmt.apimanagement.models import (
             ApiCreateOrUpdateParameter,
-            ProductContract,
-            BackendContract,
-            NamedValueCreateContract,
         )
-        from azure.core.exceptions import AzureError, HttpResponseError
 
         # Get credentials
         if self.credential_provider:
@@ -781,7 +789,7 @@ class APIMPlugin(DataPlanePlugin):
                     api_params = ApiCreateOrUpdateParameter(
                         display_name=item.properties.get("display_name", item.name),
                         path=item.properties.get("path", ""),
-                        protocols=[p for p in item.properties.get("protocols", ["https"])],
+                        protocols=list(item.properties.get("protocols", ["https"])),
                         subscription_required=item.properties.get(
                             "subscription_required", True
                         ),
@@ -803,7 +811,7 @@ class APIMPlugin(DataPlanePlugin):
                         )
 
                 except (AzureError, HttpResponseError) as e:
-                    errors.append(f"Failed to create API '{item.name}': {str(e)}")
+                    errors.append(f"Failed to create API '{item.name}': {e!s}")
                     skipped += 1
 
         # Policies are skipped in template mode
@@ -870,16 +878,13 @@ class APIMPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
+        from azure.core.exceptions import AzureError, HttpResponseError
         from azure.identity import DefaultAzureCredential
         from azure.mgmt.apimanagement import ApiManagementClient
         from azure.mgmt.apimanagement.models import (
             ApiCreateOrUpdateParameter,
-            ProductContract,
-            BackendContract,
-            NamedValueCreateContract,
             PolicyContract,
         )
-        from azure.core.exceptions import AzureError, HttpResponseError
 
         # Get credentials
         if self.credential_provider:
@@ -943,7 +948,10 @@ class APIMPlugin(DataPlanePlugin):
                     )
 
                     target_client.api.begin_create_or_update(
-                        target_resource_group, target_service_name, item.name, api_params
+                        target_resource_group,
+                        target_service_name,
+                        item.name,
+                        api_params,
                     )
                     replicated += 1
 
@@ -954,7 +962,7 @@ class APIMPlugin(DataPlanePlugin):
                         )
 
                 except (AzureError, HttpResponseError) as e:
-                    errors.append(f"Failed to replicate API '{item.name}': {str(e)}")
+                    errors.append(f"Failed to replicate API '{item.name}': {e!s}")
                     skipped += 1
 
         # Replicate API policies
@@ -980,11 +988,13 @@ class APIMPlugin(DataPlanePlugin):
                         replicated += 1
                     else:
                         skipped += 1
-                        warnings.append(f"Skipped policy for API '{api_name}' - missing content")
+                        warnings.append(
+                            f"Skipped policy for API '{api_name}' - missing content"
+                        )
 
                 except (AzureError, HttpResponseError) as e:
                     errors.append(
-                        f"Failed to replicate policy for '{api_name}': {str(e)}"
+                        f"Failed to replicate policy for '{api_name}': {e!s}"
                     )
                     skipped += 1
 

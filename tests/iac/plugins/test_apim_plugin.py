@@ -11,14 +11,14 @@ Tests cover:
 - Error handling
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch, call
+
 from src.iac.plugins.apim_plugin import APIMPlugin
 from src.iac.plugins.base_plugin import (
     DataPlaneItem,
     ReplicationMode,
-    ReplicationResult,
-    Permission,
 )
 
 
@@ -361,7 +361,7 @@ class TestAPIMPluginCodeGeneration:
         assert '"My API"' in code
         assert '"/myapi"' in code
         assert '"https"' in code
-        assert 'subscription_required = true' in code
+        assert "subscription_required = true" in code
         assert '"https://backend.example.com"' in code
 
     def test_generate_replication_code_api_policies(self):
@@ -412,8 +412,8 @@ class TestAPIMPluginCodeGeneration:
         assert "azurerm_api_management_product" in code
         assert '"starter"' in code
         assert '"Starter Plan"' in code
-        assert 'subscription_required = true' in code
-        assert 'approval_required = false' in code
+        assert "subscription_required = true" in code
+        assert "approval_required = false" in code
 
     def test_generate_replication_code_backends(self):
         """Test code generation for backends."""
@@ -464,9 +464,9 @@ class TestAPIMPluginCodeGeneration:
 
         assert "azurerm_api_management_named_value" in code
         assert '"api_key"' in code
-        assert 'secret = true' in code
+        assert "secret = true" in code
         assert 'variable "apim_named_value_api_key"' in code
-        assert 'sensitive   = true' in code
+        assert "sensitive   = true" in code
 
     def test_generate_replication_code_unsupported_format(self):
         """Test code generation with unsupported format."""
@@ -500,7 +500,9 @@ class TestAPIMPluginPermissions:
         assert permissions[0].scope == "resource"
         assert "Microsoft.ApiManagement/service/read" in permissions[0].actions
         assert "Microsoft.ApiManagement/service/apis/read" in permissions[0].actions
-        assert "Microsoft.ApiManagement/service/apis/write" not in permissions[0].actions
+        assert (
+            "Microsoft.ApiManagement/service/apis/write" not in permissions[0].actions
+        )
 
     def test_get_required_permissions_replication_mode(self):
         """Test permissions for replication mode."""
@@ -511,7 +513,9 @@ class TestAPIMPluginPermissions:
         assert len(permissions) == 1
         assert permissions[0].scope == "resource"
         assert "Microsoft.ApiManagement/service/apis/write" in permissions[0].actions
-        assert "Microsoft.ApiManagement/service/policies/write" in permissions[0].actions
+        assert (
+            "Microsoft.ApiManagement/service/policies/write" in permissions[0].actions
+        )
 
 
 class TestAPIMPluginReplication:
@@ -559,14 +563,18 @@ class TestAPIMPluginReplication:
             mock_client.api.begin_create_or_update.return_value = None
             mock_client_class.return_value = mock_client
 
-            result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+            result = plugin.replicate_with_mode(
+                source, target, ReplicationMode.TEMPLATE
+            )
 
             assert result.success is True
             assert result.items_discovered == 1
             assert result.items_replicated == 1
             # Check that warning mentions policies/products/backends/named values
             warnings_text = " ".join(result.warnings)
-            assert "policies" in warnings_text.lower() or "Template mode" in warnings_text
+            assert (
+                "policies" in warnings_text.lower() or "Template mode" in warnings_text
+            )
 
     @patch("azure.identity.DefaultAzureCredential")
     @patch("azure.mgmt.apimanagement.ApiManagementClient")
@@ -624,7 +632,9 @@ class TestAPIMPluginReplication:
 
             mock_client_class.side_effect = [mock_source_client, mock_target_client]
 
-            result = plugin.replicate_with_mode(source, target, ReplicationMode.REPLICATION)
+            result = plugin.replicate_with_mode(
+                source, target, ReplicationMode.REPLICATION
+            )
 
             assert result.success is True
             assert result.items_discovered == 1
@@ -726,7 +736,9 @@ class TestAPIMPluginModeAwareness:
 
         items = [DataPlaneItem("test", "api", {}, "/resource/id")] * 10
 
-        estimated_time = plugin.estimate_operation_time(items, ReplicationMode.REPLICATION)
+        estimated_time = plugin.estimate_operation_time(
+            items, ReplicationMode.REPLICATION
+        )
 
         assert estimated_time == 1.0  # 10 items * 0.1 seconds/item
 
@@ -746,7 +758,10 @@ class TestAPIMPluginErrorHandling:
             "properties": {},
         }
 
-        with patch("azure.mgmt.apimanagement.ApiManagementClient", side_effect=ImportError("SDK not installed")):
+        with patch(
+            "azure.mgmt.apimanagement.ApiManagementClient",
+            side_effect=ImportError("SDK not installed"),
+        ):
             items = plugin.discover(resource)
 
             # Should return empty list, not raise exception
@@ -795,8 +810,12 @@ class TestAPIMPluginErrorHandling:
             "properties": {},
         }
 
-        with patch.object(plugin, "discover", side_effect=Exception("Discovery failed")):
-            result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(
+            plugin, "discover", side_effect=Exception("Discovery failed")
+        ):
+            result = plugin.replicate_with_mode(
+                source, target, ReplicationMode.TEMPLATE
+            )
 
             assert result.success is False
             assert len(result.errors) == 1
