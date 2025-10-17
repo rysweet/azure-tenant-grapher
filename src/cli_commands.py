@@ -1865,6 +1865,221 @@ def app_registration_command(
             os.remove(manifest_path)
 
 
+async def monitor_command_handler(
+    subscription_id: Optional[str],
+    interval: int,
+    watch: bool,
+    detect_stabilization: bool,
+    threshold: int,
+    format_type: str,
+    no_container: bool = False,
+) -> None:
+    """
+    Monitor Neo4j database resource counts and relationships.
+
+    Args:
+        subscription_id: Filter by subscription ID
+        interval: Check interval in seconds
+        watch: Continuous monitoring mode
+        detect_stabilization: Exit when stable
+        threshold: Stabilization threshold (consecutive identical counts)
+        format_type: Output format (json|table|compact)
+        no_container: Skip auto-starting Neo4j container
+    """
+    import time
+    from datetime import datetime
+    from collections import deque
+    from neo4j import GraphDatabase
+
+    # Ensure Neo4j is running (unless --no-container is set)
+    if not no_container:
+        ensure_neo4j_running()
+
+    # Get Neo4j connection details from environment
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            click.echo("❌ Either NEO4J_URI or NEO4J_PORT must be set", err=True)
+            sys.exit(1)
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+
+    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
+    neo4j_password = os.environ.get("NEO4J_PASSWORD")
+    if not neo4j_password:
+        click.echo("❌ NEO4J_PASSWORD environment variable is required", err=True)
+        sys.exit(1)
+
+    # Connect to Neo4j
+    try:
+        driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+        # Test connection
+        driver.verify_connectivity()
+    except Exception as e:
+        click.echo(f"❌ Failed to connect to Neo4j: {e}", err=True)
+        sys.exit(1)
+
+    # Track counts for stabilization detection
+    count_history: deque[tuple[int, int, int]] = deque(maxlen=threshold)
+
+    def get_metrics() -> dict[str, int]:
+        """Query Neo4j for current metrics."""
+        with driver.session() as session:
+            metrics = {}
+
+            # Base filter clause
+            filter_clause = (
+                "WHERE r.subscription_id = $sub_id" if subscription_id else ""
+            )
+
+            # Count resources
+            query_resources = (
+                f"MATCH (r:Resource) {filter_clause} RETURN count(r) as count"
+            )
+            params = {"sub_id": subscription_id} if subscription_id else {}
+            result = session.run(query_resources, params)
+            metrics["resources"] = result.single()["count"]
+
+            # Count relationships
+            query_relationships = (
+                f"MATCH (r:Resource)-[rel]-() {filter_clause} "
+                "RETURN count(DISTINCT rel) as count"
+            )
+            result = session.run(query_relationships, params)
+            metrics["relationships"] = result.single()["count"]
+
+            # Count resource groups
+            query_rgs = (
+                f"MATCH (r:Resource) {filter_clause} "
+                "AND r.resourceGroup IS NOT NULL "
+                "RETURN count(DISTINCT r.resourceGroup) as count"
+            )
+            result = session.run(query_rgs, params)
+            metrics["resource_groups"] = result.single()["count"]
+
+            # Count resource types
+            query_types = (
+                f"MATCH (r:Resource) {filter_clause} "
+                "RETURN count(DISTINCT r.type) as count"
+            )
+            result = session.run(query_types, params)
+            metrics["resource_types"] = result.single()["count"]
+
+            return metrics
+
+    def format_output(metrics: dict[str, int], is_stable: bool = False) -> str:
+        """Format metrics based on output format type."""
+        from datetime import timezone
+
+        timestamp = datetime.now(tz=timezone.utc).strftime("%H:%M:%S")
+
+        if format_type == "json":
+            import json
+
+            output = {
+                "timestamp": timestamp,
+                "resources": metrics["resources"],
+                "relationships": metrics["relationships"],
+                "resource_groups": metrics["resource_groups"],
+                "resource_types": metrics["resource_types"],
+                "stable": is_stable,
+            }
+            return json.dumps(output)
+
+        if format_type == "table":
+            # Table format with headers
+            stable_str = "stable" if is_stable else "changing"
+            return (
+                f"{timestamp:<12} {metrics['resources']:<12} "
+                f"{metrics['relationships']:<15} {metrics['resource_groups']:<16} "
+                f"{metrics['resource_types']:<14} {stable_str}"
+            )
+
+        # compact (default)
+        stable_marker = " (stable)" if is_stable else ""
+        return (
+            f"[{timestamp}] Resources={metrics['resources']} "
+            f"Relationships={metrics['relationships']} "
+            f"ResourceGroups={metrics['resource_groups']} "
+            f"Types={metrics['resource_types']}{stable_marker}"
+        )
+
+    def check_stabilization(current_metrics: dict[str, int]) -> bool:
+        """Check if metrics have stabilized."""
+        if not detect_stabilization:
+            return False
+
+        # Add current counts to history
+        current_tuple = (
+            current_metrics["resources"],
+            current_metrics["relationships"],
+            current_metrics["resource_groups"]
+        )
+        count_history.append(current_tuple)
+
+        # Need at least 'threshold' samples
+        if len(count_history) < threshold:
+            return False
+
+        # Check if all recent counts are identical
+        return len(set(count_history)) == 1
+
+    try:
+        # Print header for table format
+        if format_type == "table":
+            click.echo(
+                "Timestamp    Resources    Relationships   "
+                "Resource Groups  Resource Types  Status"
+            )
+            click.echo("-" * 90)
+
+        # Main monitoring loop
+        first_check = True
+        while True:
+            try:
+                # Get current metrics
+                metrics = get_metrics()
+
+                # Check for stabilization
+                is_stable = check_stabilization(metrics)
+
+                # Output results
+                output = format_output(metrics, is_stable)
+                click.echo(output)
+
+                # Exit if stabilized
+                if is_stable and detect_stabilization:
+                    if format_type != "json":
+                        click.echo(
+                            f"\n✅ Database has stabilized "
+                            f"(threshold: {threshold} identical checks)"
+                        )
+                    break
+
+                # Exit if not in watch mode (single check)
+                if not watch:
+                    break
+
+                # Wait for next check
+                if not first_check:
+                    time.sleep(interval)
+                first_check = False
+
+            except KeyboardInterrupt:
+                click.echo("\n⚠️  Monitoring interrupted by user")
+                break
+            except Exception as e:
+                click.echo(f"\n❌ Error during monitoring: {e}", err=True)
+                if watch:
+                    click.echo("Retrying in 5 seconds...")
+                    time.sleep(5)
+                else:
+                    break
+
+    finally:
+        driver.close()
+
+
 async def mcp_query_command(
     ctx: click.Context,
     query: str,
