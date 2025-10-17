@@ -1,3 +1,16 @@
+# Data Plane Plugins
+
+## Overview
+
+Data plane plugins extend IaC generation by handling Azure resource-specific data that isn't part of the Azure Resource Manager control plane. This directory contains plugins for replicating data plane items during tenant migration.
+
+## Available Plugins
+
+1. [Virtual Machine Plugin](#virtual-machine-data-plane-plugin) - VM extensions and data disks
+2. [Container Registry Plugin](#container-registry-data-plane-plugin) - Container images and repositories
+
+---
+
 # Virtual Machine Data Plane Plugin
 
 ## Overview
