@@ -66,7 +66,7 @@
     "xterm": "^5.3.0"
   },
   "devDependencies": {
-    "@gadugi/agentic-test": "github:rysweet/gadugi-agentic-test#main",
+    "@gadugi/agentic-test": "https://github.com/rysweet/gadugi-agentic-test.git#main",
     "@playwright/test": "^1.40.0",
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",
