@@ -1301,25 +1301,47 @@ def spa_start():
         # Check if node_modules exists, if not, install dependencies
         if not os.path.exists(os.path.join(spa_dir, "node_modules")):
             click.echo("📦 Installing SPA dependencies...")
-            install_proc = subprocess.run(
-                ["npm", "install"], cwd=spa_dir, capture_output=True, text=True
-            )
-            if install_proc.returncode != 0:
+            try:
+                install_proc = subprocess.run(
+                    ["npm", "install"],
+                    cwd=spa_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=600  # 10 minute timeout for npm install
+                )
+                if install_proc.returncode != 0:
+                    click.echo(
+                        f"❌ Failed to install dependencies: {install_proc.stderr}",
+                        err=True,
+                    )
+                    return
+                click.echo("✅ Dependencies installed successfully")
+            except subprocess.TimeoutExpired:
                 click.echo(
-                    f"❌ Failed to install dependencies: {install_proc.stderr}",
+                    "❌ npm install timed out after 10 minutes. Check your network connection.",
                     err=True,
                 )
                 return
-            click.echo("✅ Dependencies installed successfully")
 
         # Always build the app to ensure latest code is used
         click.echo("🔨 Building Electron app with latest code...")
-        build_proc = subprocess.run(
-            ["npm", "run", "build"], cwd=spa_dir, capture_output=True, text=True
-        )
-        if build_proc.returncode != 0:
+        try:
+            build_proc = subprocess.run(
+                ["npm", "run", "build"],
+                cwd=spa_dir,
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout for build
+            )
+            if build_proc.returncode != 0:
+                click.echo(
+                    f"❌ Failed to build app: {build_proc.stderr}",
+                    err=True,
+                )
+                return
+        except subprocess.TimeoutExpired:
             click.echo(
-                f"❌ Failed to build app: {build_proc.stderr}",
+                "❌ npm build timed out after 5 minutes. This may indicate a build configuration issue.",
                 err=True,
             )
             return
