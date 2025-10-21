@@ -751,6 +751,24 @@ def generate_spec(
     "--resource-group-prefix",
     help="Prefix to add to all resource group names (e.g., 'ITERATION15_') for non-destructive iterations",
 )
+@click.option(
+    "--include-data-plane",
+    is_flag=True,
+    default=False,
+    help="Include data plane item discovery and replication code generation",
+)
+@click.option(
+    "--data-plane-only",
+    is_flag=True,
+    default=False,
+    help="Generate only data plane code (skip control plane resources)",
+)
+@click.option(
+    "--skip-data-plane-for",
+    type=str,
+    default=None,
+    help="Comma-separated list of resource types to skip for data plane discovery (e.g., 'Microsoft.Sql/servers/databases')",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -784,6 +802,9 @@ async def generate_iac(
     auto_cleanup: bool,
     fail_on_conflicts: bool,
     resource_group_prefix: Optional[str],
+    include_data_plane: bool,
+    data_plane_only: bool,
+    skip_data_plane_for: Optional[str],
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -843,6 +864,9 @@ async def generate_iac(
         auto_cleanup=auto_cleanup,
         fail_on_conflicts=fail_on_conflicts,
         resource_group_prefix=resource_group_prefix,
+        include_data_plane=include_data_plane,
+        data_plane_only=data_plane_only,
+        skip_data_plane_for=skip_data_plane_for,
     )
 
 

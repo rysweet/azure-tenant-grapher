@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-10-20T21:16:05.174487+00:00",
+  "source": {
+    "subscription_id": "9b00bc5e-9abc-45de-9958-02a9d9277b16",
+    "resources": 243,
+    "relationships": 762,
+    "resource_groups": 0,
+    "resource_types": 36
+  },
+  "target": {
+    "subscription_id": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285",
+    "resources": 105,
+    "relationships": 314,
+    "resource_groups": 0,
+    "resource_types": 8
+  },
+  "fidelity": {
+    "overall": 43.2,
+    "by_type": {
+      "Microsoft.Network/networkInterfaces": 84.6,
+      "Microsoft.Web/sites": 0.0,
+      "Microsoft.Network/privateDnsZones": 0.0,
+      "Microsoft.Network/privateEndpoints": 0.0,
+      "microsoft.insights/components": 0.0,
+      "Microsoft.Storage/storageAccounts": 8.3,
+      "Microsoft.Network/privateDnsZones/virtualNetworkLinks": 0.0,
+      "Microsoft.EventHub/namespaces": 0.0,
+      "Microsoft.Web/serverFarms": 0.0,
+      "Microsoft.Automation/automationAccounts": 0.0,
+      "Microsoft.ManagedIdentity/userAssignedIdentities": 0.0,
+      "Microsoft.KeyVault/vaults": 0.0,
+      "Microsoft.OperationalInsights/workspaces": 0.0,
+      "microsoft.alertsmanagement/smartDetectorAlertRules": 0.0,
+      "Microsoft.Kusto/clusters": 0.0,
+      "Microsoft.SecurityCopilot/capacities": 0.0,
+      "Microsoft.MachineLearningServices/workspaces": 0.0,
+      "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": 0.0,
+      "Microsoft.CognitiveServices/accounts": 0.0,
+      "Microsoft.Search/searchServices": 0.0,
+      "microsoft.operationalInsights/querypacks": 0.0,
+      "Microsoft.Network/networkSecurityGroups": 127.3,
+      "Microsoft.Network/virtualNetworks": 11.1,
+      "Microsoft.Network/subnets": 7.1,
+      "Microsoft.Compute/virtualMachines": 11.8,
+      "Microsoft.Compute/disks": 129.4,
+      "Microsoft.Network/bastionHosts": 0.0,
+      "Microsoft.Insights/dataCollectionRules": 0.0,
+      "Microsoft.Compute/virtualMachines/extensions": 0.0,
+      "Microsoft.Resources/templateSpecs": 0.0,
+      "Microsoft.Resources/templateSpecs/versions": 0.0,
+      "Microsoft.Compute/sshPublicKeys": 0.0,
+      "Microsoft.Network/publicIPAddresses": 560.0,
+      "Microsoft.DevTestLab/schedules": 0.0,
+      "Microsoft.Automation/automationAccounts/runbooks": 0.0,
+      "Microsoft.Insights/components": 0.0
+    },
+    "missing_resources": 138,
+    "objective_met": false,
+    "target_fidelity": 95.0
+  }
+}

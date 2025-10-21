@@ -89,6 +89,10 @@ class PluginRegistry:
         """
         Get plugin for a resource dictionary.
 
+        Attempts to find the most specific plugin that validates the resource.
+        For Microsoft.Web/sites, will prefer FunctionAppPlugin for Function Apps
+        and AppServicePlugin for regular web apps.
+
         Args:
             resource: Resource dictionary containing 'type' field
 
@@ -102,6 +106,34 @@ class PluginRegistry:
         resource_type = resource.get("type", "")
         if not resource_type:
             logger.warning("Resource missing 'type' field, cannot determine plugin")
+            return None
+
+        # For Microsoft.Web/sites, we need to check if it's a Function App
+        # FunctionAppPlugin and AppServicePlugin both support this type
+        if resource_type == "Microsoft.Web/sites":
+            if not cls._initialized:
+                cls.discover_plugins()
+
+            # Try FunctionAppPlugin first (for Function Apps)
+            from .functionapp_plugin import FunctionAppPlugin
+
+            function_app_plugin = FunctionAppPlugin()
+            if function_app_plugin.validate_resource(resource):
+                logger.debug(
+                    f"Selected FunctionAppPlugin for resource {resource.get('name')}"
+                )
+                return function_app_plugin
+
+            # Fall back to AppServicePlugin (for regular web apps)
+            from .appservice_plugin import AppServicePlugin
+
+            app_service_plugin = AppServicePlugin()
+            if app_service_plugin.validate_resource(resource):
+                logger.debug(
+                    f"Selected AppServicePlugin for resource {resource.get('name')}"
+                )
+                return app_service_plugin
+
             return None
 
         return cls.get_plugin(resource_type)
@@ -143,6 +175,9 @@ class PluginRegistry:
         This method dynamically imports and registers plugin classes.
         Currently supports:
         - KeyVaultPlugin: Microsoft.KeyVault/vaults
+        - StoragePlugin: Microsoft.Storage/storageAccounts
+        - SqlDatabasePlugin: Microsoft.Sql/servers/databases
+        - AppServicePlugin: Microsoft.Web/sites
 
         Future plugins will be auto-discovered here.
         """
@@ -168,6 +203,22 @@ class PluginRegistry:
             logger.debug("Registered StoragePlugin")
         except ImportError as e:
             logger.warning(f"Could not import StoragePlugin: {e}")
+
+        try:
+            from .sql_plugin import SqlDatabasePlugin
+
+            cls.register_plugin(SqlDatabasePlugin())
+            logger.debug("Registered SqlDatabasePlugin")
+        except ImportError as e:
+            logger.warning(f"Could not import SqlDatabasePlugin: {e}")
+
+        try:
+            from .appservice_plugin import AppServicePlugin
+
+            cls.register_plugin(AppServicePlugin())
+            logger.debug("Registered AppServicePlugin")
+        except ImportError as e:
+            logger.warning(f"Could not import AppServicePlugin: {e}")
 
         cls._initialized = True
         logger.info(
