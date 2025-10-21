@@ -32,18 +32,20 @@ class TestEngineSubnetValidation:
                 "type": "Microsoft.Network/virtualNetworks",
                 "name": "test-vnet",
                 "address_space": ["10.0.0.0/16"],
-                "properties": json.dumps({
-                    "subnets": [
-                        {
-                            "name": "subnet1",
-                            "properties": {"addressPrefix": "10.0.1.0/24"}
-                        },
-                        {
-                            "name": "subnet2",
-                            "properties": {"addressPrefix": "10.0.2.0/24"}
-                        }
-                    ]
-                }),
+                "properties": json.dumps(
+                    {
+                        "subnets": [
+                            {
+                                "name": "subnet1",
+                                "properties": {"addressPrefix": "10.0.1.0/24"},
+                            },
+                            {
+                                "name": "subnet2",
+                                "properties": {"addressPrefix": "10.0.2.0/24"},
+                            },
+                        ]
+                    }
+                ),
             }
         ]
 
@@ -55,14 +57,18 @@ class TestEngineSubnetValidation:
                 "type": "Microsoft.Network/virtualNetworks",
                 "name": "test-vnet",
                 "address_space": ["10.0.0.0/16"],
-                "properties": json.dumps({
-                    "subnets": [
-                        {
-                            "name": "subnet1",
-                            "properties": {"addressPrefix": "192.168.1.0/24"}  # Outside VNet
-                        }
-                    ]
-                }),
+                "properties": json.dumps(
+                    {
+                        "subnets": [
+                            {
+                                "name": "subnet1",
+                                "properties": {
+                                    "addressPrefix": "192.168.1.0/24"
+                                },  # Outside VNet
+                            }
+                        ]
+                    }
+                ),
             }
         ]
 
@@ -84,7 +90,9 @@ class TestEngineSubnetValidation:
         assert result == [Path("/tmp/test.tf")]
         mock_emitter.emit.assert_called_once()
 
-    def test_invalid_subnets_fail_validation(self, mock_emitter, invalid_vnet_resources):
+    def test_invalid_subnets_fail_validation(
+        self, mock_emitter, invalid_vnet_resources
+    ):
         """Test that invalid subnets fail validation."""
         engine = TransformationEngine()
         graph = TenantGraph(resources=invalid_vnet_resources, relationships=[])
@@ -188,7 +196,10 @@ class TestEngineSubnetValidation:
             "properties": {
                 "subnets": [
                     {"name": "subnet1", "properties": {"addressPrefix": "10.0.1.0/24"}},
-                    {"name": "subnet2", "properties": {"addressPrefixes": ["10.0.2.0/24"]}},
+                    {
+                        "name": "subnet2",
+                        "properties": {"addressPrefixes": ["10.0.2.0/24"]},
+                    },
                 ]
             },
         }
@@ -207,11 +218,16 @@ class TestEngineSubnetValidation:
         vnet = {
             "type": "Microsoft.Network/virtualNetworks",
             "name": "test-vnet",
-            "properties": json.dumps({
-                "subnets": [
-                    {"name": "subnet1", "properties": {"addressPrefix": "10.0.1.0/24"}},
-                ]
-            }),
+            "properties": json.dumps(
+                {
+                    "subnets": [
+                        {
+                            "name": "subnet1",
+                            "properties": {"addressPrefix": "10.0.1.0/24"},
+                        },
+                    ]
+                }
+            ),
         }
 
         subnets = engine._extract_subnets_from_vnet(vnet)

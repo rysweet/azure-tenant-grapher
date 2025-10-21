@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Tests for ConfigManager module"""
 
-import pytest
-import tempfile
-import yaml
-from pathlib import Path
 import os
-
 import sys
+import tempfile
+from pathlib import Path
+
+import pytest
+import yaml
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from modules.config_manager import ConfigManager, ConfigurationError
@@ -24,19 +25,23 @@ class TestConfigManager:
     def teardown_method(self):
         """Cleanup test environment"""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_config(self, content: dict):
         """Helper to create config file"""
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             yaml.safe_dump(content, f)
 
     def test_load_valid_config(self):
         """Test loading valid configuration"""
         config_data = {
             "app": {"url": "http://localhost:3000"},
-            "test": {"browser": "chromium", "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "info"}
+            "test": {
+                "browser": "chromium",
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "info"},
         }
         self.create_config(config_data)
 
@@ -57,7 +62,7 @@ class TestConfigManager:
 
     def test_invalid_yaml(self):
         """Test handling of invalid YAML"""
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             f.write("invalid: yaml: content: [")
 
         manager = ConfigManager(str(self.config_file))
@@ -73,8 +78,11 @@ class TestConfigManager:
 
         config_data = {
             "app": {"url": "${TEST_URL}"},
-            "test": {"browser": "chromium", "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "info"}
+            "test": {
+                "browser": "chromium",
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "info"},
         }
         self.create_config(config_data)
 
@@ -87,8 +95,11 @@ class TestConfigManager:
         """Test accessing config with dot notation"""
         config_data = {
             "app": {"url": "http://localhost:3000", "nested": {"value": 42}},
-            "test": {"browser": "chromium", "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "info"}
+            "test": {
+                "browser": "chromium",
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "info"},
         }
         self.create_config(config_data)
 
@@ -104,7 +115,7 @@ class TestConfigManager:
         config_data = {
             "app": {},  # Missing url
             "test": {"viewport": {"width": 1920, "height": 1080}},  # Missing browser
-            "logging": {}  # Missing level
+            "logging": {},  # Missing level
         }
         self.create_config(config_data)
 
@@ -119,8 +130,11 @@ class TestConfigManager:
         """Test validation of invalid browser value"""
         config_data = {
             "app": {"url": "http://localhost:3000"},
-            "test": {"browser": "invalid_browser", "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "info"}
+            "test": {
+                "browser": "invalid_browser",
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "info"},
         }
         self.create_config(config_data)
 
@@ -135,8 +149,11 @@ class TestConfigManager:
         """Test setting configuration values"""
         config_data = {
             "app": {"url": "http://localhost:3000"},
-            "test": {"browser": "chromium", "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "info"}
+            "test": {
+                "browser": "chromium",
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "info"},
         }
         self.create_config(config_data)
 
@@ -153,8 +170,12 @@ class TestConfigManager:
         """Test helper methods"""
         config_data = {
             "app": {"url": "http://example.com:8080"},
-            "test": {"browser": "firefox", "headless": True, "viewport": {"width": 1920, "height": 1080}},
-            "logging": {"level": "debug"}
+            "test": {
+                "browser": "firefox",
+                "headless": True,
+                "viewport": {"width": 1920, "height": 1080},
+            },
+            "logging": {"level": "debug"},
         }
         self.create_config(config_data)
 

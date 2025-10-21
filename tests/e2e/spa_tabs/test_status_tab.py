@@ -33,7 +33,9 @@ class TestStatusTab:
         await expect(page.locator("[data-testid='connection-status']")).to_be_visible()
 
     @pytest.mark.asyncio
-    async def test_real_time_updates(self, page: Page, spa_server_url: str, websocket_listener: List):
+    async def test_real_time_updates(
+        self, page: Page, spa_server_url: str, websocket_listener: List
+    ):
         """Test real-time status updates via WebSocket."""
         await page.goto(spa_server_url)
 
@@ -57,7 +59,7 @@ class TestStatusTab:
                 const statusElement = document.querySelector('[data-testid="current-status"]');
                 return statusElement && statusElement.textContent.includes('Connected');
             }""",
-            timeout=10000
+            timeout=10000,
         )
 
     @pytest.mark.asyncio
@@ -75,7 +77,9 @@ class TestStatusTab:
 
             # Check health status (should be one of: healthy, warning, error)
             health_class = await service_indicator.get_attribute("class")
-            assert any(status in health_class for status in ["healthy", "warning", "error"])
+            assert any(
+                status in health_class for status in ["healthy", "warning", "error"]
+            )
 
     @pytest.mark.asyncio
     async def test_activity_log(self, page: Page, spa_server_url: str):
@@ -103,7 +107,7 @@ class TestStatusTab:
                 const entries = document.querySelectorAll('[data-testid="log-entry"]');
                 return entries.length > {initial_count};
             }}""",
-            timeout=5000
+            timeout=5000,
         )
 
     @pytest.mark.asyncio
@@ -175,7 +179,7 @@ class TestStatusTab:
                 const element = document.querySelector('[data-testid="last-updated"]');
                 return element && element.textContent !== '{initial_time}';
             }}""",
-            timeout=15000
+            timeout=15000,
         )
 
         # Verify timestamp has changed
@@ -207,7 +211,7 @@ class TestStatusTab:
                 const indicator = document.querySelector('[data-testid="connection-indicator"]');
                 return indicator && indicator.classList.contains('connected');
             }""",
-            timeout=10000
+            timeout=10000,
         )
 
     @pytest.mark.asyncio
@@ -229,15 +233,18 @@ class TestStatusTab:
         download = await download_promise
 
         # Verify download
-        assert download.suggested_filename.endswith(".json") or download.suggested_filename.endswith(".txt")
+        assert download.suggested_filename.endswith(
+            ".json"
+        ) or download.suggested_filename.endswith(".txt")
 
         # Save and verify content
         import tempfile
+
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             await download.save_as(tmp.name)
 
             # Read and verify content
-            with open(tmp.name, 'r') as f:
+            with open(tmp.name) as f:
                 content = f.read()
                 if download.suggested_filename.endswith(".json"):
                     data = json.loads(content)
@@ -274,4 +281,6 @@ class TestStatusTab:
         mobile_menu = page.locator("[data-testid='mobile-menu-toggle']")
         if await mobile_menu.is_visible():
             await mobile_menu.click()
-            await expect(page.locator("[data-testid='mobile-status-menu']")).to_be_visible()
+            await expect(
+                page.locator("[data-testid='mobile-status-menu']")
+            ).to_be_visible()

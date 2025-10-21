@@ -4,7 +4,6 @@ Tests form validation, tenant creation workflow, and error handling.
 """
 
 import asyncio
-from typing import Dict
 
 import pytest
 from playwright.async_api import Page, expect
@@ -29,7 +28,9 @@ class TestCreateTenantTab:
 
         # Check for required form fields
         await expect(page.locator("[data-testid='tenant-name-input']")).to_be_visible()
-        await expect(page.locator("[data-testid='tenant-domain-input']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='tenant-domain-input']")
+        ).to_be_visible()
         await expect(page.locator("[data-testid='admin-email-input']")).to_be_visible()
 
     @pytest.mark.asyncio
@@ -44,28 +45,44 @@ class TestCreateTenantTab:
 
         # Check for validation errors
         await expect(page.locator("[data-testid='tenant-name-error']")).to_be_visible()
-        await expect(page.locator("[data-testid='tenant-domain-error']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='tenant-domain-error']")
+        ).to_be_visible()
         await expect(page.locator("[data-testid='admin-email-error']")).to_be_visible()
 
         # Test invalid email
         await page.fill("[data-testid='admin-email-input']", "invalid-email")
         await page.press("[data-testid='admin-email-input']", "Tab")
-        await expect(page.locator("[data-testid='admin-email-error']")).to_contain_text("valid email")
+        await expect(page.locator("[data-testid='admin-email-error']")).to_contain_text(
+            "valid email"
+        )
 
         # Test invalid domain
-        await page.fill("[data-testid='tenant-domain-input']", "invalid domain with spaces")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "invalid domain with spaces"
+        )
         await page.press("[data-testid='tenant-domain-input']", "Tab")
-        await expect(page.locator("[data-testid='tenant-domain-error']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='tenant-domain-error']")
+        ).to_be_visible()
 
         # Test valid inputs
         await page.fill("[data-testid='tenant-name-input']", "Test Tenant")
-        await page.fill("[data-testid='tenant-domain-input']", "test-tenant.onmicrosoft.com")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "test-tenant.onmicrosoft.com"
+        )
         await page.fill("[data-testid='admin-email-input']", "admin@test-tenant.com")
 
         # Errors should clear
-        await expect(page.locator("[data-testid='tenant-name-error']")).not_to_be_visible()
-        await expect(page.locator("[data-testid='tenant-domain-error']")).not_to_be_visible()
-        await expect(page.locator("[data-testid='admin-email-error']")).not_to_be_visible()
+        await expect(
+            page.locator("[data-testid='tenant-name-error']")
+        ).not_to_be_visible()
+        await expect(
+            page.locator("[data-testid='tenant-domain-error']")
+        ).not_to_be_visible()
+        await expect(
+            page.locator("[data-testid='admin-email-error']")
+        ).not_to_be_visible()
 
     @pytest.mark.asyncio
     async def test_tenant_configuration_options(self, page: Page, spa_server_url: str):
@@ -78,18 +95,30 @@ class TestCreateTenantTab:
 
         # Check for advanced fields
         await expect(page.locator("[data-testid='region-select']")).to_be_visible()
-        await expect(page.locator("[data-testid='subscription-type-select']")).to_be_visible()
-        await expect(page.locator("[data-testid='enable-mfa-checkbox']")).to_be_visible()
-        await expect(page.locator("[data-testid='enable-conditional-access-checkbox']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='subscription-type-select']")
+        ).to_be_visible()
+        await expect(
+            page.locator("[data-testid='enable-mfa-checkbox']")
+        ).to_be_visible()
+        await expect(
+            page.locator("[data-testid='enable-conditional-access-checkbox']")
+        ).to_be_visible()
 
         # Test region selection
         await page.select_option("[data-testid='region-select']", "eastus")
-        selected_region = await page.locator("[data-testid='region-select']").input_value()
+        selected_region = await page.locator(
+            "[data-testid='region-select']"
+        ).input_value()
         assert selected_region == "eastus"
 
         # Test subscription type
-        await page.select_option("[data-testid='subscription-type-select']", "enterprise")
-        selected_type = await page.locator("[data-testid='subscription-type-select']").input_value()
+        await page.select_option(
+            "[data-testid='subscription-type-select']", "enterprise"
+        )
+        selected_type = await page.locator(
+            "[data-testid='subscription-type-select']"
+        ).input_value()
         assert selected_type == "enterprise"
 
         # Test checkboxes
@@ -105,28 +134,45 @@ class TestCreateTenantTab:
 
         # Fill in the form
         await page.fill("[data-testid='tenant-name-input']", "E2E Test Tenant")
-        await page.fill("[data-testid='tenant-domain-input']", "e2e-test.onmicrosoft.com")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "e2e-test.onmicrosoft.com"
+        )
         await page.fill("[data-testid='admin-email-input']", "admin@e2e-test.com")
         await page.fill("[data-testid='admin-password-input']", "SecureP@ssw0rd123!")
 
         # Mock successful API response
-        await page.route("**/api/tenants/create", lambda route: route.fulfill(
-            status=200,
-            json={"success": True, "tenantId": "test-123", "message": "Tenant created successfully"}
-        ))
+        await page.route(
+            "**/api/tenants/create",
+            lambda route: route.fulfill(
+                status=200,
+                json={
+                    "success": True,
+                    "tenantId": "test-123",
+                    "message": "Tenant created successfully",
+                },
+            ),
+        )
 
         # Submit form
         await page.click("[data-testid='create-tenant-submit']")
 
         # Check for loading state
-        await expect(page.locator("[data-testid='create-tenant-loading']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='create-tenant-loading']")
+        ).to_be_visible()
 
         # Check for success message
-        await expect(page.locator("[data-testid='success-message']")).to_be_visible(timeout=10000)
-        await expect(page.locator("[data-testid='success-message']")).to_contain_text("successfully")
+        await expect(page.locator("[data-testid='success-message']")).to_be_visible(
+            timeout=10000
+        )
+        await expect(page.locator("[data-testid='success-message']")).to_contain_text(
+            "successfully"
+        )
 
         # Verify tenant ID is displayed
-        await expect(page.locator("[data-testid='created-tenant-id']")).to_contain_text("test-123")
+        await expect(page.locator("[data-testid='created-tenant-id']")).to_contain_text(
+            "test-123"
+        )
 
     @pytest.mark.asyncio
     async def test_error_handling(self, page: Page, spa_server_url: str):
@@ -136,25 +182,39 @@ class TestCreateTenantTab:
 
         # Fill in the form
         await page.fill("[data-testid='tenant-name-input']", "Error Test Tenant")
-        await page.fill("[data-testid='tenant-domain-input']", "error-test.onmicrosoft.com")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "error-test.onmicrosoft.com"
+        )
         await page.fill("[data-testid='admin-email-input']", "admin@error-test.com")
         await page.fill("[data-testid='admin-password-input']", "SecureP@ssw0rd123!")
 
         # Mock API error
-        await page.route("**/api/tenants/create", lambda route: route.fulfill(
-            status=400,
-            json={"error": "Tenant domain already exists", "code": "DUPLICATE_DOMAIN"}
-        ))
+        await page.route(
+            "**/api/tenants/create",
+            lambda route: route.fulfill(
+                status=400,
+                json={
+                    "error": "Tenant domain already exists",
+                    "code": "DUPLICATE_DOMAIN",
+                },
+            ),
+        )
 
         # Submit form
         await page.click("[data-testid='create-tenant-submit']")
 
         # Check for error message
-        await expect(page.locator("[data-testid='error-alert']")).to_be_visible(timeout=5000)
-        await expect(page.locator("[data-testid='error-alert']")).to_contain_text("already exists")
+        await expect(page.locator("[data-testid='error-alert']")).to_be_visible(
+            timeout=5000
+        )
+        await expect(page.locator("[data-testid='error-alert']")).to_contain_text(
+            "already exists"
+        )
 
         # Form should remain filled for retry
-        tenant_name_value = await page.locator("[data-testid='tenant-name-input']").input_value()
+        tenant_name_value = await page.locator(
+            "[data-testid='tenant-name-input']"
+        ).input_value()
         assert tenant_name_value == "Error Test Tenant"
 
     @pytest.mark.asyncio
@@ -178,11 +238,13 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
         # Upload CSV file
         file_input = page.locator("[data-testid='csv-file-input']")
         await file_input.set_input_files(
-            files=[{
-                "name": "tenants.csv",
-                "mimeType": "text/csv",
-                "buffer": csv_content.encode()
-            }]
+            files=[
+                {
+                    "name": "tenants.csv",
+                    "mimeType": "text/csv",
+                    "buffer": csv_content.encode(),
+                }
+            ]
         )
 
         # Preview should be displayed
@@ -193,19 +255,22 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
         assert await rows.count() == 3
 
         # Mock bulk creation API
-        await page.route("**/api/tenants/bulk-create", lambda route: route.fulfill(
-            status=200,
-            json={
-                "success": True,
-                "created": 3,
-                "failed": 0,
-                "results": [
-                    {"tenant": "Test Tenant 1", "status": "created", "id": "id-1"},
-                    {"tenant": "Test Tenant 2", "status": "created", "id": "id-2"},
-                    {"tenant": "Test Tenant 3", "status": "created", "id": "id-3"}
-                ]
-            }
-        ))
+        await page.route(
+            "**/api/tenants/bulk-create",
+            lambda route: route.fulfill(
+                status=200,
+                json={
+                    "success": True,
+                    "created": 3,
+                    "failed": 0,
+                    "results": [
+                        {"tenant": "Test Tenant 1", "status": "created", "id": "id-1"},
+                        {"tenant": "Test Tenant 2", "status": "created", "id": "id-2"},
+                        {"tenant": "Test Tenant 3", "status": "created", "id": "id-3"},
+                    ],
+                },
+            ),
+        )
 
         # Start bulk creation
         await page.click("[data-testid='start-bulk-creation']")
@@ -214,8 +279,12 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
         await expect(page.locator("[data-testid='bulk-progress']")).to_be_visible()
 
         # Check results
-        await expect(page.locator("[data-testid='bulk-results']")).to_be_visible(timeout=10000)
-        await expect(page.locator("[data-testid='bulk-success-count']")).to_contain_text("3")
+        await expect(page.locator("[data-testid='bulk-results']")).to_be_visible(
+            timeout=10000
+        )
+        await expect(
+            page.locator("[data-testid='bulk-success-count']")
+        ).to_contain_text("3")
 
     @pytest.mark.asyncio
     async def test_tenant_template_selection(self, page: Page, spa_server_url: str):
@@ -232,13 +301,17 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
         # Check for template options
         templates = ["enterprise", "small-business", "education", "government"]
         for template in templates:
-            await expect(page.locator(f"[data-testid='template-{template}']")).to_be_visible()
+            await expect(
+                page.locator(f"[data-testid='template-{template}']")
+            ).to_be_visible()
 
         # Select enterprise template
         await page.click("[data-testid='template-enterprise']")
 
         # Form should be pre-filled with template values
-        await expect(page.locator("[data-testid='subscription-type-select']")).to_have_value("enterprise")
+        await expect(
+            page.locator("[data-testid='subscription-type-select']")
+        ).to_have_value("enterprise")
 
         # MFA should be enabled for enterprise
         mfa_checkbox = page.locator("[data-testid='enable-mfa-checkbox']")
@@ -276,23 +349,31 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
 
         # Fill in some form data
         await page.fill("[data-testid='tenant-name-input']", "Autosave Test")
-        await page.fill("[data-testid='tenant-domain-input']", "autosave.onmicrosoft.com")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "autosave.onmicrosoft.com"
+        )
 
         # Wait for autosave (usually triggers after 2-3 seconds of inactivity)
         await asyncio.sleep(3)
 
         # Check for autosave indicator
-        await expect(page.locator("[data-testid='autosave-indicator']")).to_contain_text("Saved")
+        await expect(
+            page.locator("[data-testid='autosave-indicator']")
+        ).to_contain_text("Saved")
 
         # Navigate away and back
         await page.click("[data-testid='tab-status']")
         await page.click("[data-testid='tab-create-tenant']")
 
         # Form should restore saved values
-        tenant_name_value = await page.locator("[data-testid='tenant-name-input']").input_value()
+        tenant_name_value = await page.locator(
+            "[data-testid='tenant-name-input']"
+        ).input_value()
         assert tenant_name_value == "Autosave Test"
 
-        domain_value = await page.locator("[data-testid='tenant-domain-input']").input_value()
+        domain_value = await page.locator(
+            "[data-testid='tenant-domain-input']"
+        ).input_value()
         assert domain_value == "autosave.onmicrosoft.com"
 
     @pytest.mark.asyncio
@@ -306,27 +387,37 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
 
         # Tab through form fields
         await page.keyboard.press("Tab")
-        active_element = await page.evaluate("() => document.activeElement.getAttribute('data-testid')")
+        active_element = await page.evaluate(
+            "() => document.activeElement.getAttribute('data-testid')"
+        )
         assert active_element == "tenant-domain-input"
 
         await page.keyboard.press("Tab")
-        active_element = await page.evaluate("() => document.activeElement.getAttribute('data-testid')")
+        active_element = await page.evaluate(
+            "() => document.activeElement.getAttribute('data-testid')"
+        )
         assert active_element == "admin-email-input"
 
         # Test Enter key submission
         await page.fill("[data-testid='tenant-name-input']", "Keyboard Test")
-        await page.fill("[data-testid='tenant-domain-input']", "keyboard.onmicrosoft.com")
+        await page.fill(
+            "[data-testid='tenant-domain-input']", "keyboard.onmicrosoft.com"
+        )
         await page.fill("[data-testid='admin-email-input']", "admin@keyboard.com")
         await page.fill("[data-testid='admin-password-input']", "Test@123")
 
         # Mock API response
-        await page.route("**/api/tenants/create", lambda route: route.fulfill(
-            status=200,
-            json={"success": True, "tenantId": "keyboard-test"}
-        ))
+        await page.route(
+            "**/api/tenants/create",
+            lambda route: route.fulfill(
+                status=200, json={"success": True, "tenantId": "keyboard-test"}
+            ),
+        )
 
         # Submit with Enter key
         await page.keyboard.press("Enter")
 
         # Should trigger submission
-        await expect(page.locator("[data-testid='create-tenant-loading']")).to_be_visible()
+        await expect(
+            page.locator("[data-testid='create-tenant-loading']")
+        ).to_be_visible()

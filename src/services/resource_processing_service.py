@@ -65,11 +65,14 @@ class ResourceProcessingService:
         # --- AAD Graph Ingestion ---
         # Use config value which defaults to True, can be overridden by env var
         enable_aad = getattr(self.config, "enable_aad_import", True)
-        
+
         # Check if we're filtering resources
-        is_filtering = filter_config and (filter_config.has_filters() if hasattr(filter_config, 'has_filters') else 
-                                          (filter_config.resource_group_names or filter_config.subscription_ids))
-        
+        is_filtering = filter_config and (
+            filter_config.has_filters()
+            if hasattr(filter_config, "has_filters")
+            else (filter_config.resource_group_names or filter_config.subscription_ids)
+        )
+
         if enable_aad and self.aad_graph_service:
             if not is_filtering:
                 # No filtering - import all AAD users and groups
@@ -88,30 +91,37 @@ class ResourceProcessingService:
                 try:
                     # Extract identity references from filtered resources
                     identity_collector = IdentityCollector()
-                    identity_refs = identity_collector.collect_identity_references(resources)
-                    
+                    identity_refs = identity_collector.collect_identity_references(
+                        resources
+                    )
+
                     if identity_refs.has_identities():
                         logger.info(identity_collector.get_summary(identity_refs))
-                        
+
                         # Resolve managed identities to get additional details
                         identity_resolver = ManagedIdentityResolver()
                         resolved_identities = identity_resolver.resolve_identities(
-                            identity_refs.managed_identities,
-                            resources
+                            identity_refs.managed_identities, resources
                         )
-                        
+
                         if resolved_identities:
-                            logger.info(identity_resolver.get_identity_summary(resolved_identities))
-                        
+                            logger.info(
+                                identity_resolver.get_identity_summary(
+                                    resolved_identities
+                                )
+                            )
+
                         # Ingest only the referenced identities
                         # Note: Managed identities are service principals in Azure AD
-                        service_principal_ids = identity_refs.service_principals.union(identity_refs.managed_identities)
-                        
+                        service_principal_ids = identity_refs.service_principals.union(
+                            identity_refs.managed_identities
+                        )
+
                         await self.aad_graph_service.ingest_filtered_identities(
                             user_ids=identity_refs.users,
                             group_ids=identity_refs.groups,
                             service_principal_ids=service_principal_ids,
-                            db_ops=processor.db_ops
+                            db_ops=processor.db_ops,
                         )
                         logger.info("✅ Successfully imported referenced identities")
                     else:

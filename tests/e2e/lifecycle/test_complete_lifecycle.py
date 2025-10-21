@@ -1,18 +1,20 @@
 """Complete tenant lifecycle end-to-end tests."""
 
-import pytest
 import asyncio
 import json
-from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
-from playwright.async_api import async_playwright, Page, Browser
+from unittest.mock import AsyncMock, patch
+
+import pytest
+from playwright.async_api import Browser, Page, async_playwright
 
 
 class TestCompleteTenantLifecycle:
     """Test complete tenant lifecycle from discovery to deployment."""
 
     @pytest.mark.asyncio
-    async def test_full_tenant_discovery_to_deployment(self, page: Page, mock_azure_api):
+    async def test_full_tenant_discovery_to_deployment(
+        self, page: Page, mock_azure_api
+    ):
         """Test the complete flow from tenant discovery to IaC deployment."""
         # Step 1: Authenticate with Azure
         await page.goto("http://localhost:3000")
@@ -60,7 +62,9 @@ class TestCompleteTenantLifecycle:
         # Step 5: Verify threat model generation
         await page.click("[data-testid='tab-threat-model']")
         await page.click("[data-testid='generate-threat-model']")
-        await page.wait_for_selector("[data-testid='threat-model-output']", timeout=10000)
+        await page.wait_for_selector(
+            "[data-testid='threat-model-output']", timeout=10000
+        )
 
         # Verify threats identified
         threats = await page.locator("[data-testid='threat-item']").count()
@@ -75,36 +79,40 @@ class TestCompleteTenantLifecycle:
         await page.click("[data-testid='tab-create-tenant']")
 
         # Upload spec file
-        spec_content = json.dumps({
-            "tenant": {
-                "name": "Test Tenant",
-                "subscriptions": [
-                    {
-                        "name": "Test Subscription",
-                        "resource_groups": [
-                            {
-                                "name": "rg-test",
-                                "location": "eastus",
-                                "resources": [
-                                    {
-                                        "type": "Microsoft.Compute/virtualMachines",
-                                        "name": "vm-test"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+        spec_content = json.dumps(
+            {
+                "tenant": {
+                    "name": "Test Tenant",
+                    "subscriptions": [
+                        {
+                            "name": "Test Subscription",
+                            "resource_groups": [
+                                {
+                                    "name": "rg-test",
+                                    "location": "eastus",
+                                    "resources": [
+                                        {
+                                            "type": "Microsoft.Compute/virtualMachines",
+                                            "name": "vm-test",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
             }
-        })
+        )
 
         await page.set_input_files(
             "[data-testid='spec-upload']",
-            files=[{
-                "name": "tenant-spec.json",
-                "mimeType": "application/json",
-                "buffer": spec_content.encode()
-            }]
+            files=[
+                {
+                    "name": "tenant-spec.json",
+                    "mimeType": "application/json",
+                    "buffer": spec_content.encode(),
+                }
+            ],
         )
 
         # Validate spec
@@ -176,7 +184,11 @@ class TestCompleteTenantLifecycle:
         nodes = await page.locator("[data-testid='graph-node']").all()
         for node in nodes:
             node_text = await node.text_content()
-            assert "sub-123" in node_text or "rg-prod" in node_text or "rg-dev" in node_text
+            assert (
+                "sub-123" in node_text
+                or "rg-prod" in node_text
+                or "rg-dev" in node_text
+            )
 
     @pytest.mark.asyncio
     async def test_complete_undeploy_workflow(self, page: Page):
@@ -222,7 +234,9 @@ class TestCompleteTenantLifecycle:
         await page.click("[data-testid='start-scan']")
 
         # Wait for error
-        error = await page.wait_for_selector("[data-testid='scan-error']", timeout=10000)
+        error = await page.wait_for_selector(
+            "[data-testid='scan-error']", timeout=10000
+        )
         error_text = await error.text_content()
         assert "network" in error_text.lower() or "connection" in error_text.lower()
 
@@ -244,7 +258,7 @@ class TestCompleteTenantLifecycle:
         tasks = [
             self._scan_tenant(page, "tenant1"),
             self._generate_iac(page2, "terraform"),
-            self._create_threat_model(page3)
+            self._create_threat_model(page3),
         ]
 
         # Wait for all to complete
@@ -277,7 +291,9 @@ class TestCompleteTenantLifecycle:
         await page.goto("http://localhost:3000")
         await page.click("[data-testid='tab-threat-model']")
         await page.click("[data-testid='generate-threat-model']")
-        await page.wait_for_selector("[data-testid='threat-model-output']", timeout=10000)
+        await page.wait_for_selector(
+            "[data-testid='threat-model-output']", timeout=10000
+        )
         return True
 
 
@@ -298,9 +314,11 @@ def mock_azure_api():
     """Mock Azure API responses."""
     with patch("src.azure_discovery_service.AzureDiscoveryService") as mock:
         instance = mock.return_value
-        instance.discover_tenant = AsyncMock(return_value={
-            "subscriptions": [{"id": "sub-123", "displayName": "Test Sub"}],
-            "resource_groups": [{"id": "rg-123", "name": "rg-test"}],
-            "resources": [{"id": "res-123", "name": "vm-test"}]
-        })
+        instance.discover_tenant = AsyncMock(
+            return_value={
+                "subscriptions": [{"id": "sub-123", "displayName": "Test Sub"}],
+                "resource_groups": [{"id": "rg-123", "name": "rg-test"}],
+                "resources": [{"id": "res-123", "name": "vm-test"}],
+            }
+        )
         yield instance

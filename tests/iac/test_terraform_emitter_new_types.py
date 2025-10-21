@@ -9,8 +9,7 @@ This module tests the 5 new resource types added to increase fidelity:
 """
 
 import json
-import pytest
-from pathlib import Path
+
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 
 
@@ -21,29 +20,45 @@ class TestNewResourceTypeMappings:
         """Test Microsoft.Web/serverFarms mapping."""
         emitter = TerraformEmitter()
         assert "Microsoft.Web/serverFarms" in emitter.AZURE_TO_TERRAFORM_MAPPING
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Web/serverFarms"] == "azurerm_service_plan"
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Web/serverFarms"]
+            == "azurerm_service_plan"
+        )
 
     def test_managed_disk_mapping(self):
         """Test Microsoft.Compute/disks mapping."""
         emitter = TerraformEmitter()
         assert "Microsoft.Compute/disks" in emitter.AZURE_TO_TERRAFORM_MAPPING
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Compute/disks"] == "azurerm_managed_disk"
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Compute/disks"]
+            == "azurerm_managed_disk"
+        )
 
     def test_vm_extension_mapping(self):
         """Test Microsoft.Compute/virtualMachines/extensions mapping."""
         emitter = TerraformEmitter()
-        assert "Microsoft.Compute/virtualMachines/extensions" in emitter.AZURE_TO_TERRAFORM_MAPPING
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Compute/virtualMachines/extensions"]
+            "Microsoft.Compute/virtualMachines/extensions"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING[
+                "Microsoft.Compute/virtualMachines/extensions"
+            ]
             == "azurerm_virtual_machine_extension"
         )
 
     def test_log_analytics_mapping(self):
         """Test Microsoft.OperationalInsights/workspaces mapping."""
         emitter = TerraformEmitter()
-        assert "Microsoft.OperationalInsights/workspaces" in emitter.AZURE_TO_TERRAFORM_MAPPING
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.OperationalInsights/workspaces"]
+            "Microsoft.OperationalInsights/workspaces"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING[
+                "Microsoft.OperationalInsights/workspaces"
+            ]
             == "azurerm_log_analytics_workspace"
         )
 
@@ -69,13 +84,15 @@ class TestServicePlanConversion:
             "type": "Microsoft.Web/serverFarms",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "kind": "linux",
-                "sku": {
-                    "name": "P1v2",
-                    "tier": "PremiumV2",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "kind": "linux",
+                    "sku": {
+                        "name": "P1v2",
+                        "tier": "PremiumV2",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -99,13 +116,15 @@ class TestServicePlanConversion:
             "type": "Microsoft.Web/serverFarms",
             "location": "westus2",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "kind": "app",
-                "sku": {
-                    "name": "B1",
-                    "tier": "Basic",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "kind": "app",
+                    "sku": {
+                        "name": "B1",
+                        "tier": "Basic",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -128,12 +147,14 @@ class TestManagedDiskConversion:
             "type": "Microsoft.Compute/disks",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "diskSizeGB": 128,
-                "sku": {
-                    "name": "Standard_LRS",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "diskSizeGB": 128,
+                    "sku": {
+                        "name": "Standard_LRS",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -156,12 +177,14 @@ class TestManagedDiskConversion:
             "type": "Microsoft.Compute/disks",
             "location": "westus2",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "diskSizeGB": 512,
-                "sku": {
-                    "name": "Premium_LRS",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "diskSizeGB": 512,
+                    "sku": {
+                        "name": "Premium_LRS",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -178,26 +201,26 @@ class TestVMExtensionConversion:
     def test_vm_extension_with_valid_vm(self):
         """Test converting a VM extension with valid parent VM."""
         emitter = TerraformEmitter()
-        
+
         # Track the parent VM as available
-        emitter._available_resources = {
-            "azurerm_linux_virtual_machine": {"test_vm"}
-        }
-        
+        emitter._available_resources = {"azurerm_linux_virtual_machine": {"test_vm"}}
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm/extensions/custom-script",
             "name": "test-vm/custom-script",  # Azure format includes VM name
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.1",
-                "settings": {
-                    "commandToExecute": "echo 'hello world'",
-                },
-            }),
+            "properties": json.dumps(
+                {
+                    "publisher": "Microsoft.Azure.Extensions",
+                    "type": "CustomScript",
+                    "typeHandlerVersion": "2.1",
+                    "settings": {
+                        "commandToExecute": "echo 'hello world'",
+                    },
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -207,7 +230,10 @@ class TestVMExtensionConversion:
         assert terraform_type == "azurerm_virtual_machine_extension"
         # Note: safe_name is auto-generated from "test-vm/custom-script"
         assert config["name"] == "custom-script"  # Should strip VM prefix
-        assert config["virtual_machine_id"] == "${azurerm_linux_virtual_machine.test_vm.id}"
+        assert (
+            config["virtual_machine_id"]
+            == "${azurerm_linux_virtual_machine.test_vm.id}"
+        )
         assert config["publisher"] == "Microsoft.Azure.Extensions"
         assert config["type"] == "CustomScript"
         assert config["type_handler_version"] == "2.1"
@@ -217,18 +243,20 @@ class TestVMExtensionConversion:
         """Test that VM extension is skipped if parent VM is missing."""
         emitter = TerraformEmitter()
         emitter._available_resources = {}
-        
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/missing-vm/extensions/custom-script",
             "name": "custom-script",
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "publisher": "Microsoft.Azure.Extensions",
-                "type": "CustomScript",
-                "typeHandlerVersion": "2.1",
-            }),
+            "properties": json.dumps(
+                {
+                    "publisher": "Microsoft.Azure.Extensions",
+                    "type": "CustomScript",
+                    "typeHandlerVersion": "2.1",
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -247,12 +275,14 @@ class TestLogAnalyticsConversion:
             "type": "Microsoft.OperationalInsights/workspaces",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "sku": {
-                    "name": "PerGB2018",
-                },
-                "retentionInDays": 90,
-            }),
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "PerGB2018",
+                    },
+                    "retentionInDays": 90,
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -295,12 +325,14 @@ class TestLogAnalyticsConversion:
             "type": "Microsoft.OperationalInsights/workspaces",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "sku": {
-                    "name": "pergb2018",  # Lowercase from Azure
-                },
-                "retentionInDays": 90,
-            }),
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "pergb2018",  # Lowercase from Azure
+                    },
+                    "retentionInDays": 90,
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -323,9 +355,11 @@ class TestApplicationInsightsConversion:
             "type": "microsoft.insights/components",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "Application_Type": "web",
-            }),
+            "properties": json.dumps(
+                {
+                    "Application_Type": "web",
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -342,22 +376,24 @@ class TestApplicationInsightsConversion:
     def test_application_insights_with_workspace(self):
         """Test Application Insights with Log Analytics workspace link."""
         emitter = TerraformEmitter()
-        
+
         # Track the Log Analytics workspace as available
         emitter._available_resources = {
             "azurerm_log_analytics_workspace": {"test_workspace"}
         }
-        
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights",
             "name": "test-insights",
             "type": "microsoft.insights/components",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "Application_Type": "web",
-                "WorkspaceResourceId": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.OperationalInsights/workspaces/test-workspace",
-            }),
+            "properties": json.dumps(
+                {
+                    "Application_Type": "web",
+                    "WorkspaceResourceId": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.OperationalInsights/workspaces/test-workspace",
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -365,7 +401,10 @@ class TestApplicationInsightsConversion:
         terraform_type, safe_name, config = result
 
         assert config["application_type"] == "web"
-        assert config["workspace_id"] == "${azurerm_log_analytics_workspace.test_workspace.id}"
+        assert (
+            config["workspace_id"]
+            == "${azurerm_log_analytics_workspace.test_workspace.id}"
+        )
 
 
 class TestResourceTypeCount:
@@ -374,15 +413,15 @@ class TestResourceTypeCount:
     def test_total_resource_type_count(self):
         """Verify we have all expected resource type mappings."""
         emitter = TerraformEmitter()
-        
+
         # Count should be at least 27 (26 from previous + 1 new smartDetectorAlertRules)
         assert len(emitter.AZURE_TO_TERRAFORM_MAPPING) >= 27
-        
+
     def test_new_types_included_in_supported_types(self):
         """Verify new types appear in supported resource types list."""
         emitter = TerraformEmitter()
         supported_types = emitter.get_supported_resource_types()
-        
+
         assert "Microsoft.Web/serverFarms" in supported_types
         assert "Microsoft.Compute/disks" in supported_types
         assert "Microsoft.Compute/virtualMachines/extensions" in supported_types
@@ -396,9 +435,14 @@ class TestSmartDetectorAlertRuleMapping:
     def test_smart_detector_alert_rule_mapping(self):
         """Test microsoft.alertsmanagement/smartDetectorAlertRules mapping."""
         emitter = TerraformEmitter()
-        assert "microsoft.alertsmanagement/smartDetectorAlertRules" in emitter.AZURE_TO_TERRAFORM_MAPPING
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING["microsoft.alertsmanagement/smartDetectorAlertRules"]
+            "microsoft.alertsmanagement/smartDetectorAlertRules"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING[
+                "microsoft.alertsmanagement/smartDetectorAlertRules"
+            ]
             == "azurerm_monitor_smart_detector_alert_rule"
         )
 
@@ -411,22 +455,22 @@ class TestSmartDetectorAlertRuleMapping:
             "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
             "location": "global",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "description": "Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.",
-                "state": "Enabled",
-                "severity": "Sev3",
-                "frequency": "PT1M",
-                "detector": {
-                    "id": "FailureAnomaliesDetector",
-                    "name": "Failure Anomalies",
-                },
-                "scope": [
-                    "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
-                ],
-                "actionGroups": {
-                    "groupIds": []
+            "properties": json.dumps(
+                {
+                    "description": "Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.",
+                    "state": "Enabled",
+                    "severity": "Sev3",
+                    "frequency": "PT1M",
+                    "detector": {
+                        "id": "FailureAnomaliesDetector",
+                        "name": "Failure Anomalies",
+                    },
+                    "scope": [
+                        "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+                    ],
+                    "actionGroups": {"groupIds": []},
                 }
-            }),
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -444,7 +488,7 @@ class TestSmartDetectorAlertRuleMapping:
     def test_smart_detector_severity_mapping(self):
         """Test severity stays in Azure format (Sev0-Sev4) for Terraform."""
         emitter = TerraformEmitter()
-        
+
         severity_tests = [
             "Sev0",
             "Sev1",
@@ -452,7 +496,7 @@ class TestSmartDetectorAlertRuleMapping:
             "Sev3",
             "Sev4",
         ]
-        
+
         for sev_str in severity_tests:
             resource = {
                 "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/microsoft.alertsmanagement/smartDetectorAlertRules/test",
@@ -460,13 +504,15 @@ class TestSmartDetectorAlertRuleMapping:
                 "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
                 "location": "global",
                 "resource_group": "test-rg",
-                "properties": json.dumps({
-                    "state": "Enabled",
-                    "severity": sev_str,
-                    "frequency": "PT1M",
-                    "detector": {"id": "FailureAnomaliesDetector"},
-                    "scope": [],
-                }),
+                "properties": json.dumps(
+                    {
+                        "state": "Enabled",
+                        "severity": sev_str,
+                        "frequency": "PT1M",
+                        "detector": {"id": "FailureAnomaliesDetector"},
+                        "scope": [],
+                    }
+                ),
             }
 
             result = emitter._convert_resource(resource, {"resource": {}})
@@ -483,13 +529,15 @@ class TestSmartDetectorAlertRuleMapping:
             "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
             "location": "global",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "state": "Disabled",
-                "severity": "Sev3",
-                "frequency": "PT1M",
-                "detector": {"id": "FailureAnomaliesDetector"},
-                "scope": [],
-            }),
+            "properties": json.dumps(
+                {
+                    "state": "Disabled",
+                    "severity": "Sev3",
+                    "frequency": "PT1M",
+                    "detector": {"id": "FailureAnomaliesDetector"},
+                    "scope": [],
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})

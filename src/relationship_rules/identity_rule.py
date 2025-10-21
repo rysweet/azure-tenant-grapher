@@ -81,37 +81,45 @@ class IdentityRule(RelationshipRule):
 
                 # Add IaC-standard properties based on principal type
                 if principal_type == "User":
-                    identity_props.update({
-                        "type": "Microsoft.Graph/users",
-                        "name": display_name,
-                        "displayName": display_name,
-                        "location": "global",
-                        "resourceGroup": "identity-resources",
-                    })
+                    identity_props.update(
+                        {
+                            "type": "Microsoft.Graph/users",
+                            "name": display_name,
+                            "displayName": display_name,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
+                        }
+                    )
                 elif principal_type == "ServicePrincipal":
-                    identity_props.update({
-                        "type": "Microsoft.Graph/servicePrincipals",
-                        "name": display_name,
-                        "displayName": display_name,
-                        "location": "global",
-                        "resourceGroup": "identity-resources",
-                    })
+                    identity_props.update(
+                        {
+                            "type": "Microsoft.Graph/servicePrincipals",
+                            "name": display_name,
+                            "displayName": display_name,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
+                        }
+                    )
                 elif principal_type == "Group":
-                    identity_props.update({
-                        "type": "Microsoft.Graph/groups",
-                        "name": display_name,
-                        "displayName": display_name,
-                        "location": "global",
-                        "resourceGroup": "identity-resources",
-                    })
+                    identity_props.update(
+                        {
+                            "type": "Microsoft.Graph/groups",
+                            "name": display_name,
+                            "displayName": display_name,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
+                        }
+                    )
                 elif principal_type == "ManagedIdentity":
-                    identity_props.update({
-                        "type": "Microsoft.ManagedIdentity/managedIdentities",
-                        "name": display_name,
-                        "displayName": display_name,
-                        "location": "global",
-                        "resourceGroup": "identity-resources",
-                    })
+                    identity_props.update(
+                        {
+                            "type": "Microsoft.ManagedIdentity/managedIdentities",
+                            "name": display_name,
+                            "displayName": display_name,
+                            "location": "global",
+                            "resourceGroup": "identity-resources",
+                        }
+                    )
 
                 db_ops.upsert_generic(
                     label,
@@ -162,8 +170,12 @@ class IdentityRule(RelationshipRule):
                             "identityType": "SystemAssigned",
                             "resourceId": rid,
                             "type": "Microsoft.ManagedIdentity/managedIdentities",
-                            "name": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
-                            "displayName": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                            "name": principal_id.split("/")[-1]
+                            if "/" in principal_id
+                            else principal_id,
+                            "displayName": principal_id.split("/")[-1]
+                            if "/" in principal_id
+                            else principal_id,
                             "location": "global",
                             "resourceGroup": "identity-resources",
                         },
@@ -193,7 +205,9 @@ class IdentityRule(RelationshipRule):
                             "identityType": "UserAssigned",
                             "type": "Microsoft.ManagedIdentity/managedIdentities",
                             "name": uai_id.split("/")[-1] if "/" in uai_id else uai_id,
-                            "displayName": uai_id.split("/")[-1] if "/" in uai_id else uai_id,
+                            "displayName": uai_id.split("/")[-1]
+                            if "/" in uai_id
+                            else uai_id,
                             "location": "global",
                             "resourceGroup": "identity-resources",
                         },
@@ -214,8 +228,12 @@ class IdentityRule(RelationshipRule):
                         "identityType": identity.get("type", "Unknown"),
                         "resourceId": rid,
                         "type": "Microsoft.ManagedIdentity/managedIdentities",
-                        "name": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
-                        "displayName": principal_id.split("/")[-1] if "/" in principal_id else principal_id,
+                        "name": principal_id.split("/")[-1]
+                        if "/" in principal_id
+                        else principal_id,
+                        "displayName": principal_id.split("/")[-1]
+                        if "/" in principal_id
+                        else principal_id,
                         "location": "global",
                         "resourceGroup": "identity-resources",
                     },

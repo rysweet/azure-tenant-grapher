@@ -12,9 +12,8 @@ The plugin integrates with the IaC generation process to ensure that Storage Acc
 contents are preserved when deploying to new environments.
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .base_plugin import DataPlaneItem, DataPlanePlugin, ReplicationResult
 
@@ -73,15 +72,17 @@ class StoragePlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for StoragePlugin: {resource}")
 
         storage_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for Storage Account: {storage_name}")
+        self.logger.info(
+            f"Discovering data plane items for Storage Account: {storage_name}"
+        )
 
         items: List[DataPlaneItem] = []
 
         try:
             # Import Azure SDK components
+            from azure.core.exceptions import AzureError, HttpResponseError
             from azure.identity import DefaultAzureCredential
             from azure.storage.blob import BlobServiceClient
-            from azure.core.exceptions import AzureError, HttpResponseError
 
             # Construct storage account URL
             account_url = f"https://{storage_name}.blob.core.windows.net"
@@ -89,7 +90,9 @@ class StoragePlugin(DataPlanePlugin):
 
             # Discover blob containers
             try:
-                blob_service = BlobServiceClient(account_url=account_url, credential=credential)
+                blob_service = BlobServiceClient(
+                    account_url=account_url, credential=credential
+                )
                 containers = blob_service.list_containers()
 
                 for container_props in containers:
@@ -99,7 +102,8 @@ class StoragePlugin(DataPlanePlugin):
                             name=container_props.name,
                             item_type="container",
                             properties={
-                                "public_access": container_props.public_access or "None",
+                                "public_access": container_props.public_access
+                                or "None",
                                 "metadata": container_props.metadata or {},
                             },
                             source_resource_id=resource["id"],
@@ -115,17 +119,19 @@ class StoragePlugin(DataPlanePlugin):
 
                     # Sample blobs in each container (limit to avoid performance issues)
                     try:
-                        container_client = blob_service.get_container_client(container_props.name)
+                        container_client = blob_service.get_container_client(
+                            container_props.name
+                        )
                         blob_list = container_client.list_blobs()
                         blob_count = 0
-                        
+
                         for blob_props in blob_list:
                             if blob_count >= 10:  # Limit sampling
                                 self.logger.debug(
                                     f"Limiting blob discovery to 10 per container in {container_props.name}"
                                 )
                                 break
-                                
+
                             items.append(
                                 DataPlaneItem(
                                     name=f"{container_props.name}/{blob_props.name}",
@@ -134,7 +140,9 @@ class StoragePlugin(DataPlanePlugin):
                                         "container": container_props.name,
                                         "blob_type": blob_props.blob_type,
                                         "size": blob_props.size,
-                                        "content_type": blob_props.content_settings.content_type if blob_props.content_settings else None,
+                                        "content_type": blob_props.content_settings.content_type
+                                        if blob_props.content_settings
+                                        else None,
                                     },
                                     source_resource_id=resource["id"],
                                     metadata={
@@ -149,10 +157,14 @@ class StoragePlugin(DataPlanePlugin):
                             )
                             blob_count += 1
                     except (AzureError, HttpResponseError) as e:
-                        self.logger.warning(f"Failed to list blobs in container {container_props.name}: {e}")
+                        self.logger.warning(
+                            f"Failed to list blobs in container {container_props.name}: {e}"
+                        )
 
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover blob containers in {storage_name}: {e}")
+                self.logger.warning(
+                    f"Failed to discover blob containers in {storage_name}: {e}"
+                )
 
         except ImportError as e:
             self.logger.error(
@@ -161,7 +173,9 @@ class StoragePlugin(DataPlanePlugin):
                 f"Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering Storage Account items: {e}")
+            self.logger.error(
+                f"Unexpected error discovering Storage Account items: {e}"
+            )
 
         self.logger.info(
             f"Discovered {len(items)} data plane items in Storage Account '{storage_name}'"
@@ -316,7 +330,9 @@ class StoragePlugin(DataPlanePlugin):
             success=False,
             items_discovered=0,
             items_replicated=0,
-            errors=["Data replication not yet implemented - use AzCopy or Azure Data Factory"],
+            errors=[
+                "Data replication not yet implemented - use AzCopy or Azure Data Factory"
+            ],
             warnings=[
                 "This plugin generates IaC for containers/shares.",
                 "Actual data migration requires separate tooling (AzCopy, ADF).",
@@ -334,7 +350,9 @@ class StoragePlugin(DataPlanePlugin):
             Sanitized name safe for Terraform identifiers
         """
         # Replace hyphens and special chars with underscores
-        sanitized = name.replace("-", "_").replace(".", "_").replace(" ", "_").replace("/", "_")
+        sanitized = (
+            name.replace("-", "_").replace(".", "_").replace(" ", "_").replace("/", "_")
+        )
 
         # Ensure it starts with a letter
         if sanitized and not sanitized[0].isalpha():

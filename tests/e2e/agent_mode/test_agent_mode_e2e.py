@@ -8,11 +8,7 @@ Tests the complete agent mode workflow including:
 - Response generation
 """
 
-import asyncio
-import json
 import time
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -22,10 +18,7 @@ class TestAgentModeE2E:
 
     @pytest.mark.asyncio
     async def test_agent_mode_initialization(
-        self,
-        agent_mode_config,
-        mock_mcp_server,
-        mock_neo4j_session
+        self, agent_mode_config, mock_mcp_server, mock_neo4j_session
     ):
         """Test agent mode initialization and startup."""
         # Simple test that verifies configuration loading
@@ -35,10 +28,7 @@ class TestAgentModeE2E:
 
     @pytest.mark.asyncio
     async def test_natural_language_query_processing(
-        self,
-        agent_mode_config,
-        mock_mcp_server,
-        mock_azure_client
+        self, agent_mode_config, mock_mcp_server, mock_azure_client
     ):
         """Test processing natural language queries."""
         query = "Show me all virtual machines in the test environment"
@@ -47,7 +37,7 @@ class TestAgentModeE2E:
         mock_response = {
             "interpretation": "List VMs with env=test tag",
             "tools_to_use": ["query_graph", "discover_resources"],
-            "confidence": 0.95
+            "confidence": 0.95,
         }
 
         # Verify query can be processed
@@ -55,28 +45,24 @@ class TestAgentModeE2E:
         assert mock_response["confidence"] > 0.8
 
     @pytest.mark.asyncio
-    async def test_tool_orchestration(
-        self,
-        mock_mcp_server,
-        mock_azure_client
-    ):
+    async def test_tool_orchestration(self, mock_mcp_server, mock_azure_client):
         """Test orchestration of multiple tools."""
         # Mock tool execution results
         tool_results = {
             "query_graph": {
                 "nodes": [
                     {"id": "vm-1", "type": "VirtualMachine"},
-                    {"id": "vm-2", "type": "VirtualMachine"}
+                    {"id": "vm-2", "type": "VirtualMachine"},
                 ],
-                "count": 2
+                "count": 2,
             },
             "analyze_security": {
                 "findings": [
                     {"severity": "high", "count": 1},
-                    {"severity": "medium", "count": 3}
+                    {"severity": "medium", "count": 3},
                 ],
-                "score": 65
-            }
+                "score": 65,
+            },
         }
 
         # Verify tools can be orchestrated
@@ -84,10 +70,7 @@ class TestAgentModeE2E:
         assert tool_results["query_graph"]["count"] == 2
 
     @pytest.mark.asyncio
-    async def test_response_generation(
-        self,
-        mock_mcp_server
-    ):
+    async def test_response_generation(self, mock_mcp_server):
         """Test generating user-friendly responses."""
         # Mock analysis results
         analysis_results = {
@@ -95,8 +78,8 @@ class TestAgentModeE2E:
             "security_score": 75,
             "recommendations": [
                 "Enable network security groups",
-                "Update VM sizes for better performance"
-            ]
+                "Update VM sizes for better performance",
+            ],
         }
 
         # Generate response
@@ -106,27 +89,20 @@ class TestAgentModeE2E:
         assert "security score 75/100" in response
 
     @pytest.mark.asyncio
-    async def test_error_handling(
-        self,
-        mock_mcp_server
-    ):
+    async def test_error_handling(self, mock_mcp_server):
         """Test error handling in agent mode."""
         # Test various error scenarios
         error_scenarios = [
             {"type": "connection_error", "handled": True},
             {"type": "timeout_error", "handled": True},
-            {"type": "invalid_query", "handled": True}
+            {"type": "invalid_query", "handled": True},
         ]
 
         for scenario in error_scenarios:
             assert scenario["handled"] is True
 
     @pytest.mark.asyncio
-    async def test_concurrent_operations(
-        self,
-        mock_mcp_server,
-        mock_azure_client
-    ):
+    async def test_concurrent_operations(self, mock_mcp_server, mock_azure_client):
         """Test handling concurrent operations."""
         # Simulate concurrent tasks
         tasks = []
@@ -139,18 +115,14 @@ class TestAgentModeE2E:
         assert all(t["status"] == "completed" for t in tasks)
 
     @pytest.mark.asyncio
-    async def test_session_management(
-        self,
-        agent_mode_config,
-        mock_mcp_server
-    ):
+    async def test_session_management(self, agent_mode_config, mock_mcp_server):
         """Test agent mode session management."""
         # Create session
         session = {
             "id": "test-session-123",
             "user": "test-user",
             "start_time": time.time(),
-            "active": True
+            "active": True,
         }
 
         # Verify session
@@ -162,18 +134,14 @@ class TestAgentModeE2E:
         assert session["active"] is False
 
     @pytest.mark.asyncio
-    async def test_resource_discovery_flow(
-        self,
-        mock_azure_client,
-        mock_neo4j_session
-    ):
+    async def test_resource_discovery_flow(self, mock_azure_client, mock_neo4j_session):
         """Test complete resource discovery flow."""
         # Mock discovery process
         discovery_steps = [
             {"step": "authenticate", "status": "success"},
             {"step": "list_subscriptions", "status": "success"},
             {"step": "discover_resources", "status": "success"},
-            {"step": "store_in_graph", "status": "success"}
+            {"step": "store_in_graph", "status": "success"},
         ]
 
         # Verify all steps succeed
@@ -181,17 +149,14 @@ class TestAgentModeE2E:
             assert step["status"] == "success"
 
     @pytest.mark.asyncio
-    async def test_graph_analysis_flow(
-        self,
-        mock_neo4j_session
-    ):
+    async def test_graph_analysis_flow(self, mock_neo4j_session):
         """Test graph analysis workflow."""
         # Mock graph analysis
         analysis = {
             "total_nodes": 50,
             "total_relationships": 120,
             "clusters_found": 3,
-            "isolated_resources": 2
+            "isolated_resources": 2,
         }
 
         # Verify analysis results
@@ -200,10 +165,7 @@ class TestAgentModeE2E:
         assert analysis["clusters_found"] > 0
 
     @pytest.mark.asyncio
-    async def test_security_recommendations(
-        self,
-        mock_azure_client
-    ):
+    async def test_security_recommendations(self, mock_azure_client):
         """Test security recommendation generation."""
         # Mock security analysis
         recommendations = [
@@ -211,14 +173,14 @@ class TestAgentModeE2E:
                 "priority": "high",
                 "issue": "Public endpoints exposed",
                 "affected_resources": 3,
-                "remediation": "Implement private endpoints"
+                "remediation": "Implement private endpoints",
             },
             {
                 "priority": "medium",
                 "issue": "Outdated VM images",
                 "affected_resources": 5,
-                "remediation": "Update to latest images"
-            }
+                "remediation": "Update to latest images",
+            },
         ]
 
         # Verify recommendations

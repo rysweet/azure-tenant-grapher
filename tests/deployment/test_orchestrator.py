@@ -1,7 +1,6 @@
 """Tests for deployment orchestrator."""
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,7 +19,9 @@ class TestDetectIaCFormat:
 
     def test_detect_terraform_format(self, tmp_path):
         """Test Terraform format detection."""
-        (tmp_path / "main.tf").write_text('resource "azurerm_resource_group" "example" {}')
+        (tmp_path / "main.tf").write_text(
+            'resource "azurerm_resource_group" "example" {}'
+        )
         assert detect_iac_format(tmp_path) == "terraform"
 
     def test_detect_terraform_with_multiple_files(self, tmp_path):
@@ -31,7 +32,9 @@ class TestDetectIaCFormat:
 
     def test_detect_bicep_format(self, tmp_path):
         """Test Bicep format detection."""
-        (tmp_path / "main.bicep").write_text("resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
+        (tmp_path / "main.bicep").write_text(
+            "resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
         assert detect_iac_format(tmp_path) == "bicep"
 
     def test_detect_arm_format(self, tmp_path):
@@ -39,7 +42,7 @@ class TestDetectIaCFormat:
         arm_template = {
             "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
             "contentVersion": "1.0.0.0",
-            "resources": []
+            "resources": [],
         }
         (tmp_path / "template.json").write_text(json.dumps(arm_template))
         assert detect_iac_format(tmp_path) == "arm"
@@ -161,10 +164,14 @@ class TestDeployBicep:
     @patch("src.deployment.orchestrator.subprocess.run")
     def test_deploy_bicep_dry_run_success(self, mock_run, tmp_path):
         """Test Bicep dry-run deployment."""
-        (tmp_path / "main.bicep").write_text("resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
+        (tmp_path / "main.bicep").write_text(
+            "resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
 
         # Mock successful validation
-        mock_run.return_value = MagicMock(returncode=0, stdout="Validation successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Validation successful", stderr=""
+        )
 
         result = deploy_bicep(tmp_path, "test-rg", "eastus", dry_run=True)
 
@@ -186,10 +193,14 @@ class TestDeployBicep:
     @patch("src.deployment.orchestrator.subprocess.run")
     def test_deploy_bicep_deploy_success(self, mock_run, tmp_path):
         """Test successful Bicep deployment."""
-        (tmp_path / "main.bicep").write_text("resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
+        (tmp_path / "main.bicep").write_text(
+            "resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
 
         # Mock successful deployment
-        mock_run.return_value = MagicMock(returncode=0, stdout="Deployment successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Deployment successful", stderr=""
+        )
 
         result = deploy_bicep(tmp_path, "test-rg", "eastus", dry_run=False)
 
@@ -200,12 +211,18 @@ class TestDeployBicep:
     @patch("src.deployment.orchestrator.subprocess.run")
     def test_deploy_bicep_with_subscription(self, mock_run, tmp_path):
         """Test Bicep deployment with subscription ID."""
-        (tmp_path / "main.bicep").write_text("resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
+        (tmp_path / "main.bicep").write_text(
+            "resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
 
         # Mock successful deployment
-        mock_run.return_value = MagicMock(returncode=0, stdout="Deployment successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Deployment successful", stderr=""
+        )
 
-        result = deploy_bicep(tmp_path, "test-rg", "eastus", subscription_id="test-sub-id", dry_run=False)
+        result = deploy_bicep(
+            tmp_path, "test-rg", "eastus", subscription_id="test-sub-id", dry_run=False
+        )
 
         assert result["status"] == "deployed"
         # Verify subscription was passed in command
@@ -217,11 +234,17 @@ class TestDeployBicep:
     @patch("src.deployment.orchestrator.subprocess.run")
     def test_deploy_bicep_prefers_main_file(self, mock_run, tmp_path):
         """Test that Bicep deployment prefers main.bicep over other files."""
-        (tmp_path / "other.bicep").write_text("resource rg1 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
-        (tmp_path / "main.bicep").write_text("resource rg2 'Microsoft.Resources/resourceGroups@2021-04-01' = {}")
+        (tmp_path / "other.bicep").write_text(
+            "resource rg1 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
+        (tmp_path / "main.bicep").write_text(
+            "resource rg2 'Microsoft.Resources/resourceGroups@2021-04-01' = {}"
+        )
 
         # Mock successful deployment
-        mock_run.return_value = MagicMock(returncode=0, stdout="Deployment successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Deployment successful", stderr=""
+        )
 
         deploy_bicep(tmp_path, "test-rg", "eastus", dry_run=False)
 
@@ -245,12 +268,14 @@ class TestDeployARM:
         arm_template = {
             "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
             "contentVersion": "1.0.0.0",
-            "resources": []
+            "resources": [],
         }
         (tmp_path / "template.json").write_text(json.dumps(arm_template))
 
         # Mock successful validation
-        mock_run.return_value = MagicMock(returncode=0, stdout="Validation successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Validation successful", stderr=""
+        )
 
         result = deploy_arm(tmp_path, "test-rg", "eastus", dry_run=True)
 
@@ -264,12 +289,14 @@ class TestDeployARM:
         arm_template = {
             "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
             "contentVersion": "1.0.0.0",
-            "resources": []
+            "resources": [],
         }
         (tmp_path / "template.json").write_text(json.dumps(arm_template))
 
         # Mock successful deployment
-        mock_run.return_value = MagicMock(returncode=0, stdout="Deployment successful", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="Deployment successful", stderr=""
+        )
 
         result = deploy_arm(tmp_path, "test-rg", "eastus", dry_run=False)
 
@@ -290,14 +317,18 @@ class TestDeployIaC:
         mock_run.return_value = MagicMock(returncode=0)
 
         # Mock Terraform deployment
-        mock_deploy_tf.return_value = {"status": "deployed", "format": "terraform", "output": "Success"}
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
 
         result = deploy_iac(
             iac_dir=tmp_path,
             target_tenant_id="test-tenant",
             resource_group="test-rg",
             location="eastus",
-            dry_run=False
+            dry_run=False,
         )
 
         assert result["status"] == "deployed"
@@ -306,7 +337,9 @@ class TestDeployIaC:
 
     @patch("src.deployment.orchestrator.subprocess.run")
     @patch("src.deployment.orchestrator.deploy_bicep")
-    def test_deploy_iac_bicep_explicit_format(self, mock_deploy_bicep, mock_run, tmp_path):
+    def test_deploy_iac_bicep_explicit_format(
+        self, mock_deploy_bicep, mock_run, tmp_path
+    ):
         """Test deploy_iac with explicitly specified Bicep format."""
         (tmp_path / "main.bicep").write_text("# Bicep")
 
@@ -314,7 +347,11 @@ class TestDeployIaC:
         mock_run.return_value = MagicMock(returncode=0)
 
         # Mock Bicep deployment
-        mock_deploy_bicep.return_value = {"status": "deployed", "format": "bicep", "output": "Success"}
+        mock_deploy_bicep.return_value = {
+            "status": "deployed",
+            "format": "bicep",
+            "output": "Success",
+        }
 
         result = deploy_iac(
             iac_dir=tmp_path,
@@ -322,7 +359,7 @@ class TestDeployIaC:
             resource_group="test-rg",
             location="eastus",
             iac_format="bicep",
-            dry_run=False
+            dry_run=False,
         )
 
         assert result["status"] == "deployed"
@@ -340,7 +377,7 @@ class TestDeployIaC:
                 target_tenant_id="test-tenant",
                 resource_group="test-rg",
                 location="eastus",
-                dry_run=False
+                dry_run=False,
             )
 
     @patch("src.deployment.orchestrator.subprocess.run")
@@ -353,7 +390,7 @@ class TestDeployIaC:
                 resource_group="test-rg",
                 location="eastus",
                 iac_format="unsupported",  # type: ignore
-                dry_run=False
+                dry_run=False,
             )
 
     @patch("src.deployment.orchestrator.subprocess.run")
@@ -366,7 +403,11 @@ class TestDeployIaC:
         mock_run.return_value = MagicMock(returncode=0)
 
         # Mock Terraform deployment
-        mock_deploy_tf.return_value = {"status": "deployed", "format": "terraform", "output": "Success"}
+        mock_deploy_tf.return_value = {
+            "status": "deployed",
+            "format": "terraform",
+            "output": "Success",
+        }
 
         result = deploy_iac(
             iac_dir=tmp_path,
@@ -374,7 +415,7 @@ class TestDeployIaC:
             resource_group="test-rg",
             location="eastus",
             subscription_id="test-sub-id",
-            dry_run=False
+            dry_run=False,
         )
 
         assert result["status"] == "deployed"
@@ -388,7 +429,7 @@ class TestDeployIaC:
         arm_template = {
             "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
             "contentVersion": "1.0.0.0",
-            "resources": []
+            "resources": [],
         }
         (tmp_path / "template.json").write_text(json.dumps(arm_template))
 
@@ -396,7 +437,11 @@ class TestDeployIaC:
         mock_run.return_value = MagicMock(returncode=0)
 
         # Mock ARM deployment
-        mock_deploy_arm.return_value = {"status": "deployed", "format": "arm", "output": "Success"}
+        mock_deploy_arm.return_value = {
+            "status": "deployed",
+            "format": "arm",
+            "output": "Success",
+        }
 
         result = deploy_iac(
             iac_dir=tmp_path,
@@ -404,7 +449,7 @@ class TestDeployIaC:
             resource_group="test-rg",
             location="eastus",
             iac_format="arm",
-            dry_run=False
+            dry_run=False,
         )
 
         assert result["status"] == "deployed"

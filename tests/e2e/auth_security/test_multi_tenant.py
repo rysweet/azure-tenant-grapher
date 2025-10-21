@@ -6,17 +6,13 @@ and multi-tenant data segregation.
 """
 
 import asyncio
-import json
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from typing import Any, Dict, List
 
 import pytest
-
 from tests.e2e.auth_security.security_utils import (
     AuditLogger,
-    MockAzureADClient,
     SecurityScanner,
 )
 
@@ -41,7 +37,7 @@ class MultiTenantManager:
             "id": tenant_id,
             "config": config,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "status": "active"
+            "status": "active",
         }
         self.tenant_users[tenant_id] = set()
         self.tenant_data[tenant_id] = {}
@@ -66,7 +62,9 @@ class MultiTenantManager:
             raise ValueError(f"Tenant {tenant_id} not found")
 
         if user_id not in self.tenant_users.get(tenant_id, set()):
-            raise PermissionError(f"User {user_id} not authorized for tenant {tenant_id}")
+            raise PermissionError(
+                f"User {user_id} not authorized for tenant {tenant_id}"
+            )
 
         # Create session
         session_id = str(uuid.uuid4())
@@ -74,22 +72,19 @@ class MultiTenantManager:
             "user_id": user_id,
             "tenant_id": tenant_id,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "roles": self.tenant_permissions[tenant_id].get(user_id, [])
+            "roles": self.tenant_permissions[tenant_id].get(user_id, []),
         }
 
         # Audit log
         self.audit_logger.log_authentication(
-            user_id=user_id,
-            success=True,
-            method="multi_tenant",
-            ip_address="127.0.0.1"
+            user_id=user_id, success=True, method="multi_tenant", ip_address="127.0.0.1"
         )
 
         return {
             "session_id": session_id,
             "tenant_id": tenant_id,
             "user_id": user_id,
-            "roles": self.active_sessions[session_id]["roles"]
+            "roles": self.active_sessions[session_id]["roles"],
         }
 
     def switch_tenant(self, session_id: str, new_tenant_id: str) -> Dict[str, Any]:
@@ -102,7 +97,9 @@ class MultiTenantManager:
 
         # Check if user has access to new tenant
         if user_id not in self.tenant_users.get(new_tenant_id, set()):
-            raise PermissionError(f"User {user_id} not authorized for tenant {new_tenant_id}")
+            raise PermissionError(
+                f"User {user_id} not authorized for tenant {new_tenant_id}"
+            )
 
         # Update session
         old_tenant = session["tenant_id"]
@@ -151,14 +148,14 @@ class TestMultiTenant:
         tenant1_config = {
             "name": "Tenant 1",
             "domain": "tenant1.example.com",
-            "max_users": 100
+            "max_users": 100,
         }
         manager.register_tenant("tenant1", tenant1_config)
 
         tenant2_config = {
             "name": "Tenant 2",
             "domain": "tenant2.example.com",
-            "max_users": 50
+            "max_users": 50,
         }
         manager.register_tenant("tenant2", tenant2_config)
 
@@ -182,7 +179,9 @@ class TestMultiTenant:
         # Add users to tenants
         manager.add_user_to_tenant("tenant1", "user1", ["admin"])
         manager.add_user_to_tenant("tenant1", "user2", ["editor"])
-        manager.add_user_to_tenant("tenant2", "user2", ["viewer"])  # Same user, different tenant
+        manager.add_user_to_tenant(
+            "tenant2", "user2", ["viewer"]
+        )  # Same user, different tenant
         manager.add_user_to_tenant("tenant2", "user3", ["admin"])
 
         # Verify user assignments
@@ -292,11 +291,15 @@ class TestMultiTenant:
         # Attempt various cross-tenant attacks
         attack_attempts = [
             # Try to access victim's data directly
-            lambda: manager.get_tenant_data(attacker_session["session_id"], "../victim_tenant/sensitive"),
+            lambda: manager.get_tenant_data(
+                attacker_session["session_id"], "../victim_tenant/sensitive"
+            ),
             # Try to switch to victim tenant
-            lambda: manager.switch_tenant(attacker_session["session_id"], "victim_tenant"),
+            lambda: manager.switch_tenant(
+                attacker_session["session_id"], "victim_tenant"
+            ),
             # Try to add self to victim tenant
-            lambda: manager.add_user_to_tenant("victim_tenant", "attacker", ["admin"])
+            lambda: manager.add_user_to_tenant("victim_tenant", "attacker", ["admin"]),
         ]
 
         for attempt in attack_attempts:
@@ -324,7 +327,9 @@ class TestMultiTenant:
             await asyncio.sleep(0.001)  # Simulate async work
             try:
                 session = manager.authenticate_user(user_id, tenant_id)
-                manager.store_tenant_data(tenant_id, f"data_{user_id}", f"value_{user_id}")
+                manager.store_tenant_data(
+                    tenant_id, f"data_{user_id}", f"value_{user_id}"
+                )
                 return session
             except Exception as e:
                 return str(e)
@@ -401,10 +406,14 @@ class TestMultiTenant:
         assert decrypted2 == "tenant2_password"
 
         # Verify tenant keys are different
-        assert encrypted_manager.tenant_keys["tenant1"] != encrypted_manager.tenant_keys["tenant2"]
+        assert (
+            encrypted_manager.tenant_keys["tenant1"]
+            != encrypted_manager.tenant_keys["tenant2"]
+        )
 
     def test_tenant_quota_enforcement(self):
         """Test enforcement of tenant-specific quotas and limits."""
+
         class QuotaEnforcedManager(MultiTenantManager):
             def __init__(self):
                 super().__init__()
@@ -417,17 +426,22 @@ class TestMultiTenant:
                 self.tenant_quotas[tenant_id] = {
                     "max_users": config.get("max_users", 10),
                     "max_storage_mb": config.get("max_storage_mb", 100),
-                    "max_api_calls": config.get("max_api_calls", 1000)
+                    "max_api_calls": config.get("max_api_calls", 1000),
                 }
                 self.tenant_usage[tenant_id] = {
                     "users": 0,
                     "storage_mb": 0,
-                    "api_calls": 0
+                    "api_calls": 0,
                 }
 
-            def add_user_to_tenant(self, tenant_id: str, user_id: str, roles: List[str] = None):
+            def add_user_to_tenant(
+                self, tenant_id: str, user_id: str, roles: List[str] = None
+            ):
                 """Add user with quota check."""
-                if self.tenant_usage[tenant_id]["users"] >= self.tenant_quotas[tenant_id]["max_users"]:
+                if (
+                    self.tenant_usage[tenant_id]["users"]
+                    >= self.tenant_quotas[tenant_id]["max_users"]
+                ):
                     raise ValueError(f"User quota exceeded for tenant {tenant_id}")
 
                 super().add_user_to_tenant(tenant_id, user_id, roles)
@@ -442,11 +456,9 @@ class TestMultiTenant:
         quota_manager = QuotaEnforcedManager()
 
         # Register tenant with quotas
-        quota_manager.register_tenant("limited_tenant", {
-            "name": "Limited",
-            "max_users": 3,
-            "max_api_calls": 10
-        })
+        quota_manager.register_tenant(
+            "limited_tenant", {"name": "Limited", "max_users": 3, "max_api_calls": 10}
+        )
 
         # Add users up to quota
         quota_manager.add_user_to_tenant("limited_tenant", "user1")
@@ -460,12 +472,15 @@ class TestMultiTenant:
 
     def test_tenant_audit_segregation(self):
         """Test that audit logs are properly segregated by tenant."""
+
         class TenantAuditManager(MultiTenantManager):
             def __init__(self):
                 super().__init__()
                 self.tenant_audit_logs = {}
 
-            def log_tenant_event(self, tenant_id: str, event_type: str, details: Dict[str, Any]):
+            def log_tenant_event(
+                self, tenant_id: str, event_type: str, details: Dict[str, Any]
+            ):
                 """Log event for specific tenant."""
                 if tenant_id not in self.tenant_audit_logs:
                     self.tenant_audit_logs[tenant_id] = []
@@ -474,11 +489,13 @@ class TestMultiTenant:
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "tenant_id": tenant_id,
                     "event_type": event_type,
-                    "details": details
+                    "details": details,
                 }
                 self.tenant_audit_logs[tenant_id].append(event)
 
-            def get_tenant_audit_logs(self, tenant_id: str, requester_tenant: str) -> List[Dict]:
+            def get_tenant_audit_logs(
+                self, tenant_id: str, requester_tenant: str
+            ) -> List[Dict]:
                 """Get audit logs with tenant isolation."""
                 if requester_tenant != tenant_id:
                     raise PermissionError("Cannot access other tenant's audit logs")
@@ -514,14 +531,14 @@ class TestMultiTenant:
             "name": "Enterprise Tenant",
             "features": ["advanced_analytics", "custom_branding", "sso"],
             "api_rate_limit": 10000,
-            "data_retention_days": 365
+            "data_retention_days": 365,
         }
 
         tenant2_config = {
             "name": "Basic Tenant",
             "features": ["basic_reporting"],
             "api_rate_limit": 100,
-            "data_retention_days": 30
+            "data_retention_days": 30,
         }
 
         manager.register_tenant("enterprise", tenant1_config)
@@ -537,10 +554,13 @@ class TestMultiTenant:
 
         assert "sso" in enterprise_features
         assert "sso" not in basic_features
-        assert len(enterprise_features.intersection(basic_features)) == 0  # No shared features
+        assert (
+            len(enterprise_features.intersection(basic_features)) == 0
+        )  # No shared features
 
     def test_tenant_deletion_cleanup(self):
         """Test that tenant deletion properly cleans up all associated data."""
+
         class DeletableMultiTenantManager(MultiTenantManager):
             def delete_tenant(self, tenant_id: str):
                 """Securely delete tenant and all associated data."""
@@ -552,7 +572,7 @@ class TestMultiTenant:
                     violation_type="tenant_deletion",
                     details=f"Deleting tenant {tenant_id}",
                     source_ip="system",
-                    user_id="admin"
+                    user_id="admin",
                 )
 
                 # Clean up all tenant data
@@ -563,7 +583,8 @@ class TestMultiTenant:
 
                 # Invalidate all sessions for this tenant
                 sessions_to_remove = [
-                    sid for sid, session in self.active_sessions.items()
+                    sid
+                    for sid, session in self.active_sessions.items()
                     if session["tenant_id"] == tenant_id
                 ]
                 for sid in sessions_to_remove:

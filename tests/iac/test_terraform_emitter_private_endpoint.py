@@ -36,25 +36,29 @@ def sample_private_endpoint() -> Dict[str, Any]:
         "type": "Microsoft.Network/privateEndpoints",
         "location": "eastus",
         "resource_group": "test-rg",
-        "properties": json.dumps({
-            "provisioningState": "Succeeded",
-            "subnet": {
-                "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
-            },
-            "privateLinkServiceConnections": [{
-                "name": "KeyVaultConnection",
-                "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/privateEndpoints/kv-pe/privateLinkServiceConnections/KeyVaultConnection",
-                "properties": {
-                    "provisioningState": "Succeeded",
-                    "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
-                    "groupIds": ["vault"],
-                    "privateLinkServiceConnectionState": {
-                        "status": "Approved",
-                        "actionsRequired": "None"
+        "properties": json.dumps(
+            {
+                "provisioningState": "Succeeded",
+                "subnet": {
+                    "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "KeyVaultConnection",
+                        "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/privateEndpoints/kv-pe/privateLinkServiceConnections/KeyVaultConnection",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-kv",
+                            "groupIds": ["vault"],
+                            "privateLinkServiceConnectionState": {
+                                "status": "Approved",
+                                "actionsRequired": "None",
+                            },
+                        },
                     }
-                }
-            }]
-        })
+                ],
+            }
+        ),
     }
 
 
@@ -67,11 +71,13 @@ def sample_private_dns_zone() -> Dict[str, Any]:
         "type": "Microsoft.Network/privateDnsZones",
         "location": "global",
         "resource_group": "test-rg",
-        "properties": json.dumps({
-            "provisioningState": "Succeeded",
-            "maxNumberOfRecordSets": 25000,
-            "numberOfRecordSets": 1,
-        })
+        "properties": json.dumps(
+            {
+                "provisioningState": "Succeeded",
+                "maxNumberOfRecordSets": 25000,
+                "numberOfRecordSets": 1,
+            }
+        ),
     }
 
 
@@ -84,14 +90,16 @@ def sample_vnet_link() -> Dict[str, Any]:
         "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
         "location": "global",
         "resource_group": "test-rg",
-        "properties": json.dumps({
-            "provisioningState": "Succeeded",
-            "registrationEnabled": False,
-            "virtualNetwork": {
-                "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet"
-            },
-            "virtualNetworkLinkState": "Completed"
-        })
+        "properties": json.dumps(
+            {
+                "provisioningState": "Succeeded",
+                "registrationEnabled": False,
+                "virtualNetwork": {
+                    "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet"
+                },
+                "virtualNetworkLinkState": "Completed",
+            }
+        ),
     }
 
 
@@ -104,9 +112,7 @@ def sample_subnet() -> Dict[str, Any]:
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
         "resourceGroup": "test-rg",
-        "properties": json.dumps({
-            "addressPrefix": "10.0.1.0/24"
-        })
+        "properties": json.dumps({"addressPrefix": "10.0.1.0/24"}),
     }
 
 
@@ -120,9 +126,9 @@ def sample_vnet() -> Dict[str, Any]:
         "location": "eastus",
         "resourceGroup": "test-rg",
         "address_space": ["10.0.0.0/16"],
-        "properties": json.dumps({
-            "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}
-        })
+        "properties": json.dumps(
+            {"addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}}
+        ),
     }
 
 
@@ -176,12 +182,8 @@ def test_vnet_link_is_detected(
     """Verify Virtual Network Links are identified as separate resources."""
     terraform_config = {"resource": {}}
     # Need to add VNet to available resources for validation
-    terraform_emitter._available_resources = {
-        "azurerm_virtual_network": {"test_vnet"}
-    }
-    result = terraform_emitter._convert_resource(
-        sample_vnet_link, terraform_config
-    )
+    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None, "VNet Link should be detected and converted"
     terraform_type, resource_name, resource_config = result
@@ -214,7 +216,7 @@ def test_private_endpoint_name_extracted(
 def test_private_endpoint_subnet_reference_extracted(
     terraform_emitter: TerraformEmitter,
     sample_private_endpoint: Dict[str, Any],
-    sample_subnet: Dict[str, Any]
+    sample_subnet: Dict[str, Any],
 ) -> None:
     """Verify Private Endpoint references subnet correctly."""
     # Set up available subnets for validation
@@ -363,13 +365,9 @@ def test_vnet_link_name_extracted(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link name is extracted from zone/link format."""
-    terraform_emitter._available_resources = {
-        "azurerm_virtual_network": {"test_vnet"}
-    }
+    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
     terraform_config = {"resource": {}}
-    result = terraform_emitter._convert_resource(
-        sample_vnet_link, terraform_config
-    )
+    result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None
     _, resource_name, resource_config = result
@@ -383,13 +381,9 @@ def test_vnet_link_dns_zone_reference(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link references DNS zone correctly."""
-    terraform_emitter._available_resources = {
-        "azurerm_virtual_network": {"test_vnet"}
-    }
+    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
     terraform_config = {"resource": {}}
-    result = terraform_emitter._convert_resource(
-        sample_vnet_link, terraform_config
-    )
+    result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None
     _, _, resource_config = result
@@ -404,13 +398,9 @@ def test_vnet_link_virtual_network_reference(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link references virtual network correctly."""
-    terraform_emitter._available_resources = {
-        "azurerm_virtual_network": {"test_vnet"}
-    }
+    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
     terraform_config = {"resource": {}}
-    result = terraform_emitter._convert_resource(
-        sample_vnet_link, terraform_config
-    )
+    result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None
     _, _, resource_config = result
@@ -424,13 +414,9 @@ def test_vnet_link_registration_enabled_flag(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link registration_enabled flag is extracted."""
-    terraform_emitter._available_resources = {
-        "azurerm_virtual_network": {"test_vnet"}
-    }
+    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
     terraform_config = {"resource": {}}
-    result = terraform_emitter._convert_resource(
-        sample_vnet_link, terraform_config
-    )
+    result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None
     _, _, resource_config = result
@@ -451,7 +437,7 @@ def test_full_private_endpoint_resource_generated(
     terraform_emitter: TerraformEmitter,
     sample_private_endpoint: Dict[str, Any],
     sample_subnet: Dict[str, Any],
-    sample_vnet: Dict[str, Any]
+    sample_vnet: Dict[str, Any],
 ) -> None:
     """Verify complete Terraform JSON structure for Private Endpoint."""
     graph = TenantGraph()
@@ -478,8 +464,7 @@ def test_full_private_endpoint_resource_generated(
 
 
 def test_full_private_dns_zone_resource_generated(
-    terraform_emitter: TerraformEmitter,
-    sample_private_dns_zone: Dict[str, Any]
+    terraform_emitter: TerraformEmitter, sample_private_dns_zone: Dict[str, Any]
 ) -> None:
     """Verify complete Terraform JSON structure for Private DNS Zone."""
     graph = TenantGraph()
@@ -512,7 +497,7 @@ def test_full_vnet_link_resource_generated(
     terraform_emitter: TerraformEmitter,
     sample_vnet_link: Dict[str, Any],
     sample_vnet: Dict[str, Any],
-    sample_private_dns_zone: Dict[str, Any]
+    sample_private_dns_zone: Dict[str, Any],
 ) -> None:
     """Verify complete Terraform JSON structure for VNet Link."""
     graph = TenantGraph()
@@ -526,9 +511,14 @@ def test_full_vnet_link_resource_generated(
             terraform_config = json.load(f)
 
         # Check VNet Link exists
-        assert "azurerm_private_dns_zone_virtual_network_link" in terraform_config["resource"]
+        assert (
+            "azurerm_private_dns_zone_virtual_network_link"
+            in terraform_config["resource"]
+        )
 
-        links = terraform_config["resource"]["azurerm_private_dns_zone_virtual_network_link"]
+        links = terraform_config["resource"][
+            "azurerm_private_dns_zone_virtual_network_link"
+        ]
         # Should have at least one link
         assert len(links) >= 1
 
@@ -552,7 +542,7 @@ def test_private_endpoint_with_dns_zone_and_link(
     sample_private_dns_zone: Dict[str, Any],
     sample_vnet_link: Dict[str, Any],
     sample_subnet: Dict[str, Any],
-    sample_vnet: Dict[str, Any]
+    sample_vnet: Dict[str, Any],
 ) -> None:
     """Verify complete Private Endpoint setup with DNS integration."""
     graph = TenantGraph()
@@ -561,7 +551,7 @@ def test_private_endpoint_with_dns_zone_and_link(
         sample_subnet,
         sample_private_endpoint,
         sample_private_dns_zone,
-        sample_vnet_link
+        sample_vnet_link,
     ]
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -574,18 +564,28 @@ def test_private_endpoint_with_dns_zone_and_link(
         # Verify all three resource types exist
         assert "azurerm_private_endpoint" in terraform_config["resource"]
         assert "azurerm_private_dns_zone" in terraform_config["resource"]
-        assert "azurerm_private_dns_zone_virtual_network_link" in terraform_config["resource"]
+        assert (
+            "azurerm_private_dns_zone_virtual_network_link"
+            in terraform_config["resource"]
+        )
 
         # Verify counts
         assert len(terraform_config["resource"]["azurerm_private_endpoint"]) >= 1
         assert len(terraform_config["resource"]["azurerm_private_dns_zone"]) >= 1
-        assert len(terraform_config["resource"]["azurerm_private_dns_zone_virtual_network_link"]) >= 1
+        assert (
+            len(
+                terraform_config["resource"][
+                    "azurerm_private_dns_zone_virtual_network_link"
+                ]
+            )
+            >= 1
+        )
 
 
 def test_multiple_private_endpoints_same_subnet(
     terraform_emitter: TerraformEmitter,
     sample_subnet: Dict[str, Any],
-    sample_vnet: Dict[str, Any]
+    sample_vnet: Dict[str, Any],
 ) -> None:
     """Verify multiple Private Endpoints can reference the same subnet."""
     # Create two Private Endpoints
@@ -595,18 +595,22 @@ def test_multiple_private_endpoints_same_subnet(
         "type": "Microsoft.Network/privateEndpoints",
         "location": "eastus",
         "resource_group": "test-rg",
-        "properties": json.dumps({
-            "subnet": {
-                "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
-            },
-            "privateLinkServiceConnections": [{
-                "name": "Connection1",
-                "properties": {
-                    "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/kv1",
-                    "groupIds": ["vault"]
-                }
-            }]
-        })
+        "properties": json.dumps(
+            {
+                "subnet": {
+                    "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "Connection1",
+                        "properties": {
+                            "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/kv1",
+                            "groupIds": ["vault"],
+                        },
+                    }
+                ],
+            }
+        ),
     }
 
     pe2 = {
@@ -615,18 +619,22 @@ def test_multiple_private_endpoints_same_subnet(
         "type": "Microsoft.Network/privateEndpoints",
         "location": "eastus",
         "resource_group": "test-rg",
-        "properties": json.dumps({
-            "subnet": {
-                "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
-            },
-            "privateLinkServiceConnections": [{
-                "name": "Connection2",
-                "properties": {
-                    "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Storage/storageAccounts/st1",
-                    "groupIds": ["blob"]
-                }
-            }]
-        })
+        "properties": json.dumps(
+            {
+                "subnet": {
+                    "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "Connection2",
+                        "properties": {
+                            "privateLinkServiceId": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Storage/storageAccounts/st1",
+                            "groupIds": ["blob"],
+                        },
+                    }
+                ],
+            }
+        ),
     }
 
     graph = TenantGraph()
@@ -658,7 +666,7 @@ def test_multiple_private_endpoints_same_subnet(
 
 @pytest.mark.integration
 def test_real_private_endpoint_data_from_neo4j(
-    terraform_emitter: TerraformEmitter
+    terraform_emitter: TerraformEmitter,
 ) -> None:
     """Test with realistic Private Endpoint data from Neo4j."""
     # Realistic data as it would come from Azure API
@@ -669,13 +677,14 @@ def test_real_private_endpoint_data_from_neo4j(
         "location": "northcentralus",
         "resourceGroup": "ARTBAS-160224hpcp4rein6",
         "address_space": ["10.0.0.0/16"],
-        "properties": json.dumps({
-            "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
-            "subnets": [{
-                "name": "snet-pe",
-                "properties": {"addressPrefix": "10.0.1.0/24"}
-            }]
-        })
+        "properties": json.dumps(
+            {
+                "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+                "subnets": [
+                    {"name": "snet-pe", "properties": {"addressPrefix": "10.0.1.0/24"}}
+                ],
+            }
+        ),
     }
 
     realistic_pe = {
@@ -684,27 +693,31 @@ def test_real_private_endpoint_data_from_neo4j(
         "type": "Microsoft.Network/privateEndpoints",
         "location": "northcentralus",
         "resource_group": "ARTBAS-160224hpcp4rein6",
-        "properties": json.dumps({
-            "provisioningState": "Succeeded",
-            "resourceGuid": "bc2ce3ba-591a-45cf-bd50-7412ba5029ea",
-            "privateLinkServiceConnections": [{
-                "name": "KeyVaultPrivateLinkConnection",
-                "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint/privateLinkServiceConnections/KeyVaultPrivateLinkConnection",
-                "properties": {
-                    "provisioningState": "Succeeded",
-                    "privateLinkServiceId": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.KeyVault/vaults/simKV160224hpcp4rein6",
-                    "groupIds": ["vault"],
-                    "privateLinkServiceConnectionState": {
-                        "status": "Approved",
-                        "description": "",
-                        "actionsRequired": "None"
+        "properties": json.dumps(
+            {
+                "provisioningState": "Succeeded",
+                "resourceGuid": "bc2ce3ba-591a-45cf-bd50-7412ba5029ea",
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "KeyVaultPrivateLinkConnection",
+                        "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/privateEndpoints/simKV160224hpcp4rein6-keyvault-private-endpoint/privateLinkServiceConnections/KeyVaultPrivateLinkConnection",
+                        "properties": {
+                            "provisioningState": "Succeeded",
+                            "privateLinkServiceId": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.KeyVault/vaults/simKV160224hpcp4rein6",
+                            "groupIds": ["vault"],
+                            "privateLinkServiceConnectionState": {
+                                "status": "Approved",
+                                "description": "",
+                                "actionsRequired": "None",
+                            },
+                        },
                     }
-                }
-            }],
-            "subnet": {
-                "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe"
+                ],
+                "subnet": {
+                    "id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Network/virtualNetworks/vnet-ljio3xx7w6o6y/subnets/snet-pe"
+                },
             }
-        })
+        ),
     }
 
     realistic_dns_zone = {
@@ -713,11 +726,13 @@ def test_real_private_endpoint_data_from_neo4j(
         "type": "Microsoft.Network/privateDnsZones",
         "location": "global",
         "resource_group": "ARTBAS-160224hpcp4rein6",
-        "properties": json.dumps({
-            "maxNumberOfRecordSets": 25000,
-            "numberOfRecordSets": 2,
-            "provisioningState": "Succeeded"
-        })
+        "properties": json.dumps(
+            {
+                "maxNumberOfRecordSets": 25000,
+                "numberOfRecordSets": 2,
+                "provisioningState": "Succeeded",
+            }
+        ),
     }
 
     graph = TenantGraph()
@@ -741,7 +756,9 @@ def test_real_private_endpoint_data_from_neo4j(
                 pe_key = key
                 break
 
-        assert pe_key is not None, f"Private Endpoint not found. Available keys: {list(pes.keys())}"
+        assert pe_key is not None, (
+            f"Private Endpoint not found. Available keys: {list(pes.keys())}"
+        )
         pe = pes[pe_key]
 
         # Verify all critical fields

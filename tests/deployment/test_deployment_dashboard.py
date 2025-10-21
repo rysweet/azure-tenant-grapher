@@ -346,8 +346,8 @@ class TestDeploymentDashboardRendering:
 
         assert panel is not None
         # Check that panel has the expected title attribute
-        assert hasattr(panel, 'title')
-        assert 'Deployment Configuration' in str(panel.title)
+        assert hasattr(panel, "title")
+        assert "Deployment Configuration" in str(panel.title)
 
     def test_render_progress_panel(self, deployment_dashboard):
         """Test progress panel rendering."""
@@ -358,9 +358,9 @@ class TestDeploymentDashboardRendering:
 
         assert panel is not None
         # Check that panel has title attribute
-        assert hasattr(panel, 'title')
+        assert hasattr(panel, "title")
         # Panel title should reflect deployment progress
-        assert 'Progress' in str(panel.title) or 'progress' in str(panel.title).lower()
+        assert "Progress" in str(panel.title) or "progress" in str(panel.title).lower()
 
     def test_render_terraform_panel(self, deployment_dashboard):
         """Test terraform output panel rendering."""
@@ -370,8 +370,11 @@ class TestDeploymentDashboardRendering:
 
         assert panel is not None
         # Check that panel has title attribute
-        assert hasattr(panel, 'title')
-        assert 'Terraform Output' in str(panel.title) or 'terraform' in str(panel.title).lower()
+        assert hasattr(panel, "title")
+        assert (
+            "Terraform Output" in str(panel.title)
+            or "terraform" in str(panel.title).lower()
+        )
 
 
 class TestDeploymentDashboardIntegration:
@@ -419,7 +422,9 @@ class TestDeploymentDashboardIntegration:
         deployment_dashboard.update_phase("apply")
         deployment_dashboard.stream_terraform_output("Creating resource 1...")
         deployment_dashboard.update_resource_counts(applied=1)
-        deployment_dashboard.stream_terraform_output("Error: Failed to create resource 2")
+        deployment_dashboard.stream_terraform_output(
+            "Error: Failed to create resource 2"
+        )
         deployment_dashboard.update_resource_counts(failed=1)
 
         # Failed state
@@ -446,7 +451,9 @@ class TestDeploymentDashboardExitHandling:
 
     @patch("readchar.readkey")
     @patch("src.deployment.deployment_dashboard.Live")
-    def test_live_context_with_exit(self, mock_live, mock_readkey, deployment_dashboard):
+    def test_live_context_with_exit(
+        self, mock_live, mock_readkey, deployment_dashboard
+    ):
         """Test live context manager exit handling."""
         # This is a basic test - full keyboard handling would require more complex mocking
         mock_live_instance = MagicMock()

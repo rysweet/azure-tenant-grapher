@@ -113,7 +113,10 @@ def emit_private_endpoint(
         scoped_subnet_name = f"{vnet_name_safe}_{subnet_name_safe}"
 
         # Validate subnet exists if validation set provided
-        if available_subnets is not None and scoped_subnet_name not in available_subnets:
+        if (
+            available_subnets is not None
+            and scoped_subnet_name not in available_subnets
+        ):
             logger.error(
                 f"Private Endpoint '{resource_name}' references subnet that doesn't exist:\n"
                 f"  Subnet Terraform name: {scoped_subnet_name}\n"

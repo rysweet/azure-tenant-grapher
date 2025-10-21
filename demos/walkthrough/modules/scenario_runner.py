@@ -8,11 +8,12 @@ Contract: Run scenarios, handle failures, and provide execution results
 
 import asyncio
 import logging
-import yaml
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
-from playwright.async_api import Page, Browser, BrowserContext
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+import yaml
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ class ScenarioResult:
             "errors": self.errors,
             "screenshots": self.screenshots,
             "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat() if self.end_time else None
+            "end_time": self.end_time.isoformat() if self.end_time else None,
         }
 
 
@@ -125,7 +126,7 @@ class ScenarioRunner:
             raise FileNotFoundError(f"Scenario not found: {scenario_path}")
 
         try:
-            with open(scenario_path, 'r') as f:
+            with open(scenario_path) as f:
                 scenario = yaml.safe_load(f)
 
             # Validate scenario
@@ -173,7 +174,7 @@ class ScenarioRunner:
         self,
         scenario: Dict[str, Any],
         page: Page,
-        screenshot_callback: Optional[Callable] = None
+        screenshot_callback: Optional[Callable] = None,
     ) -> ScenarioResult:
         """
         Execute a scenario.
@@ -216,7 +217,9 @@ class ScenarioRunner:
                 # Stop on failure if configured
                 if not step_result["success"] and not step.optional:
                     if self.stop_on_failure:
-                        logger.warning(f"Stopping scenario due to step failure: {step.description}")
+                        logger.warning(
+                            f"Stopping scenario due to step failure: {step.description}"
+                        )
                         break
 
                     # Screenshot on failure
@@ -274,7 +277,7 @@ class ScenarioRunner:
             "action": step.action,
             "success": False,
             "attempts": 0,
-            "duration": 0
+            "duration": 0,
         }
 
         start_time = datetime.now()
@@ -301,7 +304,9 @@ class ScenarioRunner:
 
             except Exception as e:
                 last_error = e
-                logger.warning(f"Step {step.index} failed on attempt {attempt + 1}: {e}")
+                logger.warning(
+                    f"Step {step.index} failed on attempt {attempt + 1}: {e}"
+                )
 
                 if not step.should_retry(attempt + 1):
                     break
@@ -312,7 +317,9 @@ class ScenarioRunner:
         if not result["success"]:
             result["error"] = str(last_error)
             if not step.optional:
-                logger.error(f"Step {step.index} failed after {result['attempts']} attempts: {last_error}")
+                logger.error(
+                    f"Step {step.index} failed after {result['attempts']} attempts: {last_error}"
+                )
 
         end_time = datetime.now()
         result["duration"] = (end_time - start_time).total_seconds()
@@ -385,7 +392,9 @@ class ScenarioRunner:
         else:
             raise ValueError(f"Unknown action: {action}")
 
-    async def _run_assertion(self, page: Page, assertion: Dict[str, Any]) -> Dict[str, Any]:
+    async def _run_assertion(
+        self, page: Page, assertion: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Run an assertion on the page.
 
@@ -425,7 +434,9 @@ class ScenarioRunner:
                     result["success"] = True
                     result["message"] = f"Text matches: {expected}"
                 else:
-                    result["message"] = f"Text mismatch. Expected: {expected}, Got: {actual}"
+                    result["message"] = (
+                        f"Text mismatch. Expected: {expected}, Got: {actual}"
+                    )
 
             elif assertion_type == "count":
                 expected = assertion.get("value", 0)
@@ -435,13 +446,15 @@ class ScenarioRunner:
                     result["success"] = True
                     result["message"] = f"Element count matches: {expected}"
                 else:
-                    result["message"] = f"Count mismatch. Expected: {expected}, Got: {actual}"
+                    result["message"] = (
+                        f"Count mismatch. Expected: {expected}, Got: {actual}"
+                    )
 
             else:
                 result["message"] = f"Unknown assertion type: {assertion_type}"
 
         except Exception as e:
-            result["message"] = f"Assertion error: {str(e)}"
+            result["message"] = f"Assertion error: {e!s}"
 
         return result
 

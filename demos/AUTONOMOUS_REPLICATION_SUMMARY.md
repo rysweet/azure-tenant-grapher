@@ -41,7 +41,7 @@ The Azure Tenant Grapher is now autonomously working toward 100% tenant replicat
    - Root Cause: Extensions generated for VMs that were skipped due to missing NICs
    - Fix: Check generated Terraform config instead of `_available_resources`
    - Impact: Prevents invalid resource references
-   
+
 2. **DevTestLab Schedule Invalid Property**
    - Root Cause: `enabled` field in notification_settings not supported by Terraform
    - Fix: Removed invalid field from emitter
@@ -121,7 +121,7 @@ The Azure Tenant Grapher is now autonomously working toward 100% tenant replicat
 
 ### 1. Deploy Now vs Fix More Bugs First
 **Decision**: Deploy iteration 91 immediately
-**Rationale**: 
+**Rationale**:
 - 100% validation pass achieved
 - Real deployment reveals issues that validation cannot catch
 - Faster iteration cycle

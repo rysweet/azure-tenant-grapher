@@ -135,10 +135,10 @@ while not objective_achieved():
     status = check_deployment_status()
     if status.has_issues():
         spawn_fix_agents(status.issues)
-    
+
     send_imessage_update(status)
     time.sleep(60)  # Check every minute
-    
+
     if deployment_complete():
         scan_target_tenant()
         evaluate_objective()

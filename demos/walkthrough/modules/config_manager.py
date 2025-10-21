@@ -6,17 +6,19 @@ Purpose: Handle environment-specific configurations and validation
 Contract: Load, validate, and provide configuration access
 """
 
+import logging
 import os
-import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
-import logging
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
 
 class ConfigurationError(Exception):
     """Raised when configuration is invalid or missing"""
+
     pass
 
 
@@ -39,7 +41,7 @@ class ConfigManager:
             "app.url",
             "test.browser",
             "test.viewport",
-            "logging.level"
+            "logging.level",
         ]
 
     def load_config(self, path: Optional[str] = None) -> Dict[str, Any]:
@@ -64,7 +66,7 @@ class ConfigManager:
             )
 
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 self.config = yaml.safe_load(f) or {}
 
             # Expand environment variables
@@ -95,7 +97,7 @@ class ConfigManager:
         Returns:
             Configuration value or default
         """
-        keys = key.split('.')
+        keys = key.split(".")
         value = self.config
 
         for k in keys:
@@ -116,7 +118,7 @@ class ConfigManager:
             key: Configuration key (e.g., "app.url")
             value: Value to set
         """
-        keys = key.split('.')
+        keys = key.split(".")
         config = self.config
 
         for k in keys[:-1]:
@@ -141,9 +143,9 @@ class ConfigManager:
 
         if missing_keys:
             raise ConfigurationError(
-                f"Missing required configuration keys:\n"
-                + "\n".join(f"  - {key}" for key in missing_keys) +
-                f"\n\nPlease check your configuration file"
+                "Missing required configuration keys:\n"
+                + "\n".join(f"  - {key}" for key in missing_keys)
+                + "\n\nPlease check your configuration file"
             )
 
         # Validate specific values
