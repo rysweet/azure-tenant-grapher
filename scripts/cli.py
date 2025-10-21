@@ -336,6 +336,11 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     type=str,
     help="Comma-separated list of resource group names to include (filters discovery)",
 )
+@click.option(
+    "--batch-mode",
+    is_flag=True,
+    help="Enable batch mode for Neo4j writes (significantly faster for large tenants)",
+)
 @click.pass_context
 @async_command
 async def build(
@@ -355,6 +360,7 @@ async def build(
     no_aad_import: bool = False,
     filter_by_subscriptions: Optional[str] = None,
     filter_by_rgs: Optional[str] = None,
+    batch_mode: bool = False,
 ) -> str | None:
     """
     Build the complete Azure tenant graph with enhanced processing.
@@ -386,6 +392,7 @@ async def build(
         debug,
         filter_by_subscriptions,
         filter_by_rgs,
+        batch_mode,
     )
     if debug:
         print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
