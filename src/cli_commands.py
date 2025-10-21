@@ -67,6 +67,7 @@ async def build_command_handler(
     resource_limit: Optional[int],
     max_llm_threads: int,
     max_build_threads: int,
+    max_workers: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -175,7 +176,7 @@ async def build_command_handler(
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
             await _run_no_dashboard_mode(
-                ctx, grapher, logger, rebuild_edges, filter_config
+                ctx, grapher, logger, rebuild_edges, filter_config, max_workers
             )
             print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
             import asyncio
@@ -223,6 +224,7 @@ async def build_command_handler(
                 logger,
                 rebuild_edges,
                 filter_config,
+                max_workers,
             )
             print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
             structlog.get_logger(__name__).info(
@@ -252,6 +254,7 @@ async def _run_no_dashboard_mode(
     logger: logging.Logger,
     rebuild_edges: bool = False,
     filter_config: Optional[FilterConfig] = None,
+    max_workers: int = 20,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
     print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
@@ -335,14 +338,14 @@ async def _run_no_dashboard_mode(
                     "🔄 Forcing re-evaluation of all relationships/edges for all resources."
                 )
                 result = await grapher.build_graph(
-                    force_rebuild_edges=True, filter_config=filter_config
+                    force_rebuild_edges=True, filter_config=filter_config, max_workers=max_workers
                 )
                 print(
                     "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
                     flush=True,
                 )
             else:
-                result = await grapher.build_graph(filter_config=filter_config)
+                result = await grapher.build_graph(filter_config=filter_config, max_workers=max_workers)
                 print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
@@ -403,6 +406,7 @@ async def _run_dashboard_mode(
     logger: logging.Logger,
     rebuild_edges: bool = False,
     filter_config: Optional[FilterConfig] = None,
+    max_workers: int = 20,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
     print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
@@ -525,12 +529,13 @@ async def _run_dashboard_mode(
                     progress_callback=progress_callback,
                     force_rebuild_edges=True,
                     filter_config=filter_config,
+                    max_workers=max_workers,
                 )
             )
         else:
             build_task = asyncio.create_task(
                 grapher.build_graph(
-                    progress_callback=progress_callback, filter_config=filter_config
+                    progress_callback=progress_callback, filter_config=filter_config, max_workers=max_workers
                 )
             )
     dashboard.set_processing(True)

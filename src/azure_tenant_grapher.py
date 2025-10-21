@@ -164,6 +164,7 @@ class AzureTenantGrapher:
         progress_callback: Optional[Any] = None,
         force_rebuild_edges: bool = False,
         filter_config: Optional[Any] = None,
+        max_workers: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Orchestrate Azure tenant graph building using composed services.
@@ -330,8 +331,9 @@ class AzureTenantGrapher:
                     stats.llm_skipped = 0
                 else:
                     stats = await self.processing_service.process_resources(
-                        all_resources, 
+                        all_resources,
                         progress_callback=progress_callback,
+                        max_workers=max_workers,
                         filter_config=filter_config
                     )
                     logger.info(

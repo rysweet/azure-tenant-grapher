@@ -284,6 +284,12 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     help="Maximum concurrent API calls for fetching resource details (default: 20)",
 )
 @click.option(
+    "--max-workers",
+    type=int,
+    default=20,
+    help="Maximum concurrent workers for resource processing phase (default: 20)",
+)
+@click.option(
     "--max-retries",
     type=int,
     default=3,
@@ -349,6 +355,7 @@ async def build(
     resource_limit: Optional[int],
     max_llm_threads: int,
     max_build_threads: int,
+    max_workers: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -380,6 +387,7 @@ async def build(
         resource_limit,
         max_llm_threads,
         max_build_threads,
+        max_workers,
         max_retries,
         no_container,
         generate_spec,
@@ -422,6 +430,12 @@ async def build(
     type=int,
     default=20,
     help="Maximum concurrent API calls for fetching resource details (default: 20)",
+)
+@click.option(
+    "--max-workers",
+    type=int,
+    default=20,
+    help="Maximum concurrent workers for resource processing phase (default: 20)",
 )
 @click.option(
     "--max-retries",
@@ -489,6 +503,7 @@ async def scan(
     resource_limit: Optional[int],
     max_llm_threads: int,
     max_build_threads: int,
+    max_workers: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -522,6 +537,7 @@ async def scan(
         resource_limit,
         max_llm_threads,
         max_build_threads,
+        max_workers,
         max_retries,
         no_container,
         generate_spec,
