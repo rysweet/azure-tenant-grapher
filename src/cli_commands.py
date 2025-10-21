@@ -103,7 +103,10 @@ async def build_command_handler(
         config = create_config_from_env(
             effective_tenant_id, resource_limit, max_retries, max_build_threads, debug
         )
-        config.processing.max_concurrency = max_llm_threads
+        # Set max_concurrency to max_workers (resource processing concurrency)
+        # Note: max_llm_threads is only used for dashboard display, not actual LLM concurrency
+        # (LLM concurrency is currently handled by the resource processing worker pool)
+        config.processing.max_concurrency = max_workers
         config.processing.auto_start_container = not no_container
         config.processing.enable_aad_import = not no_aad_import
         config.processing.enable_batch_mode = batch_mode
