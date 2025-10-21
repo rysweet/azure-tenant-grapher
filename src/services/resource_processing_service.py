@@ -60,6 +60,7 @@ class ResourceProcessingService:
             self.llm_generator,
             getattr(self.config, "resource_limit", None),
             getattr(self.config, "max_retries", 3),
+            getattr(self.config, "enable_batch_mode", False),
         )
 
         # --- AAD Graph Ingestion ---

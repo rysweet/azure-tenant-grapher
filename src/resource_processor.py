@@ -677,6 +677,7 @@ class ResourceProcessor:
         llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
         resource_limit: Optional[int] = None,
         max_retries: int = 3,
+        enable_batch_mode: bool = False,
     ):
         """
         Initialize the resource processor.
@@ -686,6 +687,7 @@ class ResourceProcessor:
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
             max_retries: Maximum number of retries for failed resources
+            enable_batch_mode: Enable batch mode for Neo4j writes (faster for large tenants)
         """
         self.session_manager = session_manager
         self.llm_generator = llm_generator
@@ -694,7 +696,7 @@ class ResourceProcessor:
 
         # Initialize helper classes
         self.state = ResourceState(session_manager)
-        self.db_ops = DatabaseOperations(session_manager)
+        self.db_ops = DatabaseOperations(session_manager, enable_batch_mode)
 
         # Processing statistics
         self.stats = ProcessingStats()
@@ -1544,6 +1546,7 @@ def create_resource_processor(
     llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
     resource_limit: Optional[int] = None,
     max_retries: int = 3,
+    enable_batch_mode: bool = False,
 ) -> ResourceProcessor:
     """
     Factory function to create a ResourceProcessor instance.
@@ -1553,10 +1556,11 @@ def create_resource_processor(
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
         max_retries: Maximum number of retries for failed resources
+        enable_batch_mode: Enable batch mode for Neo4j writes (faster for large tenants)
 
     Returns:
         ResourceProcessor: Configured resource processor instance
     """
     return ResourceProcessor(
-        session_manager, llm_generator, resource_limit, max_retries
+        session_manager, llm_generator, resource_limit, max_retries, enable_batch_mode
     )

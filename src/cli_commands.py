@@ -79,6 +79,7 @@ async def build_command_handler(
     debug: bool = False,
     filter_by_subscriptions: Optional[str] = None,
     filter_by_rgs: Optional[str] = None,
+    batch_mode: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
@@ -104,6 +105,7 @@ async def build_command_handler(
         config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container
         config.processing.enable_aad_import = not no_aad_import
+        config.processing.enable_batch_mode = batch_mode
         config.logging.level = ctx.obj["log_level"]
 
         setup_logging(config.logging)
