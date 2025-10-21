@@ -195,6 +195,7 @@ class TestProcessingConfig:
             assert config.resource_limit is None
             assert config.max_concurrency == 5
             assert config.max_retries == 3
+            assert config.max_build_threads == 20
             assert config.retry_delay == 1.0
             assert config.parallel_processing is True
             assert config.auto_start_container is True
@@ -206,6 +207,7 @@ class TestProcessingConfig:
             {
                 "PROCESSING_BATCH_SIZE": "10",
                 "PROCESSING_MAX_RETRIES": "5",
+                "MAX_BUILD_THREADS": "50",
                 "PROCESSING_RETRY_DELAY": "2.5",
                 "PROCESSING_PARALLEL": "false",
                 "AUTO_START_CONTAINER": "false",
@@ -214,6 +216,7 @@ class TestProcessingConfig:
             config = ProcessingConfig()
             assert config.max_concurrency == 10
             assert config.max_retries == 5
+            assert config.max_build_threads == 50
             assert config.retry_delay == 2.5
             assert config.parallel_processing is False
             assert config.auto_start_container is False
