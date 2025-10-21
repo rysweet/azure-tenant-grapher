@@ -1,0 +1,217 @@
+{
+  "terraform": {
+    "required_providers": {
+      "azurerm": {
+        "source": "hashicorp/azurerm",
+        "version": ">=3.0"
+      },
+      "random": {
+        "source": "hashicorp/random",
+        "version": ">=3.1"
+      },
+      "tls": {
+        "source": "hashicorp/tls",
+        "version": ">=4.0"
+      }
+    }
+  },
+  "provider": {
+    "azurerm": {
+      "features": {},
+      "resource_provider_registrations": "none",
+      "subscription_id": "${var.subscription_id}"
+    }
+  },
+  "variable": {
+    "subscription_id": {
+      "description": "Azure subscription ID for deployment",
+      "type": "string",
+      "default": "2ae182b4-49bc-459e-95ed-e2a3a65d0d12"
+    }
+  },
+  "resource": {
+    "azurerm_resource_group": {
+      "ARTBAS_160224hpcp4rein6": {
+        "name": "ARTBAS-160224hpcp4rein6",
+        "location": "northcentralus"
+      }
+    },
+    "azurerm_private_dns_zone": {
+      "privatelink_function_simMgr160224hpcp4rein6": {
+        "name": "privatelink.function.simMgr160224hpcp4rein6",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      },
+      "privatelink_file_core_windows_net": {
+        "name": "privatelink.file.core.windows.net",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_application_insights": {
+      "simAI160224hpcp4rein6": {
+        "name": "simAI160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "application_type": "web",
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_storage_account": {
+      "cm160224hpcp4rein6": {
+        "name": "cm160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS",
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_network_interface": {
+      "cm160224hpcp4rein6_blob_private_endpoint_nic_fb5d0aaa_3647_4862_9ca4_70a4038aa2fd": {
+        "name": "cm160224hpcp4rein6-blob-private-endpoint.nic.fb5d0aaa-3647-4862-9ca4-70a4038aa2fd",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.50a2efda-fd32-464c-9275-5019f9015841",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      },
+      "exec160224hpcp4rein6_file_private_endpoint_nic_efd5da1b_8201_494e_a3c8_44503c7b0a9a": {
+        "name": "exec160224hpcp4rein6-file-private-endpoint.nic.efd5da1b-8201-494e-a3c8-44503c7b0a9a",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.1e12a750-4a40-457c-ab96-6f558b65e55a",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        },
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_windows_web_app": {
+      "simMgr160224hpcp4rein6": {
+        "name": "simMgr160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "tags": {
+          "hidden-related:/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverfarms/ASP-160224hpcp4rein6": "empty",
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f",
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/microsoft.insights/components/simAI160224hpcp4rein6",
+          "hidden-link: /app-insights-instrumentation-key": "bed2e111-aee6-4cdb-b629-b28ca2e5d673",
+          "hidden-link: /app-insights-conn-string": "InstrumentationKey=bed2e111-aee6-4cdb-b629-b28ca2e5d673;IngestionEndpoint=https://northcentralus-0.in.applicationinsights.azure.com/;LiveEndpoint=https://northcentralus.livediagnostics.monitor.azure.com/;ApplicationId=1623201e-bb7e-48fa-a0dd-13bef395ec8f"
+        },
+        "service_plan_id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverFarms/default-plan",
+        "site_config": {},
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_private_endpoint": {
+      "simKV160224hpcp4rein6_keyvault_private_endpoint": {
+        "name": "simKV160224hpcp4rein6-keyvault-private-endpoint",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+        "private_service_connection": [
+          {
+            "name": "KeyVaultPrivateLinkConnection",
+            "is_manual_connection": false,
+            "private_connection_resource_id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.KeyVault/vaults/simKV160224hpcp4rein6",
+            "subresource_names": [
+              "vault"
+            ]
+          }
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      },
+      "cm160224hpcp4rein6_file_private_endpoint": {
+        "name": "cm160224hpcp4rein6-file-private-endpoint",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+        "private_service_connection": [
+          {
+            "name": "StorageFilePrivateLinkConnection",
+            "is_manual_connection": false,
+            "private_connection_resource_id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Storage/storageAccounts/cm160224hpcp4rein6",
+            "subresource_names": [
+              "file"
+            ]
+          }
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      },
+      "exec160224hpcp4rein6_blob_private_endpoint": {
+        "name": "exec160224hpcp4rein6-blob-private-endpoint",
+        "location": "northcentralus",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+        "private_service_connection": [
+          {
+            "name": "StorageBlobPrivateLinkConnection",
+            "is_manual_connection": false,
+            "private_connection_resource_id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Storage/storageAccounts/exec160224hpcp4rein6",
+            "subresource_names": [
+              "blob"
+            ]
+          }
+        ],
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    },
+    "azurerm_private_dns_zone_virtual_network_link": {
+      "privatelink_vaultcore_azure_net_vnet_ljio3xx7w6o6y_link": {
+        "name": "privatelink_vaultcore_azure_net_vnet_ljio3xx7w6o6y_link",
+        "resource_group_name": "ARTBAS-160224hpcp4rein6",
+        "private_dns_zone_name": "${azurerm_private_dns_zone.privatelink_vaultcore_azure_net.name}",
+        "virtual_network_id": "${azurerm_virtual_network.vnet_ljio3xx7w6o6y.id}",
+        "depends_on": [
+          "azurerm_resource_group.ARTBAS_160224hpcp4rein6"
+        ]
+      }
+    }
+  }
+}

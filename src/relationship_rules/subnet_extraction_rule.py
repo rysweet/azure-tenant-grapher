@@ -64,16 +64,20 @@ class SubnetExtractionRule(RelationshipRule):
         properties = self._parse_properties(resource)
         subnets = properties.get("subnets", [])
 
+        # Extract VNet address space for reference
+        address_space = properties.get("addressSpace", {})
+        vnet_address_prefixes = address_space.get("addressPrefixes", [])
+
         if not subnets:
             logger.debug(f"VNet {vnet_id} has no subnets to extract")
             return
 
-        logger.info(f"Extracting {len(subnets)} subnets from VNet {vnet_id}")
+        logger.info(f"Extracting {len(subnets)} subnets from VNet {vnet_id} (VNet address space: {vnet_address_prefixes})")
 
         # Process each subnet
         for subnet in subnets:
             try:
-                subnet_resource = self._build_subnet_resource(resource, subnet)
+                subnet_resource = self._build_subnet_resource(resource, subnet, vnet_address_prefixes)
                 if subnet_resource:
                     # Create standalone subnet node
                     db_ops.upsert_resource(
@@ -123,7 +127,10 @@ class SubnetExtractionRule(RelationshipRule):
         return properties if isinstance(properties, dict) else {}
 
     def _build_subnet_resource(
-        self, vnet_resource: Dict[str, Any], subnet: Dict[str, Any]
+        self,
+        vnet_resource: Dict[str, Any],
+        subnet: Dict[str, Any],
+        vnet_address_prefixes: list[str] = None
     ) -> Dict[str, Any] | None:
         """
         Build a standalone subnet resource from VNet and subnet data.
@@ -131,6 +138,7 @@ class SubnetExtractionRule(RelationshipRule):
         Args:
             vnet_resource: Parent VNet resource
             subnet: Subnet data from VNet properties
+            vnet_address_prefixes: VNet address space prefixes for context
 
         Returns:
             Subnet resource dictionary or None if invalid
@@ -153,9 +161,14 @@ class SubnetExtractionRule(RelationshipRule):
         # Store subnet even if address prefix is missing
         # Private endpoint subnets may lack explicit address prefixes
         if not subnet_props.get("addressPrefix") and not subnet_props.get("addressPrefixes"):
-            logger.warning(
-                f"Subnet {subnet_name} in VNet {vnet_id} has no address prefix - storing anyway (may be PE subnet)"
+            vnet_info = f" (VNet address space: {vnet_address_prefixes})" if vnet_address_prefixes else ""
+            logger.info(
+                f"Subnet {subnet_name} in VNet {vnet_id} has no explicit address prefix{vnet_info} - "
+                f"storing anyway (may be private endpoint subnet or use default allocation)"
             )
+            # Store VNet address space in metadata for potential IaC generation use
+            if vnet_address_prefixes:
+                subnet_props["_vnet_address_space"] = vnet_address_prefixes
 
         # Build subnet resource
         subnet_resource = {
@@ -186,11 +199,15 @@ class SubnetExtractionRule(RelationshipRule):
         # Build properties dictionary with all relevant fields
         extracted = {}
 
-        # Address prefixes (required)
+        # Address prefixes - handle multiple sources
+        # Azure API may return addressPrefix (singular) or addressPrefixes (plural)
+        # Private endpoint subnets may have neither (derived from VNet address space)
         if "addressPrefixes" in subnet_props:
             extracted["addressPrefixes"] = subnet_props["addressPrefixes"]
         elif "addressPrefix" in subnet_props:
             extracted["addressPrefix"] = subnet_props["addressPrefix"]
+        # Note: If neither exists, subnet may be a private endpoint subnet or
+        # have an address space derived from parent VNet during deployment
 
         # Optional properties
         optional_props = [
@@ -203,6 +220,9 @@ class SubnetExtractionRule(RelationshipRule):
             "ipConfigurations",
             "serviceEndpointPolicies",
             "natGateway",
+            "ipAllocations",
+            "resourceNavigationLinks",
+            "serviceAssociationLinks",
         ]
 
         for prop in optional_props:

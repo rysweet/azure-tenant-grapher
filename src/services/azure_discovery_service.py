@@ -8,6 +8,7 @@ proper error handling and dependency injection patterns.
 
 import asyncio
 import logging
+import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from azure.core.exceptions import AzureError
@@ -273,8 +274,15 @@ class AzureDiscoveryService:
                         f"🔄 Phase 2: Fetching full properties for {len(resource_basics)} resources "
                         f"(max {self._max_build_threads} concurrent threads)..."
                     )
+                    start_time = time.perf_counter()
                     enriched_resources = await self._fetch_resources_with_properties(
                         resource_basics, resource_client, subscription_id
+                    )
+                    duration = time.perf_counter() - start_time
+                    rate = len(enriched_resources) / duration if duration > 0 else 0
+                    logger.info(
+                        f"⚡ Property fetch complete: {len(enriched_resources)} resources in {duration:.1f}s "
+                        f"({rate:.1f} resources/sec)"
                     )
                     return enriched_resources
                 else:
@@ -444,6 +452,7 @@ class AzureDiscoveryService:
     ) -> str:
         """
         Get the appropriate API version for a resource type.
+        Uses aggressive caching to minimize provider API calls.
 
         Args:
             resource_id: Azure resource ID
@@ -462,12 +471,37 @@ class AzureDiscoveryService:
         resource_type = parsed["resource_type"]
         cache_key = f"{provider}/{resource_type}"
 
-        # Check cache first
+        # Check cache first (PERFORMANCE: avoid expensive provider API call)
         if cache_key in self._api_version_cache:
             return self._api_version_cache[cache_key]
 
+        # Use well-known API versions for common resource types to avoid provider calls
+        # This dramatically reduces API calls for large tenants
+        common_api_versions = {
+            "Microsoft.Compute/virtualMachines": "2023-03-01",
+            "Microsoft.Compute/disks": "2023-01-02",
+            "Microsoft.Network/virtualNetworks": "2023-05-01",
+            "Microsoft.Network/networkInterfaces": "2023-05-01",
+            "Microsoft.Network/publicIPAddresses": "2023-05-01",
+            "Microsoft.Network/networkSecurityGroups": "2023-05-01",
+            "Microsoft.Network/loadBalancers": "2023-05-01",
+            "Microsoft.Storage/storageAccounts": "2023-01-01",
+            "Microsoft.Web/sites": "2022-09-01",
+            "Microsoft.Sql/servers": "2022-05-01-preview",
+            "Microsoft.KeyVault/vaults": "2023-02-01",
+            "Microsoft.ContainerService/managedClusters": "2023-05-01",
+            "Microsoft.Automation/automationAccounts": "2023-11-01",
+            "Microsoft.Insights/components": "2020-02-02",
+        }
+
+        if cache_key in common_api_versions:
+            api_version = common_api_versions[cache_key]
+            self._api_version_cache[cache_key] = api_version
+            logger.debug(f"Using known API version for {cache_key}: {api_version}")
+            return api_version
+
         try:
-            # Query provider for available API versions
+            # Query provider for available API versions (EXPENSIVE - only for uncommon types)
             provider_info = await asyncio.to_thread(
                 resource_client.providers.get, provider
             )

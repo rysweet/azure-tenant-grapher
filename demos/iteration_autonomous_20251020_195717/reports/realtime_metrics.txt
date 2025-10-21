@@ -1,0 +1,20 @@
+REALTIME METRICS - Updated: $(date)
+========================================
+
+Process Status:
+- PID: 42095 (RUNNING)
+- Log Lines: 205
+- Current Phase: 2 - Source Discovery
+- Turn: 2/30
+
+Infrastructure:
+- Neo4j: UP (port 7688)
+- Terraform: v1.13.4 INSTALLED
+- Azure Auth: DefenderATEVET17 ACTIVE
+- Iteration Dir: 6 files created
+
+Resources:
+- Source Tenant: 1632 resources
+- Target Tenant: 1 RG, 99 resources
+- Scan: IN PROGRESS
+
