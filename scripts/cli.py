@@ -195,7 +195,7 @@ def show_comprehensive_help(ctx: click.Context) -> None:
 
     # Show command descriptions
     commands_info = {
-        "build": "🏗️  Build Azure tenant graph with optional dashboard interface",
+        "build/scan": "🏗️  Build/scan Azure tenant graph with optional dashboard interface",
         "test": "🧪 Run quick test with limited resources to validate setup",
         "visualize": "🎨 Generate interactive HTML visualization from existing graph",
         "spec": "📋 Generate tenant specification document from existing graph",
@@ -260,7 +260,7 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
         show_comprehensive_help(ctx)
 
 
-@cli.command()
+@cli.command(name="build")
 @click.option(
     "--tenant-id",
     required=False,
@@ -349,7 +349,7 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
 )
 @click.pass_context
 @async_command
-async def build(
+async def build_scan_command(
     ctx: click.Context,
     tenant_id: str,
     resource_limit: Optional[int],
@@ -370,7 +370,10 @@ async def build(
     batch_mode: bool = False,
 ) -> str | None:
     """
-    Build the complete Azure tenant graph with enhanced processing.
+    Build/scan the complete Azure tenant graph with enhanced processing.
+
+    This command discovers all resources in your Azure tenant and builds a comprehensive
+    Neo4j graph database. Available as both 'build' and 'scan' for convenience.
 
     By default, shows a live Rich dashboard with progress, logs, and interactive controls:
       - Press 'x' to exit the dashboard at any time.
@@ -380,7 +383,8 @@ async def build(
     """
     debug = ctx.obj.get("debug", False)
     if debug:
-        print("[DEBUG] CLI build command called", flush=True)
+        command_name = ctx.info_name
+        print(f"[DEBUG] CLI {command_name} command called", flush=True)
     result = await build_command_handler(
         ctx,
         tenant_id,
@@ -404,159 +408,6 @@ async def build(
     )
     if debug:
         print(f"[DEBUG] build_command_handler returned: {result!r}", flush=True)
-    return result
-
-
-# Add "scan" as an alias to the "build" command for consistency with documentation and UI
-@cli.command(name="scan")
-@click.option(
-    "--tenant-id",
-    required=False,
-    help="Azure tenant ID (defaults to AZURE_TENANT_ID from .env)",
-)
-@click.option(
-    "--resource-limit",
-    type=int,
-    help="Maximum number of resources to process (for testing)",
-)
-@click.option(
-    "--max-llm-threads",
-    type=int,
-    default=5,
-    help="Maximum number of parallel LLM threads (default: 5)",
-)
-@click.option(
-    "--max-build-threads",
-    type=int,
-    default=20,
-    help="Maximum concurrent API calls for fetching resource details (default: 20)",
-)
-@click.option(
-    "--max-workers",
-    type=int,
-    default=20,
-    help="Maximum concurrent workers for resource processing phase (default: 20)",
-)
-@click.option(
-    "--max-retries",
-    type=int,
-    default=3,
-    help="Maximum number of retries for failed resources (default: 3)",
-)
-@click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
-@click.option(
-    "--generate-spec",
-    is_flag=True,
-    help="Generate tenant specification after graph scanning",
-)
-@click.option(
-    "--visualize",
-    is_flag=True,
-    help="Generate graph visualization after scanning",
-)
-@click.option(
-    "--no-dashboard",
-    is_flag=True,
-    help="Disable the Rich dashboard and emit logs line by line",
-)
-@click.option(
-    "--test-keypress-queue",
-    is_flag=True,
-    help="Enable test mode for dashboard keypresses (for integration tests only)",
-)
-@click.option(
-    "--test-keypress-file",
-    type=str,
-    default="",
-    help="Path to file containing simulated keypresses (for integration tests only)",
-)
-@click.option(
-    "--rebuild-edges",
-    is_flag=True,
-    help="Force re-evaluation of all relationships/edges for all resources in the graph database",
-)
-@click.option(
-    "--no-aad-import",
-    is_flag=True,
-    help="Disable Azure AD user/group import from Microsoft Graph API",
-)
-@click.option(
-    "--filter-by-subscriptions",
-    type=str,
-    help="Comma-separated list of subscription IDs to include (filters discovery)",
-)
-@click.option(
-    "--filter-by-rgs",
-    type=str,
-    help="Comma-separated list of resource group names to include (filters discovery)",
-)
-@click.option(
-    "--batch-mode",
-    is_flag=True,
-    help="Enable batch mode for Neo4j writes (significantly faster for large tenants)",
-)
-@click.pass_context
-@async_command
-async def scan(
-    ctx: click.Context,
-    tenant_id: str,
-    resource_limit: Optional[int],
-    max_llm_threads: int,
-    max_build_threads: int,
-    max_workers: int,
-    max_retries: int,
-    no_container: bool,
-    generate_spec: bool,
-    visualize: bool,
-    no_dashboard: bool,
-    test_keypress_queue: bool,
-    test_keypress_file: str,
-    rebuild_edges: bool = False,
-    no_aad_import: bool = False,
-    filter_by_subscriptions: Optional[str] = None,
-    filter_by_rgs: Optional[str] = None,
-    batch_mode: bool = False,
-) -> str | None:
-    """
-    Scan the complete Azure tenant graph with enhanced processing.
-
-    This command discovers all resources in your Azure tenant and builds a comprehensive
-    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs,
-    and interactive controls:
-      - Press 'x' to exit the dashboard at any time.
-      - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
-
-    Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
-    """
-    debug = ctx.obj.get("debug", False)
-    if debug:
-        print("[DEBUG] CLI scan command called", flush=True)
-    result = await build_command_handler(
-        ctx,
-        tenant_id,
-        resource_limit,
-        max_llm_threads,
-        max_build_threads,
-        max_workers,
-        max_retries,
-        no_container,
-        generate_spec,
-        visualize,
-        no_dashboard,
-        test_keypress_queue,
-        test_keypress_file,
-        rebuild_edges,
-        no_aad_import,
-        debug,
-        filter_by_subscriptions,
-        filter_by_rgs,
-        batch_mode,
-    )
-    if debug:
-        print(
-            f"[DEBUG] scan command (via build_command_handler) returned: {result!r}",
-            flush=True,
-        )
     return result
 
 
@@ -1007,6 +858,9 @@ async def generate_sim_doc(
 
 # Alias: gensimdoc
 cli.add_command(generate_sim_doc, "gensimdoc")
+
+# Register scan as an alias for build command (DRY principle - eliminates 322 lines of duplication)
+cli.add_command(build_scan_command, "scan")
 
 # Register create-tenant command
 cli.add_command(create_tenant_command, "create-tenant")
