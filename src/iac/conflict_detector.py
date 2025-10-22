@@ -10,20 +10,80 @@ Design Goals:
 - Integration with existing cleanup infrastructure
 - Zero false positives
 - Graceful error handling with warnings
+- Cross-tenant support with proper credential routing
 """
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 from azure.core.exceptions import AzureError, ResourceNotFoundError
-from azure.identity import DefaultAzureCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.resource import ManagementLockClient, ResourceManagementClient
 
 logger = logging.getLogger(__name__)
+
+
+def _get_tenant_credential_from_env(tenant_num: int) -> Optional[ClientSecretCredential]:
+    """Create Azure credential from tenant-specific environment variables.
+
+    Args:
+        tenant_num: Tenant number (1 or 2)
+
+    Returns:
+        ClientSecretCredential if all required env vars exist, None otherwise
+    """
+    tenant_id = os.environ.get(f"AZURE_TENANT_{tenant_num}_ID")
+    client_id = os.environ.get(f"AZURE_TENANT_{tenant_num}_CLIENT_ID")
+    client_secret = os.environ.get(f"AZURE_TENANT_{tenant_num}_CLIENT_SECRET")
+
+    if tenant_id and client_id and client_secret:
+        logger.debug(f"Creating credential for Tenant {tenant_num} (tenant_id: {tenant_id[:8]}...)")
+        return ClientSecretCredential(
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_secret=client_secret
+        )
+    return None
+
+
+def _build_subscription_to_credential_map() -> Dict[str, ClientSecretCredential]:
+    """Build mapping from subscription IDs to appropriate tenant credentials.
+
+    Reads AZURE_TENANT_1_SUBSCRIPTION_ID and AZURE_TENANT_2_SUBSCRIPTION_ID
+    from environment and maps them to their respective credentials.
+
+    Returns:
+        Dictionary mapping subscription_id -> ClientSecretCredential
+    """
+    mapping = {}
+
+    # Try Tenant 1
+    tenant1_sub = os.environ.get("AZURE_TENANT_1_SUBSCRIPTION_ID")
+    tenant1_cred = _get_tenant_credential_from_env(1)
+    if tenant1_sub and tenant1_cred:
+        mapping[tenant1_sub] = tenant1_cred
+        logger.debug(f"Mapped subscription {tenant1_sub[:8]}... to Tenant 1 credentials")
+
+    # Try Tenant 2
+    tenant2_sub = os.environ.get("AZURE_TENANT_2_SUBSCRIPTION_ID")
+    tenant2_cred = _get_tenant_credential_from_env(2)
+    if tenant2_sub and tenant2_cred:
+        mapping[tenant2_sub] = tenant2_cred
+        logger.debug(f"Mapped subscription {tenant2_sub[:8]}... to Tenant 2 credentials")
+
+    if not mapping:
+        logger.warning(
+            "No subscription-to-tenant mappings found. "
+            "Set AZURE_TENANT_1_SUBSCRIPTION_ID and AZURE_TENANT_2_SUBSCRIPTION_ID "
+            "to enable cross-tenant conflict detection."
+        )
+
+    return mapping
 
 
 class ConflictType(Enum):
@@ -137,7 +197,11 @@ class ConflictReport:
 
 
 class ConflictDetector:
-    """Detects deployment conflicts in target Azure subscription."""
+    """Detects deployment conflicts in target Azure subscription.
+
+    Supports cross-tenant conflict detection by automatically selecting
+    the appropriate credential based on subscription-to-tenant mapping.
+    """
 
     def __init__(
         self,
@@ -149,11 +213,34 @@ class ConflictDetector:
 
         Args:
             subscription_id: Target Azure subscription ID
-            credential: Optional Azure credential (defaults to DefaultAzureCredential)
+            credential: Optional Azure credential. If not provided, attempts to
+                       select credential based on subscription-to-tenant mapping
+                       from environment variables (AZURE_TENANT_1_SUBSCRIPTION_ID, etc.)
             timeout: Timeout in seconds for Azure API operations
         """
         self.subscription_id = subscription_id
-        self.credential = credential or DefaultAzureCredential()
+
+        # Select credential: explicit > mapped > default
+        if credential is not None:
+            self.credential = credential
+            logger.debug(f"Using explicitly provided credential for subscription {subscription_id[:8]}...")
+        else:
+            # Try to get tenant-specific credential from mapping
+            sub_to_cred_map = _build_subscription_to_credential_map()
+            if subscription_id in sub_to_cred_map:
+                self.credential = sub_to_cred_map[subscription_id]
+                logger.info(
+                    f"Using tenant-specific credential for subscription {subscription_id[:8]}... "
+                    f"(cross-tenant mode enabled)"
+                )
+            else:
+                self.credential = DefaultAzureCredential()
+                logger.warning(
+                    f"Subscription {subscription_id[:8]}... not in tenant mapping, "
+                    f"falling back to DefaultAzureCredential. "
+                    f"This may cause LinkedAuthorizationFailed errors in cross-tenant scenarios."
+                )
+
         self.timeout = timeout
 
         # Lazy-initialized clients

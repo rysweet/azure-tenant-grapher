@@ -4,7 +4,8 @@ These tests use mocked Azure SDK clients to verify conflict detection
 logic without making actual API calls.
 """
 
-from unittest.mock import Mock
+import os
+from unittest.mock import Mock, patch
 
 import pytest
 from azure.core.exceptions import AzureError, ResourceNotFoundError
@@ -14,6 +15,8 @@ from src.iac.conflict_detector import (
     ConflictReport,
     ConflictType,
     ResourceConflict,
+    _build_subscription_to_credential_map,
+    _get_tenant_credential_from_env,
 )
 
 
@@ -764,3 +767,109 @@ class TestSelectiveChecking:
         mock_lock_client.management_locks.list_at_resource_group_level.assert_not_called()
 
         assert not report.has_conflicts
+
+
+class TestCrossTenantCredentialSelection:
+    """Test cross-tenant credential selection logic (Issue #336 fix)."""
+
+    def test_get_tenant_credential_from_env_success(self):
+        """Test creating credential from environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "AZURE_TENANT_1_ID": "tenant-1-id",
+                "AZURE_TENANT_1_CLIENT_ID": "client-1-id",
+                "AZURE_TENANT_1_CLIENT_SECRET": "secret-1",
+            },
+        ):
+            cred = _get_tenant_credential_from_env(1)
+            assert cred is not None
+            # Credential should be a ClientSecretCredential
+            assert hasattr(cred, "get_token")
+
+    def test_get_tenant_credential_from_env_missing_vars(self):
+        """Test returns None when env vars missing."""
+        with patch.dict(os.environ, {}, clear=True):
+            cred = _get_tenant_credential_from_env(1)
+            assert cred is None
+
+    def test_get_tenant_credential_from_env_partial_vars(self):
+        """Test returns None when only some env vars present."""
+        with patch.dict(
+            os.environ,
+            {
+                "AZURE_TENANT_2_ID": "tenant-2-id",
+                "AZURE_TENANT_2_CLIENT_ID": "client-2-id",
+                # Missing CLIENT_SECRET
+            },
+            clear=True,
+        ):
+            cred = _get_tenant_credential_from_env(2)
+            assert cred is None
+
+    def test_build_subscription_to_credential_map_success(self):
+        """Test building subscription-to-credential mapping."""
+        with patch.dict(
+            os.environ,
+            {
+                "AZURE_TENANT_1_ID": "tenant-1-id",
+                "AZURE_TENANT_1_CLIENT_ID": "client-1-id",
+                "AZURE_TENANT_1_CLIENT_SECRET": "secret-1",
+                "AZURE_TENANT_1_SUBSCRIPTION_ID": "sub-1-id",
+                "AZURE_TENANT_2_ID": "tenant-2-id",
+                "AZURE_TENANT_2_CLIENT_ID": "client-2-id",
+                "AZURE_TENANT_2_CLIENT_SECRET": "secret-2",
+                "AZURE_TENANT_2_SUBSCRIPTION_ID": "sub-2-id",
+            },
+        ):
+            mapping = _build_subscription_to_credential_map()
+            assert len(mapping) == 2
+            assert "sub-1-id" in mapping
+            assert "sub-2-id" in mapping
+            assert mapping["sub-1-id"] is not None
+            assert mapping["sub-2-id"] is not None
+
+    def test_build_subscription_to_credential_map_empty(self):
+        """Test empty mapping when no env vars set."""
+        with patch.dict(os.environ, {}, clear=True):
+            mapping = _build_subscription_to_credential_map()
+            assert len(mapping) == 0
+
+    def test_conflict_detector_uses_mapped_credential(self):
+        """Test ConflictDetector selects credential from mapping."""
+        with patch.dict(
+            os.environ,
+            {
+                "AZURE_TENANT_1_ID": "tenant-1-id",
+                "AZURE_TENANT_1_CLIENT_ID": "client-1-id",
+                "AZURE_TENANT_1_CLIENT_SECRET": "secret-1",
+                "AZURE_TENANT_1_SUBSCRIPTION_ID": "sub-1-id",
+            },
+        ):
+            detector = ConflictDetector("sub-1-id")
+            # Should have selected tenant-specific credential
+            assert detector.credential is not None
+            assert hasattr(detector.credential, "get_token")
+
+    def test_conflict_detector_falls_back_to_default(self):
+        """Test ConflictDetector falls back to DefaultAzureCredential."""
+        with patch.dict(os.environ, {}, clear=True):
+            detector = ConflictDetector("unmapped-sub-id")
+            # Should have fallen back to DefaultAzureCredential
+            assert detector.credential is not None
+
+    def test_conflict_detector_explicit_credential_takes_priority(self):
+        """Test explicit credential parameter takes priority over mapping."""
+        mock_cred = Mock()
+        with patch.dict(
+            os.environ,
+            {
+                "AZURE_TENANT_1_ID": "tenant-1-id",
+                "AZURE_TENANT_1_CLIENT_ID": "client-1-id",
+                "AZURE_TENANT_1_CLIENT_SECRET": "secret-1",
+                "AZURE_TENANT_1_SUBSCRIPTION_ID": "test-sub-id",
+            },
+        ):
+            detector = ConflictDetector("test-sub-id", credential=mock_cred)
+            # Should use explicit credential, not mapping
+            assert detector.credential is mock_cred
