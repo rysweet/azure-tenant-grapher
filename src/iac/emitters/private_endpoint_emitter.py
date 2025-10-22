@@ -91,6 +91,8 @@ def emit_private_endpoint(
     Returns:
         Terraform resource configuration dictionary
     """
+    import uuid
+
     sanitize = sanitize_name_fn or sanitize_terraform_name
     extract = extract_name_fn or extract_resource_name_from_id
 
@@ -144,11 +146,24 @@ def emit_private_endpoint(
         )
 
     # Build base configuration
+    # Generate custom NIC name with valid Azure naming format (hyphens instead of dots)
+    # Format: {endpoint-name}-nic-{uuid} instead of {endpoint-name}.nic.{uuid}
+    # This prevents InvalidResourceName errors during deployment
+    # Azure NIC name constraints: max 80 chars, must start/end with word char or underscore
+    unique_id = str(uuid.uuid4())
+    nic_suffix = f"-nic-{unique_id}"  # 41 characters (including hyphen)
+    max_base_length = 80 - len(nic_suffix)
+
+    # Truncate endpoint name if necessary to stay within 80 char limit
+    base_name = resource_name[:max_base_length] if len(resource_name) > max_base_length else resource_name
+    custom_nic_name = f"{base_name}{nic_suffix}"
+
     config = {
         "name": resource_name,
         "location": resource.get("location", "eastus"),
         "resource_group_name": resource.get("resource_group", "default-rg"),
         "subnet_id": subnet_reference,
+        "custom_network_interface_name": custom_nic_name,
     }
 
     # Extract private link service connections
