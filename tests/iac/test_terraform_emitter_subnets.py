@@ -37,7 +37,7 @@ def sample_standalone_subnet() -> Dict[str, Any]:
         "name": "default",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps(
             {
                 "addressPrefix": "10.0.1.0/24",
@@ -55,7 +55,7 @@ def sample_subnet_with_nsg() -> Dict[str, Any]:
         "name": "secure-subnet",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps(
             {
                 "addressPrefix": "10.0.2.0/24",
@@ -75,7 +75,7 @@ def sample_subnet_with_service_endpoints() -> Dict[str, Any]:
         "name": "service-subnet",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps(
             {
                 "addressPrefix": "10.0.3.0/24",
@@ -96,7 +96,7 @@ def sample_subnet_with_address_prefixes_list() -> Dict[str, Any]:
         "name": "multi-prefix",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps({"addressPrefixes": ["10.0.4.0/24", "10.0.5.0/24"]}),
     }
 
@@ -109,7 +109,7 @@ def sample_subnet_special_chars() -> Dict[str, Any]:
         "name": "my-subnet.prod",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps({"addressPrefix": "10.0.6.0/24"}),
     }
 
@@ -122,7 +122,7 @@ def sample_subnet_missing_properties() -> Dict[str, Any]:
         "name": "incomplete",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": "{}",  # Empty properties
     }
 
@@ -135,7 +135,7 @@ def sample_vnet_with_embedded_subnets() -> Dict[str, Any]:
         "name": "test-vnet",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "address_space": ["10.0.0.0/16"],
         "properties": json.dumps(
             {
@@ -159,7 +159,7 @@ def sample_network_interface() -> Dict[str, Any]:
         "name": "test-nic",
         "type": "Microsoft.Network/networkInterfaces",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps(
             {
                 "ipConfigurations": [
@@ -229,7 +229,7 @@ def test_subnet_type_mapping(terraform_emitter: TerraformEmitter) -> None:
         "type": "Microsoft.Network/subnets",
         "name": "test",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps({"addressPrefix": "10.0.0.0/24"}),
     }
     terraform_config = {"resource": {}}
@@ -457,7 +457,7 @@ def test_subnet_without_vnet_logs_warning(terraform_emitter: TerraformEmitter) -
         "name": "orphan",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps({"addressPrefix": "10.0.0.0/24"}),
     }
 
@@ -543,7 +543,7 @@ def test_subnet_with_null_address_prefixes(terraform_emitter: TerraformEmitter) 
         "name": "no-prefix",
         "type": "Microsoft.Network/subnets",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "properties": json.dumps({}),  # No addressPrefix or addressPrefixes
     }
 
@@ -649,14 +649,14 @@ def test_terraform_validate_passes_with_subnets(
     terraform_emitter: TerraformEmitter,
     sample_standalone_subnet: Dict[str, Any],
     sample_network_interface: Dict[str, Any],
+    sample_vnet_with_embedded_subnets: Dict[str, Any],
 ) -> None:
     """Verify generated Terraform passes terraform validate.
 
-    Expected to FAIL: Without subnet resources, validation will fail with
-    'Reference to undeclared resource: azurerm_subnet.default'.
+    Includes VNet resource so subnet can reference it.
     """
     graph = TenantGraph()
-    graph.resources = [sample_standalone_subnet, sample_network_interface]
+    graph.resources = [sample_vnet_with_embedded_subnets, sample_standalone_subnet, sample_network_interface]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         out_dir = Path(temp_dir)
@@ -744,7 +744,7 @@ def test_subnet_nsg_associations(
             "type": "Microsoft.Network/networkSecurityGroups",
             "name": "test-nsg",
             "location": "eastus",
-            "resourceGroup": "test-rg",
+            "resource_group": "test-rg",
         }
     ]
 
@@ -823,7 +823,7 @@ def test_real_azure_subnet_data_generates_valid_terraform(
         "name": "app-subnet",
         "type": "Microsoft.Network/subnets",
         "location": "eastus2",
-        "resourceGroup": "production-rg",
+        "resource_group": "production-rg",
         "properties": json.dumps(
             {
                 "provisioningState": "Succeeded",
@@ -891,7 +891,7 @@ def test_complete_vnet_topology_with_subnets_nics_vms(
         "name": "test-vm",
         "type": "Microsoft.Compute/virtualMachines",
         "location": "eastus",
-        "resourceGroup": "test-rg",
+        "resource_group": "test-rg",
         "size": "Standard_B2s",
         "properties": json.dumps(
             {

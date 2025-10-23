@@ -558,81 +558,84 @@ async def generate_iac_command_handler(
 
         # Validate and fix global name conflicts (GAP-014)
         if format_type.lower() == "terraform" and not skip_name_validation:
-            from ..validation import NameConflictValidator
+            try:
+                from ..validation import NameConflictValidator
 
-            logger.info("🔍 Checking for global resource name conflicts...")
+                logger.info("🔍 Checking for global resource name conflicts...")
 
-            # Read generated Terraform config
-            terraform_file = out_dir / "main.tf.json"
-            if terraform_file.exists():
-                with open(terraform_file) as f:
-                    terraform_config = json.load(f)
+                # Read generated Terraform config
+                terraform_file = out_dir / "main.tf.json"
+                if terraform_file.exists():
+                    with open(terraform_file) as f:
+                        terraform_config = json.load(f)
 
-                # Initialize validator (GAP-015, GAP-016)
-                subscription_id = None  # TODO: Get from environment/config
-                validator = NameConflictValidator(
-                    subscription_id=subscription_id,
-                    naming_suffix=naming_suffix,
-                    preserve_names=preserve_names,
-                    auto_purge_soft_deleted=auto_purge_soft_deleted,
-                )
-
-                # Validate and auto-fix conflicts (respects preserve_names mode)
-                auto_fix = not preserve_names  # Don't auto-fix if preserving names
-                updated_config, validation_result = (
-                    validator.validate_and_fix_terraform(
-                        terraform_config, auto_fix=auto_fix
+                    # Initialize validator (GAP-015, GAP-016)
+                    subscription_id = None  # TODO: Get from environment/config
+                    validator = NameConflictValidator(
+                        subscription_id=subscription_id,
+                        naming_suffix=naming_suffix,
+                        preserve_names=preserve_names,
+                        auto_purge_soft_deleted=auto_purge_soft_deleted,
                     )
-                )
 
-                # Report conflicts (GAP-015)
-                if validation_result.conflicts:
-                    if preserve_names:
-                        # In preserve-names mode, fail on conflicts
-                        click.echo(
-                            f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
+                    # Validate and auto-fix conflicts (respects preserve_names mode)
+                    auto_fix = not preserve_names  # Don't auto-fix if preserving names
+                    updated_config, validation_result = (
+                        validator.validate_and_fix_terraform(
+                            terraform_config, auto_fix=auto_fix
                         )
-                        for conflict in validation_result.conflicts:
+                    )
+
+                    # Report conflicts (GAP-015)
+                    if validation_result.conflicts:
+                        if preserve_names:
+                            # In preserve-names mode, fail on conflicts
                             click.echo(
-                                f"   • {conflict.resource_type}: {conflict.original_name}"
+                                f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
                             )
-                            click.echo(f"     Reason: {conflict.conflict_reason}")
-                        click.echo(
-                            "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
-                            "or use --naming-suffix to specify a custom suffix."
+                            for conflict in validation_result.conflicts:
+                                click.echo(
+                                    f"   • {conflict.resource_type}: {conflict.original_name}"
+                                )
+                                click.echo(f"     Reason: {conflict.conflict_reason}")
+                            click.echo(
+                                "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
+                                "or use --naming-suffix to specify a custom suffix."
+                            )
+                            return 1
+                        else:
+                            # In auto-fix mode, show fixes
+                            click.echo(
+                                f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
+                            )
+                            for conflict in validation_result.conflicts:
+                                click.echo(
+                                    f"   • {conflict.resource_type}: {conflict.original_name} "
+                                    f"-> {conflict.suggested_name or 'N/A'}"
+                                )
+                                click.echo(f"     Reason: {conflict.conflict_reason}")
+
+                    # Save updated config if changes were made
+                    if validation_result.name_mappings:
+                        with open(terraform_file, "w") as f:
+                            json.dump(updated_config, f, indent=2)
+
+                        # Save name mappings with conflict reasons (GAP-015)
+                        validator.save_name_mappings(
+                            validation_result.name_mappings,
+                            out_dir,
+                            conflicts=validation_result.conflicts,
                         )
-                        return 1
+                        click.echo(
+                            f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
+                        )
+                        click.echo(
+                            f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
+                        )
                     else:
-                        # In auto-fix mode, show fixes
-                        click.echo(
-                            f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
-                        )
-                        for conflict in validation_result.conflicts:
-                            click.echo(
-                                f"   • {conflict.resource_type}: {conflict.original_name} "
-                                f"-> {conflict.suggested_name or 'N/A'}"
-                            )
-                            click.echo(f"     Reason: {conflict.conflict_reason}")
-
-                # Save updated config if changes were made
-                if validation_result.name_mappings:
-                    with open(terraform_file, "w") as f:
-                        json.dump(updated_config, f, indent=2)
-
-                    # Save name mappings with conflict reasons (GAP-015)
-                    validator.save_name_mappings(
-                        validation_result.name_mappings,
-                        out_dir,
-                        conflicts=validation_result.conflicts,
-                    )
-                    click.echo(
-                        f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
-                    )
-                    click.echo(
-                        f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
-                    )
-                else:
-                    click.echo("✅ No global name conflicts detected")
+                        click.echo("✅ No global name conflicts detected")
+            except ImportError:
+                logger.warning("⚠️  NameConflictValidator not available, skipping name conflict validation")
 
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:

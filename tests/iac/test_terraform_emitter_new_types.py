@@ -178,12 +178,12 @@ class TestVMExtensionConversion:
     def test_vm_extension_with_valid_vm(self):
         """Test converting a VM extension with valid parent VM."""
         emitter = TerraformEmitter()
-        
+
         # Track the parent VM as available
         emitter._available_resources = {
             "azurerm_linux_virtual_machine": {"test_vm"}
         }
-        
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm/extensions/custom-script",
             "name": "test-vm/custom-script",  # Azure format includes VM name
@@ -200,7 +200,20 @@ class TestVMExtensionConversion:
             }),
         }
 
-        result = emitter._convert_resource(resource, {"resource": {}})
+        # Include the VM in terraform_config so the extension can reference it
+        terraform_config = {
+            "resource": {
+                "azurerm_linux_virtual_machine": {
+                    "test_vm": {
+                        "name": "test-vm",
+                        "location": "eastus",
+                        "resource_group_name": "test-rg"
+                    }
+                }
+            }
+        }
+
+        result = emitter._convert_resource(resource, terraform_config)
         assert result is not None
         terraform_type, safe_name, config = result
 
