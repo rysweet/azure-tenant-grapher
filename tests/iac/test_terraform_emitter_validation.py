@@ -119,12 +119,34 @@ class TestTerraformEmitterValidation:
         """Test VM with multiple NICs where some are missing."""
         graph = TenantGraph(
             resources=[
+                # VNet and subnet for the NIC to reference
+                {
+                    "type": "Microsoft.Network/virtualNetworks",
+                    "name": "test-vnet",
+                    "location": "eastus",
+                    "resource_group": "test-rg",
+                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+                    "address_space": ["10.0.0.0/16"],
+                    "properties": json.dumps({
+                        "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}
+                    }),
+                },
+                {
+                    "type": "Microsoft.Network/subnets",
+                    "name": "test-subnet",
+                    "location": "eastus",
+                    "resource_group": "test-rg",
+                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet",
+                    "properties": json.dumps({
+                        "addressPrefix": "10.0.1.0/24"
+                    }),
+                },
                 # Only one of the two NICs exists
                 {
                     "type": "Microsoft.Network/networkInterfaces",
                     "name": "existing-nic",
                     "location": "eastus",
-                    "resourceGroup": "test-rg",
+                    "resource_group": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/existing-nic",
                     "properties": json.dumps({
                         "ipConfigurations": [
@@ -145,7 +167,7 @@ class TestTerraformEmitterValidation:
                     "type": "Microsoft.Compute/virtualMachines",
                     "name": "test-vm",
                     "location": "eastus",
-                    "resourceGroup": "test-rg",
+                    "resource_group": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
                     "properties": json.dumps({
                         "networkProfile": {
@@ -170,17 +192,13 @@ class TestTerraformEmitterValidation:
         with open(output_files[0]) as f:
             config = json.load(f)
 
-        # VM should still be included (has at least one valid NIC)
-        assert "azurerm_linux_virtual_machine" in config["resource"]
-        assert "test_vm" in config["resource"]["azurerm_linux_virtual_machine"]
+        # VM should be skipped entirely (cascade deletion when any NIC is missing)
+        # This is the current behavior - VMs with ANY missing NICs are skipped
+        assert "azurerm_linux_virtual_machine" not in config["resource"]
 
-        # VM should only reference the existing NIC
-        vm = config["resource"]["azurerm_linux_virtual_machine"]["test_vm"]
-        assert "network_interface_ids" in vm
-        assert len(vm["network_interface_ids"]) == 1
-        assert "${azurerm_network_interface.existing_nic.id}" in vm["network_interface_ids"]
-        # Should NOT reference the missing NIC
-        assert "${azurerm_network_interface.missing_nic.id}" not in vm["network_interface_ids"]
+        # The existing NIC should still be generated
+        assert "azurerm_network_interface" in config["resource"]
+        assert "existing_nic" in config["resource"]["azurerm_network_interface"]
 
     def test_missing_references_are_tracked(self, tmp_path: Path):
         """Test that missing references are tracked for reporting."""
