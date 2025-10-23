@@ -47,6 +47,15 @@ class TestAzureDiscoveryService:
         return Mock()
 
     @pytest.fixture
+    def mock_authorization_client(self) -> Mock:
+        """Provide a mock AuthorizationManagementClient instance."""
+        mock_client = Mock()
+        # Mock empty lists for role assignments and definitions by default
+        mock_client.role_assignments.list_for_subscription.return_value = []
+        mock_client.role_definitions.list.return_value = []
+        return mock_client
+
+    @pytest.fixture
     def subscription_client_factory(
         self, mock_subscription_client: Mock
     ) -> Callable[[Any], Mock]:
@@ -61,12 +70,20 @@ class TestAzureDiscoveryService:
         return lambda credential, subscription_id: mock_resource_client
 
     @pytest.fixture
+    def authorization_client_factory(
+        self, mock_authorization_client: Mock
+    ) -> Callable[[Any, str], Mock]:
+        """Factory for AuthorizationManagementClient."""
+        return lambda credential, subscription_id: mock_authorization_client
+
+    @pytest.fixture
     def azure_service(
         self,
         mock_config: Mock,
         mock_credential: Mock,
         subscription_client_factory: Callable[[Any], Mock],
         resource_client_factory: Callable[[Any, str], Mock],
+        authorization_client_factory: Callable[[Any, str], Mock],
     ) -> AzureDiscoveryService:
         """Provide an Azure Discovery Service instance with injected factories."""
         return AzureDiscoveryService(
@@ -74,6 +91,7 @@ class TestAzureDiscoveryService:
             mock_credential,
             subscription_client_factory=subscription_client_factory,
             resource_client_factory=resource_client_factory,
+            authorization_client_factory=authorization_client_factory,
         )
 
     @pytest.fixture
@@ -94,6 +112,7 @@ class TestAzureDiscoveryService:
         mock_credential: Mock,
         subscription_client_factory: Callable[[Any], Mock],
         resource_client_factory: Callable[[Any, str], Mock],
+        authorization_client_factory: Callable[[Any, str], Mock],
         mock_change_feed_ingestion_service: Mock,
     ) -> AzureDiscoveryService:
         """Provide an AzureDiscoveryService with ChangeFeedIngestionService injected."""
@@ -102,6 +121,7 @@ class TestAzureDiscoveryService:
             mock_credential,
             subscription_client_factory=subscription_client_factory,
             resource_client_factory=resource_client_factory,
+            authorization_client_factory=authorization_client_factory,
             change_feed_ingestion_service=mock_change_feed_ingestion_service,
         )
 
@@ -304,6 +324,7 @@ class TestAzureDiscoveryService:
             "type",
             "location",
             "tags",
+            "properties",
             "subscription_id",
             "resource_group",
         }
@@ -338,6 +359,7 @@ class TestAzureDiscoveryService:
             "type",
             "location",
             "tags",
+            "properties",
             "subscription_id",
             "resource_group",
         }
