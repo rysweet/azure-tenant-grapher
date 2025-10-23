@@ -2,6 +2,8 @@
 
 Azure Tenant Grapher discovers every resource in your Azure tenant, stores the results in a richly-typed Neo4j graph, and offers tooling to visualize, document, and recreate your cloud environment — including Infrastructure-as-Code generation, AI-powered summaries, and narrative description to simulated tenant creation.
 
+**📚 [View Documentation](https://rysweet.github.io/azure-tenant-grapher/)** | **📐 [Architecture Deep Dive](https://rysweet.github.io/azure-tenant-grapher/architecture-presentation.html)**
+
 ![Azure Tenant Grapher Screenshot](docs/resources/screenshot.png)
 
 ---
@@ -405,6 +407,7 @@ You can run the above command directly, or use the provided helper script (`scri
 All test output artifacts are excluded from version control via `.gitignore`.
 ## Documentation
 
+- **[📐 Comprehensive Architecture Presentation](docs/architecture-presentation.html)** - Interactive deep-dive with diagrams, data flows, and threat modeling
 - [Product Requirements](.github/azure-tenant-grapher-prd.md)
 - [Project Specification](.github/azure-tenant-grapher-spec.md)
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)

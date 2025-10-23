@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Tenant Grapher - Architecture Deep Dive</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .metadata {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        nav {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .section {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            color: #764ba2;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .diagram-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 2px solid #e0e0e0;
+        }
+
+        .mermaid {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .description {
+            background: #f0f7ff;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .component-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .component-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .component-card h5 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .threat-category {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .threat-critical {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .threat-high {
+            border-left-color: #fd7e14;
+            background: #ffe5d0;
+        }
+
+        .threat-medium {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .threat-low {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .badge-python {
+            background: #3776ab;
+            color: white;
+        }
+
+        .badge-typescript {
+            background: #3178c6;
+            color: white;
+        }
+
+        .badge-react {
+            background: #61dafb;
+            color: #282c34;
+        }
+
+        .badge-neo4j {
+            background: #008cc1;
+            color: white;
+        }
+
+        .badge-azure {
+            background: #0078d4;
+            color: white;
+        }
+
+        footer {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .scroll-top {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            text-decoration: none;
+            font-size: 1.5em;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Azure Tenant Grapher</h1>
+            <p class="subtitle">Comprehensive Architecture & Design Documentation</p>
+            <div class="metadata">
+                <span>📅 Generated: <script>document.write(new Date().toLocaleDateString())</script></span>
+                <span>🏗️ Version: 2.0</span>
+                <span>👤 Architecture Review</span>
+            </div>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#modules">Modules</a></li>
+                <li><a href="#data-flow">Data Flow</a></li>
+                <li><a href="#workflows">Workflows</a></li>
+                <li><a href="#agent-mode">Agent Mode</a></li>
+                <li><a href="#spa">SPA/GUI</a></li>
+                <li><a href="#threat-model">Threat Model</a></li>
+            </ul>
+        </nav>
+
+        <section id="overview" class="section">
+            <h2>📋 System Overview</h2>
+
+            <div class="description">
+                <p><strong>Azure Tenant Grapher</strong> is a comprehensive cloud infrastructure discovery, documentation, and replication tool. It discovers every resource in an Azure tenant, stores the results in a richly-typed Neo4j graph database, and offers extensive tooling for visualization, analysis, documentation, and Infrastructure-as-Code (IaC) generation.</p>
+            </div>
+
+            <h3>Core Capabilities</h3>
+            <div class="component-list">
+                <div class="component-card">
+                    <h5>🔍 Discovery & Scanning</h5>
+                    <p>Comprehensive Azure resource discovery across all subscriptions with identity import from Microsoft Graph API. Supports filtering by subscriptions and resource groups.</p>
+                </div>
+                <div class="component-card">
+                    <h5>💾 Graph Database</h5>
+                    <p>Rich Neo4j graph with typed nodes, relationships, and RBAC modeling. Includes extensible relationship engine with modular rules.</p>
+                </div>
+                <div class="component-card">
+                    <h5>📊 Visualization</h5>
+                    <p>Interactive 3D graph visualization with filtering, search, and ResourceGroup labels. Desktop GUI with Electron and React.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🏗️ IaC Generation</h5>
+                    <p>Generate Terraform, Bicep, and ARM templates from the graph with transformation rules and deployment scripts.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🤖 AI Agent Mode</h5>
+                    <p>Natural language queries over the graph using MCP (Model Context Protocol) and AutoGen agents.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🔐 Threat Modeling</h5>
+                    <p>Automated DFD creation, threat enumeration using STRIDE methodology, and comprehensive security reports.</p>
+                </div>
+            </div>
+
+            <h3>Technology Stack</h3>
+            <div style="margin: 20px 0;">
+                <span class="badge badge-python">Python 3.8+</span>
+                <span class="badge badge-neo4j">Neo4j</span>
+                <span class="badge badge-azure">Azure SDK</span>
+                <span class="badge badge-typescript">TypeScript</span>
+                <span class="badge badge-react">React</span>
+                <span class="badge badge-python">AutoGen</span>
+                <span class="badge badge-python">FastAPI</span>
+            </div>
+        </section>
+
+        <section id="architecture" class="section">
+            <h2>🏛️ Overall System Architecture</h2>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    subgraph "External Services"
+        Azure[Azure ARM API]
+        Graph[Microsoft Graph API]
+        OpenAI[Azure OpenAI]
+    end
+
+    subgraph "Data Layer"
+        Neo4j[(Neo4j Graph DB)]
+    end
+
+    subgraph "Core Services"
+        Discovery[Azure Discovery Service]
+        Processing[Resource Processing Service]
+        ContainerMgr[Container Manager]
+        AADService[AAD Graph Service]
+    end
+
+    subgraph "IaC Engine"
+        Traverser[Graph Traverser]
+        Engine[IaC Engine]
+        TFEmitter[Terraform Emitter]
+        BicepEmitter[Bicep Emitter]
+        ARMEmitter[ARM Emitter]
+        Validators[Validators]
+    end
+
+    subgraph "Agent System"
+        MCP[MCP Server]
+        AgentMode[Agent Mode]
+        ThreatAgent[Threat Modeling Agent]
+    end
+
+    subgraph "User Interfaces"
+        CLI[CLI Dashboard]
+        SPA[Electron GUI]
+        Viz[3D Visualizer]
+    end
+
+    Azure --> Discovery
+    Graph --> AADService
+    Discovery --> Processing
+    AADService --> Processing
+    Processing --> Neo4j
+    ContainerMgr --> Neo4j
+
+    Neo4j --> Traverser
+    Traverser --> Engine
+    Engine --> TFEmitter
+    Engine --> BicepEmitter
+    Engine --> ARMEmitter
+    Engine --> Validators
+
+    Neo4j --> MCP
+    MCP --> AgentMode
+    MCP --> ThreatAgent
+
+    OpenAI --> AgentMode
+    OpenAI --> ThreatAgent
+
+    Neo4j --> CLI
+    Neo4j --> SPA
+    Neo4j --> Viz
+
+    CLI -.-> ContainerMgr
+    SPA -.-> ContainerMgr
+
+    style Neo4j fill:#008cc1,color:#fff
+    style Azure fill:#0078d4,color:#fff
+    style Graph fill:#0078d4,color:#fff
+    style OpenAI fill:#10a37f,color:#fff
+                </div>
+            </div>
+
+            <div class="description">
+                <h4>Architecture Principles</h4>
+                <ul>
+                    <li><strong>Separation of Concerns:</strong> Clear boundaries between discovery, storage, transformation, and presentation layers</li>
+                    <li><strong>Async Processing:</strong> Core services use asyncio for concurrent API calls and improved performance</li>
+                    <li><strong>Extensibility:</strong> Plugin-based relationship rules, multiple IaC formats via emitters, modular validators</li>
+                    <li><strong>Graph-Native:</strong> Neo4j as the source of truth for all resource relationships and queries</li>
+                    <li><strong>Multi-Interface:</strong> CLI, GUI, and agent-based interfaces for different user workflows</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="modules" class="section">
+            <h2>🧩 Module Architecture</h2>
+
+            <h3>Core Services Module</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    subgraph "src/services/"
+        ADS[Azure Discovery Service]
+        RPS[Resource Processing Service]
+        AAD[AAD Graph Service]
+        TenantMgr[Tenant Manager]
+        Identity[Identity Collector]
+        Filter[Discovery Filter Service]
+    end
+
+    subgraph "src/"
+        RP[Resource Processor]
+        CM[Container Manager]
+        SM[Session Manager]
+    end
+
+    ADS --> RPS
+    AAD --> RPS
+    Filter --> ADS
+    RPS --> RP
+    RP --> SM
+    SM --> Neo4j[(Neo4j)]
+    CM --> Neo4j
+    Identity --> AAD
+    TenantMgr --> RPS
+
+    style Neo4j fill:#008cc1,color:#fff
+                </div>
+            </div>
+
+            <h4>Azure Discovery Service</h4>
+            <p><code>src/services/azure_discovery_service.py</code> - Discovers Azure resources using Azure SDK with pagination and rate limiting support.</p>
+
+            <h4>Resource Processing Service</h4>
+            <p><code>src/services/resource_processing_service.py</code> (110 lines) - Orchestrates resource processing, coordinates AAD import, and manages concurrent processing with progress tracking.</p>
+
+            <h4>Container Manager</h4>
+            <p><code>src/container_manager.py</code> (746 lines) - Manages Neo4j Docker container lifecycle including:</p>
+            <ul>
+                <li>Container start/stop operations</li>
+                <li>Readiness checks and health monitoring</li>
+                <li>Database backup and restore (via neo4j-admin)</li>
+                <li>Volume management for test isolation</li>
+                <li>Connection verification</li>
+            </ul>
+
+            <h3>Relationship Rules Engine</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    Base[Relationship Rule Base]
+
+    Base --> Network[Network Rule]
+    Base --> Identity[Identity Rule]
+    Base --> Diagnostic[Diagnostic Rule]
+    Base --> Monitoring[Monitoring Rule]
+    Base --> Creator[Creator Rule]
+    Base --> Region[Region Rule]
+    Base --> Tag[Tag Rule]
+    Base --> Secret[Secret Rule]
+    Base --> DependsOn[Depends On Rule]
+    Base --> Subnet[Subnet Extraction Rule]
+
+    Network --> |CONNECTED_TO| Graph[(Neo4j Graph)]
+    Identity --> |USES_IDENTITY| Graph
+    Diagnostic --> |LOGS_TO| Graph
+    Monitoring --> |MONITORS| Graph
+    Creator --> |CREATED_BY| Graph
+    Region --> |REGION_OF| Graph
+    Tag --> |TAGGED_WITH| Graph
+    Secret --> |STORES_SECRET_IN| Graph
+    DependsOn --> |DEPENDS_ON| Graph
+    Subnet --> |SUBNET_OF| Graph
+
+    style Base fill:#764ba2,color:#fff
+    style Graph fill:#008cc1,color:#fff
+                </div>
+            </div>
+
+            <div class="description">
+                <p>The relationship rules system is <strong>modular and extensible</strong>. Each rule implements the <code>RelationshipRule</code> interface and can create specific types of relationships in the graph. Rules are registered in <code>src/relationship_rules/__init__.py</code>.</p>
+            </div>
+
+            <h3>IaC Generation Module</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    CLI[CLI Command] --> Handler[IaC Handler]
+    Handler --> Engine[IaC Engine]
+    Engine --> Traverser[Graph Traverser]
+    Engine --> Filters[Subset Filters]
+    Engine --> Transform[Transformation Rules]
+    Engine --> Validators[Validators]
+
+    Traverser --> Neo4j[(Neo4j)]
+
+    Engine --> Emitters{Format?}
+    Emitters --> |terraform| TF[Terraform Emitter<br/>2126 lines]
+    Emitters --> |bicep| Bicep[Bicep Emitter<br/>479 lines]
+    Emitters --> |arm| ARM[ARM Emitter<br/>473 lines]
+
+    Validators --> SubnetVal[Subnet Validator]
+    Validators --> AddrVal[Address Space Validator]
+    Validators --> TFVal[Terraform Validator]
+
+    TF --> Output[main.tf.json]
+    Bicep --> Output2[main.bicep]
+    ARM --> Output3[template.json]
+
+    Engine --> DeployScript[deploy.sh]
+
+    style Engine fill:#667eea,color:#fff
+    style Neo4j fill:#008cc1,color:#fff
+                </div>
+            </div>
+
+            <h4>Key Components</h4>
+            <ul>
+                <li><strong>Graph Traverser</strong> (<code>src/iac/traverser.py</code>) - Queries Neo4j and extracts resources with relationships</li>
+                <li><strong>IaC Engine</strong> (<code>src/iac/engine.py</code>) - Orchestrates the entire generation pipeline</li>
+                <li><strong>Terraform Emitter</strong> (<code>src/iac/emitters/terraform_emitter.py</code>) - Converts resources to Terraform HCL/JSON format with 50+ Azure resource types mapped</li>
+                <li><strong>Validators</strong> (<code>src/iac/validators/</code>) - Validates subnet containment, address space conflicts, and Terraform syntax</li>
+            </ul>
+        </section>
+
+        <section id="data-flow" class="section">
+            <h2>🌊 Data Flow Architecture</h2>
+
+            <h3>Discovery to Graph Flow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant CLI
+    participant Discovery
+    participant Azure
+    participant AAD
+    participant Processing
+    participant RelRules
+    participant Neo4j
+
+    User->>CLI: atg scan --tenant-id <ID>
+    CLI->>CLI: Setup Neo4j Container
+    CLI->>Discovery: Start Discovery
+
+    par Parallel Discovery
+        Discovery->>Azure: List Subscriptions
+        Azure-->>Discovery: Subscription List
+        Discovery->>Azure: Discover Resources (paginated)
+        Azure-->>Discovery: Resources Batch
+    and AAD Import
+        Discovery->>AAD: Get Users
+        AAD-->>Discovery: User List
+        Discovery->>AAD: Get Groups
+        AAD-->>Discovery: Group List
+    end
+
+    Discovery->>Processing: Process Resources
+
+    loop For Each Resource
+        Processing->>Neo4j: Create Resource Node
+        Processing->>RelRules: Apply Relationship Rules
+        RelRules->>Neo4j: Create Relationships
+    end
+
+    Neo4j-->>CLI: Stats & Progress
+    CLI-->>User: Completion Report
+                </div>
+            </div>
+
+            <h3>Graph to IaC Flow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant CLI
+    participant Handler
+    participant Engine
+    participant Traverser
+    participant Neo4j
+    participant Validators
+    participant Emitter
+    participant FS
+
+    User->>CLI: atg generate-iac --format terraform
+    CLI->>Handler: generate_iac_command_handler()
+    Handler->>Engine: generate()
+
+    Engine->>Traverser: traverse()
+    Traverser->>Neo4j: MATCH (r:Resource)...
+    Neo4j-->>Traverser: TenantGraph{resources, relationships}
+    Traverser-->>Engine: TenantGraph
+
+    Engine->>Engine: Apply Subset Filters
+    Engine->>Engine: Apply Transformation Rules
+
+    Engine->>Validators: validate_address_spaces()
+    Validators-->>Engine: ValidationResult
+
+    alt Has Conflicts
+        Engine->>User: ⚠️  Warning: Address space conflicts
+    end
+
+    Engine->>Emitter: emit(TenantGraph)
+    Emitter->>Emitter: Convert to Terraform
+    Emitter->>FS: Write main.tf.json
+    Emitter->>FS: Write variables.tf.json
+    Emitter->>FS: Write deploy.sh
+
+    FS-->>User: ✅ IaC Generated: ./output/
+                </div>
+            </div>
+
+            <h3>Agent Mode Query Flow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant AgentMode
+    participant Workbench
+    participant MCP
+    participant Neo4j
+    participant LLM
+
+    User->>AgentMode: "How many storage resources?"
+    AgentMode->>Workbench: list_tools()
+    Workbench-->>AgentMode: [get_neo4j_schema, read_neo4j_cypher]
+
+    AgentMode->>Workbench: call_tool(get_neo4j_schema)
+    Workbench->>MCP: get_neo4j_schema
+    MCP->>Neo4j: CALL db.schema.visualization()
+    Neo4j-->>MCP: Schema JSON
+    MCP-->>AgentMode: Schema
+
+    AgentMode->>LLM: Generate Cypher Query
+    Note over AgentMode,LLM: Prompt includes schema + question
+    LLM-->>AgentMode: MATCH (r:Resource) WHERE...
+
+    AgentMode->>Workbench: call_tool(read_neo4j_cypher, query)
+    Workbench->>MCP: read_neo4j_cypher
+    MCP->>Neo4j: Execute Cypher Query
+    Neo4j-->>MCP: Query Results
+    MCP-->>AgentMode: Results JSON
+
+    AgentMode->>LLM: Format Answer
+    LLM-->>AgentMode: Natural Language Answer
+    AgentMode-->>User: "There are 3 storage resources in the tenant."
+                </div>
+            </div>
+        </section>
+
+        <section id="workflows" class="section">
+            <h2>🔄 Workflow Diagrams</h2>
+
+            <h3>Scanning Workflow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([User: atg scan]) --> CheckDocker{Docker<br/>Available?}
+    CheckDocker -->|No| InstallPrompt[Prompt to Install Docker]
+    InstallPrompt --> Exit1([Exit])
+    CheckDocker -->|Yes| CheckNeo4j{Neo4j<br/>Running?}
+
+    CheckNeo4j -->|No| StartNeo4j[Start Neo4j Container]
+    StartNeo4j --> WaitReady[Wait for Readiness]
+    WaitReady --> RunMigrations[Run Database Migrations]
+    CheckNeo4j -->|Yes| RunMigrations
+
+    RunMigrations --> AuthCheck{Azure<br/>Authenticated?}
+    AuthCheck -->|No| AuthPrompt[Prompt: az login]
+    AuthPrompt --> Exit2([Exit])
+    AuthCheck -->|Yes| StartDashboard[Launch CLI Dashboard]
+
+    StartDashboard --> InitDiscovery[Initialize Discovery Service]
+    InitDiscovery --> ListSubs[List Subscriptions]
+    ListSubs --> FilterCheck{Filters<br/>Applied?}
+
+    FilterCheck -->|Yes| ApplyFilters[Apply Subscription/RG Filters]
+    FilterCheck -->|No| DiscoverAll[Discover All Resources]
+    ApplyFilters --> DiscoverFiltered[Discover Filtered Resources]
+
+    DiscoverFiltered --> ProcessResources
+    DiscoverAll --> ProcessResources[Process Resources]
+
+    ProcessResources --> AADCheck{AAD Import<br/>Enabled?}
+    AADCheck -->|Yes| ImportAAD[Import Users & Groups]
+    AADCheck -->|No| CreateNodes
+    ImportAAD --> CreateNodes[Create Neo4j Nodes]
+
+    CreateNodes --> ApplyRules[Apply Relationship Rules]
+    ApplyRules --> GenMetrics[Generate Metrics]
+    GenMetrics --> Complete([Scan Complete])
+
+    style Start fill:#667eea,color:#fff
+    style Complete fill:#28a745,color:#fff
+    style Exit1 fill:#dc3545,color:#fff
+    style Exit2 fill:#dc3545,color:#fff
+                </div>
+            </div>
+
+            <h3>IaC Generation & Deployment Workflow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([User: atg generate-iac]) --> ValidateGraph{Graph<br/>Exists?}
+    ValidateGraph -->|No| Error1[Error: Run scan first]
+    Error1 --> Exit1([Exit])
+
+    ValidateGraph -->|Yes| TraverseGraph[Traverse Neo4j Graph]
+    TraverseGraph --> SubsetFilter{Subset<br/>Filter?}
+
+    SubsetFilter -->|Yes| ApplySubset[Apply Subset Filter]
+    SubsetFilter -->|No| TransformRules
+    ApplySubset --> TransformRules{Transform<br/>Rules?}
+
+    TransformRules -->|Yes| ApplyTransform[Apply Transformation Rules]
+    TransformRules -->|No| ValidateAddr
+    ApplyTransform --> ValidateAddr[Validate Address Spaces]
+
+    ValidateAddr --> ConflictCheck{Conflicts<br/>Found?}
+    ConflictCheck -->|Yes| AutoFix{Auto-fix<br/>Enabled?}
+    AutoFix -->|Yes| FixConflicts[Fix Address Conflicts]
+    AutoFix -->|No| LogWarning[Log Warnings]
+    FixConflicts --> SelectFormat
+    ConflictCheck -->|No| SelectFormat
+    LogWarning --> SelectFormat
+
+    SelectFormat{Format?} -->|terraform| TFEmit[Terraform Emitter]
+    SelectFormat -->|bicep| BicepEmit[Bicep Emitter]
+    SelectFormat -->|arm| ARMEmit[ARM Emitter]
+
+    TFEmit --> GenFiles[Generate IaC Files]
+    BicepEmit --> GenFiles
+    ARMEmit --> GenFiles
+
+    GenFiles --> GenScript[Generate deploy.sh]
+    GenScript --> Complete([Generation Complete])
+
+    Complete --> UserDeploy{User runs<br/>./deploy.sh?}
+    UserDeploy -->|Yes| AzAuth{Azure<br/>Authenticated?}
+    UserDeploy -->|No| ManualDeploy[Manual Deployment]
+
+    AzAuth -->|No| RunLogin[az login]
+    RunLogin --> ValidatePlan
+    AzAuth -->|Yes| ValidatePlan[Validate/Plan]
+
+    ValidatePlan --> ReviewPlan{User<br/>Approves?}
+    ReviewPlan -->|No| CancelDeploy([Cancelled])
+    ReviewPlan -->|Yes| Deploy[Deploy Resources]
+
+    Deploy --> Monitor[Monitor Deployment]
+    Monitor --> DeployComplete([Deployment Complete])
+
+    style Start fill:#667eea,color:#fff
+    style Complete fill:#28a745,color:#fff
+    style DeployComplete fill:#28a745,color:#fff
+    style Exit1 fill:#dc3545,color:#fff
+    style CancelDeploy fill:#ffc107,color:#000
+                </div>
+            </div>
+
+            <h3>Undeployment Workflow</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    Start([User: atg undeploy]) --> ListDeploy[List Active Deployments]
+    ListDeploy --> SelectDeploy{Select<br/>Deployment}
+
+    SelectDeploy --> LoadState[Load Deployment State]
+    LoadState --> AnalyzeDeps[Analyze Resource Dependencies]
+
+    AnalyzeDeps --> OrderDeletion[Order Deletion Sequence]
+    OrderDeletion --> Confirm{User<br/>Confirms?}
+
+    Confirm -->|No| Cancel([Cancelled])
+    Confirm -->|Yes| DeleteResources[Delete Resources]
+
+    DeleteResources --> MonitorDeletion[Monitor Deletion Progress]
+    MonitorDeletion --> CheckComplete{All<br/>Deleted?}
+
+    CheckComplete -->|No| RetryFailed{Retry<br/>Failed?}
+    CheckComplete -->|Yes| CleanState[Clean Deployment State]
+
+    RetryFailed -->|Yes| DeleteResources
+    RetryFailed -->|No| PartialClean[Partial Cleanup]
+
+    PartialClean --> Report[Generate Failure Report]
+    CleanState --> Complete([Undeploy Complete])
+    Report --> Exit([Exit with Warnings])
+
+    style Start fill:#667eea,color:#fff
+    style Complete fill:#28a745,color:#fff
+    style Cancel fill:#ffc107,color:#000
+    style Exit fill:#fd7e14,color:#fff
+                </div>
+            </div>
+        </section>
+
+        <section id="agent-mode" class="section">
+            <h2>🤖 Agent Mode & MCP Architecture</h2>
+
+            <h3>Agent Mode System</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    User[User] --> CLI[CLI: atg agent-mode]
+    CLI --> Startup[Ensure Neo4j Running]
+    Startup --> InitMCP[Initialize MCP Workbench]
+
+    InitMCP --> MCPServer[MCP Server Process]
+    MCPServer --> Tools[Available Tools]
+
+    Tools --> Tool1[get_neo4j_schema]
+    Tools --> Tool2[read_neo4j_cypher]
+    Tools --> Tool3[write_neo4j_cypher]
+
+    InitMCP --> InitLLM[Initialize Azure OpenAI Client]
+    InitLLM --> Assistant[AutoGen Assistant Agent]
+
+    Assistant --> Workbench[MCP Workbench]
+    Workbench --> MCPServer
+
+    User --> |Question| Assistant
+    Assistant --> |1. Get Schema| Tool1
+    Tool1 --> Neo4j[(Neo4j)]
+    Neo4j --> |Schema| Assistant
+
+    Assistant --> |2. Generate Query| LLM[Azure OpenAI]
+    LLM --> |Cypher Query| Assistant
+
+    Assistant --> |3. Execute Query| Tool2
+    Tool2 --> Neo4j
+    Neo4j --> |Results| Assistant
+
+    Assistant --> |4. Format Answer| LLM
+    LLM --> |Natural Language| Assistant
+    Assistant --> User
+
+    style Neo4j fill:#008cc1,color:#fff
+    style LLM fill:#10a37f,color:#fff
+    style Assistant fill:#764ba2,color:#fff
+                </div>
+            </div>
+
+            <div class="description">
+                <h4>MCP Integration Details</h4>
+                <p>The agent mode leverages the <strong>Model Context Protocol (MCP)</strong> to provide a standardized interface between the LLM and Neo4j database. Key components:</p>
+                <ul>
+                    <li><code>src/mcp_server.py</code> - Launches the MCP server process (uvx mcp-neo4j-cypher)</li>
+                    <li><code>src/agent_mode.py</code> - Orchestrates the agent workflow with multi-step tool chaining</li>
+                    <li><strong>AutoGen Integration:</strong> Uses AutoGen's AssistantAgent with MCP workbench for tool calling</li>
+                    <li><strong>Two Modes:</strong> Interactive REPL and single-question mode</li>
+                </ul>
+            </div>
+
+            <h3>Threat Modeling Agent</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    User[User] --> ThreatCLI[atg threat-model]
+    ThreatCLI --> LoadSpec[Load Tenant Spec]
+    LoadSpec --> ThreatAgent[Threat Modeling Agent]
+
+    ThreatAgent --> DFD[DFD Builder]
+    ThreatAgent --> Enum[Threat Enumerator]
+    ThreatAgent --> ASB[ASB Mapper]
+    ThreatAgent --> Report[Report Builder]
+
+    DFD --> |Identify Components| Neo4j[(Neo4j)]
+    DFD --> |Generate DFD| Mermaid[Mermaid Diagram]
+
+    Enum --> |STRIDE Analysis| Threats[Threat Categories]
+    Threats --> Spoofing
+    Threats --> Tampering
+    Threats --> Repudiation
+    Threats --> InfoDisclosure[Information Disclosure]
+    Threats --> DoS[Denial of Service]
+    Threats --> ElevationPriv[Elevation of Privilege]
+
+    ASB --> |Map to Controls| AzureSecBaseline[Azure Security Baseline]
+
+    Report --> MDReport[threat_model_report.md]
+    Report --> JSONData[threat_data.json]
+
+    style Neo4j fill:#008cc1,color:#fff
+    style ThreatAgent fill:#dc3545,color:#fff
+                </div>
+            </div>
+        </section>
+
+        <section id="spa" class="section">
+            <h2>🖥️ SPA/GUI Architecture</h2>
+
+            <h3>Electron Application Architecture</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    subgraph "Main Process (Node.js)"
+        Main[index.ts<br/>App Lifecycle]
+        IPC[IPC Handlers]
+        ProcMgr[Process Manager]
+        Menu[Application Menu]
+    end
+
+    subgraph "Renderer Process (React)"
+        App[App.tsx]
+        Tabs[Tab Components]
+        Context[React Context]
+        Hooks[Custom Hooks]
+    end
+
+    subgraph "CLI Integration"
+        CLI[Python CLI]
+        WebSocket[WebSocket Server]
+        Logs[Log Streaming]
+    end
+
+    subgraph "Backend (Express)"
+        API[API Routes]
+        Neo4jConn[Neo4j Connection]
+    end
+
+    Main --> IPC
+    Main --> ProcMgr
+    Main --> Menu
+    IPC <--> App
+
+    App --> Tabs
+    App --> Context
+    Tabs --> Hooks
+
+    ProcMgr --> CLI
+    CLI --> WebSocket
+    WebSocket --> Logs
+    Logs --> Context
+
+    Tabs --> API
+    API --> Neo4jConn
+    Neo4jConn --> Neo4j[(Neo4j)]
+
+    style Main fill:#764ba2,color:#fff
+    style App fill:#61dafb,color:#000
+    style Neo4j fill:#008cc1,color:#fff
+                </div>
+            </div>
+
+            <h3>Key GUI Features</h3>
+            <div class="component-list">
+                <div class="component-card">
+                    <h5>📊 Status Tab</h5>
+                    <p>Dashboard showing Neo4j status, resource counts, and system health metrics.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🔍 Scan Tab</h5>
+                    <p>Interactive scanning interface with real-time progress tracking and log streaming.</p>
+                </div>
+                <div class="component-card">
+                    <h5>📝 Generate Spec Tab</h5>
+                    <p>Generate tenant specifications with format options (YAML/JSON/Markdown).</p>
+                </div>
+                <div class="component-card">
+                    <h5>🏗️ Generate IaC Tab</h5>
+                    <p>IaC generation interface with format selection, subset filtering, and transformation rules.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🎨 Visualize Tab</h5>
+                    <p>3D graph visualization with search, filtering, and navigation controls.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🤖 Agent Mode Tab</h5>
+                    <p>Interactive chat interface for natural language queries over the graph.</p>
+                </div>
+                <div class="component-card">
+                    <h5>🔐 Threat Model Tab</h5>
+                    <p>Generate threat models and security reports for the tenant.</p>
+                </div>
+                <div class="component-card">
+                    <h5>⚙️ Config Tab</h5>
+                    <p>Manage environment variables and Azure credentials.</p>
+                </div>
+            </div>
+
+            <h3>IPC Communication Pattern</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Renderer
+    participant Main
+    participant CLI
+    participant Neo4j
+
+    Renderer->>Main: IPC: start-scan
+    Main->>Main: Spawn CLI Process
+    Main->>CLI: python -m scripts.cli scan
+
+    loop Real-time Updates
+        CLI->>Main: stdout/stderr
+        Main->>Renderer: IPC: scan-progress
+        Renderer->>Renderer: Update UI
+    end
+
+    CLI->>Neo4j: Write Resources
+    CLI->>Main: Process Exit
+    Main->>Renderer: IPC: scan-complete
+
+    Renderer->>Main: IPC: get-stats
+    Main->>Neo4j: Query Stats
+    Neo4j-->>Main: Stats Data
+    Main-->>Renderer: IPC: stats-data
+    Renderer->>Renderer: Update Dashboard
+                </div>
+            </div>
+        </section>
+
+        <section id="threat-model" class="section">
+            <h2>🔐 Threat Model & Security Analysis</h2>
+
+            <div class="description">
+                <p>This threat model follows the <strong>Microsoft Threat Modeling Tool</strong> methodology using the <strong>STRIDE</strong> framework. The analysis focuses on the current architecture: a single-user development tool running on a developer's system using Docker for the database.</p>
+            </div>
+
+            <h3>System Context & Trust Boundaries</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TB
+    subgraph "Trust Boundary: Developer Workstation"
+        CLI[CLI Process<br/>User Context]
+        GUI[Electron GUI<br/>User Context]
+        Neo4jContainer[Neo4j Container<br/>Docker]
+        LocalFS[Local File System]
+    end
+
+    subgraph "Trust Boundary: Azure Cloud"
+        AzureARM[Azure ARM API<br/>HTTPS]
+        GraphAPI[Microsoft Graph API<br/>HTTPS]
+        OpenAI[Azure OpenAI<br/>HTTPS]
+    end
+
+    subgraph "Trust Boundary: Internet"
+        PyPI[PyPI/npm<br/>Dependencies]
+        DockerHub[Docker Hub<br/>Images]
+    end
+
+    CLI -->|Auth Token| AzureARM
+    CLI -->|Auth Token| GraphAPI
+    CLI -->|API Key| OpenAI
+    CLI -->|bolt://| Neo4jContainer
+    GUI -->|spawn| CLI
+    GUI -->|bolt://| Neo4jContainer
+    CLI -->|Read/Write| LocalFS
+    GUI -->|Read/Write| LocalFS
+
+    CLI -.->|Install| PyPI
+    GUI -.->|Install| PyPI
+    Neo4jContainer -.->|Pull| DockerHub
+
+    style CLI fill:#667eea,color:#fff
+    style GUI fill:#61dafb,color:#000
+    style Neo4jContainer fill:#008cc1,color:#fff
+                </div>
+            </div>
+
+            <h3>STRIDE Analysis</h3>
+
+            <div class="threat-category threat-high">
+                <h4>🎭 Spoofing</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T1:</strong> Malicious process impersonates CLI/GUI to access Neo4j</td>
+                        <td>HIGH - Unauthorized access to sensitive tenant data</td>
+                        <td>✅ Neo4j requires password authentication. ⚠️ Password stored in .env file (file permissions critical)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T2:</strong> Stolen Azure credentials used to scan wrong tenant</td>
+                        <td>MEDIUM - Unauthorized tenant discovery</td>
+                        <td>✅ Uses Azure CLI authentication (tokens time-limited). ⚠️ No additional verification of tenant ID</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T3:</strong> Man-in-the-middle attack on localhost Neo4j connection</td>
+                        <td>LOW - Requires local access</td>
+                        <td>⚠️ bolt:// protocol not encrypted. ✅ localhost-only reduces exposure</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="threat-category threat-critical">
+                <h4>🔧 Tampering</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T4:</strong> Malicious modification of graph data in Neo4j</td>
+                        <td>CRITICAL - Corrupted infrastructure documentation leading to failed deployments</td>
+                        <td>⚠️ No audit logging of graph changes. ⚠️ No backup automation by default</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T5:</strong> Tampering with generated IaC before deployment</td>
+                        <td>CRITICAL - Deployment of malicious infrastructure</td>
+                        <td>❌ No integrity checks on generated files. ✅ User reviews in deploy.sh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T6:</strong> Modified .env file with malicious credentials</td>
+                        <td>HIGH - Unauthorized access to Azure resources or LLM usage</td>
+                        <td>⚠️ .env file has user-only permissions. ❌ No integrity verification</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T7:</strong> Supply chain attack via compromised dependencies</td>
+                        <td>CRITICAL - Arbitrary code execution</td>
+                        <td>✅ uv.lock pins versions. ⚠️ No vulnerability scanning in CI</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="threat-category threat-medium">
+                <h4>📝 Repudiation</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T8:</strong> No audit trail for scan operations</td>
+                        <td>MEDIUM - Cannot prove who scanned tenant</td>
+                        <td>✅ Logs stored in logs/ directory. ⚠️ Logs not signed or timestamped</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T9:</strong> No audit trail for IaC deployments</td>
+                        <td>HIGH - Cannot prove who deployed what resources</td>
+                        <td>✅ Azure Activity Log tracks deployments. ❌ No local deployment records</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="threat-category threat-critical">
+                <h4>🔓 Information Disclosure</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T10:</strong> Neo4j data exposed if Docker port is exposed</td>
+                        <td>CRITICAL - Full tenant data exposure</td>
+                        <td>✅ Default docker-compose binds to localhost only. ⚠️ User can modify</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T11:</strong> Credentials in .env file exposed</td>
+                        <td>CRITICAL - Azure tenant compromise, API key theft</td>
+                        <td>✅ .env in .gitignore. ⚠️ File permissions not enforced. ❌ No encryption</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T12:</strong> Secrets stored in Neo4j graph</td>
+                        <td>HIGH - Key Vault secrets, connection strings exposed</td>
+                        <td>⚠️ Graph stores full resource properties. ❌ No secret redaction. ⚠️ Database not encrypted at rest by default</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T13:</strong> Generated IaC files contain sensitive data</td>
+                        <td>HIGH - Secrets, keys, connection strings in plain text</td>
+                        <td>⚠️ Output directory permissions user-only. ❌ No secret detection</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T14:</strong> Logs contain sensitive information</td>
+                        <td>MEDIUM - Resource names, IDs, configuration details</td>
+                        <td>⚠️ Logs stored locally with user permissions. ❌ No sensitive data filtering</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="threat-category threat-medium">
+                <h4>⛔ Denial of Service</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T15:</strong> Resource exhaustion from scanning large tenants</td>
+                        <td>MEDIUM - Developer workstation becomes unresponsive</td>
+                        <td>✅ Rate limiting in discovery service. ✅ Pagination support. ⚠️ No memory limits</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T16:</strong> Neo4j container consumes excessive resources</td>
+                        <td>MEDIUM - System performance degradation</td>
+                        <td>⚠️ No resource limits in docker-compose. ✅ Can be configured by user</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T17:</strong> Disk space exhaustion from graph data</td>
+                        <td>LOW - Tool stops working</td>
+                        <td>✅ Backup and cleanup utilities available. ⚠️ No automatic cleanup</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="threat-category threat-high">
+                <h4>⬆️ Elevation of Privilege</h4>
+                <table>
+                    <tr>
+                        <th>Threat</th>
+                        <th>Impact</th>
+                        <th>Mitigation</th>
+                    </tr>
+                    <tr>
+                        <td><strong>T18:</strong> Docker socket access enables container escape</td>
+                        <td>HIGH - Full system compromise</td>
+                        <td>✅ Tool only manages Neo4j container. ⚠️ User must have Docker access. ❌ No additional sandboxing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T19:</strong> Malicious deployment script execution</td>
+                        <td>CRITICAL - Arbitrary Azure resource creation</td>
+                        <td>⚠️ deploy.sh generated with user review expected. ❌ No script validation</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T20:</strong> Agent mode LLM prompt injection</td>
+                        <td>HIGH - Unauthorized graph queries or modifications</td>
+                        <td>✅ System message restricts agent scope. ⚠️ No query validation. ⚠️ write_neo4j_cypher tool available</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>Security Recommendations</h3>
+            <div class="component-list">
+                <div class="component-card">
+                    <h5>🔴 Critical Priority</h5>
+                    <ul>
+                        <li>Implement secret detection and redaction in graph ingestion</li>
+                        <li>Add integrity checks for generated IaC files</li>
+                        <li>Enable Neo4j encryption at rest</li>
+                        <li>Implement dependency vulnerability scanning in CI</li>
+                    </ul>
+                </div>
+                <div class="component-card">
+                    <h5>🟠 High Priority</h5>
+                    <ul>
+                        <li>Add audit logging for all graph modifications</li>
+                        <li>Implement .env file encryption or secure secret management</li>
+                        <li>Add Neo4j bolt+s:// (TLS) connection support</li>
+                        <li>Restrict agent mode to read-only queries</li>
+                    </ul>
+                </div>
+                <div class="component-card">
+                    <h5>🟡 Medium Priority</h5>
+                    <ul>
+                        <li>Implement automated backup scheduling</li>
+                        <li>Add resource limits to docker-compose</li>
+                        <li>Implement sensitive data filtering in logs</li>
+                        <li>Add deployment record tracking</li>
+                    </ul>
+                </div>
+                <div class="component-card">
+                    <h5>🟢 Low Priority</h5>
+                    <ul>
+                        <li>Implement disk space monitoring and alerts</li>
+                        <li>Add tenant ID verification prompts</li>
+                        <li>Enhanced script validation for generated files</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Assumptions & Constraints</h3>
+            <div class="description">
+                <ul>
+                    <li><strong>Single User Tool:</strong> Designed for use by individual developers on their local machines, not as a multi-tenant service</li>
+                    <li><strong>Trusted Environment:</strong> Assumes the developer's workstation is secure and not compromised</li>
+                    <li><strong>Azure Trust:</strong> Relies on Azure ARM/Graph API security and authentication mechanisms</li>
+                    <li><strong>Docker Dependency:</strong> Requires Docker to be installed and running with appropriate user permissions</li>
+                    <li><strong>Network Access:</strong> Requires internet access for Azure APIs, OpenAI, and package downloads</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <h3>Document Information</h3>
+            <p>This comprehensive architecture documentation was generated for the Azure Tenant Grapher project.</p>
+            <p><strong>Document Version:</strong> 2.0 | <strong>Last Updated:</strong> <script>document.write(new Date().toLocaleDateString())</script></p>
+            <p><strong>Repository:</strong> <a href="https://github.com/your-org/azure-tenant-grapher">github.com/your-org/azure-tenant-grapher</a></p>
+        </footer>
+
+        <a href="#" class="scroll-top">↑</a>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', function() {
+            const scrollTop = document.querySelector('.scroll-top');
+            if (window.pageYOffset > 300) {
+                scrollTop.style.display = 'flex';
+            } else {
+                scrollTop.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
