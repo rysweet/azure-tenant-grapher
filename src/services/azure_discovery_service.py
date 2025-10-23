@@ -17,6 +17,7 @@ from azure.identity import (
     CredentialUnavailableError,
     DefaultAzureCredential,
 )
+from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.subscription import SubscriptionClient
 
@@ -45,6 +46,7 @@ class AzureDiscoveryService:
         credential: Optional[Any] = None,
         subscription_client_factory: Optional[Callable[[Any], Any]] = None,
         resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+        authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
         change_feed_ingestion_service: Optional[Any] = None,
     ) -> None:
         """
@@ -55,6 +57,7 @@ class AzureDiscoveryService:
             credential: Optional Azure credential (for dependency injection/testing)
             subscription_client_factory: Optional factory for SubscriptionClient (for testing)
             resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+            authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
             change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
@@ -64,6 +67,9 @@ class AzureDiscoveryService:
         )
         self.resource_client_factory = (
             resource_client_factory or ResourceManagementClient
+        )
+        self.authorization_client_factory = (
+            authorization_client_factory or AuthorizationManagementClient
         )
         self.change_feed_ingestion_service = change_feed_ingestion_service
         # Maximum retry attempts for transient Azure errors (default 3)
@@ -269,6 +275,7 @@ class AzureDiscoveryService:
                 )
 
                 # Phase 2: Fetch full properties in parallel if enabled
+                final_resources = resource_basics
                 if self._max_build_threads > 0 and resource_basics:
                     logger.info(
                         f"🔄 Phase 2: Fetching full properties for {len(resource_basics)} resources "
@@ -284,12 +291,43 @@ class AzureDiscoveryService:
                         f"⚡ Property fetch complete: {len(enriched_resources)} resources in {duration:.1f}s "
                         f"({rate:.1f} resources/sec)"
                     )
-                    return enriched_resources
+                    final_resources = enriched_resources
                 else:
                     logger.info(
                         "Skipping property enrichment (disabled or no resources)"
                     )
-                    return resource_basics
+
+                # Phase 3: Discover role assignments and role definitions
+                logger.info("🔄 Phase 3: Discovering role assignments...")
+                try:
+                    role_resources = await self.discover_role_assignments(subscription_id)
+                    # Apply filter if provided
+                    if filter_config:
+                        filtered_role_resources = []
+                        for role_resource in role_resources:
+                            if filter_config.should_include_resource(role_resource):
+                                filtered_role_resources.append(role_resource)
+                            else:
+                                logger.debug(
+                                    f"🚫 Filtering out role resource: {role_resource.get('name')}"
+                                )
+                        role_resources = filtered_role_resources
+                        logger.info(
+                            f"✅ After filtering: {len(role_resources)} role resources included"
+                        )
+
+                    # Merge role resources with regular resources
+                    final_resources.extend(role_resources)
+                    logger.info(
+                        f"✅ Total resources (including RBAC): {len(final_resources)}"
+                    )
+                except Exception as role_exc:
+                    # Log error but don't fail the entire discovery
+                    logger.warning(
+                        f"Failed to discover role assignments (continuing without them): {role_exc}"
+                    )
+
+                return final_resources
             except AzureError:
                 # Log and propagate so outer retry loop can handle
                 logger.exception("AzureError during resource discovery")
@@ -403,6 +441,117 @@ class AzureDiscoveryService:
             item for sublist in results_nested for item in sublist
         ]
         return flattened
+
+    async def discover_role_assignments(
+        self, subscription_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover role assignments and role definitions in a subscription.
+
+        Role assignments are NOT returned by the standard resources.list() API, so we need
+        to query them separately using the AuthorizationManagementClient.
+
+        Args:
+            subscription_id: Azure subscription ID
+
+        Returns:
+            List of role assignment and role definition dictionaries in resource format
+
+        Raises:
+            AzureDiscoveryError: If discovery fails
+        """
+        logger.info(f"🔍 Discovering role assignments in subscription {subscription_id}")
+
+        try:
+            authorization_client = self.authorization_client_factory(
+                self.credential, subscription_id
+            )
+
+            role_resources: List[Dict[str, Any]] = []
+
+            # Discover role assignments
+            logger.debug("Fetching role assignments...")
+            role_assignments_pager = authorization_client.role_assignments.list_for_subscription()
+
+            for assignment in role_assignments_pager:
+                # Convert role assignment to resource-like dict
+                assignment_dict: Dict[str, Any] = {
+                    "id": getattr(assignment, "id", None),
+                    "name": getattr(assignment, "name", None),
+                    "type": "Microsoft.Authorization/roleAssignments",
+                    "location": None,  # Role assignments don't have location
+                    "tags": {},
+                    "properties": {
+                        "principalId": getattr(assignment, "principal_id", None),
+                        "roleDefinitionId": getattr(assignment, "role_definition_id", None),
+                        "scope": getattr(assignment, "scope", None),
+                        "principalType": getattr(assignment, "principal_type", None),
+                    },
+                    "subscription_id": subscription_id,
+                    "resource_group": None,  # Subscription-scoped, not in RG
+                }
+                role_resources.append(assignment_dict)
+
+            logger.info(f"✅ Found {len(role_resources)} role assignments")
+
+            # Discover role definitions
+            logger.debug("Fetching role definitions...")
+            role_definitions_pager = authorization_client.role_definitions.list(
+                scope=f"/subscriptions/{subscription_id}"
+            )
+
+            role_def_count = 0
+            for role_def in role_definitions_pager:
+                # Convert role definition to resource-like dict
+                role_def_dict: Dict[str, Any] = {
+                    "id": getattr(role_def, "id", None),
+                    "name": getattr(role_def, "name", None),
+                    "type": "Microsoft.Authorization/roleDefinitions",
+                    "location": None,
+                    "tags": {},
+                    "properties": {
+                        "roleName": getattr(role_def, "role_name", None),
+                        "description": getattr(role_def, "description", None),
+                        "roleType": getattr(role_def, "role_type", None),
+                        "permissions": [
+                            {
+                                "actions": list(getattr(perm, "actions", [])),
+                                "notActions": list(getattr(perm, "not_actions", [])),
+                                "dataActions": list(getattr(perm, "data_actions", [])),
+                                "notDataActions": list(getattr(perm, "not_data_actions", [])),
+                            }
+                            for perm in getattr(role_def, "permissions", [])
+                        ] if getattr(role_def, "permissions", None) else [],
+                    },
+                    "subscription_id": subscription_id,
+                    "resource_group": None,
+                }
+                role_resources.append(role_def_dict)
+                role_def_count += 1
+
+            logger.info(f"✅ Found {role_def_count} role definitions")
+            logger.info(f"✅ Total RBAC resources discovered: {len(role_resources)}")
+
+            return role_resources
+
+        except AzureError as exc:
+            logger.exception("AzureError during role assignment discovery")
+            raise AzureDiscoveryError(
+                f"Azure error during role assignment discovery: {exc}",
+                context={
+                    "subscription_id": subscription_id,
+                    "tenant_id": self.config.tenant_id,
+                },
+            ) from exc
+        except Exception as exc:
+            logger.exception("Non-AzureError during role assignment discovery")
+            raise AzureDiscoveryError(
+                f"Non-Azure error during role assignment discovery: {exc}",
+                context={
+                    "subscription_id": subscription_id,
+                    "tenant_id": self.config.tenant_id,
+                },
+            ) from exc
 
     async def _handle_auth_fallback(
         self,
@@ -774,6 +923,7 @@ def create_azure_discovery_service(
     credential: Optional[Any] = None,
     subscription_client_factory: Optional[Callable[[Any], Any]] = None,
     resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+    authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
     change_feed_ingestion_service: Optional[Any] = None,
 ) -> AzureDiscoveryService:
     """
@@ -784,6 +934,7 @@ def create_azure_discovery_service(
         credential: Optional Azure credential for dependency injection
         subscription_client_factory: Optional factory for SubscriptionClient (for testing)
         resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+        authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
         change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
 
     Returns:
@@ -794,5 +945,6 @@ def create_azure_discovery_service(
         credential,
         subscription_client_factory=subscription_client_factory,
         resource_client_factory=resource_client_factory,
+        authorization_client_factory=authorization_client_factory,
         change_feed_ingestion_service=change_feed_ingestion_service,
     )
