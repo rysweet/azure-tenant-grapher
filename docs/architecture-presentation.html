@@ -606,7 +606,7 @@ sequenceDiagram
     participant RelRules
     participant Neo4j
 
-    User->>CLI: atg scan --tenant-id <ID>
+    User->>CLI: atg scan --tenant-id TENANT_ID
     CLI->>CLI: Setup Neo4j Container
     CLI->>Discovery: Start Discovery
 
