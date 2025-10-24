@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Tenant Grapher - Demos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            border-bottom: 3px solid #0078d4;
+            padding-bottom: 10px;
+        }
+        .demo-card {
+            background: #f5f5f5;
+            border-left: 4px solid #0078d4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .demo-card h2 {
+            margin-top: 0;
+            color: #0078d4;
+        }
+        a {
+            color: #0078d4;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .button {
+            display: inline-block;
+            background: #0078d4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 10px 10px 0 0;
+        }
+        .button:hover {
+            background: #005a9e;
+            text-decoration: none;
+        }
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Azure Tenant Grapher - Demos & Presentations</h1>
+
+    <p>
+        Welcome to the Azure Tenant Grapher demonstration hub! Explore our interactive presentations
+        and command walkthroughs to see the power of graph-driven Infrastructure-as-Code generation.
+    </p>
+
+    <div class="demo-card">
+        <h2>Simuland Replication Demo</h2>
+        <p>
+            Watch how Azure Tenant Grapher automatically clones Microsoft's complex Simuland threat
+            detection lab environment. This demo showcases:
+        </p>
+        <ul>
+            <li>Automatic resource discovery and relationship mapping</li>
+            <li>Graph-driven Terraform generation</li>
+            <li>Complete infrastructure replication with 100% fidelity</li>
+            <li>Role assignment and identity replication</li>
+        </ul>
+        <a href="simuland-replication-slides.html" class="button">View Interactive Slides</a>
+        <a href="simuland-replication.md" class="button">Read Markdown</a>
+    </div>
+
+    <div class="demo-card">
+        <h2>CLI Command Walkthroughs</h2>
+        <p>
+            Step-by-step guides for every ATG command with real output examples,
+            troubleshooting tips, and best practices.
+        </p>
+        <a href="overview.md" class="button">Browse Commands</a>
+    </div>
+
+    <div class="demo-card">
+        <h2>Additional Resources</h2>
+        <p>
+            More demonstrations and guides:
+        </p>
+        <ul>
+            <li><a href="subset_bicep_demo.md">Subset Bicep Demo</a> - Selective resource replication</li>
+            <li><a href="../">Documentation Hub</a> - Architecture, guides, and references</li>
+            <li><a href="https://github.com/rysweet/azure-tenant-grapher">GitHub Repository</a></li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; text-align: center;">
+        <p>Azure Tenant Grapher | Graph-Driven Infrastructure-as-Code Generation</p>
+    </footer>
+</body>
+</html>
