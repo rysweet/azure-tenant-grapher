@@ -9,6 +9,20 @@ set -euo pipefail
 PROJECT_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
 cd "$PROJECT_ROOT"
 
+# Source Neo4j credentials validation library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/neo4j_credentials.sh"
+
+# Validate Neo4j credentials before proceeding
+if ! validate_neo4j_credentials; then
+    echo "ERROR: Failed to validate Neo4j credentials" >&2
+    exit 1
+fi
+
+echo "Neo4j credentials validated successfully"
+echo "  URI: $(get_neo4j_connection_string)"
+echo "  Username: $(get_neo4j_username)"
+
 # Configuration
 SOURCE_SUB="9b00bc5e-9abc-45de-9958-02a9d9277b16"  # DefenderATEVET17
 TARGET_SUB="c190c55a-9ab2-4b1e-92c4-cc8b1a032285"  # DefenderATEVET12
@@ -34,8 +48,12 @@ send_message() {
 # Get Neo4j counts
 get_neo4j_counts() {
     local sub_id=$1
+    local username=$(get_neo4j_username)
+    local password=$(get_neo4j_password)
+    local uri=$(get_neo4j_connection_string)
+
     local count=$(docker exec azure-tenant-grapher-neo4j-1 \
-        cypher-shell -u neo4j -p "${NEO4J_PASSWORD:-neo4j}" \
+        cypher-shell -u "$username" -p "$password" -a "$uri" \
         "MATCH (r:Resource) WHERE r.subscription_id = '$sub_id' RETURN count(r) as count" 2>/dev/null | \
         grep -E '^\d+' | head -1 || echo "0")
     echo "${count:-0}"

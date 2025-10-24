@@ -24,18 +24,28 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
-import traceback
+from typing import Any, Dict, List, Tuple
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.utils.neo4j_credentials import Neo4jCredentialsError, load_neo4j_credentials
 
 # Configuration
 REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
 DEMOS_DIR = REPO_ROOT / "demos"
 STATUS_FILE = DEMOS_DIR / "autonomous_replication_status.json"
 IMESSAGE_TOOL = Path.home() / ".local/bin/imessR"
-NEO4J_URI = "bolt://localhost:7688"
-NEO4J_PASSWORD = "azure-grapher-2024"
+
+# Load Neo4j credentials from environment
+try:
+    NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD = load_neo4j_credentials()
+except Neo4jCredentialsError as e:
+    print(f"Error: {e}")
+    sys.exit(1)
 
 # Source and target tenants
 SOURCE_TENANT = "DefenderATEVET17"
@@ -67,7 +77,7 @@ class StateAssessor:
         """Check if Neo4j is accessible"""
         try:
             import neo4j
-            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD))
+            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
             with driver.session() as session:
                 session.run("RETURN 1")
             driver.close()
@@ -83,10 +93,10 @@ class StateAssessor:
         
         try:
             import neo4j
-            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD))
-            
+            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
+
             state = {}
-            
+
             with driver.session() as session:
                 # Total counts
                 result = session.run("MATCH (n) RETURN count(n) as total_nodes")
@@ -184,7 +194,7 @@ class StateAssessor:
             else:
                 current_tenant = None
                 logged_in = False
-        except Exception as e:
+        except Exception:
             current_tenant = None
             logged_in = False
         
@@ -224,7 +234,7 @@ class WorkstreamOrchestrator:
                 timeout=timeout
             )
             return result.returncode, result.stdout, result.stderr
-        except subprocess.TimeoutExpired as e:
+        except subprocess.TimeoutExpired:
             return -1, "", f"Timeout after {timeout}s"
         except Exception as e:
             return -1, "", str(e)
@@ -429,7 +439,7 @@ class AutonomousEngine:
                 self.save_status()
             return success
         else:
-            self.reporter.send(f"⏭️ Continuing to next iteration (need 3 consecutive passes)")
+            self.reporter.send("⏭️ Continuing to next iteration (need 3 consecutive passes)")
             return True
     
     def run_continuous_loop(self):
@@ -483,7 +493,7 @@ class AutonomousEngine:
                 break
             
             except Exception as e:
-                error_msg = f"❌ Error in iteration {iteration_count}: {str(e)}"
+                error_msg = f"❌ Error in iteration {iteration_count}: {e!s}"
                 self.reporter.send(error_msg)
                 self.status.setdefault("errors", []).append({
                     "iteration": iteration_count,
