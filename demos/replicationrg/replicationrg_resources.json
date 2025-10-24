@@ -1,0 +1,447 @@
+[
+  {
+    "Location": "westus2",
+    "Name": "7ie4gs27bx36i",
+    "Type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "Location": "westus2",
+    "Name": "vnet-winad",
+    "Type": "Microsoft.Network/virtualNetworks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-DC01",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "pip-vnet-winad-bastion",
+    "Type": "Microsoft.Network/publicIPAddresses"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION7",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "2yoovipwxkb76",
+    "Type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION13",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION11",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION17",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION8",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION9",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION18",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION14",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION15",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION5",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION16",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION10",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION6",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "vnet-winad-bastion",
+    "Type": "Microsoft.Network/bastionHosts"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION19",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "nic-WORKSTATION12",
+    "Type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "Location": "westus2",
+    "Name": "DC01",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "DC01_OsDisk_1_7ce5dc9dbe894dab87161977b6d61cab",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION6",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION19",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION8",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION14",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION9",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION17",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION15",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION16",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION18",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION10",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION12",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION5",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION11",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION13",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION7",
+    "Type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION15_OsDisk_1_f05d37822cab4d2191477f2fa212dbc4",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION10_OsDisk_1_d7db92e1315740b182c110116f14e57a",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION6_OsDisk_1_b55eadbd39984fdabdd1d7ec6eabfcea",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION18_OsDisk_1_ef8c0154bfb249c8832654df846ac54b",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION16_OsDisk_1_f4fdf7a53f9a49d8b9796cd3af87cb17",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION9_OsDisk_1_b6f3dec8d862406483facb6373f76041",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION17_OsDisk_1_a4d9e28612c6421e9cb40305d4bea8ec",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION5_OsDisk_1_c4f6b6b54f404237b2a07a820e89eafe",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION14_OsDisk_1_d4ec2d8e3a2b44b98db7742accaa0f2d",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION7_OsDisk_1_71ec36d5789a47699cf7bd5be8650837",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION13_OsDisk_1_fd71b54b9e674c96892cc17caccc1b60",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION8_OsDisk_1_c6b0a4c63735454cb7bbabed8bf7ec1d",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION19_OsDisk_1_cdd1bc5d5dbc43c1a73e0970953c2464",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION11_OsDisk_1_b83f83366d1d423b95e181be9de46e53",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION12_OsDisk_1_147ae7b2f73b4364ad0b9bffef299361",
+    "Type": "Microsoft.Compute/disks"
+  },
+  {
+    "Location": "westus2",
+    "Name": "DC01/SetUpDC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION9/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION16/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION14/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION13/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION19/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION11/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION5/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION10/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION7/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION15/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION18/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION8/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION17/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION6/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION12/SetupWinVM",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "DC01/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION12/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION19/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION16/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION13/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION17/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION15/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION10/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION7/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION8/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION5/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION18/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION6/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION11/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION14/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "westus2",
+    "Name": "WORKSTATION9/PowerShellDSC",
+    "Type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "Location": "eastus",
+    "Name": "testreplicationkv",
+    "Type": "Microsoft.KeyVault/vaults"
+  },
+  {
+    "Location": "eastus",
+    "Name": "testreplicationkv2",
+    "Type": "Microsoft.KeyVault/vaults"
+  },
+  {
+    "Location": "westus2",
+    "Name": "testreplicationstg",
+    "Type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "Location": "westus2",
+    "Name": "testreplicationstg2",
+    "Type": "Microsoft.Storage/storageAccounts"
+  }
+]
