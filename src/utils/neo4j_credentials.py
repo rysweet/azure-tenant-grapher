@@ -6,7 +6,6 @@ All credentials must be provided via environment variables.
 """
 
 import os
-from typing import Optional
 
 from py2neo import Graph
 

@@ -20,10 +20,15 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
+
+# Add project root to path for imports
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.utils.neo4j_credentials import Neo4jCredentialsError, load_neo4j_credentials
 
 # Status tracking
 STATUS_FILE = PROJECT_ROOT / "demos" / "autonomous_loop_status.json"
@@ -106,17 +111,14 @@ class AutonomousReplicationLoop:
         try:
             # Use py2neo instead of cypher-shell
             from py2neo import Graph
-            
-            # Load .env file
-            env_file = PROJECT_ROOT / ".env"
-            neo4j_password = "azure-grapher-2024"  # Default
-            if env_file.exists():
-                with open(env_file) as f:
-                    for line in f:
-                        if line.startswith("NEO4J_PASSWORD="):
-                            neo4j_password = line.split("=", 1)[1].strip()
-            
-            graph = Graph("bolt://localhost:7688", auth=("neo4j", neo4j_password))
+
+            # Load Neo4j credentials from environment
+            try:
+                neo4j_uri, neo4j_username, neo4j_password = load_neo4j_credentials()
+            except Neo4jCredentialsError as e:
+                return {"met": False, "error": f"Failed to load credentials: {e}"}
+
+            graph = Graph(neo4j_uri, auth=(neo4j_username, neo4j_password))
             
             # Source tenant subscription: 9b00bc5e-9abc-45de-9958-02a9d9277b16 (DefenderATEVET17)
             # Target tenant subscription: c190c55a-9ab2-4b1e-92c4-cc8b1a032285 (DefenderATEVET12)
@@ -151,7 +153,7 @@ class AutonomousReplicationLoop:
                 "source_nodes": source_count,
                 "target_nodes": target_count,
                 "delta_percent": delta_pct * 100,
-                "note": f"Target should have >= source due to multiple iterations"
+                "note": "Target should have >= source due to multiple iterations"
             }
         except Exception as e:
             print(f"Graph fidelity check failed: {e}")
@@ -212,23 +214,21 @@ class AutonomousReplicationLoop:
     def identify_gaps(self) -> List[Dict]:
         """Identify gaps between source and target tenants"""
         print("\n=== IDENTIFYING GAPS ===")
-        
+
         gaps = []
-        
+
         # Check for missing resource types
         try:
             from py2neo import Graph
-            
-            # Load .env file
-            env_file = PROJECT_ROOT / ".env"
-            neo4j_password = "azure-grapher-2024"
-            if env_file.exists():
-                with open(env_file) as f:
-                    for line in f:
-                        if line.startswith("NEO4J_PASSWORD="):
-                            neo4j_password = line.split("=", 1)[1].strip()
-            
-            graph = Graph("bolt://localhost:7688", auth=("neo4j", neo4j_password))
+
+            # Load Neo4j credentials from environment
+            try:
+                neo4j_uri, neo4j_username, neo4j_password = load_neo4j_credentials()
+            except Neo4jCredentialsError as e:
+                print(f"Failed to load credentials: {e}")
+                return gaps
+
+            graph = Graph(neo4j_uri, auth=(neo4j_username, neo4j_password))
             
             # Query source tenant for resource types
             query = """
@@ -408,7 +408,7 @@ Do not stop until the gap is fixed.
             )
         except Exception as e:
             print(f"Failed to switch subscription: {e}")
-            self.send_imessage(f"❌ Failed to switch to target subscription")
+            self.send_imessage("❌ Failed to switch to target subscription")
             return False
         
         # Get subscription ID from Azure CLI (should be target now)
@@ -424,7 +424,7 @@ Do not stop until the gap is fixed.
             
             if subscription_id != TARGET_SUBSCRIPTION:
                 print(f"WARNING: Subscription mismatch! Expected {TARGET_SUBSCRIPTION}, got {subscription_id}")
-                self.send_imessage(f"⚠️ Subscription mismatch in deployment")
+                self.send_imessage("⚠️ Subscription mismatch in deployment")
         except Exception as e:
             print(f"Failed to get subscription ID: {e}")
             subscription_id = TARGET_SUBSCRIPTION
@@ -534,7 +534,7 @@ Do not stop until the gap is fixed.
                 break
             
             # Report status
-            print(f"\nObjective Status:")
+            print("\nObjective Status:")
             print(f"  Graph Fidelity: {'✓' if results['graph_fidelity']['met'] else '✗'}")
             print(f"  Control Plane: {'✓' if results['control_plane_fidelity']['met'] else '✗'}")
             print(f"  Validation: {'✓' if results['validation_status']['met'] else '✗'}")

@@ -91,17 +91,11 @@ export class CredentialManager {
       }
     }
 
-    // Fallback to defaults (development only)
-    if (process.env.NODE_ENV !== 'production') {
-      logger.warn('Using default Neo4j credentials (development only)');
-      return {
-        uri: 'bolt://localhost:7687',
-        username: 'neo4j',
-        password: 'azure-grapher-2024'
-      };
-    }
-
-    throw new Error('Neo4j credentials not configured');
+    // No hardcoded fallback - credentials MUST be provided via environment
+    throw new Error(
+      'Neo4j credentials not configured. Please set NEO4J_URI, NEO4J_USER (or NEO4J_USERNAME), ' +
+      'and NEO4J_PASSWORD environment variables.'
+    );
   }
 
   /**
