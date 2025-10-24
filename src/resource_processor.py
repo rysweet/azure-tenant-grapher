@@ -250,14 +250,27 @@ class DatabaseOperations:
 
         try:
             # Defensive validation of required fields
+            # Subscription-scoped resources (e.g., role assignments) don't have location/resource_group
+            subscription_scoped_types = [
+                "Microsoft.Authorization/roleAssignments",
+                "Microsoft.Authorization/roleDefinitions",
+                "Microsoft.Authorization/policyAssignments",
+                "Microsoft.Authorization/policyDefinitions",
+            ]
+
+            is_subscription_scoped = resource.get("type") in subscription_scoped_types
+
             required_fields = [
                 "id",
                 "name",
                 "type",
-                "location",
-                "resource_group",
                 "subscription_id",
             ]
+
+            # Only require location and resource_group for resource-group-scoped resources
+            if not is_subscription_scoped:
+                required_fields.extend(["location", "resource_group"])
+
             # Accept id from resource_id if present
             if not resource.get("id") and resource.get("resource_id"):
                 resource["id"] = resource["resource_id"]
