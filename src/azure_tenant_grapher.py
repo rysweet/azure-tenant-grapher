@@ -50,7 +50,6 @@ class AzureTenantGrapher:
                 logger.warning(
                     "Migration runner failed or unavailable; skipping migrations."
                 )
-        from .services.aad_graph_service import AADGraphService
         from .services.azure_discovery_service import AzureDiscoveryService
         from .services.resource_processing_service import ResourceProcessingService
         from .services.tenant_specification_service import TenantSpecificationService
@@ -63,10 +62,19 @@ class AzureTenantGrapher:
         aad_graph_service = None
         if config.processing.enable_aad_import:
             try:
+                from .services.aad_graph_service import AADGraphService
                 aad_graph_service = AADGraphService()
                 logger.info("AAD Graph Service initialized for identity import")
+            except ModuleNotFoundError as e:
+                logger.warning(
+                    f"AAD import is enabled but required dependencies are not installed: {e}\n"
+                    "Install msgraph dependencies with: pip install msgraph-sdk azure-identity\n"
+                    "Or disable AAD import with: --no-aad-import"
+                )
+                aad_graph_service = None
             except Exception as e:
                 logger.warning(f"Failed to initialize AAD Graph Service: {e}")
+                aad_graph_service = None
 
         self.processing_service = ResourceProcessingService(
             self.session_manager,
