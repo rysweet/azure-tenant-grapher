@@ -438,7 +438,9 @@ class TransformationEngine:
 
         for vnet in vnets:
             vnet_name = vnet.get("name", "unknown")
-            vnet_address_space = vnet.get("address_space", [])
+
+            # Parse addressSpace from properties (same logic as terraform_emitter.py:594-598)
+            vnet_address_space = self._extract_vnet_address_space(vnet)
 
             # Extract subnets
             subnets = self._extract_subnets_from_vnet(vnet)
@@ -453,6 +455,56 @@ class TransformationEngine:
             results.append(result)
 
         return results
+
+    def _extract_vnet_address_space(self, vnet: Dict[str, Any]) -> List[str]:
+        """Extract addressSpace from VNet resource.
+
+        Parses the properties JSON to extract addressSpace.addressPrefixes,
+        similar to terraform_emitter.py:594-598.
+
+        Args:
+            vnet: VNet resource dictionary
+
+        Returns:
+            List of address prefixes (e.g., ["10.0.0.0/16"])
+        """
+        vnet_name = vnet.get("name", "unknown")
+
+        # Try top-level address_space first (if set by resource processor)
+        if "address_space" in vnet and vnet["address_space"]:
+            try:
+                if isinstance(vnet["address_space"], str):
+                    return json.loads(vnet["address_space"])
+                elif isinstance(vnet["address_space"], list):
+                    return vnet["address_space"]
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(
+                    f"Failed to parse top-level address_space for VNet '{vnet_name}': {e}"
+                )
+
+        # Parse from properties JSON
+        properties = vnet.get("properties", {})
+
+        # Handle JSON string from Neo4j
+        if isinstance(properties, str):
+            try:
+                properties = json.loads(properties)
+            except json.JSONDecodeError:
+                logger.warning(
+                    f"Failed to parse properties for VNet '{vnet_name}'"
+                )
+                return []
+
+        # Extract addressSpace.addressPrefixes
+        address_space_obj = properties.get("addressSpace", {})
+        address_prefixes = address_space_obj.get("addressPrefixes", [])
+
+        if not address_prefixes:
+            logger.debug(
+                f"VNet '{vnet_name}' has no addressSpace in properties"
+            )
+
+        return address_prefixes
 
     def _extract_subnets_from_vnet(self, vnet: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract subnet configurations from VNet resource.
