@@ -322,9 +322,18 @@ class DatabaseOperations:
                                 logger.debug(
                                     f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
                                 )
+
+                        # Extract subnets as separate top-level property to avoid truncation
+                        subnets = props_dict.get("subnets", [])
+                        if subnets:
+                            # Store complete subnets array to prevent loss from properties truncation
+                            resource_data["subnets"] = json.dumps(subnets)
+                            logger.debug(
+                                f"Extracted {len(subnets)} subnets for VNet '{resource.get('name')}'"
+                            )
                     except (json.JSONDecodeError, AttributeError, TypeError) as e:
                         logger.warning(
-                            f"Failed to extract addressSpace from VNet '{resource.get('name')}': {e}"
+                            f"Failed to extract addressSpace/subnets from VNet '{resource.get('name')}': {e}"
                         )
 
             # Prevent empty properties from overwriting existing data
