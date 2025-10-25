@@ -628,8 +628,26 @@ class TerraformEmitter(IaCEmitter):
             resource_config["address_space"] = address_prefixes
 
             # Extract and emit subnets from vnet properties
+            # Try top-level subnets field first (stored separately to avoid truncation)
+            subnets = []
+            if resource.get("subnets"):
+                try:
+                    subnets_str = resource.get("subnets")
+                    if isinstance(subnets_str, str):
+                        subnets = json.loads(subnets_str)
+                        logger.debug(
+                            f"VNet '{resource_name}' using top-level subnets property: {len(subnets)} subnets"
+                        )
+                    elif isinstance(subnets_str, list):
+                        subnets = subnets_str
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(
+                        f"Failed to parse top-level subnets for VNet '{resource_name}': {e}"
+                    )
 
-            subnets = properties.get("subnets", [])
+            # Fallback to properties.subnets if top-level not found
+            if not subnets:
+                subnets = properties.get("subnets", [])
             for subnet in subnets:
                 subnet_name = subnet.get("name")
                 if not subnet_name:
