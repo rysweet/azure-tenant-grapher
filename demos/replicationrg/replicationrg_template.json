@@ -1,0 +1,3742 @@
+WARNING: Export template operation completed with errors. Some resources were not exported. Please see details for more information.
+ERROR: Could not get resources of the type 'Microsoft.Storage/storageAccounts/inventoryPolicies'. Resources of this type will not be exported.
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "bastionHosts_vnet_winad_bastion_name": {
+      "type": "String"
+    },
+    "extensions_PowerShellDSC_configurationFunction": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_1": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_10": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_11": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_12": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_13": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_14": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_15": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_2": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_3": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_4": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_5": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_6": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_7": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_8": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_configurationFunction_9": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_1": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_10": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_11": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_12": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_13": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_14": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_15": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_2": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_3": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_4": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_5": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_6": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_7": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_8": {
+      "type": "SecureString"
+    },
+    "extensions_PowerShellDSC_modulesUrl_9": {
+      "type": "SecureString"
+    },
+    "networkInterfaces_nic_DC01_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION10_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION11_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION12_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION13_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION14_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION15_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION16_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION17_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION18_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION19_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION5_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION6_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION7_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION8_name": {
+      "type": "String"
+    },
+    "networkInterfaces_nic_WORKSTATION9_name": {
+      "type": "String"
+    },
+    "publicIPAddresses_pip_vnet_winad_bastion_name": {
+      "type": "String"
+    },
+    "storageAccounts_2yoovipwxkb76_name": {
+      "type": "String"
+    },
+    "storageAccounts_7ie4gs27bx36i_name": {
+      "type": "String"
+    },
+    "storageAccounts_testreplicationstg2_name": {
+      "type": "String"
+    },
+    "storageAccounts_testreplicationstg_name": {
+      "type": "String"
+    },
+    "vaults_testreplicationkv2_name": {
+      "type": "String"
+    },
+    "vaults_testreplicationkv_name": {
+      "type": "String"
+    },
+    "virtualMachines_DC01_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION10_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION11_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION12_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION13_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION14_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION15_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION16_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION17_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION18_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION19_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION5_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION6_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION7_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION8_name": {
+      "type": "String"
+    },
+    "virtualMachines_WORKSTATION9_name": {
+      "type": "String"
+    },
+    "virtualNetworks_vnet_winad_name": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2024-12-01-preview",
+      "location": "eastus",
+      "name": "[parameters('vaults_testreplicationkv_name')]",
+      "properties": {
+        "accessPolicies": [],
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "enabledForDeployment": false,
+        "enabledForDiskEncryption": false,
+        "enabledForTemplateDeployment": false,
+        "networkAcls": {
+          "bypass": "None",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "provisioningState": "Succeeded",
+        "publicNetworkAccess": "Enabled",
+        "sku": {
+          "family": "A",
+          "name": "Standard"
+        },
+        "softDeleteRetentionInDays": 90,
+        "tenantId": "3cd87a41-1f61-4aef-a212-cefdecd9a2d1",
+        "vaultUri": "[concat('https://', parameters('vaults_testreplicationkv_name'), '.vault.azure.net/')]"
+      },
+      "type": "Microsoft.KeyVault/vaults"
+    },
+    {
+      "apiVersion": "2024-12-01-preview",
+      "location": "eastus",
+      "name": "[parameters('vaults_testreplicationkv2_name')]",
+      "properties": {
+        "accessPolicies": [],
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "enabledForDeployment": false,
+        "enabledForDiskEncryption": false,
+        "enabledForTemplateDeployment": false,
+        "networkAcls": {
+          "bypass": "None",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "provisioningState": "Succeeded",
+        "publicNetworkAccess": "Enabled",
+        "sku": {
+          "family": "A",
+          "name": "Standard"
+        },
+        "softDeleteRetentionInDays": 90,
+        "tenantId": "3cd87a41-1f61-4aef-a212-cefdecd9a2d1",
+        "vaultUri": "[concat('https://', parameters('vaults_testreplicationkv2_name'), '.vault.azure.net/')]"
+      },
+      "type": "Microsoft.KeyVault/vaults"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "location": "westus2",
+      "name": "[parameters('publicIPAddresses_pip_vnet_winad_bastion_name')]",
+      "properties": {
+        "idleTimeoutInMinutes": 4,
+        "ipAddress": "52.233.84.5",
+        "ipTags": [],
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Static"
+      },
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "type": "Microsoft.Network/publicIPAddresses"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "location": "westus2",
+      "name": "[parameters('virtualNetworks_vnet_winad_name')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "192.168.0.0/16"
+          ]
+        },
+        "dhcpOptions": {
+          "dnsServers": [
+            "192.168.2.4"
+          ]
+        },
+        "enableDdosProtection": false,
+        "privateEndpointVNetPolicies": "Disabled",
+        "subnets": [
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]",
+            "name": "snet-win",
+            "properties": {
+              "addressPrefix": "192.168.2.0/24",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'AzureBastionSubnet')]",
+            "name": "AzureBastionSubnet",
+            "properties": {
+              "addressPrefix": "192.168.3.0/26",
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          }
+        ],
+        "virtualNetworkPeerings": []
+      },
+      "type": "Microsoft.Network/virtualNetworks"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "kind": "Storage",
+      "location": "westus2",
+      "name": "[parameters('storageAccounts_2yoovipwxkb76_name')]",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "allowCrossTenantReplication": false,
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "services": {
+            "blob": {
+              "enabled": true,
+              "keyType": "Account"
+            },
+            "file": {
+              "enabled": true,
+              "keyType": "Account"
+            }
+          }
+        },
+        "minimumTlsVersion": "TLS1_0",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "supportsHttpsTrafficOnly": false
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "kind": "Storage",
+      "location": "westus2",
+      "name": "[parameters('storageAccounts_7ie4gs27bx36i_name')]",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "allowCrossTenantReplication": false,
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "services": {
+            "blob": {
+              "enabled": true,
+              "keyType": "Account"
+            },
+            "file": {
+              "enabled": true,
+              "keyType": "Account"
+            }
+          }
+        },
+        "minimumTlsVersion": "TLS1_0",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "supportsHttpsTrafficOnly": false
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "kind": "StorageV2",
+      "location": "westus2",
+      "name": "[parameters('storageAccounts_testreplicationstg_name')]",
+      "properties": {
+        "accessTier": "Hot",
+        "allowBlobPublicAccess": false,
+        "allowCrossTenantReplication": false,
+        "allowSharedKeyAccess": true,
+        "defaultToOAuthAuthentication": false,
+        "dnsEndpointType": "Standard",
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "requireInfrastructureEncryption": false,
+          "services": {
+            "blob": {
+              "enabled": true,
+              "keyType": "Account"
+            },
+            "file": {
+              "enabled": true,
+              "keyType": "Account"
+            }
+          }
+        },
+        "largeFileSharesState": "Enabled",
+        "minimumTlsVersion": "TLS1_2",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "publicNetworkAccess": "Enabled",
+        "supportsHttpsTrafficOnly": true
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "kind": "StorageV2",
+      "location": "westus2",
+      "name": "[parameters('storageAccounts_testreplicationstg2_name')]",
+      "properties": {
+        "accessTier": "Hot",
+        "allowBlobPublicAccess": false,
+        "allowCrossTenantReplication": false,
+        "allowSharedKeyAccess": true,
+        "defaultToOAuthAuthentication": false,
+        "dnsEndpointType": "Standard",
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "requireInfrastructureEncryption": false,
+          "services": {
+            "blob": {
+              "enabled": true,
+              "keyType": "Account"
+            },
+            "file": {
+              "enabled": true,
+              "keyType": "Account"
+            }
+          }
+        },
+        "largeFileSharesState": "Enabled",
+        "minimumTlsVersion": "TLS1_2",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Allow",
+          "ipRules": [],
+          "virtualNetworkRules": []
+        },
+        "publicNetworkAccess": "Enabled",
+        "supportsHttpsTrafficOnly": true
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_DC01_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_DC01_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION10_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION10_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_1')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_1')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION11_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION11_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_2')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_2')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION12_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION12_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_3')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_3')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION13_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION13_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_4')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_4')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION14_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION14_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_5')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_5')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION15_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION15_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_6')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_6')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION16_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION16_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_7')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_7')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION17_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION17_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_8')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_8')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION18_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION18_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_9')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_9')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION19_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION19_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_10')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_10')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION5_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION5_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_11')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_11')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION6_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION6_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_12')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_12')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION7_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION7_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_13')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_13')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION8_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION8_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_14')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_14')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION9_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION9_name'), '/PowerShellDSC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Powershell",
+        "settings": {
+          "configurationFunction": "[parameters('extensions_PowerShellDSC_configurationFunction_15')]",
+          "modulesUrl": "[parameters('extensions_PowerShellDSC_modulesUrl_15')]",
+          "wmfVersion": "latest"
+        },
+        "type": "DSC",
+        "typeHandlerVersion": "2.77"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_DC01_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_DC01_name'), '/SetUpDC')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10-AD/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10-AD/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION10_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION10_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION11_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION11_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION12_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION12_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION13_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION13_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION14_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION14_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION15_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION15_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION16_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION16_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION17_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION17_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION18_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION18_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION19_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION19_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION5_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION5_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION6_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION6_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION7_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION7_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION8_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION8_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_WORKSTATION9_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[concat(parameters('virtualMachines_WORKSTATION9_name'), '/SetupWinVM')]",
+      "properties": {
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {},
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File ./Set-Initial-Settings.ps1",
+          "fileUris": [
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Set-Initial-Settings.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/templates/azure/Win10/scripts/Install-DSC-Modules.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Prepare-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Box.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Disarm-Firewall.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Configure-PSRemoting.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-WinAuditCategories.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Enable-PowerShell-Logging.ps1",
+            "https://raw.githubusercontent.com/OTRF/Set-AuditRule/master/Set-AuditRule.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/auditing/Set-SACLs.ps1",
+            "https://raw.githubusercontent.com/OTRF/Blacksmith/master/resources/scripts/powershell/misc/Set-WallPaper.ps1"
+          ]
+        },
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.8"
+      },
+      "type": "Microsoft.Compute/virtualMachines/extensions"
+    },
+    {
+      "apiVersion": "2024-12-01-preview",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_testreplicationkv_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('vaults_testreplicationkv_name'), '/TestCert')]",
+      "properties": {
+        "attributes": {
+          "enabled": true,
+          "exp": 1792594219,
+          "nbf": 1761057619
+        }
+      },
+      "type": "Microsoft.KeyVault/vaults/keys"
+    },
+    {
+      "apiVersion": "2024-12-01-preview",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_testreplicationkv_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('vaults_testreplicationkv_name'), '/TestCert')]",
+      "properties": {
+        "attributes": {
+          "enabled": true,
+          "exp": 1792594219,
+          "nbf": 1761057619
+        },
+        "contentType": "application/x-pkcs12"
+      },
+      "type": "Microsoft.KeyVault/vaults/secrets"
+    },
+    {
+      "apiVersion": "2024-12-01-preview",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_testreplicationkv_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('vaults_testreplicationkv_name'), '/testSecret')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "type": "Microsoft.KeyVault/vaults/secrets"
+    },
+    {
+      "apiVersion": "2024-12-01-preview",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('vaults_testreplicationkv2_name'))]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('vaults_testreplicationkv2_name'), '/TestSecret')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        }
+      },
+      "type": "Microsoft.KeyVault/vaults/secrets"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_DC01_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_DC01_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.4",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION10_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION10_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.10",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION11_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION11_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.11",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION12_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION12_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.12",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION13_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION13_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.13",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION14_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION14_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.14",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION15_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION15_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.15",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION16_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION16_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.16",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION17_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION17_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.17",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION18_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION18_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.18",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION19_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION19_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.19",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION5_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION5_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.5",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION6_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION6_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.6",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION7_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION7_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.7",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION8_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION8_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.8",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+      ],
+      "kind": "Regular",
+      "location": "westus2",
+      "name": "[parameters('networkInterfaces_nic_WORKSTATION9_name')]",
+      "properties": {
+        "auxiliaryMode": "None",
+        "auxiliarySku": "None",
+        "disableTcpStateTracking": false,
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION9_name')), '/ipConfigurations/ipconfig1')]",
+            "name": "ipconfig1",
+            "properties": {
+              "primary": true,
+              "privateIPAddress": "192.168.2.9",
+              "privateIPAddressVersion": "IPv4",
+              "privateIPAllocationMethod": "Static",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'snet-win')]"
+              }
+            },
+            "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+          }
+        ],
+        "nicType": "Standard"
+      },
+      "type": "Microsoft.Network/networkInterfaces"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_winad_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_winad_name'), '/AzureBastionSubnet')]",
+      "properties": {
+        "addressPrefix": "192.168.3.0/26",
+        "delegations": [],
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_winad_name'))]"
+      ],
+      "name": "[concat(parameters('virtualNetworks_vnet_winad_name'), '/snet-win')]",
+      "properties": {
+        "addressPrefix": "192.168.2.0/24",
+        "delegations": [],
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": false,
+          "enabled": false
+        }
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_7ie4gs27bx36i_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": false,
+          "enabled": false
+        }
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default')]",
+      "properties": {
+        "containerDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        },
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": false,
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default')]",
+      "properties": {
+        "containerDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        },
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": false,
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "protocolSettings": {
+          "smb": {}
+        },
+        "shareDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/fileServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_7ie4gs27bx36i_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "protocolSettings": {
+          "smb": {}
+        },
+        "shareDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/fileServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "protocolSettings": {
+          "smb": {}
+        },
+        "shareDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/fileServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "protocolSettings": {
+          "smb": {}
+        },
+        "shareDeleteRetentionPolicy": {
+          "days": 7,
+          "enabled": true
+        }
+      },
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Storage/storageAccounts/fileServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/queueServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_7ie4gs27bx36i_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/queueServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/queueServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/queueServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/tableServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_7ie4gs27bx36i_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/tableServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/tableServices"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "type": "Microsoft.Storage/storageAccounts/tableServices"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_DC01_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_DC01_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_7ie4gs27bx36i_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_DC01_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_DC01_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "WindowsServer",
+            "publisher": "MicrosoftWindowsServer",
+            "sku": "2019-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_DC01_name'), '_OsDisk_1_7ce5dc9dbe894dab87161977b6d61cab'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_DC01_name'), '_OsDisk_1_7ce5dc9dbe894dab87161977b6d61cab')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION10_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION10_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION10_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION10_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION10_name'), '_OsDisk_1_d7db92e1315740b182c110116f14e57a'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION10_name'), '_OsDisk_1_d7db92e1315740b182c110116f14e57a')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION11_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION11_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION11_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION11_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION11_name'), '_OsDisk_1_b83f83366d1d423b95e181be9de46e53'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION11_name'), '_OsDisk_1_b83f83366d1d423b95e181be9de46e53')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION12_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION12_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION12_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION12_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION12_name'), '_OsDisk_1_147ae7b2f73b4364ad0b9bffef299361'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION12_name'), '_OsDisk_1_147ae7b2f73b4364ad0b9bffef299361')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION13_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION13_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION13_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION13_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION13_name'), '_OsDisk_1_fd71b54b9e674c96892cc17caccc1b60'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION13_name'), '_OsDisk_1_fd71b54b9e674c96892cc17caccc1b60')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION14_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION14_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION14_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION14_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION14_name'), '_OsDisk_1_d4ec2d8e3a2b44b98db7742accaa0f2d'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION14_name'), '_OsDisk_1_d4ec2d8e3a2b44b98db7742accaa0f2d')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION15_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION15_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION15_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION15_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION15_name'), '_OsDisk_1_f05d37822cab4d2191477f2fa212dbc4'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION15_name'), '_OsDisk_1_f05d37822cab4d2191477f2fa212dbc4')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION16_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION16_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION16_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION16_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION16_name'), '_OsDisk_1_f4fdf7a53f9a49d8b9796cd3af87cb17'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION16_name'), '_OsDisk_1_f4fdf7a53f9a49d8b9796cd3af87cb17')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION17_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION17_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION17_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION17_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION17_name'), '_OsDisk_1_a4d9e28612c6421e9cb40305d4bea8ec'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION17_name'), '_OsDisk_1_a4d9e28612c6421e9cb40305d4bea8ec')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION18_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION18_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION18_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION18_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION18_name'), '_OsDisk_1_ef8c0154bfb249c8832654df846ac54b'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION18_name'), '_OsDisk_1_ef8c0154bfb249c8832654df846ac54b')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION19_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION19_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION19_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION19_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION19_name'), '_OsDisk_1_cdd1bc5d5dbc43c1a73e0970953c2464'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION19_name'), '_OsDisk_1_cdd1bc5d5dbc43c1a73e0970953c2464')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION5_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION5_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION5_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION5_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION5_name'), '_OsDisk_1_c4f6b6b54f404237b2a07a820e89eafe'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION5_name'), '_OsDisk_1_c4f6b6b54f404237b2a07a820e89eafe')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION6_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION6_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION6_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION6_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION6_name'), '_OsDisk_1_b55eadbd39984fdabdd1d7ec6eabfcea'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION6_name'), '_OsDisk_1_b55eadbd39984fdabdd1d7ec6eabfcea')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION7_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION7_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION7_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION7_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION7_name'), '_OsDisk_1_71ec36d5789a47699cf7bd5be8650837'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION7_name'), '_OsDisk_1_71ec36d5789a47699cf7bd5be8650837')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION8_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION8_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION8_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION8_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION8_name'), '_OsDisk_1_c6b0a4c63735454cb7bbabed8bf7ec1d'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION8_name'), '_OsDisk_1_c6b0a4c63735454cb7bbabed8bf7ec1d')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-11-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION9_name'))]",
+        "[resourceId('Microsoft.Storage/StorageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "location": "westus2",
+      "name": "[parameters('virtualMachines_WORKSTATION9_name')]",
+      "properties": {
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', parameters('storageAccounts_2yoovipwxkb76_name'), '.blob.core.windows.net/')]"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "Standard_B2ms"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_nic_WORKSTATION9_name'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "adminUsername": "yourAdminUser",
+          "allowExtensionOperations": true,
+          "computerName": "[parameters('virtualMachines_WORKSTATION9_name')]",
+          "requireGuestProvisionSignal": true,
+          "secrets": [],
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "patchSettings": {
+              "assessmentMode": "ImageDefault",
+              "patchMode": "AutomaticByOS"
+            },
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "imageReference": {
+            "offer": "Windows-10",
+            "publisher": "MicrosoftWindowsDesktop",
+            "sku": "win10-22h2-pro",
+            "version": "latest"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "deleteOption": "Detach",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_WORKSTATION9_name'), '_OsDisk_1_b6f3dec8d862406483facb6373f76041'))]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "[concat(parameters('virtualMachines_WORKSTATION9_name'), '_OsDisk_1_b6f3dec8d862406483facb6373f76041')]",
+            "osType": "Windows"
+          }
+        }
+      },
+      "type": "Microsoft.Compute/virtualMachines"
+    },
+    {
+      "apiVersion": "2024-07-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_pip_vnet_winad_bastion_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'AzureBastionSubnet')]"
+      ],
+      "location": "westus2",
+      "name": "[parameters('bastionHosts_vnet_winad_bastion_name')]",
+      "properties": {
+        "disableCopyPaste": false,
+        "dnsName": "bst-addd3c6b-f3b8-422f-b130-e66d754b661f.bastion.azure.com",
+        "enableFileCopy": true,
+        "enableShareableLink": true,
+        "ipConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/bastionHosts', parameters('bastionHosts_vnet_winad_bastion_name')), '/bastionHostIpConfigurations/IpConf')]",
+            "name": "IpConf",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_pip_vnet_winad_bastion_name'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_winad_name'), 'AzureBastionSubnet')]"
+              }
+            }
+          }
+        ],
+        "scaleUnits": 2
+      },
+      "sku": {
+        "name": "Standard"
+      },
+      "type": "Microsoft.Network/bastionHosts"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_7ie4gs27bx36i_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_7ie4gs27bx36i_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_7ie4gs27bx36i_name'), '/default/bootdiagnostics-dc01-aeae7810-502f-48c3-a499-37017a81babc')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-01649d27-eb45-4e63-867e-5dd6813fa883')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-4212b29d-762d-45d4-b256-e7fdd8616261')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-615e686b-b261-4870-9738-6802195112ef')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-6515b6ca-4f1b-4f87-9418-f901ad145a77')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-65907029-03e0-47b4-b204-4538139bc8f9')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-67b1b1ec-0e97-4e91-9d56-918213c75965')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-6ee6596b-40cd-4088-94b2-495257d197af')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-8c99f80c-7af7-4157-91dc-29ab31776886')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-92eba6a6-37a6-4721-9146-292c9537dba4')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-b67a472a-7a49-44c2-9846-69f4a9e98a4e')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-c5329904-cf66-4adb-902c-8e04710e22d8')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-c6172ffd-cd53-450d-8db3-3dc3d073bde4')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-c67066d7-8162-465b-a8e9-857a17593494')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-dc56cc7d-3fa1-434c-ae70-14b3c35841d6')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_2yoovipwxkb76_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_2yoovipwxkb76_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_2yoovipwxkb76_name'), '/default/bootdiagnostics-workstati-df6a57a5-1e66-49cc-9d18-0248aab2be7f')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_testreplicationstg2_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default/test2')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_testreplicationstg2_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg2_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg2_name'), '/default/test3')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_testreplicationstg_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default/test4')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    },
+    {
+      "apiVersion": "2025-01-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_testreplicationstg_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_testreplicationstg_name'))]"
+      ],
+      "name": "[concat(parameters('storageAccounts_testreplicationstg_name'), '/default/test5')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "publicAccess": "None"
+      },
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers"
+    }
+  ],
+  "variables": {}
+}
