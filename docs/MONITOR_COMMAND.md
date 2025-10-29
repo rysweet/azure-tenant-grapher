@@ -345,10 +345,8 @@ from neo4j import GraphDatabase
 from datetime import datetime
 import os
 
-uri = 'bolt://localhost:7688'
+uri = os.getenv('NEO4J_URI', 'bolt://localhost:7688')
 password = os.getenv('NEO4J_PASSWORD')
-if not password:
-    raise ValueError('NEO4J_PASSWORD environment variable is required')
 driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 
 with driver.session() as session:
@@ -361,7 +359,7 @@ print(f'[{datetime.now().strftime("%H:%M:%S")}] Source={source}')
 ```
 
 **Problems:**
-- Hard-coded credentials
+- Manual credential management
 - No error handling
 - Manual subprocess management
 - Limited output formats

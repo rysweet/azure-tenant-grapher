@@ -315,8 +315,6 @@ uv run python3 -c "
 import os
 from neo4j import GraphDatabase
 password = os.getenv('NEO4J_PASSWORD')
-if not password:
-    raise ValueError('NEO4J_PASSWORD environment variable is required')
 driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (nic:Resource {name: \"csiska-01654\"})
@@ -341,8 +339,6 @@ uv run python3 -c "
 import os
 from neo4j import GraphDatabase
 password = os.getenv('NEO4J_PASSWORD')
-if not password:
-    raise ValueError('NEO4J_PASSWORD environment variable is required')
 driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (r:Resource)

@@ -1197,6 +1197,255 @@ async def fidelity(
     )
 
 
+@cli.command("cost-analysis")
+@click.option(
+    "--subscription-id",
+    required=True,
+    help="Azure subscription ID",
+)
+@click.option(
+    "--resource-group",
+    help="Resource group name (optional)",
+)
+@click.option(
+    "--resource-id",
+    help="Specific resource ID (optional)",
+)
+@click.option(
+    "--start-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="Start date (YYYY-MM-DD)",
+)
+@click.option(
+    "--end-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="End date (YYYY-MM-DD)",
+)
+@click.option(
+    "--granularity",
+    type=click.Choice(["daily", "monthly"], case_sensitive=False),
+    default="daily",
+    help="Data granularity (default: daily)",
+)
+@click.option(
+    "--group-by",
+    type=click.Choice(["resource", "resource_group", "service_name", "tag"], case_sensitive=False),
+    help="Group results by field",
+)
+@click.option(
+    "--tag-key",
+    help="Tag key for grouping (if group-by=tag)",
+)
+@click.option(
+    "--sync",
+    is_flag=True,
+    help="Sync costs from Azure before querying",
+)
+@click.pass_context
+@async_command
+async def cost_analysis(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    resource_id: Optional[str],
+    start_date: Optional[click.DateTime],
+    end_date: Optional[click.DateTime],
+    granularity: str,
+    group_by: Optional[str],
+    tag_key: Optional[str],
+    sync: bool,
+) -> None:
+    """Analyze Azure costs for resources tracked in the graph.
+
+    This command queries cost data from Azure Cost Management API and stores it
+    in the Neo4j graph database for analysis. You can filter by subscription,
+    resource group, or specific resource.
+
+    Examples:
+
+        # Analyze subscription costs for current month with sync
+        atg cost-analysis --subscription-id xxx-xxx-xxx --sync
+
+        # Analyze specific resource group costs
+        atg cost-analysis --subscription-id xxx-xxx-xxx \\
+                          --resource-group my-rg \\
+                          --start-date 2025-01-01 \\
+                          --end-date 2025-01-31
+
+        # Group costs by service
+        atg cost-analysis --subscription-id xxx-xxx-xxx \\
+                          --group-by service_name \\
+                          --sync
+    """
+    from src.cli_commands import cost_analysis_command_handler
+
+    await cost_analysis_command_handler(
+        ctx=ctx,
+        subscription_id=subscription_id,
+        resource_group=resource_group,
+        resource_id=resource_id,
+        start_date=start_date,
+        end_date=end_date,
+        granularity=granularity,
+        group_by=group_by,
+        tag_key=tag_key,
+        sync=sync,
+    )
+
+
+@cli.command("cost-forecast")
+@click.option(
+    "--subscription-id",
+    required=True,
+    help="Azure subscription ID",
+)
+@click.option(
+    "--resource-group",
+    help="Resource group name (optional)",
+)
+@click.option(
+    "--days",
+    default=30,
+    type=int,
+    help="Number of days to forecast (default: 30)",
+)
+@click.option(
+    "--output",
+    help="Output file path (JSON)",
+)
+@click.pass_context
+@async_command
+async def cost_forecast(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    days: int,
+    output: Optional[str],
+) -> None:
+    """Forecast future costs based on historical trends.
+
+    This command uses historical cost data stored in Neo4j to generate cost
+    forecasts using linear regression. Requires at least 14 days of historical
+    cost data.
+
+    Examples:
+
+        # Forecast subscription costs for next 30 days
+        atg cost-forecast --subscription-id xxx-xxx-xxx
+
+        # Forecast resource group costs for next 90 days
+        atg cost-forecast --subscription-id xxx-xxx-xxx \\
+                          --resource-group my-rg \\
+                          --days 90
+
+        # Export forecast to JSON
+        atg cost-forecast --subscription-id xxx-xxx-xxx \\
+                          --output forecast.json
+    """
+    from src.cli_commands import cost_forecast_command_handler
+
+    await cost_forecast_command_handler(
+        ctx=ctx,
+        subscription_id=subscription_id,
+        resource_group=resource_group,
+        days=days,
+        output=output,
+    )
+
+
+@cli.command("cost-report")
+@click.option(
+    "--subscription-id",
+    required=True,
+    help="Azure subscription ID",
+)
+@click.option(
+    "--resource-group",
+    help="Resource group name (optional)",
+)
+@click.option(
+    "--start-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="Start date (YYYY-MM-DD)",
+)
+@click.option(
+    "--end-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="End date (YYYY-MM-DD)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["markdown", "json"], case_sensitive=False),
+    default="markdown",
+    help="Output format (default: markdown)",
+)
+@click.option(
+    "--include-forecast/--no-forecast",
+    default=True,
+    help="Include cost forecast (default: include)",
+)
+@click.option(
+    "--include-anomalies/--no-anomalies",
+    default=True,
+    help="Include anomaly detection (default: include)",
+)
+@click.option(
+    "--output",
+    help="Output file path",
+)
+@click.pass_context
+@async_command
+async def cost_report(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    start_date: Optional[click.DateTime],
+    end_date: Optional[click.DateTime],
+    format_type: str,
+    include_forecast: bool,
+    include_anomalies: bool,
+    output: Optional[str],
+) -> None:
+    """Generate comprehensive cost report.
+
+    This command generates a detailed cost report including historical costs,
+    optional forecasts, and anomaly detection. Reports can be generated in
+    markdown or JSON format.
+
+    Examples:
+
+        # Generate markdown report for current month
+        atg cost-report --subscription-id xxx-xxx-xxx
+
+        # Generate detailed report with forecast and anomalies
+        atg cost-report --subscription-id xxx-xxx-xxx \\
+                        --include-forecast \\
+                        --include-anomalies \\
+                        --output report.md
+
+        # Generate JSON report for specific period
+        atg cost-report --subscription-id xxx-xxx-xxx \\
+                        --start-date 2025-01-01 \\
+                        --end-date 2025-01-31 \\
+                        --format json \\
+                        --output report.json
+    """
+    from src.cli_commands import cost_report_command_handler
+
+    await cost_report_command_handler(
+        ctx=ctx,
+        subscription_id=subscription_id,
+        resource_group=resource_group,
+        start_date=start_date,
+        end_date=end_date,
+        format=format_type,
+        include_forecast=include_forecast,
+        include_anomalies=include_anomalies,
+        output=output,
+    )
+
+
 @cli.command("backup")
 @click.option(
     "--path",

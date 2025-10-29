@@ -2367,3 +2367,426 @@ async def fidelity_command_handler(
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+
+# === Cost Management Command Handlers ===
+
+
+async def cost_analysis_command_handler(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    resource_id: Optional[str],
+    start_date: Optional[click.DateTime],
+    end_date: Optional[click.DateTime],
+    granularity: str,
+    group_by: Optional[str],
+    tag_key: Optional[str],
+    sync: bool,
+) -> None:
+    """
+    Analyze Azure costs for resources tracked in the graph.
+
+    Args:
+        ctx: Click context
+        subscription_id: Azure subscription ID
+        resource_group: Optional resource group name
+        resource_id: Optional specific resource ID
+        start_date: Start date for analysis
+        end_date: End date for analysis
+        granularity: Data granularity (daily or monthly)
+        group_by: Optional grouping (resource, resource_group, tag)
+        tag_key: Tag key for grouping (if group_by=tag)
+        sync: Sync costs from Azure before querying
+    """
+    from datetime import date, timedelta
+    from azure.identity import DefaultAzureCredential
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from src.services.cost_management_service import CostManagementService, CostManagementError
+    from src.models.cost_models import Granularity, TimeFrame
+
+    console = Console()
+
+    # Ensure Neo4j is running
+    ensure_neo4j_running()
+
+    # Get Neo4j connection details
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            console.print("[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]")
+            sys.exit(1)
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+
+    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
+    neo4j_password = os.environ.get("NEO4J_PASSWORD")
+    if not neo4j_password:
+        console.print("[red]❌ NEO4J_PASSWORD environment variable is required[/red]")
+        sys.exit(1)
+
+    # Validate group_by and tag_key
+    if group_by == "tag" and not tag_key:
+        console.print("[red]❌ --tag-key is required when using --group-by=tag[/red]")
+        sys.exit(1)
+
+    # Set default dates if not provided
+    if not end_date:
+        end_date = date.today()
+    else:
+        end_date = end_date.date()
+
+    if not start_date:
+        start_date = end_date - timedelta(days=30)
+    else:
+        start_date = start_date.date()
+
+    # Validate date range
+    if start_date > end_date:
+        console.print("[red]❌ Start date must be before end date[/red]")
+        sys.exit(1)
+
+    # Build scope string
+    scope = f"/subscriptions/{subscription_id}"
+    if resource_group:
+        scope += f"/resourceGroups/{resource_group}"
+    if resource_id:
+        scope = resource_id
+
+    try:
+        # Initialize Neo4j driver
+        from neo4j import AsyncGraphDatabase
+        driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+
+        # Initialize Azure credential
+        credential = DefaultAzureCredential()
+
+        # Create cost management service
+        service = CostManagementService(driver, credential)
+        await service.initialize()
+
+        # Sync costs from Azure if requested
+        if sync:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                progress.add_task(description="Syncing costs from Azure...", total=None)
+
+                # Fetch and store costs
+                costs = await service.fetch_costs(
+                    scope=scope,
+                    time_frame=TimeFrame.CUSTOM,
+                    start_date=start_date,
+                    end_date=end_date,
+                    granularity=Granularity.DAILY if granularity == "daily" else Granularity.MONTHLY,
+                )
+
+                stored_count = await service.store_costs(costs)
+                console.print(f"[green]✅ Synced {stored_count} cost records from Azure[/green]")
+
+        # Query costs from Neo4j
+        summary = await service.query_costs(
+            scope=scope,
+            start_date=start_date,
+            end_date=end_date,
+            group_by=group_by,
+            tag_key=tag_key,
+        )
+
+        # Display summary panel
+        summary_text = f"""
+[bold]Scope:[/bold] {summary.scope}
+[bold]Period:[/bold] {summary.start_date} to {summary.end_date}
+[bold]Total Cost:[/bold] {summary.total_cost:.2f} {summary.currency}
+[bold]Resources:[/bold] {summary.resource_count}
+[bold]Average Daily Cost:[/bold] {summary.average_daily_cost:.2f} {summary.currency}
+[bold]Average Cost per Resource:[/bold] {summary.average_cost_per_resource:.2f} {summary.currency}
+        """
+        console.print(Panel(summary_text, title="Cost Summary", border_style="blue"))
+
+        # Display service breakdown if available
+        if summary.service_breakdown:
+            table = Table(title="Cost by Service", show_header=True, header_style="bold magenta")
+            table.add_column("Service", style="cyan")
+            table.add_column("Cost", justify="right", style="green")
+            table.add_column("Percentage", justify="right", style="yellow")
+
+            sorted_services = sorted(
+                summary.service_breakdown.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+            for service, cost in sorted_services:
+                percentage = (cost / summary.total_cost * 100) if summary.total_cost > 0 else 0
+                table.add_row(
+                    service,
+                    f"{cost:.2f} {summary.currency}",
+                    f"{percentage:.1f}%"
+                )
+
+            console.print(table)
+
+        # Close connections
+        await driver.close()
+
+    except CostManagementError as e:
+        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+async def cost_forecast_command_handler(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    days: int,
+    output: Optional[str],
+) -> None:
+    """
+    Forecast future costs based on historical trends.
+
+    Args:
+        ctx: Click context
+        subscription_id: Azure subscription ID
+        resource_group: Optional resource group name
+        days: Number of days to forecast
+        output: Optional output file path (JSON)
+    """
+    from azure.identity import DefaultAzureCredential
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from src.services.cost_management_service import CostManagementService, CostManagementError
+
+    console = Console()
+
+    # Ensure Neo4j is running
+    ensure_neo4j_running()
+
+    # Get Neo4j connection details
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            console.print("[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]")
+            sys.exit(1)
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+
+    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
+    neo4j_password = os.environ.get("NEO4J_PASSWORD")
+    if not neo4j_password:
+        console.print("[red]❌ NEO4J_PASSWORD environment variable is required[/red]")
+        sys.exit(1)
+
+    # Build scope string
+    scope = f"/subscriptions/{subscription_id}"
+    if resource_group:
+        scope += f"/resourceGroups/{resource_group}"
+
+    try:
+        # Initialize Neo4j driver
+        from neo4j import AsyncGraphDatabase
+        driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+
+        # Initialize Azure credential
+        credential = DefaultAzureCredential()
+
+        # Create cost management service
+        service = CostManagementService(driver, credential)
+        await service.initialize()
+
+        # Generate forecast
+        console.print(f"[blue]📊 Forecasting costs for next {days} days...[/blue]")
+        forecasts = await service.forecast_costs(scope, forecast_days=days)
+
+        if not forecasts:
+            console.print("[yellow]⚠️  No forecast data generated (insufficient historical data)[/yellow]")
+            await driver.close()
+            return
+
+        # Calculate total predicted cost
+        total_predicted = sum(f.predicted_cost for f in forecasts)
+
+        # Display summary
+        summary_text = f"""
+[bold]Scope:[/bold] {scope}
+[bold]Forecast Period:[/bold] {days} days
+[bold]Total Predicted Cost:[/bold] {total_predicted:.2f} USD
+[bold]Average Daily Cost:[/bold] {total_predicted / days:.2f} USD
+        """
+        console.print(Panel(summary_text, title="Forecast Summary", border_style="blue"))
+
+        # Display forecast table (first 7 days)
+        table = Table(title=f"Cost Forecast (first 7 days)", show_header=True, header_style="bold magenta")
+        table.add_column("Date", style="cyan")
+        table.add_column("Predicted Cost", justify="right", style="green")
+        table.add_column("Confidence Range", justify="right", style="yellow")
+
+        for forecast in forecasts[:7]:
+            table.add_row(
+                str(forecast.forecast_date),
+                f"{forecast.predicted_cost:.2f} USD",
+                f"{forecast.confidence_lower:.2f} - {forecast.confidence_upper:.2f}"
+            )
+
+        console.print(table)
+
+        # Write to output file if specified
+        if output:
+            import json
+            forecast_data = [
+                {
+                    "date": f.forecast_date.isoformat(),
+                    "predicted_cost": f.predicted_cost,
+                    "confidence_lower": f.confidence_lower,
+                    "confidence_upper": f.confidence_upper,
+                }
+                for f in forecasts
+            ]
+            with open(output, "w") as f:
+                json.dump(forecast_data, f, indent=2)
+            console.print(f"[green]✅ Forecast data written to {output}[/green]")
+
+        # Close connections
+        await driver.close()
+
+    except CostManagementError as e:
+        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+async def cost_report_command_handler(
+    ctx: click.Context,
+    subscription_id: str,
+    resource_group: Optional[str],
+    start_date: Optional[click.DateTime],
+    end_date: Optional[click.DateTime],
+    format: str,
+    include_forecast: bool,
+    include_anomalies: bool,
+    output: Optional[str],
+) -> None:
+    """
+    Generate comprehensive cost report.
+
+    Args:
+        ctx: Click context
+        subscription_id: Azure subscription ID
+        resource_group: Optional resource group name
+        start_date: Start date for report
+        end_date: End date for report
+        format: Output format (markdown or json)
+        include_forecast: Include cost forecast
+        include_anomalies: Include anomaly detection
+        output: Optional output file path
+    """
+    from datetime import date, timedelta
+    from azure.identity import DefaultAzureCredential
+    from rich.console import Console
+    from src.services.cost_management_service import CostManagementService, CostManagementError
+
+    console = Console()
+
+    # Ensure Neo4j is running
+    ensure_neo4j_running()
+
+    # Get Neo4j connection details
+    neo4j_uri = os.environ.get("NEO4J_URI")
+    if not neo4j_uri:
+        neo4j_port = os.environ.get("NEO4J_PORT")
+        if not neo4j_port:
+            console.print("[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]")
+            sys.exit(1)
+        neo4j_uri = f"bolt://localhost:{neo4j_port}"
+
+    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
+    neo4j_password = os.environ.get("NEO4J_PASSWORD")
+    if not neo4j_password:
+        console.print("[red]❌ NEO4J_PASSWORD environment variable is required[/red]")
+        sys.exit(1)
+
+    # Set default dates if not provided
+    if not end_date:
+        end_date = date.today()
+    else:
+        end_date = end_date.date()
+
+    if not start_date:
+        start_date = end_date - timedelta(days=30)
+    else:
+        start_date = start_date.date()
+
+    # Validate date range
+    if start_date > end_date:
+        console.print("[red]❌ Start date must be before end date[/red]")
+        sys.exit(1)
+
+    # Build scope string
+    scope = f"/subscriptions/{subscription_id}"
+    if resource_group:
+        scope += f"/resourceGroups/{resource_group}"
+
+    try:
+        # Initialize Neo4j driver
+        from neo4j import AsyncGraphDatabase
+        driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+
+        # Initialize Azure credential
+        credential = DefaultAzureCredential()
+
+        # Create cost management service
+        service = CostManagementService(driver, credential)
+        await service.initialize()
+
+        # Generate report
+        console.print("[blue]📊 Generating comprehensive cost report...[/blue]")
+        report_content = await service.generate_report(
+            scope=scope,
+            start_date=start_date,
+            end_date=end_date,
+            output_format=format,
+            include_forecast=include_forecast,
+            include_anomalies=include_anomalies,
+        )
+
+        # Display or save report
+        if output:
+            with open(output, "w") as f:
+                f.write(report_content)
+            console.print(f"[green]✅ Report written to {output}[/green]")
+        else:
+            # Display to console
+            if format == "json":
+                console.print(report_content)
+            else:
+                # Pretty print markdown
+                from rich.markdown import Markdown
+                md = Markdown(report_content)
+                console.print(md)
+
+        # Close connections
+        await driver.close()
+
+    except CostManagementError as e:
+        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
