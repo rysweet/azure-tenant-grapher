@@ -343,10 +343,9 @@ uv run atg monitor --watch
 ```python
 from neo4j import GraphDatabase
 from datetime import datetime
-import os
 
-uri = os.getenv('NEO4J_URI', 'bolt://localhost:7688')
-password = os.getenv('NEO4J_PASSWORD')
+uri = 'bolt://localhost:7688'
+password = os.getenv('NEO4J_PASSWORD', 'your-password-here')
 driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 
 with driver.session() as session:
@@ -359,7 +358,7 @@ print(f'[{datetime.now().strftime("%H:%M:%S")}] Source={source}')
 ```
 
 **Problems:**
-- Manual credential management
+- Hard-coded credentials
 - No error handling
 - Manual subprocess management
 - Limited output formats

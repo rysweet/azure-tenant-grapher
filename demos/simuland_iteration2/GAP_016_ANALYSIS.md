@@ -312,9 +312,9 @@ uv run atg scan --tenant-id <TENANT_ID>
 
 # 3. Verify csiska-01654 NIC was discovered
 uv run python3 -c "
-import os
 from neo4j import GraphDatabase
-password = os.getenv('NEO4J_PASSWORD')
+import os
+password = os.getenv('NEO4J_PASSWORD', 'your-password-here')
 driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (nic:Resource {name: \"csiska-01654\"})
@@ -336,9 +336,9 @@ grep -q "csiska_01" demos/simuland_iteration2/main.tf.json
 ```bash
 # After implementing Fix 2, verify resource groups are stored
 uv run python3 -c "
-import os
 from neo4j import GraphDatabase
-password = os.getenv('NEO4J_PASSWORD')
+import os
+password = os.getenv('NEO4J_PASSWORD', 'your-password-here')
 driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (r:Resource)

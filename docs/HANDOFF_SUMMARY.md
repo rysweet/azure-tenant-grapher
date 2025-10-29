@@ -30,11 +30,11 @@ cp .env.example .env
 ### 2. Start Neo4j
 ```bash
 # The tool will automatically start Neo4j if needed
-# Or manually start (set your own secure password):
+# Or manually start:
 docker run -d \
   --name neo4j-azure-grapher \
   -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/<your-secure-password> \
+  -e NEO4J_AUTH=neo4j/${NEO4J_PASSWORD} \
   neo4j:5.26.0
 ```
 
@@ -241,7 +241,7 @@ AZURE_TENANT_2_NAME=<TARGET_TENANT_NAME>
 NEO4J_PORT=7688
 NEO4J_URI=bolt://localhost:7688
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=<your-secure-password>
+NEO4J_PASSWORD=your-secure-password-here
 
 # Logging
 LOG_LEVEL=INFO
@@ -456,10 +456,9 @@ cp .env.example .env
 
 ### Step 2: Start Neo4j (1 minute)
 ```bash
-# Set your own secure password
 docker run -d --name neo4j-azure-grapher \
   -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/<your-secure-password> \
+  -e NEO4J_AUTH=neo4j/${NEO4J_PASSWORD} \
   neo4j:5.26.0
 ```
 
