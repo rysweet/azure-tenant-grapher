@@ -1,5 +1,5 @@
 # Cloud Agent Runbook - Autonomous Replication
-**Purpose**: Step-by-step operational guide for cloud agent  
+**Purpose**: Step-by-step operational guide for cloud agent
 **Prerequisites**: Read CLOUD_HANDOFF_2025-10-15.md first
 
 ---
@@ -53,13 +53,13 @@ echo "Latest iteration: $LATEST"
 # Check if deployment in progress
 cd demos/iteration${LATEST} 2>/dev/null && {
     echo "Checking iteration${LATEST}..."
-    
+
     # Check terraform state
     if [ -f "terraform.tfstate" ]; then
         DEPLOYED=$(terraform show -json 2>/dev/null | jq '.values.root_module.resources | length' 2>/dev/null || echo "0")
         echo "Deployed resources: $DEPLOYED"
     fi
-    
+
     # Check for errors
     if [ -f "terraform_apply.log" ]; then
         ERRORS=$(grep -c "Error:" terraform_apply.log 2>/dev/null || echo "0")
@@ -85,7 +85,7 @@ RETURN count(r)
 
 target = g.evaluate("""
 MATCH (r:Resource)
-WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'  
+WHERE r.subscription_id = 'c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
 RETURN count(r)
 """) or 0
 
@@ -184,19 +184,19 @@ def get_neo4j_counts():
     try:
         from py2neo import Graph
         g = Graph("bolt://localhost:7688", auth=("neo4j", os.getenv("NEO4J_PASSWORD")))
-        
+
         source = g.evaluate(f"""
         MATCH (r:Resource)
         WHERE r.subscription_id = '{SOURCE_SUBSCRIPTION}'
         RETURN count(r)
         """) or 0
-        
+
         target = g.evaluate(f"""
         MATCH (r:Resource)
         WHERE r.subscription_id = '{TARGET_SUBSCRIPTION}'
         RETURN count(r)
         """) or 0
-        
+
         return source, target
     except Exception as e:
         log(f"Neo4j query failed: {e}")
@@ -236,9 +236,9 @@ def get_next_iteration_dir(iteration):
 def generate_iac(iteration):
     """Generate Infrastructure as Code"""
     log(f"Generating IaC for iteration {iteration}...")
-    
+
     output_dir = get_next_iteration_dir(iteration)
-    
+
     cmd = [
         "uv", "run", "atg", "generate-iac",
         "--resource-filters", f"subscription_id='{SOURCE_SUBSCRIPTION}'",
@@ -246,7 +246,7 @@ def generate_iac(iteration):
         "--skip-name-validation",
         "--output", str(output_dir)
     ]
-    
+
     try:
         result = subprocess.run(
             cmd,
@@ -255,14 +255,14 @@ def generate_iac(iteration):
             timeout=300,
             cwd=Path.cwd()
         )
-        
+
         if result.returncode != 0:
             log(f"IaC generation failed: {result.stderr}")
             return False
-            
+
         log(f"IaC generated successfully")
         return True
-        
+
     except Exception as e:
         log(f"IaC generation error: {e}")
         return False
@@ -270,7 +270,7 @@ def generate_iac(iteration):
 def terraform_init(iteration_dir):
     """Initialize Terraform"""
     log("Running terraform init...")
-    
+
     try:
         result = subprocess.run(
             ["terraform", "init"],
@@ -287,7 +287,7 @@ def terraform_init(iteration_dir):
 def terraform_validate(iteration_dir):
     """Validate Terraform configuration"""
     log("Running terraform validate...")
-    
+
     try:
         result = subprocess.run(
             ["terraform", "validate", "-json"],
@@ -296,16 +296,16 @@ def terraform_validate(iteration_dir):
             text=True,
             timeout=60
         )
-        
+
         if result.returncode == 0:
             output = json.loads(result.stdout)
             if output.get("valid"):
                 log("Validation passed")
                 return True
-        
+
         log(f"Validation failed: {result.stdout}")
         return False
-        
+
     except Exception as e:
         log(f"Terraform validate error: {e}")
         return False
@@ -313,7 +313,7 @@ def terraform_validate(iteration_dir):
 def terraform_plan(iteration_dir):
     """Create Terraform plan"""
     log("Running terraform plan...")
-    
+
     try:
         result = subprocess.run(
             ["terraform", "plan", "-out=tfplan"],
@@ -322,14 +322,14 @@ def terraform_plan(iteration_dir):
             text=True,
             timeout=300
         )
-        
+
         if result.returncode == 0:
             log("Plan created successfully")
             return True
-            
+
         log(f"Plan failed: {result.stderr}")
         return False
-        
+
     except Exception as e:
         log(f"Terraform plan error: {e}")
         return False
@@ -338,7 +338,7 @@ def terraform_apply(iteration, iteration_dir):
     """Apply Terraform configuration"""
     log(f"Deploying iteration {iteration}...")
     send_imessage(f"🚀 Deploying iteration {iteration} to DefenderATEVET12")
-    
+
     try:
         result = subprocess.run(
             ["terraform", "apply", "-auto-approve", "tfplan"],
@@ -347,14 +347,14 @@ def terraform_apply(iteration, iteration_dir):
             text=True,
             timeout=MAX_DEPLOYMENT_TIME
         )
-        
+
         if result.returncode == 0:
             log(f"Deployment succeeded")
             return True
         else:
             log(f"Deployment failed: {result.stderr[:500]}")
             return False
-            
+
     except subprocess.TimeoutExpired:
         log(f"Deployment timed out after {MAX_DEPLOYMENT_TIME}s")
         send_imessage(f"⏱️ Iteration {iteration} timed out after 1 hour")
@@ -366,23 +366,23 @@ def terraform_apply(iteration, iteration_dir):
 def rescan_target():
     """Rescan target tenant to update Neo4j"""
     log("Rescanning target tenant...")
-    
+
     try:
         result = subprocess.run(
-            ["uv", "run", "atg", "scan", 
+            ["uv", "run", "atg", "scan",
              "--subscription-id", TARGET_SUBSCRIPTION],
             capture_output=True,
             text=True,
             timeout=600
         )
-        
+
         if result.returncode == 0:
             log("Target tenant rescanned")
             return True
         else:
             log(f"Rescan failed: {result.stderr}")
             return False
-            
+
     except Exception as e:
         log(f"Rescan error: {e}")
         return False
@@ -395,25 +395,25 @@ def main():
     log(f"Objective: >= {FIDELITY_TARGET}% fidelity with {CONSECUTIVE_SUCCESSES_NEEDED} consecutive successes")
     log("This loop will NOT stop until objective is achieved or interrupted")
     log("="*80)
-    
+
     send_imessage("🤖 Autonomous replication loop started")
-    
+
     state = load_state()
     iteration = state["iteration"]
-    
+
     try:
         while True:
             log("")
             log("="*80)
             log(f"ITERATION {iteration}")
             log("="*80)
-            
+
             # Check current fidelity
             source_count, target_count = get_neo4j_counts()
             if source_count and target_count:
                 fidelity = calculate_fidelity(source_count, target_count)
                 log(f"Current state: {target_count}/{source_count} resources = {fidelity:.1f}% fidelity")
-                
+
                 # Check if objective achieved
                 if check_objective_achieved(fidelity, state["consecutive_successes"]):
                     log("="*80)
@@ -423,21 +423,21 @@ def main():
                     log("="*80)
                     send_imessage(f"✅ OBJECTIVE ACHIEVED! {fidelity:.1f}% fidelity with {state['consecutive_successes']} consecutive successes")
                     break
-            
+
             # Generate IaC
             if not generate_iac(iteration):
                 log("Skipping iteration due to generation failure")
                 time.sleep(300)
                 continue
-            
+
             iteration_dir = get_next_iteration_dir(iteration)
-            
+
             # Initialize
             if not terraform_init(iteration_dir):
                 log("Skipping iteration due to init failure")
                 time.sleep(300)
                 continue
-            
+
             # Validate
             if not terraform_validate(iteration_dir):
                 log("Skipping iteration due to validation failure")
@@ -447,7 +447,7 @@ def main():
                 iteration += 1
                 time.sleep(60)
                 continue
-            
+
             # Plan
             if not terraform_plan(iteration_dir):
                 log("Skipping iteration due to plan failure")
@@ -457,46 +457,46 @@ def main():
                 iteration += 1
                 time.sleep(60)
                 continue
-            
+
             # Deploy
             deployment_success = terraform_apply(iteration, iteration_dir)
-            
+
             # Rescan regardless of deployment outcome
             rescan_target()
-            
+
             # Check new fidelity
             source_count, target_count = get_neo4j_counts()
             if source_count and target_count:
                 new_fidelity = calculate_fidelity(source_count, target_count)
                 log(f"Post-deployment: {target_count}/{source_count} = {new_fidelity:.1f}%")
-                
+
                 if new_fidelity > state["best_fidelity"]:
                     state["best_fidelity"] = new_fidelity
                     log(f"🎉 New best fidelity: {new_fidelity:.1f}%")
                     send_imessage(f"📈 New best: {new_fidelity:.1f}% fidelity ({target_count}/{source_count})")
-            
+
             # Update state
             if deployment_success:
                 state["consecutive_successes"] += 1
             else:
                 state["consecutive_successes"] = 0
-            
+
             state["deployment_history"].append({
                 "iteration": iteration,
                 "success": deployment_success,
                 "fidelity": new_fidelity if source_count and target_count else 0
             })
-            
+
             state["iteration"] = iteration + 1
             save_state(state)
-            
+
             # Move to next iteration
             iteration += 1
-            
+
             # Keep session alive
             log("Waiting 60s before next iteration...")
             time.sleep(60)
-            
+
     except KeyboardInterrupt:
         log("")
         log("="*80)
@@ -558,18 +558,18 @@ def main():
     """Monitor loop and send updates"""
     print("Starting autonomous loop monitor...")
     print(f"Updates every {UPDATE_INTERVAL}s")
-    
+
     last_iteration = None
-    
+
     while True:
         try:
             state = get_state()
-            
+
             if state:
                 current_iteration = state.get("iteration", 0)
                 consecutive = state.get("consecutive_successes", 0)
                 best_fidelity = state.get("best_fidelity", 0)
-                
+
                 # Send update if iteration changed
                 if current_iteration != last_iteration:
                     message = (
@@ -579,9 +579,9 @@ def main():
                     )
                     send_imessage(message)
                     last_iteration = current_iteration
-            
+
             time.sleep(UPDATE_INTERVAL)
-            
+
         except KeyboardInterrupt:
             print("\nMonitor stopped")
             break

@@ -6,15 +6,13 @@ token validation, encryption/decryption, security scanning, and audit logging.
 """
 
 import base64
-import hashlib
 import hmac
 import json
 import re
 import secrets
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import MagicMock
 
 import jwt
 from cryptography.fernet import Fernet
@@ -52,40 +50,42 @@ class TokenValidator:
         issues = []
 
         # Check basic structure
-        parts = token.split('.')
+        parts = token.split(".")
         if len(parts) != 3:
-            issues.append(f"Invalid token structure: expected 3 parts, got {len(parts)}")
+            issues.append(
+                f"Invalid token structure: expected 3 parts, got {len(parts)}"
+            )
             return False, issues
 
         # Try to decode header
         try:
-            header = json.loads(base64.urlsafe_b64decode(parts[0] + '=='))
-            if 'alg' not in header:
+            header = json.loads(base64.urlsafe_b64decode(parts[0] + "=="))
+            if "alg" not in header:
                 issues.append("Missing 'alg' in header")
-            if 'typ' not in header:
+            if "typ" not in header:
                 issues.append("Missing 'typ' in header")
         except Exception as e:
             issues.append(f"Invalid header encoding: {e}")
 
         # Try to decode payload
         try:
-            payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=='))
+            payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=="))
 
             # Check required claims
-            required_claims = ['iss', 'sub', 'aud', 'exp', 'iat']
+            required_claims = ["iss", "sub", "aud", "exp", "iat"]
             for claim in required_claims:
                 if claim not in payload:
                     issues.append(f"Missing required claim: {claim}")
 
             # Check expiration
-            if 'exp' in payload:
-                exp_time = datetime.fromtimestamp(payload['exp'], tz=timezone.utc)
+            if "exp" in payload:
+                exp_time = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
                 if exp_time < datetime.now(timezone.utc):
                     issues.append("Token is expired")
 
             # Check issued at time
-            if 'iat' in payload:
-                iat_time = datetime.fromtimestamp(payload['iat'], tz=timezone.utc)
+            if "iat" in payload:
+                iat_time = datetime.fromtimestamp(payload["iat"], tz=timezone.utc)
                 if iat_time > datetime.now(timezone.utc):
                     issues.append("Token issued in the future")
 
@@ -108,22 +108,24 @@ class TokenValidator:
         vulnerabilities = []
 
         try:
-            header = json.loads(
-                base64.urlsafe_b64decode(token.split('.')[0] + '==')
-            )
+            header = json.loads(base64.urlsafe_b64decode(token.split(".")[0] + "=="))
 
             # Check for 'none' algorithm vulnerability
-            if header.get('alg', '').lower() == 'none':
+            if header.get("alg", "").lower() == "none":
                 vulnerabilities.append("CRITICAL: Token uses 'none' algorithm")
 
             # Check for weak algorithms
-            weak_algs = ['HS256', 'HS384', 'HS512']
-            if header.get('alg') in weak_algs:
-                vulnerabilities.append(f"Token uses symmetric algorithm: {header['alg']}")
+            weak_algs = ["HS256", "HS384", "HS512"]
+            if header.get("alg") in weak_algs:
+                vulnerabilities.append(
+                    f"Token uses symmetric algorithm: {header['alg']}"
+                )
 
             # Check for algorithm confusion
-            if 'jku' in header or 'jwk' in header or 'x5u' in header:
-                vulnerabilities.append("Token contains key URL claims (potential key confusion)")
+            if "jku" in header or "jwk" in header or "x5u" in header:
+                vulnerabilities.append(
+                    "Token contains key URL claims (potential key confusion)"
+                )
 
         except Exception:
             vulnerabilities.append("Unable to parse token header")
@@ -223,7 +225,7 @@ class SecurityScanner:
         r"(--|#|\/\*|\*\/)",
         r"(\bOR\b\s*\d*\s*=\s*\d*)",
         r"(\bAND\b\s*\d*\s*=\s*\d*)",
-        r"('|\"|;|\\x00|\\n|\\r|\\x1a)"
+        r"('|\"|;|\\x00|\\n|\\r|\\x1a)",
     ]
 
     XSS_PATTERNS = [
@@ -232,7 +234,7 @@ class SecurityScanner:
         r"(on\w+\s*=)",
         r"(<iframe[^>]*>)",
         r"(document\.(cookie|write|domain))",
-        r"(window\.(location|open))"
+        r"(window\.(location|open))",
     ]
 
     PATH_TRAVERSAL_PATTERNS = [
@@ -240,7 +242,7 @@ class SecurityScanner:
         r"(%2e%2e%2f|%2e%2e/)",
         r"(\.\.;)",
         r"(\w+://)",
-        r"(/etc/passwd|/windows/system32)"
+        r"(/etc/passwd|/windows/system32)",
     ]
 
     @classmethod
@@ -319,7 +321,7 @@ class SecurityScanner:
         api_key_patterns = [
             r"api[_-]?key[\"']?\s*[:=]\s*[\"']?[\w-]{20,}",
             r"sk_[a-z]+_[\w]{20,}",
-            r"pk_[a-z]+_[\w]{20,}"
+            r"pk_[a-z]+_[\w]{20,}",
         ]
         for pattern in api_key_patterns:
             if re.search(pattern, text, re.IGNORECASE):
@@ -345,7 +347,7 @@ class AuditLogger:
         success: bool,
         method: str,
         ip_address: str,
-        user_agent: str = None
+        user_agent: str = None,
     ):
         """Log authentication attempt."""
         event = {
@@ -355,7 +357,7 @@ class AuditLogger:
             "success": success,
             "method": method,
             "ip_address": ip_address,
-            "user_agent": user_agent
+            "user_agent": user_agent,
         }
         self.events.append(event)
         return event
@@ -366,7 +368,7 @@ class AuditLogger:
         resource: str,
         action: str,
         allowed: bool,
-        reason: str = None
+        reason: str = None,
     ):
         """Log authorization decision."""
         event = {
@@ -376,17 +378,13 @@ class AuditLogger:
             "resource": resource,
             "action": action,
             "allowed": allowed,
-            "reason": reason
+            "reason": reason,
         }
         self.events.append(event)
         return event
 
     def log_security_violation(
-        self,
-        violation_type: str,
-        details: str,
-        source_ip: str,
-        user_id: str = None
+        self, violation_type: str, details: str, source_ip: str, user_id: str = None
     ):
         """Log security violation."""
         event = {
@@ -395,7 +393,7 @@ class AuditLogger:
             "violation_type": violation_type,
             "details": details,
             "source_ip": source_ip,
-            "user_id": user_id
+            "user_id": user_id,
         }
         self.events.append(event)
         return event
@@ -405,7 +403,7 @@ class AuditLogger:
         event_type: str = None,
         user_id: str = None,
         start_time: datetime = None,
-        end_time: datetime = None
+        end_time: datetime = None,
     ) -> List[Dict[str, Any]]:
         """Query audit events."""
         filtered = self.events
@@ -418,13 +416,15 @@ class AuditLogger:
 
         if start_time:
             filtered = [
-                e for e in filtered
+                e
+                for e in filtered
                 if datetime.fromisoformat(e["timestamp"]) >= start_time
             ]
 
         if end_time:
             filtered = [
-                e for e in filtered
+                e
+                for e in filtered
                 if datetime.fromisoformat(e["timestamp"]) <= end_time
             ]
 
@@ -445,10 +445,7 @@ class MockAzureADClient:
         self.failed_attempts = {}
 
     def authenticate(
-        self,
-        username: str,
-        password: str,
-        tenant_id: str = None
+        self, username: str, password: str, tenant_id: str = None
     ) -> Dict[str, Any]:
         """Mock authentication flow."""
         tenant_id = tenant_id or self.config.get("tenant_id")
@@ -478,7 +475,7 @@ class MockAzureADClient:
             "expires_in": 3600,
             "token_type": "Bearer",
             "user_id": username,
-            "tenant_id": tenant_id
+            "tenant_id": tenant_id,
         }
 
         self.refresh_tokens[f"refresh_{token_id}"] = token_id
@@ -504,7 +501,7 @@ class MockAzureADClient:
             "expires_in": 3600,
             "token_type": "Bearer",
             "user_id": old_token["user_id"],
-            "tenant_id": old_token["tenant_id"]
+            "tenant_id": old_token["tenant_id"],
         }
 
         # Invalidate old tokens
@@ -547,10 +544,7 @@ def validate_csrf_token(token: str, expected: str) -> bool:
 
 
 def simulate_brute_force_attack(
-    client: MockAzureADClient,
-    username: str,
-    password_list: List[str],
-    delay: float = 0
+    client: MockAzureADClient, username: str, password_list: List[str], delay: float = 0
 ) -> Tuple[bool, str]:
     """
     Simulate brute force attack for testing.
@@ -608,8 +602,6 @@ def check_security_headers(headers: Dict[str, str]) -> List[str]:
                         f"Invalid {header}: {actual} (expected one of {expected_value})"
                     )
             elif actual != expected_value:
-                issues.append(
-                    f"Invalid {header}: {actual} (expected {expected_value})"
-                )
+                issues.append(f"Invalid {header}: {actual} (expected {expected_value})")
 
     return issues

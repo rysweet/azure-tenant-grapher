@@ -7,10 +7,8 @@ and Azure API mocking.
 
 import asyncio
 import json
-import os
-import tempfile
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -22,7 +20,7 @@ MOCK_AZURE_RESOURCES = {
             "subscriptionId": "test-sub-1",
             "displayName": "Test Subscription 1",
             "state": "Enabled",
-            "tenantId": "test-tenant-1"
+            "tenantId": "test-tenant-1",
         }
     ],
     "resource_groups": [
@@ -30,7 +28,7 @@ MOCK_AZURE_RESOURCES = {
             "id": "/subscriptions/test-sub-1/resourceGroups/test-rg-1",
             "name": "test-rg-1",
             "location": "eastus",
-            "tags": {"env": "test", "owner": "team-a"}
+            "tags": {"env": "test", "owner": "team-a"},
         }
     ],
     "virtual_machines": [
@@ -38,10 +36,7 @@ MOCK_AZURE_RESOURCES = {
             "id": "/subscriptions/test-sub-1/resourceGroups/test-rg-1/providers/Microsoft.Compute/virtualMachines/test-vm-1",
             "name": "test-vm-1",
             "location": "eastus",
-            "properties": {
-                "vmSize": "Standard_B2s",
-                "provisioningState": "Succeeded"
-            }
+            "properties": {"vmSize": "Standard_B2s", "provisioningState": "Succeeded"},
         }
     ],
     "storage_accounts": [
@@ -50,7 +45,7 @@ MOCK_AZURE_RESOURCES = {
             "name": "teststorage1",
             "location": "eastus",
             "kind": "StorageV2",
-            "sku": {"name": "Standard_LRS"}
+            "sku": {"name": "Standard_LRS"},
         }
     ],
     "users": [
@@ -58,7 +53,7 @@ MOCK_AZURE_RESOURCES = {
             "id": "user-1",
             "displayName": "Test User 1",
             "userPrincipalName": "user1@test.com",
-            "mail": "user1@test.com"
+            "mail": "user1@test.com",
         }
     ],
     "groups": [
@@ -66,9 +61,9 @@ MOCK_AZURE_RESOURCES = {
             "id": "group-1",
             "displayName": "Test Group 1",
             "description": "Test security group",
-            "members": ["user-1"]
+            "members": ["user-1"],
         }
-    ]
+    ],
 }
 
 
@@ -125,8 +120,8 @@ def mock_azure_clients(mock_azure_credentials):
         # Mock resources
         resources_list = MagicMock()
         all_resources = (
-            MOCK_AZURE_RESOURCES["virtual_machines"] +
-            MOCK_AZURE_RESOURCES["storage_accounts"]
+            MOCK_AZURE_RESOURCES["virtual_machines"]
+            + MOCK_AZURE_RESOURCES["storage_accounts"]
         )
         resources_list.list.return_value = all_resources
         rm_client.resources = resources_list
@@ -158,8 +153,8 @@ def test_tenant_config(tmp_path):
         "discovery_filters": {
             "resource_types": ["VirtualMachine", "StorageAccount"],
             "resource_groups": ["test-rg-1"],
-            "tags": {"env": "test"}
-        }
+            "tags": {"env": "test"},
+        },
     }
 
     config_file.write_text(json.dumps(config_data, indent=2))
@@ -197,22 +192,15 @@ def agent_mode_config(tmp_path, mock_mcp_server):
     """Create agent mode configuration for testing."""
     return {
         "mode": "agent",
-        "mcp": {
-            "enabled": True,
-            "endpoint": mock_mcp_server,
-            "timeout": 10
-        },
+        "mcp": {"enabled": True, "endpoint": mock_mcp_server, "timeout": 10},
         "neo4j": {
             "uri": "bolt://localhost:7687",
             "username": "neo4j",
             "password": "test_password",
-            "database": "test"
+            "database": "test",
         },
-        "azure": {
-            "tenant_id": "test-tenant-1",
-            "subscription_ids": ["test-sub-1"]
-        },
-        "output_dir": str(tmp_path / "output")
+        "azure": {"tenant_id": "test-tenant-1", "subscription_ids": ["test-sub-1"]},
+        "output_dir": str(tmp_path / "output"),
     }
 
 
@@ -236,8 +224,8 @@ def mock_websocket_client():
                 "result": {
                     "answer": "Found 2 virtual machines in the test environment",
                     "tools_used": ["query_graph", "discover_resources"],
-                    "confidence": 0.95
-                }
+                    "confidence": 0.95,
+                },
             }
             await message_queue.put(json.dumps(response))
 
@@ -262,37 +250,43 @@ def mock_llm_client():
         # Parse intent from prompt
         if "list all virtual machines" in prompt.lower():
             return {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({
-                            "intent": "list_resources",
-                            "resource_type": "VirtualMachine",
-                            "filters": {}
-                        })
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "intent": "list_resources",
+                                    "resource_type": "VirtualMachine",
+                                    "filters": {},
+                                }
+                            )
+                        }
                     }
-                }]
+                ]
             }
         elif "security" in prompt.lower():
             return {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({
-                            "intent": "analyze_security",
-                            "scope": "all"
-                        })
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {"intent": "analyze_security", "scope": "all"}
+                            )
+                        }
                     }
-                }]
+                ]
             }
         else:
             return {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({
-                            "intent": "unknown",
-                            "query": prompt
-                        })
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {"intent": "unknown", "query": prompt}
+                            )
+                        }
                     }
-                }]
+                ]
             }
 
     client.completions.create = mock_complete
@@ -323,12 +317,7 @@ def cleanup_test_resources():
 @pytest.fixture
 def performance_monitor():
     """Monitor performance metrics during tests."""
-    metrics = {
-        "start_time": None,
-        "end_time": None,
-        "operations": [],
-        "errors": []
-    }
+    metrics = {"start_time": None, "end_time": None, "operations": [], "errors": []}
 
     class PerformanceMonitor:
         def start(self):
@@ -338,19 +327,19 @@ def performance_monitor():
             metrics["end_time"] = time.time()
 
         def record_operation(self, name: str, duration: float, success: bool = True):
-            metrics["operations"].append({
-                "name": name,
-                "duration": duration,
-                "success": success,
-                "timestamp": time.time()
-            })
+            metrics["operations"].append(
+                {
+                    "name": name,
+                    "duration": duration,
+                    "success": success,
+                    "timestamp": time.time(),
+                }
+            )
 
         def record_error(self, error: str, context: Optional[Dict] = None):
-            metrics["errors"].append({
-                "error": error,
-                "context": context or {},
-                "timestamp": time.time()
-            })
+            metrics["errors"].append(
+                {"error": error, "context": context or {}, "timestamp": time.time()}
+            )
 
         def get_metrics(self) -> Dict:
             if metrics["start_time"] and metrics["end_time"]:

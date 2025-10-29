@@ -52,8 +52,12 @@ def query_resources(
 
 
 @click.command(name="validate-deployment")
-@click.option("--source-tenant-id", required=True, help="Source tenant ID to compare from")
-@click.option("--target-tenant-id", required=True, help="Target tenant ID to compare to")
+@click.option(
+    "--source-tenant-id", required=True, help="Source tenant ID to compare from"
+)
+@click.option(
+    "--target-tenant-id", required=True, help="Target tenant ID to compare to"
+)
 @click.option(
     "--source-filter",
     help="Filter for source resources (e.g., resourceGroup=RG1)",
@@ -143,7 +147,9 @@ def validate_deployment_command(
             config.neo4j.uri, auth=(config.neo4j.user, config.neo4j.password)
         )
 
-        console.print(f"[cyan]Querying source resources (tenant: {source_tenant_id})...[/cyan]")
+        console.print(
+            f"[cyan]Querying source resources (tenant: {source_tenant_id})...[/cyan]"
+        )
 
         # Query source resources
         source_resources = query_resources(driver, source_tenant_id)
@@ -153,7 +159,9 @@ def validate_deployment_command(
                 f"[yellow]⚠ Warning: No resources found for source tenant {source_tenant_id}[/yellow]"
             )
 
-        console.print(f"[cyan]Querying target resources (tenant: {target_tenant_id})...[/cyan]")
+        console.print(
+            f"[cyan]Querying target resources (tenant: {target_tenant_id})...[/cyan]"
+        )
 
         # Query target resources
         target_resources = query_resources(driver, target_tenant_id)

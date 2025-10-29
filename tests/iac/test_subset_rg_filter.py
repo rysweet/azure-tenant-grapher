@@ -4,7 +4,6 @@ Unit tests for resource group filtering in SubsetFilter.
 Tests the new resource_group predicate functionality added in Issue #277.
 """
 
-
 from src.iac.subset import SubsetFilter, SubsetSelector
 from src.iac.traverser import TenantGraph
 
@@ -63,8 +62,14 @@ def test_selector_resource_group_filter():
     assert all("SimuLand" in r["id"] for r in result.resources)
     # Verify the correct resources are included
     result_ids = {r["id"] for r in result.resources}
-    assert "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1" in result_ids
-    assert "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Network/virtualNetworks/vnet1" in result_ids
+    assert (
+        "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1"
+        in result_ids
+    )
+    assert (
+        "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Network/virtualNetworks/vnet1"
+        in result_ids
+    )
 
 
 def test_selector_multiple_resource_groups():
@@ -95,8 +100,14 @@ def test_selector_multiple_resource_groups():
     assert len(result.resources) == 2
     # Verify the correct resources are included
     result_ids = {r["id"] for r in result.resources}
-    assert "/subscriptions/sub1/resourceGroups/RG1/providers/Microsoft.Compute/virtualMachines/VM1" in result_ids
-    assert "/subscriptions/sub1/resourceGroups/RG2/providers/Microsoft.Network/virtualNetworks/vnet1" in result_ids
+    assert (
+        "/subscriptions/sub1/resourceGroups/RG1/providers/Microsoft.Compute/virtualMachines/VM1"
+        in result_ids
+    )
+    assert (
+        "/subscriptions/sub1/resourceGroups/RG2/providers/Microsoft.Network/virtualNetworks/vnet1"
+        in result_ids
+    )
 
 
 def test_selector_no_matching_resource_groups():
@@ -143,7 +154,10 @@ def test_selector_resource_group_excludes_non_rg_resources():
     result = selector.apply(graph, filter_obj)
 
     assert len(result.resources) == 1
-    assert result.resources[0]["id"] == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1"
+    assert (
+        result.resources[0]["id"]
+        == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1"
+    )
 
 
 def test_selector_resource_group_no_dependency_closure():
@@ -176,7 +190,10 @@ def test_selector_resource_group_no_dependency_closure():
 
     # Should only include resources in SimuLand, not dependencies
     assert len(result.resources) == 1
-    assert result.resources[0]["id"] == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1"
+    assert (
+        result.resources[0]["id"]
+        == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Compute/virtualMachines/VM1"
+    )
 
 
 def test_selector_resource_group_with_relationships():
@@ -220,7 +237,10 @@ def test_selector_resource_group_with_relationships():
     assert len(result.resources) == 2
     # Should only include the relationship between SimuLand resources
     assert len(result.relationships) == 1
-    assert result.relationships[0]["target"] == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Network/virtualNetworks/vnet1"
+    assert (
+        result.relationships[0]["target"]
+        == "/subscriptions/sub1/resourceGroups/SimuLand/providers/Microsoft.Network/virtualNetworks/vnet1"
+    )
 
 
 def test_has_filters_with_resource_group():

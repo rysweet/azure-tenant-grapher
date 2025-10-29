@@ -14,12 +14,12 @@ export async function withErrorHandling<T>(
     rethrow?: boolean;
   }
 ): Promise<T | undefined> {
-  const { 
-    fallbackValue, 
-    retries = 0, 
-    retryDelay = 1000, 
+  const {
+    fallbackValue,
+    retries = 0,
+    retryDelay = 1000,
     onError,
-    rethrow = false 
+    rethrow = false
   } = options || {};
 
   let lastError: Error | null = null;
@@ -30,7 +30,7 @@ export async function withErrorHandling<T>(
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       errorService.handleAsyncError(lastError, operationName);
 
       if (onError) {
@@ -67,12 +67,12 @@ export async function withNetworkErrorHandling<T>(
     rethrow?: boolean;
   }
 ): Promise<T | undefined> {
-  const { 
-    fallbackValue, 
-    retries = 2, 
-    retryDelay = 1000, 
+  const {
+    fallbackValue,
+    retries = 2,
+    retryDelay = 1000,
     onError,
-    rethrow = false 
+    rethrow = false
   } = options || {};
 
   let lastError: any = null;
@@ -83,7 +83,7 @@ export async function withNetworkErrorHandling<T>(
       return await request();
     } catch (error) {
       lastError = error;
-      
+
       errorService.handleNetworkError(error, endpoint);
 
       if (onError) {

@@ -37,7 +37,7 @@ class ErrorService {
     };
 
     this.addLog(errorLog);
-    
+
     // Console log for development
     // Console error removed
 
@@ -108,7 +108,7 @@ class ErrorService {
   handleNetworkError(error: any, endpoint?: string): void {
     const message = error.response?.data?.message || error.message || 'Network request failed';
     const status = error.response?.status;
-    
+
     this.logError(
       `Network Error: ${message}`,
       'network',
@@ -134,7 +134,7 @@ class ErrorService {
 
   private addLog(log: ErrorLog): void {
     this.errorLogs.unshift(log);
-    
+
     // Keep only recent logs
     if (this.errorLogs.length > this.maxLogs) {
       this.errorLogs = this.errorLogs.slice(0, this.maxLogs);
@@ -188,12 +188,12 @@ if (typeof window !== 'undefined') {
     errorService.logError(
       new Error(event.reason?.message || event.reason || 'Unhandled Promise Rejection'),
       'unhandled',
-      { 
+      {
         promise: event.promise,
-        reason: event.reason 
+        reason: event.reason
       }
     );
-    
+
     // Prevent default browser behavior
     event.preventDefault();
   });
@@ -209,7 +209,7 @@ if (typeof window !== 'undefined') {
         colno: event.colno
       }
     );
-    
+
     // Prevent default browser behavior
     event.preventDefault();
   });

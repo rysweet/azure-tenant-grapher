@@ -41,19 +41,19 @@ export function useSafeAsync<T = any>(
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      
+
       // Cancel any pending operations on unmount
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      
+
       // Clear any pending timeouts
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
       }
-      
+
       // Execute cleanup callbacks
       cleanupCallbacksRef.current.forEach(callback => {
         try {
@@ -63,7 +63,7 @@ export function useSafeAsync<T = any>(
         }
       });
       cleanupCallbacksRef.current.clear();
-      
+
       // Call user-provided cleanup
       if (options.onCleanup) {
         try {
@@ -108,7 +108,7 @@ export function useSafeAsync<T = any>(
           }
 
           let result: T;
-          
+
           // Execute with timeout if specified
           if (timeout > 0) {
             const timeoutPromise = new Promise<never>((_, reject) => {
@@ -116,7 +116,7 @@ export function useSafeAsync<T = any>(
                 reject(new Error(`Operation timed out after ${timeout}ms`));
               }, timeout);
             });
-            
+
             try {
               result = await Promise.race([
                 asyncFunction(...args),
@@ -167,17 +167,17 @@ export function useSafeAsync<T = any>(
               retryDelay * Math.pow(2, attempt),
               maxRetryDelay
             );
-            
+
             // Use AbortController-aware delay
             await new Promise<void>((resolve, reject) => {
               const timeoutId = setTimeout(resolve, delay);
-              
+
               // Allow abort during retry delay
               const abortHandler = () => {
                 clearTimeout(timeoutId);
                 reject(new Error('Retry aborted'));
               };
-              
+
               if (abortControllerRef.current) {
                 abortControllerRef.current.signal.addEventListener('abort', abortHandler, { once: true });
               }
@@ -203,13 +203,13 @@ export function useSafeAsync<T = any>(
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     // Clear any pending timeouts
     if (timeoutIdRef.current) {
       clearTimeout(timeoutIdRef.current);
       timeoutIdRef.current = null;
     }
-    
+
     // Execute cleanup callbacks
     cleanupCallbacksRef.current.forEach(callback => {
       try {
@@ -218,7 +218,7 @@ export function useSafeAsync<T = any>(
         // Console error removed
       }
     });
-    
+
     setState({ data: null, error: null, loading: false });
   }, []);
 
@@ -251,7 +251,7 @@ export function useSafeAsyncEffect(
                 reject(new Error(`Effect timed out after ${options.timeout}ms`));
               }, options.timeout);
             });
-            
+
             await Promise.race([
               effect(),
               timeoutPromise
@@ -264,7 +264,7 @@ export function useSafeAsyncEffect(
         if (!currentController.signal.aborted && isMountedRef.current) {
           const err = error instanceof Error ? error : new Error(String(error));
           errorService.handleAsyncError(err, 'useEffect');
-          
+
           if (options.onError) {
             options.onError(err);
           }
@@ -277,7 +277,7 @@ export function useSafeAsyncEffect(
     return () => {
       // Abort the effect on cleanup
       currentController.abort();
-      
+
       // Call user-provided cleanup
       if (options.onCleanup) {
         try {

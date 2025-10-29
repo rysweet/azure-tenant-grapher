@@ -45,7 +45,7 @@ log() {
 get_resource_counts() {
     cd "$PROJECT_ROOT"
     source .env
-    
+
     python3 <<PYTHON
 from py2neo import Graph
 import os
@@ -90,12 +90,12 @@ get_latest_iteration() {
 check_iteration_complete() {
     local iter_num="$1"
     local iter_dir="$ITERATION_DIR/iteration${iter_num}"
-    
+
     if [ ! -d "$iter_dir" ]; then
         echo "not_found"
         return
     fi
-    
+
     if [ -f "$iter_dir/terraform.tfstate" ]; then
         echo "complete"
     elif [ -f "$iter_dir/tfplan" ]; then
@@ -114,9 +114,9 @@ spawn_agent() {
     local agent_name="$1"
     local prompt="$2"
     local log_file="$AGENT_LOG_DIR/${agent_name}_$(date +%s).log"
-    
+
     log "INFO" "${BLUE}Spawning agent: ${agent_name}${NC}"
-    
+
     # Run copilot in background
     (
         cd "$PROJECT_ROOT"
@@ -125,13 +125,13 @@ spawn_agent() {
         log "INFO" "${GREEN}Agent ${agent_name} completed with exit code ${exit_code}${NC}"
         echo "$exit_code" > "${log_file}.exitcode"
     ) &
-    
+
     local agent_pid=$!
     echo "$agent_pid" > "$STATE_DIR/${agent_name}.pid"
-    
+
     log "INFO" "Agent ${agent_name} started with PID ${agent_pid}"
     send_imessage "🤖 Started agent: ${agent_name}"
-    
+
     echo "$agent_pid"
 }
 
@@ -139,12 +139,12 @@ spawn_agent() {
 check_agent() {
     local agent_name="$1"
     local pid_file="$STATE_DIR/${agent_name}.pid"
-    
+
     if [ ! -f "$pid_file" ]; then
         echo "not_running"
         return
     fi
-    
+
     local pid=$(cat "$pid_file")
     if kill -0 "$pid" 2>/dev/null; then
         echo "running"
@@ -156,22 +156,22 @@ check_agent() {
 # Evaluate objective achievement
 evaluate_objective() {
     log "INFO" "${BLUE}Evaluating objective...${NC}"
-    
+
     # Get resource counts
     local counts=$(get_resource_counts)
     local source_count=$(echo "$counts" | cut -d',' -f1)
     local target_count=$(echo "$counts" | cut -d',' -f2)
     local fidelity=$(echo "$counts" | cut -d',' -f3)
-    
+
     # Get latest iteration
     local latest_iter=$(get_latest_iteration)
-    
+
     # Check if fidelity >= 95%
     local fidelity_achieved=false
     if (( $(echo "$fidelity >= 95.0" | bc -l) )); then
         fidelity_achieved=true
     fi
-    
+
     # Check last 3 iterations for completion
     local consecutive_passes=0
     for i in $(seq "$latest_iter" -1 $(($latest_iter - 2))); do
@@ -185,20 +185,20 @@ evaluate_objective() {
             break
         fi
     done
-    
+
     # Objective is achieved if fidelity >= 95% AND 3 consecutive passes
     local objective_achieved=false
     if [ "$fidelity_achieved" = true ] && [ "$consecutive_passes" -ge 3 ]; then
         objective_achieved=true
     fi
-    
+
     log "INFO" "Source Resources: $source_count"
     log "INFO" "Target Resources: $target_count"
     log "INFO" "Fidelity: $fidelity%"
     log "INFO" "Latest Iteration: $latest_iter"
     log "INFO" "Consecutive Passes: $consecutive_passes"
     log "INFO" "Objective Achieved: $objective_achieved"
-    
+
     if [ "$objective_achieved" = true ]; then
         echo "achieved"
     else
@@ -210,35 +210,35 @@ evaluate_objective() {
 main() {
     log "INFO" "${GREEN}🚀 Master Orchestrator Started${NC}"
     send_imessage "🚀 Master Orchestrator started - working until objective achieved"
-    
+
     local iteration_count=0
     local last_status_update=0
-    
+
     while true; do
         ((iteration_count++))
         log "INFO" "${YELLOW}========== Orchestration Cycle $iteration_count ==========${NC}"
-        
+
         # 1. Evaluate objective
         local objective_status=$(evaluate_objective)
-        
+
         if [ "$objective_status" = "achieved" ]; then
             log "INFO" "${GREEN}🎉 OBJECTIVE ACHIEVED!${NC}"
             send_imessage "🎉 OBJECTIVE ACHIEVED! Tenant replication complete."
             exit 0
         fi
-        
+
         # 2. Get current state
         local latest_iter=$(get_latest_iteration)
         local iter_status=$(check_iteration_complete "$latest_iter")
-        
+
         log "INFO" "Latest iteration: $latest_iter (status: $iter_status)"
-        
+
         # 3. Check active agents
         for pid_file in "$STATE_DIR"/*.pid; do
             if [ -f "$pid_file" ]; then
                 local agent_name=$(basename "$pid_file" .pid)
                 local agent_status=$(check_agent "$agent_name")
-                
+
                 if [ "$agent_status" = "complete" ]; then
                     log "INFO" "${GREEN}✅ Agent ${agent_name} completed${NC}"
                     rm -f "$pid_file"
@@ -246,23 +246,23 @@ main() {
                 fi
             fi
         done
-        
+
         # 4. Progress current iteration if needed
         case "$iter_status" in
             "complete")
                 log "INFO" "${GREEN}Iteration $latest_iter complete, generating next...${NC}"
-                
+
                 # Generate next iteration
                 local next_iter=$((latest_iter + 1))
                 log "INFO" "Generating iteration $next_iter..."
-                
+
                 cd "$PROJECT_ROOT"
                 if uv run atg generate-iac \
                     --resource-filters "resourceGroup=~'(?i).*(simuland|SimuLand).*'" \
                     --resource-group-prefix "ITERATION${next_iter}_" \
                     --skip-name-validation \
                     --output "demos/iteration${next_iter}" 2>&1 | tee "$STATE_DIR/generate_${next_iter}.log"; then
-                    
+
                     log "INFO" "${GREEN}✅ Generated iteration $next_iter${NC}"
                     send_imessage "✅ Generated iteration $next_iter"
                 else
@@ -270,44 +270,44 @@ main() {
                     send_imessage "❌ Failed to generate iteration $next_iter"
                 fi
                 ;;
-                
+
             "generated")
                 log "INFO" "Iteration $latest_iter generated, initializing terraform..."
-                
+
                 cd "$ITERATION_DIR/iteration${latest_iter}"
                 terraform init > "$STATE_DIR/init_${latest_iter}.log" 2>&1
                 ;;
-                
+
             "planning")
                 log "INFO" "Iteration $latest_iter initialized, creating plan..."
-                
+
                 cd "$ITERATION_DIR/iteration${latest_iter}"
                 terraform plan -out=tfplan > "$STATE_DIR/plan_${latest_iter}.log" 2>&1
                 ;;
-                
+
             "applying")
                 log "INFO" "Iteration $latest_iter planned, applying..."
-                
+
                 cd "$ITERATION_DIR/iteration${latest_iter}"
                 terraform apply tfplan > "$STATE_DIR/apply_${latest_iter}.log" 2>&1 &
                 local apply_pid=$!
                 echo "$apply_pid" > "$STATE_DIR/terraform_apply_${latest_iter}.pid"
-                
+
                 log "INFO" "Terraform apply started with PID $apply_pid"
                 send_imessage "🔄 Deploying iteration $latest_iter..."
                 ;;
         esac
-        
+
         # 5. Send periodic status updates
         local current_time=$(date +%s)
         if [ $((current_time - last_status_update)) -ge 600 ]; then  # Every 10 minutes
             local counts=$(get_resource_counts)
             local fidelity=$(echo "$counts" | cut -d',' -f3)
-            
+
             send_imessage "🔄 Cycle $iteration_count | Fidelity: ${fidelity}% | Iteration: $latest_iter"
             last_status_update=$current_time
         fi
-        
+
         # 6. Sleep before next cycle
         sleep 30  # Check every 30 seconds
     done

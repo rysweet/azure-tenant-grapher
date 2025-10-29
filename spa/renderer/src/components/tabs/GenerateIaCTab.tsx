@@ -249,9 +249,9 @@ const GenerateIaCTab: React.FC = () => {
         )}
 
         {selectedNodeDetails.length > 0 && (
-          <Alert 
-            severity="info" 
-            sx={{ mb: 2 }} 
+          <Alert
+            severity="info"
+            sx={{ mb: 2 }}
             onClose={() => {
               setSelectedNodeIds([]);
               setSelectedNodeDetails([]);
@@ -262,13 +262,13 @@ const GenerateIaCTab: React.FC = () => {
             </Typography>
             <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {selectedNodeDetails.slice(0, 5).map(node => (
-                <Chip 
-                  key={node.id} 
+                <Chip
+                  key={node.id}
                   label={
-                    node.type === 'ResourceGroup' && node.resourceName 
-                      ? `📁 ${node.resourceName}` 
+                    node.type === 'ResourceGroup' && node.resourceName
+                      ? `📁 ${node.resourceName}`
                       : node.label || node.id
-                  } 
+                  }
                   size="small"
                   color={node.type === 'ResourceGroup' ? 'primary' : 'default'}
                 />

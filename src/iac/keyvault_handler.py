@@ -26,7 +26,7 @@ class KeyVaultHandler:
         vault_names: List[str],
         subscription_id: str,
         location: Optional[str] = None,
-        auto_purge: bool = False
+        auto_purge: bool = False,
     ) -> Dict[str, str]:
         """Check for Key Vault conflicts and optionally resolve them.
 

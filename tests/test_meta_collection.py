@@ -7,7 +7,6 @@ Following TDD: These tests should FAIL initially, then pass after fixes.
 
 import importlib.util
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -97,7 +96,9 @@ class TestTestCollectionIntegrity:
         - playwright.async_api is available
         - TestCompleteTenantLifecycle class exists
         """
-        test_path = Path(__file__).parent / "e2e" / "lifecycle" / "test_complete_lifecycle.py"
+        test_path = (
+            Path(__file__).parent / "e2e" / "lifecycle" / "test_complete_lifecycle.py"
+        )
 
         if not test_path.exists():
             pytest.skip("lifecycle test not found")
@@ -152,7 +153,9 @@ class TestTestCollectionIntegrity:
         - conftest imports successfully
         - No NameError during import
         """
-        conftest_path = Path(__file__).parent / "e2e" / "neo4j_integration" / "conftest.py"
+        conftest_path = (
+            Path(__file__).parent / "e2e" / "neo4j_integration" / "conftest.py"
+        )
 
         if not conftest_path.exists():
             pytest.skip("neo4j_integration conftest not found")
@@ -165,13 +168,16 @@ class TestTestCollectionIntegrity:
         except NameError as e:
             pytest.fail(f"NameError during import: {e}")
 
-    @pytest.mark.parametrize("test_dir", [
-        "tests/e2e/agent_mode",
-        "tests/e2e/auth_security",
-        "tests/e2e/lifecycle",
-        "tests/e2e/neo4j_integration",
-        "tests/e2e/spa_tabs",
-    ])
+    @pytest.mark.parametrize(
+        "test_dir",
+        [
+            "tests/e2e/agent_mode",
+            "tests/e2e/auth_security",
+            "tests/e2e/lifecycle",
+            "tests/e2e/neo4j_integration",
+            "tests/e2e/spa_tabs",
+        ],
+    )
     def test_e2e_subdirectory_collects_without_errors(self, test_dir):
         """
         FAILING TEST: Each E2E subdirectory should collect cleanly.
@@ -225,6 +231,7 @@ class TestDependencyInstallation:
         """
         try:
             import playwright
+
             assert playwright is not None, "playwright module is None"
         except ModuleNotFoundError:
             pytest.fail(
@@ -284,6 +291,7 @@ class TestDependencyInstallation:
         """
         try:
             from cryptography.hazmat.primitives.serialization import NoEncryption
+
             assert NoEncryption is not None, "NoEncryption is None"
         except ImportError as e:
             pytest.fail(
@@ -308,6 +316,7 @@ class TestDependencyInstallation:
         """
         try:
             from testcontainers.neo4j import Neo4jContainer
+
             assert Neo4jContainer is not None, "Neo4jContainer is None"
         except (ImportError, ModuleNotFoundError) as e:
             pytest.fail(
@@ -342,8 +351,7 @@ class TestDependencyInstallation:
                 missing.append(package_name)
 
         assert len(missing) == 0, (
-            f"Missing dev dependencies: {', '.join(missing)}\n"
-            f"Install with: uv sync"
+            f"Missing dev dependencies: {', '.join(missing)}\nInstall with: uv sync"
         )
 
 
@@ -361,7 +369,15 @@ class TestImportHealth:
         - No DeprecationWarning during collection
         """
         result = subprocess.run(
-            ["uv", "run", "pytest", "tests/", "--collect-only", "-W", "error::PytestCollectionWarning"],
+            [
+                "uv",
+                "run",
+                "pytest",
+                "tests/",
+                "--collect-only",
+                "-W",
+                "error::PytestCollectionWarning",
+            ],
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent.parent,
@@ -398,8 +414,8 @@ class TestImportHealth:
                 syntax_errors.append((test_file, e))
 
         assert len(syntax_errors) == 0, (
-            f"Found {len(syntax_errors)} files with syntax errors:\n" +
-            "\n".join(f"{path}: {err}" for path, err in syntax_errors)
+            f"Found {len(syntax_errors)} files with syntax errors:\n"
+            + "\n".join(f"{path}: {err}" for path, err in syntax_errors)
         )
 
 

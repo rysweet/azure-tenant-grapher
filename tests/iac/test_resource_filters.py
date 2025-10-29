@@ -1,7 +1,5 @@
 """Tests for resource filtering functionality in IaC generation."""
 
-import pytest
-
 
 class TestResourceFilterParsing:
     """Test the parsing logic for resource_filters parameter."""
@@ -123,7 +121,9 @@ class TestResourceFilterParsing:
 
     def test_mixed_filters(self):
         """Test that mixed type and property filters work together."""
-        resource_filters = "Microsoft.Network/virtualNetworks,resourceGroup=~'(?i).*simuland.*'"
+        resource_filters = (
+            "Microsoft.Network/virtualNetworks,resourceGroup=~'(?i).*simuland.*'"
+        )
         filters = [f.strip() for f in resource_filters.split(",")]
         filter_conditions = []
 

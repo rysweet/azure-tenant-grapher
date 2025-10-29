@@ -58,7 +58,9 @@ def electron_app_path() -> str:
                 break
 
     if not app_path:
-        pytest.skip("Electron app path not found. Set ELECTRON_APP_PATH environment variable.")
+        pytest.skip(
+            "Electron app path not found. Set ELECTRON_APP_PATH environment variable."
+        )
 
     return app_path
 
@@ -225,6 +227,7 @@ def test_environment_setup():
 @pytest.fixture
 def assert_element_visible():
     """Helper fixture to assert element visibility."""
+
     async def _assert(page: Page, selector: str, timeout: int = 5000):
         try:
             await page.wait_for_selector(selector, state="visible", timeout=timeout)
@@ -238,11 +241,16 @@ def assert_element_visible():
 @pytest.fixture
 def assert_element_text():
     """Helper fixture to assert element text content."""
-    async def _assert(page: Page, selector: str, expected_text: str, timeout: int = 5000):
+
+    async def _assert(
+        page: Page, selector: str, expected_text: str, timeout: int = 5000
+    ):
         try:
             element = await page.wait_for_selector(selector, timeout=timeout)
             actual_text = await element.text_content()
-            assert expected_text in actual_text, f"Expected '{expected_text}' in '{actual_text}'"
+            assert expected_text in actual_text, (
+                f"Expected '{expected_text}' in '{actual_text}'"
+            )
             return True
         except Exception as e:
             pytest.fail(f"Text assertion failed for {selector}: {e}")

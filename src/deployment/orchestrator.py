@@ -39,7 +39,9 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
         try:
             with open(json_file) as f:
                 data = json.load(f)
-                if "$schema" in data and "deploymentTemplate" in data.get("$schema", ""):
+                if "$schema" in data and "deploymentTemplate" in data.get(
+                    "$schema", ""
+                ):
                     return "arm"
         except Exception:
             continue
@@ -233,9 +235,7 @@ def deploy_bicep(
             dashboard.add_error(f"No Bicep files found in {iac_dir}")
         raise RuntimeError(f"No Bicep files found in {iac_dir}")
 
-    main_file = next(
-        (f for f in bicep_files if f.name == "main.bicep"), bicep_files[0]
-    )
+    main_file = next((f for f in bicep_files if f.name == "main.bicep"), bicep_files[0])
 
     if dry_run:
         # Validate only
@@ -364,7 +364,9 @@ def deploy_arm(
         try:
             with open(json_file) as f:
                 data = json.load(f)
-                if "$schema" in data and "deploymentTemplate" in data.get("$schema", ""):
+                if "$schema" in data and "deploymentTemplate" in data.get(
+                    "$schema", ""
+                ):
                     arm_files.append(json_file)
         except Exception:
             continue
@@ -516,13 +518,19 @@ def deploy_iac(
         check=False,
     )
 
-    current_tenant = current_tenant_result.stdout.strip() if current_tenant_result.returncode == 0 else None
+    current_tenant = (
+        current_tenant_result.stdout.strip()
+        if current_tenant_result.returncode == 0
+        else None
+    )
 
     if current_tenant == target_tenant_id:
         logger.info(f"Already authenticated to target tenant {target_tenant_id}")
     elif subscription_id:
         # Try switching subscription (works for multi-tenant users)
-        logger.info(f"Switching to subscription {subscription_id} in tenant {target_tenant_id}...")
+        logger.info(
+            f"Switching to subscription {subscription_id} in tenant {target_tenant_id}..."
+        )
         switch_result = subprocess.run(
             ["az", "account", "set", "--subscription", subscription_id],
             capture_output=True,
@@ -557,8 +565,12 @@ def deploy_iac(
     if iac_format == "terraform":
         return deploy_terraform(iac_dir, resource_group, location, dry_run, dashboard)
     elif iac_format == "bicep":
-        return deploy_bicep(iac_dir, resource_group, location, subscription_id, dry_run, dashboard)
+        return deploy_bicep(
+            iac_dir, resource_group, location, subscription_id, dry_run, dashboard
+        )
     elif iac_format == "arm":
-        return deploy_arm(iac_dir, resource_group, location, subscription_id, dry_run, dashboard)
+        return deploy_arm(
+            iac_dir, resource_group, location, subscription_id, dry_run, dashboard
+        )
     else:
         raise ValueError(f"Unsupported IaC format: {iac_format}")

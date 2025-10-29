@@ -87,8 +87,12 @@ class Tenant:
     tenant_id: str
     display_name: str
     subscription_ids: List[str] = field(default_factory=list)
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    last_accessed: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    last_accessed: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     is_active: bool = True
     configuration: Dict[str, Any] = field(default_factory=dict)
 

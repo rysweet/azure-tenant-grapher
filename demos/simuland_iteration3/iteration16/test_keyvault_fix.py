@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Test script to verify Key Vault tenant_id fix."""
+
 import json
 import sys
 from pathlib import Path

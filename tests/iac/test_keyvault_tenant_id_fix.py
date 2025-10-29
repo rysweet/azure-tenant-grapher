@@ -1,9 +1,8 @@
 """Test to verify Key Vault tenant_id fix (ITERATION 15 bug)."""
-import json
-from pathlib import Path
-import tempfile
 
-import pytest
+import json
+import tempfile
+from pathlib import Path
 
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph
@@ -40,7 +39,9 @@ class TestKeyVaultTenantIDFix:
         kv_config = config["resource"]["azurerm_key_vault"]["test_keyvault"]
 
         # Verify tenant_id is using data source reference (not placeholder)
-        assert kv_config["tenant_id"] == "${data.azurerm_client_config.current.tenant_id}"
+        assert (
+            kv_config["tenant_id"] == "${data.azurerm_client_config.current.tenant_id}"
+        )
 
         # Verify data source was added
         assert "data" in config
@@ -97,7 +98,9 @@ class TestKeyVaultTenantIDFix:
 
         # Verify placeholder was replaced with data source reference
         kv_config = config["resource"]["azurerm_key_vault"]["test_keyvault_3"]
-        assert kv_config["tenant_id"] == "${data.azurerm_client_config.current.tenant_id}"
+        assert (
+            kv_config["tenant_id"] == "${data.azurerm_client_config.current.tenant_id}"
+        )
         assert kv_config["tenant_id"] != "00000000-0000-0000-0000-000000000000"
 
     def test_keyvault_tenant_id_from_properties(self):
@@ -109,7 +112,9 @@ class TestKeyVaultTenantIDFix:
             "name": "test-keyvault-4",
             "location": "northeurope",
             "resource_group": "test-rg",
-            "properties": json.dumps({"tenantId": tenant_id}),  # tenant_id in properties
+            "properties": json.dumps(
+                {"tenantId": tenant_id}
+            ),  # tenant_id in properties
             "id": "/subscriptions/12345-abcde-67890/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/test-keyvault-4",
         }
 

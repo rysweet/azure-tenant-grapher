@@ -5,17 +5,14 @@ This module tests encryption, data sanitization, secure storage,
 data leakage prevention, and compliance with security standards.
 """
 
-import base64
 import hashlib
 import json
 import os
 import re
 import tempfile
 from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
 from tests.e2e.auth_security.security_utils import (
     AuditLogger,
     EncryptionHelper,
@@ -32,8 +29,14 @@ class DataSecurityService:
         self.audit_logger = AuditLogger()
         self.scanner = SecurityScanner()
         self.sensitive_fields = [
-            "password", "secret", "token", "api_key", "private_key",
-            "ssn", "credit_card", "bank_account"
+            "password",
+            "secret",
+            "token",
+            "api_key",
+            "private_key",
+            "ssn",
+            "credit_card",
+            "bank_account",
         ]
 
     def sanitize_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -67,7 +70,9 @@ class DataSecurityService:
                 if isinstance(value, str):
                     encrypted[key] = {
                         "encrypted": True,
-                        "value": EncryptionHelper.encrypt_data(value, self.encryption_key)
+                        "value": EncryptionHelper.encrypt_data(
+                            value, self.encryption_key
+                        ),
                     }
                 else:
                     encrypted[key] = value
@@ -108,11 +113,15 @@ class DataSecurityService:
         issues.extend(sensitive_patterns)
 
         # Check for exposed secrets
-        if re.search(r"(password|secret|token|key)\s*[:=]\s*['\"]?[\w\-\.]+", text, re.IGNORECASE):
+        if re.search(
+            r"(password|secret|token|key)\s*[:=]\s*['\"]?[\w\-\.]+", text, re.IGNORECASE
+        ):
             issues.append("Potential exposed credentials detected")
 
         # Check for internal IPs
-        if re.search(r"\b(?:10|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}\b", text):
+        if re.search(
+            r"\b(?:10|172\.(?:1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}\b", text
+        ):
             issues.append("Internal IP address exposed")
 
         # Check for file paths
@@ -138,8 +147,8 @@ class TestDataSecurity:
             "profile": {
                 "name": "Test User",
                 "ssn": "123-45-6789",
-                "credit_card": "4111111111111111"
-            }
+                "credit_card": "4111111111111111",
+            },
         }
 
         # Encrypt sensitive data
@@ -173,8 +182,8 @@ class TestDataSecurity:
             "public_info": "This is public",
             "nested": {
                 "private_key": "-----BEGIN RSA PRIVATE KEY-----",
-                "public_data": "visible"
-            }
+                "public_data": "visible",
+            },
         }
 
         # Sanitize data
@@ -198,7 +207,7 @@ class TestDataSecurity:
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": "DENY",
             "Strict-Transport-Security": "max-age=31536000",
-            "Content-Security-Policy": "default-src 'self'"
+            "Content-Security-Policy": "default-src 'self'",
         }
 
         # Check security headers
@@ -220,7 +229,7 @@ class TestDataSecurity:
             "id": "12345",
             "name": "Test Entity",
             "value": 100,
-            "timestamp": "2024-01-01T00:00:00Z"
+            "timestamp": "2024-01-01T00:00:00Z",
         }
 
         # Calculate integrity hash
@@ -244,26 +253,11 @@ class TestDataSecurity:
 
         # Test various leakage scenarios
         test_cases = [
-            (
-                "Error: password=MySecret123 in config",
-                ["exposed credentials"]
-            ),
-            (
-                "Server IP: 192.168.1.100",
-                ["Internal IP"]
-            ),
-            (
-                "File path: /home/user/.ssh/id_rsa",
-                ["file path"]
-            ),
-            (
-                "API Key: test_live_api_key_fake_value",
-                ["API key"]
-            ),
-            (
-                "SSN: 123-45-6789",
-                ["SSN"]
-            )
+            ("Error: password=MySecret123 in config", ["exposed credentials"]),
+            ("Server IP: 192.168.1.100", ["Internal IP"]),
+            ("File path: /home/user/.ssh/id_rsa", ["file path"]),
+            ("API Key: test_live_api_key_fake_value", ["API key"]),
+            ("SSN: 123-45-6789", ["SSN"]),
         ]
 
         for text, expected_issues in test_cases:
@@ -280,10 +274,7 @@ class TestDataSecurity:
             # Create test file with sensitive data
             sensitive_content = {
                 "database_password": "db_pass_123",
-                "api_keys": {
-                    "stripe": "test_stripe_key_fake",
-                    "aws": "AKIA_test_key"
-                }
+                "api_keys": {"stripe": "test_stripe_key_fake", "aws": "AKIA_test_key"},
             }
 
             # Encrypt before saving
@@ -295,11 +286,11 @@ class TestDataSecurity:
                 json.dump(encrypted_content, f)
 
             # Read and verify encryption
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 loaded_data = json.load(f)
 
             # Verify sensitive data is not in plain text
-            file_content = open(file_path, "r").read()
+            file_content = open(file_path).read()
             assert "db_pass_123" not in file_content
             assert "test_stripe_key" not in file_content
 
@@ -309,6 +300,7 @@ class TestDataSecurity:
 
     def test_database_query_parameterization(self):
         """Test that database queries are parameterized to prevent injection."""
+
         # Mock database interface
         class SecureDatabase:
             def __init__(self):
@@ -349,7 +341,7 @@ class TestDataSecurity:
             "username": "testuser",
             "password": "SecretPass123",
             "ip_address": "192.168.1.100",
-            "session_token": "eyJhbGciOiJIUzI1NiIs..."
+            "session_token": "eyJhbGciOiJIUzI1NiIs...",
         }
 
         # Sanitize before logging
@@ -396,6 +388,7 @@ class TestDataSecurity:
 
     def test_data_anonymization(self):
         """Test data anonymization for compliance."""
+
         class DataAnonymizer:
             @staticmethod
             def anonymize_pii(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -435,7 +428,7 @@ class TestDataSecurity:
             "name": "John Doe",
             "email": "john.doe@example.com",
             "phone": "555-123-4567",
-            "age": 30
+            "age": 30,
         }
 
         # Anonymize data
@@ -453,6 +446,7 @@ class TestDataSecurity:
 
     def test_encryption_key_management(self):
         """Test secure management of encryption keys."""
+
         class KeyManager:
             def __init__(self):
                 self.keys = {}
@@ -465,13 +459,13 @@ class TestDataSecurity:
                 key_hash = hashlib.sha256(key).hexdigest()
                 self.keys[key_id] = {
                     "hash": key_hash,
-                    "created": datetime.now(timezone.utc).isoformat()
+                    "created": datetime.now(timezone.utc).isoformat(),
                 }
                 self.audit_logger.log_security_violation(
                     violation_type="key_generation",
                     details=f"Key {key_id} generated",
                     source_ip="system",
-                    user_id="system"
+                    user_id="system",
                 )
                 return key
 
@@ -505,9 +499,9 @@ class TestDataSecurity:
         export_data = {
             "users": [
                 {"id": 1, "name": "User1", "ssn": "123-45-6789"},
-                {"id": 2, "name": "User2", "ssn": "987-65-4321"}
+                {"id": 2, "name": "User2", "ssn": "987-65-4321"},
             ],
-            "api_key": "secret_key_123"
+            "api_key": "secret_key_123",
         }
 
         # Sanitize before export
@@ -518,13 +512,12 @@ class TestDataSecurity:
             violation_type="data_export",
             details=f"Data exported with {len(export_data['users'])} users",
             source_ip="192.168.1.100",
-            user_id="admin"
+            user_id="admin",
         )
 
         # Verify sensitive data is sanitized
         assert all(
-            user.get("ssn") == "***REDACTED***"
-            for user in sanitized_export["users"]
+            user.get("ssn") == "***REDACTED***" for user in sanitized_export["users"]
         )
         assert sanitized_export["api_key"] == "***REDACTED***"
 
@@ -535,12 +528,13 @@ class TestDataSecurity:
 
     def test_data_classification_enforcement(self):
         """Test that data classification levels are enforced."""
+
         class DataClassifier:
             CLASSIFICATIONS = {
                 "public": 0,
                 "internal": 1,
                 "confidential": 2,
-                "restricted": 3
+                "restricted": 3,
             }
 
             @classmethod
@@ -548,9 +542,14 @@ class TestDataSecurity:
                 """Classify data field based on content."""
                 field_lower = field_name.lower()
 
-                if any(term in field_lower for term in ["password", "secret", "key", "token"]):
+                if any(
+                    term in field_lower
+                    for term in ["password", "secret", "key", "token"]
+                ):
                     return "restricted"
-                elif any(term in field_lower for term in ["ssn", "credit_card", "bank"]):
+                elif any(
+                    term in field_lower for term in ["ssn", "credit_card", "bank"]
+                ):
                     return "confidential"
                 elif any(term in field_lower for term in ["email", "phone", "address"]):
                     return "internal"

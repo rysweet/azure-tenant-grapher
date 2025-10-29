@@ -554,7 +554,7 @@ class KeyVaultPlugin(DataPlanePlugin):
                         "Microsoft.KeyVault/vaults/keys/read",
                         "Microsoft.KeyVault/vaults/certificates/read",
                     ],
-                    description="Key Vault Reader - list secrets, keys, certificates (no values)"
+                    description="Key Vault Reader - list secrets, keys, certificates (no values)",
                 )
             ]
         else:  # REPLICATION mode
@@ -570,14 +570,12 @@ class KeyVaultPlugin(DataPlanePlugin):
                         "Microsoft.KeyVault/vaults/certificates/read",
                         "Microsoft.KeyVault/vaults/certificates/create/action",
                     ],
-                    description="Key Vault Secrets Officer, Crypto Officer, Certificates Officer - read and write all items"
+                    description="Key Vault Secrets Officer, Crypto Officer, Certificates Officer - read and write all items",
                 )
             ]
 
     def discover_with_mode(
-        self,
-        resource: Dict[str, Any],
-        mode: ReplicationMode
+        self, resource: Dict[str, Any], mode: ReplicationMode
     ) -> List[DataPlaneItem]:
         """
         Discover Key Vault items with mode awareness.
@@ -639,23 +637,18 @@ class KeyVaultPlugin(DataPlanePlugin):
 
             if self.progress_reporter:
                 self.progress_reporter.report_discovery(
-                    source_resource["id"],
-                    len(items)
+                    source_resource["id"], len(items)
                 )
 
             if mode == ReplicationMode.TEMPLATE:
                 # Template mode: Create empty secrets with placeholder values
                 result = self._replicate_template_mode(
-                    source_resource,
-                    target_resource,
-                    items
+                    source_resource, target_resource, items
                 )
             else:
                 # Replication mode: Copy actual secret values
                 result = self._replicate_full_mode(
-                    source_resource,
-                    target_resource,
-                    items
+                    source_resource, target_resource, items
                 )
 
             # Add timing information
@@ -668,7 +661,7 @@ class KeyVaultPlugin(DataPlanePlugin):
 
         except Exception as e:
             duration = time.time() - start_time
-            error_msg = f"Failed to replicate Key Vault: {str(e)}"
+            error_msg = f"Failed to replicate Key Vault: {e!s}"
             self.logger.error(error_msg)
 
             return ReplicationResult(
@@ -678,14 +671,14 @@ class KeyVaultPlugin(DataPlanePlugin):
                 items_skipped=0,
                 errors=[error_msg],
                 warnings=[],
-                duration_seconds=duration
+                duration_seconds=duration,
             )
 
     def _replicate_template_mode(
         self,
         source_resource: Dict[str, Any],
         target_resource: Dict[str, Any],
-        items: List[DataPlaneItem]
+        items: List[DataPlaneItem],
     ) -> ReplicationResult:
         """
         Replicate in template mode: create empty secrets with placeholder values.
@@ -698,11 +691,9 @@ class KeyVaultPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
+        from azure.core.exceptions import AzureError, HttpResponseError
         from azure.identity import DefaultAzureCredential
         from azure.keyvault.secrets import SecretClient
-        from azure.keyvault.keys import KeyClient
-        from azure.keyvault.certificates import CertificateClient
-        from azure.core.exceptions import AzureError, HttpResponseError
 
         # Get credentials
         if self.credential_provider:
@@ -734,7 +725,9 @@ class KeyVaultPlugin(DataPlanePlugin):
         # Create empty secrets
         if secrets:
             try:
-                secret_client = SecretClient(vault_url=target_vault_uri, credential=credential)
+                secret_client = SecretClient(
+                    vault_url=target_vault_uri, credential=credential
+                )
                 for item in secrets:
                     try:
                         # Create secret with placeholder value
@@ -742,31 +735,34 @@ class KeyVaultPlugin(DataPlanePlugin):
                             item.name,
                             "PLACEHOLDER-VALUE-SET-MANUALLY",
                             content_type=item.properties.get("content_type"),
-                            tags=item.properties.get("tags", {})
+                            tags=item.properties.get("tags", {}),
                         )
                         replicated += 1
 
                         if self.progress_reporter:
                             progress = (replicated / len(items)) * 100
                             self.progress_reporter.report_replication_progress(
-                                item.name,
-                                progress
+                                item.name, progress
                             )
                     except (AzureError, HttpResponseError) as e:
-                        errors.append(f"Failed to create secret '{item.name}': {str(e)}")
+                        errors.append(f"Failed to create secret '{item.name}': {e!s}")
                         skipped += 1
             except Exception as e:
-                errors.append(f"Failed to initialize secret client: {str(e)}")
+                errors.append(f"Failed to initialize secret client: {e!s}")
                 skipped += len(secrets)
 
         # Create placeholder keys
         if keys:
-            warnings.append(f"Template mode: {len(keys)} keys not created (manual creation required)")
+            warnings.append(
+                f"Template mode: {len(keys)} keys not created (manual creation required)"
+            )
             skipped += len(keys)
 
         # Create placeholder certificates
         if certificates:
-            warnings.append(f"Template mode: {len(certificates)} certificates not created (manual creation required)")
+            warnings.append(
+                f"Template mode: {len(certificates)} certificates not created (manual creation required)"
+            )
             skipped += len(certificates)
 
         warnings.append(
@@ -780,14 +776,14 @@ class KeyVaultPlugin(DataPlanePlugin):
             items_replicated=replicated,
             items_skipped=skipped,
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
         )
 
     def _replicate_full_mode(
         self,
         source_resource: Dict[str, Any],
         target_resource: Dict[str, Any],
-        items: List[DataPlaneItem]
+        items: List[DataPlaneItem],
     ) -> ReplicationResult:
         """
         Replicate in full mode: copy actual secret values.
@@ -800,11 +796,9 @@ class KeyVaultPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
+        from azure.core.exceptions import AzureError, HttpResponseError
         from azure.identity import DefaultAzureCredential
         from azure.keyvault.secrets import SecretClient
-        from azure.keyvault.keys import KeyClient
-        from azure.keyvault.certificates import CertificateClient
-        from azure.core.exceptions import AzureError, HttpResponseError
 
         # Get credentials
         if self.credential_provider:
@@ -847,8 +841,12 @@ class KeyVaultPlugin(DataPlanePlugin):
         # Replicate secrets
         if secrets:
             try:
-                source_client = SecretClient(vault_url=source_vault_uri, credential=credential)
-                target_client = SecretClient(vault_url=target_vault_uri, credential=credential)
+                source_client = SecretClient(
+                    vault_url=source_vault_uri, credential=credential
+                )
+                target_client = SecretClient(
+                    vault_url=target_vault_uri, credential=credential
+                )
 
                 for item in secrets:
                     try:
@@ -860,23 +858,24 @@ class KeyVaultPlugin(DataPlanePlugin):
                             item.name,
                             secret.value,
                             content_type=secret.properties.content_type,
-                            tags=secret.properties.tags or {}
+                            tags=secret.properties.tags or {},
                         )
                         replicated += 1
 
                         if self.progress_reporter:
                             progress = (replicated / len(items)) * 100
                             self.progress_reporter.report_replication_progress(
-                                item.name,
-                                progress
+                                item.name, progress
                             )
 
                     except (AzureError, HttpResponseError) as e:
-                        errors.append(f"Failed to replicate secret '{item.name}': {str(e)}")
+                        errors.append(
+                            f"Failed to replicate secret '{item.name}': {e!s}"
+                        )
                         skipped += 1
 
             except Exception as e:
-                errors.append(f"Failed to initialize secret clients: {str(e)}")
+                errors.append(f"Failed to initialize secret clients: {e!s}")
                 skipped += len(secrets)
 
         # Keys replication (not fully implemented)
@@ -901,5 +900,5 @@ class KeyVaultPlugin(DataPlanePlugin):
             items_replicated=replicated,
             items_skipped=skipped,
             errors=errors,
-            warnings=warnings
+            warnings=warnings,
         )

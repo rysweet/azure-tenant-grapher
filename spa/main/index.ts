@@ -253,7 +253,7 @@ function cleanupPidFiles() {
   const projectRoot = path.join(__dirname, '../../..');
   const mcpPidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
   const spaPidFile = path.join(projectRoot, 'outputs', 'spa_server.pid');
-  
+
   // Clean up MCP PID file
   if (fs.existsSync(mcpPidFile)) {
     try {
@@ -263,7 +263,7 @@ function cleanupPidFiles() {
       console.error('Error cleaning up MCP PID file:', e);
     }
   }
-  
+
   // Clean up SPA PID file
   if (fs.existsSync(spaPidFile)) {
     try {

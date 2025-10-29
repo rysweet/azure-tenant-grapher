@@ -48,7 +48,9 @@ def main():
         base_cmd = cmd_args[0]
         if base_cmd not in SAFE_COMMANDS:
             safe_list = ", ".join(sorted(SAFE_COMMANDS))
-            reason = f"🚫 Command '{base_cmd}' not allowed.\n\nAllowed commands: {safe_list}"
+            reason = (
+                f"🚫 Command '{base_cmd}' not allowed.\n\nAllowed commands: {safe_list}"
+            )
             output = {"decision": "block", "reason": reason}
             print(json.dumps(output))
             sys.exit(0)

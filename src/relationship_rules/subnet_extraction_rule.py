@@ -77,8 +77,7 @@ class SubnetExtractionRule(RelationshipRule):
                 if subnet_resource:
                     # Create standalone subnet node
                     db_ops.upsert_resource(
-                        subnet_resource,
-                        processing_status="completed"
+                        subnet_resource, processing_status="completed"
                     )
 
                     # Create VNet -> Subnet relationship
@@ -87,12 +86,10 @@ class SubnetExtractionRule(RelationshipRule):
                         "CONTAINS",
                         str(subnet_resource["id"]),
                         "Resource",
-                        "id"
+                        "id",
                     )
 
-                    logger.debug(
-                        f"Created subnet node: {subnet_resource['id']}"
-                    )
+                    logger.debug(f"Created subnet node: {subnet_resource['id']}")
             except Exception as e:
                 subnet_name = subnet.get("name", "unknown")
                 logger.error(
@@ -139,9 +136,7 @@ class SubnetExtractionRule(RelationshipRule):
         subnet_name = subnet.get("name")
 
         if not subnet_name:
-            logger.warning(
-                f"Subnet in VNet {vnet_id} missing name, skipping"
-            )
+            logger.warning(f"Subnet in VNet {vnet_id} missing name, skipping")
             return None
 
         # Construct subnet ID following Azure ARM format
@@ -152,7 +147,9 @@ class SubnetExtractionRule(RelationshipRule):
 
         # Store subnet even if address prefix is missing
         # Private endpoint subnets may lack explicit address prefixes
-        if not subnet_props.get("addressPrefix") and not subnet_props.get("addressPrefixes"):
+        if not subnet_props.get("addressPrefix") and not subnet_props.get(
+            "addressPrefixes"
+        ):
             logger.warning(
                 f"Subnet {subnet_name} in VNet {vnet_id} has no address prefix - storing anyway (may be PE subnet)"
             )

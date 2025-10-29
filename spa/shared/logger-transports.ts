@@ -24,9 +24,9 @@ export class ConsoleTransport implements LogTransport {
     const levelName = LogLevel[entry.level];
     const color = this.colors[entry.level];
     const component = entry.component ? `[${entry.component}]` : '';
-    
+
     const message = `${color}[${entry.timestamp}] ${levelName}${this.reset} ${component} ${entry.message}`;
-    
+
     if (entry.metadata) {
       console.log(message, entry.metadata);
     } else {
@@ -53,7 +53,7 @@ export class FileTransport implements LogTransport {
     // Create log file with date
     const date = new Date().toISOString().split('T')[0];
     this.logPath = path.join(logDir, `app-${date}.log`);
-    
+
     // Open file stream
     this.fileStream = fs.createWriteStream(this.logPath, { flags: 'a' });
   }
@@ -70,10 +70,10 @@ export class FileTransport implements LogTransport {
 
   private async processQueue(): Promise<void> {
     if (this.isWriting || this.writeQueue.length === 0) return;
-    
+
     this.isWriting = true;
     const batch = this.writeQueue.splice(0, 100); // Process in batches
-    
+
     try {
       for (const line of batch) {
         await this.write(line);
@@ -106,7 +106,7 @@ export class FileTransport implements LogTransport {
     while (this.writeQueue.length > 0) {
       await this.processQueue();
     }
-    
+
     return new Promise((resolve) => {
       if (this.fileStream) {
         this.fileStream.end(() => resolve());
@@ -129,18 +129,18 @@ export class WebSocketTransport implements LogTransport {
 
   setWebSocketServer(wss: any): void {
     this.wss = wss;
-    
+
     // Handle new connections
     wss.on('connection', (ws: WebSocket) => {
       this.connections.add(ws);
-      
+
       // Send initial buffer of recent logs
       this.sendInitialLogs(ws);
-      
+
       ws.on('close', () => {
         this.connections.delete(ws);
       });
-      
+
       ws.on('error', () => {
         this.connections.delete(ws);
       });
@@ -152,7 +152,7 @@ export class WebSocketTransport implements LogTransport {
     const logger = require('./logger').logger;
     const buffer = logger.getBuffer();
     const recentLogs = buffer.slice(-100);
-    
+
     if (recentLogs.length > 0) {
       try {
         ws.send(JSON.stringify({
@@ -168,16 +168,16 @@ export class WebSocketTransport implements LogTransport {
   log(entry: LogEntry): void {
     // Add to batch buffer
     this.batchBuffer.push(entry);
-    
+
     // Start or reset batch timer
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
     }
-    
+
     this.batchTimer = setTimeout(() => {
       this.sendBatch();
     }, this.batchInterval);
-    
+
     // Send immediately if buffer is large
     if (this.batchBuffer.length >= 20) {
       this.sendBatch();
@@ -186,15 +186,15 @@ export class WebSocketTransport implements LogTransport {
 
   private sendBatch(): void {
     if (this.batchBuffer.length === 0) return;
-    
+
     const batch = [...this.batchBuffer];
     this.batchBuffer = [];
-    
+
     const message = JSON.stringify({
       type: 'log-batch',
       entries: batch,
     });
-    
+
     // Send to all connected clients
     for (const ws of this.connections) {
       if (ws.readyState === WebSocket.OPEN) {
@@ -206,7 +206,7 @@ export class WebSocketTransport implements LogTransport {
         }
       }
     }
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = undefined;
@@ -233,9 +233,9 @@ export class BrowserConsoleTransport implements LogTransport {
     const levelName = LogLevel[entry.level];
     const style = this.styles[entry.level];
     const component = entry.component ? `[${entry.component}]` : '';
-    
+
     const prefix = `%c[${entry.timestamp}] ${levelName} ${component}`;
-    
+
     if (entry.metadata) {
       console.log(`${prefix} ${entry.message}`, style, entry.metadata);
     } else {

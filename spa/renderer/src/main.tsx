@@ -26,15 +26,15 @@ window.addEventListener('error', (event) => {
 
 // Root error boundary fallback
 const RootErrorFallback = (
-  <div style={{ 
-    padding: '40px', 
+  <div style={{
+    padding: '40px',
     textAlign: 'center',
     fontFamily: 'system-ui, -apple-system, sans-serif'
   }}>
     <h1 style={{ color: '#d32f2f' }}>Application Error</h1>
     <p>The application encountered a critical error and cannot continue.</p>
     <p>Please refresh the page to try again.</p>
-    <button 
+    <button
       onClick={() => window.location.reload()}
       style={{
         marginTop: '20px',

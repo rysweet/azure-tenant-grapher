@@ -57,7 +57,7 @@ function getComponentName(filePath) {
  * Check if file already has logger import
  */
 function hasLoggerImport(content) {
-  return content.includes('createLogger') || 
+  return content.includes('createLogger') ||
          content.includes('from \'./logger\'') ||
          content.includes('from "./logger"') ||
          content.includes('logger-setup');
@@ -77,7 +77,7 @@ function addLoggerImport(content, filePath) {
   if (fileType === 'backend' || fileType === 'main') {
     const fileDir = path.dirname(filePath);
     const setupPath = path.join(fileDir, 'logger-setup.ts');
-    
+
     if (!fs.existsSync(setupPath)) {
       // Need to go up directories to find logger-setup
       const depth = filePath.split('/').length - filePath.split('/').indexOf('src') - 1;
@@ -89,12 +89,12 @@ function addLoggerImport(content, filePath) {
   // Find the last import statement
   const importRegex = /^import .* from .*;?$/gm;
   const imports = content.match(importRegex);
-  
+
   if (imports && imports.length > 0) {
     const lastImport = imports[imports.length - 1];
     const lastImportIndex = content.lastIndexOf(lastImport);
     const insertPosition = lastImportIndex + lastImport.length;
-    
+
     return content.slice(0, insertPosition) + '\n' + importStatement + '\n' + content.slice(insertPosition);
   } else {
     // No imports found, add at the beginning
@@ -153,7 +153,7 @@ function replaceConsoleStatements(content) {
  */
 function processFile(filePath) {
   const fileName = path.basename(filePath);
-  
+
   // Skip files in the skip list
   if (FILES_TO_SKIP.includes(fileName)) {
     return { skipped: true };
@@ -165,7 +165,7 @@ function processFile(filePath) {
 
     // Replace console statements
     const { content: modifiedContent, changeCount } = replaceConsoleStatements(content);
-    
+
     if (changeCount === 0) {
       return { skipped: true, reason: 'No console statements found' };
     }
@@ -203,7 +203,7 @@ function main() {
 
   DIRECTORIES_TO_PROCESS.forEach(dir => {
     const fullPath = path.join(process.cwd(), dir);
-    
+
     if (!fs.existsSync(fullPath)) {
       console.log(`⚠️  Directory not found: ${dir}`);
       return;

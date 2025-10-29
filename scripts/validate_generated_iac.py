@@ -670,15 +670,11 @@ Examples:
 
     # Validate directory exists
     if not args.iac_directory.exists():
-        console.print(
-            f"[red]Error: Directory not found: {args.iac_directory}[/red]"
-        )
+        console.print(f"[red]Error: Directory not found: {args.iac_directory}[/red]")
         return 2
 
     if not args.iac_directory.is_dir():
-        console.print(
-            f"[red]Error: Not a directory: {args.iac_directory}[/red]"
-        )
+        console.print(f"[red]Error: Not a directory: {args.iac_directory}[/red]")
         return 2
 
     # Run validation
@@ -687,9 +683,7 @@ Examples:
     try:
         validator.load_terraform_files()
     except Exception as e:
-        console.print(
-            f"[red]Error loading Terraform files: {e}[/red]"
-        )
+        console.print(f"[red]Error loading Terraform files: {e}[/red]")
         return 2
 
     if not validator.terraform_files:

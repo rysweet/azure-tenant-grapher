@@ -195,10 +195,14 @@ class MCPIntegrationService:
             resources = await self.discovery_service.discover_resources_in_subscription(
                 subscription_id, filter_config=None
             )
-            
+
             # Filter by resource types if specified
             if resource_types:
-                resources = [r for r in resources if any(rt in r.get('type', '') for rt in resource_types)]
+                resources = [
+                    r
+                    for r in resources
+                    if any(rt in r.get("type", "") for rt in resource_types)
+                ]
         else:
             logger.warning("No discovery service available for fallback")
 

@@ -33,7 +33,7 @@ import Editor from '@monaco-editor/react';
 import { useApp } from '../../context/AppContext';
 import { LogEntry as AppLogEntry, LogLevel as AppLogLevel } from '../../context/AppContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { 
+import {
   getLogs,
   clearLogs,
   createLogger
@@ -597,9 +597,9 @@ const LogsTab: React.FC = () => {
             </Typography>
             {(!webSocket.isConnected || !logWebSocketConnected) && (
               <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                {!webSocket.isConnected && !logWebSocketConnected 
+                {!webSocket.isConnected && !logWebSocketConnected
                   ? 'WebSocket connections disconnected - logs may not appear.'
-                  : !webSocket.isConnected 
+                  : !webSocket.isConnected
                   ? 'Process WebSocket disconnected - process output may not appear.'
                   : 'Log WebSocket disconnected - system logs may not appear.'}
               </Typography>
