@@ -6,17 +6,11 @@ Runs forever until stopped
 """
 
 import json
+import os
 import subprocess
-import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
-# Add project root to path for imports
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.utils.neo4j_credentials import Neo4jCredentialsError, get_neo4j_graph
 
 IMESSAGE_TOOL = Path.home() / ".local" / "bin" / "imessR"
 PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
@@ -46,21 +40,21 @@ def get_process_count(pattern):
 def get_neo4j_counts():
     """Get resource counts from Neo4j"""
     try:
-        graph = get_neo4j_graph()
-
+        from py2neo import Graph
+        neo4j_password = os.getenv("NEO4J_PASSWORD")
+        if not neo4j_password:
+            raise ValueError("NEO4J_PASSWORD environment variable is required")
+        graph = Graph("bolt://localhost:7688", auth=("neo4j", neo4j_password))
+        
         # Source count
         source_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/' RETURN count(r) as count"
         source_count = graph.run(source_q).data()[0]["count"]
-
-        # Target count
+        
+        # Target count  
         target_q = "MATCH (r:Resource) WHERE r.id CONTAINS '/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/' RETURN count(r) as count"
         target_count = graph.run(target_q).data()[0]["count"]
-
+        
         return source_count, target_count
-    except Neo4jCredentialsError as e:
-        print(f"Neo4j credentials error: {e}")
-        print("Please set NEO4J_PASSWORD and NEO4J_PORT in your .env file")
-        return 0, 0
     except Exception as e:
         print(f"Neo4j query failed: {e}")
         return 0, 0

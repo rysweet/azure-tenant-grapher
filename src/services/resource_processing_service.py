@@ -11,6 +11,8 @@ from src.resource_processor import (
     ProcessingStats,
     ResourceProcessor,
 )
+from src.services.identity_collector import IdentityCollector
+from src.services.managed_identity_resolver import ManagedIdentityResolver
 from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
@@ -58,45 +60,75 @@ class ResourceProcessingService:
             self.llm_generator,
             getattr(self.config, "resource_limit", None),
             getattr(self.config, "max_retries", 3),
-            getattr(self.config, "enable_batch_mode", False),
         )
 
         # --- AAD Graph Ingestion ---
         # Use config value which defaults to True, can be overridden by env var
         enable_aad = getattr(self.config, "enable_aad_import", True)
-
+        
         # Check if we're filtering resources
-        is_filtering = filter_config and (filter_config.has_filters() if hasattr(filter_config, 'has_filters') else
+        is_filtering = filter_config and (filter_config.has_filters() if hasattr(filter_config, 'has_filters') else 
                                           (filter_config.resource_group_names or filter_config.subscription_ids))
-
-        # IMPORTANT: Entra ID (AAD) is tenant-wide, not resource-group-scoped.
-        # When filtering ARM resources by subscription or resource group, we should still
-        # import ALL Entra ID resources because:
-        # 1. Entra ID resources are tenant-wide, not scoped to resource groups
-        # 2. Role assignments and permissions may reference identities not directly attached to filtered resources
-        # 3. The user expectation is to filter ARM resources, not Entra ID resources
+        
         if enable_aad and self.aad_graph_service:
-            logger.info(
-                "AAD import enabled: ingesting all Azure AD users and groups into graph."
-            )
-            if is_filtering:
+            if not is_filtering:
+                # No filtering - import all AAD users and groups
                 logger.info(
-                    "📋 Note: ARM resource filtering is active, but importing ALL Entra ID resources (tenant-wide)."
+                    "AAD import enabled: ingesting all Azure AD users and groups into graph."
                 )
-            try:
-                await self.aad_graph_service.ingest_into_graph(processor.db_ops)
-            except Exception as ex:
-                logger.exception(f"Failed to ingest AAD users/groups: {ex}")
+                try:
+                    await self.aad_graph_service.ingest_into_graph(processor.db_ops)
+                except Exception as ex:
+                    logger.exception(f"Failed to ingest AAD users/groups: {ex}")
+            else:
+                # Filtering enabled - import only referenced identities
+                logger.info(
+                    "🎯 Filtering enabled: extracting and importing only referenced identities."
+                )
+                try:
+                    # Extract identity references from filtered resources
+                    identity_collector = IdentityCollector()
+                    identity_refs = identity_collector.collect_identity_references(resources)
+                    
+                    if identity_refs.has_identities():
+                        logger.info(identity_collector.get_summary(identity_refs))
+                        
+                        # Resolve managed identities to get additional details
+                        identity_resolver = ManagedIdentityResolver()
+                        resolved_identities = identity_resolver.resolve_identities(
+                            identity_refs.managed_identities,
+                            resources
+                        )
+                        
+                        if resolved_identities:
+                            logger.info(identity_resolver.get_identity_summary(resolved_identities))
+                        
+                        # Ingest only the referenced identities
+                        # Note: Managed identities are service principals in Azure AD
+                        service_principal_ids = identity_refs.service_principals.union(identity_refs.managed_identities)
+                        
+                        await self.aad_graph_service.ingest_filtered_identities(
+                            user_ids=identity_refs.users,
+                            group_ids=identity_refs.groups,
+                            service_principal_ids=service_principal_ids,
+                            db_ops=processor.db_ops
+                        )
+                        logger.info("✅ Successfully imported referenced identities")
+                    else:
+                        logger.info(
+                            "No identity references found in filtered resources - skipping AAD import"
+                        )
+                except Exception as ex:
+                    logger.exception(f"Failed to ingest filtered AAD identities: {ex}")
 
         if max_workers is None:
             max_workers = getattr(self.config, "max_concurrency", 5)
         if max_workers is None:
             max_workers = 5
-
-        if enable_aad and not self.aad_graph_service:
+        elif is_filtering and enable_aad and not self.aad_graph_service:
             logger.warning(
-                "⚠️  AAD import enabled but AADGraphService not available. "
-                "Entra ID resources will not be imported."
+                "⚠️  AAD import enabled with filtering but AADGraphService not available. "
+                "Identities referenced by filtered resources will not be imported."
             )
         logger.info(
             f"[DEBUG][RPS] Calling processor.process_resources with {len(resources)} resources, max_workers={max_workers}"

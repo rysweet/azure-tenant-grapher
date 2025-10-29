@@ -317,7 +317,7 @@ class TestKeyVaultReplication:
     """Test replication functionality for Key Vault plugin."""
 
     def test_replicate_with_valid_resources_returns_result(self):
-        """Test replicate returns ReplicationResult with empty vault."""
+        """Test replicate returns ReplicationResult (stub)."""
         plugin = KeyVaultPlugin()
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
@@ -333,13 +333,10 @@ class TestKeyVaultReplication:
         result = plugin.replicate(source, target)
 
         assert isinstance(result, ReplicationResult)
-        # With no items in source vault, returns success=True with warning
-        assert result.success is True
-        assert result.items_discovered == 0
-        assert result.items_replicated == 0
-        assert len(result.errors) == 0
+        # Stub implementation returns unsuccessful result
+        assert result.success is False
+        assert "not yet implemented" in result.errors[0].lower()
         assert len(result.warnings) > 0
-        assert "No items found" in result.warnings[0]
 
     def test_replicate_with_invalid_source_raises_error(self):
         """Test replicate raises error for invalid source."""

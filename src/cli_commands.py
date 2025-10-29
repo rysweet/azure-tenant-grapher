@@ -67,7 +67,6 @@ async def build_command_handler(
     resource_limit: Optional[int],
     max_llm_threads: int,
     max_build_threads: int,
-    max_workers: int,
     max_retries: int,
     no_container: bool,
     generate_spec: bool,
@@ -80,7 +79,6 @@ async def build_command_handler(
     debug: bool = False,
     filter_by_subscriptions: Optional[str] = None,
     filter_by_rgs: Optional[str] = None,
-    batch_mode: bool = False,
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
@@ -103,13 +101,9 @@ async def build_command_handler(
         config = create_config_from_env(
             effective_tenant_id, resource_limit, max_retries, max_build_threads, debug
         )
-        # Set max_concurrency to max_workers (resource processing concurrency)
-        # Note: max_llm_threads is only used for dashboard display, not actual LLM concurrency
-        # (LLM concurrency is currently handled by the resource processing worker pool)
-        config.processing.max_concurrency = max_workers
+        config.processing.max_concurrency = max_llm_threads
         config.processing.auto_start_container = not no_container
         config.processing.enable_aad_import = not no_aad_import
-        config.processing.enable_batch_mode = batch_mode
         config.logging.level = ctx.obj["log_level"]
 
         setup_logging(config.logging)
@@ -179,7 +173,7 @@ async def build_command_handler(
         if no_dashboard:
             print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
             await _run_no_dashboard_mode(
-                ctx, grapher, logger, rebuild_edges, filter_config, max_workers
+                ctx, grapher, logger, rebuild_edges, filter_config
             )
             print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
             import asyncio
@@ -227,7 +221,6 @@ async def build_command_handler(
                 logger,
                 rebuild_edges,
                 filter_config,
-                max_workers,
             )
             print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
             structlog.get_logger(__name__).info(
@@ -257,7 +250,6 @@ async def _run_no_dashboard_mode(
     logger: logging.Logger,
     rebuild_edges: bool = False,
     filter_config: Optional[FilterConfig] = None,
-    max_workers: int = 20,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
     print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
@@ -341,14 +333,14 @@ async def _run_no_dashboard_mode(
                     "🔄 Forcing re-evaluation of all relationships/edges for all resources."
                 )
                 result = await grapher.build_graph(
-                    force_rebuild_edges=True, filter_config=filter_config, max_workers=max_workers
+                    force_rebuild_edges=True, filter_config=filter_config
                 )
                 print(
                     "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
                     flush=True,
                 )
             else:
-                result = await grapher.build_graph(filter_config=filter_config, max_workers=max_workers)
+                result = await grapher.build_graph(filter_config=filter_config)
                 print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
@@ -409,7 +401,6 @@ async def _run_dashboard_mode(
     logger: logging.Logger,
     rebuild_edges: bool = False,
     filter_config: Optional[FilterConfig] = None,
-    max_workers: int = 20,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
     print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
@@ -532,13 +523,12 @@ async def _run_dashboard_mode(
                     progress_callback=progress_callback,
                     force_rebuild_edges=True,
                     filter_config=filter_config,
-                    max_workers=max_workers,
                 )
             )
         else:
             build_task = asyncio.create_task(
                 grapher.build_graph(
-                    progress_callback=progress_callback, filter_config=filter_config, max_workers=max_workers
+                    progress_callback=progress_callback, filter_config=filter_config
                 )
             )
     dashboard.set_processing(True)
@@ -1311,47 +1301,25 @@ def spa_start():
         # Check if node_modules exists, if not, install dependencies
         if not os.path.exists(os.path.join(spa_dir, "node_modules")):
             click.echo("📦 Installing SPA dependencies...")
-            try:
-                install_proc = subprocess.run(
-                    ["npm", "install"],
-                    cwd=spa_dir,
-                    capture_output=True,
-                    text=True,
-                    timeout=600  # 10 minute timeout for npm install
-                )
-                if install_proc.returncode != 0:
-                    click.echo(
-                        f"❌ Failed to install dependencies: {install_proc.stderr}",
-                        err=True,
-                    )
-                    return
-                click.echo("✅ Dependencies installed successfully")
-            except subprocess.TimeoutExpired:
+            install_proc = subprocess.run(
+                ["npm", "install"], cwd=spa_dir, capture_output=True, text=True
+            )
+            if install_proc.returncode != 0:
                 click.echo(
-                    "❌ npm install timed out after 10 minutes. Check your network connection.",
+                    f"❌ Failed to install dependencies: {install_proc.stderr}",
                     err=True,
                 )
                 return
+            click.echo("✅ Dependencies installed successfully")
 
         # Always build the app to ensure latest code is used
         click.echo("🔨 Building Electron app with latest code...")
-        try:
-            build_proc = subprocess.run(
-                ["npm", "run", "build"],
-                cwd=spa_dir,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout for build
-            )
-            if build_proc.returncode != 0:
-                click.echo(
-                    f"❌ Failed to build app: {build_proc.stderr}",
-                    err=True,
-                )
-                return
-        except subprocess.TimeoutExpired:
+        build_proc = subprocess.run(
+            ["npm", "run", "build"], cwd=spa_dir, capture_output=True, text=True
+        )
+        if build_proc.returncode != 0:
             click.echo(
-                "❌ npm build timed out after 5 minutes. This may indicate a build configuration issue.",
+                f"❌ Failed to build app: {build_proc.stderr}",
                 err=True,
             )
             return

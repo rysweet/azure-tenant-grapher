@@ -117,17 +117,11 @@ class TestTransformationEngineGenerateIac:
         mock_emitter = Mock()
         mock_emitter.emit.return_value = ["output.bicep"]
 
-        # Disable name generation and other transformers to test only the apply() method
         engine.generate_iac(
             graph=sample_graph,
             emitter=mock_emitter,
             out_dir="/tmp/test",
             subset_filter=None,
-            enable_name_generation=False,
-            enable_location_mapping=False,
-            enable_bastion_nsg_rules=False,
-            enable_vnet_link_validation=False,
-            enable_cross_tenant_filter=False,
         )
 
         # Should call emitter with transformed resources

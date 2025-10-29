@@ -312,8 +312,12 @@ uv run atg scan --tenant-id <TENANT_ID>
 
 # 3. Verify csiska-01654 NIC was discovered
 uv run python3 -c "
+import os
 from neo4j import GraphDatabase
-driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', 'azure-grapher-2024'))
+password = os.getenv('NEO4J_PASSWORD')
+if not password:
+    raise ValueError('NEO4J_PASSWORD environment variable is required')
+driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (nic:Resource {name: \"csiska-01654\"})
     RETURN nic.name, nic.id
@@ -334,8 +338,12 @@ grep -q "csiska_01" demos/simuland_iteration2/main.tf.json
 ```bash
 # After implementing Fix 2, verify resource groups are stored
 uv run python3 -c "
+import os
 from neo4j import GraphDatabase
-driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', 'azure-grapher-2024'))
+password = os.getenv('NEO4J_PASSWORD')
+if not password:
+    raise ValueError('NEO4J_PASSWORD environment variable is required')
+driver = GraphDatabase.driver('bolt://localhost:7688', auth=('neo4j', password))
 result = driver.execute_query('''
     MATCH (r:Resource)
     WHERE r.resourceGroup IS NOT NULL

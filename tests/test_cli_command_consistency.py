@@ -100,23 +100,16 @@ class TestCommandConsistency:
     def test_commands_use_same_handler(self):
         """Verify that both commands use the same underlying handler."""
         # This is more of a code inspection test
-        # After refactoring, scan is an alias of build_scan_command
-        from scripts.cli import build_scan_command, cli as cli_group
-
-        # Check that the unified command exists
-        assert build_scan_command is not None
-
-        # Should be a Click command
-        assert callable(build_scan_command)
-
-        # Verify both command names are registered in the CLI group
-        registered_commands = cli_group.commands
-        assert 'build' in registered_commands, "build command not registered"
-        assert 'scan' in registered_commands, "scan command not registered"
-
-        # Verify both are the same command object (true aliasing)
-        assert registered_commands['build'] is registered_commands['scan'], \
-            "build and scan should be the same command object"
+        # Both should call build_command_handler
+        from scripts.cli import build, scan
+        
+        # Check that both commands exist
+        assert build is not None
+        assert scan is not None
+        
+        # Both should be async commands
+        assert hasattr(build, '__wrapped__')
+        assert hasattr(scan, '__wrapped__')
 
 
 if __name__ == '__main__':

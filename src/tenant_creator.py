@@ -516,7 +516,7 @@ Instructions:
             # Use the db_ops from ResourceProcessor for upserts
             from src.resource_processor import ResourceProcessor
 
-            processor = ResourceProcessor(session_manager, self.llm_generator, None, max_retries=3, enable_batch_mode=False)
+            processor = ResourceProcessor(session_manager, self.llm_generator, None)
             aad_graph_service.ingest_into_graph(processor.db_ops)
         else:
             print("DEBUG: Processing identities from tenant spec...")

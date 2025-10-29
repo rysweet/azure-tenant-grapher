@@ -15,7 +15,6 @@ class NetworkRule(RelationshipRule):
     """
     Emits network-related relationships:
     - (VirtualMachine) -[:USES_SUBNET]-> (Subnet)
-    - (NetworkInterface) -[:USES_SUBNET]-> (Subnet)
     - (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
     - (Resource) -[:CONNECTED_TO_PE]- (PrivateEndpoint)
     - (DNSZone) -[:RESOLVES_TO]-> (Resource)
@@ -28,7 +27,6 @@ class NetworkRule(RelationshipRule):
             or rtype.endswith("subnets")
             or rtype == "Microsoft.Network/privateEndpoints"
             or rtype == "Microsoft.Network/dnszones"
-            or rtype == "Microsoft.Network/networkInterfaces"
         )
 
     def emit(self, resource: Dict[str, Any], db_ops: Any) -> None:
@@ -45,37 +43,6 @@ class NetworkRule(RelationshipRule):
                     subnet = ipcfg.get("subnet")
                     if subnet and isinstance(subnet, dict):
                         subnet_id = subnet.get("id")
-                        if subnet_id and rid:
-                            db_ops.create_generic_rel(
-                                str(rid),
-                                "USES_SUBNET",
-                                str(subnet_id),
-                                "Resource",
-                                "id",
-                            )
-
-        # (NetworkInterface) -[:USES_SUBNET]-> (Subnet)
-        # Handle NICs that may reference subnets in different resource groups
-        if rtype == "Microsoft.Network/networkInterfaces":
-            # Parse properties if it's a JSON string
-            parsed_props = {}
-            if isinstance(props.get("properties"), str):
-                import json
-                try:
-                    parsed_props = json.loads(props["properties"])
-                except (json.JSONDecodeError, KeyError, TypeError):
-                    # If parsing fails, default to empty dict
-                    parsed_props = {}
-            elif isinstance(props.get("properties"), dict):
-                parsed_props = props.get("properties", {})
-
-            # Only proceed if parsed_props is a dict
-            if isinstance(parsed_props, dict):
-                ip_configs = parsed_props.get("ipConfigurations", [])
-                for ip_config in ip_configs:
-                    subnet_ref = ip_config.get("subnet")
-                    if subnet_ref and isinstance(subnet_ref, dict):
-                        subnet_id = subnet_ref.get("id")
                         if subnet_id and rid:
                             db_ops.create_generic_rel(
                                 str(rid),

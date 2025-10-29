@@ -10785,48 +10785,6 @@
       },
       "terraform_version": null,
       "state_backup": null
-    },
-    {
-      "id": "deploy-20251023-161340",
-      "directory": "/home/azureuser/replicationrg_deploy",
-      "tenant": "tenant-1",
-      "status": "active",
-      "deployed_at": "2025-10-23T16:13:40.565039",
-      "destroyed_at": null,
-      "resources": {
-        "Microsoft.Storage/storageAccounts": 4,
-        "Microsoft.Network/virtualNetworks": 1,
-        "Microsoft.Network/subnets": 2,
-        "Microsoft.Network/networkInterfaces": 16,
-        "Microsoft.Network/publicIPAddresses": 1,
-        "Microsoft.Network/bastionHosts": 1,
-        "Microsoft.Compute/virtualMachines": 16,
-        "Microsoft.Compute/virtualMachines/extensions": 32,
-        "Microsoft.KeyVault/vaults": 2
-      },
-      "terraform_version": null,
-      "state_backup": null
-    },
-    {
-      "id": "deploy-20251023-170928",
-      "directory": "/home/azureuser/replicationrg_final_complete",
-      "tenant": "tenant-1",
-      "status": "active",
-      "deployed_at": "2025-10-23T17:09:28.461432",
-      "destroyed_at": null,
-      "resources": {
-        "Microsoft.Storage/storageAccounts": 4,
-        "Microsoft.Network/virtualNetworks": 1,
-        "Microsoft.Network/subnets": 2,
-        "Microsoft.Network/networkInterfaces": 16,
-        "Microsoft.Network/publicIPAddresses": 1,
-        "Microsoft.Network/bastionHosts": 1,
-        "Microsoft.Compute/virtualMachines": 16,
-        "Microsoft.Compute/virtualMachines/extensions": 32,
-        "Microsoft.KeyVault/vaults": 2
-      },
-      "terraform_version": null,
-      "state_backup": null
     }
   ]
 }

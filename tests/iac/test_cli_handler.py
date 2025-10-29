@@ -53,22 +53,6 @@ def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
         skip_subnet_validation: bool = False,
         auto_fix_subnets: bool = False,
         domain_name: Optional[str] = None,
-        preserve_rg_structure: bool = False,
-        naming_suffix: Optional[str] = None,
-        skip_name_validation: bool = False,
-        skip_address_space_validation: bool = False,
-        auto_renumber_address_spaces: bool = False,
-        preserve_names: bool = False,
-        auto_purge_soft_deleted: bool = False,
-        check_conflicts: bool = True,
-        skip_conflict_check: bool = False,
-        auto_cleanup: bool = False,
-        fail_on_conflicts: bool = True,
-        resource_group_prefix: Optional[str] = None,
-        target_subscription: Optional[str] = None,
-        include_data_plane: bool = False,
-        data_plane_only: bool = False,
-        skip_data_plane_for: Optional[str] = None,
     ) -> int:
         called["tenant_id"] = tenant_id
         return 0
@@ -140,7 +124,7 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda resource_group_prefix=None: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
@@ -228,7 +212,7 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda resource_group_prefix=None: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
@@ -318,7 +302,7 @@ async def test_node_id_filter_with_relationships(
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda resource_group_prefix=None: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
     )
 
     # Mock engine
