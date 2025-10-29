@@ -13,9 +13,16 @@ contents are preserved when deploying to new environments.
 
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
-from .base_plugin import DataPlaneItem, DataPlanePlugin, ReplicationResult
+from .base_plugin import (
+    DataPlaneItem,
+    DataPlanePlugin,
+    Permission,
+    ReplicationMode,
+    ReplicationResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -521,3 +528,378 @@ class KeyVaultPlugin(DataPlanePlugin):
             sanitized = "kv_" + sanitized
 
         return sanitized.lower()
+
+    # ============ NEW MODE-AWARE METHODS ============
+
+    def get_required_permissions(self, mode: ReplicationMode) -> List[Permission]:
+        """
+        Return required permissions for Key Vault operations.
+
+        Template mode: Read-only permissions to list items
+        Replication mode: Read/write permissions to get and set values
+
+        Args:
+            mode: Replication mode
+
+        Returns:
+            List of required permissions
+        """
+        if mode == ReplicationMode.TEMPLATE:
+            return [
+                Permission(
+                    scope="resource",
+                    actions=["Microsoft.KeyVault/vaults/read"],
+                    data_actions=[
+                        "Microsoft.KeyVault/vaults/secrets/getMetadata/action",
+                        "Microsoft.KeyVault/vaults/keys/read",
+                        "Microsoft.KeyVault/vaults/certificates/read",
+                    ],
+                    description="Key Vault Reader - list secrets, keys, certificates (no values)"
+                )
+            ]
+        else:  # REPLICATION mode
+            return [
+                Permission(
+                    scope="resource",
+                    actions=["Microsoft.KeyVault/vaults/read"],
+                    data_actions=[
+                        "Microsoft.KeyVault/vaults/secrets/getSecret/action",
+                        "Microsoft.KeyVault/vaults/secrets/setSecret/action",
+                        "Microsoft.KeyVault/vaults/keys/read",
+                        "Microsoft.KeyVault/vaults/keys/create/action",
+                        "Microsoft.KeyVault/vaults/certificates/read",
+                        "Microsoft.KeyVault/vaults/certificates/create/action",
+                    ],
+                    description="Key Vault Secrets Officer, Crypto Officer, Certificates Officer - read and write all items"
+                )
+            ]
+
+    def discover_with_mode(
+        self,
+        resource: Dict[str, Any],
+        mode: ReplicationMode
+    ) -> List[DataPlaneItem]:
+        """
+        Discover Key Vault items with mode awareness.
+
+        Both modes discover metadata only - actual secret values are never
+        fetched during discovery for security reasons. Values are only
+        retrieved during replication mode's replicate operation.
+
+        Args:
+            resource: Key Vault resource
+            mode: Replication mode (both modes behave the same for discovery)
+
+        Returns:
+            List of discovered items
+        """
+        # Current discover() method already does metadata-only discovery
+        # This is appropriate for both modes
+        return self.discover(resource)
+
+    def replicate_with_mode(
+        self,
+        source_resource: Dict[str, Any],
+        target_resource: Dict[str, Any],
+        mode: ReplicationMode,
+    ) -> ReplicationResult:
+        """
+        Replicate Key Vault contents with mode awareness.
+
+        Template mode: Create empty secrets with placeholder values
+        Replication mode: Copy actual secret values from source to target
+
+        Args:
+            source_resource: Source Key Vault resource
+            target_resource: Target Key Vault resource
+            mode: Replication mode
+
+        Returns:
+            ReplicationResult with operation statistics
+        """
+        start_time = time.time()
+
+        if not self.validate_resource(source_resource):
+            raise ValueError(f"Invalid source resource: {source_resource}")
+
+        if not self.validate_resource(target_resource):
+            raise ValueError(f"Invalid target resource: {target_resource}")
+
+        source_name = source_resource.get("name", "unknown")
+        target_name = target_resource.get("name", "unknown")
+
+        self.logger.info(
+            f"Replicating Key Vault from '{source_name}' to '{target_name}' "
+            f"(mode={mode.value})"
+        )
+
+        try:
+            # Discover items from source
+            items = self.discover(source_resource)
+
+            if self.progress_reporter:
+                self.progress_reporter.report_discovery(
+                    source_resource["id"],
+                    len(items)
+                )
+
+            if mode == ReplicationMode.TEMPLATE:
+                # Template mode: Create empty secrets with placeholder values
+                result = self._replicate_template_mode(
+                    source_resource,
+                    target_resource,
+                    items
+                )
+            else:
+                # Replication mode: Copy actual secret values
+                result = self._replicate_full_mode(
+                    source_resource,
+                    target_resource,
+                    items
+                )
+
+            # Add timing information
+            result.duration_seconds = time.time() - start_time
+
+            if self.progress_reporter:
+                self.progress_reporter.report_completion(result)
+
+            return result
+
+        except Exception as e:
+            duration = time.time() - start_time
+            error_msg = f"Failed to replicate Key Vault: {str(e)}"
+            self.logger.error(error_msg)
+
+            return ReplicationResult(
+                success=False,
+                items_discovered=0,
+                items_replicated=0,
+                items_skipped=0,
+                errors=[error_msg],
+                warnings=[],
+                duration_seconds=duration
+            )
+
+    def _replicate_template_mode(
+        self,
+        source_resource: Dict[str, Any],
+        target_resource: Dict[str, Any],
+        items: List[DataPlaneItem]
+    ) -> ReplicationResult:
+        """
+        Replicate in template mode: create empty secrets with placeholder values.
+
+        Args:
+            source_resource: Source Key Vault
+            target_resource: Target Key Vault
+            items: Items discovered from source
+
+        Returns:
+            ReplicationResult
+        """
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+        from azure.keyvault.keys import KeyClient
+        from azure.keyvault.certificates import CertificateClient
+        from azure.core.exceptions import AzureError, HttpResponseError
+
+        # Get credentials
+        if self.credential_provider:
+            credential = self.credential_provider.get_credential()
+        else:
+            credential = DefaultAzureCredential()
+
+        # Parse target vault URI
+        target_properties = target_resource.get("properties", {})
+        if isinstance(target_properties, str):
+            try:
+                target_properties = json.loads(target_properties)
+            except json.JSONDecodeError:
+                target_properties = {}
+
+        target_vault_uri = target_properties.get("vaultUri")
+        if not target_vault_uri:
+            target_vault_uri = f"https://{target_resource['name']}.vault.azure.net/"
+
+        secrets = [item for item in items if item.item_type == "secret"]
+        keys = [item for item in items if item.item_type == "key"]
+        certificates = [item for item in items if item.item_type == "certificate"]
+
+        replicated = 0
+        skipped = 0
+        errors = []
+        warnings = []
+
+        # Create empty secrets
+        if secrets:
+            try:
+                secret_client = SecretClient(vault_url=target_vault_uri, credential=credential)
+                for item in secrets:
+                    try:
+                        # Create secret with placeholder value
+                        secret_client.set_secret(
+                            item.name,
+                            "PLACEHOLDER-VALUE-SET-MANUALLY",
+                            content_type=item.properties.get("content_type"),
+                            tags=item.properties.get("tags", {})
+                        )
+                        replicated += 1
+
+                        if self.progress_reporter:
+                            progress = (replicated / len(items)) * 100
+                            self.progress_reporter.report_replication_progress(
+                                item.name,
+                                progress
+                            )
+                    except (AzureError, HttpResponseError) as e:
+                        errors.append(f"Failed to create secret '{item.name}': {str(e)}")
+                        skipped += 1
+            except Exception as e:
+                errors.append(f"Failed to initialize secret client: {str(e)}")
+                skipped += len(secrets)
+
+        # Create placeholder keys
+        if keys:
+            warnings.append(f"Template mode: {len(keys)} keys not created (manual creation required)")
+            skipped += len(keys)
+
+        # Create placeholder certificates
+        if certificates:
+            warnings.append(f"Template mode: {len(certificates)} certificates not created (manual creation required)")
+            skipped += len(certificates)
+
+        warnings.append(
+            "Template mode: Secrets created with placeholder values. "
+            "You must manually set actual values after deployment."
+        )
+
+        return ReplicationResult(
+            success=len(errors) == 0,
+            items_discovered=len(items),
+            items_replicated=replicated,
+            items_skipped=skipped,
+            errors=errors,
+            warnings=warnings
+        )
+
+    def _replicate_full_mode(
+        self,
+        source_resource: Dict[str, Any],
+        target_resource: Dict[str, Any],
+        items: List[DataPlaneItem]
+    ) -> ReplicationResult:
+        """
+        Replicate in full mode: copy actual secret values.
+
+        Args:
+            source_resource: Source Key Vault
+            target_resource: Target Key Vault
+            items: Items discovered from source
+
+        Returns:
+            ReplicationResult
+        """
+        from azure.identity import DefaultAzureCredential
+        from azure.keyvault.secrets import SecretClient
+        from azure.keyvault.keys import KeyClient
+        from azure.keyvault.certificates import CertificateClient
+        from azure.core.exceptions import AzureError, HttpResponseError
+
+        # Get credentials
+        if self.credential_provider:
+            credential = self.credential_provider.get_credential()
+        else:
+            credential = DefaultAzureCredential()
+
+        # Parse vault URIs
+        source_properties = source_resource.get("properties", {})
+        if isinstance(source_properties, str):
+            try:
+                source_properties = json.loads(source_properties)
+            except json.JSONDecodeError:
+                source_properties = {}
+
+        source_vault_uri = source_properties.get("vaultUri")
+        if not source_vault_uri:
+            source_vault_uri = f"https://{source_resource['name']}.vault.azure.net/"
+
+        target_properties = target_resource.get("properties", {})
+        if isinstance(target_properties, str):
+            try:
+                target_properties = json.loads(target_properties)
+            except json.JSONDecodeError:
+                target_properties = {}
+
+        target_vault_uri = target_properties.get("vaultUri")
+        if not target_vault_uri:
+            target_vault_uri = f"https://{target_resource['name']}.vault.azure.net/"
+
+        secrets = [item for item in items if item.item_type == "secret"]
+        keys = [item for item in items if item.item_type == "key"]
+        certificates = [item for item in items if item.item_type == "certificate"]
+
+        replicated = 0
+        skipped = 0
+        errors = []
+        warnings = []
+
+        # Replicate secrets
+        if secrets:
+            try:
+                source_client = SecretClient(vault_url=source_vault_uri, credential=credential)
+                target_client = SecretClient(vault_url=target_vault_uri, credential=credential)
+
+                for item in secrets:
+                    try:
+                        # Get secret value from source
+                        secret = source_client.get_secret(item.name)
+
+                        # Set secret in target
+                        target_client.set_secret(
+                            item.name,
+                            secret.value,
+                            content_type=secret.properties.content_type,
+                            tags=secret.properties.tags or {}
+                        )
+                        replicated += 1
+
+                        if self.progress_reporter:
+                            progress = (replicated / len(items)) * 100
+                            self.progress_reporter.report_replication_progress(
+                                item.name,
+                                progress
+                            )
+
+                    except (AzureError, HttpResponseError) as e:
+                        errors.append(f"Failed to replicate secret '{item.name}': {str(e)}")
+                        skipped += 1
+
+            except Exception as e:
+                errors.append(f"Failed to initialize secret clients: {str(e)}")
+                skipped += len(secrets)
+
+        # Keys replication (not fully implemented)
+        if keys:
+            warnings.append(
+                f"Replication mode: {len(keys)} keys not replicated "
+                "(key replication requires additional implementation for key types)"
+            )
+            skipped += len(keys)
+
+        # Certificates replication (not fully implemented)
+        if certificates:
+            warnings.append(
+                f"Replication mode: {len(certificates)} certificates not replicated "
+                "(certificate replication requires additional implementation)"
+            )
+            skipped += len(certificates)
+
+        return ReplicationResult(
+            success=len(errors) == 0,
+            items_discovered=len(items),
+            items_replicated=replicated,
+            items_skipped=skipped,
+            errors=errors,
+            warnings=warnings
+        )

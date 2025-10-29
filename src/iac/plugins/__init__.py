@@ -143,6 +143,9 @@ class PluginRegistry:
         This method dynamically imports and registers plugin classes.
         Currently supports:
         - KeyVaultPlugin: Microsoft.KeyVault/vaults
+        - StoragePlugin: Microsoft.Storage/storageAccounts
+        - SQLDatabasePlugin: Microsoft.Sql/servers/databases
+        - APIMPlugin: Microsoft.ApiManagement/service
 
         Future plugins will be auto-discovered here.
         """
@@ -168,6 +171,22 @@ class PluginRegistry:
             logger.debug("Registered StoragePlugin")
         except ImportError as e:
             logger.warning(f"Could not import StoragePlugin: {e}")
+
+        try:
+            from .sql_plugin import SQLDatabasePlugin
+
+            cls.register_plugin(SQLDatabasePlugin())
+            logger.debug("Registered SQLDatabasePlugin")
+        except ImportError as e:
+            logger.warning(f"Could not import SQLDatabasePlugin: {e}")
+
+        try:
+            from .apim_plugin import APIMPlugin
+
+            cls.register_plugin(APIMPlugin())
+            logger.debug("Registered APIMPlugin")
+        except ImportError as e:
+            logger.warning(f"Could not import APIMPlugin: {e}")
 
         cls._initialized = True
         logger.info(
