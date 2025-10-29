@@ -50,6 +50,7 @@ class AzureTenantGrapher:
                 logger.warning(
                     "Migration runner failed or unavailable; skipping migrations."
                 )
+        from .services.aad_graph_service import AADGraphService
         from .services.azure_discovery_service import AzureDiscoveryService
         from .services.resource_processing_service import ResourceProcessingService
         from .services.tenant_specification_service import TenantSpecificationService
@@ -62,19 +63,10 @@ class AzureTenantGrapher:
         aad_graph_service = None
         if config.processing.enable_aad_import:
             try:
-                from .services.aad_graph_service import AADGraphService
                 aad_graph_service = AADGraphService()
                 logger.info("AAD Graph Service initialized for identity import")
-            except ModuleNotFoundError as e:
-                logger.warning(
-                    f"AAD import is enabled but required dependencies are not installed: {e}\n"
-                    "Install msgraph dependencies with: pip install msgraph-sdk azure-identity\n"
-                    "Or disable AAD import with: --no-aad-import"
-                )
-                aad_graph_service = None
             except Exception as e:
                 logger.warning(f"Failed to initialize AAD Graph Service: {e}")
-                aad_graph_service = None
 
         self.processing_service = ResourceProcessingService(
             self.session_manager,
@@ -172,7 +164,6 @@ class AzureTenantGrapher:
         progress_callback: Optional[Any] = None,
         force_rebuild_edges: bool = False,
         filter_config: Optional[Any] = None,
-        max_workers: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Orchestrate Azure tenant graph building using composed services.
@@ -339,9 +330,8 @@ class AzureTenantGrapher:
                     stats.llm_skipped = 0
                 else:
                     stats = await self.processing_service.process_resources(
-                        all_resources,
+                        all_resources, 
                         progress_callback=progress_callback,
-                        max_workers=max_workers,
                         filter_config=filter_config
                     )
                     logger.info(

@@ -91,11 +91,20 @@ export class CredentialManager {
       }
     }
 
-    // No hardcoded fallback - credentials MUST be provided via environment
-    throw new Error(
-      'Neo4j credentials not configured. Please set NEO4J_URI, NEO4J_USER (or NEO4J_USERNAME), ' +
-      'and NEO4J_PASSWORD environment variables.'
-    );
+    // Fallback to environment variables (development only)
+    if (process.env.NODE_ENV !== 'production') {
+      const password = process.env.NEO4J_PASSWORD;
+      if (password) {
+        logger.warn('Using Neo4j credentials from environment (development only)');
+        return {
+          uri: process.env.NEO4J_URI || 'bolt://localhost:7687',
+          username: process.env.NEO4J_USER || 'neo4j',
+          password: password
+        };
+      }
+    }
+
+    throw new Error('Neo4j credentials not configured. Set NEO4J_PASSWORD environment variable.');
   }
 
   /**

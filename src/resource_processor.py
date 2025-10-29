@@ -183,12 +183,8 @@ class ResourceState:
 class DatabaseOperations:
     """Handles all database operations for resources."""
 
-    def __init__(self, session_manager: Any, enable_batch_mode: bool = False) -> None:
+    def __init__(self, session_manager: Any) -> None:
         self.session_manager = session_manager
-        self.enable_batch_mode = enable_batch_mode
-        self._batch_resources: List[Dict[str, Any]] = []
-        self._batch_relationships: List[Dict[str, Any]] = []
-        self._batch_size = 100  # Configurable batch size
 
     def upsert_subscription(
         self, subscription_id: str, subscription_name: str = ""
@@ -250,27 +246,14 @@ class DatabaseOperations:
 
         try:
             # Defensive validation of required fields
-            # Subscription-scoped resources (e.g., role assignments) don't have location/resource_group
-            subscription_scoped_types = [
-                "Microsoft.Authorization/roleAssignments",
-                "Microsoft.Authorization/roleDefinitions",
-                "Microsoft.Authorization/policyAssignments",
-                "Microsoft.Authorization/policyDefinitions",
-            ]
-
-            is_subscription_scoped = resource.get("type") in subscription_scoped_types
-
             required_fields = [
                 "id",
                 "name",
                 "type",
+                "location",
+                "resource_group",
                 "subscription_id",
             ]
-
-            # Only require location and resource_group for resource-group-scoped resources
-            if not is_subscription_scoped:
-                required_fields.extend(["location", "resource_group"])
-
             # Accept id from resource_id if present
             if not resource.get("id") and resource.get("resource_id"):
                 resource["id"] = resource["resource_id"]
@@ -322,18 +305,9 @@ class DatabaseOperations:
                                 logger.debug(
                                     f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
                                 )
-
-                        # Extract subnets as separate top-level property to avoid truncation
-                        subnets = props_dict.get("subnets", [])
-                        if subnets:
-                            # Store complete subnets array to prevent loss from properties truncation
-                            resource_data["subnets"] = json.dumps(subnets)
-                            logger.debug(
-                                f"Extracted {len(subnets)} subnets for VNet '{resource.get('name')}'"
-                            )
                     except (json.JSONDecodeError, AttributeError, TypeError) as e:
                         logger.warning(
-                            f"Failed to extract addressSpace/subnets from VNet '{resource.get('name')}': {e}"
+                            f"Failed to extract addressSpace from VNet '{resource.get('name')}': {e}"
                         )
 
             # Prevent empty properties from overwriting existing data
@@ -543,127 +517,6 @@ class DatabaseOperations:
             )
             return False
 
-    def batch_upsert_resources(self, resources: List[Dict[str, Any]]) -> int:
-        """
-        Batch upsert multiple resources using UNWIND for better performance.
-
-        Args:
-            resources: List of resource dictionaries to upsert
-
-        Returns:
-            int: Number of successfully upserted resources
-        """
-        if not resources:
-            return 0
-
-        try:
-            # Prepare resources for batch insert
-            serialized_resources = []
-            for resource in resources:
-                try:
-                    resource_data = resource.copy()
-                    resource_data["llm_description"] = resource.get("llm_description", "")
-                    resource_data["processing_status"] = resource.get(
-                        "processing_status", "completed"
-                    )
-
-                    # Serialize all values
-                    for k, v in resource_data.items():
-                        resource_data[k] = serialize_value(v)
-
-                    serialized_resources.append(resource_data)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to serialize resource {resource.get('id', 'Unknown')}: {e}"
-                    )
-                    continue
-
-            if not serialized_resources:
-                return 0
-
-            # Batch upsert using UNWIND
-            query = """
-            UNWIND $resources AS props
-            MERGE (r:Resource {id: props.id})
-            SET r += props,
-                r.updated_at = datetime()
-            """
-
-            with self.session_manager.session() as session:
-                result = session.run(query, resources=serialized_resources)
-                # Get summary to count operations
-                summary = result.consume()
-                logger.debug(
-                    f"Batch upserted {len(serialized_resources)} resources "
-                    f"(Neo4j stats: {summary.counters})"
-                )
-
-            return len(serialized_resources)
-
-        except Exception as e:
-            logger.exception(f"Error in batch upsert: {e}")
-            return 0
-
-    def batch_create_relationships(
-        self, relationships: List[Dict[str, str]], rel_type: str
-    ) -> int:
-        """
-        Batch create relationships using UNWIND for better performance.
-
-        Args:
-            relationships: List of dicts with 'src_id' and 'tgt_id' keys
-            rel_type: Type of relationship to create
-
-        Returns:
-            int: Number of successfully created relationships
-        """
-        if not relationships:
-            return 0
-
-        try:
-            query = f"""
-            UNWIND $rels AS rel
-            MATCH (src:Resource {{id: rel.src_id}})
-            MATCH (tgt:Resource {{id: rel.tgt_id}})
-            MERGE (src)-[:{rel_type}]->(tgt)
-            """
-
-            with self.session_manager.session() as session:
-                result = session.run(query, rels=relationships)
-                summary = result.consume()
-                logger.debug(
-                    f"Batch created {len(relationships)} {rel_type} relationships "
-                    f"(Neo4j stats: {summary.counters})"
-                )
-
-            return len(relationships)
-
-        except Exception as e:
-            logger.exception(f"Error in batch relationship creation: {e}")
-            return 0
-
-    def flush_batch(self) -> Tuple[int, int]:
-        """
-        Flush accumulated batch operations to Neo4j.
-
-        Returns:
-            Tuple of (resources_written, relationships_created)
-        """
-        resources_written = 0
-        relationships_created = 0
-
-        if self._batch_resources:
-            resources_written = self.batch_upsert_resources(self._batch_resources)
-            self._batch_resources.clear()
-
-        if self._batch_relationships:
-            relationships_created = self.batch_create_relationships(
-                self._batch_relationships, "DEPENDS_ON"
-            )
-            self._batch_relationships.clear()
-
-        return resources_written, relationships_created
-
 
 def extract_identity_fields(resource: Dict[str, Any]) -> None:
     """
@@ -699,7 +552,6 @@ class ResourceProcessor:
         llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
         resource_limit: Optional[int] = None,
         max_retries: int = 3,
-        enable_batch_mode: bool = False,
     ):
         """
         Initialize the resource processor.
@@ -709,7 +561,6 @@ class ResourceProcessor:
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
             max_retries: Maximum number of retries for failed resources
-            enable_batch_mode: Enable batch mode for Neo4j writes (faster for large tenants)
         """
         self.session_manager = session_manager
         self.llm_generator = llm_generator
@@ -718,7 +569,7 @@ class ResourceProcessor:
 
         # Initialize helper classes
         self.state = ResourceState(session_manager)
-        self.db_ops = DatabaseOperations(session_manager, enable_batch_mode)
+        self.db_ops = DatabaseOperations(session_manager)
 
         # Processing statistics
         self.stats = ProcessingStats()
@@ -1568,7 +1419,6 @@ def create_resource_processor(
     llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
     resource_limit: Optional[int] = None,
     max_retries: int = 3,
-    enable_batch_mode: bool = False,
 ) -> ResourceProcessor:
     """
     Factory function to create a ResourceProcessor instance.
@@ -1578,11 +1428,10 @@ def create_resource_processor(
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
         max_retries: Maximum number of retries for failed resources
-        enable_batch_mode: Enable batch mode for Neo4j writes (faster for large tenants)
 
     Returns:
         ResourceProcessor: Configured resource processor instance
     """
     return ResourceProcessor(
-        session_manager, llm_generator, resource_limit, max_retries, enable_batch_mode
+        session_manager, llm_generator, resource_limit, max_retries
     )

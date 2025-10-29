@@ -9,7 +9,7 @@ import base64
 import json
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import jwt

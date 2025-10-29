@@ -343,9 +343,13 @@ uv run atg monitor --watch
 ```python
 from neo4j import GraphDatabase
 from datetime import datetime
+import os
 
 uri = 'bolt://localhost:7688'
-driver = GraphDatabase.driver(uri, auth=('neo4j', 'azure-grapher-2024'))
+password = os.getenv('NEO4J_PASSWORD')
+if not password:
+    raise ValueError('NEO4J_PASSWORD environment variable is required')
+driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 
 with driver.session() as session:
     source = session.run(

@@ -4,7 +4,6 @@ This overview provides a high-level guide to the Azure Tenant Grapher CLI and it
 
 ## Table of Contents
 
-- [Simuland Replication Demo Presentation](simuland-replication-slides.html) - Interactive slides showcasing complete infrastructure cloning
 - [Environment Setup](#environment-setup)
 - [Command Walkthroughs](#command-walkthroughs)
 

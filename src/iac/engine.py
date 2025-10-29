@@ -16,15 +16,9 @@ from ruamel.yaml import YAML
 from ..validation.address_space_validator import (
     AddressSpaceValidator,
 )
-from .filters.cross_tenant_filter import CrossTenantResourceFilter
-from .filters.existing_resource_filter import ExistingResourceFilter
 from .subset import SubsetFilter, SubsetSelector
-from .transformers.bastion_nsg_rules import BastionNSGRuleGenerator
-from .transformers.location_mapper import GlobalLocationMapper
-from .transformers.name_generator import UniqueNameGenerator
 from .traverser import TenantGraph
 from .validators.subnet_validator import SubnetValidator, ValidationResult
-from .validators.vnet_link_validator import VNetLinkDependencyValidator
 
 logger = logging.getLogger(__name__)
 
@@ -125,14 +119,6 @@ class TransformationEngine:
         auto_renumber_conflicts: bool = False,
         tenant_id: Optional[str] = None,
         subscription_id: Optional[str] = None,
-        source_subscription_id: Optional[str] = None,
-        enable_cross_tenant_filter: bool = True,
-        enable_existing_resource_filter: bool = False,
-        enable_name_generation: bool = True,
-        enable_location_mapping: bool = True,
-        enable_bastion_nsg_rules: bool = True,
-        enable_vnet_link_validation: bool = True,
-        name_generation_suffix: Optional[str] = None,
     ) -> List[str]:
         """Generate IaC templates from tenant graph.
 
@@ -147,14 +133,6 @@ class TransformationEngine:
             auto_renumber_conflicts: Auto-renumber conflicting VNet address spaces (Issue #334)
             tenant_id: Optional SOURCE Azure tenant ID for Neo4j operations
             subscription_id: Optional TARGET subscription ID for resource deployment
-            source_subscription_id: Optional SOURCE subscription ID (for cross-tenant filtering)
-            enable_cross_tenant_filter: Enable cross-tenant resource filter (fixes 130 errors)
-            enable_existing_resource_filter: Enable existing resource filter (fixes 67 errors)
-            enable_name_generation: Enable unique name generation (fixes 97 errors)
-            enable_location_mapping: Enable global location mapping (fixes 2 errors)
-            enable_bastion_nsg_rules: Enable Bastion NSG rule generation (fixes 2 errors)
-            enable_vnet_link_validation: Enable VNet Link dependency validation (fixes 22 errors)
-            name_generation_suffix: Optional suffix for generated names
 
         Returns:
             List of output file paths
@@ -174,90 +152,6 @@ class TransformationEngine:
             transformed = self.apply(resource)
             transformed_resources.append(transformed)
         filtered_graph.resources = transformed_resources
-
-        # ===== DEPLOYMENT ERROR FIX PIPELINE (Issue #374) =====
-        logger.info("Starting deployment error fix pipeline...")
-
-        # Module 1: Cross-Tenant Resource Filter (P0 - 130 errors)
-        if enable_cross_tenant_filter and source_subscription_id and subscription_id:
-            logger.info("Applying cross-tenant resource filter...")
-            cross_tenant_filter = CrossTenantResourceFilter(
-                source_subscription_id=source_subscription_id,
-                target_subscription_id=subscription_id,
-            )
-            filter_result = cross_tenant_filter.filter_resources(filtered_graph.resources)
-            filtered_graph.resources = filter_result.filtered_resources
-            logger.info(
-                f"Cross-tenant filter: {filter_result.resources_before} -> "
-                f"{filter_result.resources_after} resources "
-                f"(filtered {filter_result.filtered_count})"
-            )
-
-        # Module 6: Existing Resource Filter (Optional - 67 errors)
-        if enable_existing_resource_filter and subscription_id:
-            logger.info("Applying existing resource filter...")
-            existing_filter = ExistingResourceFilter(
-                target_subscription_id=subscription_id,
-                enable_async_check=True,
-            )
-            filter_result = existing_filter.filter_resources(filtered_graph.resources)
-            filtered_graph.resources = filter_result.filtered_resources
-            logger.info(
-                f"Existing resource filter: {filter_result.resources_before} -> "
-                f"{filter_result.resources_after} resources "
-                f"(filtered {filter_result.filtered_count})"
-            )
-
-        # Module 2: Global Location Mapper (P0 - 2 errors)
-        if enable_location_mapping:
-            logger.info("Applying global location mapper...")
-            location_mapper = GlobalLocationMapper()
-            location_result = location_mapper.transform_resources(filtered_graph.resources)
-            logger.info(
-                f"Location mapper: {location_result.resources_mapped} "
-                f"Resource Groups mapped from 'global' to physical region"
-            )
-
-        # Module 3: Unique Name Generator (P1 - 97 errors)
-        if enable_name_generation:
-            logger.info("Applying unique name generator...")
-            name_generator = UniqueNameGenerator(suffix=name_generation_suffix)
-            name_result = name_generator.transform_resources(filtered_graph.resources)
-            logger.info(
-                f"Name generator: {name_result.resources_renamed} "
-                f"resources renamed for global uniqueness"
-            )
-
-        # Module 5: Bastion NSG Rule Generator (P1 - 2 errors)
-        if enable_bastion_nsg_rules:
-            logger.info("Applying Bastion NSG rule generator...")
-            bastion_generator = BastionNSGRuleGenerator()
-            bastion_result = bastion_generator.transform_resources(filtered_graph.resources)
-            logger.info(
-                f"Bastion NSG rules: {bastion_result.rules_added} rules added "
-                f"to {bastion_result.nsgs_modified} NSGs"
-            )
-
-        # Module 4: VNet Link Dependency Validator (P1 - 22 errors)
-        if enable_vnet_link_validation:
-            logger.info("Applying VNet Link dependency validator...")
-            vnet_link_validator = VNetLinkDependencyValidator()
-            vnet_link_result = vnet_link_validator.validate_and_fix_dependencies(
-                filtered_graph.resources
-            )
-            logger.info(
-                f"VNet Link validation: {vnet_link_result.valid_links}/"
-                f"{vnet_link_result.total_vnet_links} valid, "
-                f"{vnet_link_result.invalid_links} invalid"
-            )
-            if vnet_link_result.invalid_links > 0:
-                logger.warning(
-                    f"VNet Link validation found {vnet_link_result.invalid_links} "
-                    f"invalid links with missing DNS zones"
-                )
-
-        logger.info("Deployment error fix pipeline complete")
-        # ===== END DEPLOYMENT ERROR FIX PIPELINE =====
 
         # Validate subnet containment (Issue #333)
         if validate_subnet_containment:
@@ -438,9 +332,7 @@ class TransformationEngine:
 
         for vnet in vnets:
             vnet_name = vnet.get("name", "unknown")
-
-            # Parse addressSpace from properties (same logic as terraform_emitter.py:594-598)
-            vnet_address_space = self._extract_vnet_address_space(vnet)
+            vnet_address_space = vnet.get("address_space", [])
 
             # Extract subnets
             subnets = self._extract_subnets_from_vnet(vnet)
@@ -455,56 +347,6 @@ class TransformationEngine:
             results.append(result)
 
         return results
-
-    def _extract_vnet_address_space(self, vnet: Dict[str, Any]) -> List[str]:
-        """Extract addressSpace from VNet resource.
-
-        Parses the properties JSON to extract addressSpace.addressPrefixes,
-        similar to terraform_emitter.py:594-598.
-
-        Args:
-            vnet: VNet resource dictionary
-
-        Returns:
-            List of address prefixes (e.g., ["10.0.0.0/16"])
-        """
-        vnet_name = vnet.get("name", "unknown")
-
-        # Try top-level address_space first (if set by resource processor)
-        if "address_space" in vnet and vnet["address_space"]:
-            try:
-                if isinstance(vnet["address_space"], str):
-                    return json.loads(vnet["address_space"])
-                elif isinstance(vnet["address_space"], list):
-                    return vnet["address_space"]
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.warning(
-                    f"Failed to parse top-level address_space for VNet '{vnet_name}': {e}"
-                )
-
-        # Parse from properties JSON
-        properties = vnet.get("properties", {})
-
-        # Handle JSON string from Neo4j
-        if isinstance(properties, str):
-            try:
-                properties = json.loads(properties)
-            except json.JSONDecodeError:
-                logger.warning(
-                    f"Failed to parse properties for VNet '{vnet_name}'"
-                )
-                return []
-
-        # Extract addressSpace.addressPrefixes
-        address_space_obj = properties.get("addressSpace", {})
-        address_prefixes = address_space_obj.get("addressPrefixes", [])
-
-        if not address_prefixes:
-            logger.debug(
-                f"VNet '{vnet_name}' has no addressSpace in properties"
-            )
-
-        return address_prefixes
 
     def _extract_subnets_from_vnet(self, vnet: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract subnet configurations from VNet resource.

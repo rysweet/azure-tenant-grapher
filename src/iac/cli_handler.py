@@ -16,8 +16,6 @@ from neo4j import Driver  # type: ignore
 from ..config_manager import create_neo4j_config_from_env
 from ..deployment_registry import DeploymentRegistry
 from ..utils.session_manager import create_session_manager
-from .data_plane_code_generator import DataPlaneCodeGenerator
-from .data_plane_orchestrator import DataPlaneOrchestrator
 from .emitters import get_emitter
 from .engine import TransformationEngine
 from .subset import SubsetFilter
@@ -74,10 +72,6 @@ async def generate_iac_command_handler(
     fail_on_conflicts: bool = True,
     resource_group_prefix: Optional[str] = None,
     target_subscription: Optional[str] = None,
-    # Data plane parameters
-    include_data_plane: bool = False,
-    data_plane_only: bool = False,
-    skip_data_plane_for: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -109,9 +103,6 @@ async def generate_iac_command_handler(
         auto_cleanup: Automatically run cleanup script on conflicts (default: False)
         fail_on_conflicts: Fail deployment if conflicts detected (default: True)
         resource_group_prefix: Prefix to add to all resource group names
-        include_data_plane: Include data plane item discovery and replication code
-        data_plane_only: Generate only data plane code (skip control plane)
-        skip_data_plane_for: Comma-separated list of resource types to skip for data plane discovery
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -211,56 +202,6 @@ async def generate_iac_command_handler(
         # Traverse graph
         graph = await traverser.traverse(filter_cypher)
         logger.info(f"Extracted {len(graph.resources)} resources")
-
-        # Data plane discovery (if enabled)
-        data_plane_items = {}
-        if include_data_plane or data_plane_only:
-            logger.info("🔍 Discovering data plane items...")
-            click.echo("🔍 Discovering data plane items...")
-
-            skip_types = []
-            if skip_data_plane_for:
-                skip_types = [t.strip() for t in skip_data_plane_for.split(",")]
-                logger.info(f"Skipping data plane discovery for: {', '.join(skip_types)}")
-
-            orchestrator = DataPlaneOrchestrator(skip_resource_types=skip_types)
-
-            def progress_callback(msg: str, current: int, total: int) -> None:
-                logger.info(f"  {msg} ({current}/{total})")
-
-            try:
-                discovery_result = await orchestrator.discover_all(
-                    graph.resources,
-                    progress_callback=progress_callback
-                )
-                data_plane_items = discovery_result.items_by_resource
-
-                # Log results
-                for error in discovery_result.errors:
-                    if error.error_type == "permission":
-                        logger.warning(f"⚠️  Permission denied: {error.resource_id}")
-                    elif error.error_type == "sdk_missing":
-                        logger.warning(f"⚠️  SDK not installed for: {error.resource_type}")
-                    else:
-                        logger.error(f"❌ Error discovering {error.resource_id}: {error.message}")
-
-                logger.info("📊 Data plane discovery complete:")
-                logger.info(f"   - Scanned: {discovery_result.stats.resources_scanned} resources")
-                logger.info(f"   - Found items: {discovery_result.stats.total_items} items")
-                logger.info(f"   - Errors: {len(discovery_result.errors)}")
-
-                click.echo("✅ Data plane discovery complete:")
-                click.echo(f"   - Scanned: {discovery_result.stats.resources_scanned} resources")
-                click.echo(f"   - Found items: {discovery_result.stats.total_items} items")
-                click.echo(f"   - Errors: {len(discovery_result.errors)}")
-
-            except Exception as e:
-                logger.error(f"Data plane discovery failed: {e}", exc_info=True)
-                click.echo(f"⚠️  Data plane discovery failed: {e}")
-                # Continue - we can still generate control plane code
-                if data_plane_only:
-                    # If data-plane-only mode, this is a hard failure
-                    return 1
 
         # Determine target subscription ID
         # Priority: 1) Explicit --target-subscription parameter
@@ -510,132 +451,85 @@ async def generate_iac_command_handler(
         if "neo4j_driver" in emit_signature.parameters:
             emit_kwargs["neo4j_driver"] = driver
 
-        # Skip control plane generation if data-plane-only mode
-        if data_plane_only:
-            paths = []
-            logger.info("Skipping control plane code generation (data-plane-only mode)")
-        else:
-            paths = emitter.emit(graph, out_dir, **emit_kwargs)
-
-        # Generate data plane code (if enabled and items discovered)
-        if (include_data_plane or data_plane_only) and data_plane_items:
-            try:
-                logger.info("📝 Generating data plane IaC code...")
-                click.echo("📝 Generating data plane IaC code...")
-
-                generator = DataPlaneCodeGenerator(output_format=format_type)
-                data_plane_paths = generator.generate(
-                    data_plane_items,
-                    graph.resources,
-                    out_dir
-                )
-
-                paths.extend(data_plane_paths)
-                logger.info(f"✅ Generated {len(data_plane_paths)} data plane files")
-                click.echo(f"✅ Generated {len(data_plane_paths)} data plane files")
-                for path in data_plane_paths:
-                    logger.info(f"  📄 {path}")
-                    click.echo(f"  📄 {path}")
-
-            except Exception as e:
-                logger.warning(f"Data plane code generation failed: {e}", exc_info=True)
-                click.echo(f"⚠️  Data plane code generation failed: {e}")
-                # Continue - control plane code is already generated (if not data-plane-only)
-                if data_plane_only:
-                    # If data-plane-only mode, this is a hard failure
-                    return 1
-
-        # If data-plane-only mode, return early
-        if data_plane_only:
-            if paths:
-                click.echo(f"\n✅ Generated {len(paths)} data plane files:")
-                for path in paths:
-                    click.echo(f"  📄 {path}")
-                return 0
-            else:
-                click.echo("❌ No data plane files were generated")
-                return 1
+        paths = emitter.emit(graph, out_dir, **emit_kwargs)
 
         # Validate and fix global name conflicts (GAP-014)
         if format_type.lower() == "terraform" and not skip_name_validation:
-            try:
-                from ..validation import NameConflictValidator
+            from ..validation import NameConflictValidator
 
-                logger.info("🔍 Checking for global resource name conflicts...")
+            logger.info("🔍 Checking for global resource name conflicts...")
 
-                # Read generated Terraform config
-                terraform_file = out_dir / "main.tf.json"
-                if terraform_file.exists():
-                    with open(terraform_file) as f:
-                        terraform_config = json.load(f)
+            # Read generated Terraform config
+            terraform_file = out_dir / "main.tf.json"
+            if terraform_file.exists():
+                with open(terraform_file) as f:
+                    terraform_config = json.load(f)
 
-                    # Initialize validator (GAP-015, GAP-016)
-                    subscription_id = None  # TODO: Get from environment/config
-                    validator = NameConflictValidator(
-                        subscription_id=subscription_id,
-                        naming_suffix=naming_suffix,
-                        preserve_names=preserve_names,
-                        auto_purge_soft_deleted=auto_purge_soft_deleted,
+                # Initialize validator (GAP-015, GAP-016)
+                subscription_id = None  # TODO: Get from environment/config
+                validator = NameConflictValidator(
+                    subscription_id=subscription_id,
+                    naming_suffix=naming_suffix,
+                    preserve_names=preserve_names,
+                    auto_purge_soft_deleted=auto_purge_soft_deleted,
+                )
+
+                # Validate and auto-fix conflicts (respects preserve_names mode)
+                auto_fix = not preserve_names  # Don't auto-fix if preserving names
+                updated_config, validation_result = (
+                    validator.validate_and_fix_terraform(
+                        terraform_config, auto_fix=auto_fix
                     )
+                )
 
-                    # Validate and auto-fix conflicts (respects preserve_names mode)
-                    auto_fix = not preserve_names  # Don't auto-fix if preserving names
-                    updated_config, validation_result = (
-                        validator.validate_and_fix_terraform(
-                            terraform_config, auto_fix=auto_fix
-                        )
-                    )
-
-                    # Report conflicts (GAP-015)
-                    if validation_result.conflicts:
-                        if preserve_names:
-                            # In preserve-names mode, fail on conflicts
-                            click.echo(
-                                f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
-                            )
-                            for conflict in validation_result.conflicts:
-                                click.echo(
-                                    f"   • {conflict.resource_type}: {conflict.original_name}"
-                                )
-                                click.echo(f"     Reason: {conflict.conflict_reason}")
-                            click.echo(
-                                "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
-                                "or use --naming-suffix to specify a custom suffix."
-                            )
-                            return 1
-                        else:
-                            # In auto-fix mode, show fixes
-                            click.echo(
-                                f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
-                            )
-                            for conflict in validation_result.conflicts:
-                                click.echo(
-                                    f"   • {conflict.resource_type}: {conflict.original_name} "
-                                    f"-> {conflict.suggested_name or 'N/A'}"
-                                )
-                                click.echo(f"     Reason: {conflict.conflict_reason}")
-
-                    # Save updated config if changes were made
-                    if validation_result.name_mappings:
-                        with open(terraform_file, "w") as f:
-                            json.dump(updated_config, f, indent=2)
-
-                        # Save name mappings with conflict reasons (GAP-015)
-                        validator.save_name_mappings(
-                            validation_result.name_mappings,
-                            out_dir,
-                            conflicts=validation_result.conflicts,
-                        )
+                # Report conflicts (GAP-015)
+                if validation_result.conflicts:
+                    if preserve_names:
+                        # In preserve-names mode, fail on conflicts
                         click.echo(
-                            f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
+                            f"❌ Found {len(validation_result.conflicts)} name conflicts (preserve-names mode):"
                         )
+                        for conflict in validation_result.conflicts:
+                            click.echo(
+                                f"   • {conflict.resource_type}: {conflict.original_name}"
+                            )
+                            click.echo(f"     Reason: {conflict.conflict_reason}")
                         click.echo(
-                            f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
+                            "\n💡 Tip: Remove --preserve-names flag to auto-fix conflicts, "
+                            "or use --naming-suffix to specify a custom suffix."
                         )
+                        return 1
                     else:
-                        click.echo("✅ No global name conflicts detected")
-            except ImportError:
-                logger.warning("⚠️  NameConflictValidator not available, skipping name conflict validation")
+                        # In auto-fix mode, show fixes
+                        click.echo(
+                            f"⚠️  Found {len(validation_result.conflicts)} name conflicts:"
+                        )
+                        for conflict in validation_result.conflicts:
+                            click.echo(
+                                f"   • {conflict.resource_type}: {conflict.original_name} "
+                                f"-> {conflict.suggested_name or 'N/A'}"
+                            )
+                            click.echo(f"     Reason: {conflict.conflict_reason}")
+
+                # Save updated config if changes were made
+                if validation_result.name_mappings:
+                    with open(terraform_file, "w") as f:
+                        json.dump(updated_config, f, indent=2)
+
+                    # Save name mappings with conflict reasons (GAP-015)
+                    validator.save_name_mappings(
+                        validation_result.name_mappings,
+                        out_dir,
+                        conflicts=validation_result.conflicts,
+                    )
+                    click.echo(
+                        f"✅ Auto-fixed {len(validation_result.name_mappings)} conflicts"
+                    )
+                    click.echo(
+                        f"   Name mappings saved to {out_dir / 'name_mappings.json'}"
+                    )
+                else:
+                    click.echo("✅ No global name conflicts detected")
 
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
