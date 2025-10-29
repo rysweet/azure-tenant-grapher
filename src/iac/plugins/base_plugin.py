@@ -14,10 +14,40 @@ Each plugin is responsible for:
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol
 
 logger = logging.getLogger(__name__)
+
+
+class ReplicationMode(Enum):
+    """Data plane replication modes."""
+    TEMPLATE = "template"      # Structure only, no data
+    REPLICATION = "replication"  # Full data copy
+
+
+@dataclass
+class Permission:
+    """Azure RBAC permission requirement."""
+    scope: str                # "resource" | "resource_group" | "subscription"
+    actions: List[str]        # E.g., ["Microsoft.KeyVault/vaults/secrets/getSecret"]
+    not_actions: List[str] = field(default_factory=list)
+    data_actions: List[str] = field(default_factory=list)
+    description: str = ""
+
+
+class ProgressReporter(Protocol):
+    """Protocol for progress reporting (duck typing)."""
+    def report_discovery(self, resource_id: str, item_count: int) -> None: ...
+    def report_replication_progress(self, item_name: str, progress_pct: float) -> None: ...
+    def report_completion(self, result: "ReplicationResult") -> None: ...
+
+
+class CredentialProvider(Protocol):
+    """Protocol for credential provision (duck typing)."""
+    def get_credential(self) -> Any: ...
+    def get_connection_string(self, resource_id: str) -> Optional[str]: ...
 
 
 @dataclass
@@ -29,6 +59,7 @@ class DataPlaneItem:
     properties: Dict[str, Any]
     source_resource_id: str
     metadata: Optional[Dict[str, Any]] = None
+    size_bytes: Optional[int] = None  # For progress tracking
 
 
 @dataclass
@@ -38,8 +69,10 @@ class ReplicationResult:
     success: bool
     items_discovered: int
     items_replicated: int
-    errors: List[str]
-    warnings: List[str]
+    items_skipped: int = 0    # Track skipped items
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    duration_seconds: float = 0.0  # Timing information
 
 
 class DataPlanePlugin(ABC):
@@ -60,9 +93,15 @@ class DataPlanePlugin(ABC):
                 ...
     """
 
-    def __init__(self) -> None:
-        """Initialize the data plane plugin."""
+    def __init__(
+        self,
+        credential_provider: Optional[CredentialProvider] = None,
+        progress_reporter: Optional[ProgressReporter] = None,
+    ) -> None:
+        """Initialize the data plane plugin with optional providers."""
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.credential_provider = credential_provider
+        self.progress_reporter = progress_reporter
 
     @abstractmethod
     def discover(self, resource: Dict[str, Any]) -> List[DataPlaneItem]:
@@ -203,3 +242,104 @@ class DataPlanePlugin(ABC):
         """
         # Default implementation supports Terraform
         return output_format.lower() == "terraform"
+
+    # ============ NEW METHODS FOR MODE SUPPORT ============
+
+    def get_required_permissions(self, mode: ReplicationMode) -> List[Permission]:
+        """
+        Return Azure RBAC permissions required for this plugin.
+
+        Default implementation returns empty list. Override to specify
+        actual permissions needed.
+
+        Args:
+            mode: The replication mode (affects required permissions)
+
+        Returns:
+            List of Permission objects describing needed RBAC roles
+        """
+        return []
+
+    def discover_with_mode(
+        self,
+        resource: Dict[str, Any],
+        mode: ReplicationMode
+    ) -> List[DataPlaneItem]:
+        """
+        Discover data plane items with mode awareness.
+
+        Template mode: Discover metadata only (names, types, counts)
+        Replication mode: Discover full details including values
+
+        Default implementation delegates to discover() method.
+        Override for mode-specific behavior.
+
+        Args:
+            resource: Resource dictionary from Neo4j
+            mode: Replication mode
+
+        Returns:
+            List of discovered items (detail level varies by mode)
+        """
+        return self.discover(resource)
+
+    def replicate_with_mode(
+        self,
+        source_resource: Dict[str, Any],
+        target_resource: Dict[str, Any],
+        mode: ReplicationMode,
+    ) -> ReplicationResult:
+        """
+        Replicate with mode awareness.
+
+        Template mode: Create empty structures (e.g., empty Key Vault)
+        Replication mode: Copy actual data
+
+        Default implementation delegates to replicate() method.
+        Override for mode-specific behavior.
+
+        Args:
+            source_resource: Source resource
+            target_resource: Target resource
+            mode: Replication mode
+
+        Returns:
+            ReplicationResult with statistics
+        """
+        return self.replicate(source_resource, target_resource)
+
+    def supports_mode(self, mode: ReplicationMode) -> bool:
+        """
+        Check if plugin supports a specific mode.
+
+        Default implementation supports both modes.
+        Override if plugin has limitations.
+
+        Args:
+            mode: Replication mode to check
+
+        Returns:
+            True if mode is supported
+        """
+        return True
+
+    def estimate_operation_time(
+        self,
+        items: List[DataPlaneItem],
+        mode: ReplicationMode
+    ) -> float:
+        """
+        Estimate time required for replication operation.
+
+        Args:
+            items: Items to replicate
+            mode: Replication mode
+
+        Returns:
+            Estimated seconds (0 for template mode)
+        """
+        if mode == ReplicationMode.TEMPLATE:
+            return 0.0
+
+        # Default: 100ms per item (override in subclasses)
+        return len(items) * 0.1
