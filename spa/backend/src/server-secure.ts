@@ -161,7 +161,7 @@ app.get('/api/tenant-name', async (req, res) => {
  */
 app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
   const { command, args = [] } = req.body;
-  
+
   // Validate command
   const commandValidation = validateCommand(command);
   if (!commandValidation.isValid) {
@@ -255,7 +255,7 @@ app.post('/api/execute', requireAuth, rateLimiters.execute, (req, res) => {
  */
 app.post('/api/cancel/:processId', requireAuth, (req, res) => {
   const { processId } = req.params;
-  
+
   // Validate process ID
   if (!validateProcessId(processId)) {
     return res.status(400).json({ error: 'Invalid process ID' });
@@ -278,7 +278,7 @@ app.post('/api/cancel/:processId', requireAuth, (req, res) => {
  */
 app.get('/api/status/:processId', requireAuth, (req, res) => {
   const { processId } = req.params;
-  
+
   // Validate process ID
   if (!validateProcessId(processId)) {
     return res.status(400).json({ error: 'Invalid process ID' });
@@ -460,7 +460,7 @@ app.get('/api/docs/:filePath(*)', requireAuth, async (req, res) => {
   try {
     const filePath = req.params.filePath;
     const projectRoot = path.resolve(__dirname, '../../..');
-    
+
     // Validate file path
     const pathValidation = validateFilePath(filePath, projectRoot);
     if (!pathValidation.isValid) {

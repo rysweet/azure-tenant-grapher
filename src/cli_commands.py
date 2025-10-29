@@ -18,7 +18,6 @@ import click
 import structlog
 
 from src.azure_tenant_grapher import AzureTenantGrapher
-from src.utils.graph_id_resolver import is_graph_database_id, split_and_detect_ids
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
     create_config_from_env,
@@ -29,6 +28,7 @@ from src.graph_visualizer import GraphVisualizer
 from src.logging_config import configure_logging
 from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
+from src.utils.graph_id_resolver import split_and_detect_ids
 from src.utils.neo4j_startup import ensure_neo4j_running
 
 configure_logging()
@@ -132,7 +132,7 @@ async def build_command_handler(
             if filter_by_rgs:
                 # Split and detect which values are graph IDs vs actual names
                 regular_names, graph_ids = split_and_detect_ids(filter_by_rgs)
-                
+
                 if graph_ids:
                     logger.warning(
                         f"⚠️  Detected graph database IDs in resource group filter: {graph_ids}\n"
@@ -140,11 +140,13 @@ async def build_command_handler(
                         f"   Please use actual resource group names (e.g., 'Ballista_UCAScenario') instead.\n"
                         f"   You can find the actual names in the Neo4j database or Azure portal."
                     )
-                    
+
                     # For now, we'll skip the graph IDs and only use the regular names
                     # In a future improvement, we could resolve these IDs to actual names
                     if regular_names:
-                        logger.info(f"📋 Using valid resource group names: {regular_names}")
+                        logger.info(
+                            f"📋 Using valid resource group names: {regular_names}"
+                        )
                         resource_group_names = regular_names
                     else:
                         logger.error(
@@ -154,7 +156,9 @@ async def build_command_handler(
                         resource_group_names = []
                 else:
                     resource_group_names = regular_names
-                    logger.info(f"📋 Filtering by resource groups: {resource_group_names}")
+                    logger.info(
+                        f"📋 Filtering by resource groups: {resource_group_names}"
+                    )
 
             try:
                 filter_config = FilterConfig(
@@ -272,17 +276,23 @@ async def _run_no_dashboard_mode(
     }
     root_logger.setLevel(level_map.get(cli_log_level, logging.INFO))
     root_logger.handlers.clear()
-    
+
     # Check if we're running from Electron app (SPA)
-    is_electron = os.environ.get('ELECTRON_RUN_AS_NODE') == '1' or os.environ.get('IS_ELECTRON_APP') == 'true' or os.environ.get('PYTHONUNBUFFERED') == '1'
-    
+    is_electron = (
+        os.environ.get("ELECTRON_RUN_AS_NODE") == "1"
+        or os.environ.get("IS_ELECTRON_APP") == "true"
+        or os.environ.get("PYTHONUNBUFFERED") == "1"
+    )
+
     if is_electron:
         # Use simple StreamHandler for Electron to capture all output
         handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
         handler.setLevel(level_map.get(cli_log_level, logging.INFO))
         root_logger.addHandler(handler)
         # Force flush for immediate output
@@ -308,7 +318,7 @@ async def _run_no_dashboard_mode(
                     return Style(color="red", bold=True, reverse=True)
                 # Fallback for other levels
                 return Style(color="cyan")
-        
+
         handler = GreenInfoRichHandler(
             rich_tracebacks=True, show_time=True, show_level=True, show_path=False
         )
@@ -768,7 +778,10 @@ async def spec_command_handler(
 
 
 def generate_spec_command_handler(
-    ctx: click.Context, limit: Optional[int], output: Optional[str], hierarchical: bool = False
+    ctx: click.Context,
+    limit: Optional[int],
+    output: Optional[str],
+    hierarchical: bool = False,
 ) -> None:
     """Handle the generate-spec command logic."""
     ensure_neo4j_running()
@@ -795,22 +808,22 @@ def generate_spec_command_handler(
 
         # Choose generator based on hierarchical flag
         from src.tenant_spec_generator import ResourceAnonymizer
-        
+
         # Anonymizer
         anonymizer = ResourceAnonymizer(seed=spec_config.anonymization_seed)
-        
+
         if hierarchical:
             from src.hierarchical_spec_generator import HierarchicalSpecGenerator
-            
+
             # Generator
             generator = HierarchicalSpecGenerator(
                 neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
             )
-            
+
             click.echo("📊 Generating hierarchical tenant specification...")
         else:
             from src.tenant_spec_generator import TenantSpecificationGenerator
-            
+
             # Generator
             generator = TenantSpecificationGenerator(
                 neo4j_uri, neo4j_user, neo4j_password, anonymizer, spec_config
@@ -1274,7 +1287,7 @@ def spa_start():
                 # Process not running, clean up stale PID file
                 click.echo(f"ℹ️  Cleaning up stale PID file (process {pid} not found)")
                 os.remove(SPA_PIDFILE)
-        except (ValueError, IOError) as e:
+        except (OSError, ValueError) as e:
             # Invalid PID file, remove it
             click.echo(f"ℹ️  Removing invalid PID file: {e}")
             os.remove(SPA_PIDFILE)
@@ -1346,17 +1359,21 @@ def spa_start():
                         mcp_pid = int(f.read().strip())
                     try:
                         os.kill(mcp_pid, 0)  # Check if process exists
-                        click.echo(f"⚠️  MCP server already running (PID: {mcp_pid}), skipping...")
+                        click.echo(
+                            f"⚠️  MCP server already running (PID: {mcp_pid}), skipping..."
+                        )
                         mcp_needs_start = False
                     except ProcessLookupError:
                         # Process not running, clean up stale PID file
-                        click.echo(f"ℹ️  Cleaning up stale MCP PID file (process {mcp_pid} not found)")
+                        click.echo(
+                            f"ℹ️  Cleaning up stale MCP PID file (process {mcp_pid} not found)"
+                        )
                         os.remove(MCP_PIDFILE)
-                except (ValueError, IOError) as e:
+                except (OSError, ValueError) as e:
                     # Invalid PID file, remove it
                     click.echo(f"ℹ️  Removing invalid MCP PID file: {e}")
                     os.remove(MCP_PIDFILE)
-            
+
             if mcp_needs_start:
                 # Start MCP server in the background
                 mcp_proc = subprocess.Popen(
@@ -1887,8 +1904,9 @@ async def monitor_command_handler(
         no_container: Skip auto-starting Neo4j container
     """
     import time
-    from datetime import datetime
     from collections import deque
+    from datetime import datetime
+
     from neo4j import GraphDatabase
 
     # Ensure Neo4j is running (unless --no-container is set)
@@ -2013,7 +2031,7 @@ async def monitor_command_handler(
         current_tuple = (
             current_metrics["resources"],
             current_metrics["relationships"],
-            current_metrics["resource_groups"]
+            current_metrics["resource_groups"],
         )
         count_history.append(current_tuple)
 
@@ -2281,9 +2299,10 @@ async def fidelity_command_handler(
         if check_objective:
             try:
                 objective_met, target_fidelity = calculator.check_objective(
-                    check_objective, 0.0  # Will recalculate below
+                    check_objective,
+                    0.0,  # Will recalculate below
                 )
-            except IOError:
+            except OSError:
                 click.echo(
                     f"⚠️  Could not read objective file: {check_objective}",
                     err=True,
@@ -2335,9 +2354,7 @@ async def fidelity_command_handler(
         if metrics.fidelity_by_type:
             click.echo("\n🔍 Fidelity by Resource Type (top 10):")
             sorted_types = sorted(
-                metrics.fidelity_by_type.items(),
-                key=lambda x: x[1],
-                reverse=True
+                metrics.fidelity_by_type.items(), key=lambda x: x[1], reverse=True
             )[:10]
             for resource_type, fidelity in sorted_types:
                 click.echo(f"  {resource_type}: {fidelity:.1f}%")
@@ -2348,8 +2365,10 @@ async def fidelity_command_handler(
         if track:
             try:
                 calculator.track_fidelity(metrics)
-                click.echo("\n✅ Fidelity metrics tracked to demos/fidelity_history.jsonl")
-            except IOError as e:
+                click.echo(
+                    "\n✅ Fidelity metrics tracked to demos/fidelity_history.jsonl"
+                )
+            except OSError as e:
                 click.echo(f"\n⚠️  Failed to track metrics: {e}", err=True)
 
         # Export to JSON if output path provided
@@ -2357,7 +2376,7 @@ async def fidelity_command_handler(
             try:
                 calculator.export_to_json(metrics, output)
                 click.echo(f"\n✅ Fidelity metrics exported to {output}")
-            except IOError as e:
+            except OSError as e:
                 click.echo(f"\n⚠️  Failed to export metrics: {e}", err=True)
 
         calculator.close()
@@ -2365,6 +2384,7 @@ async def fidelity_command_handler(
     except Exception as e:
         click.echo(f"❌ Failed to calculate fidelity: {e}", err=True)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

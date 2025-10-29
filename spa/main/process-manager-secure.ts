@@ -50,7 +50,7 @@ export class SecureProcessManager extends EventEmitter {
     // Check process limit
     const runningProcesses = Array.from(this.processes.values())
       .filter(p => p.status === 'running').length;
-    
+
     if (runningProcesses >= this.maxProcesses) {
       throw new Error('Maximum number of concurrent processes reached');
     }
@@ -145,7 +145,7 @@ export class SecureProcessManager extends EventEmitter {
       processInfo.endTime = new Date();
 
       this.emit('process:exit', { id, code });
-      
+
       // Clean up old processes after completion
       setTimeout(() => {
         if (this.processes.has(id)) {
@@ -295,7 +295,7 @@ export class SecureProcessManager extends EventEmitter {
         // Ensure output is sanitized before streaming
         const sanitizedData = {
           ...data,
-          data: Array.isArray(data.data) 
+          data: Array.isArray(data.data)
             ? data.data.map((line: string) => sanitizeOutput(line))
             : sanitizeOutput(data.data)
         };
@@ -317,7 +317,7 @@ export class SecureProcessManager extends EventEmitter {
   getProcessCount(): { total: number; running: number } {
     const running = Array.from(this.processes.values())
       .filter(p => p.status === 'running').length;
-    
+
     return {
       total: this.processes.size,
       running

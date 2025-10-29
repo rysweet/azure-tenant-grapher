@@ -8,12 +8,13 @@ Contract: Check services, dependencies, and provide health status
 
 import asyncio
 import logging
-import subprocess
 import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import aiohttp
+import subprocess
 import sys
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ logger = logging.getLogger(__name__)
 class HealthCheck:
     """Represents a single health check result."""
 
-    def __init__(self, name: str, healthy: bool, message: str, details: Optional[Dict] = None):
+    def __init__(
+        self, name: str, healthy: bool, message: str, details: Optional[Dict] = None
+    ):
         self.name = name
         self.healthy = healthy
         self.message = message
@@ -33,7 +36,7 @@ class HealthCheck:
             "name": self.name,
             "healthy": self.healthy,
             "message": self.message,
-            "details": self.details
+            "details": self.details,
         }
 
 
@@ -92,18 +95,22 @@ class HealthChecker:
         """Check Python version compatibility."""
         version = sys.version_info
         if version.major >= 3 and version.minor >= 8:
-            self.checks.append(HealthCheck(
-                "Python Version",
-                True,
-                f"Python {version.major}.{version.minor}.{version.micro}"
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Python Version",
+                    True,
+                    f"Python {version.major}.{version.minor}.{version.micro}",
+                )
+            )
         else:
-            self.checks.append(HealthCheck(
-                "Python Version",
-                False,
-                f"Python {version.major}.{version.minor} detected, requires 3.8+",
-                {"current": f"{version.major}.{version.minor}", "required": "3.8+"}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Python Version",
+                    False,
+                    f"Python {version.major}.{version.minor} detected, requires 3.8+",
+                    {"current": f"{version.major}.{version.minor}", "required": "3.8+"},
+                )
+            )
 
     async def check_service(self, url: str, name: Optional[str] = None) -> bool:
         """
@@ -122,57 +129,62 @@ class HealthChecker:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, timeout=self.timeout) as response:
                     if response.status < 500:
-                        self.checks.append(HealthCheck(
-                            service_name,
-                            True,
-                            f"Service responding (status: {response.status})",
-                            {"url": url, "status": response.status}
-                        ))
+                        self.checks.append(
+                            HealthCheck(
+                                service_name,
+                                True,
+                                f"Service responding (status: {response.status})",
+                                {"url": url, "status": response.status},
+                            )
+                        )
                         return True
                     else:
-                        self.checks.append(HealthCheck(
-                            service_name,
-                            False,
-                            f"Service error (status: {response.status})",
-                            {"url": url, "status": response.status}
-                        ))
+                        self.checks.append(
+                            HealthCheck(
+                                service_name,
+                                False,
+                                f"Service error (status: {response.status})",
+                                {"url": url, "status": response.status},
+                            )
+                        )
                         return False
 
         except asyncio.TimeoutError:
-            self.checks.append(HealthCheck(
-                service_name,
-                False,
-                f"Service timeout after {self.timeout}s",
-                {"url": url, "timeout": self.timeout}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    service_name,
+                    False,
+                    f"Service timeout after {self.timeout}s",
+                    {"url": url, "timeout": self.timeout},
+                )
+            )
             return False
 
         except aiohttp.ClientError as e:
-            self.checks.append(HealthCheck(
-                service_name,
-                False,
-                f"Cannot connect to service: {str(e)}",
-                {"url": url, "error": str(e)}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    service_name,
+                    False,
+                    f"Cannot connect to service: {e!s}",
+                    {"url": url, "error": str(e)},
+                )
+            )
             return False
 
         except Exception as e:
-            self.checks.append(HealthCheck(
-                service_name,
-                False,
-                f"Unexpected error: {str(e)}",
-                {"url": url, "error": str(e)}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    service_name,
+                    False,
+                    f"Unexpected error: {e!s}",
+                    {"url": url, "error": str(e)},
+                )
+            )
             return False
 
     async def _check_dependencies(self) -> None:
         """Check required Python dependencies."""
-        required_packages = [
-            "playwright",
-            "pyyaml",
-            "aiohttp",
-            "pillow"
-        ]
+        required_packages = ["playwright", "pyyaml", "aiohttp", "pillow"]
 
         try:
             import importlib.metadata
@@ -197,25 +209,27 @@ class HealthChecker:
                         missing.append(package)
 
             if missing:
-                self.checks.append(HealthCheck(
-                    "Python Dependencies",
-                    False,
-                    f"Missing packages: {', '.join(missing)}",
-                    {"missing": missing}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Python Dependencies",
+                        False,
+                        f"Missing packages: {', '.join(missing)}",
+                        {"missing": missing},
+                    )
+                )
             else:
-                self.checks.append(HealthCheck(
-                    "Python Dependencies",
-                    True,
-                    "All required packages installed"
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Python Dependencies", True, "All required packages installed"
+                    )
+                )
 
         except Exception as e:
-            self.checks.append(HealthCheck(
-                "Python Dependencies",
-                False,
-                f"Cannot check dependencies: {str(e)}"
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Python Dependencies", False, f"Cannot check dependencies: {e!s}"
+                )
+            )
 
     async def check_azure_auth(self) -> bool:
         """
@@ -226,54 +240,59 @@ class HealthChecker:
         """
         try:
             result = subprocess.run(
-                ["az", "account", "show"],
-                capture_output=True,
-                text=True,
-                timeout=10
+                ["az", "account", "show"], capture_output=True, text=True, timeout=10
             )
 
             if result.returncode == 0:
                 import json
+
                 account = json.loads(result.stdout)
-                self.checks.append(HealthCheck(
-                    "Azure Authentication",
-                    True,
-                    f"Authenticated to {account.get('name', 'Unknown')}",
-                    {"tenant": account.get('tenantId'), "subscription": account.get('id')}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Azure Authentication",
+                        True,
+                        f"Authenticated to {account.get('name', 'Unknown')}",
+                        {
+                            "tenant": account.get("tenantId"),
+                            "subscription": account.get("id"),
+                        },
+                    )
+                )
                 return True
             else:
-                self.checks.append(HealthCheck(
-                    "Azure Authentication",
-                    False,
-                    "Not authenticated - run 'az login'",
-                    {"error": result.stderr}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Azure Authentication",
+                        False,
+                        "Not authenticated - run 'az login'",
+                        {"error": result.stderr},
+                    )
+                )
                 return False
 
         except subprocess.TimeoutExpired:
-            self.checks.append(HealthCheck(
-                "Azure Authentication",
-                False,
-                "Azure CLI check timed out"
-            ))
+            self.checks.append(
+                HealthCheck("Azure Authentication", False, "Azure CLI check timed out")
+            )
             return False
 
         except FileNotFoundError:
-            self.checks.append(HealthCheck(
-                "Azure Authentication",
-                False,
-                "Azure CLI not installed",
-                {"suggestion": "Install Azure CLI: https://aka.ms/azure-cli"}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Azure Authentication",
+                    False,
+                    "Azure CLI not installed",
+                    {"suggestion": "Install Azure CLI: https://aka.ms/azure-cli"},
+                )
+            )
             return False
 
         except Exception as e:
-            self.checks.append(HealthCheck(
-                "Azure Authentication",
-                False,
-                f"Cannot check authentication: {str(e)}"
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Azure Authentication", False, f"Cannot check authentication: {e!s}"
+                )
+            )
             return False
 
     async def _check_playwright(self) -> None:
@@ -291,71 +310,95 @@ class HealthChecker:
                     ["playwright", "install", "--dry-run"],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
                 )
 
-                if browser in result.stdout.lower() and "missing" not in result.stdout.lower():
-                    self.checks.append(HealthCheck(
-                        f"Playwright {browser.title()}",
-                        True,
-                        f"{browser.title()} browser installed"
-                    ))
+                if (
+                    browser in result.stdout.lower()
+                    and "missing" not in result.stdout.lower()
+                ):
+                    self.checks.append(
+                        HealthCheck(
+                            f"Playwright {browser.title()}",
+                            True,
+                            f"{browser.title()} browser installed",
+                        )
+                    )
                 else:
-                    self.checks.append(HealthCheck(
-                        f"Playwright {browser.title()}",
-                        False,
-                        f"{browser.title()} not installed - run 'playwright install {browser}'",
-                        {"browser": browser}
-                    ))
+                    self.checks.append(
+                        HealthCheck(
+                            f"Playwright {browser.title()}",
+                            False,
+                            f"{browser.title()} not installed - run 'playwright install {browser}'",
+                            {"browser": browser},
+                        )
+                    )
             else:
-                self.checks.append(HealthCheck(
-                    "Playwright",
-                    False,
-                    "Playwright CLI not found",
-                    {"suggestion": "Run: pip install playwright && playwright install"}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Playwright",
+                        False,
+                        "Playwright CLI not found",
+                        {
+                            "suggestion": "Run: pip install playwright && playwright install"
+                        },
+                    )
+                )
 
         except ImportError:
-            self.checks.append(HealthCheck(
-                "Playwright",
-                False,
-                "Playwright not installed",
-                {"suggestion": "Run: pip install playwright"}
-            ))
+            self.checks.append(
+                HealthCheck(
+                    "Playwright",
+                    False,
+                    "Playwright not installed",
+                    {"suggestion": "Run: pip install playwright"},
+                )
+            )
 
         except Exception as e:
-            self.checks.append(HealthCheck(
-                "Playwright",
-                False,
-                f"Cannot check Playwright: {str(e)}"
-            ))
+            self.checks.append(
+                HealthCheck("Playwright", False, f"Cannot check Playwright: {e!s}")
+            )
 
     def _check_disk_space(self) -> None:
         """Check available disk space."""
         try:
             import shutil
+
             path = Path.cwd()
             stat = shutil.disk_usage(path)
 
             # Convert to GB
-            free_gb = stat.free / (1024 ** 3)
-            total_gb = stat.total / (1024 ** 3)
+            free_gb = stat.free / (1024**3)
+            total_gb = stat.total / (1024**3)
             used_percent = (stat.used / stat.total) * 100
 
             if free_gb < 1:
-                self.checks.append(HealthCheck(
-                    "Disk Space",
-                    False,
-                    f"Low disk space: {free_gb:.1f}GB free",
-                    {"free_gb": free_gb, "total_gb": total_gb, "used_percent": used_percent}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Disk Space",
+                        False,
+                        f"Low disk space: {free_gb:.1f}GB free",
+                        {
+                            "free_gb": free_gb,
+                            "total_gb": total_gb,
+                            "used_percent": used_percent,
+                        },
+                    )
+                )
             else:
-                self.checks.append(HealthCheck(
-                    "Disk Space",
-                    True,
-                    f"{free_gb:.1f}GB free ({used_percent:.1f}% used)",
-                    {"free_gb": free_gb, "total_gb": total_gb, "used_percent": used_percent}
-                ))
+                self.checks.append(
+                    HealthCheck(
+                        "Disk Space",
+                        True,
+                        f"{free_gb:.1f}GB free ({used_percent:.1f}% used)",
+                        {
+                            "free_gb": free_gb,
+                            "total_gb": total_gb,
+                            "used_percent": used_percent,
+                        },
+                    )
+                )
 
         except Exception as e:
             logger.warning(f"Cannot check disk space: {e}")
@@ -379,7 +422,7 @@ class HealthChecker:
             "=" * 60,
             f"Status: {'✅ HEALTHY' if healthy == total else '⚠️ ISSUES DETECTED'}",
             f"Checks Passed: {healthy}/{total}",
-            ""
+            "",
         ]
 
         for check in self.checks:

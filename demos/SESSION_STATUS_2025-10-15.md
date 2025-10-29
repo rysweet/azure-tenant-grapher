@@ -17,7 +17,7 @@ Faithfully replicate source tenant (DefenderATEVET17) to target tenant (Defender
 1. ✅ Fixed VM extension validation bug (csiska-01)
    - Extensions now check generated Terraform config, not just _available_resources
    - Prevents extensions for VMs skipped due to missing dependencies
-   
+
 2. ✅ Fixed DevTestLab schedule notification_settings bug
    - Removed invalid 'enabled' field
    - azurerm_dev_test_schedule doesn't support this property

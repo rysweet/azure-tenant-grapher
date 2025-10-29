@@ -74,9 +74,7 @@ class FidelityMetrics:
             },
             "fidelity": {
                 "overall": round(self.overall_fidelity, 1),
-                "by_type": {
-                    k: round(v, 1) for k, v in self.fidelity_by_type.items()
-                },
+                "by_type": {k: round(v, 1) for k, v in self.fidelity_by_type.items()},
                 "missing_resources": self.missing_resources,
                 "objective_met": self.objective_met,
                 "target_fidelity": self.target_fidelity,
@@ -99,9 +97,7 @@ class FidelityCalculator:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
-        self.driver = GraphDatabase.driver(
-            neo4j_uri, auth=(neo4j_user, neo4j_password)
-        )
+        self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
     def close(self) -> None:
         """Close Neo4j driver connection."""
@@ -309,17 +305,13 @@ class FidelityCalculator:
         for resource_type, source_count in source_types.items():
             target_count = target_types.get(resource_type, 0)
             if source_count > 0:
-                fidelity_by_type[resource_type] = (
-                    target_count / source_count
-                ) * 100.0
+                fidelity_by_type[resource_type] = (target_count / source_count) * 100.0
             else:
                 fidelity_by_type[resource_type] = 0.0
 
         return fidelity_by_type
 
-    def export_to_json(
-        self, metrics: FidelityMetrics, output_path: str
-    ) -> None:
+    def export_to_json(self, metrics: FidelityMetrics, output_path: str) -> None:
         """
         Export fidelity metrics to JSON file.
 
@@ -334,7 +326,7 @@ class FidelityCalculator:
             with open(output_path, "w") as f:
                 json.dump(metrics.to_dict(), f, indent=2)
             logger.info(f"Fidelity metrics exported to {output_path}")
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to export metrics to {output_path}: {e}")
             raise
 
@@ -361,7 +353,7 @@ class FidelityCalculator:
             with open(tracking_file, "a") as f:
                 f.write(json.dumps(metrics.to_dict()) + "\n")
             logger.info(f"Fidelity metrics tracked to {tracking_file}")
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to track metrics to {tracking_file}: {e}")
             raise
 
@@ -410,6 +402,6 @@ class FidelityCalculator:
 
             return objective_met, target_fidelity
 
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to read objective file {objective_file}: {e}")
             raise

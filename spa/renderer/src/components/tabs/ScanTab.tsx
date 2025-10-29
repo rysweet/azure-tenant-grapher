@@ -157,12 +157,12 @@ const ScanTab: React.FC = () => {
   // Handle tenant selection change
   const handleTenantSelection = useCallback(async (selectedTenant: '1' | '2') => {
     setSelectedTenant(selectedTenant);
-    
+
     try {
       // Load environment config to get tenant IDs
       const response = await axios.get('http://localhost:3001/api/config/env');
       const envData = response.data;
-      
+
       // Map selected tenant to tenant ID based on environment variables
       let tenantId = '';
       if (selectedTenant === '1') {
@@ -172,7 +172,7 @@ const ScanTab: React.FC = () => {
         // Simuland tenant - use AZURE_TENANT_ID_2
         tenantId = envData.AZURE_TENANT_ID_2 || '';
       }
-      
+
       if (tenantId) {
         setTenantId(tenantId);
         dispatch({ type: 'UPDATE_CONFIG', payload: { tenantId } });
@@ -709,7 +709,7 @@ const ScanTab: React.FC = () => {
               <Typography component="h3" variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Tenant Configuration
               </Typography>
-              
+
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <TextField

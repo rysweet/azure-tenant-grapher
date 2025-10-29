@@ -8,10 +8,6 @@ Tests the integration of various MCP tools used in agent mode including:
 - Compliance checking tools
 """
 
-import json
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 
@@ -24,17 +20,17 @@ class TestMCPTools:
         # Mock tool invocation
         tool_params = {
             "query": "MATCH (vm:VirtualMachine) RETURN vm LIMIT 5",
-            "parameters": {}
+            "parameters": {},
         }
 
         # Mock response
         mock_response = {
             "nodes": [
                 {"id": "vm-1", "type": "VirtualMachine", "name": "prod-vm-1"},
-                {"id": "vm-2", "type": "VirtualMachine", "name": "prod-vm-2"}
+                {"id": "vm-2", "type": "VirtualMachine", "name": "prod-vm-2"},
             ],
             "relationships": [],
-            "execution_time": 0.025
+            "execution_time": 0.025,
         }
 
         # Verify tool functionality
@@ -48,19 +44,14 @@ class TestMCPTools:
         tool_params = {
             "subscription_id": "test-sub-1",
             "resource_types": ["VirtualMachine", "StorageAccount"],
-            "filters": {
-                "tags": {"environment": "production"}
-            }
+            "filters": {"tags": {"environment": "production"}},
         }
 
         # Mock discovery results
         mock_results = {
             "resources_discovered": 15,
-            "resource_breakdown": {
-                "VirtualMachine": 10,
-                "StorageAccount": 5
-            },
-            "discovery_time": 2.5
+            "resource_breakdown": {"VirtualMachine": 10, "StorageAccount": 5},
+            "discovery_time": 2.5,
         }
 
         # Verify discovery
@@ -73,22 +64,17 @@ class TestMCPTools:
         # Mock security analysis parameters
         tool_params = {
             "resource_ids": ["vm-1", "vm-2", "storage-1"],
-            "check_types": ["network", "identity", "encryption"]
+            "check_types": ["network", "identity", "encryption"],
         }
 
         # Mock analysis results
         mock_results = {
             "security_score": 72,
-            "findings": {
-                "critical": 0,
-                "high": 2,
-                "medium": 5,
-                "low": 8
-            },
+            "findings": {"critical": 0, "high": 2, "medium": 5, "low": 8},
             "recommendations": [
                 "Enable disk encryption on all VMs",
-                "Implement network segmentation"
-            ]
+                "Implement network segmentation",
+            ],
         }
 
         # Verify analysis
@@ -102,7 +88,7 @@ class TestMCPTools:
         # Mock compliance check parameters
         tool_params = {
             "standards": ["CIS", "PCI-DSS"],
-            "resource_scope": "subscription"
+            "resource_scope": "subscription",
         }
 
         # Mock compliance results
@@ -113,8 +99,8 @@ class TestMCPTools:
             "not_applicable": 50,
             "critical_failures": [
                 "CIS-1.4: MFA not enabled for all users",
-                "PCI-3.2: Encryption at rest not configured"
-            ]
+                "PCI-3.2: Encryption at rest not configured",
+            ],
         }
 
         # Verify compliance check
@@ -137,12 +123,9 @@ class TestMCPTools:
             "properties": {
                 "vmSize": "Standard_D2s_v3",
                 "osType": "Linux",
-                "provisioningState": "Succeeded"
+                "provisioningState": "Succeeded",
             },
-            "tags": {
-                "environment": "test",
-                "owner": "team-a"
-            }
+            "tags": {"environment": "test", "owner": "team-a"},
         }
 
         # Verify details retrieval
@@ -153,10 +136,7 @@ class TestMCPTools:
     async def test_analyze_costs_tool(self):
         """Test the analyze_costs MCP tool."""
         # Mock cost analysis parameters
-        tool_params = {
-            "time_period": "last_30_days",
-            "group_by": "resource_type"
-        }
+        tool_params = {"time_period": "last_30_days", "group_by": "resource_type"}
 
         # Mock cost analysis results
         mock_results = {
@@ -165,10 +145,10 @@ class TestMCPTools:
             "breakdown": {
                 "VirtualMachine": 3200.50,
                 "Storage": 1231.60,
-                "Network": 1000.00
+                "Network": 1000.00,
             },
             "trend": "increasing",
-            "forecast_next_month": 5800.00
+            "forecast_next_month": 5800.00,
         }
 
         # Verify cost analysis
@@ -183,22 +163,19 @@ class TestMCPTools:
         tool_params = {
             "source_id": "vm-1",
             "relationship_types": ["USES", "CONNECTS_TO", "DEPENDS_ON"],
-            "max_depth": 2
+            "max_depth": 2,
         }
 
         # Mock relationship results
         mock_results = {
             "relationships_found": 8,
             "paths": [
-                {
-                    "path": ["vm-1", "USES", "storage-1"],
-                    "distance": 1
-                },
+                {"path": ["vm-1", "USES", "storage-1"], "distance": 1},
                 {
                     "path": ["vm-1", "CONNECTS_TO", "vnet-1", "CONTAINS", "subnet-1"],
-                    "distance": 2
-                }
-            ]
+                    "distance": 2,
+                },
+            ],
         }
 
         # Verify relationship finding
@@ -213,7 +190,7 @@ class TestMCPTools:
         tool_params = {
             "report_type": "security_assessment",
             "format": "markdown",
-            "include_recommendations": True
+            "include_recommendations": True,
         }
 
         # Mock report generation
@@ -225,10 +202,10 @@ class TestMCPTools:
                 "Executive Summary",
                 "Findings",
                 "Recommendations",
-                "Appendix"
+                "Appendix",
             ],
             "size_bytes": 45678,
-            "generated_at": "2024-01-15T10:30:00Z"
+            "generated_at": "2024-01-15T10:30:00Z",
         }
 
         # Verify report generation
@@ -244,18 +221,18 @@ class TestMCPTools:
             {
                 "tool": "query_graph",
                 "error": "Connection timeout",
-                "retry_possible": True
+                "retry_possible": True,
             },
             {
                 "tool": "discover_resources",
                 "error": "Invalid subscription",
-                "retry_possible": False
+                "retry_possible": False,
             },
             {
                 "tool": "analyze_security",
                 "error": "Rate limit exceeded",
-                "retry_possible": True
-            }
+                "retry_possible": True,
+            },
         ]
 
         for scenario in error_scenarios:
@@ -272,7 +249,7 @@ class TestMCPTools:
         chain_steps = [
             {"tool": "discover_resources", "status": "success", "output_size": 50},
             {"tool": "analyze_security", "status": "success", "output_size": 25},
-            {"tool": "generate_report", "status": "success", "output_size": 100}
+            {"tool": "generate_report", "status": "success", "output_size": 100},
         ]
 
         # Execute chain
@@ -289,7 +266,7 @@ class TestMCPTools:
         parallel_tools = [
             {"tool": "query_graph", "execution_time": 0.5},
             {"tool": "analyze_costs", "execution_time": 0.8},
-            {"tool": "check_compliance", "execution_time": 0.6}
+            {"tool": "check_compliance", "execution_time": 0.6},
         ]
 
         # Calculate max execution time (parallel)
@@ -304,11 +281,7 @@ class TestMCPTools:
     async def test_tool_caching(self):
         """Test caching of MCP tool results."""
         # Mock cache configuration
-        cache_config = {
-            "enabled": True,
-            "ttl_seconds": 300,
-            "max_size_mb": 100
-        }
+        cache_config = {"enabled": True, "ttl_seconds": 300, "max_size_mb": 100}
 
         # Mock cached vs non-cached execution
         first_call = {"execution_time": 2.5, "cached": False}

@@ -49,7 +49,7 @@ class ErrorRecoveryService {
       recover: async () => {
         // Wait for network to stabilize
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         // Check if we're back online
         if (!navigator.onLine) {
           throw new Error('Still offline');
@@ -209,7 +209,7 @@ class ErrorRecoveryService {
     const timeSinceLastAttempt = Date.now() - lastTime;
 
     if (timeSinceLastAttempt < backoffMs) {
-      await new Promise(resolve => 
+      await new Promise(resolve =>
         setTimeout(resolve, backoffMs - timeSinceLastAttempt)
       );
     }
@@ -280,7 +280,7 @@ class ErrorRecoveryService {
     try {
       const keysToKeep = ['auth_token', 'user_id', 'tenant_id'];
       const allKeys = Object.keys(sessionStorage);
-      
+
       allKeys.forEach(key => {
         if (!keysToKeep.includes(key)) {
           sessionStorage.removeItem(key);
@@ -303,14 +303,14 @@ class ErrorRecoveryService {
     // This would typically call your auth service
     // Placeholder implementation
     const refreshToken = localStorage.getItem('refresh_token');
-    
+
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
 
     // Simulate token refresh
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // In real implementation, this would call your auth endpoint
     // and update the stored tokens
   }
@@ -324,7 +324,7 @@ class ErrorRecoveryService {
     isRecovering: boolean;
   } {
     const attemptsByStrategy: Record<string, number> = {};
-    
+
     for (const [id, attempts] of this.recoveryAttempts.entries()) {
       const strategy = this.strategies.get(id);
       if (strategy) {

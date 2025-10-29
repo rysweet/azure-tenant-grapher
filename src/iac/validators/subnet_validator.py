@@ -108,7 +108,9 @@ class SubnetValidator:
             )
 
         # Track allocated subnet networks for overlap detection
-        allocated_subnets: List[tuple[str, ipaddress.IPv4Network | ipaddress.IPv6Network]] = []
+        allocated_subnets: List[
+            tuple[str, ipaddress.IPv4Network | ipaddress.IPv6Network]
+        ] = []
 
         for subnet in subnets:
             subnet_name = subnet.get("name", "unknown")
@@ -226,7 +228,8 @@ class SubnetValidator:
         critical_issues = [
             i
             for i in issues
-            if i.issue_type in ("out_of_range", "overlap", "invalid_prefix", "missing_prefix")
+            if i.issue_type
+            in ("out_of_range", "overlap", "invalid_prefix", "missing_prefix")
             and not i.auto_fixable
         ]
         valid = len(critical_issues) == 0
@@ -260,9 +263,7 @@ class SubnetValidator:
             address_space = vnet_config.get("address_space", [])
 
             # Find subnets for this VNet
-            subnets = self._find_subnets_for_vnet(
-                vnet_name, terraform_resources
-            )
+            subnets = self._find_subnets_for_vnet(vnet_name, terraform_resources)
 
             # Validate subnets
             result = self.validate_vnet_subnets(vnet_name, address_space, subnets)
@@ -320,8 +321,7 @@ class SubnetValidator:
         # Update in various possible locations
         if "address_prefixes" in subnet:
             subnet["address_prefixes"] = [
-                new_prefix if p == old_prefix else p
-                for p in subnet["address_prefixes"]
+                new_prefix if p == old_prefix else p for p in subnet["address_prefixes"]
             ]
         elif "address_prefix" in subnet:
             subnet["address_prefix"] = new_prefix
@@ -341,7 +341,9 @@ class SubnetValidator:
         self,
         original_subnet: ipaddress.IPv4Network | ipaddress.IPv6Network,
         vnet_network: ipaddress.IPv4Network | ipaddress.IPv6Network,
-        allocated_subnets: List[tuple[str, ipaddress.IPv4Network | ipaddress.IPv6Network]],
+        allocated_subnets: List[
+            tuple[str, ipaddress.IPv4Network | ipaddress.IPv6Network]
+        ],
     ) -> Optional[str]:
         """
         Suggest a valid subnet prefix within the VNet range.

@@ -145,9 +145,7 @@ def deploy_command(
             )
             click.echo(f"Status: {status}")
         else:
-            click.echo(
-                f"\nDeployment completed successfully ({format_type} format)"
-            )
+            click.echo(f"\nDeployment completed successfully ({format_type} format)")
             click.echo(f"Status: {status}")
 
         # Show output if available

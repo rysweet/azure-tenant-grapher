@@ -65,7 +65,7 @@ io.use(AuthMiddleware.authenticate);
 // WebSocket connection handling
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id });
-  
+
   // Setup heartbeat for this connection
   AuthMiddleware.setupHeartbeat(socket);
 
@@ -94,14 +94,14 @@ app.post('/api/auth/token', (req, res) => {
     // In production, validate credentials here
     // For now, we'll use a simple user identification
     const { userId = 'default-user', clientId = uuidv4() } = req.body;
-    
+
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
     const userAgent = req.headers['user-agent'];
-    
+
     const token = AuthMiddleware.createSession(userId, clientId, ipAddress, userAgent);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       token,
       expiresIn: 86400 // 24 hours in seconds
     });
@@ -412,10 +412,10 @@ app.get('/api/neo4j/tenants', async (req, res) => {
   try {
     const neo4j = require('neo4j-driver');
     const { CredentialManager } = require('./security/credential-manager');
-    
+
     // Get credentials from secure manager
     const credentials = CredentialManager.getNeo4jCredentials();
-    
+
     const driver = neo4j.driver(
       credentials.uri,
       neo4j.auth.basic(credentials.username, credentials.password)
@@ -878,7 +878,7 @@ app.get('/api/test/azure-openai', async (req, res) => {
     const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
     const rateLimitKey = `azure-openai-test:${clientIp}`;
     const now = Date.now();
-    
+
     if (global.rateLimitCache && global.rateLimitCache[rateLimitKey]) {
       const lastRequest = global.rateLimitCache[rateLimitKey];
       const timeSinceLastRequest = now - lastRequest;
@@ -889,19 +889,19 @@ app.get('/api/test/azure-openai', async (req, res) => {
         });
       }
     }
-    
+
     // Initialize rate limit cache if not exists
     if (!global.rateLimitCache) {
       global.rateLimitCache = {};
     }
     global.rateLimitCache[rateLimitKey] = now;
-    
+
     // Test with actual API call - use the endpoint as configured
     try {
       // Determine the URL to use
       let url: string;
       let actualModel = modelChat || 'gpt-4';
-      
+
       // If endpoint already contains /chat/completions, it's a full URL - use as-is
       if (endpoint.includes('/chat/completions')) {
         url = endpoint;
@@ -916,9 +916,9 @@ app.get('/api/test/azure-openai', async (req, res) => {
         const deploymentName = modelChat === 'gpt-4.1' ? 'gpt-4o' : (modelChat || 'gpt-4');
         url = `${endpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
       }
-      
+
       logger.debug('Testing Azure OpenAI with URL', { url });
-      
+
       // Make a test call with the joke prompt as specified in requirements
       const response = await fetch(url, {
         method: 'POST',
@@ -936,32 +936,32 @@ app.get('/api/test/azure-openai', async (req, res) => {
 
       if (response.ok) {
         const data: any = await response.json();
-        
+
         // Validate response structure
         if (!data || typeof data !== 'object') {
           logger.error('Invalid response structure from Azure OpenAI', { data });
-          return res.json({ 
-            success: false, 
+          return res.json({
+            success: false,
             error: 'Invalid response from Azure OpenAI API',
             configured: true
           });
         }
-        
+
         const endpointHost = new URL(endpoint.includes('://') ? endpoint : `https://${endpoint}`).host;
-        
+
         // Extract the joke response if available with validation
         let testResponse = 'Connection successful';
-        if (data.choices && 
-            Array.isArray(data.choices) && 
-            data.choices.length > 0 && 
-            data.choices[0].message && 
+        if (data.choices &&
+            Array.isArray(data.choices) &&
+            data.choices.length > 0 &&
+            data.choices[0].message &&
             typeof data.choices[0].message.content === 'string') {
           testResponse = data.choices[0].message.content || 'Connection successful';
         }
-        
+
         // Sanitize response to prevent XSS
         testResponse = testResponse.replace(/[<>]/g, '').substring(0, 200);
-        
+
         return res.json({
           success: true,
           message: 'Azure OpenAI is working correctly',
@@ -976,22 +976,22 @@ app.get('/api/test/azure-openai', async (req, res) => {
       } else if (response.status === 401) {
         return res.json({ success: false, error: 'Invalid Azure OpenAI API key' });
       } else if (response.status === 404) {
-        return res.json({ 
-          success: false, 
+        return res.json({
+          success: false,
           error: `Model deployment '${actualModel}' not found`,
           configured: true
         });
       } else if (response.status === 429) {
-        return res.json({ 
-          success: false, 
+        return res.json({
+          success: false,
           error: 'Azure OpenAI rate limit exceeded. Please try again later.',
           configured: true
         });
       } else {
         const errorText = await response.text();
         logger.error(`Azure OpenAI test failed: ${response.status}`, { errorText });
-        return res.json({ 
-          success: false, 
+        return res.json({
+          success: false,
           error: `API test failed: ${response.status}`,
           configured: true
         });
@@ -1025,13 +1025,13 @@ app.get('/api/test/graph-permissions', async (req, res) => {
       logger.debug('Testing Graph API permissions with service principal authentication');
     } else {
       logger.debug('Service principal credentials not found, attempting Azure CLI authentication');
-      
+
       // Try to get access token from Azure CLI
       try {
         const { exec } = require('child_process');
         const { promisify } = require('util');
         const execPromise = promisify(exec);
-        
+
         const { stdout } = await execPromise('az account get-access-token --resource https://graph.microsoft.com --query "accessToken" --output tsv', {
           timeout: 10000
         });
@@ -1110,7 +1110,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           headers,
           signal: AbortSignal.timeout(10000)
         });
-        
+
         if (usersResponse.ok) {
           const usersData: any = await usersResponse.json();
           permissions.users = true;
@@ -1130,7 +1130,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           headers,
           signal: AbortSignal.timeout(10000)
         });
-        
+
         if (groupsResponse.ok) {
           const groupsData: any = await groupsResponse.json();
           permissions.groups = true;
@@ -1150,7 +1150,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           headers,
           signal: AbortSignal.timeout(10000)
         });
-        
+
         if (spResponse.ok) {
           const spData: any = await spResponse.json();
           permissions.servicePrincipals = true;
@@ -1170,7 +1170,7 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           headers,
           signal: AbortSignal.timeout(10000)
         });
-        
+
         if (rolesResponse.ok) {
           const rolesData: any = await rolesResponse.json();
           permissions.directoryRoles = true;
@@ -1187,12 +1187,12 @@ app.get('/api/test/graph-permissions', async (req, res) => {
       // Determine if user has sufficient permissions
       // Method 1: Has the basic required permissions (User.Read.All AND Group.Read.All)
       const hasBasicRequired = permissions.users && permissions.groups;
-      
+
       // Method 2: Has Directory.Read.All (indicated by having servicePrincipals AND directoryRoles)
       const hasDirectoryReadAll = permissions.servicePrincipals && permissions.directoryRoles;
-      
+
       // Method 3: Has mixed permissions that include core requirements + additional (likely Directory.Read.All)
-      const hasSufficientMixed = (permissions.users || permissions.servicePrincipals) && 
+      const hasSufficientMixed = (permissions.users || permissions.servicePrincipals) &&
                                  (permissions.groups || permissions.directoryRoles) &&
                                  (permissions.servicePrincipals || permissions.directoryRoles);
 
@@ -1210,19 +1210,19 @@ app.get('/api/test/graph-permissions', async (req, res) => {
       } else {
         const missing = [];
         const suggestions = [];
-        
+
         if (!permissions.users && !permissions.servicePrincipals) {
           missing.push('User.Read.All');
         }
         if (!permissions.groups && !permissions.directoryRoles) {
           missing.push('Group.Read.All');
         }
-        
+
         if (missing.length > 0) {
           suggestions.push(`Grant specific permissions: ${missing.join(', ')}`);
         }
         suggestions.push('Or grant Directory.Read.All for comprehensive access');
-        
+
         message = `Insufficient Graph API permissions. ${suggestions.join(' ')}`;
       }
 
@@ -1235,15 +1235,15 @@ app.get('/api/test/graph-permissions', async (req, res) => {
           authMethod: hasServicePrincipalAuth ? 'Service Principal' : 'Azure CLI',
           tenantId: tenantId || 'Unknown',
           clientId: hasServicePrincipalAuth && clientId ? clientId.substring(0, 8) + '...' : undefined,
-          detectedPermissionLevel: hasDirectoryReadAll ? 'Directory.Read.All' : 
-                                   hasBasicRequired ? 'Specific (User+Group)' : 
+          detectedPermissionLevel: hasDirectoryReadAll ? 'Directory.Read.All' :
+                                   hasBasicRequired ? 'Specific (User+Group)' :
                                    hasSufficientMixed ? 'Mixed/Sufficient' : 'Insufficient'
         }
       });
 
     } catch (error: any) {
       logger.error('Graph API permissions test failed', { error });
-      
+
       return res.json({
         success: false,
         error: `Failed to test Graph API permissions: ${error.message}`,

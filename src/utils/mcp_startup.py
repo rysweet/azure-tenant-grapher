@@ -26,7 +26,9 @@ class MCPServerManager:
         self.mcp_endpoint = os.environ.get(
             "MCP_ENDPOINT", f"http://localhost:{self.mcp_port}"
         )
-        self.process: Optional[Union[subprocess.Popen[bytes], async_subprocess.Process]] = None
+        self.process: Optional[
+            Union[subprocess.Popen[bytes], async_subprocess.Process]
+        ] = None
 
     def is_mcp_running(self) -> bool:
         """Check if MCP server is running by checking health endpoint."""
@@ -44,7 +46,8 @@ class MCPServerManager:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.mcp_endpoint}/health", timeout=aiohttp.ClientTimeout(total=2)
+                    f"{self.mcp_endpoint}/health",
+                    timeout=aiohttp.ClientTimeout(total=2),
                 ) as response:
                     return response.status == 200
         except Exception:
@@ -171,6 +174,7 @@ class MCPServerManager:
                         if self.process.poll() is not None:
                             break
                         import time
+
                         time.sleep(0.1)
                     else:
                         raise subprocess.TimeoutExpired(self.process.args, 5)
@@ -199,7 +203,9 @@ class MCPServerManager:
                 else:
                     # For sync Popen, use executor
                     loop = asyncio.get_event_loop()
-                    await asyncio.wait_for(loop.run_in_executor(None, self.process.wait), timeout=5)
+                    await asyncio.wait_for(
+                        loop.run_in_executor(None, self.process.wait), timeout=5
+                    )
             except asyncio.TimeoutError:
                 logger.warning("MCP server did not stop gracefully, killing it")
                 self.process.kill()

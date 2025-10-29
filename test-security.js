@@ -3,11 +3,11 @@
  * Tests the security fixes for Azure Tenant Grapher
  */
 
-const { 
-  validateCommand, 
-  validateArguments, 
-  validateProcessId, 
-  validateSearchQuery 
+const {
+  validateCommand,
+  validateArguments,
+  validateProcessId,
+  validateSearchQuery
 } = require('./spa/backend/src/security/input-validator');
 
 console.log('=== Azure Tenant Grapher Security Test Suite ===\n');
@@ -32,7 +32,7 @@ testCommands.forEach(test => {
   const result = validateCommand(test.cmd);
   const testPassed = result.valid === test.expected;
   if (testPassed) passCount++;
-  
+
   const statusIcon = testPassed ? '✓' : '✗';
   console.log('  ' + statusIcon + ' ' + test.desc + ': ' + test.cmd);
   if (!testPassed) {
@@ -58,7 +58,7 @@ testArgs.forEach(test => {
   const result = validateArguments(test.args);
   const testPassed = result.valid === test.expected;
   if (testPassed) passCount++;
-  
+
   const statusIcon = testPassed ? '✓' : '✗';
   console.log('  ' + statusIcon + ' ' + test.desc + ': ' + JSON.stringify(test.args));
   if (!testPassed) {
@@ -83,7 +83,7 @@ testProcessIds.forEach(test => {
   const result = validateProcessId(test.id);
   const testPassed = result === test.expected;
   if (testPassed) passCount++;
-  
+
   const statusIcon = testPassed ? '✓' : '✗';
   console.log('  ' + statusIcon + ' ' + test.desc + ': ' + test.id);
 });
@@ -104,7 +104,7 @@ testQueries.forEach(test => {
   const result = validateSearchQuery(test.query);
   const testPassed = result.valid === test.expected;
   if (testPassed) passCount++;
-  
+
   const statusIcon = testPassed ? '✓' : '✗';
   console.log('  ' + statusIcon + ' ' + test.desc);
   if (result.valid && result.sanitized !== test.query) {

@@ -176,6 +176,19 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-cosmos"
+version = "4.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-core" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/ea/d1818eed2915c4b67d3ddfb67bf661784456c9c4eedd5c7619f08fcef33d/azure_cosmos-4.14.0.tar.gz", hash = "sha256:3cc7ca6a68b87e4da18f9e9b07a4a9bb03ddf015b4ed1f48f7fe140e6d6689b0", size = 2013062, upload-time = "2025-10-13T21:08:49.959Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/1c/874b99c5c00f3ed658c334ab51af34510e4cbc5a783bf62e983fbf24e127/azure_cosmos-4.14.0-py3-none-any.whl", hash = "sha256:9d659e9be3d13b95c639f7fbae6b159cb62025d16aa17e1a4171077986c28a58", size = 385868, upload-time = "2025-10-13T21:08:52.115Z" },
+]
+
+[[package]]
 name = "azure-identity"
 version = "1.23.0"
 source = { registry = "https://pypi.org/simple" }
@@ -189,6 +202,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/41/52/458c1be17a5d3796570ae2ed3c6b7b55b134b22d5ef8132b4f97046a9051/azure_identity-1.23.0.tar.gz", hash = "sha256:d9cdcad39adb49d4bb2953a217f62aec1f65bbb3c63c9076da2be2a47e53dde4", size = 265280, upload-time = "2025-05-14T00:18:30.408Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/07/16/a51d47780f41e4b87bb2d454df6aea90a44a346e918ac189d3700f3d728d/azure_identity-1.23.0-py3-none-any.whl", hash = "sha256:dbbeb64b8e5eaa81c44c565f264b519ff2de7ff0e02271c49f3cb492762a50b0", size = 186097, upload-time = "2025-05-14T00:18:32.734Z" },
+]
+
+[[package]]
+name = "azure-mgmt-apimanagement"
+version = "5.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-common" },
+    { name = "azure-mgmt-core" },
+    { name = "isodate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/e4/3e536f0374bccb203886ef7aeb1148e063de6be31187034179ddcbf1adff/azure_mgmt_apimanagement-5.0.0.tar.gz", hash = "sha256:0ab7fe17e70fe3154cd840ff47d19d7a4610217003eaa7c21acf3511a6e57999", size = 625729, upload-time = "2025-04-22T06:24:05.364Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/d8/1406ff959601b1a93fb662b1a76067ecef7094680efcdd75c007457f9efd/azure_mgmt_apimanagement-5.0.0-py3-none-any.whl", hash = "sha256:b88c42a392333b60722fb86f15d092dfc19a8d67510dccd15c217381dff4e6ec", size = 1150262, upload-time = "2025-04-22T06:24:07.012Z" },
 ]
 
 [[package]]
@@ -230,20 +258,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/48/9a/9bdc35295a16fe9139a1f99c13d9915563cbc4f30b479efaa40f8694eaf7/azure_mgmt_core-1.5.0.tar.gz", hash = "sha256:380ae3dfa3639f4a5c246a7db7ed2d08374e88230fd0da3eb899f7c11e5c441a", size = 32093, upload-time = "2024-10-31T18:06:39.836Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/2d/762b027cfd58b1b2c9b5b60d112615bd04bc33ef85dac55d2ee739641054/azure_mgmt_core-1.5.0-py3-none-any.whl", hash = "sha256:18aaa5a723ee8ae05bf1bfc9f6d0ffb996631c7ea3c922cc86f522973ce07b5f", size = 30295, upload-time = "2024-10-31T18:06:41.409Z" },
-]
-
-[[package]]
-name = "azure-mgmt-costmanagement"
-version = "4.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "azure-common" },
-    { name = "azure-mgmt-core" },
-    { name = "isodate" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/45/0f/fca8cc1228c4d8acb7462b8cb7fb2bd68d7fa7dec3b13f1aaf6f612a9e89/azure-mgmt-costmanagement-4.0.1.zip", hash = "sha256:a95734102450b6f01aaa938d78c00285b90fc52b866caae17efb5521ae986db7", size = 194223, upload-time = "2023-07-19T07:53:35.036Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/ff/bafa7f1f205922d871616f19bd8d3b49020d61286015b87c13379b26a8e7/azure_mgmt_costmanagement-4.0.1-py3-none-any.whl", hash = "sha256:23e77373427555e880ce938d468f87c6a8d66a5b237d7b2b0270bb192d61586f", size = 180916, upload-time = "2023-07-19T07:53:36.551Z" },
 ]
 
 [[package]]
@@ -385,10 +399,11 @@ dependencies = [
     { name = "aiohttp" },
     { name = "autogen-agentchat" },
     { name = "autogen-ext", extra = ["mcp"] },
+    { name = "azure-cosmos" },
     { name = "azure-identity" },
+    { name = "azure-mgmt-apimanagement" },
     { name = "azure-mgmt-authorization" },
     { name = "azure-mgmt-compute" },
-    { name = "azure-mgmt-costmanagement" },
     { name = "azure-mgmt-keyvault" },
     { name = "azure-mgmt-monitor" },
     { name = "azure-mgmt-network" },
@@ -440,10 +455,11 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "autogen-agentchat" },
     { name = "autogen-ext", extras = ["mcp"], specifier = ">=0.6.1" },
+    { name = "azure-cosmos", specifier = ">=4.5.0" },
     { name = "azure-identity", specifier = ">=1.15.0" },
+    { name = "azure-mgmt-apimanagement", specifier = ">=4.0.0" },
     { name = "azure-mgmt-authorization", specifier = ">=4.0.0" },
     { name = "azure-mgmt-compute", specifier = ">=30.0.0" },
-    { name = "azure-mgmt-costmanagement", specifier = ">=4.0.0" },
     { name = "azure-mgmt-keyvault", specifier = ">=10.0.0" },
     { name = "azure-mgmt-monitor", specifier = ">=6.0.0" },
     { name = "azure-mgmt-network", specifier = ">=25.0.0" },

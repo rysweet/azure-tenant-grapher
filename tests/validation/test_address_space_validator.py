@@ -4,7 +4,6 @@ This module tests the address space validation functionality that detects
 overlapping VNet address spaces and optionally auto-renumbers conflicts.
 """
 
-
 from src.validation.address_space_validator import (
     AddressSpaceConflict,
     AddressSpaceValidator,
@@ -426,7 +425,10 @@ class TestAddressSpaceValidator:
             {
                 "type": "Microsoft.Network/virtualNetworks",
                 "name": "vnet2",
-                "address_space": ["10.1.0.0/16", "10.2.0.0/16"],  # Overlaps on 10.1.0.0/16
+                "address_space": [
+                    "10.1.0.0/16",
+                    "10.2.0.0/16",
+                ],  # Overlaps on 10.1.0.0/16
             },
         ]
         result = validator.validate_resources(resources)

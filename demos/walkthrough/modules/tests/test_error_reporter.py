@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Tests for ErrorReporter module"""
 
-import pytest
-import tempfile
 import json
+import sys
+import tempfile
 from pathlib import Path
 
-import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from modules.error_reporter import ErrorReporter, ErrorReport
+from modules.error_reporter import ErrorReport, ErrorReporter
 
 
 class TestErrorReporter:
@@ -23,6 +22,7 @@ class TestErrorReporter:
     def teardown_method(self):
         """Cleanup test environment"""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_report_creation(self):
@@ -45,7 +45,7 @@ class TestErrorReporter:
             (TimeoutError("Operation timed out"), "timeout"),
             (FileNotFoundError("Scenario not found"), "scenario_not_found"),
             (PermissionError("Permission denied"), "permission_denied"),
-            (Exception("Unknown error"), "unknown_error")
+            (Exception("Unknown error"), "unknown_error"),
         ]
 
         for error, expected_type in test_cases:
@@ -58,7 +58,9 @@ class TestErrorReporter:
         report = self.reporter.report_error(connection_error)
 
         assert len(report.suggestions) > 0
-        assert any("Check if the application is running" in s for s in report.suggestions)
+        assert any(
+            "Check if the application is running" in s for s in report.suggestions
+        )
 
     def test_console_formatting(self):
         """Test console output formatting"""

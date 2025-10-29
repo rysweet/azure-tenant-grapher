@@ -49,7 +49,7 @@ const childProcess = spawn(uvPath, fullArgs, {
 
 #### Vulnerability Details
 - **Location**: `spa/backend/src/server.ts:49-67`
-- **Issues**: 
+- **Issues**:
   - No authentication mechanism
   - No rate limiting
   - No heartbeat/timeout

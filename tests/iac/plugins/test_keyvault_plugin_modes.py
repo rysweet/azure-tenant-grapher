@@ -5,8 +5,9 @@ Tests the new template and replication modes added to the KeyVault plugin,
 including permission management and progress reporting.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 
 from src.iac.plugins.base_plugin import (
     DataPlaneItem,
@@ -56,7 +57,9 @@ class TestKeyVaultPermissions:
         replication_perms = plugin.get_required_permissions(ReplicationMode.REPLICATION)
 
         # Replication should have more data actions
-        assert len(replication_perms[0].data_actions) > len(template_perms[0].data_actions)
+        assert len(replication_perms[0].data_actions) > len(
+            template_perms[0].data_actions
+        )
 
 
 class TestKeyVaultDiscoverWithMode:
@@ -69,11 +72,11 @@ class TestKeyVaultDiscoverWithMode:
             "id": "/subscriptions/123/vaults/kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "test-kv",
-            "properties": {"vaultUri": "https://test-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://test-kv.vault.azure.net/"},
         }
 
         # Mock the discover method
-        with patch.object(plugin, 'discover', return_value=[]) as mock_discover:
+        with patch.object(plugin, "discover", return_value=[]) as mock_discover:
             items = plugin.discover_with_mode(resource, ReplicationMode.TEMPLATE)
 
             mock_discover.assert_called_once_with(resource)
@@ -86,12 +89,14 @@ class TestKeyVaultDiscoverWithMode:
             "id": "/subscriptions/123/vaults/kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "test-kv",
-            "properties": {"vaultUri": "https://test-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://test-kv.vault.azure.net/"},
         }
 
         # Both modes should behave the same for discovery (metadata only)
         template_items = plugin.discover_with_mode(resource, ReplicationMode.TEMPLATE)
-        replication_items = plugin.discover_with_mode(resource, ReplicationMode.REPLICATION)
+        replication_items = plugin.discover_with_mode(
+            resource, ReplicationMode.REPLICATION
+        )
 
         # Should return same results (both metadata-only)
         assert isinstance(template_items, list)
@@ -109,14 +114,14 @@ class TestKeyVaultReplicateWithMode:
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "source-kv",
-            "properties": {"vaultUri": "https://source-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://source-kv.vault.azure.net/"},
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "target-kv",
-            "properties": {"vaultUri": "https://target-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://target-kv.vault.azure.net/"},
         }
 
         # Mock discovery to return test items
@@ -125,7 +130,7 @@ class TestKeyVaultReplicateWithMode:
                 name="test-secret",
                 item_type="secret",
                 properties={"enabled": True},
-                source_resource_id=source["id"]
+                source_resource_id=source["id"],
             )
         ]
 
@@ -136,12 +141,16 @@ class TestKeyVaultReplicateWithMode:
             items_replicated=1,
             items_skipped=0,
             errors=[],
-            warnings=["Template mode: Secrets created with placeholder values."]
+            warnings=["Template mode: Secrets created with placeholder values."],
         )
 
-        with patch.object(plugin, 'discover', return_value=test_items):
-            with patch.object(plugin, '_replicate_template_mode', return_value=mock_result):
-                result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(plugin, "discover", return_value=test_items):
+            with patch.object(
+                plugin, "_replicate_template_mode", return_value=mock_result
+            ):
+                result = plugin.replicate_with_mode(
+                    source, target, ReplicationMode.TEMPLATE
+                )
 
                 assert isinstance(result, ReplicationResult)
                 assert result.items_discovered == 1
@@ -155,14 +164,14 @@ class TestKeyVaultReplicateWithMode:
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "source-kv",
-            "properties": {"vaultUri": "https://source-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://source-kv.vault.azure.net/"},
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
             "name": "target-kv",
-            "properties": {"vaultUri": "https://target-kv.vault.azure.net/"}
+            "properties": {"vaultUri": "https://target-kv.vault.azure.net/"},
         }
 
         # Mock discovery
@@ -171,7 +180,7 @@ class TestKeyVaultReplicateWithMode:
                 name="test-secret",
                 item_type="secret",
                 properties={"enabled": True},
-                source_resource_id=source["id"]
+                source_resource_id=source["id"],
             )
         ]
 
@@ -181,12 +190,14 @@ class TestKeyVaultReplicateWithMode:
             items_replicated=1,
             items_skipped=0,
             errors=[],
-            warnings=[]
+            warnings=[],
         )
 
-        with patch.object(plugin, 'discover', return_value=test_items):
-            with patch.object(plugin, '_replicate_full_mode', return_value=mock_result):
-                result = plugin.replicate_with_mode(source, target, ReplicationMode.REPLICATION)
+        with patch.object(plugin, "discover", return_value=test_items):
+            with patch.object(plugin, "_replicate_full_mode", return_value=mock_result):
+                result = plugin.replicate_with_mode(
+                    source, target, ReplicationMode.REPLICATION
+                )
 
                 assert isinstance(result, ReplicationResult)
                 assert result.success is True
@@ -198,20 +209,18 @@ class TestKeyVaultReplicateWithMode:
 
         invalid_source = {
             "type": "Microsoft.Storage/storageAccounts",
-            "name": "storage"
+            "name": "storage",
         }
 
         valid_target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         with pytest.raises(ValueError, match="Invalid source resource"):
             plugin.replicate_with_mode(
-                invalid_source,
-                valid_target,
-                ReplicationMode.TEMPLATE
+                invalid_source, valid_target, ReplicationMode.TEMPLATE
             )
 
     def test_replicate_with_mode_tracks_timing(self):
@@ -221,24 +230,26 @@ class TestKeyVaultReplicateWithMode:
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "source-kv"
+            "name": "source-kv",
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         mock_result = ReplicationResult(
-            success=True,
-            items_discovered=0,
-            items_replicated=0
+            success=True, items_discovered=0, items_replicated=0
         )
 
-        with patch.object(plugin, 'discover', return_value=[]):
-            with patch.object(plugin, '_replicate_template_mode', return_value=mock_result):
-                result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(plugin, "discover", return_value=[]):
+            with patch.object(
+                plugin, "_replicate_template_mode", return_value=mock_result
+            ):
+                result = plugin.replicate_with_mode(
+                    source, target, ReplicationMode.TEMPLATE
+                )
 
                 # Duration should be tracked
                 assert result.duration_seconds >= 0
@@ -255,13 +266,13 @@ class TestKeyVaultProgressReporting:
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "source-kv"
+            "name": "source-kv",
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         test_items = [
@@ -269,31 +280,28 @@ class TestKeyVaultProgressReporting:
                 name="secret1",
                 item_type="secret",
                 properties={},
-                source_resource_id=source["id"]
+                source_resource_id=source["id"],
             ),
             DataPlaneItem(
                 name="secret2",
                 item_type="secret",
                 properties={},
-                source_resource_id=source["id"]
-            )
+                source_resource_id=source["id"],
+            ),
         ]
 
         mock_result = ReplicationResult(
-            success=True,
-            items_discovered=2,
-            items_replicated=2
+            success=True, items_discovered=2, items_replicated=2
         )
 
-        with patch.object(plugin, 'discover', return_value=test_items):
-            with patch.object(plugin, '_replicate_template_mode', return_value=mock_result):
+        with patch.object(plugin, "discover", return_value=test_items):
+            with patch.object(
+                plugin, "_replicate_template_mode", return_value=mock_result
+            ):
                 plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
 
                 # Verify discovery was reported
-                mock_reporter.report_discovery.assert_called_once_with(
-                    source["id"],
-                    2
-                )
+                mock_reporter.report_discovery.assert_called_once_with(source["id"], 2)
 
     def test_replicate_reports_completion(self):
         """Test replication reports completion."""
@@ -303,24 +311,26 @@ class TestKeyVaultProgressReporting:
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "source-kv"
+            "name": "source-kv",
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         mock_result = ReplicationResult(
-            success=True,
-            items_discovered=0,
-            items_replicated=0
+            success=True, items_discovered=0, items_replicated=0
         )
 
-        with patch.object(plugin, 'discover', return_value=[]):
-            with patch.object(plugin, '_replicate_template_mode', return_value=mock_result):
-                result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(plugin, "discover", return_value=[]):
+            with patch.object(
+                plugin, "_replicate_template_mode", return_value=mock_result
+            ):
+                result = plugin.replicate_with_mode(
+                    source, target, ReplicationMode.TEMPLATE
+                )
 
                 # Verify completion was reported
                 mock_reporter.report_completion.assert_called_once()
@@ -365,7 +375,12 @@ class TestKeyVaultModeSupport:
         plugin = KeyVaultPlugin()
 
         items = [
-            DataPlaneItem(name=f"secret{i}", item_type="secret", properties={}, source_resource_id="")
+            DataPlaneItem(
+                name=f"secret{i}",
+                item_type="secret",
+                properties={},
+                source_resource_id="",
+            )
             for i in range(10)
         ]
 
@@ -379,7 +394,12 @@ class TestKeyVaultModeSupport:
         plugin = KeyVaultPlugin()
 
         items = [
-            DataPlaneItem(name=f"secret{i}", item_type="secret", properties={}, source_resource_id="")
+            DataPlaneItem(
+                name=f"secret{i}",
+                item_type="secret",
+                properties={},
+                source_resource_id="",
+            )
             for i in range(10)
         ]
 
@@ -399,13 +419,13 @@ class TestKeyVaultErrorHandling:
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "source-kv"
+            "name": "source-kv",
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         # Mock discovery
@@ -414,7 +434,7 @@ class TestKeyVaultErrorHandling:
                 name="test-secret",
                 item_type="secret",
                 properties={},
-                source_resource_id=source["id"]
+                source_resource_id=source["id"],
             )
         ]
 
@@ -425,12 +445,16 @@ class TestKeyVaultErrorHandling:
             items_replicated=0,
             items_skipped=1,
             errors=["Failed to create secret 'test-secret': Permission denied"],
-            warnings=[]
+            warnings=[],
         )
 
-        with patch.object(plugin, 'discover', return_value=test_items):
-            with patch.object(plugin, '_replicate_template_mode', return_value=mock_result):
-                result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(plugin, "discover", return_value=test_items):
+            with patch.object(
+                plugin, "_replicate_template_mode", return_value=mock_result
+            ):
+                result = plugin.replicate_with_mode(
+                    source, target, ReplicationMode.TEMPLATE
+                )
 
                 # Should not crash, but report error
                 assert isinstance(result, ReplicationResult)
@@ -445,18 +469,20 @@ class TestKeyVaultErrorHandling:
         source = {
             "id": "/subscriptions/123/vaults/source-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "source-kv"
+            "name": "source-kv",
         }
 
         target = {
             "id": "/subscriptions/123/vaults/target-kv",
             "type": "Microsoft.KeyVault/vaults",
-            "name": "target-kv"
+            "name": "target-kv",
         }
 
         # Mock discover to raise exception
-        with patch.object(plugin, 'discover', side_effect=Exception("Network error")):
-            result = plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
+        with patch.object(plugin, "discover", side_effect=Exception("Network error")):
+            result = plugin.replicate_with_mode(
+                source, target, ReplicationMode.TEMPLATE
+            )
 
             # Should not crash
             assert isinstance(result, ReplicationResult)

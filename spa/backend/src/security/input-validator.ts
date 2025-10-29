@@ -71,7 +71,7 @@ export class InputValidator {
     }
 
     const sanitized = command.trim().toLowerCase();
-    
+
     if (!ALLOWED_COMMANDS.has(sanitized)) {
       return { isValid: false, error: `Command '${sanitized}' is not allowed` };
     }
@@ -88,10 +88,10 @@ export class InputValidator {
     }
 
     const sanitizedArgs: string[] = [];
-    
+
     for (let i = 0; i < args.length; i++) {
       const arg = args[i];
-      
+
       if (typeof arg !== 'string') {
         return { isValid: false, error: `Argument at index ${i} must be a string` };
       }

@@ -2,8 +2,6 @@
 Tests for fidelity_calculator module.
 """
 
-import json
-import os
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -72,7 +70,9 @@ class TestFidelityMetrics:
         assert result["target"]["subscription_id"] == "target-sub-id"
         assert result["target"]["resources"] == 800
         assert result["fidelity"]["overall"] == 80.5
-        assert result["fidelity"]["by_type"]["Microsoft.Compute/virtualMachines"] == 85.2
+        assert (
+            result["fidelity"]["by_type"]["Microsoft.Compute/virtualMachines"] == 85.2
+        )
         assert result["fidelity"]["missing_resources"] == 200
         assert result["fidelity"]["objective_met"] is False
         assert result["fidelity"]["target_fidelity"] == 95.0
@@ -398,6 +398,6 @@ class TestFidelityCalculator:
                 "bolt://localhost:7687", "neo4j", "password"
             )
 
-            with patch("builtins.open", side_effect=IOError("File not found")):
+            with patch("builtins.open", side_effect=OSError("File not found")):
                 with pytest.raises(IOError):
                     calculator.check_objective("OBJECTIVE.md", 96.0)

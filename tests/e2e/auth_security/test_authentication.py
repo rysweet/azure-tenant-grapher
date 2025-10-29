@@ -8,12 +8,9 @@ failed attempts, MFA, conditional access, and security vulnerabilities.
 import asyncio
 import base64
 import json
-import os
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
-
 from tests.e2e.auth_security.security_utils import (
     AuditLogger,
     MockAzureADClient,
@@ -33,10 +30,14 @@ class TestAzureADAuthentication:
         """Test successful authentication with valid credentials."""
         from src.services.aad_graph_service import AADGraphService
 
-        with patch("src.services.aad_graph_service.ClientSecretCredential") as mock_cred_class:
+        with patch(
+            "src.services.aad_graph_service.ClientSecretCredential"
+        ) as mock_cred_class:
             mock_cred_class.return_value = mock_credential
 
-            with patch("src.services.aad_graph_service.GraphServiceClient") as mock_client_class:
+            with patch(
+                "src.services.aad_graph_service.GraphServiceClient"
+            ) as mock_client_class:
                 mock_client_class.return_value = mock_graph_client
 
                 # Initialize service
@@ -47,7 +48,7 @@ class TestAzureADAuthentication:
                 mock_cred_class.assert_called_once_with(
                     tenant_id=azure_ad_config["tenant_id"],
                     client_id=azure_ad_config["client_id"],
-                    client_secret=azure_ad_config["client_secret"]
+                    client_secret=azure_ad_config["client_secret"],
                 )
 
                 # Test fetching users
@@ -64,8 +65,12 @@ class TestAzureADAuthentication:
         # Set invalid credentials
         monkeypatch.setenv("AZURE_CLIENT_SECRET", "invalid-secret")
 
-        with patch("src.services.aad_graph_service.ClientSecretCredential") as mock_cred_class:
-            mock_cred_class.side_effect = Exception("Authentication failed: Invalid client secret")
+        with patch(
+            "src.services.aad_graph_service.ClientSecretCredential"
+        ) as mock_cred_class:
+            mock_cred_class.side_effect = Exception(
+                "Authentication failed: Invalid client secret"
+            )
 
             with pytest.raises(Exception) as exc_info:
                 service = AADGraphService(use_mock=False)
@@ -83,7 +88,9 @@ class TestAzureADAuthentication:
         with pytest.raises(RuntimeError) as exc_info:
             service = AADGraphService(use_mock=False)
 
-        assert "Missing one or more required Azure AD credentials" in str(exc_info.value)
+        assert "Missing one or more required Azure AD credentials" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_token_validation(self, create_test_token, mock_rsa_keys):
@@ -114,21 +121,31 @@ class TestAzureADAuthentication:
         validator = TokenValidator()
 
         # Create token with 'none' algorithm vulnerability
-        header = base64.urlsafe_b64encode(
-            json.dumps({"alg": "none", "typ": "JWT"}).encode()
-        ).decode().rstrip("=")
-        payload = base64.urlsafe_b64encode(
-            json.dumps({"sub": "test", "exp": 9999999999}).encode()
-        ).decode().rstrip("=")
+        header = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "none", "typ": "JWT"}).encode())
+            .decode()
+            .rstrip("=")
+        )
+        payload = (
+            base64.urlsafe_b64encode(
+                json.dumps({"sub": "test", "exp": 9999999999}).encode()
+            )
+            .decode()
+            .rstrip("=")
+        )
         none_token = f"{header}.{payload}."
 
         vulnerabilities = validator.check_token_vulnerabilities(none_token)
         assert any("none" in vuln.lower() for vuln in vulnerabilities)
 
         # Create token with weak algorithm
-        header = base64.urlsafe_b64encode(
-            json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
-        ).decode().rstrip("=")
+        header = (
+            base64.urlsafe_b64encode(
+                json.dumps({"alg": "HS256", "typ": "JWT"}).encode()
+            )
+            .decode()
+            .rstrip("=")
+        )
         weak_token = f"{header}.{payload}.signature"
 
         vulnerabilities = validator.check_token_vulnerabilities(weak_token)
@@ -166,7 +183,7 @@ class TestAzureADAuthentication:
             user_id="testuser",
             success=True,
             method="client_credentials",
-            ip_address="192.168.1.1"
+            ip_address="192.168.1.1",
         )
 
         # Failed authentication
@@ -178,7 +195,7 @@ class TestAzureADAuthentication:
             user_id="testuser",
             success=False,
             method="client_credentials",
-            ip_address="192.168.1.1"
+            ip_address="192.168.1.1",
         )
 
         # Verify audit logs
@@ -198,7 +215,7 @@ class TestAzureADAuthentication:
             "admin' OR '1'='1",
             "'; DROP TABLE users; --",
             "1' UNION SELECT * FROM passwords --",
-            "admin'--"
+            "admin'--",
         ]
 
         for malicious_input in malicious_inputs:
@@ -210,7 +227,7 @@ class TestAzureADAuthentication:
             audit_logger.log_security_violation(
                 violation_type="sql_injection_attempt",
                 details=f"Detected SQL injection attempt: {malicious_input}",
-                source_ip="192.168.1.100"
+                source_ip="192.168.1.100",
             )
 
         # Verify security violations were logged
@@ -226,7 +243,7 @@ class TestAzureADAuthentication:
         malicious_responses = [
             {"error": "<script>alert('XSS')</script>"},
             {"username": "<img src=x onerror=alert('XSS')>"},
-            {"redirect": "javascript:alert('XSS')"}
+            {"redirect": "javascript:alert('XSS')"},
         ]
 
         for response in malicious_responses:
@@ -299,12 +316,14 @@ class TestAzureADAuthentication:
         malicious_headers = [
             "Bearer token\\r\\nX-Injected: malicious",
             "Bearer token\\nAuthorization: Bearer evil",
-            "Bearer token\r\nSet-Cookie: session=hijacked"
+            "Bearer token\r\nSet-Cookie: session=hijacked",
         ]
 
         for header in malicious_headers:
             # Check for newline characters that could inject headers
-            assert "\\r" in header or "\\n" in header or "\r" in header or "\n" in header
+            assert (
+                "\\r" in header or "\\n" in header or "\r" in header or "\n" in header
+            )
 
     @pytest.mark.asyncio
     async def test_authentication_bypass_attempts(self, mock_credential):
@@ -317,7 +336,7 @@ class TestAzureADAuthentication:
             {"authenticated": True, "bypass": "auth"},
             {"token": "../../admin/token"},
             {"user": "admin", "password": ""},
-            {"grant_type": "bypass_auth"}
+            {"grant_type": "bypass_auth"},
         ]
 
         for attempt in bypass_attempts:
@@ -325,7 +344,7 @@ class TestAzureADAuthentication:
             audit_logger.log_security_violation(
                 violation_type="authentication_bypass_attempt",
                 details=json.dumps(attempt),
-                source_ip="192.168.1.50"
+                source_ip="192.168.1.50",
             )
 
         # Verify all attempts were logged
@@ -343,7 +362,7 @@ class TestAzureADAuthentication:
             ("user1@example.com", "password123"),
             ("user2@example.com", "qwerty"),
             ("admin@example.com", "admin"),
-            ("test@example.com", "123456")
+            ("test@example.com", "123456"),
         ]
 
         blocked_count = 0
@@ -357,7 +376,7 @@ class TestAzureADAuthentication:
                     violation_type="credential_stuffing",
                     details=f"Blocked credential stuffing attempt for {username}",
                     source_ip="192.168.1.75",
-                    user_id=username
+                    user_id=username,
                 )
 
         assert blocked_count == len(breached_credentials)
@@ -374,7 +393,7 @@ class TestAzureADAuthentication:
         test_cases = [
             ("valid_user", "wrong_password"),
             ("invalid_user", "any_password"),
-            ("another_user", "wrong_password")
+            ("another_user", "wrong_password"),
         ]
 
         for username, password in test_cases:
@@ -404,7 +423,7 @@ class TestAzureADAuthentication:
 
         # Verify hash properties
         assert len(hashed) == 64  # SHA256 produces 32 bytes = 64 hex chars
-        assert len(salt) == 64    # 32 bytes salt = 64 hex chars
+        assert len(salt) == 64  # 32 bytes salt = 64 hex chars
         assert hashed != password  # Password should not equal hash
 
         # Verify password verification
@@ -421,7 +440,7 @@ class TestAzureADAuthentication:
             ("nonexistent_user", "any_password"),
             ("valid_user", "wrong_password"),
             ("", ""),
-            ("admin", "' OR '1'='1")
+            ("admin", "' OR '1'='1"),
         ]
 
         for username, password in error_scenarios:
@@ -430,8 +449,10 @@ class TestAzureADAuthentication:
             except Exception as e:
                 error_msg = str(e)
                 # Error should be generic, not revealing if user exists
-                assert "invalid credentials" in error_msg.lower() or \
-                       "authentication failed" in error_msg.lower()
+                assert (
+                    "invalid credentials" in error_msg.lower()
+                    or "authentication failed" in error_msg.lower()
+                )
                 # Should not reveal specific details
                 assert "user not found" not in error_msg.lower()
                 assert "incorrect password" not in error_msg.lower()

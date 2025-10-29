@@ -24,14 +24,18 @@ def main():
             try:
                 # Change to the project root directory
                 os.chdir(project_path)
-                print(f"[Session Hook] Changed directory to project root: {project_path}")
+                print(
+                    f"[Session Hook] Changed directory to project root: {project_path}"
+                )
 
                 # Verify .claude directory exists
                 claude_dir = project_path / ".claude"
                 if claude_dir.exists():
                     print(f"[Session Hook] Verified .claude directory at: {claude_dir}")
                 else:
-                    print(f"[Session Hook] Warning: .claude directory not found at {claude_dir}")
+                    print(
+                        f"[Session Hook] Warning: .claude directory not found at {claude_dir}"
+                    )
 
             except Exception as e:
                 # More graceful error handling - warn but don't fail
@@ -39,7 +43,9 @@ def main():
                     f"[Session Hook] Warning: Could not change to project root: {e}",
                     file=sys.stderr,
                 )
-                print("[Session Hook] Continuing with current directory", file=sys.stderr)
+                print(
+                    "[Session Hook] Continuing with current directory", file=sys.stderr
+                )
                 # Don't return error code - allow session to continue
                 return 0
         else:

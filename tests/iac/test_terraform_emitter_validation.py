@@ -6,8 +6,6 @@ Tests for Issue #WORKSTREAM_F - Missing Network Interface Bug
 import json
 from pathlib import Path
 
-import pytest
-
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph
 
@@ -26,15 +24,17 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
-                    "properties": json.dumps({
-                        "networkProfile": {
-                            "networkInterfaces": [
-                                {
-                                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
-                                }
-                            ]
+                    "properties": json.dumps(
+                        {
+                            "networkProfile": {
+                                "networkInterfaces": [
+                                    {
+                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
+                                    }
+                                ]
+                            }
                         }
-                    }),
+                    ),
                 }
             ]
         )
@@ -60,19 +60,21 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/test-nic",
-                    "properties": json.dumps({
-                        "ipConfigurations": [
-                            {
-                                "name": "internal",
-                                "properties": {
-                                    "subnet": {
-                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet"
+                    "properties": json.dumps(
+                        {
+                            "ipConfigurations": [
+                                {
+                                    "name": "internal",
+                                    "properties": {
+                                        "subnet": {
+                                            "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet"
+                                        },
+                                        "privateIPAllocationMethod": "Dynamic",
                                     },
-                                    "privateIPAllocationMethod": "Dynamic"
                                 }
-                            }
-                        ]
-                    }),
+                            ]
+                        }
+                    ),
                 },
                 # Then add the VM that references it
                 {
@@ -81,16 +83,18 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
-                    "properties": json.dumps({
-                        "networkProfile": {
-                            "networkInterfaces": [
-                                {
-                                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/test-nic"
-                                }
-                            ]
+                    "properties": json.dumps(
+                        {
+                            "networkProfile": {
+                                "networkInterfaces": [
+                                    {
+                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/test-nic"
+                                    }
+                                ]
+                            }
                         }
-                    }),
-                }
+                    ),
+                },
             ]
         )
 
@@ -126,19 +130,21 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/existing-nic",
-                    "properties": json.dumps({
-                        "ipConfigurations": [
-                            {
-                                "name": "internal",
-                                "properties": {
-                                    "subnet": {
-                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet"
+                    "properties": json.dumps(
+                        {
+                            "ipConfigurations": [
+                                {
+                                    "name": "internal",
+                                    "properties": {
+                                        "subnet": {
+                                            "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/test-subnet"
+                                        },
+                                        "privateIPAllocationMethod": "Dynamic",
                                     },
-                                    "privateIPAllocationMethod": "Dynamic"
                                 }
-                            }
-                        ]
-                    }),
+                            ]
+                        }
+                    ),
                 },
                 # VM references both existing and missing NIC
                 {
@@ -147,19 +153,21 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
-                    "properties": json.dumps({
-                        "networkProfile": {
-                            "networkInterfaces": [
-                                {
-                                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/existing-nic"
-                                },
-                                {
-                                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
-                                }
-                            ]
+                    "properties": json.dumps(
+                        {
+                            "networkProfile": {
+                                "networkInterfaces": [
+                                    {
+                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/existing-nic"
+                                    },
+                                    {
+                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
+                                    },
+                                ]
+                            }
                         }
-                    }),
-                }
+                    ),
+                },
             ]
         )
 
@@ -178,9 +186,15 @@ class TestTerraformEmitterValidation:
         vm = config["resource"]["azurerm_linux_virtual_machine"]["test_vm"]
         assert "network_interface_ids" in vm
         assert len(vm["network_interface_ids"]) == 1
-        assert "${azurerm_network_interface.existing_nic.id}" in vm["network_interface_ids"]
+        assert (
+            "${azurerm_network_interface.existing_nic.id}"
+            in vm["network_interface_ids"]
+        )
         # Should NOT reference the missing NIC
-        assert "${azurerm_network_interface.missing_nic.id}" not in vm["network_interface_ids"]
+        assert (
+            "${azurerm_network_interface.missing_nic.id}"
+            not in vm["network_interface_ids"]
+        )
 
     def test_missing_references_are_tracked(self, tmp_path: Path):
         """Test that missing references are tracked for reporting."""
@@ -192,15 +206,17 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "test-rg",
                     "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
-                    "properties": json.dumps({
-                        "networkProfile": {
-                            "networkInterfaces": [
-                                {
-                                    "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
-                                }
-                            ]
+                    "properties": json.dumps(
+                        {
+                            "networkProfile": {
+                                "networkInterfaces": [
+                                    {
+                                        "id": "/subscriptions/test/resourceGroups/test-rg/providers/Microsoft.Network/networkInterfaces/missing-nic"
+                                    }
+                                ]
+                            }
                         }
-                    }),
+                    ),
                 }
             ]
         )
@@ -227,16 +243,18 @@ class TestTerraformEmitterValidation:
                     "location": "eastus",
                     "resourceGroup": "sparta_attackbot",
                     "id": "/subscriptions/test/resourceGroups/sparta_attackbot/providers/Microsoft.Compute/virtualMachines/csiska-01",
-                    "properties": json.dumps({
-                        "networkProfile": {
-                            "networkInterfaces": [
-                                {
-                                    # NIC is in a DIFFERENT resource group
-                                    "id": "/subscriptions/test/resourceGroups/Ballista_UCAScenario/providers/Microsoft.Network/networkInterfaces/csiska-01654"
-                                }
-                            ]
+                    "properties": json.dumps(
+                        {
+                            "networkProfile": {
+                                "networkInterfaces": [
+                                    {
+                                        # NIC is in a DIFFERENT resource group
+                                        "id": "/subscriptions/test/resourceGroups/Ballista_UCAScenario/providers/Microsoft.Network/networkInterfaces/csiska-01654"
+                                    }
+                                ]
+                            }
                         }
-                    }),
+                    ),
                 }
             ]
         )

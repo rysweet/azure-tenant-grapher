@@ -1,10 +1,9 @@
 """Screenshot management utilities for demo walkthrough."""
 
-import os
+import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-import json
+from typing import Any, Dict, List
 
 from playwright.async_api import Page
 
@@ -15,7 +14,7 @@ class ScreenshotManager:
     def __init__(self, config: Dict[str, Any]):
         """Initialize screenshot manager with configuration."""
         self.config = config
-        self.screenshot_dir = Path(config.get('path', './screenshots'))
+        self.screenshot_dir = Path(config.get("path", "./screenshots"))
         self.screenshot_dir.mkdir(parents=True, exist_ok=True)
         self.screenshots: List[Dict[str, Any]] = []
         self.metadata_file = self.screenshot_dir / "metadata.json"
@@ -24,15 +23,17 @@ class ScreenshotManager:
     def _load_metadata(self):
         """Load existing screenshot metadata if available."""
         if self.metadata_file.exists():
-            with open(self.metadata_file, 'r') as f:
+            with open(self.metadata_file) as f:
                 self.screenshots = json.load(f)
 
     def _save_metadata(self):
         """Save screenshot metadata to file."""
-        with open(self.metadata_file, 'w') as f:
+        with open(self.metadata_file, "w") as f:
             json.dump(self.screenshots, f, indent=2, default=str)
 
-    async def capture(self, page: Page, scenario: str, step: int, description: str) -> str:
+    async def capture(
+        self, page: Page, scenario: str, step: int, description: str
+    ) -> str:
         """
         Capture a screenshot with metadata.
 
@@ -45,47 +46,51 @@ class ScreenshotManager:
         Returns:
             Path to the saved screenshot
         """
-        if not self.config.get('enabled', True):
+        if not self.config.get("enabled", True):
             return ""
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Generate filename based on pattern
-        pattern = self.config.get('naming_pattern', '{timestamp}_{scenario}_{step}_{description}')
+        pattern = self.config.get(
+            "naming_pattern", "{timestamp}_{scenario}_{step}_{description}"
+        )
         filename = pattern.format(
             timestamp=timestamp,
             scenario=scenario,
             step=step,
-            description=description.replace(' ', '_').lower()
+            description=description.replace(" ", "_").lower(),
         )
 
         # Add extension
-        format_ext = self.config.get('format', 'png')
+        format_ext = self.config.get("format", "png")
         filename = f"{filename}.{format_ext}"
         filepath = self.screenshot_dir / filename
 
         # Capture screenshot with options
         screenshot_options = {
-            'path': str(filepath),
-            'full_page': self.config.get('fullPage', False),
-            'animations': self.config.get('animations', 'disabled')
+            "path": str(filepath),
+            "full_page": self.config.get("fullPage", False),
+            "animations": self.config.get("animations", "disabled"),
         }
 
-        if format_ext == 'jpeg':
-            screenshot_options['quality'] = self.config.get('quality', 90)
+        if format_ext == "jpeg":
+            screenshot_options["quality"] = self.config.get("quality", 90)
 
         await page.screenshot(**screenshot_options)
 
         # Store metadata
         metadata = {
-            'filename': filename,
-            'filepath': str(filepath),
-            'timestamp': timestamp,
-            'scenario': scenario,
-            'step': step,
-            'description': description,
-            'url': page.url,
-            'viewport': await page.evaluate('() => ({ width: window.innerWidth, height: window.innerHeight })')
+            "filename": filename,
+            "filepath": str(filepath),
+            "timestamp": timestamp,
+            "scenario": scenario,
+            "step": step,
+            "description": description,
+            "url": page.url,
+            "viewport": await page.evaluate(
+                "() => ({ width: window.innerWidth, height: window.innerHeight })"
+            ),
         }
 
         self.screenshots.append(metadata)
@@ -101,13 +106,16 @@ class ScreenshotManager:
             page: Playwright page object
             elements: List of elements to annotate with selectors and labels
         """
-        if not self.config.get('annotations', {}).get('enabled', False):
+        if not self.config.get("annotations", {}).get("enabled", False):
             return
 
-        highlight_color = self.config.get('annotations', {}).get('highlight_color', '#FF0000')
+        highlight_color = self.config.get("annotations", {}).get(
+            "highlight_color", "#FF0000"
+        )
 
         # Inject annotation script
-        await page.evaluate("""
+        await page.evaluate(
+            """
             (elements, color) => {
                 elements.forEach(({selector, label}) => {
                     const element = document.querySelector(selector);
@@ -137,18 +145,20 @@ class ScreenshotManager:
                     }
                 });
             }
-        """, elements, highlight_color)
+        """,
+            elements,
+            highlight_color,
+        )
 
     def get_screenshots_by_scenario(self, scenario: str) -> List[Dict[str, Any]]:
         """Get all screenshots for a specific scenario."""
-        return [s for s in self.screenshots if s['scenario'] == scenario]
+        return [s for s in self.screenshots if s["scenario"] == scenario]
 
-    def get_screenshots_by_timestamp(self, start: str, end: str) -> List[Dict[str, Any]]:
+    def get_screenshots_by_timestamp(
+        self, start: str, end: str
+    ) -> List[Dict[str, Any]]:
         """Get screenshots within a timestamp range."""
-        return [
-            s for s in self.screenshots
-            if start <= s['timestamp'] <= end
-        ]
+        return [s for s in self.screenshots if start <= s["timestamp"] <= end]
 
     async def generate_gallery(self, config: Dict[str, Any]) -> str:
         """
@@ -163,11 +173,11 @@ class ScreenshotManager:
         gallery_path = self.screenshot_dir / "gallery.html"
 
         # Group screenshots based on configuration
-        group_by = config.get('group_by', 'scenario')
+        group_by = config.get("group_by", "scenario")
         groups = {}
 
         for screenshot in self.screenshots:
-            key = screenshot.get(group_by, 'ungrouped')
+            key = screenshot.get(group_by, "ungrouped")
             if key not in groups:
                 groups[key] = []
             groups[key].append(screenshot)
@@ -175,29 +185,36 @@ class ScreenshotManager:
         # Generate HTML
         html_content = self._generate_gallery_html(groups, config)
 
-        with open(gallery_path, 'w') as f:
+        with open(gallery_path, "w") as f:
             f.write(html_content)
 
         return str(gallery_path)
 
-    def _generate_gallery_html(self, groups: Dict[str, List[Dict]], config: Dict[str, Any]) -> str:
+    def _generate_gallery_html(
+        self, groups: Dict[str, List[Dict]], config: Dict[str, Any]
+    ) -> str:
         """Generate HTML content for the gallery."""
-        title = config.get('title', 'Screenshot Gallery')
-        description = config.get('description', '')
-        template = config.get('template', 'default')
+        title = config.get("title", "Screenshot Gallery")
+        description = config.get("description", "")
+        template = config.get("template", "default")
 
-        if template == 'grid':
+        if template == "grid":
             return self._generate_grid_template(groups, title, description, config)
-        elif template == 'carousel':
+        elif template == "carousel":
             return self._generate_carousel_template(groups, title, description, config)
         else:
             return self._generate_default_template(groups, title, description, config)
 
-    def _generate_default_template(self, groups: Dict[str, List[Dict]], title: str,
-                                    description: str, config: Dict[str, Any]) -> str:
+    def _generate_default_template(
+        self,
+        groups: Dict[str, List[Dict]],
+        title: str,
+        description: str,
+        config: Dict[str, Any],
+    ) -> str:
         """Generate default gallery template."""
-        thumbnail_width = config.get('thumbnail_size', {}).get('width', 400)
-        thumbnail_height = config.get('thumbnail_size', {}).get('height', 300)
+        thumbnail_width = config.get("thumbnail_size", {}).get("width", 400)
+        thumbnail_height = config.get("thumbnail_size", {}).get("height", 300)
 
         html = f"""
 <!DOCTYPE html>
@@ -358,12 +375,12 @@ class ScreenshotManager:
             <div class="screenshots">
 """
             for screenshot in screenshots:
-                relative_path = Path(screenshot['filename']).name
-                html += f"""                <div class="screenshot-card" onclick="openModal('{relative_path}', '{screenshot['description']}')">
-                    <img src="{relative_path}" alt="{screenshot['description']}" class="screenshot-image">
+                relative_path = Path(screenshot["filename"]).name
+                html += f"""                <div class="screenshot-card" onclick="openModal('{relative_path}', '{screenshot["description"]}')">
+                    <img src="{relative_path}" alt="{screenshot["description"]}" class="screenshot-image">
                     <div class="screenshot-info">
-                        <div class="screenshot-title">{screenshot['description']}</div>
-                        <div class="screenshot-meta">Step {screenshot['step']} • {screenshot['timestamp']}</div>
+                        <div class="screenshot-title">{screenshot["description"]}</div>
+                        <div class="screenshot-meta">Step {screenshot["step"]} • {screenshot["timestamp"]}</div>
                     </div>
                 </div>
 """
@@ -445,14 +462,24 @@ class ScreenshotManager:
 
         return html
 
-    def _generate_grid_template(self, groups: Dict[str, List[Dict]], title: str,
-                                 description: str, config: Dict[str, Any]) -> str:
+    def _generate_grid_template(
+        self,
+        groups: Dict[str, List[Dict]],
+        title: str,
+        description: str,
+        config: Dict[str, Any],
+    ) -> str:
         """Generate grid-style gallery template."""
         # Similar to default but with different layout
         return self._generate_default_template(groups, title, description, config)
 
-    def _generate_carousel_template(self, groups: Dict[str, List[Dict]], title: str,
-                                     description: str, config: Dict[str, Any]) -> str:
+    def _generate_carousel_template(
+        self,
+        groups: Dict[str, List[Dict]],
+        title: str,
+        description: str,
+        config: Dict[str, Any],
+    ) -> str:
         """Generate carousel-style gallery template."""
         # Implement carousel template with sliding images
         # For now, fallback to default
@@ -466,19 +493,17 @@ class ScreenshotManager:
         cutoff_timestamp = cutoff_date.strftime("%Y%m%d_%H%M%S")
 
         old_screenshots = [
-            s for s in self.screenshots
-            if s['timestamp'] < cutoff_timestamp
+            s for s in self.screenshots if s["timestamp"] < cutoff_timestamp
         ]
 
         for screenshot in old_screenshots:
-            filepath = Path(screenshot['filepath'])
+            filepath = Path(screenshot["filepath"])
             if filepath.exists():
                 filepath.unlink()
 
         # Update metadata
         self.screenshots = [
-            s for s in self.screenshots
-            if s['timestamp'] >= cutoff_timestamp
+            s for s in self.screenshots if s["timestamp"] >= cutoff_timestamp
         ]
         self._save_metadata()
 

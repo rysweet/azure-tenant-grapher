@@ -12,7 +12,9 @@ from typing import Any, Dict, List
 
 # Add parent directories to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "amplihack" / "hooks"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "tools" / "amplihack" / "reflection"))
+sys.path.insert(
+    0, str(Path(__file__).parent.parent / "tools" / "amplihack" / "reflection")
+)
 
 
 def get_session_messages(input_data: Dict[str, Any]) -> List[Dict]:
@@ -46,7 +48,12 @@ def analyze_session_safely(messages: List[Dict]) -> Dict[str, Any]:
         return {"patterns": [], "stats": {}}
 
     # Basic statistics
-    stats = {"message_count": len(messages), "tool_uses": 0, "errors": 0, "user_messages": 0}
+    stats = {
+        "message_count": len(messages),
+        "tool_uses": 0,
+        "errors": 0,
+        "user_messages": 0,
+    }
 
     patterns = []
     error_messages = []
@@ -63,7 +70,10 @@ def analyze_session_safely(messages: List[Dict]) -> Dict[str, Any]:
             stats["tool_uses"] += 1
 
         # Look for errors
-        if any(err in content.lower() for err in ["error", "failed", "exception", "traceback"]):
+        if any(
+            err in content.lower()
+            for err in ["error", "failed", "exception", "traceback"]
+        ):
             stats["errors"] += 1
             # Extract first 100 chars of error context
             error_messages.append(content[:100])
@@ -120,7 +130,9 @@ def analyze_session_safely(messages: List[Dict]) -> Dict[str, Any]:
         )
 
     # Check for repeated tool failures
-    tool_failures = sum(1 for msg in messages if "tool_use_error" in str(msg.get("content", "")))
+    tool_failures = sum(
+        1 for msg in messages if "tool_use_error" in str(msg.get("content", ""))
+    )
     if tool_failures > 2:
         patterns.append(
             {
@@ -153,8 +165,12 @@ def format_reflection_output(analysis: Dict[str, Any]) -> str:
     ]
 
     for i, pattern in enumerate(patterns, 1):
-        priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(pattern["priority"], "⚪")
-        lines.append(f"\n{i}. {priority_emoji} {pattern['type'].upper().replace('_', ' ')}")
+        priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(
+            pattern["priority"], "⚪"
+        )
+        lines.append(
+            f"\n{i}. {priority_emoji} {pattern['type'].upper().replace('_', ' ')}"
+        )
         lines.append(f"   {pattern['description']}")
         lines.append(f"   💡 {pattern['suggestion']}")
 
@@ -235,13 +251,17 @@ def main():
     print(json.dumps(result, indent=2))
 
     # Log to file for debugging (optional)
-    log_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")) / ".claude" / "runtime" / "logs"
+    log_dir = (
+        Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")) / ".claude" / "runtime" / "logs"
+    )
     if log_dir.exists():
         log_file = log_dir / "stop_reflection.log"
         with open(log_file, "a") as f:
             import datetime
 
-            f.write(f"\n[{datetime.datetime.now().isoformat()}] Reflection analysis completed\n")
+            f.write(
+                f"\n[{datetime.datetime.now().isoformat()}] Reflection analysis completed\n"
+            )
             f.write(f"Patterns found: {len(patterns)}\n")
             f.write(f"Stats: {analysis.get('stats', {})}\n")
 

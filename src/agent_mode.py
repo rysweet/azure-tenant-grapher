@@ -390,9 +390,7 @@ Cypher Query:"""
 
         from autogen_core.models import SystemMessage
 
-        response = await model_client.create(
-            [SystemMessage(content=query_prompt)]
-        )
+        response = await model_client.create([SystemMessage(content=query_prompt)])
 
         # Extract the generated query
         cypher_query = (
@@ -470,6 +468,7 @@ Answer:"""
 
     except Exception as e:
         import traceback
+
         print(f"\n❌ Error in manual processing: {e}")
         traceback.print_exc()
 

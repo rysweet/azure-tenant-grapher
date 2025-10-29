@@ -61,14 +61,14 @@ export class Neo4jService {
     try {
       // Get credentials from secure credential manager
       const credentials = CredentialManager.getNeo4jCredentials();
-      
+
       // Validate credentials before use
       if (!CredentialManager.validateCredentials(credentials)) {
         throw new Error('Invalid Neo4j credentials format');
       }
 
       this.driver = neo4j.driver(
-        credentials.uri, 
+        credentials.uri,
         neo4j.auth.basic(credentials.username, credentials.password)
       );
       logger.info(`Connected to Neo4j at ${credentials.uri}`);

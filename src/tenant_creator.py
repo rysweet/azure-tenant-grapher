@@ -330,8 +330,10 @@ Instructions:
             raise LLMGenerationError(
                 "Failed to parse LLM output as valid JSON.",
                 model=(
-                    getattr(getattr(self.llm_generator, "config", None), "model_chat", None) 
-                    if self.llm_generator and hasattr(self.llm_generator, "config") 
+                    getattr(
+                        getattr(self.llm_generator, "config", None), "model_chat", None
+                    )
+                    if self.llm_generator and hasattr(self.llm_generator, "config")
                     else None
                 ),  # type: ignore
                 context={"prompt": prompt, "raw_response": json_text},

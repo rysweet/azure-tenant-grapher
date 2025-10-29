@@ -296,7 +296,9 @@ class TestTerraformEmitterIdentities:
                 assert "azuread" in provider_types, "azuread provider missing"
             else:
                 # Should be a list when multiple providers are needed
-                raise AssertionError("Provider should be a list with multiple providers")
+                raise AssertionError(
+                    "Provider should be a list with multiple providers"
+                )
 
     def test_managed_identity_not_in_azuread_provider(self) -> None:
         """Test that Managed Identities are not treated as Azure AD resources."""
@@ -328,10 +330,11 @@ class TestTerraformEmitterIdentities:
             # Managed Identity should use azurerm provider, not azuread
             assert "resource" in terraform_config
             # It should be an azurerm_user_assigned_identity
-            assert (
-                "azurerm_user_assigned_identity" in terraform_config["resource"]
-                or "azurerm_user_assigned_identity" in str(terraform_config)
-            ), "Managed Identity should use azurerm provider"
+            assert "azurerm_user_assigned_identity" in terraform_config[
+                "resource"
+            ] or "azurerm_user_assigned_identity" in str(terraform_config), (
+                "Managed Identity should use azurerm provider"
+            )
 
             # Azure AD provider should NOT be included for just managed identities
             providers = terraform_config["provider"]

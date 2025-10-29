@@ -169,9 +169,7 @@ class DeploymentDashboard:
 
     def _render_terraform_panel(self) -> Panel:
         """Render the terraform output panel."""
-        log_level_label = (
-            f"Terraform Output | Log Level: {self.log_level.upper()}"
-        )
+        log_level_label = f"Terraform Output | Log Level: {self.log_level.upper()}"
 
         # Get filtered lines based on current log level
         filtered_lines = self.terraform_widget.get_filtered_lines(self.log_level)
@@ -320,9 +318,7 @@ class DeploymentDashboard:
                     level_map = {"i": "info", "d": "debug", "w": "warning"}
                     with self.lock:
                         self.log_level = level_map[key.lower()]
-                        self.log_info(
-                            f"Log level set to {self.log_level.upper()}"
-                        )
+                        self.log_info(f"Log level set to {self.log_level.upper()}")
                         # Update terraform panel to reflect new filter
                         self.layout["terraform_output"].update(
                             self._render_terraform_panel()
@@ -332,9 +328,7 @@ class DeploymentDashboard:
         key_thread.start()
 
         try:
-            with Live(
-                self.layout, refresh_per_second=4, console=self.console
-            ):
+            with Live(self.layout, refresh_per_second=4, console=self.console):
                 yield
         finally:
             stop_event.set()

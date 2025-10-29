@@ -11,7 +11,7 @@
 - Each resource must maintain its configuration, properties, and settings
 - Resource relationships and dependencies must be preserved
 
-### 2. Entra ID Replication  
+### 2. Entra ID Replication
 - Users, groups, service principals, and applications from source tenant
 - Role assignments and permissions
 - Group memberships and hierarchies
@@ -38,7 +38,7 @@
 - [ ] No property truncation warnings in logs
 - [ ] All critical relationships mapped
 
-### Control Plane Fidelity  
+### Control Plane Fidelity
 - [ ] 100% Terraform validation pass rate (3 consecutive passes)
 - [ ] All supported Azure resource types mapped
 - [ ] terraform plan runs successfully (no errors)
@@ -105,7 +105,7 @@ def objective_achieved() -> bool:
     validation_passed = terraform_validate_json["valid"] == True
     deployment_success = terraform_apply_exitcode == 0
     consecutive_passes = last_3_iterations_all_passed()
-    
+
     return (
         fidelity >= 95.0 and
         validation_passed and
@@ -118,7 +118,7 @@ def objective_achieved() -> bool:
 
 Based on Neo4j database inspection:
 - **Source (DefenderATEVET17)**: 410 resources in subscription 9b00bc5e-9abc-45de-9958-02a9d9277b16
-- **Target (DefenderATEVET12)**: 158 resources in subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285  
+- **Target (DefenderATEVET12)**: 158 resources in subscription c190c55a-9ab2-4b1e-92c4-cc8b1a032285
 - **Current Fidelity**: 38.5% (158/410)
 - **Latest Iteration**: 98
 - **Validation Status**: Unknown (needs check)
@@ -208,7 +208,7 @@ uv run atg generate-iac \
   --output demos/iteration{N}
 ```
 
-### Validate Iteration  
+### Validate Iteration
 ```bash
 cd demos/iteration{N}
 terraform init
@@ -227,7 +227,7 @@ MATCH (r:Resource)
 WHERE r.tenantId = 'DefenderATEVET17'
 RETURN count(r) as source_count;
 
-// Target tenant  
+// Target tenant
 MATCH (r:Resource)
 WHERE r.tenantId = 'DefenderATEVET12'
 RETURN count(r) as target_count;

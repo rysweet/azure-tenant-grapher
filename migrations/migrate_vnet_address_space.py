@@ -68,6 +68,7 @@ class VNetAddressSpaceMigrator:
                     if '"addressSpace"' in truncated_json:
                         # Try to extract just the addressSpace section
                         import re
+
                         pattern = r'"addressSpace"\s*:\s*\{[^}]*"addressPrefixes"\s*:\s*(\[[^\]]*\])'
                         match = re.search(pattern, truncated_json)
                         if match:

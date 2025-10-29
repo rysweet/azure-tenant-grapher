@@ -19,7 +19,7 @@ import logging
 import os
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from azure.core.credentials import TokenCredential
 from azure.core.exceptions import ClientAuthenticationError
@@ -112,7 +112,9 @@ class CredentialProvider:
         # Thread-safe credential caching
         with self._lock:
             if self._credential_cache:
-                self.logger.debug(f"Using cached credential from: {self._credential_source}")
+                self.logger.debug(
+                    f"Using cached credential from: {self._credential_source}"
+                )
                 return self._credential_cache
 
             # Try each priority level in order with validation
@@ -122,10 +124,12 @@ class CredentialProvider:
                 if self._validate_credential(credential):
                     self._credential_cache = credential
                     self._credential_source = source
-                    self.logger.info(f"Successfully resolved credentials from: {source}")
+                    self.logger.info(
+                        f"Successfully resolved credentials from: {source}"
+                    )
                     return credential
                 else:
-                    self.logger.warning(f"Explicit credentials failed validation")
+                    self.logger.warning("Explicit credentials failed validation")
 
             # Priority 2: Environment variables
             if self.config.use_environment and self._has_env_credentials():
@@ -133,10 +137,12 @@ class CredentialProvider:
                 if self._validate_credential(credential):
                     self._credential_cache = credential
                     self._credential_source = source
-                    self.logger.info(f"Successfully resolved credentials from: {source}")
+                    self.logger.info(
+                        f"Successfully resolved credentials from: {source}"
+                    )
                     return credential
                 else:
-                    self.logger.warning(f"Environment credentials failed validation")
+                    self.logger.warning("Environment credentials failed validation")
 
             # Priority 3: DefaultAzureCredential
             if self._try_default_credential():
@@ -145,10 +151,12 @@ class CredentialProvider:
                     if self._validate_credential(credential):
                         self._credential_cache = credential
                         self._credential_source = source
-                        self.logger.info(f"Successfully resolved credentials from: {source}")
+                        self.logger.info(
+                            f"Successfully resolved credentials from: {source}"
+                        )
                         return credential
                     else:
-                        self.logger.warning(f"DefaultAzureCredential failed validation")
+                        self.logger.warning("DefaultAzureCredential failed validation")
                 except Exception as e:
                     self.logger.warning(f"DefaultAzureCredential failed: {e}")
 
@@ -158,10 +166,12 @@ class CredentialProvider:
                 if self._validate_credential(credential):
                     self._credential_cache = credential
                     self._credential_source = source
-                    self.logger.info(f"Successfully resolved credentials from: {source}")
+                    self.logger.info(
+                        f"Successfully resolved credentials from: {source}"
+                    )
                     return credential
                 else:
-                    self.logger.error(f"Interactive credentials failed validation")
+                    self.logger.error("Interactive credentials failed validation")
 
             # Failed to resolve credentials from any source
             raise ValueError(

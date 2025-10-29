@@ -10,8 +10,9 @@ Tests all 4 priority levels with mocked credentials:
 
 import os
 import threading
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from azure.core.credentials import AccessToken
 from azure.core.exceptions import ClientAuthenticationError
 
@@ -19,7 +20,6 @@ from src.iac.data_plane_plugins.credential_provider import (
     CredentialConfig,
     CredentialProvider,
 )
-
 
 # ============ Fixtures ============
 
@@ -104,7 +104,9 @@ def test_credential_config_with_values():
 
 
 @patch("src.iac.data_plane_plugins.credential_provider.ClientSecretCredential")
-def test_priority_level_1_explicit_credentials(mock_client_secret_cred, mock_credential):
+def test_priority_level_1_explicit_credentials(
+    mock_client_secret_cred, mock_credential
+):
     """Test priority level 1: explicit credentials via config."""
     mock_client_secret_cred.return_value = mock_credential
 
@@ -216,7 +218,9 @@ def test_environment_disabled_skips_to_default(
 
 
 @patch("src.iac.data_plane_plugins.credential_provider.DefaultAzureCredential")
-def test_priority_level_3_default_credential(mock_default_cred, mock_credential, clean_env):
+def test_priority_level_3_default_credential(
+    mock_default_cred, mock_credential, clean_env
+):
     """Test priority level 3: DefaultAzureCredential."""
     mock_default_cred.return_value = mock_credential
 
@@ -389,7 +393,9 @@ def test_validation_success(mock_client_secret_cred, mock_credential):
     assert credential is not None
 
     # Verify get_token was called for validation
-    mock_credential.get_token.assert_called_with("https://management.azure.com/.default")
+    mock_credential.get_token.assert_called_with(
+        "https://management.azure.com/.default"
+    )
 
 
 @patch("src.iac.data_plane_plugins.credential_provider.DefaultAzureCredential")
@@ -398,7 +404,9 @@ def test_validation_failure(mock_client_secret_cred, mock_default_cred, clean_en
     """Test credential validation failure falls through all levels."""
     # Create credential that fails validation
     failed_credential = Mock()
-    failed_credential.get_token.side_effect = ClientAuthenticationError("Invalid credentials")
+    failed_credential.get_token.side_effect = ClientAuthenticationError(
+        "Invalid credentials"
+    )
     mock_client_secret_cred.return_value = failed_credential
     mock_default_cred.return_value = failed_credential
 
@@ -406,7 +414,7 @@ def test_validation_failure(mock_client_secret_cred, mock_default_cred, clean_en
         client_id="bad-id",
         client_secret="bad-secret",
         tenant_id="bad-tenant",
-        allow_interactive=False  # Don't allow interactive to test failure
+        allow_interactive=False,  # Don't allow interactive to test failure
     )
     provider = CredentialProvider(config)
 
@@ -431,7 +439,7 @@ def test_validation_empty_token(mock_client_secret_cred, mock_default_cred, clea
         client_id="test-id",
         client_secret="test-secret",
         tenant_id="test-tenant",
-        allow_interactive=False  # Don't allow interactive to test failure
+        allow_interactive=False,  # Don't allow interactive to test failure
     )
     provider = CredentialProvider(config)
 
@@ -509,7 +517,9 @@ def test_provider_with_none_config():
 
 
 @patch("src.iac.data_plane_plugins.credential_provider.ClientSecretCredential")
-def test_partial_explicit_credentials_falls_through(mock_client_secret_cred, mock_credential, clean_env):
+def test_partial_explicit_credentials_falls_through(
+    mock_client_secret_cred, mock_credential, clean_env
+):
     """Test that partial explicit credentials fall through to next level."""
     mock_client_secret_cred.return_value = mock_credential
 

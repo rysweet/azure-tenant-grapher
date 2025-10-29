@@ -20,6 +20,7 @@ from azure.mgmt.resourcegraph.models import QueryRequest, QueryRequestOptions
 
 try:
     from azure.mgmt.monitor import MonitorManagementClient
+
     MonitorClient = MonitorManagementClient  # type: ignore[misc]
 except ImportError:
     MonitorClient = None  # type: ignore[assignment]
@@ -97,13 +98,9 @@ class ChangeFeedIngestionService:
         try:
             query_options = QueryRequestOptions(result_format="objectArray")
             query_request = QueryRequest(
-                query=query,
-                subscriptions=[subscription_id],
-                options=query_options
+                query=query, subscriptions=[subscription_id], options=query_options
             )
-            response = resourcegraph_client.resources(
-                query=query_request
-            )
+            response = resourcegraph_client.resources(query=query_request)
             changes = response.data if hasattr(response, "data") else []
         except Exception as e:
             logger.error(f"Failed to query Resource Graph: {e}")

@@ -178,7 +178,10 @@ class DependencyAnalyzer:
             "Microsoft.Graph/servicePrincipals",
         }
 
-        if resource_type != "Microsoft.Resources/resourceGroups" and resource_type not in azure_ad_types:
+        if (
+            resource_type != "Microsoft.Resources/resourceGroups"
+            and resource_type not in azure_ad_types
+        ):
             # Try both field names (resource_group and resourceGroup)
             rg_name = resource.get("resource_group") or resource.get("resourceGroup")
             if rg_name:
@@ -186,7 +189,9 @@ class DependencyAnalyzer:
                 rg_name_sanitized = self._sanitize_terraform_name(rg_name)
                 terraform_ref = f"azurerm_resource_group.{rg_name_sanitized}"
                 dependencies.add(terraform_ref)
-                logger.debug(f"Added RG dependency for {resource.get('name', 'unknown')}: {terraform_ref}")
+                logger.debug(
+                    f"Added RG dependency for {resource.get('name', 'unknown')}: {terraform_ref}"
+                )
 
         # TODO: Extract additional explicit dependencies from properties
         # - VNets for subnets

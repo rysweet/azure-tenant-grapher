@@ -6,14 +6,11 @@ resource access control, and authorization vulnerabilities.
 """
 
 import json
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from typing import Any, Dict, List
 
 import pytest
-
 from tests.e2e.auth_security.security_utils import (
     AuditLogger,
-    MockAzureADClient,
     SecurityScanner,
 )
 
@@ -27,7 +24,7 @@ class MockAuthorizationService:
             "editor": ["read", "write"],
             "viewer": ["read"],
             "security_admin": ["read", "manage_security", "audit"],
-            "tenant_admin": ["read", "write", "manage_tenants"]
+            "tenant_admin": ["read", "write", "manage_tenants"],
         }
 
         self.user_roles = {}
@@ -57,9 +54,7 @@ class MockAuthorizationService:
             permissions.update(self.roles.get(role, []))
         return list(permissions)
 
-    def check_permission(
-        self, user_id: str, action: str, resource: str = None
-    ) -> bool:
+    def check_permission(self, user_id: str, action: str, resource: str = None) -> bool:
         """Check if user has permission for action."""
         user_permissions = self.get_user_permissions(user_id)
         has_permission = action in user_permissions
@@ -76,7 +71,7 @@ class MockAuthorizationService:
             resource=resource or "system",
             action=action,
             allowed=has_permission,
-            reason="Role-based access" if has_permission else "Permission denied"
+            reason="Role-based access" if has_permission else "Permission denied",
         )
 
         return has_permission
@@ -201,7 +196,7 @@ class TestAuthorization:
             ("attacker", "manage_users"),
             ("attacker", "manage_roles"),
             ("attacker", "delete"),
-            ("attacker", "manage_security")
+            ("attacker", "manage_security"),
         ]
 
         for user_id, action in escalation_attempts:
@@ -213,7 +208,7 @@ class TestAuthorization:
                 violation_type="privilege_escalation_attempt",
                 details=f"User {user_id} attempted unauthorized action: {action}",
                 source_ip="192.168.1.100",
-                user_id=user_id
+                user_id=user_id,
             )
 
         # Verify violations were logged
@@ -226,9 +221,7 @@ class TestAuthorization:
         scanner = SecurityScanner()
 
         # Grant permission for specific resource
-        auth_service.grant_resource_permission(
-            "user1", "documents/public", ["read"]
-        )
+        auth_service.grant_resource_permission("user1", "documents/public", ["read"])
 
         # Test path traversal attempts
         traversal_attempts = [
@@ -236,7 +229,7 @@ class TestAuthorization:
             "documents/public/../../admin",
             "documents/public/../../../etc/passwd",
             "documents/public/..\\..\\admin",
-            "documents/public/%2e%2e%2f%2e%2e%2fadmin"
+            "documents/public/%2e%2e%2f%2e%2e%2fadmin",
         ]
 
         for resource_path in traversal_attempts:
@@ -282,7 +275,7 @@ class TestAuthorization:
             {"permissions": ["manage_users"], "override": True},
             {"bypass_auth": True},
             {"admin": "true"},
-            {"sudo": True}
+            {"sudo": True},
         ]
 
         for attempt in bypass_attempts:
@@ -294,7 +287,7 @@ class TestAuthorization:
                 violation_type="authorization_bypass_attempt",
                 details=f"Detected bypass attempt: {attempt_str}",
                 source_ip="192.168.1.50",
-                user_id="attacker"
+                user_id="attacker",
             )
 
         violations = audit_logger.get_events(event_type="security_violation")
@@ -309,7 +302,7 @@ class TestAuthorization:
             "reader": "viewer",
             "contributor": "editor",
             "owner": "admin",
-            "security_officer": "security_admin"
+            "security_officer": "security_admin",
         }
 
         for user_id, role in users.items():
@@ -360,7 +353,7 @@ class TestAuthorization:
                 self.pending_operations[op_id] = {
                     "initiator": initiator,
                     "operation": operation,
-                    "approved": False
+                    "approved": False,
                 }
                 return op_id
 
@@ -410,10 +403,7 @@ class TestAuthorization:
                 self.business_hours = (9, 17)  # 9 AM to 5 PM
 
             def check_contextual_permission(
-                self,
-                user_id: str,
-                action: str,
-                context: Dict[str, Any]
+                self, user_id: str, action: str, context: Dict[str, Any]
             ) -> bool:
                 """Check permission with contextual rules."""
                 # Basic permission check
@@ -426,7 +416,9 @@ class TestAuthorization:
 
                 # Restrict certain actions to business hours
                 if action in ["delete", "manage_users"]:
-                    if not (self.business_hours[0] <= current_hour < self.business_hours[1]):
+                    if not (
+                        self.business_hours[0] <= current_hour < self.business_hours[1]
+                    ):
                         return False
 
                 # Restrict based on IP range
@@ -485,7 +477,9 @@ class TestAuthorization:
             def invalidate_cache(self, user_id: str = None):
                 """Invalidate cache for user or all users."""
                 if user_id:
-                    keys_to_remove = [k for k in self.cache if k.startswith(f"{user_id}:")]
+                    keys_to_remove = [
+                        k for k in self.cache if k.startswith(f"{user_id}:")
+                    ]
                     for key in keys_to_remove:
                         del self.cache[key]
                 else:

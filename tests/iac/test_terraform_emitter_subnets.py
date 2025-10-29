@@ -745,7 +745,7 @@ def test_subnet_nsg_associations(
             "name": "test-nsg",
             "location": "eastus",
             "resourceGroup": "test-rg",
-        }
+        },
     ]
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -756,15 +756,22 @@ def test_subnet_nsg_associations(
             terraform_config = json.load(f)
 
         # Subnet should NOT have inline network_security_group_id (deprecated in v3.0+)
-        subnet = terraform_config["resource"]["azurerm_subnet"]["test_vnet_secure_subnet"]
+        subnet = terraform_config["resource"]["azurerm_subnet"][
+            "test_vnet_secure_subnet"
+        ]
         assert "network_security_group_id" not in subnet, (
             "Subnet should not have deprecated inline network_security_group_id"
         )
 
         # Should have separate NSG association resource
-        assert "azurerm_subnet_network_security_group_association" in terraform_config["resource"]
+        assert (
+            "azurerm_subnet_network_security_group_association"
+            in terraform_config["resource"]
+        )
 
-        nsg_associations = terraform_config["resource"]["azurerm_subnet_network_security_group_association"]
+        nsg_associations = terraform_config["resource"][
+            "azurerm_subnet_network_security_group_association"
+        ]
         assert len(nsg_associations) == 1
 
         # Get the association resource
@@ -774,7 +781,10 @@ def test_subnet_nsg_associations(
         assert "subnet_id" in assoc
         assert "${azurerm_subnet.test_vnet_secure_subnet.id}" in assoc["subnet_id"]
         assert "network_security_group_id" in assoc
-        assert "${azurerm_network_security_group.test_nsg.id}" in assoc["network_security_group_id"]
+        assert (
+            "${azurerm_network_security_group.test_nsg.id}"
+            in assoc["network_security_group_id"]
+        )
 
 
 def test_subnet_service_endpoints(
