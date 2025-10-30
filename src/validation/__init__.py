@@ -13,6 +13,9 @@ Public API:
     - AddressSpaceConflict: Dataclass for conflict information
     - ValidationResult: Dataclass for validation results
     - validate_address_spaces: Convenience function for validation
+    - NameConflictValidator: Validate Azure resource name conflicts (GAP-015)
+    - NameConflict: Dataclass for name conflict information
+    - NameValidationResult: Dataclass for name validation results
 """
 
 from .address_space_validator import (
@@ -22,12 +25,20 @@ from .address_space_validator import (
     validate_address_spaces,
 )
 from .comparator import ComparisonResult, compare_filtered_graphs, compare_graphs
+from .name_conflict_validator import (
+    NameConflict,
+    NameConflictValidator,
+    NameValidationResult,
+)
 from .report import generate_json_report, generate_markdown_report
 
 __all__ = [
     "AddressSpaceConflict",
     "AddressSpaceValidator",
     "ComparisonResult",
+    "NameConflict",
+    "NameConflictValidator",
+    "NameValidationResult",
     "ValidationResult",
     "compare_filtered_graphs",
     "compare_graphs",

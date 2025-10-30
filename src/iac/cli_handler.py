@@ -454,11 +454,7 @@ async def generate_iac_command_handler(
         paths = emitter.emit(graph, out_dir, **emit_kwargs)
 
         # Validate and fix global name conflicts (GAP-014)
-        # TODO: NameConflictValidator not yet implemented - see Problem 6
-        # Commenting out until class is implemented to avoid ImportError
-        # The validation code below is disabled because NameConflictValidator doesn't exist
-        # To re-enable: implement NameConflictValidator in src/validation/ or use --skip-name-validation flag
-        if False:  # Disabled - NameConflictValidator not implemented
+        if format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
             logger.info("🔍 Checking for global resource name conflicts...")
