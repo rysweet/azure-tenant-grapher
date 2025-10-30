@@ -6,7 +6,10 @@ Private DNS Zone resources in Terraform format.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +81,7 @@ def emit_private_endpoint(
     extract_name_fn: Optional[callable] = None,
     available_subnets: Optional[set] = None,
     missing_references: Optional[List[Dict[str, str]]] = None,
+    translator: Optional["PrivateEndpointTranslator"] = None,
 ) -> Dict[str, Any]:
     """Generate azurerm_private_endpoint resource configuration.
 
@@ -87,6 +91,7 @@ def emit_private_endpoint(
         extract_name_fn: Function to extract names from resource IDs (optional)
         available_subnets: Set of available VNet-scoped subnet names for validation
         missing_references: List to append missing reference information to
+        translator: Optional translator for cross-subscription resource IDs
 
     Returns:
         Terraform resource configuration dictionary
@@ -165,10 +170,21 @@ def emit_private_endpoint(
                 "is_manual_connection": False,
             }
 
-            # Add target resource ID
+            # Add target resource ID with optional translation
             target_resource_id = conn_props.get("privateLinkServiceId")
             if target_resource_id:
-                conn_config["private_connection_resource_id"] = target_resource_id
+                # Apply translation if translator is provided and translation is needed
+                if translator and translator.should_translate(target_resource_id):
+                    result = translator.translate_resource_id(
+                        target_resource_id, resource_name
+                    )
+                    conn_config["private_connection_resource_id"] = result.translated_id
+                    # Log any warnings from translation
+                    for warning in result.warnings:
+                        logger.warning(warning)
+                else:
+                    # No translation needed or no translator provided
+                    conn_config["private_connection_resource_id"] = target_resource_id
 
             # Add subresource names (group IDs)
             group_ids = conn_props.get("groupIds", [])
