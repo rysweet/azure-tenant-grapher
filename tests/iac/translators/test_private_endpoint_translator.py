@@ -521,3 +521,53 @@ class TestPrivateEndpointTranslatorEdgeCases:
         assert result.was_translated is True
         assert target_sub in result.translated_id
         assert source_sub not in result.translated_id
+
+    def test_deeply_nested_network_resource_ids(self):
+        """Test handling of deeply nested network resource IDs.
+
+        This addresses reviewer concern about regex pattern handling all
+        Azure resource ID edge cases, particularly Network Interface
+        IP Configurations and Virtual Network Gateway Connections.
+        """
+        source_sub = "11111111-1111-1111-1111-111111111111"
+        target_sub = "22222222-2222-2222-2222-222222222222"
+
+        translator = PrivateEndpointTranslator(
+            source_subscription_id=source_sub,
+            target_subscription_id=target_sub,
+            available_resources={},
+        )
+
+        # Test 1: Network Interface IP Configuration (4 levels deep)
+        nic_ip_config_id = (
+            f"/subscriptions/{source_sub}/resourceGroups/network-rg/"
+            "providers/Microsoft.Network/networkInterfaces/nic-01/"
+            "ipConfigurations/ipconfig1"
+        )
+        result = translator.translate_resource_id(nic_ip_config_id)
+        assert result.was_translated is True
+        assert target_sub in result.translated_id
+        assert source_sub not in result.translated_id
+        assert "networkInterfaces/nic-01/ipConfigurations/ipconfig1" in result.translated_id
+
+        # Test 2: Virtual Network Gateway Connection
+        vng_connection_id = (
+            f"/subscriptions/{source_sub}/resourceGroups/gateway-rg/"
+            "providers/Microsoft.Network/virtualNetworkGateways/vng-prod/"
+            "connections/conn-to-onprem"
+        )
+        result2 = translator.translate_resource_id(vng_connection_id)
+        assert result2.was_translated is True
+        assert target_sub in result2.translated_id
+        assert "virtualNetworkGateways/vng-prod/connections/conn-to-onprem" in result2.translated_id
+
+        # Test 3: Application Gateway HTTP Listener (complex sub-resource)
+        appgw_listener_id = (
+            f"/subscriptions/{source_sub}/resourceGroups/appgw-rg/"
+            "providers/Microsoft.Network/applicationGateways/appgw-01/"
+            "httpListeners/listener-443"
+        )
+        result3 = translator.translate_resource_id(appgw_listener_id)
+        assert result3.was_translated is True
+        assert target_sub in result3.translated_id
+        assert "applicationGateways/appgw-01/httpListeners/listener-443" in result3.translated_id

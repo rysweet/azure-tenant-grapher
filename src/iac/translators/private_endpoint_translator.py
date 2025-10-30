@@ -249,8 +249,16 @@ class PrivateEndpointTranslator:
 
         Returns:
             Terraform resource type or None if mapping not found
+
+        Note:
+            This is a curated list of the most common Azure resources that support
+            private endpoints. The system gracefully handles unmapped types by logging
+            a debug message and returning None. Unmapped types will be skipped during
+            target existence validation but translation will still occur.
         """
-        # Common mappings
+        # Curated mapping of common private endpoint target types.
+        # Based on Azure Private Link service documentation and most frequently
+        # used resources in enterprise deployments.
         type_map = {
             "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
             "Microsoft.KeyVault/vaults": "azurerm_key_vault",
