@@ -1835,6 +1835,8 @@ class TerraformEmitter(IaCEmitter):
                     workspace_resource_id = la_dest.get("workspaceResourceId", "")
                     dest_name = la_dest.get("name", "default")
                     if workspace_resource_id:
+                        # Normalize resource ID casing (fixes Problem 5)
+                        workspace_resource_id = self._normalize_azure_resource_id(workspace_resource_id)
                         log_analytics_list.append(
                             {
                                 "workspace_resource_id": workspace_resource_id,
@@ -2162,6 +2164,50 @@ class TerraformEmitter(IaCEmitter):
             sanitized = f"resource_{sanitized}"
 
         return sanitized or "unnamed_resource"
+
+    def _normalize_azure_resource_id(self, resource_id: str) -> str:
+        """Normalize Azure resource ID casing to match Terraform expectations.
+
+        Azure API returns inconsistent casing in resource IDs (e.g.,
+        'microsoft.OperationalInsights/Workspaces' instead of
+        'Microsoft.OperationalInsights/workspaces'). This function normalizes
+        them to the canonical Azure Resource Provider format.
+
+        Args:
+            resource_id: Azure resource ID to normalize
+
+        Returns:
+            Normalized resource ID with correct casing
+
+        Example:
+            Input:  /subscriptions/.../microsoft.OperationalInsights/Workspaces/name
+            Output: /subscriptions/.../Microsoft.OperationalInsights/workspaces/name
+        """
+        if not resource_id:
+            return resource_id
+
+        import re
+
+        # Known provider normalizations (pattern → correct casing)
+        # Format: (regex_pattern, replacement_string)
+        provider_normalizations = [
+            (r'/microsoft\.operationalinsights/workspaces/', '/Microsoft.OperationalInsights/workspaces/'),
+            (r'/microsoft\.insights/', '/Microsoft.Insights/'),
+            (r'/microsoft\.compute/', '/Microsoft.Compute/'),
+            (r'/microsoft\.network/', '/Microsoft.Network/'),
+            (r'/microsoft\.storage/', '/Microsoft.Storage/'),
+            (r'/microsoft\.keyvault/', '/Microsoft.KeyVault/'),
+            (r'/microsoft\.web/', '/Microsoft.Web/'),
+            (r'/microsoft\.sql/', '/Microsoft.Sql/'),
+            (r'/microsoft\.automation/', '/Microsoft.Automation/'),
+            (r'/microsoft\.devtestlab/', '/Microsoft.DevTestLab/'),
+        ]
+
+        normalized = resource_id
+        for pattern, replacement in provider_normalizations:
+            normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
+
+        return normalized
 
     def _validate_resource_reference(
         self, terraform_type: str, resource_name: str
