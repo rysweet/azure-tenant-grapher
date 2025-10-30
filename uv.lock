@@ -261,6 +261,20 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-mgmt-costmanagement"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-common" },
+    { name = "azure-mgmt-core" },
+    { name = "isodate" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/45/0f/fca8cc1228c4d8acb7462b8cb7fb2bd68d7fa7dec3b13f1aaf6f612a9e89/azure-mgmt-costmanagement-4.0.1.zip", hash = "sha256:a95734102450b6f01aaa938d78c00285b90fc52b866caae17efb5521ae986db7", size = 194223, upload-time = "2023-07-19T07:53:35.036Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/ff/bafa7f1f205922d871616f19bd8d3b49020d61286015b87c13379b26a8e7/azure_mgmt_costmanagement-4.0.1-py3-none-any.whl", hash = "sha256:23e77373427555e880ce938d468f87c6a8d66a5b237d7b2b0270bb192d61586f", size = 180916, upload-time = "2023-07-19T07:53:36.551Z" },
+]
+
+[[package]]
 name = "azure-mgmt-keyvault"
 version = "11.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -404,6 +418,7 @@ dependencies = [
     { name = "azure-mgmt-apimanagement" },
     { name = "azure-mgmt-authorization" },
     { name = "azure-mgmt-compute" },
+    { name = "azure-mgmt-costmanagement" },
     { name = "azure-mgmt-keyvault" },
     { name = "azure-mgmt-monitor" },
     { name = "azure-mgmt-network" },
@@ -460,6 +475,7 @@ requires-dist = [
     { name = "azure-mgmt-apimanagement", specifier = ">=4.0.0" },
     { name = "azure-mgmt-authorization", specifier = ">=4.0.0" },
     { name = "azure-mgmt-compute", specifier = ">=30.0.0" },
+    { name = "azure-mgmt-costmanagement", specifier = ">=4.0.0" },
     { name = "azure-mgmt-keyvault", specifier = ">=10.0.0" },
     { name = "azure-mgmt-monitor", specifier = ">=6.0.0" },
     { name = "azure-mgmt-network", specifier = ">=25.0.0" },
