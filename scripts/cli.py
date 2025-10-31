@@ -638,6 +638,26 @@ def generate_spec(
     help="Target Azure subscription ID for deployment (overrides auto-detection from source resources)",
 )
 @click.option(
+    "--source-tenant-id",
+    required=False,
+    help="Source tenant ID (auto-detected from Azure CLI if not specified) - used for cross-tenant translation",
+)
+@click.option(
+    "--target-tenant-id",
+    required=False,
+    help="Target tenant ID for cross-tenant deployment - enables Entra ID object translation",
+)
+@click.option(
+    "--identity-mapping-file",
+    required=False,
+    help="Path to identity mapping JSON file for Entra ID object translation (users, groups, service principals)",
+)
+@click.option(
+    "--strict-translation",
+    is_flag=True,
+    help="Fail on missing identity mappings (default: warn only and use placeholders)",
+)
+@click.option(
     "--format",
     "format_type",
     default="terraform",
@@ -755,6 +775,10 @@ async def generate_iac(
     ctx: click.Context,
     tenant_id: str,
     target_subscription: Optional[str],
+    source_tenant_id: Optional[str],
+    target_tenant_id: Optional[str],
+    identity_mapping_file: Optional[str],
+    strict_translation: bool,
     format_type: str,
     output_path: Optional[str],
     rules_file: Optional[str],
@@ -782,11 +806,18 @@ async def generate_iac(
     """
     Generate Infrastructure-as-Code templates from graph data.
 
-    Options:
-      --aad-mode [none|manual|auto]  Control AAD object creation/replication mode.
-        - none:   Do not create or replicate AAD objects.
-        - manual: Only create/replicate AAD objects when explicitly specified (default).
-        - auto:   Automatically create/replicate required AAD objects.
+    Cross-Tenant Translation:
+      Use --target-tenant-id to enable cross-tenant deployment with automatic
+      translation of Entra ID objects and resource IDs. Combine with:
+
+      --identity-mapping-file: JSON file mapping source to target identities
+      --source-tenant-id: Source tenant (auto-detected if not provided)
+      --strict-translation: Fail on missing mappings instead of using placeholders
+
+    Example - Cross-tenant deployment:
+      atg generate-iac --target-tenant-id TARGET_TENANT_ID \\
+                       --target-subscription TARGET_SUB_ID \\
+                       --identity-mapping-file mappings.json
 
     All other standard IaC options are supported. See --help for details.
     """
@@ -813,6 +844,10 @@ async def generate_iac(
     await generate_iac_command_handler(
         tenant_id=tenant_id,
         target_subscription=target_subscription,
+        source_tenant_id=source_tenant_id,
+        target_tenant_id=target_tenant_id,
+        identity_mapping_file=identity_mapping_file,
+        strict_translation=strict_translation,
         format_type=format_type,
         output_path=output_path,
         rules_file=rules_file,
@@ -1229,7 +1264,9 @@ async def fidelity(
 )
 @click.option(
     "--group-by",
-    type=click.Choice(["resource", "resource_group", "service_name", "tag"], case_sensitive=False),
+    type=click.Choice(
+        ["resource", "resource_group", "service_name", "tag"], case_sensitive=False
+    ),
     help="Group results by field",
 )
 @click.option(

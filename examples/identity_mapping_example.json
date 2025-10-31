@@ -1,0 +1,26 @@
+{
+  "description": "Example identity mapping file for cross-tenant translation",
+  "source_tenant_id": "9b00bc5e-9abc-45de-9958-02a9d9277b16",
+  "target_tenant_id": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285",
+  "users": {
+    "source-user-object-id-1": "target-user-object-id-1",
+    "source-user-object-id-2": "target-user-object-id-2",
+    "12345678-1234-1234-1234-123456789012": "87654321-4321-4321-4321-210987654321"
+  },
+  "groups": {
+    "source-group-object-id-1": "target-group-object-id-1",
+    "source-group-object-id-2": "target-group-object-id-2"
+  },
+  "service_principals": {
+    "source-sp-object-id-1": "target-sp-object-id-1",
+    "source-sp-object-id-2": "target-sp-object-id-2"
+  },
+  "notes": [
+    "All IDs should be Azure AD object IDs (GUIDs)",
+    "Use 'az ad user show --id user@domain.com --query id' to get user object IDs",
+    "Use 'az ad group show --group GroupName --query id' to get group object IDs",
+    "Use 'az ad sp show --id app-id --query id' to get service principal object IDs",
+    "If a mapping is missing and --strict-translation is NOT used, a placeholder will be generated",
+    "Placeholders follow the pattern: PLACEHOLDER_USER_<source-object-id>"
+  ]
+}

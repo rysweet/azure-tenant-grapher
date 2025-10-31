@@ -28,42 +28,11 @@ Usage:
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
+from .base_translator import TranslationContext
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class TranslationContext:
-    """
-    Context passed to all translators during initialization.
-
-    This provides translators with all the information they need to perform
-    cross-tenant translation, including subscription/tenant IDs, available
-    resources, and configuration options.
-    """
-
-    source_subscription_id: Optional[str]
-    """Source subscription ID (where resources were scanned)"""
-
-    target_subscription_id: str
-    """Target subscription ID (where resources will be deployed)"""
-
-    source_tenant_id: Optional[str] = None
-    """Source tenant ID (for Entra ID translation)"""
-
-    target_tenant_id: Optional[str] = None
-    """Target tenant ID (for Entra ID translation)"""
-
-    available_resources: Dict[str, Any] = field(default_factory=dict)
-    """Resources being generated in IaC (for existence validation)"""
-
-    identity_mapping_file: Optional[str] = None
-    """Path to identity mapping file (for EntraIdTranslator)"""
-
-    strict_mode: bool = False
-    """If True, fail on missing mappings. If False, warn."""
 
 
 class TranslationCoordinator:
