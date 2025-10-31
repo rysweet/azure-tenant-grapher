@@ -18,7 +18,10 @@ Usage:
 
 import logging
 import threading
-from typing import Any, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Type
+
+if TYPE_CHECKING:
+    from src.iac.translators.base_translator import BaseTranslator
 
 logger = logging.getLogger(__name__)
 
