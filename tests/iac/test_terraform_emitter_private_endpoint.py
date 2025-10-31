@@ -774,3 +774,131 @@ def test_real_private_endpoint_data_from_neo4j(
         assert "azurerm_private_dns_zone" in terraform_config["resource"]
         zones = terraform_config["resource"]["azurerm_private_dns_zone"]
         assert any("vaultcore" in name for name in zones.keys())
+
+
+def test_cross_subscription_translation_e2e(terraform_emitter):
+    """End-to-end test for cross-subscription resource ID translation.
+
+    This test addresses reviewer concern #4: lack of integration test showing
+    cross-subscription translation happening in the full emit pipeline.
+
+    Scenario:
+    - Resources discovered from source subscription
+    - IaC generated for different target subscription
+    - Private endpoint connection resource IDs should be translated
+    """
+    source_sub = "11111111-1111-1111-1111-111111111111"
+    target_sub = "22222222-2222-2222-2222-222222222222"
+
+    # Create resources with source subscription IDs
+    vnet = {
+        "id": f"/subscriptions/{source_sub}/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+        "name": "test-vnet",
+        "type": "Microsoft.Network/virtualNetworks",
+        "location": "eastus",
+        "resource_group": "network-rg",
+        "properties": json.dumps(
+            {
+                "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+                "subnets": [
+                    {
+                        "id": f"/subscriptions/{source_sub}/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet",
+                        "name": "pe-subnet",
+                        "properties": {"addressPrefix": "10.0.1.0/24"},
+                    }
+                ],
+            }
+        ),
+    }
+
+    subnet = {
+        "id": f"/subscriptions/{source_sub}/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet",
+        "name": "test-vnet/pe-subnet",
+        "type": "Microsoft.Network/virtualNetworks/subnets",
+        "location": "eastus",
+        "resource_group": "network-rg",
+        "properties": json.dumps({"addressPrefix": "10.0.1.0/24"}),
+    }
+
+    storage_account = {
+        "id": f"/subscriptions/{source_sub}/resourceGroups/storage-rg/providers/Microsoft.Storage/storageAccounts/crosssubsa",
+        "name": "crosssubsa",
+        "type": "Microsoft.Storage/storageAccounts",
+        "location": "eastus",
+        "resource_group": "storage-rg",
+        "properties": json.dumps({}),
+    }
+
+    # Private endpoint with cross-subscription storage account reference
+    private_endpoint = {
+        "id": f"/subscriptions/{source_sub}/resourceGroups/network-rg/providers/Microsoft.Network/privateEndpoints/sa-pe",
+        "name": "sa-pe",
+        "type": "Microsoft.Network/privateEndpoints",
+        "location": "eastus",
+        "resource_group": "network-rg",
+        "properties": json.dumps(
+            {
+                "subnet": {
+                    "id": f"/subscriptions/{source_sub}/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/pe-subnet"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "StorageConnection",
+                        "properties": {
+                            "privateLinkServiceId": f"/subscriptions/{source_sub}/resourceGroups/storage-rg/providers/Microsoft.Storage/storageAccounts/crosssubsa",
+                            "groupIds": ["blob"],
+                        },
+                    }
+                ],
+            }
+        ),
+    }
+
+    graph = TenantGraph()
+    graph.resources = [vnet, subnet, storage_account, private_endpoint]
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        out_dir = Path(temp_dir)
+
+        # Emit with DIFFERENT target subscription (passed as parameter)
+        written_files = terraform_emitter.emit(
+            graph, out_dir, subscription_id=target_sub
+        )
+
+        with open(written_files[0]) as f:
+            terraform_config = json.load(f)
+
+        # Verify private endpoint was emitted
+        assert "azurerm_private_endpoint" in terraform_config["resource"]
+        pes = terraform_config["resource"]["azurerm_private_endpoint"]
+
+        # Find the PE (name may be sanitized)
+        pe_key = None
+        for key in pes.keys():
+            if "sa_pe" in key.lower():
+                pe_key = key
+                break
+
+        assert pe_key is not None, f"PE not found. Keys: {list(pes.keys())}"
+        pe = pes[pe_key]
+
+        # CRITICAL VERIFICATION: Resource ID should be translated
+        conn = pe["private_service_connection"][0]
+        resource_id = conn["private_connection_resource_id"]
+
+        # The key assertion: resource ID should have target subscription, not source
+        assert target_sub in resource_id, (
+            f"Expected target subscription {target_sub} in resource ID, "
+            f"but got: {resource_id}"
+        )
+        assert source_sub not in resource_id, (
+            f"Source subscription {source_sub} should not be in resource ID, "
+            f"but got: {resource_id}"
+        )
+
+        # Verify the resource name and type are preserved
+        assert "crosssubsa" in resource_id
+        assert "Microsoft.Storage/storageAccounts" in resource_id
+
+        # Verify subnet reference (should NOT be translated - it's a Terraform reference)
+        assert "${azurerm_subnet" in pe["subnet_id"]

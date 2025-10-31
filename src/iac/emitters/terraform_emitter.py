@@ -6,10 +6,12 @@ tenant graph data.
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from ..dependency_analyzer import DependencyAnalyzer
+from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
@@ -45,6 +47,8 @@ class TerraformEmitter(IaCEmitter):
         self._available_resources: Dict[str, set] = {}
         # Track missing resource references for reporting
         self._missing_references: List[Dict[str, str]] = []
+        # Translator for cross-subscription resource IDs (initialized in emit())
+        self._translator: Optional[PrivateEndpointTranslator] = None
 
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
@@ -310,6 +314,39 @@ class TerraformEmitter(IaCEmitter):
         logger.debug(
             f"Subnet index built: {len(self._available_subnets)} subnets tracked"
         )
+
+        # Initialize translator if target subscription differs from source
+        source_subscription_id = self._extract_source_subscription(graph.resources)
+        if (
+            source_subscription_id
+            and subscription_id
+            and source_subscription_id != subscription_id
+        ):
+            logger.info(
+                f"Initializing translator for cross-subscription deployment: "
+                f"source={source_subscription_id}, target={subscription_id}"
+            )
+            # Convert _available_resources (Dict[str, set]) to Dict[str, Dict[str, Any]]
+            # format expected by translator
+            resources_dict: Dict[str, Dict[str, Any]] = {}
+            for resource_type, resource_names in self._available_resources.items():
+                resources_dict[resource_type] = {name: {} for name in resource_names}
+
+            self._translator = PrivateEndpointTranslator(
+                source_subscription_id=source_subscription_id,
+                target_subscription_id=subscription_id,
+                available_resources=resources_dict,
+            )
+        else:
+            self._translator = None
+            if source_subscription_id and subscription_id:
+                logger.debug(
+                    f"No translator needed - source and target subscriptions match: {subscription_id}"
+                )
+            else:
+                logger.debug(
+                    f"No translator needed - source_sub={source_subscription_id}, target_sub={subscription_id}"
+                )
 
         # Extract and generate resource group resources
         logger.info("Extracting resource groups from discovered resources")
@@ -1233,12 +1270,14 @@ class TerraformEmitter(IaCEmitter):
             # Ensure _available_subnets exists (for direct _convert_resource calls in tests)
             available_subnets = getattr(self, "_available_subnets", set())
             missing_references = getattr(self, "_missing_references", [])
+            translator = getattr(self, "_translator", None)
             resource_config = emit_private_endpoint(
                 resource,
                 sanitize_name_fn=self._sanitize_terraform_name,
                 extract_name_fn=self._extract_resource_name_from_id,
                 available_subnets=available_subnets,
                 missing_references=missing_references,
+                translator=translator,
             )
         elif azure_type == "Microsoft.Network/privateDnsZones":
             # Private DNS Zone specific properties
@@ -1836,7 +1875,9 @@ class TerraformEmitter(IaCEmitter):
                     dest_name = la_dest.get("name", "default")
                     if workspace_resource_id:
                         # Normalize resource ID casing (fixes Problem 5)
-                        workspace_resource_id = self._normalize_azure_resource_id(workspace_resource_id)
+                        workspace_resource_id = self._normalize_azure_resource_id(
+                            workspace_resource_id
+                        )
                         log_analytics_list.append(
                             {
                                 "workspace_resource_id": workspace_resource_id,
@@ -2191,16 +2232,19 @@ class TerraformEmitter(IaCEmitter):
         # Known provider normalizations (pattern → correct casing)
         # Format: (regex_pattern, replacement_string)
         provider_normalizations = [
-            (r'/microsoft\.operationalinsights/workspaces/', '/Microsoft.OperationalInsights/workspaces/'),
-            (r'/microsoft\.insights/', '/Microsoft.Insights/'),
-            (r'/microsoft\.compute/', '/Microsoft.Compute/'),
-            (r'/microsoft\.network/', '/Microsoft.Network/'),
-            (r'/microsoft\.storage/', '/Microsoft.Storage/'),
-            (r'/microsoft\.keyvault/', '/Microsoft.KeyVault/'),
-            (r'/microsoft\.web/', '/Microsoft.Web/'),
-            (r'/microsoft\.sql/', '/Microsoft.Sql/'),
-            (r'/microsoft\.automation/', '/Microsoft.Automation/'),
-            (r'/microsoft\.devtestlab/', '/Microsoft.DevTestLab/'),
+            (
+                r"/microsoft\.operationalinsights/workspaces/",
+                "/Microsoft.OperationalInsights/workspaces/",
+            ),
+            (r"/microsoft\.insights/", "/Microsoft.Insights/"),
+            (r"/microsoft\.compute/", "/Microsoft.Compute/"),
+            (r"/microsoft\.network/", "/Microsoft.Network/"),
+            (r"/microsoft\.storage/", "/Microsoft.Storage/"),
+            (r"/microsoft\.keyvault/", "/Microsoft.KeyVault/"),
+            (r"/microsoft\.web/", "/Microsoft.Web/"),
+            (r"/microsoft\.sql/", "/Microsoft.Sql/"),
+            (r"/microsoft\.automation/", "/Microsoft.Automation/"),
+            (r"/microsoft\.devtestlab/", "/Microsoft.DevTestLab/"),
         ]
 
         normalized = resource_id
@@ -2309,6 +2353,39 @@ class TerraformEmitter(IaCEmitter):
         )
 
         return f"${{azurerm_subnet.{scoped_subnet_name}.id}}"
+
+    def _extract_source_subscription(
+        self, resources: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        """Extract source subscription ID from discovered resources.
+
+        Examines resource IDs to determine the source subscription ID
+        from which resources were discovered.
+
+        Args:
+            resources: List of discovered resources from graph
+
+        Returns:
+            Source subscription ID or None if not found
+        """
+        # Pattern to match Azure resource IDs
+        resource_id_pattern = re.compile(
+            r"^/subscriptions/([a-f0-9-]+)/", re.IGNORECASE
+        )
+
+        for resource in resources:
+            resource_id = resource.get("id", "")
+            if resource_id:
+                match = resource_id_pattern.match(resource_id)
+                if match:
+                    subscription_id = match.group(1)
+                    logger.debug(
+                        f"Extracted source subscription ID from resource ID: {subscription_id}"
+                    )
+                    return subscription_id
+
+        logger.debug("Could not extract source subscription ID from resources")
+        return None
 
     def get_supported_resource_types(self) -> List[str]:
         """Get list of Azure resource types supported by Terraform provider.
