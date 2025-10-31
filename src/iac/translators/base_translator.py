@@ -71,6 +71,12 @@ class TranslationContext:
     identity_mapping_file: Optional[str] = None
     """Path to identity mapping file (for EntraIdTranslator)"""
 
+    identity_mapping: Optional[Dict[str, Any]] = None
+    """
+    Identity mapping dictionary loaded from JSON file (for EntraIdTranslator).
+    If provided, this takes precedence over identity_mapping_file.
+    """
+
     strict_mode: bool = False
     """If True, fail on missing mappings. If False, warn."""
 
