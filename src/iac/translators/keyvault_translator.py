@@ -232,7 +232,7 @@ class KeyVaultTranslator(BaseTranslator):
         return translated
 
     def _translate_access_policies(
-        self, policies: List[Dict[str, Any]]
+        self, policies: Any
     ) -> Tuple[List[Dict[str, Any]], List[str]]:
         """
         Translate Key Vault access policies.
@@ -244,7 +244,7 @@ class KeyVaultTranslator(BaseTranslator):
         - permissions: PRESERVE unchanged
 
         Args:
-            policies: List of access policy dictionaries
+            policies: List of access policy dictionaries (or invalid type)
 
         Returns:
             Tuple of (translated_policies, warnings)
@@ -254,8 +254,13 @@ class KeyVaultTranslator(BaseTranslator):
         """
         warnings: List[str] = []
 
-        if not policies or not isinstance(policies, list):
-            warnings.append("Access policies is empty or invalid")
+        # Defensive type check: ensure policies is a list
+        if not isinstance(policies, list):
+            warnings.append(f"Access policies is not a list (got {type(policies).__name__}), skipping translation")
+            return [] if policies is None else policies, warnings
+
+        if not policies:
+            warnings.append("Access policies is empty")
             return policies, warnings
 
         translated_policies = []

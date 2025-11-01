@@ -242,6 +242,10 @@ class EntraIdTranslator(BaseTranslator):
         resource_type = resource.get("type", "")
         properties = resource.get("properties", {})
 
+        # Defensive type check: ensure properties is a dict
+        if not isinstance(properties, dict):
+            properties = {}
+
         # Check if resource type is supported
         type_supported = False
         for supported_type in self.supported_resource_types:
@@ -386,6 +390,11 @@ class EntraIdTranslator(BaseTranslator):
         warnings: List[str] = []
         properties = resource.get("properties", {})
 
+        # Defensive type check: ensure properties is a dict
+        if not isinstance(properties, dict):
+            warnings.append("Role assignment properties is not a dict, skipping translation")
+            return resource, warnings
+
         principal_id = properties.get("principalId")
         principal_type = properties.get("principalType", "Unknown")
 
@@ -427,6 +436,12 @@ class EntraIdTranslator(BaseTranslator):
         """
         warnings: List[str] = []
         properties = resource.get("properties", {})
+
+        # Defensive type check: ensure properties is a dict
+        if not isinstance(properties, dict):
+            warnings.append("Key Vault properties is not a dict, skipping access policy translation")
+            return resource, warnings
+
         access_policies = properties.get("accessPolicies", [])
 
         for policy in access_policies:

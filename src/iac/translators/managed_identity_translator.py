@@ -176,7 +176,17 @@ class ManagedIdentityTranslator(BaseTranslator):
 
         # Handle identity block in other resources
         identity = resource.get("identity")
-        if not identity or not isinstance(identity, dict):
+
+        # Defensive type check: ensure identity is a dict
+        if not isinstance(identity, dict):
+            if identity is not None:
+                logger.warning(
+                    f"Identity block for {resource_type} '{resource_name}' is not a dict "
+                    f"(got {type(identity).__name__}), skipping translation"
+                )
+            return resource
+
+        if not identity:
             return resource
 
         # Make a copy of identity block
@@ -214,6 +224,13 @@ class ManagedIdentityTranslator(BaseTranslator):
             Tuple of (translated_identity, warnings)
         """
         all_warnings: List[str] = []
+
+        # Defensive type check: ensure identity is a dict (should be handled by caller, but double-check)
+        if not isinstance(identity, dict):
+            all_warnings.append(
+                f"Identity block is not a dict (got {type(identity).__name__}), skipping translation"
+            )
+            return identity, all_warnings
 
         # Check for user_assigned_identity_ids field
         user_assigned_ids = identity.get("user_assigned_identity_ids", [])

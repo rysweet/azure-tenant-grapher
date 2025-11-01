@@ -265,7 +265,13 @@ class AppServiceTranslator(BaseTranslator):
         """
         warnings: List[str] = []
 
-        if not settings or not isinstance(settings, dict):
+        # Defensive type check: ensure settings is a dict
+        if not isinstance(settings, dict):
+            if settings is not None:
+                warnings.append(f"App settings is not a dict (got {type(settings).__name__}), skipping translation")
+            return settings, warnings
+
+        if not settings:
             return settings, warnings
 
         # Skip Terraform variables
@@ -370,13 +376,15 @@ class AppServiceTranslator(BaseTranslator):
         """
         warnings: List[str] = []
 
-        if not conn_strings:
+        # Defensive type check: ensure conn_strings is a list
+        if not isinstance(conn_strings, list):
+            if conn_strings is not None:
+                warnings.append(
+                    f"Connection strings in unexpected format (expected list, got {type(conn_strings).__name__})"
+                )
             return conn_strings, warnings
 
-        if not isinstance(conn_strings, list):
-            warnings.append(
-                f"Connection strings in unexpected format (expected list, got {type(conn_strings).__name__})"
-            )
+        if not conn_strings:
             return conn_strings, warnings
 
         translated_conn_strings = []
