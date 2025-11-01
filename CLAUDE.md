@@ -103,19 +103,9 @@ uv run atg stop     # Stop GUI application
    - Validates subnet address space containment (Issue #333)
    - Cross-tenant resource translation (Issue #406)
 
-6. **Cross-Tenant Translation** (`src/iac/translators/`):
-   - Translates resource IDs from source to target subscription
-   - Translates Entra ID object IDs and tenant IDs
-   - 6 concrete translators: Storage, Identity, Database, KeyVault, AppService, EntraId
-   - Auto-discovery via decorator-based registry
-   - Comprehensive reporting
+6. **Cross-Tenant Translation**: See `@docs/cross-tenant/FEATURES.md` for details
 
-7. **Terraform Import** (`src/iac/importers/`):
-   - Automatically imports pre-existing Azure resources into Terraform state
-   - Three import strategies: resource_groups, all_resources, selective
-   - Handles resource name conflicts by updating (not recreating)
-
-6. **IaC Validators** (`src/iac/validators/`):
+7. **IaC Validators** (`src/iac/validators/`):
    - **SubnetValidator**: Validates subnets are within VNet address space
    - **TerraformValidator**: Validates Terraform templates
    - Supports auto-fix for common subnet misconfigurations
