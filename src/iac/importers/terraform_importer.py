@@ -208,7 +208,7 @@ class TerraformImporter:
 
         except Exception as e:
             logger.error(f"Failed to detect existing resources: {e}")
-            raise AzureError(f"Resource detection failed: {e}")
+            raise AzureError(f"Resource detection failed: {e}") from e
 
     def filter_resources_by_strategy(
         self, resources: List[Dict[str, Any]]
