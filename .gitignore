@@ -177,6 +177,7 @@ iac-out-*/
 outputs/
 !outputs/.gitkeep
 output/
+reports/
 
 # Terraform output directory
 terraform-output/
