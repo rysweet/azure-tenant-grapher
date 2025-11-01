@@ -16,6 +16,7 @@ from azure.identity import (
     CredentialUnavailableError,
     DefaultAzureCredential,
 )
+from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.subscription import SubscriptionClient
 
@@ -44,6 +45,7 @@ class AzureDiscoveryService:
         credential: Optional[Any] = None,
         subscription_client_factory: Optional[Callable[[Any], Any]] = None,
         resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+        authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
         change_feed_ingestion_service: Optional[Any] = None,
     ) -> None:
         """
@@ -54,6 +56,7 @@ class AzureDiscoveryService:
             credential: Optional Azure credential (for dependency injection/testing)
             subscription_client_factory: Optional factory for SubscriptionClient (for testing)
             resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+            authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
             change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
         """
         self.config = config
@@ -63,6 +66,9 @@ class AzureDiscoveryService:
         )
         self.resource_client_factory = (
             resource_client_factory or ResourceManagementClient
+        )
+        self.authorization_client_factory = (
+            authorization_client_factory or AuthorizationManagementClient
         )
         self.change_feed_ingestion_service = change_feed_ingestion_service
         # Maximum retry attempts for transient Azure errors (default 3)
@@ -267,6 +273,51 @@ class AzureDiscoveryService:
                     f"✅ Found {len(resource_basics)} resources in subscription {subscription_id} after filtering"
                 )
 
+                # Phase 1.5: Discover role assignments in subscription
+                # This is done separately because role assignments are not returned by
+                # resources.list() - they require a separate API call to the
+                # Authorization Management Client
+                logger.info("🔐 Phase 1.5: Discovering role assignments...")
+                try:
+                    # Get subscription name from cached subscriptions
+                    subscription_name = subscription_id
+                    for sub in self._subscriptions:
+                        if sub.get("id") == subscription_id:
+                            subscription_name = sub.get("display_name", subscription_id)
+                            break
+
+                    role_assignments = (
+                        await self.discover_role_assignments_in_subscription(
+                            subscription_id, subscription_name
+                        )
+                    )
+
+                    # Apply filter to role assignments if provided
+                    if filter_config and role_assignments:
+                        filtered_assignments = []
+                        for assignment in role_assignments:
+                            if filter_config.should_include_resource(assignment):
+                                filtered_assignments.append(assignment)
+                            else:
+                                logger.debug(
+                                    f"🚫 Filtering out role assignment: {assignment.get('id')}"
+                                )
+                        role_assignments = filtered_assignments
+                        logger.info(
+                            f"✅ After filtering: {len(role_assignments)} role assignments included"
+                        )
+
+                    # Merge role assignments with resources
+                    resource_basics.extend(role_assignments)
+                    logger.info(
+                        f"✅ Total resources including role assignments: {len(resource_basics)}"
+                    )
+                except Exception as role_error:
+                    # Log but don't fail - role assignments are supplementary
+                    logger.warning(
+                        f"Failed to discover role assignments (continuing with other resources): {role_error}"
+                    )
+
                 # Phase 2: Fetch full properties in parallel if enabled
                 if self._max_build_threads > 0 and resource_basics:
                     logger.info(
@@ -395,6 +446,164 @@ class AzureDiscoveryService:
             item for sublist in results_nested for item in sublist
         ]
         return flattened
+
+    async def discover_role_assignments_in_subscription(
+        self, subscription_id: str, subscription_name: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover role assignments in a specific subscription.
+
+        Role assignments link identities (users, service principals, managed identities)
+        to roles at specific scopes. This method fetches all role assignments for a
+        subscription and converts them to the resource format expected by the processor.
+
+        Args:
+            subscription_id: Azure subscription ID
+            subscription_name: Display name of the subscription
+
+        Returns:
+            List of role assignment dictionaries in resource format
+
+        Raises:
+            AzureDiscoveryError: If role assignment discovery fails critically
+        """
+        logger.info(
+            f"🔍 Discovering role assignments in subscription {subscription_id}"
+        )
+
+        try:
+            # Create authorization client for this subscription
+            authorization_client = self.authorization_client_factory(
+                self.credential, subscription_id
+            )
+
+            role_assignments: List[Dict[str, Any]] = []
+
+            # List all role assignments in the subscription
+            # This requires Reader + User Access Administrator roles or equivalent
+            try:
+                pager = authorization_client.role_assignments.list_for_subscription()
+
+                for assignment in pager:
+                    # Extract role assignment properties
+                    assignment_id: Optional[str] = getattr(assignment, "id", None)
+                    if not assignment_id:
+                        logger.debug("Skipping role assignment without ID")
+                        continue
+
+                    # Get assignment properties
+                    principal_id: Optional[str] = getattr(
+                        assignment, "principal_id", None
+                    )
+                    principal_type: Optional[str] = getattr(
+                        assignment, "principal_type", None
+                    )
+                    role_definition_id: Optional[str] = getattr(
+                        assignment, "role_definition_id", None
+                    )
+                    scope: Optional[str] = getattr(assignment, "scope", None)
+
+                    # Convert to resource format expected by processor
+                    # Format matches what ResourceManagementClient.resources.list() returns
+                    role_assignment_dict: Dict[str, Any] = {
+                        "id": assignment_id,
+                        "name": assignment_id.split("/")[-1]
+                        if assignment_id
+                        else "unknown",
+                        "type": "Microsoft.Authorization/roleAssignments",
+                        "location": None,  # Role assignments are not location-specific
+                        "tags": {},
+                        "properties": {
+                            "principalId": principal_id,
+                            "principalType": principal_type,
+                            "roleDefinitionId": role_definition_id,
+                            "scope": scope,
+                        },
+                        "subscription_id": subscription_id,
+                        # Extract resource group from scope if present
+                        "resource_group": self._extract_resource_group_from_scope(
+                            scope
+                        ),
+                    }
+
+                    role_assignments.append(role_assignment_dict)
+
+                    logger.debug(
+                        f"Found role assignment: {principal_type} -> "
+                        f"{role_definition_id.split('/')[-1] if role_definition_id else 'unknown'} "
+                        f"at scope {scope}"
+                    )
+
+                logger.info(
+                    f"✅ Discovered {len(role_assignments)} role assignments in subscription {subscription_id}"
+                )
+
+            except Exception as perm_error:
+                # Permission errors are common - handle gracefully
+                error_msg = str(perm_error).lower()
+                if any(
+                    keyword in error_msg
+                    for keyword in [
+                        "authorization",
+                        "forbidden",
+                        "access denied",
+                        "insufficient privileges",
+                        "does not have authorization",
+                    ]
+                ):
+                    logger.warning(
+                        f"⚠️  Insufficient permissions to list role assignments in subscription {subscription_id}. "
+                        "This requires Reader + User Access Administrator roles or Owner role. "
+                        "Role assignment relationships will not be created for this subscription."
+                    )
+                    # Return empty list - not a fatal error
+                    return []
+                else:
+                    # Unknown error - log but don't fail the entire discovery
+                    logger.warning(
+                        f"Failed to list role assignments in subscription {subscription_id}: {perm_error}"
+                    )
+                    return []
+
+            return role_assignments
+
+        except Exception as exc:
+            # Catch-all for unexpected errors
+            logger.exception(
+                f"Unexpected error discovering role assignments in subscription {subscription_id}"
+            )
+            # Don't raise - role assignments are supplementary, not critical
+            logger.warning(
+                f"Continuing discovery without role assignments for subscription {subscription_id}"
+            )
+            return []
+
+    def _extract_resource_group_from_scope(self, scope: Optional[str]) -> Optional[str]:
+        """
+        Extract resource group name from a role assignment scope.
+
+        Args:
+            scope: Role assignment scope (e.g., /subscriptions/{sub}/resourceGroups/{rg})
+
+        Returns:
+            Resource group name if present in scope, None otherwise
+        """
+        if not scope:
+            return None
+
+        try:
+            # Scope format: /subscriptions/{sub}/resourceGroups/{rg}/...
+            segments = scope.strip("/").split("/")
+            try:
+                rg_index = segments.index("resourceGroups")
+                if rg_index + 1 < len(segments):
+                    return segments[rg_index + 1]
+            except (ValueError, IndexError):
+                # No resourceGroups in scope (subscription or management group level)
+                return None
+        except Exception:
+            logger.debug(f"Could not extract resource group from scope: {scope}")
+            return None
 
     async def _handle_auth_fallback(
         self,
@@ -740,6 +949,7 @@ def create_azure_discovery_service(
     credential: Optional[Any] = None,
     subscription_client_factory: Optional[Callable[[Any], Any]] = None,
     resource_client_factory: Optional[Callable[[Any, str], Any]] = None,
+    authorization_client_factory: Optional[Callable[[Any, str], Any]] = None,
     change_feed_ingestion_service: Optional[Any] = None,
 ) -> AzureDiscoveryService:
     """
@@ -750,6 +960,7 @@ def create_azure_discovery_service(
         credential: Optional Azure credential for dependency injection
         subscription_client_factory: Optional factory for SubscriptionClient (for testing)
         resource_client_factory: Optional factory for ResourceManagementClient (for testing)
+        authorization_client_factory: Optional factory for AuthorizationManagementClient (for testing)
         change_feed_ingestion_service: Optional ChangeFeedIngestionService for delta ingestion (for testing)
 
     Returns:
@@ -760,5 +971,6 @@ def create_azure_discovery_service(
         credential,
         subscription_client_factory=subscription_client_factory,
         resource_client_factory=resource_client_factory,
+        authorization_client_factory=authorization_client_factory,
         change_feed_ingestion_service=change_feed_ingestion_service,
     )

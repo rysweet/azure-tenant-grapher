@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from ..dependency_analyzer import DependencyAnalyzer
+from ..translators import TranslationContext, TranslationCoordinator
 from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 from ..traverser import TenantGraph
 from . import register_emitter
@@ -31,12 +32,26 @@ class TerraformEmitter(IaCEmitter):
         self,
         config: Optional[Dict[str, Any]] = None,
         resource_group_prefix: Optional[str] = None,
+        target_subscription_id: Optional[str] = None,
+        target_tenant_id: Optional[str] = None,
+        source_subscription_id: Optional[str] = None,
+        source_tenant_id: Optional[str] = None,
+        identity_mapping: Optional[Dict[str, Any]] = None,
+        identity_mapping_file: Optional[str] = None,
+        strict_mode: bool = False,
     ):
         """Initialize the TerraformEmitter.
 
         Args:
             config: Optional configuration dictionary
             resource_group_prefix: Optional prefix to add to all resource group names (e.g., "ITERATION15_")
+            target_subscription_id: Target subscription ID for cross-tenant translation (opt-in)
+            target_tenant_id: Target tenant ID for cross-tenant translation (opt-in)
+            source_subscription_id: Source subscription ID (auto-detected if not provided)
+            source_tenant_id: Source tenant ID (auto-detected if not provided)
+            identity_mapping: Identity mapping dictionary for Entra ID translation
+            identity_mapping_file: Path to identity mapping JSON file
+            strict_mode: If True, fail on missing mappings. If False, warn.
         """
         super().__init__(config)
         self.resource_group_prefix = resource_group_prefix or ""
@@ -49,6 +64,18 @@ class TerraformEmitter(IaCEmitter):
         self._missing_references: List[Dict[str, str]] = []
         # Translator for cross-subscription resource IDs (initialized in emit())
         self._translator: Optional[PrivateEndpointTranslator] = None
+
+        # Store translation parameters for later initialization
+        self.target_subscription_id = target_subscription_id
+        self.target_tenant_id = target_tenant_id
+        self.source_subscription_id = source_subscription_id
+        self.source_tenant_id = source_tenant_id
+        self.identity_mapping = identity_mapping
+        self.identity_mapping_file = identity_mapping_file
+        self.strict_mode = strict_mode
+
+        # Translation coordinator (initialized in emit() when resources are available)
+        self._translation_coordinator: Optional[TranslationCoordinator] = None
 
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
@@ -402,6 +429,68 @@ class TerraformEmitter(IaCEmitter):
         # Prepend RG resources to the resource list for dependency analysis
         all_resources = rg_resources + graph.resources
 
+        # Initialize and run TranslationCoordinator if cross-tenant translation is enabled
+        # This is opt-in behavior - only runs if target_subscription_id or target_tenant_id is provided
+        if self.target_subscription_id or self.target_tenant_id:
+            logger.info("=" * 70)
+            logger.info("Cross-tenant translation enabled")
+            logger.info("=" * 70)
+
+            # Extract source subscription ID from resources if not provided
+            detected_source_subscription = self._extract_source_subscription(
+                all_resources
+            )
+            final_source_subscription = (
+                self.source_subscription_id or detected_source_subscription
+            )
+
+            # Convert _available_resources (Dict[str, set]) to Dict[str, Dict[str, Any]]
+            # format expected by TranslationContext
+            resources_dict: Dict[str, Dict[str, Any]] = {}
+            for resource_type, resource_names in self._available_resources.items():
+                resources_dict[resource_type] = {name: {} for name in resource_names}
+
+            # Create TranslationContext
+            translation_context = TranslationContext(
+                source_subscription_id=final_source_subscription,
+                target_subscription_id=self.target_subscription_id or "",
+                source_tenant_id=self.source_tenant_id,
+                target_tenant_id=self.target_tenant_id,
+                available_resources=resources_dict,
+                identity_mapping=self.identity_mapping,
+                identity_mapping_file=self.identity_mapping_file,
+                strict_mode=self.strict_mode,
+            )
+
+            # Initialize TranslationCoordinator
+            logger.info(
+                f"Source Subscription: {final_source_subscription or 'Not specified'}"
+            )
+            logger.info(
+                f"Target Subscription: {self.target_subscription_id or 'Not specified'}"
+            )
+            logger.info(f"Source Tenant: {self.source_tenant_id or 'Not specified'}")
+            logger.info(f"Target Tenant: {self.target_tenant_id or 'Not specified'}")
+            logger.info(f"Strict Mode: {self.strict_mode}")
+            logger.info("=" * 70)
+
+            self._translation_coordinator = TranslationCoordinator(translation_context)
+
+            # Translate all resources
+            logger.info(f"Translating {len(all_resources)} resources...")
+            try:
+                translated_resources = (
+                    self._translation_coordinator.translate_resources(all_resources)
+                )
+                all_resources = translated_resources
+                logger.info("Translation complete!")
+            except Exception as e:
+                logger.error(
+                    f"Translation failed with error: {e}. Continuing with untranslated resources.",
+                    exc_info=True,
+                )
+                # Continue with untranslated resources (graceful degradation)
+
         # Analyze dependencies and sort resources by tier
         logger.info("Analyzing resource dependencies and calculating tiers")
         analyzer = DependencyAnalyzer()
@@ -534,6 +623,48 @@ class TerraformEmitter(IaCEmitter):
                 f"  4. Subnet extraction rule skipped subnets without address prefixes\n"
                 f"{'=' * 80}\n"
             )
+
+        # Generate and save translation report if translation was performed
+        if self._translation_coordinator:
+            logger.info("=" * 70)
+            logger.info("Generating translation report...")
+            logger.info("=" * 70)
+
+            try:
+                # Save human-readable text report
+                text_report_path = out_dir / "translation_report.txt"
+                self._translation_coordinator.save_translation_report(
+                    str(text_report_path), format="text"
+                )
+                logger.info(f"Translation report (text) saved to: {text_report_path}")
+
+                # Save machine-readable JSON report
+                json_report_path = out_dir / "translation_report.json"
+                self._translation_coordinator.save_translation_report(
+                    str(json_report_path), format="json"
+                )
+                logger.info(f"Translation report (JSON) saved to: {json_report_path}")
+
+                # Print summary to console
+                formatted_report = (
+                    self._translation_coordinator.format_translation_report()
+                )
+                print(formatted_report)
+
+                # Log translation statistics
+                stats = self._translation_coordinator.get_translation_statistics()
+                logger.info(
+                    f"Translation statistics: {stats['resources_processed']} resources processed, "
+                    f"{stats['resources_translated']} translated, "
+                    f"{stats['total_warnings']} warnings, "
+                    f"{stats['total_errors']} errors"
+                )
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to generate translation report: {e}", exc_info=True
+                )
+                # Don't fail the entire generation if report generation fails
 
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"

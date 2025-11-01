@@ -548,7 +548,10 @@ class TestPrivateEndpointTranslatorEdgeCases:
         assert result.was_translated is True
         assert target_sub in result.translated_id
         assert source_sub not in result.translated_id
-        assert "networkInterfaces/nic-01/ipConfigurations/ipconfig1" in result.translated_id
+        assert (
+            "networkInterfaces/nic-01/ipConfigurations/ipconfig1"
+            in result.translated_id
+        )
 
         # Test 2: Virtual Network Gateway Connection
         vng_connection_id = (
@@ -559,7 +562,10 @@ class TestPrivateEndpointTranslatorEdgeCases:
         result2 = translator.translate_resource_id(vng_connection_id)
         assert result2.was_translated is True
         assert target_sub in result2.translated_id
-        assert "virtualNetworkGateways/vng-prod/connections/conn-to-onprem" in result2.translated_id
+        assert (
+            "virtualNetworkGateways/vng-prod/connections/conn-to-onprem"
+            in result2.translated_id
+        )
 
         # Test 3: Application Gateway HTTP Listener (complex sub-resource)
         appgw_listener_id = (
@@ -570,4 +576,7 @@ class TestPrivateEndpointTranslatorEdgeCases:
         result3 = translator.translate_resource_id(appgw_listener_id)
         assert result3.was_translated is True
         assert target_sub in result3.translated_id
-        assert "applicationGateways/appgw-01/httpListeners/listener-443" in result3.translated_id
+        assert (
+            "applicationGateways/appgw-01/httpListeners/listener-443"
+            in result3.translated_id
+        )

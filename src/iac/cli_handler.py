@@ -6,6 +6,7 @@ in the Azure Tenant Grapher CLI.
 
 import json
 import logging
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -43,6 +44,41 @@ def default_timestamped_dir() -> Path:
     return outdir
 
 
+def _get_default_subscription_from_azure_cli() -> Optional[tuple[str, str]]:
+    """Get default subscription ID and tenant ID from Azure CLI.
+
+    Returns:
+        Tuple of (subscription_id, tenant_id) or None if not available.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "az",
+                "account",
+                "show",
+                "--query",
+                "{subscriptionId:id, tenantId:tenantId}",
+                "-o",
+                "json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            subscription_id = data.get("subscriptionId")
+            tenant_id = data.get("tenantId")
+            if subscription_id and tenant_id:
+                logger.debug(
+                    f"Retrieved from Azure CLI: subscription={subscription_id}, tenant={tenant_id}"
+                )
+                return (subscription_id, tenant_id)
+    except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError) as e:
+        logger.debug(f"Could not retrieve subscription/tenant from Azure CLI: {e}")
+    return None
+
+
 async def generate_iac_command_handler(
     tenant_id: Optional[str] = None,
     format_type: str = "terraform",
@@ -72,6 +108,11 @@ async def generate_iac_command_handler(
     fail_on_conflicts: bool = True,
     resource_group_prefix: Optional[str] = None,
     target_subscription: Optional[str] = None,
+    # Cross-tenant translation parameters (Issue #406)
+    source_tenant_id: Optional[str] = None,
+    target_tenant_id: Optional[str] = None,
+    identity_mapping_file: Optional[str] = None,
+    strict_translation: bool = False,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -103,6 +144,10 @@ async def generate_iac_command_handler(
         auto_cleanup: Automatically run cleanup script on conflicts (default: False)
         fail_on_conflicts: Fail deployment if conflicts detected (default: True)
         resource_group_prefix: Prefix to add to all resource group names
+        source_tenant_id: Source tenant ID (auto-detected from Azure CLI if not specified)
+        target_tenant_id: Target tenant ID for cross-tenant deployment
+        identity_mapping_file: Path to identity mapping JSON file for Entra ID object translation
+        strict_translation: Fail on missing identity mappings (default: warn only)
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -232,6 +277,58 @@ async def generate_iac_command_handler(
                 "No subscription ID available. Key Vault tenant_id will use placeholder. "
                 "Set AZURE_SUBSCRIPTION_ID environment variable, use --target-subscription parameter, "
                 "or ensure resource IDs contain subscription."
+            )
+
+        # Determine source subscription and tenant IDs for cross-tenant translation
+        # Priority: 1) Explicit parameters
+        #           2) Azure CLI defaults
+        #           3) Extract from resource IDs
+        source_subscription_id = None
+        resolved_source_tenant_id = source_tenant_id
+        resolved_target_tenant_id = target_tenant_id
+
+        # Try to get defaults from Azure CLI if not explicitly provided
+        if not resolved_source_tenant_id or not source_subscription_id:
+            cli_info = _get_default_subscription_from_azure_cli()
+            if cli_info:
+                cli_sub_id, cli_tenant_id = cli_info
+                if not source_subscription_id:
+                    source_subscription_id = cli_sub_id
+                    logger.debug(
+                        f"Using source subscription from Azure CLI: {source_subscription_id}"
+                    )
+                if not resolved_source_tenant_id:
+                    resolved_source_tenant_id = cli_tenant_id
+                    logger.debug(
+                        f"Using source tenant from Azure CLI: {resolved_source_tenant_id}"
+                    )
+
+        # Fallback: extract source subscription from resource IDs if still not set
+        if not source_subscription_id and graph.resources:
+            for resource in graph.resources:
+                resource_id = resource.get("id", "")
+                if "/subscriptions/" in resource_id:
+                    source_subscription_id = resource_id.split("/subscriptions/")[
+                        1
+                    ].split("/")[0]
+                    logger.debug(
+                        f"Extracted source subscription from resource ID: {source_subscription_id}"
+                    )
+                    break
+
+        # Log cross-tenant translation status
+        if resolved_target_tenant_id and resolved_source_tenant_id:
+            if resolved_target_tenant_id != resolved_source_tenant_id:
+                logger.info(
+                    f"Cross-tenant translation enabled: {resolved_source_tenant_id} -> {resolved_target_tenant_id}"
+                )
+            else:
+                logger.info(
+                    "Source and target tenants are the same - translation not needed"
+                )
+        elif resolved_target_tenant_id:
+            logger.warning(
+                "Target tenant specified but source tenant unknown - cross-tenant translation may not work correctly"
             )
 
         # Pre-deployment conflict detection (Issue #336)
@@ -380,7 +477,19 @@ async def generate_iac_command_handler(
         # Generate templates using new engine method if subset or RG is specified
         if subset_filter_obj or dest_rg or location or preserve_rg_structure:
             emitter_cls = get_emitter(format_type)
-            emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
+            # Pass cross-tenant translation parameters to emitter (only for Terraform)
+            if format_type.lower() == "terraform":
+                emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
+                    resource_group_prefix=resource_group_prefix,
+                    target_subscription_id=subscription_id,
+                    target_tenant_id=resolved_target_tenant_id,
+                    source_subscription_id=source_subscription_id,
+                    source_tenant_id=resolved_source_tenant_id,
+                    identity_mapping_file=identity_mapping_file,
+                    strict_mode=strict_translation,
+                )
+            else:
+                emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
             if output_path:
                 out_dir = Path(output_path)
             else:
@@ -426,7 +535,19 @@ async def generate_iac_command_handler(
 
         # Get emitter
         emitter_cls = get_emitter(format_type)
-        emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
+        # Pass cross-tenant translation parameters to emitter (only for Terraform)
+        if format_type.lower() == "terraform":
+            emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
+                resource_group_prefix=resource_group_prefix,
+                target_subscription_id=subscription_id,
+                target_tenant_id=resolved_target_tenant_id,
+                source_subscription_id=source_subscription_id,
+                source_tenant_id=resolved_source_tenant_id,
+                identity_mapping_file=identity_mapping_file,
+                strict_mode=strict_translation,
+            )
+        else:
+            emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
 
         # Determine output directory
         if output_path:
