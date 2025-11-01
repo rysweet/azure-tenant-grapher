@@ -14,6 +14,9 @@ from .coordinator import (
 from .database_translator import (
     DatabaseTranslator,
 )
+from .entraid_translator import (
+    EntraIdTranslator,
+)
 from .keyvault_translator import (
     KeyVaultTranslator,
 )
@@ -35,6 +38,7 @@ __all__ = [
     "AppServiceTranslator",
     "BaseTranslator",
     "DatabaseTranslator",
+    "EntraIdTranslator",
     "KeyVaultTranslator",
     "ManagedIdentityTranslator",
     "PrivateEndpointTranslator",
