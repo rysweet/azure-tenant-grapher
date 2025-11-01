@@ -67,13 +67,13 @@ class TestAppServiceTranslator:
         return AppServiceTranslator(context)
 
     def test_supported_resource_types(self, translator):
-        """Test that translator declares 8 supported types."""
+        """Test that translator declares supported types (both Azure and Terraform formats)."""
         supported = translator.supported_resource_types
 
-        # Should have exactly 8 supported types
-        assert len(supported) == 8
+        # Should have exactly 10 supported types (8 Terraform + 2 Azure)
+        assert len(supported) == 10
 
-        # Verify key types are included
+        # Verify Terraform types are included
         assert "azurerm_app_service" in supported
         assert "azurerm_linux_web_app" in supported
         assert "azurerm_windows_web_app" in supported
@@ -82,6 +82,10 @@ class TestAppServiceTranslator:
         assert "azurerm_windows_function_app" in supported
         assert "azurerm_app_service_plan" in supported
         assert "azurerm_service_plan" in supported
+
+        # Verify Azure types are included
+        assert "Microsoft.Web/sites" in supported
+        assert "Microsoft.Web/serverFarms" in supported
 
     def test_can_translate_app_service_with_plan_id(self, translator, source_sub_id):
         """Test can_translate returns True for app service with plan ID."""

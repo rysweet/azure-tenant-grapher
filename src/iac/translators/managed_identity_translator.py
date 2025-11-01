@@ -61,34 +61,46 @@ class ManagedIdentityTranslator(BaseTranslator):
 
     @property
     def supported_resource_types(self) -> List[str]:
-        """Get list of resource types that use managed identities."""
+        """Get list of resource types that use managed identities.
+
+        Supports both Azure and Terraform resource type formats.
+        """
         return [
             # User-assigned identity resource itself
             "azurerm_user_assigned_identity",
+            "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "Microsoft.ManagedIdentity/managedIdentities",
             # Virtual machines
             "azurerm_virtual_machine",
             "azurerm_linux_virtual_machine",
             "azurerm_windows_virtual_machine",
+            "Microsoft.Compute/virtualMachines",
             # VM scale sets
             "azurerm_virtual_machine_scale_set",
             "azurerm_linux_virtual_machine_scale_set",
             "azurerm_windows_virtual_machine_scale_set",
+            "Microsoft.Compute/virtualMachineScaleSets",
             # App services
             "azurerm_app_service",
             "azurerm_linux_web_app",
             "azurerm_windows_web_app",
+            "Microsoft.Web/sites",
             # Function apps
             "azurerm_function_app",
             "azurerm_linux_function_app",
             "azurerm_windows_function_app",
             # Container services
             "azurerm_kubernetes_cluster",
+            "Microsoft.ContainerService/managedClusters",
             "azurerm_container_group",
+            "Microsoft.ContainerInstance/containerGroups",
             # Data services
             "azurerm_data_factory",
+            "Microsoft.DataFactory/factories",
             # Logic apps
             "azurerm_logic_app_standard",
             "azurerm_logic_app_workflow",
+            "Microsoft.Logic/workflows",
         ]
 
     def can_translate(self, resource: Dict[str, Any]) -> bool:

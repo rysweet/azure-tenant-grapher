@@ -72,17 +72,23 @@ class TestDatabaseTranslator:
         return DatabaseTranslator(context)
 
     def test_supported_resource_types(self, translator):
-        """Test that translator declares 7 supported database types."""
-        expected_types = [
-            "azurerm_mssql_server",
-            "azurerm_mssql_database",
-            "azurerm_postgresql_server",
-            "azurerm_postgresql_database",
-            "azurerm_mysql_server",
-            "azurerm_mysql_database",
-            "azurerm_cosmosdb_account",
-        ]
-        assert translator.supported_resource_types == expected_types
+        """Test that translator declares supported database types (both Azure and Terraform formats)."""
+        supported = translator.supported_resource_types
+
+        # Should have Terraform types
+        assert "azurerm_mssql_server" in supported
+        assert "azurerm_mssql_database" in supported
+        assert "azurerm_postgresql_server" in supported
+        assert "azurerm_postgresql_database" in supported
+        assert "azurerm_mysql_server" in supported
+        assert "azurerm_mysql_database" in supported
+        assert "azurerm_cosmosdb_account" in supported
+
+        # Should also have Azure types
+        assert "Microsoft.Sql/servers" in supported
+        assert "Microsoft.DBforPostgreSQL/servers" in supported
+        assert "Microsoft.DBforMySQL/servers" in supported
+        assert "Microsoft.DocumentDB/databaseAccounts" in supported
 
     def test_can_translate_sql_server(self, translator, source_sub_id):
         """Test can_translate returns True for SQL Server."""

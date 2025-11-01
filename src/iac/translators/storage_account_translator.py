@@ -86,12 +86,17 @@ class StorageAccountTranslator(BaseTranslator):
     @property
     def supported_resource_types(self) -> List[str]:
         """
-        Get list of Terraform resource types this translator handles.
+        Get list of resource types this translator handles.
+
+        Supports both Azure and Terraform resource type formats.
 
         Returns:
-            List containing "azurerm_storage_account"
+            List containing Azure and Terraform storage account types
         """
-        return ["azurerm_storage_account"]
+        return [
+            "azurerm_storage_account",  # Terraform type
+            "Microsoft.Storage/storageAccounts",  # Azure type
+        ]
 
     def can_translate(self, resource: Dict[str, Any]) -> bool:
         """

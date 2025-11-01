@@ -72,14 +72,20 @@ class TestKeyVaultTranslator:
         return KeyVaultTranslator(context)
 
     def test_supported_resource_types(self, translator):
-        """Test that translator declares supported types."""
-        expected_types = [
-            "azurerm_key_vault",
-            "azurerm_key_vault_key",
-            "azurerm_key_vault_secret",
-            "azurerm_key_vault_certificate",
-        ]
-        assert translator.supported_resource_types == expected_types
+        """Test that translator declares supported types (both Azure and Terraform formats)."""
+        supported = translator.supported_resource_types
+
+        # Should have Terraform types
+        assert "azurerm_key_vault" in supported
+        assert "azurerm_key_vault_key" in supported
+        assert "azurerm_key_vault_secret" in supported
+        assert "azurerm_key_vault_certificate" in supported
+
+        # Should also have Azure types
+        assert "Microsoft.KeyVault/vaults" in supported
+        assert "Microsoft.KeyVault/vaults/keys" in supported
+        assert "Microsoft.KeyVault/vaults/secrets" in supported
+        assert "Microsoft.KeyVault/vaults/certificates" in supported
 
     def test_can_translate_with_access_policy(self, translator):
         """Test can_translate returns True for Key Vault with access policies."""

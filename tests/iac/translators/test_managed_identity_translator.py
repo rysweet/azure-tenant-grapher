@@ -58,13 +58,13 @@ class TestManagedIdentityTranslator:
         return ManagedIdentityTranslator(context)
 
     def test_supported_resource_types(self, translator):
-        """Test that translator declares 18 supported types."""
+        """Test that translator declares supported types (both Azure and Terraform formats)."""
         supported = translator.supported_resource_types
 
-        # Should have exactly 18 supported types
-        assert len(supported) == 18
+        # Should have 27 total types (18 Terraform + 9 Azure, including 2 identity aliases)
+        assert len(supported) == 27
 
-        # Verify key types are included
+        # Verify key Terraform types are included
         assert "azurerm_user_assigned_identity" in supported
         assert "azurerm_linux_virtual_machine" in supported
         assert "azurerm_windows_virtual_machine" in supported
@@ -73,6 +73,12 @@ class TestManagedIdentityTranslator:
         assert "azurerm_container_group" in supported
         assert "azurerm_linux_function_app" in supported
         assert "azurerm_logic_app_workflow" in supported
+
+        # Verify key Azure types are included
+        assert "Microsoft.ManagedIdentity/userAssignedIdentities" in supported
+        assert "Microsoft.Compute/virtualMachines" in supported
+        assert "Microsoft.Web/sites" in supported
+        assert "Microsoft.ContainerService/managedClusters" in supported
 
     def test_can_translate_with_user_assigned_identity(self, translator, source_sub_id):
         """Test can_translate returns True for resources with user-assigned identity."""

@@ -178,27 +178,39 @@ class EntraIdTranslator(BaseTranslator):
         """
         Resource types that contain Entra ID references.
 
+        Supports both Azure and Terraform resource type formats.
+
         Returns:
             List of Azure resource types this translator handles
         """
         return [
             # Role assignments (RBAC)
+            "azurerm_role_assignment",
             "Microsoft.Authorization/roleAssignments",
+            "Microsoft.Authorization/roleDefinitions",
             # Key Vault (access policies contain object IDs)
+            "azurerm_key_vault",
             "Microsoft.KeyVault/vaults",
             # Entra ID resources (if generating them)
-            "Microsoft.Graph/users",
-            "Microsoft.Graph/groups",
-            "Microsoft.Graph/servicePrincipals",
-            "Microsoft.Graph/applications",
-            # Azure AD resources (legacy naming)
             "azuread_user",
+            "Microsoft.Graph/users",
+            "Microsoft.AAD/User",
+            "User",  # Neo4j label
+            # Groups
             "azuread_group",
+            "Microsoft.Graph/groups",
+            "Microsoft.AAD/Group",
+            "Group",  # Neo4j label
+            # Service Principals
             "azuread_service_principal",
+            "Microsoft.Graph/servicePrincipals",
+            "Microsoft.AAD/ServicePrincipal",
+            "ServicePrincipal",  # Neo4j label
+            # Applications
             "azuread_application",
-            # Terraform resource types
-            "azurerm_role_assignment",
-            "azurerm_key_vault",
+            "Microsoft.Graph/applications",
+            "Microsoft.AAD/Application",
+            "Application",  # Neo4j label
         ]
 
     def __init__(self, context: TranslationContext):

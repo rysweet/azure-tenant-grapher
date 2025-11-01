@@ -116,19 +116,34 @@ class DatabaseTranslator(BaseTranslator):
     @property
     def supported_resource_types(self) -> List[str]:
         """
-        Get list of Terraform resource types this translator handles.
+        Get list of resource types this translator handles.
+
+        Supports both Azure and Terraform resource type formats.
 
         Returns:
             List of database resource types
         """
         return [
+            # Azure SQL
             "azurerm_mssql_server",
+            "Microsoft.Sql/servers",
             "azurerm_mssql_database",
+            "Microsoft.Sql/servers/databases",
+            # PostgreSQL
             "azurerm_postgresql_server",
+            "Microsoft.DBforPostgreSQL/servers",
+            "Microsoft.DBforPostgreSQL/flexibleServers",
             "azurerm_postgresql_database",
+            "Microsoft.DBforPostgreSQL/servers/databases",
+            # MySQL
             "azurerm_mysql_server",
+            "Microsoft.DBforMySQL/servers",
+            "Microsoft.DBforMySQL/flexibleServers",
             "azurerm_mysql_database",
+            "Microsoft.DBforMySQL/servers/databases",
+            # Cosmos DB
             "azurerm_cosmosdb_account",
+            "Microsoft.DocumentDB/databaseAccounts",
         ]
 
     def can_translate(self, resource: Dict[str, Any]) -> bool:

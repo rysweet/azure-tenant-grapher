@@ -93,16 +93,26 @@ class KeyVaultTranslator(BaseTranslator):
     @property
     def supported_resource_types(self) -> List[str]:
         """
-        Get list of Terraform resource types this translator handles.
+        Get list of resource types this translator handles.
+
+        Supports both Azure and Terraform resource type formats.
 
         Returns:
             List containing Key Vault-related resource types
         """
         return [
+            # Key Vault
             "azurerm_key_vault",
+            "Microsoft.KeyVault/vaults",
+            # Keys
             "azurerm_key_vault_key",
+            "Microsoft.KeyVault/vaults/keys",
+            # Secrets
             "azurerm_key_vault_secret",
+            "Microsoft.KeyVault/vaults/secrets",
+            # Certificates
             "azurerm_key_vault_certificate",
+            "Microsoft.KeyVault/vaults/certificates",
         ]
 
     def can_translate(self, resource: Dict[str, Any]) -> bool:

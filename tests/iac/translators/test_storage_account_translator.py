@@ -52,8 +52,11 @@ class TestStorageAccountTranslator:
         return StorageAccountTranslator(context)
 
     def test_supported_resource_types(self, translator):
-        """Test that translator declares supported types."""
-        assert translator.supported_resource_types == ["azurerm_storage_account"]
+        """Test that translator declares supported types (both Azure and Terraform formats)."""
+        supported = translator.supported_resource_types
+        assert "azurerm_storage_account" in supported
+        assert "Microsoft.Storage/storageAccounts" in supported
+        assert len(supported) == 2
 
     def test_can_translate_with_connection_string(self, translator):
         """Test can_translate returns True for storage account with connection string."""

@@ -82,7 +82,9 @@ class AppServiceTranslator(BaseTranslator):
     @property
     def supported_resource_types(self) -> List[str]:
         """
-        Get list of Terraform resource types this translator handles.
+        Get list of resource types this translator handles.
+
+        Supports both Azure and Terraform resource type formats.
 
         Returns:
             List of App Service and Function App resource types
@@ -92,13 +94,15 @@ class AppServiceTranslator(BaseTranslator):
             "azurerm_app_service",
             "azurerm_linux_web_app",
             "azurerm_windows_web_app",
-            # Function Apps
+            "Microsoft.Web/sites",
+            # Function Apps (also Microsoft.Web/sites with kind=functionapp)
             "azurerm_function_app",
             "azurerm_linux_function_app",
             "azurerm_windows_function_app",
             # App Service Plans
             "azurerm_app_service_plan",
             "azurerm_service_plan",
+            "Microsoft.Web/serverFarms",
         ]
 
     def can_translate(self, resource: Dict[str, Any]) -> bool:
