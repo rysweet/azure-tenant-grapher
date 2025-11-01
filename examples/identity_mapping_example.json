@@ -1,26 +1,123 @@
 {
-  "description": "Example identity mapping file for cross-tenant translation",
-  "source_tenant_id": "9b00bc5e-9abc-45de-9958-02a9d9277b16",
-  "target_tenant_id": "c190c55a-9ab2-4b1e-92c4-cc8b1a032285",
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Identity Mapping for Cross-Tenant Azure Deployment",
+  "description": "Maps Entra ID (Azure AD) identities from source tenant to target tenant for cross-tenant resource deployment. This file enables translation of Object IDs, UPNs, and resource IDs when deploying infrastructure to a different tenant.",
+
   "users": {
-    "source-user-object-id-1": "target-user-object-id-1",
-    "source-user-object-id-2": "target-user-object-id-2",
-    "12345678-1234-1234-1234-123456789012": "87654321-4321-4321-4321-210987654321"
+    "aaaaaaaa-1111-1111-1111-111111111111": "bbbbbbbb-2222-2222-2222-222222222222",
+    "cccccccc-3333-3333-3333-333333333333": "dddddddd-4444-4444-4444-444444444444",
+    "alice.smith@sourcetenant.onmicrosoft.com": "alice.smith@targettenant.onmicrosoft.com",
+    "bob.jones@sourcetenant.onmicrosoft.com": "bob.jones@targettenant.onmicrosoft.com",
+    "charlie.brown@sourcetenant.onmicrosoft.com": "charlie.brown@targettenant.onmicrosoft.com"
   },
+
   "groups": {
-    "source-group-object-id-1": "target-group-object-id-1",
-    "source-group-object-id-2": "target-group-object-id-2"
+    "eeeeeeee-5555-5555-5555-555555555555": "ffffffff-6666-6666-6666-666666666666",
+    "11111111-7777-7777-7777-777777777777": "22222222-8888-8888-8888-888888888888",
+    "Database Administrators": "Database Administrators",
+    "App Developers": "App Developers",
+    "Security Readers": "Security Readers"
   },
+
   "service_principals": {
-    "source-sp-object-id-1": "target-sp-object-id-1",
-    "source-sp-object-id-2": "target-sp-object-id-2"
+    "33333333-9999-9999-9999-999999999999": "44444444-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "55555555-bbbb-bbbb-bbbb-bbbbbbbbbbbb": "66666666-cccc-cccc-cccc-cccccccccccc",
+    "77777777-dddd-dddd-dddd-dddddddddddd": "88888888-eeee-eeee-eeee-eeeeeeeeeeee"
   },
-  "notes": [
-    "All IDs should be Azure AD object IDs (GUIDs)",
-    "Use 'az ad user show --id user@domain.com --query id' to get user object IDs",
-    "Use 'az ad group show --group GroupName --query id' to get group object IDs",
-    "Use 'az ad sp show --id app-id --query id' to get service principal object IDs",
-    "If a mapping is missing and --strict-translation is NOT used, a placeholder will be generated",
-    "Placeholders follow the pattern: PLACEHOLDER_USER_<source-object-id>"
+
+  "managed_identities": {
+    "99999999-ffff-ffff-ffff-ffffffffffff": "aaaaaaaa-0000-0000-0000-000000000000",
+    "/subscriptions/SOURCE-SUB-ID/resourceGroups/rg-apps/providers/Microsoft.ManagedIdentity/userAssignedIdentities/app1-identity": "/subscriptions/TARGET-SUB-ID/resourceGroups/rg-apps/providers/Microsoft.ManagedIdentity/userAssignedIdentities/app1-identity",
+    "/subscriptions/SOURCE-SUB-ID/resourceGroups/rg-data/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sql-identity": "/subscriptions/TARGET-SUB-ID/resourceGroups/rg-data/providers/Microsoft.ManagedIdentity/userAssignedIdentities/sql-identity"
+  },
+
+  "_comments": {
+    "file_purpose": "This file maps identities between source and target Azure tenants for cross-tenant deployments",
+    "mapping_format": "Each section maps source identities (left) to target identities (right)",
+    "users_section": "Maps user Object IDs and User Principal Names (UPNs)",
+    "groups_section": "Maps security group Object IDs and display names",
+    "service_principals_section": "Maps service principal Object IDs (applications registered in Entra ID)",
+    "managed_identities_section": "Maps managed identity Object IDs and full Azure resource IDs",
+
+    "usage_examples": {
+      "example_1_keyvault": "Key Vault access policies reference user/group/SP Object IDs - these will be translated using this file",
+      "example_2_rbac": "Azure RBAC role assignments reference principal IDs - these will be translated",
+      "example_3_managed_identity": "Resources with managed identities will have their identity references translated",
+      "example_4_cosmos_rbac": "Cosmos DB role assignments reference principal IDs - these will be translated"
+    },
+
+    "how_to_populate": {
+      "step_1": "Scan source tenant: uv run atg scan --tenant-id SOURCE_TENANT_ID",
+      "step_2": "Review generated spec to identify referenced identities",
+      "step_3": "For each source identity, find corresponding target identity using Azure CLI",
+      "step_4": "Add mappings to this file using format: 'SOURCE_ID': 'TARGET_ID'",
+      "step_5": "Validate mappings before deployment",
+      "detailed_guide": "See examples/generate_identity_mapping.md for complete instructions"
+    },
+
+    "best_practices": {
+      "use_object_ids": "Always prefer Object ID mappings over name-based mappings for reliability",
+      "validate_both_sides": "Verify that both source and target identities exist before adding mappings",
+      "document_mappings": "Keep a separate notes file documenting why each mapping exists",
+      "version_control": "Store this file in version control but use Azure Key Vault for sensitive deployments",
+      "test_first": "Test with dry-run before actual deployment",
+      "keep_synchronized": "Update this file when identities change in either tenant"
+    },
+
+    "troubleshooting": {
+      "missing_mapping": "If translation warnings appear, add the missing identity to this file",
+      "wrong_permissions": "Ensure target identities have same permissions as source identities",
+      "name_conflicts": "Multiple identities can have same display name - always use Object IDs to disambiguate",
+      "cross_tenant_guests": "Guest users may need special handling - contact your tenant admin"
+    }
+  },
+
+  "_example_scenarios": {
+    "scenario_1_enterprise_migration": {
+      "description": "Migrating production workload from on-prem AD tenant to cloud-native tenant",
+      "users_mapped": "5 developers, 3 DBAs, 2 security admins",
+      "groups_mapped": "Database Admins, App Developers, Security Readers",
+      "service_principals_mapped": "CI/CD pipeline, monitoring agent, backup service",
+      "managed_identities_mapped": "Application identity, SQL managed identity"
+    },
+
+    "scenario_2_disaster_recovery": {
+      "description": "Setting up DR environment in separate tenant for compliance",
+      "users_mapped": "Break-glass admin accounts only",
+      "groups_mapped": "DR administrators, incident responders",
+      "service_principals_mapped": "DR automation service principal",
+      "managed_identities_mapped": "VM identities for automated failover"
+    },
+
+    "scenario_3_dev_test": {
+      "description": "Replicating production infrastructure to dev/test tenant",
+      "users_mapped": "Test users corresponding to production users",
+      "groups_mapped": "Dev team groups",
+      "service_principals_mapped": "Test automation service principals",
+      "managed_identities_mapped": "Test application identities"
+    }
+  },
+
+  "_azure_cli_helpers": {
+    "find_user_by_upn": "az ad user show --id alice@domain.com --query '{objectId:id, upn:userPrincipalName}'",
+    "find_user_by_objectid": "az ad user show --id OBJECT_ID --query '{objectId:id, upn:userPrincipalName}'",
+    "find_group_by_name": "az ad group list --display-name 'Group Name' --query '[0].{objectId:id, name:displayName}'",
+    "find_group_by_objectid": "az ad group show --group OBJECT_ID --query '{objectId:id, name:displayName}'",
+    "find_sp_by_name": "az ad sp list --display-name 'App Name' --query '[0].{objectId:id, appId:appId}'",
+    "find_sp_by_objectid": "az ad sp show --id OBJECT_ID --query '{objectId:id, appId:appId}'",
+    "list_all_users": "az ad user list --query '[].{objectId:id, upn:userPrincipalName, name:displayName}'",
+    "list_all_groups": "az ad group list --query '[].{objectId:id, name:displayName}'",
+    "list_all_sps": "az ad sp list --all --query '[].{objectId:id, appId:appId, name:displayName}'"
+  },
+
+  "_notes": [
+    "This is an EXAMPLE file with placeholder UUIDs and domains.",
+    "Replace all example values with your actual tenant identities.",
+    "The '$schema', '_comments', '_example_scenarios', '_azure_cli_helpers', and '_notes' keys are documentation only.",
+    "These documentation keys will be ignored by the translation system.",
+    "Only 'users', 'groups', 'service_principals', and 'managed_identities' are used for actual translation.",
+    "For security, consider storing production identity mappings in Azure Key Vault.",
+    "This file can contain hundreds or thousands of mappings for large organizations.",
+    "Use automation scripts to generate mappings when dealing with many identities."
   ]
 }

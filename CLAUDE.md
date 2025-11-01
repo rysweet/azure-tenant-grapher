@@ -61,6 +61,12 @@ uv run atg generate-iac --tenant-id <TENANT_ID>  # Validates subnets by default
 uv run atg generate-iac --tenant-id <TENANT_ID> --auto-fix-subnets  # Auto-fix invalid subnets
 uv run atg generate-iac --tenant-id <TENANT_ID> --skip-subnet-validation  # Skip validation (not recommended)
 
+# Cross-tenant IaC generation (Issue #406)
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID>  # Cross-tenant deployment
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --target-subscription <TARGET_SUB_ID>  # With target subscription
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --identity-mapping-file identity_mappings.json  # With Entra ID translation
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Import pre-existing resources
+
 # SPA/GUI commands
 uv run atg start    # Launch Electron GUI
 uv run atg stop     # Stop GUI application
@@ -95,6 +101,19 @@ uv run atg stop     # Stop GUI application
    - Supports multiple output formats via emitters
    - Handles resource dependencies and ordering
    - Validates subnet address space containment (Issue #333)
+   - Cross-tenant resource translation (Issue #406)
+
+6. **Cross-Tenant Translation** (`src/iac/translators/`):
+   - Translates resource IDs from source to target subscription
+   - Translates Entra ID object IDs and tenant IDs
+   - 6 concrete translators: Storage, Identity, Database, KeyVault, AppService, EntraId
+   - Auto-discovery via decorator-based registry
+   - Comprehensive reporting
+
+7. **Terraform Import** (`src/iac/importers/`):
+   - Automatically imports pre-existing Azure resources into Terraform state
+   - Three import strategies: resource_groups, all_resources, selective
+   - Handles resource name conflicts by updating (not recreating)
 
 6. **IaC Validators** (`src/iac/validators/`):
    - **SubnetValidator**: Validates subnets are within VNet address space
