@@ -232,7 +232,37 @@ class AzureTenantGrapher:
                 f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"
             )
 
-            # 3. Process resources
+            # 3. Enrich with Entra ID identity data
+            logger.info("=" * 70)
+            logger.info("Enriching with Entra ID (Azure AD) identity data...")
+            logger.info("=" * 70)
+
+            try:
+                # Fetch service principals
+                service_principals = await self.aad_graph.get_service_principals()
+                logger.info(f"Fetched {len(service_principals)} service principals")
+
+                # Convert service principals to resource format and add to all_resources
+                for sp in service_principals:
+                    sp_resource = {
+                        "id": f"/servicePrincipals/{sp['id']}",
+                        "name": sp.get("displayName", sp['id']),
+                        "type": "Microsoft.Graph/servicePrincipals",
+                        "properties": sp,
+                        "subscription_id": subscriptions[0]["id"] if subscriptions else "",
+                        "resource_group": None,  # Service principals are tenant-level
+                        "location": "global",
+                        "tags": {},
+                    }
+                    all_resources.append(sp_resource)
+
+                logger.info(f"Added {len(service_principals)} service principals to processing queue")
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch service principals: {e}")
+                logger.warning("Continuing without service principal enrichment")
+
+            # 4. Process resources
             with self.session_manager:
                 if force_rebuild_edges:
                     logger.info(
