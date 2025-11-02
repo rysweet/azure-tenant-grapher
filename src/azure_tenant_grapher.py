@@ -59,11 +59,11 @@ class AzureTenantGrapher:
         self.session_manager = Neo4jSessionManager(config.neo4j)
         self.discovery_service = AzureDiscoveryService(config)
 
-        # Create AAD Graph Service if enabled
-        aad_graph_service = None
+        # Create AAD Graph Service if enabled - store as instance attribute
+        self.aad_graph_service = None
         if config.processing.enable_aad_import:
             try:
-                aad_graph_service = AADGraphService()
+                self.aad_graph_service = AADGraphService()
                 logger.info("AAD Graph Service initialized for identity import")
             except Exception as e:
                 logger.warning(f"Failed to initialize AAD Graph Service: {e}")
@@ -72,7 +72,7 @@ class AzureTenantGrapher:
             self.session_manager,
             create_llm_generator() if config.azure_openai.is_configured() else None,
             config.processing,
-            aad_graph_service=aad_graph_service,
+            aad_graph_service=self.aad_graph_service,
         )
         self.specification_service = TenantSpecificationService(
             self.session_manager,
@@ -233,34 +233,42 @@ class AzureTenantGrapher:
             )
 
             # 3. Enrich with Entra ID identity data
-            logger.info("=" * 70)
-            logger.info("Enriching with Entra ID (Azure AD) identity data...")
-            logger.info("=" * 70)
+            if self.aad_graph_service:
+                logger.info("=" * 70)
+                logger.info("Enriching with Entra ID (Azure AD) identity data...")
+                logger.info("=" * 70)
 
-            try:
-                # Fetch service principals
-                service_principals = await self.aad_graph.get_service_principals()
-                logger.info(f"Fetched {len(service_principals)} service principals")
+                try:
+                    # Fetch service principals
+                    logger.info("Fetching service principals from Microsoft Graph API...")
+                    service_principals = await self.aad_graph_service.get_service_principals()
+                    logger.info(f"Successfully fetched {len(service_principals)} service principals from Graph API")
 
-                # Convert service principals to resource format and add to all_resources
-                for sp in service_principals:
-                    sp_resource = {
-                        "id": f"/servicePrincipals/{sp['id']}",
-                        "name": sp.get("displayName", sp['id']),
-                        "type": "Microsoft.Graph/servicePrincipals",
-                        "properties": sp,
-                        "subscription_id": subscriptions[0]["id"] if subscriptions else "",
-                        "resource_group": None,  # Service principals are tenant-level
-                        "location": "global",
-                        "tags": {},
-                    }
-                    all_resources.append(sp_resource)
+                    # Convert service principals to resource format and add to all_resources
+                    sp_count_before = len(all_resources)
+                    for sp in service_principals:
+                        sp_resource = {
+                            "id": f"/servicePrincipals/{sp['id']}",
+                            "name": sp.get("displayName", sp['id']),
+                            "type": "Microsoft.Graph/servicePrincipals",
+                            "properties": sp,
+                            "subscription_id": subscriptions[0]["id"] if subscriptions else "",
+                            "resource_group": None,  # Service principals are tenant-level
+                            "location": "global",
+                            "tags": {},
+                        }
+                        all_resources.append(sp_resource)
+                        logger.debug(f"Added service principal: {sp_resource['name']} (ID: {sp['id']})")
 
-                logger.info(f"Added {len(service_principals)} service principals to processing queue")
+                    logger.info(f"Successfully added {len(service_principals)} service principals to processing queue")
+                    logger.info(f"Total resources after AAD enrichment: {len(all_resources)} (was {sp_count_before})")
 
-            except Exception as e:
-                logger.warning(f"Failed to fetch service principals: {e}")
-                logger.warning("Continuing without service principal enrichment")
+                except Exception as e:
+                    logger.exception(f"Failed to fetch service principals from Graph API: {e}")
+                    logger.warning("Continuing without service principal enrichment")
+            else:
+                logger.info("AAD enrichment disabled (enable_aad_import=False or AAD service failed to initialize)")
+                logger.info("Skipping service principal discovery")
 
             # 4. Process resources
             with self.session_manager:
