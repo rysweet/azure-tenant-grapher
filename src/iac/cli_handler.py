@@ -17,6 +17,7 @@ from neo4j import Driver  # type: ignore
 from ..config_manager import create_neo4j_config_from_env
 from ..deployment_registry import DeploymentRegistry
 from ..utils.session_manager import create_session_manager
+from .auto_identity_mapper import AutoIdentityMapper
 from .emitters import get_emitter
 from .engine import TransformationEngine
 from .subset import SubsetFilter
@@ -330,6 +331,61 @@ async def generate_iac_command_handler(
             logger.warning(
                 "Target tenant specified but source tenant unknown - cross-tenant translation may not work correctly"
             )
+
+        # Auto-map identities for cross-tenant deployment (Issue #410)
+        identity_mapping = None
+        if resolved_target_tenant_id and resolved_source_tenant_id:
+            if resolved_target_tenant_id != resolved_source_tenant_id:
+                logger.info("Automatically mapping identities between tenants...")
+                click.echo("Creating identity mappings between tenants...")
+
+                mapper = AutoIdentityMapper()
+                try:
+                    # Create auto-mapping (manual file takes precedence if provided)
+                    identity_mapping = await mapper.create_mapping(
+                        source_tenant_id=resolved_source_tenant_id,
+                        target_tenant_id=resolved_target_tenant_id,
+                        manual_mapping_file=(
+                            Path(identity_mapping_file) if identity_mapping_file else None
+                        ),
+                        neo4j_driver=driver,
+                    )
+
+                    # Save mapping to output directory for reference
+                    if output_path:
+                        mapping_output_dir = Path(output_path)
+                    else:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        mapping_output_dir = Path("outputs") / f"iac-out-{timestamp}"
+
+                    mapping_output_dir.mkdir(parents=True, exist_ok=True)
+                    mapping_file = mapping_output_dir / "identity_mapping.json"
+                    mapper.save_mapping(identity_mapping, mapping_file)
+
+                    # Update identity_mapping_file to point to generated file if not manually provided
+                    if not identity_mapping_file:
+                        identity_mapping_file = str(mapping_file)
+
+                    click.echo(f"Identity mapping saved to: {mapping_file}")
+
+                    # Log mapping summary
+                    users_count = len(identity_mapping["users"])
+                    groups_count = len(identity_mapping["groups"])
+                    sps_count = len(identity_mapping["service_principals"])
+                    click.echo(
+                        f"Mapped {users_count} users, {groups_count} groups, {sps_count} service principals"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Identity mapping failed: {e}")
+                    click.echo(
+                        f"Warning: Automatic identity mapping failed: {e}",
+                        err=True,
+                    )
+                    click.echo(
+                        "Continuing with manual identity mapping file if provided...",
+                        err=True,
+                    )
 
         # Pre-deployment conflict detection (Issue #336)
         should_check_conflicts = check_conflicts and not skip_conflict_check

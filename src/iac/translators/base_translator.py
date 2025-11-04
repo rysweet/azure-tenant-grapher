@@ -53,10 +53,10 @@ class TranslationContext:
     cross-tenant translation.
     """
 
-    source_subscription_id: Optional[str]
+    source_subscription_id: Optional[str] = None
     """Source subscription ID (where resources were scanned)"""
 
-    target_subscription_id: str
+    target_subscription_id: Optional[str] = None
     """Target subscription ID (where resources will be deployed)"""
 
     source_tenant_id: Optional[str] = None
