@@ -241,6 +241,23 @@ class EntraIdTranslator(BaseTranslator):
         # Track missing mappings for reporting
         self.missing_mappings: List[Dict[str, str]] = []
 
+    def _make_json_serializable(self, obj: Any) -> Any:
+        """Convert DateTime objects to strings for JSON serialization.
+
+        Args:
+            obj: Object to make JSON serializable
+
+        Returns:
+            JSON-serializable version of the object
+        """
+        if isinstance(obj, dict):
+            return {k: self._make_json_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(i) for i in obj]
+        elif hasattr(obj, 'isoformat'):  # DateTime objects
+            return obj.isoformat()
+        return obj
+
     def can_translate(self, resource: Dict[str, Any]) -> bool:
         """
         Determine if this resource needs Entra ID translation.
@@ -287,7 +304,9 @@ class EntraIdTranslator(BaseTranslator):
             return True
 
         # Check for tenant_id field anywhere in resource
-        resource_json = json.dumps(resource)
+        # Make resource JSON serializable first to avoid DateTime errors
+        resource_copy = self._make_json_serializable(resource)
+        resource_json = json.dumps(resource_copy)
         if (
             self.context.source_tenant_id
             and self.context.source_tenant_id in resource_json
@@ -371,7 +390,9 @@ class EntraIdTranslator(BaseTranslator):
         warnings: List[str] = []
 
         # Convert to JSON string, replace all occurrences, convert back
-        resource_json = json.dumps(resource)
+        # Make resource JSON serializable first to avoid DateTime errors
+        resource_copy = self._make_json_serializable(resource)
+        resource_json = json.dumps(resource_copy)
 
         # Count occurrences for reporting
         occurrence_count = resource_json.count(self.context.source_tenant_id)
@@ -602,7 +623,9 @@ class EntraIdTranslator(BaseTranslator):
             return resource, warnings
 
         # Convert to JSON string for easier text replacement
-        resource_json = json.dumps(resource)
+        # Make resource JSON serializable first to avoid DateTime errors
+        resource_copy = self._make_json_serializable(resource)
+        resource_json = json.dumps(resource_copy)
 
         # Replace all UPNs with source domain
         # Pattern: anything@source.domain -> anything@target.domain

@@ -20,6 +20,55 @@ logger = logging.getLogger(__name__)
 class AADGraphService:
     """Lightweight wrapper around Microsoft Graph API for fetching identities from a specific tenant."""
 
+    def _get_tenant_credentials(self, tenant_id: str) -> tuple[str, str]:
+        """Get credentials for a specific tenant from environment variables.
+
+        Supports multi-tenant configuration:
+        - AZURE_TENANT_2_ID matches tenant -> use AZURE_TENANT_2_CLIENT_ID/SECRET
+        - AZURE_TENANT_1_ID matches tenant -> use AZURE_TENANT_1_CLIENT_ID/SECRET
+        - Otherwise -> use AZURE_CLIENT_ID/SECRET (default)
+
+        Args:
+            tenant_id: Target tenant ID
+
+        Returns:
+            Tuple of (client_id, client_secret)
+
+        Raises:
+            ValueError: If credentials not found for tenant
+        """
+        # Check Tenant 2 first (target tenant)
+        tenant_2_id = os.environ.get("AZURE_TENANT_2_ID")
+        if tenant_2_id and tenant_2_id.lower() == tenant_id.lower():
+            client_id = os.environ.get("AZURE_TENANT_2_CLIENT_ID")
+            client_secret = os.environ.get("AZURE_TENANT_2_CLIENT_SECRET")
+            if client_id and client_secret:
+                logger.info(f"Using Tenant 2 credentials for tenant {tenant_id[:8]}...")
+                return (client_id, client_secret)
+
+        # Check Tenant 1
+        tenant_1_id = os.environ.get("AZURE_TENANT_1_ID")
+        if tenant_1_id and tenant_1_id.lower() == tenant_id.lower():
+            client_id = os.environ.get("AZURE_TENANT_1_CLIENT_ID")
+            client_secret = os.environ.get("AZURE_TENANT_1_CLIENT_SECRET")
+            if client_id and client_secret:
+                logger.info(f"Using Tenant 1 credentials for tenant {tenant_id[:8]}...")
+                return (client_id, client_secret)
+
+        # Fall back to default credentials
+        client_id = os.environ.get("AZURE_CLIENT_ID")
+        client_secret = os.environ.get("AZURE_CLIENT_SECRET")
+        if client_id and client_secret:
+            logger.info(f"Using default Azure credentials for tenant {tenant_id[:8]}...")
+            return (client_id, client_secret)
+
+        raise ValueError(
+            f"No credentials found for tenant {tenant_id}. "
+            f"Set AZURE_TENANT_2_CLIENT_ID/SECRET (for tenant 2) or "
+            f"AZURE_TENANT_1_CLIENT_ID/SECRET (for tenant 1) or "
+            f"AZURE_CLIENT_ID/SECRET (default) in environment variables."
+        )
+
     def __init__(
         self,
         tenant_id: str,
@@ -30,19 +79,23 @@ class AADGraphService:
 
         Args:
             tenant_id: Azure AD tenant ID
-            client_id: Optional client ID (defaults to AZURE_CLIENT_ID env var)
-            client_secret: Optional client secret (defaults to AZURE_CLIENT_SECRET env var)
+            client_id: Optional client ID (overrides auto-detection)
+            client_secret: Optional client secret (overrides auto-detection)
         """
         self.tenant_id = tenant_id
 
-        # Get credentials from parameters or environment
-        self.client_id = client_id or os.environ.get("AZURE_CLIENT_ID")
-        self.client_secret = client_secret or os.environ.get("AZURE_CLIENT_SECRET")
+        # Get credentials - use provided or auto-detect from environment
+        if client_id and client_secret:
+            self.client_id = client_id
+            self.client_secret = client_secret
+            logger.info(f"Using provided credentials for tenant {tenant_id[:8]}...")
+        else:
+            self.client_id, self.client_secret = self._get_tenant_credentials(tenant_id)
 
         if not self.client_id or not self.client_secret:
             raise ValueError(
                 "Missing Azure credentials. Provide client_id and client_secret or set "
-                "AZURE_CLIENT_ID and AZURE_CLIENT_SECRET environment variables."
+                "appropriate environment variables (AZURE_TENANT_1_*/AZURE_TENANT_2_*/AZURE_*)."
             )
 
         # Validate tenant ID format (basic check)

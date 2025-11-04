@@ -114,6 +114,9 @@ async def generate_iac_command_handler(
     target_tenant_id: Optional[str] = None,
     identity_mapping_file: Optional[str] = None,
     strict_translation: bool = False,
+    # Terraform import parameters (for pre-existing resources)
+    auto_import_existing: bool = False,
+    import_strategy: str = "resource_groups",
 ) -> int:
     """Handle the generate-iac CLI command.
 
