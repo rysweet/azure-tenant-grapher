@@ -145,6 +145,9 @@ class TerraformEmitter(IaCEmitter):
         "Group": "azuread_group",
         "ServicePrincipal": "azuread_service_principal",
         "Application": "azuread_application",
+        # Role-Based Access Control (RBAC)
+        "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
+        "Microsoft.Authorization/roleDefinitions": "azurerm_role_definition",
     }
 
     def _extract_resource_groups(
@@ -1987,6 +1990,23 @@ class TerraformEmitter(IaCEmitter):
                     ),
                 }
             )
+        elif azure_type == "Microsoft.Authorization/roleAssignments":
+            # Role Assignments - RBAC configuration (no location, scoped resources)
+            properties = self._parse_properties(resource)
+
+            resource_config = {
+                "scope": properties.get("scope", resource.get("scope", "")),
+                "role_definition_id": properties.get(
+                    "roleDefinitionId", resource.get("roleDefinitionId", "")
+                ),
+                "principal_id": properties.get(
+                    "principalId", resource.get("principalId", "")
+                ),
+            }
+
+            # Note: Role assignments don't have a location property (global/scoped)
+            # Remove location from resource_config if present
+            resource_config.pop("location", None)
         elif azure_type in [
             "Microsoft.Insights/dataCollectionRules",
             "microsoft.insights/dataCollectionRules",
