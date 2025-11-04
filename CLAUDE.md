@@ -61,6 +61,12 @@ uv run atg generate-iac --tenant-id <TENANT_ID>  # Validates subnets by default
 uv run atg generate-iac --tenant-id <TENANT_ID> --auto-fix-subnets  # Auto-fix invalid subnets
 uv run atg generate-iac --tenant-id <TENANT_ID> --skip-subnet-validation  # Skip validation (not recommended)
 
+# Cross-tenant IaC generation (Issue #406)
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID>  # Cross-tenant deployment
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --target-subscription <TARGET_SUB_ID>  # With target subscription
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --identity-mapping-file identity_mappings.json  # With Entra ID translation
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Import pre-existing resources
+
 # SPA/GUI commands
 uv run atg start    # Launch Electron GUI
 uv run atg stop     # Stop GUI application
@@ -95,8 +101,11 @@ uv run atg stop     # Stop GUI application
    - Supports multiple output formats via emitters
    - Handles resource dependencies and ordering
    - Validates subnet address space containment (Issue #333)
+   - Cross-tenant resource translation (Issue #406)
 
-6. **IaC Validators** (`src/iac/validators/`):
+6. **Cross-Tenant Translation**: See `@docs/cross-tenant/FEATURES.md` for details
+
+7. **IaC Validators** (`src/iac/validators/`):
    - **SubnetValidator**: Validates subnets are within VNet address space
    - **TerraformValidator**: Validates Terraform templates
    - Supports auto-fix for common subnet misconfigurations
