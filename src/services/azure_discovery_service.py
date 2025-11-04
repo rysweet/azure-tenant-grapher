@@ -661,6 +661,11 @@ class AzureDiscoveryService:
         Returns:
             API version string
         """
+        # Special handling for role assignments - they use Microsoft.Authorization API versions
+        # regardless of their parent resource
+        if "/providers/Microsoft.Authorization/roleAssignments/" in resource_id:
+            return "2022-04-01"  # Stable API version for role assignments
+
         # Parse resource ID to extract provider and resource type
         parsed = self._parse_resource_id(resource_id)
         if not parsed.get("provider") or not parsed.get("resource_type"):
