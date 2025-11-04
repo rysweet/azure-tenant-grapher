@@ -65,15 +65,29 @@ def test_identity_rule_role_assignment_user():
     }
     assert rule.applies(resource)
     rule.emit(resource, db)
-    # RoleAssignment node
-    assert ("upsert", "RoleAssignment", "id", "ra1", {"id": "ra1"}) in db.calls
-    # User node
+    # RoleAssignment node with complete properties
+    assert ("upsert", "RoleAssignment", "id", "ra1", {
+        "id": "ra1",
+        "principalId": "user1",
+        "principalType": "User",
+        "roleDefinitionId": "roledef1",
+        "scope": None,
+    }) in db.calls
+    # User node with IaC-standard properties
     assert (
         "upsert",
         "User",
         "id",
         "user1",
-        {"id": "user1", "principalType": "User"},
+        {
+            "id": "user1",
+            "principalType": "User",
+            "type": "Microsoft.Graph/users",
+            "name": "user1",
+            "displayName": "user1",
+            "location": "global",
+            "resourceGroup": "identity-resources",
+        },
     ) in db.calls
     # RoleDefinition node
     assert ("upsert", "RoleDefinition", "id", "roledef1", {"id": "roledef1"}) in [
@@ -99,12 +113,29 @@ def test_identity_rule_role_assignment_service_principal():
     }
     assert rule.applies(resource)
     rule.emit(resource, db)
+    # RoleAssignment node with complete properties
+    assert ("upsert", "RoleAssignment", "id", "ra2", {
+        "id": "ra2",
+        "principalId": "sp1",
+        "principalType": "ServicePrincipal",
+        "roleDefinitionId": "roledef2",
+        "scope": None,
+    }) in db.calls
+    # ServicePrincipal node with IaC-standard properties
     assert (
         "upsert",
         "ServicePrincipal",
         "id",
         "sp1",
-        {"id": "sp1", "principalType": "ServicePrincipal"},
+        {
+            "id": "sp1",
+            "principalType": "ServicePrincipal",
+            "type": "Microsoft.Graph/servicePrincipals",
+            "name": "sp1",
+            "displayName": "sp1",
+            "location": "global",
+            "resourceGroup": "identity-resources",
+        },
     ) in db.calls
     assert ("rel", "ra2", "ASSIGNED_TO", "sp1", "ServicePrincipal", "id") in db.calls
     assert ("rel", "sp1", "HAS_ROLE", "roledef2", "RoleDefinition", "id") in db.calls
@@ -124,12 +155,29 @@ def test_identity_rule_role_assignment_managed_identity():
     }
     assert rule.applies(resource)
     rule.emit(resource, db)
+    # RoleAssignment node with complete properties
+    assert ("upsert", "RoleAssignment", "id", "ra3", {
+        "id": "ra3",
+        "principalId": "mi1",
+        "principalType": "ManagedIdentity",
+        "roleDefinitionId": "roledef3",
+        "scope": None,
+    }) in db.calls
+    # ManagedIdentity node with IaC-standard properties
     assert (
         "upsert",
         "ManagedIdentity",
         "id",
         "mi1",
-        {"id": "mi1", "principalType": "ManagedIdentity"},
+        {
+            "id": "mi1",
+            "principalType": "ManagedIdentity",
+            "type": "Microsoft.ManagedIdentity/managedIdentities",
+            "name": "mi1",
+            "displayName": "mi1",
+            "location": "global",
+            "resourceGroup": "identity-resources",
+        },
     ) in db.calls
     assert ("rel", "ra3", "ASSIGNED_TO", "mi1", "ManagedIdentity", "id") in db.calls
     assert ("rel", "mi1", "HAS_ROLE", "roledef3", "RoleDefinition", "id") in db.calls
@@ -149,12 +197,29 @@ def test_identity_rule_role_assignment_group():
     }
     assert rule.applies(resource)
     rule.emit(resource, db)
+    # RoleAssignment node with complete properties
+    assert ("upsert", "RoleAssignment", "id", "ra4", {
+        "id": "ra4",
+        "principalId": "group1",
+        "principalType": "Group",
+        "roleDefinitionId": "roledef4",
+        "scope": None,
+    }) in db.calls
+    # IdentityGroup node with IaC-standard properties
     assert (
         "upsert",
         "IdentityGroup",
         "id",
         "group1",
-        {"id": "group1", "principalType": "Group"},
+        {
+            "id": "group1",
+            "principalType": "Group",
+            "type": "Microsoft.Graph/groups",
+            "name": "group1",
+            "displayName": "group1",
+            "location": "global",
+            "resourceGroup": "identity-resources",
+        },
     ) in db.calls
     assert ("rel", "ra4", "ASSIGNED_TO", "group1", "IdentityGroup", "id") in db.calls
     assert ("rel", "group1", "HAS_ROLE", "roledef4", "RoleDefinition", "id") in db.calls
