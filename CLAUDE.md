@@ -65,7 +65,10 @@ uv run atg generate-iac --tenant-id <TENANT_ID> --skip-subnet-validation  # Skip
 uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID>  # Cross-tenant deployment
 uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --target-subscription <TARGET_SUB_ID>  # With target subscription
 uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --identity-mapping-file identity_mappings.json  # With Entra ID translation
-uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Import pre-existing resources
+
+# Terraform import blocks (Issue #412) - FULLY IMPLEMENTED
+uv run atg generate-iac --auto-import-existing --import-strategy resource_groups  # Generates Terraform 1.5+ import blocks
+uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Cross-tenant with imports
 
 # SPA/GUI commands
 uv run atg start    # Launch Electron GUI
