@@ -14,7 +14,7 @@ contents are preserved when deploying to new environments.
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .base_plugin import (
     DataPlaneItem,
@@ -84,11 +84,11 @@ class KeyVaultPlugin(DataPlanePlugin):
 
         try:
             # Import Azure SDK components
-            from azure.identity import DefaultAzureCredential
-            from azure.keyvault.secrets import SecretClient
-            from azure.keyvault.keys import KeyClient
-            from azure.keyvault.certificates import CertificateClient
             from azure.core.exceptions import AzureError, HttpResponseError
+            from azure.identity import DefaultAzureCredential
+            from azure.keyvault.certificates import CertificateClient
+            from azure.keyvault.keys import KeyClient
+            from azure.keyvault.secrets import SecretClient
 
             # Parse vault URI from properties
             properties = resource.get("properties", {})
@@ -97,7 +97,7 @@ class KeyVaultPlugin(DataPlanePlugin):
                     properties = json.loads(properties)
                 except json.JSONDecodeError:
                     properties = {}
-            
+
             vault_uri = properties.get("vaultUri")
             if not vault_uri:
                 # Construct vault URI from name
