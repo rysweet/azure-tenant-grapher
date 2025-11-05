@@ -1,12 +1,12 @@
 """
 Tests for Dual-Graph Implementation - Resource Processor (Issue #420)
 
-These tests verify the actual implementation of dual-node creation.
+These tests verify the implementation of dual-node creation.
+Dual-graph is always enabled (no feature flags).
 """
 
-import os
 from typing import Any, Dict
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -60,59 +60,32 @@ def mock_session_manager():
 class TestDualGraphImplementation:
     """Test suite for dual-graph implementation."""
 
-    def test_feature_flag_disabled_creates_single_node(
+    def test_dual_graph_initializes_services(
         self, mock_session_manager, sample_azure_resource
     ):
-        """Test that when feature flag is disabled, only single node is created."""
+        """Test that dual-graph services are always initialized."""
         from src.resource_processor import DatabaseOperations
 
-        # Create DatabaseOperations with dual-graph disabled
+        # Create DatabaseOperations with tenant_id
         db_ops = DatabaseOperations(
             mock_session_manager,
             tenant_id="tenant-123",
-            enable_dual_graph=False,
-        )
-
-        # Process resource
-        result = db_ops.upsert_resource(sample_azure_resource)
-
-        # Should succeed
-        assert result is True
-
-        # Verify it called the single resource method (not dual)
-        # We can check that it didn't try to create abstracted IDs
-        assert db_ops._id_abstraction_service is None
-
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
-    def test_feature_flag_enabled_initializes_services(
-        self, mock_session_manager, sample_azure_resource
-    ):
-        """Test that when feature flag is enabled, dual-graph services are initialized."""
-        from src.resource_processor import DatabaseOperations
-
-        # Create DatabaseOperations with dual-graph enabled
-        db_ops = DatabaseOperations(
-            mock_session_manager,
-            tenant_id="tenant-123",
-            enable_dual_graph=True,
         )
 
         # Should have initialized services
         assert db_ops._tenant_seed_manager is not None
         assert db_ops._id_abstraction_service is not None
 
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
     def test_dual_graph_creates_two_nodes(
         self, mock_session_manager, sample_azure_resource
     ):
-        """Test that dual-graph mode creates both Original and Abstracted nodes."""
+        """Test that dual-graph creates both Original and Abstracted nodes."""
         from src.resource_processor import DatabaseOperations
 
-        # Create DatabaseOperations with dual-graph enabled
+        # Create DatabaseOperations
         db_ops = DatabaseOperations(
             mock_session_manager,
             tenant_id="tenant-123",
-            enable_dual_graph=True,
         )
 
         # Process resource
@@ -136,18 +109,16 @@ class TestDualGraphImplementation:
         original_calls = [c for c in calls if ":Original" in c]
         assert len(original_calls) >= 1, "Should create Original node"
 
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
     def test_abstracted_id_generation(
         self, mock_session_manager, sample_azure_resource
     ):
         """Test that abstracted IDs are generated correctly."""
         from src.resource_processor import DatabaseOperations
 
-        # Create DatabaseOperations with dual-graph enabled
+        # Create DatabaseOperations
         db_ops = DatabaseOperations(
             mock_session_manager,
             tenant_id="tenant-123",
-            enable_dual_graph=True,
         )
 
         # Get ID abstraction service
@@ -170,7 +141,6 @@ class TestDualGraphImplementation:
         abstracted_id2 = abstraction_service.abstract_resource_id(original_id)
         assert abstracted_id == abstracted_id2
 
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
     def test_tenant_seed_is_persistent(self, mock_session_manager):
         """Test that tenant seed is retrieved from database if it exists."""
         from src.services.tenant_seed_manager import TenantSeedManager
@@ -189,23 +159,6 @@ class TestDualGraphImplementation:
         session = mock_session_manager.session.return_value.__enter__.return_value
         session.run.assert_called()
 
-    def test_database_operations_requires_tenant_id_for_dual_graph(
-        self, mock_session_manager
-    ):
-        """Test that dual-graph mode requires tenant_id."""
-        from src.resource_processor import DatabaseOperations
-
-        # Try to create with dual-graph but no tenant_id - should not crash
-        db_ops = DatabaseOperations(
-            mock_session_manager,
-            tenant_id=None,  # No tenant ID
-            enable_dual_graph=True,
-        )
-
-        # Should not have initialized services (no tenant_id)
-        assert db_ops._id_abstraction_service is None
-
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
     def test_resource_processor_accepts_tenant_id(self, mock_session_manager):
         """Test that ResourceProcessor accepts tenant_id parameter."""
         from src.resource_processor import ResourceProcessor
@@ -214,12 +167,10 @@ class TestDualGraphImplementation:
         processor = ResourceProcessor(
             session_manager=mock_session_manager,
             tenant_id="tenant-123",
-            enable_dual_graph=True,
         )
 
         # Should have initialized
         assert processor.tenant_id == "tenant-123"
-        assert processor.enable_dual_graph is True
 
     def test_id_abstraction_service_generates_type_prefixes(self):
         """Test that ID abstraction service generates correct type prefixes."""
@@ -245,41 +196,16 @@ class TestDualGraphImplementation:
                 f"Expected {expected_prefix} for {resource_type}, got {abstracted}"
             )
 
-    def test_feature_flag_environment_variable(self):
-        """Test that ENABLE_DUAL_GRAPH environment variable is read correctly."""
-        # Test default (should be false)
-        with patch.dict(os.environ, {}, clear=True):
-            # Reimport to get fresh value
-            import importlib
-
-            import src.resource_processor
-
-            importlib.reload(src.resource_processor)
-            assert src.resource_processor.ENABLE_DUAL_GRAPH is False
-
-        # Test explicit true
-        with patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"}):
-            importlib.reload(src.resource_processor)
-            assert src.resource_processor.ENABLE_DUAL_GRAPH is True
-
-        # Test explicit false
-        with patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "false"}):
-            importlib.reload(src.resource_processor)
-            assert src.resource_processor.ENABLE_DUAL_GRAPH is False
-
-    @patch.dict(os.environ, {"ENABLE_DUAL_GRAPH": "true"})
     def test_create_resource_processor_factory_function(self, mock_session_manager):
-        """Test that create_resource_processor factory function works with dual-graph."""
+        """Test that create_resource_processor factory function works."""
         from src.resource_processor import create_resource_processor
 
         # Create processor using factory
         processor = create_resource_processor(
             session_manager=mock_session_manager,
             tenant_id="tenant-123",
-            enable_dual_graph=True,
         )
 
         # Should have created processor
         assert processor is not None
         assert processor.tenant_id == "tenant-123"
-        assert processor.enable_dual_graph is True

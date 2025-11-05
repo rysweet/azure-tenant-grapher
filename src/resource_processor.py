@@ -7,7 +7,6 @@ with improved error handling, progress tracking, and database operations.
 
 import asyncio
 import json
-import os
 import re
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -23,9 +22,6 @@ from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_desc
 
 configure_logging()
 logger = structlog.get_logger(__name__)
-
-# Feature flag for dual-graph architecture (Issue #420)
-ENABLE_DUAL_GRAPH = os.getenv("ENABLE_DUAL_GRAPH", "true").lower() == "true"
 
 
 @retry_neo4j_operation()
@@ -185,29 +181,26 @@ class ResourceState:
 
 
 class DatabaseOperations:
-    """Handles all database operations for resources."""
+    """Handles all database operations for resources using dual-graph architecture."""
 
     def __init__(
         self,
         session_manager: Any,
-        tenant_id: Optional[str] = None,
-        enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
+        tenant_id: str,
     ) -> None:
         self.session_manager = session_manager
         self.tenant_id = tenant_id
-        self.enable_dual_graph = enable_dual_graph
         self._tenant_seed_manager = None
         self._id_abstraction_service = None
 
-        # Initialize dual-graph services if enabled
-        if self.enable_dual_graph and self.tenant_id:
-            self._initialize_dual_graph_services()
+        # Always initialize dual-graph services
+        self._initialize_dual_graph_services()
 
     def _initialize_dual_graph_services(self) -> None:
         """Initialize services needed for dual-graph architecture."""
         try:
-            from src.services.tenant_seed_manager import TenantSeedManager
             from src.services.id_abstraction_service import IDAbstractionService
+            from src.services.tenant_seed_manager import TenantSeedManager
 
             # Initialize tenant seed manager
             self._tenant_seed_manager = TenantSeedManager(self.session_manager)
@@ -224,8 +217,6 @@ class DatabaseOperations:
 
         except Exception as e:
             logger.exception(f"Failed to initialize dual-graph services: {e}")
-            # Disable dual-graph if initialization fails
-            self.enable_dual_graph = False
             raise
 
     def upsert_subscription(
@@ -275,10 +266,12 @@ class DatabaseOperations:
         self, resource: Dict[str, Any], processing_status: str = "completed"
     ) -> bool:
         """
-        Create or update a resource node in Neo4j with enhanced metadata.
+        Create or update both Original and Abstracted nodes for a resource in Neo4j.
 
-        If dual-graph mode is enabled, creates both Original and Abstracted nodes.
-        Otherwise, creates a single node (legacy behavior).
+        Creates dual-graph nodes:
+        1. Original node (:Resource:Original) with real Azure IDs
+        2. Abstracted node (:Resource) with type-prefixed hash IDs
+        3. SCAN_SOURCE_NODE relationship linking them
 
         Args:
             resource: Resource dictionary
@@ -287,142 +280,7 @@ class DatabaseOperations:
         Returns:
             bool: True if successful, False otherwise
         """
-        from .exceptions import ResourceDataValidationError, wrap_neo4j_exception
-
-        # Route to appropriate implementation based on feature flag
-        if self.enable_dual_graph:
-            return self._upsert_dual_graph_resource(resource, processing_status)
-        else:
-            return self._upsert_single_resource(resource, processing_status)
-
-    def _upsert_single_resource(
-        self, resource: Dict[str, Any], processing_status: str = "completed"
-    ) -> bool:
-        """
-        Create or update a single resource node (legacy behavior).
-
-        Args:
-            resource: Resource dictionary
-            processing_status: Status of processing
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        from .exceptions import ResourceDataValidationError, wrap_neo4j_exception
-
-        try:
-            # Defensive validation of required fields
-            required_fields = [
-                "id",
-                "name",
-                "type",
-                "location",
-                "resource_group",
-                "subscription_id",
-            ]
-            # Accept id from resource_id if present
-            if not resource.get("id") and resource.get("resource_id"):
-                resource["id"] = resource["resource_id"]
-
-            missing_or_null = [
-                f for f in required_fields if resource.get(f) in (None, "")
-            ]
-            if missing_or_null:
-                logger.exception(
-                    f"Resource data missing/null for required fields: {missing_or_null} (resource: {resource})"
-                )
-                raise ResourceDataValidationError(missing_fields=missing_or_null)
-
-            # Upsert Subscription node before relationships
-            self.upsert_subscription(resource["subscription_id"])
-
-            query = """
-            MERGE (r:Resource {id: $props.id})
-            SET r += $props,
-                r.updated_at = datetime()
-            """
-
-            resource_data = resource.copy()
-            resource_data["llm_description"] = resource.get("llm_description", "")
-            resource_data["processing_status"] = processing_status
-
-            # Extract critical VNet properties BEFORE serialization to avoid truncation
-            # This prevents Neo4j driver truncation issues for large properties (>5000 chars)
-            if resource_data.get("type") == "Microsoft.Network/virtualNetworks":
-                properties_raw = resource_data.get("properties")
-                if properties_raw:
-                    try:
-                        # If properties is already a dict, use it directly
-                        if isinstance(properties_raw, dict):
-                            props_dict = properties_raw
-                        elif isinstance(properties_raw, str):
-                            # If it's a JSON string, parse it
-                            props_dict = json.loads(properties_raw)
-                        else:
-                            props_dict = {}
-
-                        # Extract addressSpace as separate top-level property
-                        address_space = props_dict.get("addressSpace", {})
-                        if address_space:
-                            address_prefixes = address_space.get("addressPrefixes", [])
-                            if address_prefixes:
-                                # Store as JSON string for easy access in IaC generation
-                                resource_data["addressSpace"] = json.dumps(
-                                    address_prefixes
-                                )
-                                logger.debug(
-                                    f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
-                                )
-                    except (json.JSONDecodeError, AttributeError, TypeError) as e:
-                        logger.warning(
-                            f"Failed to extract addressSpace from VNet '{resource.get('name')}': {e}"
-                        )
-
-            # Prevent empty properties from overwriting existing data
-            # If properties is empty dict, remove it from update to preserve existing
-            if resource_data.get("properties") == {}:
-                logger.debug(
-                    f"Skipping empty properties update for {resource.get('id')} to preserve existing data"
-                )
-                resource_data.pop("properties", None)
-
-            # Serialize all values for Neo4j compatibility
-            try:
-                for k, v in resource_data.items():
-                    resource_data[k] = serialize_value(v)
-            except Exception as ser_exc:
-                logger.exception(
-                    f"Serialization error for resource {resource.get('id', 'Unknown')}: {ser_exc}"
-                )
-                return False
-
-            try:
-                logger.debug(
-                    "Running upsert_resource query", query=query, props=resource_data
-                )
-                with self.session_manager.session() as session:
-                    session.run(query, props=resource_data)
-            except Exception as neo4j_exc:
-                logger.error(
-                    f"Neo4j upsert error for resource {resource.get('id', 'Unknown')}: {neo4j_exc}"
-                )
-                # Use custom exception wrapper for context
-                wrapped_exc = wrap_neo4j_exception(
-                    neo4j_exc, context={"resource_id": resource.get("id", "Unknown")}
-                )
-                logger.error(str(wrapped_exc))
-                return False
-
-            return True
-
-        except ResourceDataValidationError:
-            # Already logged above
-            return False
-        except Exception as exc:
-            logger.exception(
-                f"Error upserting resource {resource.get('id', 'Unknown')}: {exc}"
-            )
-            return False
+        return self._upsert_dual_graph_resource(resource, processing_status)
 
     def _upsert_dual_graph_resource(
         self, resource: Dict[str, Any], processing_status: str = "completed"
@@ -830,7 +688,7 @@ def extract_identity_fields(resource: Dict[str, Any]) -> None:
 class ResourceProcessor:
     """
     Enhanced resource processor with improved error handling, progress tracking,
-    and resumable operations.
+    and resumable operations. Uses dual-graph architecture for all resources.
     """
 
     def __init__(
@@ -840,7 +698,6 @@ class ResourceProcessor:
         resource_limit: Optional[int] = None,
         max_retries: int = 3,
         tenant_id: Optional[str] = None,
-        enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
     ):
         """
         Initialize the resource processor.
@@ -850,22 +707,19 @@ class ResourceProcessor:
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
             max_retries: Maximum number of retries for failed resources
-            tenant_id: Tenant ID for dual-graph mode (required if enable_dual_graph=True)
-            enable_dual_graph: Enable dual-graph architecture (creates Original and Abstracted nodes)
+            tenant_id: Tenant ID for dual-graph architecture (required)
         """
         self.session_manager = session_manager
         self.llm_generator = llm_generator
         self.resource_limit = resource_limit
         self.max_retries = max_retries
         self.tenant_id = tenant_id
-        self.enable_dual_graph = enable_dual_graph
 
         # Initialize helper classes
         self.state = ResourceState(session_manager)
         self.db_ops = DatabaseOperations(
             session_manager,
             tenant_id=tenant_id,
-            enable_dual_graph=enable_dual_graph,
         )
 
         # Processing statistics
@@ -875,10 +729,9 @@ class ResourceProcessor:
         self._seen_ids: set[str] = set()
         self._seen_lock = threading.Lock()
 
-        dual_graph_status = "enabled" if enable_dual_graph else "disabled"
         logger.info(
             f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}, "
-            f"max_retries: {max_retries}, dual-graph: {dual_graph_status}"
+            f"max_retries: {max_retries}, dual-graph: enabled"
         )
 
     def _should_process_resource(self, resource: Dict[str, Any]) -> Tuple[bool, str]:
@@ -1719,7 +1572,6 @@ def create_resource_processor(
     resource_limit: Optional[int] = None,
     max_retries: int = 3,
     tenant_id: Optional[str] = None,
-    enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
 ) -> ResourceProcessor:
     """
     Factory function to create a ResourceProcessor instance.
@@ -1729,8 +1581,7 @@ def create_resource_processor(
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
         max_retries: Maximum number of retries for failed resources
-        tenant_id: Tenant ID for dual-graph mode (required if enable_dual_graph=True)
-        enable_dual_graph: Enable dual-graph architecture (creates Original and Abstracted nodes)
+        tenant_id: Tenant ID for dual-graph architecture (required)
 
     Returns:
         ResourceProcessor: Configured resource processor instance
@@ -1741,5 +1592,4 @@ def create_resource_processor(
         resource_limit,
         max_retries,
         tenant_id,
-        enable_dual_graph,
     )

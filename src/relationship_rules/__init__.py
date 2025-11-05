@@ -1,5 +1,3 @@
-import os
-
 from .creator_rule import CreatorRule
 from .depends_on_rule import DependsOnRule
 from .diagnostic_rule import DiagnosticRule
@@ -10,34 +8,28 @@ from .region_rule import RegionRule
 from .subnet_extraction_rule import SubnetExtractionRule
 from .tag_rule import TagRule
 
-# Feature flag for dual-graph architecture (Issue #420)
-ENABLE_DUAL_GRAPH = os.getenv("ENABLE_DUAL_GRAPH", "false").lower() == "true"
 
-
-def create_relationship_rules(enable_dual_graph: bool = ENABLE_DUAL_GRAPH):
+def create_relationship_rules():
     """
     Create all relationship rule instances with dual-graph support.
-
-    Args:
-        enable_dual_graph: Enable dual-graph relationship duplication
 
     Returns:
         List of relationship rule instances
     """
     return [
         SubnetExtractionRule(
-            enable_dual_graph=enable_dual_graph
+            enable_dual_graph=True
         ),  # Extract subnets from VNets first
-        NetworkRule(enable_dual_graph=enable_dual_graph),
-        IdentityRule(enable_dual_graph=enable_dual_graph),
-        TagRule(enable_dual_graph=enable_dual_graph),
-        RegionRule(enable_dual_graph=enable_dual_graph),
-        CreatorRule(enable_dual_graph=enable_dual_graph),
-        MonitoringRule(enable_dual_graph=enable_dual_graph),
-        DiagnosticRule(enable_dual_graph=enable_dual_graph),
-        DependsOnRule(enable_dual_graph=enable_dual_graph),
+        NetworkRule(enable_dual_graph=True),
+        IdentityRule(enable_dual_graph=True),
+        TagRule(enable_dual_graph=True),
+        RegionRule(enable_dual_graph=True),
+        CreatorRule(enable_dual_graph=True),
+        MonitoringRule(enable_dual_graph=True),
+        DiagnosticRule(enable_dual_graph=True),
+        DependsOnRule(enable_dual_graph=True),
     ]
 
 
-# Default rule list for backward compatibility (uses environment variable)
+# Default rule list with dual-graph enabled
 ALL_RELATIONSHIP_RULES = create_relationship_rules()
