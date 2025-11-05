@@ -17,11 +17,9 @@ actual workflow a user would run.
 """
 
 import json
-import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -29,10 +27,8 @@ from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.importers.terraform_importer import ImportStrategy, TerraformImporter
 from src.iac.translators.private_endpoint_translator import (
     PrivateEndpointTranslator,
-    TranslationResult,
 )
 from src.iac.traverser import TenantGraph
-
 
 # ============================================================================
 # FIXTURES
@@ -91,7 +87,7 @@ class TestBasicTranslation:
             "properties": json.dumps(
                 {
                     "primaryEndpoints": {
-                        "blob": f"https://testsa.blob.core.windows.net/",
+                        "blob": "https://testsa.blob.core.windows.net/",
                     }
                 }
             ),
@@ -345,12 +341,12 @@ class TestManagedIdentityTranslation:
                 terraform_config = json.load(f)
 
             # Verify both resources exist
-            assert (
-                "azurerm_user_assigned_identity" in terraform_config["resource"]
-            ), "User-assigned identity should be in config"
-            assert (
-                "azurerm_linux_virtual_machine" in terraform_config["resource"]
-            ), "VM should be in config"
+            assert "azurerm_user_assigned_identity" in terraform_config["resource"], (
+                "User-assigned identity should be in config"
+            )
+            assert "azurerm_linux_virtual_machine" in terraform_config["resource"], (
+                "VM should be in config"
+            )
 
             # Verify identity reference uses Terraform reference (not resource ID)
             vm_resources = terraform_config["resource"]["azurerm_linux_virtual_machine"]
@@ -361,9 +357,9 @@ class TestManagedIdentityTranslation:
                 if "identity_ids" in identity_config:
                     identity_ids = identity_config["identity_ids"]
                     # Should reference the identity resource, not hardcoded ID
-                    assert any(
-                        "${" in str(id_ref) for id_ref in identity_ids
-                    ), "Identity should use Terraform reference"
+                    assert any("${" in str(id_ref) for id_ref in identity_ids), (
+                        "Identity should use Terraform reference"
+                    )
 
 
 # ============================================================================
@@ -621,9 +617,7 @@ class TestReportGeneration:
         - Shows original and translated IDs
         """
         available_resources = {
-            "azurerm_storage_account": {
-                "sa1": {"name": "sa1", "location": "eastus"}
-            }
+            "azurerm_storage_account": {"sa1": {"name": "sa1", "location": "eastus"}}
         }
 
         translator = PrivateEndpointTranslator(
@@ -657,9 +651,7 @@ class TestReportGeneration:
         - JSON is valid
         """
         available_resources = {
-            "azurerm_storage_account": {
-                "sa1": {"name": "sa1", "location": "eastus"}
-            }
+            "azurerm_storage_account": {"sa1": {"name": "sa1", "location": "eastus"}}
         }
 
         translator = PrivateEndpointTranslator(
@@ -725,7 +717,7 @@ class TestReportGeneration:
 
                 # Verify report is ImportReport object
                 assert report is not None
-                assert hasattr(report, 'commands_generated')
+                assert hasattr(report, "commands_generated")
                 assert report.commands_generated == 0
                 assert report.dry_run is True
 

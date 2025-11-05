@@ -33,7 +33,9 @@ try:
         TranslationContext,
         TranslationResult,
     )
-    from src.iac.translators.private_endpoint_translator import PrivateEndpointTranslator
+    from src.iac.translators.private_endpoint_translator import (
+        PrivateEndpointTranslator,
+    )
 except ImportError as e:
     print(f"Error importing translators: {e}")
     print("\nTo run this script, use: uv run python examples/test_translation.py")
@@ -106,9 +108,7 @@ def example_1_private_endpoint_translation() -> None:
             "azurerm_storage_account": {
                 "storage1": {"name": "storage1", "location": "eastus"}
             },
-            "azurerm_private_endpoint": {
-                "pe1": {"name": "pe1", "location": "eastus"}
-            },
+            "azurerm_private_endpoint": {"pe1": {"name": "pe1", "location": "eastus"}},
         },
         strict_mode=False,
     )
@@ -338,7 +338,7 @@ def example_3_multiple_resources() -> None:
     total_translated = sum(1 for r in results if r.was_translated)
     total_warnings = sum(len(r.warnings) for r in results)
 
-    print(f"\nTranslation Summary:")
+    print("\nTranslation Summary:")
     print(f"  Total resource IDs processed: {len(results)}")
     print(f"  Translated: {total_translated}")
     print(f"  Unchanged: {len(results) - total_translated}")

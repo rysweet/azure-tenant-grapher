@@ -16,6 +16,7 @@ IMESSAGE_TOOL = Path.home() / ".local" / "bin" / "imessR"
 PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
 STATUS_FILE = PROJECT_ROOT / "demos" / "autonomous_loop_status.json"
 
+
 def send_update(msg):
     """Send iMessage update"""
     try:
@@ -25,22 +26,23 @@ def send_update(msg):
     except Exception as e:
         print(f"Failed to send update: {e}")
 
+
 def get_process_count(pattern):
     """Count running processes matching pattern"""
     try:
         result = subprocess.run(
-            ["pgrep", "-f", pattern],
-            capture_output=True,
-            timeout=5
+            ["pgrep", "-f", pattern], capture_output=True, timeout=5
         )
-        return len(result.stdout.decode().strip().split('\n')) if result.stdout else 0
+        return len(result.stdout.decode().strip().split("\n")) if result.stdout else 0
     except:
         return 0
+
 
 def get_neo4j_counts():
     """Get resource counts from Neo4j"""
     try:
         from py2neo import Graph
+
         neo4j_password = os.getenv("NEO4J_PASSWORD")
         if not neo4j_password:
             raise ValueError("NEO4J_PASSWORD environment variable is required")
@@ -58,6 +60,7 @@ def get_neo4j_counts():
     except Exception as e:
         print(f"Neo4j query failed: {e}")
         return 0, 0
+
 
 def main():
     print("=" * 80)
@@ -94,13 +97,21 @@ def main():
         source_count, target_count = get_neo4j_counts()
 
         # Calculate coverage
-        coverage_pct = (target_count / max(source_count, 1)) * 100 if source_count > 0 else 0
+        coverage_pct = (
+            (target_count / max(source_count, 1)) * 100 if source_count > 0 else 0
+        )
 
         # Print status
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Status Update (Runtime: {runtime_mins}m)")
+        print(
+            f"\n[{datetime.now().strftime('%H:%M:%S')}] Status Update (Runtime: {runtime_mins}m)"
+        )
         print(f"  Iteration: {iteration_count}")
-        print(f"  Processes: Loop={loop_procs}, Terraform={terraform_procs}, Scan={scan_procs}")
-        print(f"  Neo4j: Source={source_count}, Target={target_count} ({coverage_pct:.1f}% coverage)")
+        print(
+            f"  Processes: Loop={loop_procs}, Terraform={terraform_procs}, Scan={scan_procs}"
+        )
+        print(
+            f"  Neo4j: Source={source_count}, Target={target_count} ({coverage_pct:.1f}% coverage)"
+        )
 
         # Send periodic update
         if (current_time - last_report_time) >= 300:  # 5 minutes
@@ -115,6 +126,7 @@ def main():
 
         # Sleep before next check
         time.sleep(60)  # Check every minute
+
 
 if __name__ == "__main__":
     main()

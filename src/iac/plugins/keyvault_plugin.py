@@ -117,7 +117,9 @@ class KeyVaultPlugin(DataPlanePlugin):
                 for secret_props in secrets:
                     # Skip if disabled
                     if not secret_props.enabled:
-                        self.logger.debug(f"Skipping disabled secret: {secret_props.name}")
+                        self.logger.debug(
+                            f"Skipping disabled secret: {secret_props.name}"
+                        )
                         continue
 
                     items.append(
@@ -227,7 +229,9 @@ class KeyVaultPlugin(DataPlanePlugin):
                         )
                     )
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover certificates in {vault_name}: {e}")
+                self.logger.warning(
+                    f"Failed to discover certificates in {vault_name}: {e}"
+                )
 
         except ImportError as e:
             self.logger.error(
@@ -407,7 +411,7 @@ class KeyVaultPlugin(DataPlanePlugin):
                         "    }",
                         "",
                         "    key_properties {",
-                        '      exportable = true',
+                        "      exportable = true",
                         '      key_type   = "RSA"',
                         "      key_size   = 2048",
                         "      reuse_key  = true",

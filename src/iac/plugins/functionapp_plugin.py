@@ -57,9 +57,7 @@ class FunctionAppPlugin(DataPlanePlugin):
         # Function Apps must have kind containing "functionapp"
         kind = resource.get("kind", "")
         if "functionapp" not in kind.lower():
-            self.logger.debug(
-                f"Resource kind '{kind}' does not indicate Function App"
-            )
+            self.logger.debug(f"Resource kind '{kind}' does not indicate Function App")
             return False
 
         return True
@@ -166,7 +164,9 @@ class FunctionAppPlugin(DataPlanePlugin):
                             name=key,
                             item_type=item_type,
                             properties={
-                                "value": value if not is_sensitive else "***REDACTED***",
+                                "value": value
+                                if not is_sensitive
+                                else "***REDACTED***",
                                 "is_sensitive": is_sensitive,
                             },
                             source_resource_id=resource["id"],
@@ -220,7 +220,9 @@ class FunctionAppPlugin(DataPlanePlugin):
                             source_resource_id=resource["id"],
                             metadata={
                                 "function_id": function.id,
-                                "href": function.href if hasattr(function, "href") else None,
+                                "href": function.href
+                                if hasattr(function, "href")
+                                else None,
                             },
                         )
                     )
@@ -301,9 +303,7 @@ class FunctionAppPlugin(DataPlanePlugin):
                 f"pip install azure-mgmt-web. Error: {e}"
             )
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error discovering Function App items: {e}"
-            )
+            self.logger.error(f"Unexpected error discovering Function App items: {e}")
 
         self.logger.info(
             f"Discovered {len(items)} data plane items in Function App '{function_app_name}'"
@@ -376,98 +376,124 @@ class FunctionAppPlugin(DataPlanePlugin):
 
         # Group items by type
         app_settings = [
-            item for item in items if item.item_type in ["app_setting", "function_app_setting"]
+            item
+            for item in items
+            if item.item_type in ["app_setting", "function_app_setting"]
         ]
         functions = [item for item in items if item.item_type == "function"]
         site_configs = [item for item in items if item.item_type == "site_config"]
-        connection_strings = [item for item in items if item.item_type == "connection_string"]
+        connection_strings = [
+            item for item in items if item.item_type == "connection_string"
+        ]
 
         # Generate app settings
         if app_settings:
-            code_lines.extend([
-                "# Application Settings",
-                "# Note: Add these to your azurerm_linux_function_app or azurerm_windows_function_app resource",
-                "#",
-                "# app_settings = {",
-            ])
+            code_lines.extend(
+                [
+                    "# Application Settings",
+                    "# Note: Add these to your azurerm_linux_function_app or azurerm_windows_function_app resource",
+                    "#",
+                    "# app_settings = {",
+                ]
+            )
 
             for item in app_settings:
                 if item.properties.get("is_sensitive", False):
-                    code_lines.append(f'#   "{item.name}" = var.function_app_setting_{self._sanitize_name(item.name)}')
+                    code_lines.append(
+                        f'#   "{item.name}" = var.function_app_setting_{self._sanitize_name(item.name)}'
+                    )
                 else:
                     value = item.properties.get("value", "")
                     code_lines.append(f'#   "{item.name}" = "{value}"')
 
-            code_lines.extend([
-                "# }",
-                "",
-            ])
+            code_lines.extend(
+                [
+                    "# }",
+                    "",
+                ]
+            )
 
             # Generate variables for sensitive settings
-            sensitive_settings = [item for item in app_settings if item.properties.get("is_sensitive", False)]
+            sensitive_settings = [
+                item
+                for item in app_settings
+                if item.properties.get("is_sensitive", False)
+            ]
             if sensitive_settings:
-                code_lines.extend([
-                    "# Required variables for sensitive application settings",
-                ])
+                code_lines.extend(
+                    [
+                        "# Required variables for sensitive application settings",
+                    ]
+                )
                 for item in sensitive_settings:
                     sanitized = self._sanitize_name(item.name)
-                    code_lines.extend([
-                        f'variable "function_app_setting_{sanitized}" {{',
-                        f'  description = "Value for {item.name} (set via Key Vault or environment)"',
-                        "  type        = string",
-                        "  sensitive   = true",
-                        "}",
-                        "",
-                    ])
+                    code_lines.extend(
+                        [
+                            f'variable "function_app_setting_{sanitized}" {{',
+                            f'  description = "Value for {item.name} (set via Key Vault or environment)"',
+                            "  type        = string",
+                            "  sensitive   = true",
+                            "}",
+                            "",
+                        ]
+                    )
 
         # Document discovered functions
         if functions:
-            code_lines.extend([
-                f"# Discovered Functions ({len(functions)} total)",
-                "#",
-                "# The following functions were discovered in the source Function App.",
-                "# Deploy function code using one of these methods:",
-                "#",
-                "# Method 1: Azure Functions Core Tools",
-                "#   func azure functionapp publish <function-app-name>",
-                "#",
-                "# Method 2: GitHub Actions",
-                "#   - Use Azure/functions-action@v1",
-                "#   - Example: https://github.com/Azure/functions-action",
-                "#",
-                "# Method 3: Azure DevOps",
-                "#   - Use AzureFunctionApp@1 task",
-                "#",
-            ])
+            code_lines.extend(
+                [
+                    f"# Discovered Functions ({len(functions)} total)",
+                    "#",
+                    "# The following functions were discovered in the source Function App.",
+                    "# Deploy function code using one of these methods:",
+                    "#",
+                    "# Method 1: Azure Functions Core Tools",
+                    "#   func azure functionapp publish <function-app-name>",
+                    "#",
+                    "# Method 2: GitHub Actions",
+                    "#   - Use Azure/functions-action@v1",
+                    "#   - Example: https://github.com/Azure/functions-action",
+                    "#",
+                    "# Method 3: Azure DevOps",
+                    "#   - Use AzureFunctionApp@1 task",
+                    "#",
+                ]
+            )
 
             for item in functions:
                 trigger_type = item.properties.get("trigger_type", "unknown")
                 bindings = item.properties.get("bindings", [])
-                code_lines.extend([
-                    f'# Function: {item.name}',
-                    f'#   Trigger: {trigger_type}',
-                ])
+                code_lines.extend(
+                    [
+                        f"# Function: {item.name}",
+                        f"#   Trigger: {trigger_type}",
+                    ]
+                )
                 if bindings:
-                    code_lines.append(f'#   Bindings: {len(bindings)} configured')
+                    code_lines.append(f"#   Bindings: {len(bindings)} configured")
                 code_lines.append("#")
 
-            code_lines.extend([
-                "",
-                "# Example: Deploy using Azure CLI",
-                "# az functionapp deployment source config-zip \\",
-                "#   --resource-group <resource-group> \\",
-                "#   --name <function-app-name> \\",
-                "#   --src <path-to-zip-file>",
-                "",
-            ])
+            code_lines.extend(
+                [
+                    "",
+                    "# Example: Deploy using Azure CLI",
+                    "# az functionapp deployment source config-zip \\",
+                    "#   --resource-group <resource-group> \\",
+                    "#   --name <function-app-name> \\",
+                    "#   --src <path-to-zip-file>",
+                    "",
+                ]
+            )
 
         # Generate site configuration notes
         if site_configs:
-            code_lines.extend([
-                "# Site Configuration",
-                "# Add these settings to your Function App resource configuration:",
-                "#",
-            ])
+            code_lines.extend(
+                [
+                    "# Site Configuration",
+                    "# Add these settings to your Function App resource configuration:",
+                    "#",
+                ]
+            )
             for item in site_configs:
                 props = item.properties
                 if props.get("always_on"):
@@ -475,88 +501,98 @@ class FunctionAppPlugin(DataPlanePlugin):
                 if props.get("http20_enabled"):
                     code_lines.append("#   http20_enabled = true")
                 if props.get("min_tls_version"):
-                    code_lines.append(f'#   min_tls_version = "{props.get("min_tls_version")}"')
+                    code_lines.append(
+                        f'#   min_tls_version = "{props.get("min_tls_version")}"'
+                    )
                 if props.get("ftps_state"):
                     code_lines.append(f'#   ftps_state = "{props.get("ftps_state")}"')
             code_lines.append("")
 
         # Generate connection strings (as variables)
         if connection_strings:
-            code_lines.extend([
-                "# Connection Strings",
-                "# Note: Store these in Azure Key Vault and reference them",
-                "#",
-                "# connection_string {",
-            ])
+            code_lines.extend(
+                [
+                    "# Connection Strings",
+                    "# Note: Store these in Azure Key Vault and reference them",
+                    "#",
+                    "# connection_string {",
+                ]
+            )
             for item in connection_strings:
                 sanitized = self._sanitize_name(item.name)
                 conn_type = item.properties.get("type", "Custom")
-                code_lines.extend([
-                    f'#   name  = "{item.name}"',
-                    f"#   type  = \"{conn_type}\"",
-                    f"#   value = var.function_app_connection_{sanitized}",
-                    "# }",
-                    "#",
-                ])
+                code_lines.extend(
+                    [
+                        f'#   name  = "{item.name}"',
+                        f'#   type  = "{conn_type}"',
+                        f"#   value = var.function_app_connection_{sanitized}",
+                        "# }",
+                        "#",
+                    ]
+                )
             code_lines.append("")
 
             # Add variable declarations for connection strings
             code_lines.append("# Required variables for connection strings")
             for item in connection_strings:
                 sanitized = self._sanitize_name(item.name)
-                code_lines.extend([
-                    f'variable "function_app_connection_{sanitized}" {{',
-                    f'  description = "Connection string for {item.name}"',
-                    "  type        = string",
-                    "  sensitive   = true",
-                    "}",
-                    "",
-                ])
+                code_lines.extend(
+                    [
+                        f'variable "function_app_connection_{sanitized}" {{',
+                        f'  description = "Connection string for {item.name}"',
+                        "  type        = string",
+                        "  sensitive   = true",
+                        "}",
+                        "",
+                    ]
+                )
 
         # Add deployment examples
-        code_lines.extend([
-            "# ============================================",
-            "# Function App Code Deployment Guide",
-            "# ============================================",
-            "#",
-            "# Option 1: Zip Deploy (Recommended for automation)",
-            "# resource \"null_resource\" \"deploy_function_code\" {",
-            "#   provisioner \"local-exec\" {",
-            "#     command = <<-EOT",
-            "#       cd ${path.module}/function-code",
-            "#       zip -r function.zip .",
-            "#       az functionapp deployment source config-zip \\",
-            "#         --resource-group ${azurerm_resource_group.example.name} \\",
-            "#         --name ${azurerm_linux_function_app.example.name} \\",
-            "#         --src function.zip",
-            "#     EOT",
-            "#   }",
-            "#",
-            "#   depends_on = [azurerm_linux_function_app.example]",
-            "# }",
-            "#",
-            "# Option 2: GitHub Actions CI/CD",
-            "# name: Deploy Azure Function",
-            "# on: [push]",
-            "# jobs:",
-            "#   deploy:",
-            "#     runs-on: ubuntu-latest",
-            "#     steps:",
-            "#       - uses: actions/checkout@v2",
-            "#       - uses: Azure/functions-action@v1",
-            "#         with:",
-            "#           app-name: 'your-function-app-name'",
-            "#           package: '.'",
-            "#",
-            "# Option 3: Azure DevOps Pipeline",
-            "# - task: AzureFunctionApp@1",
-            "#   inputs:",
-            "#     azureSubscription: 'your-subscription'",
-            "#     appType: 'functionAppLinux'",
-            "#     appName: 'your-function-app-name'",
-            "#     package: '$(System.DefaultWorkingDirectory)/**/*.zip'",
-            "",
-        ])
+        code_lines.extend(
+            [
+                "# ============================================",
+                "# Function App Code Deployment Guide",
+                "# ============================================",
+                "#",
+                "# Option 1: Zip Deploy (Recommended for automation)",
+                '# resource "null_resource" "deploy_function_code" {',
+                '#   provisioner "local-exec" {',
+                "#     command = <<-EOT",
+                "#       cd ${path.module}/function-code",
+                "#       zip -r function.zip .",
+                "#       az functionapp deployment source config-zip \\",
+                "#         --resource-group ${azurerm_resource_group.example.name} \\",
+                "#         --name ${azurerm_linux_function_app.example.name} \\",
+                "#         --src function.zip",
+                "#     EOT",
+                "#   }",
+                "#",
+                "#   depends_on = [azurerm_linux_function_app.example]",
+                "# }",
+                "#",
+                "# Option 2: GitHub Actions CI/CD",
+                "# name: Deploy Azure Function",
+                "# on: [push]",
+                "# jobs:",
+                "#   deploy:",
+                "#     runs-on: ubuntu-latest",
+                "#     steps:",
+                "#       - uses: actions/checkout@v2",
+                "#       - uses: Azure/functions-action@v1",
+                "#         with:",
+                "#           app-name: 'your-function-app-name'",
+                "#           package: '.'",
+                "#",
+                "# Option 3: Azure DevOps Pipeline",
+                "# - task: AzureFunctionApp@1",
+                "#   inputs:",
+                "#     azureSubscription: 'your-subscription'",
+                "#     appType: 'functionAppLinux'",
+                "#     appName: 'your-function-app-name'",
+                "#     package: '$(System.DefaultWorkingDirectory)/**/*.zip'",
+                "",
+            ]
+        )
 
         return "\n".join(code_lines)
 
@@ -704,7 +740,8 @@ class FunctionAppPlugin(DataPlanePlugin):
 
         # Group items by type for batch operations
         app_settings = [
-            item for item in source_items
+            item
+            for item in source_items
             if item.item_type in ["app_setting", "function_app_setting"]
         ]
         connection_strings = [

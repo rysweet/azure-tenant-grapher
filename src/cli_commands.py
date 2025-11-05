@@ -2420,13 +2420,18 @@ async def cost_analysis_command_handler(
         sync: Sync costs from Azure before querying
     """
     from datetime import date, timedelta
+
     from azure.identity import DefaultAzureCredential
     from rich.console import Console
-    from rich.table import Table
     from rich.panel import Panel
     from rich.progress import Progress, SpinnerColumn, TextColumn
-    from src.services.cost_management_service import CostManagementService, CostManagementError
+    from rich.table import Table
+
     from src.models.cost_models import Granularity, TimeFrame
+    from src.services.cost_management_service import (
+        CostManagementError,
+        CostManagementService,
+    )
 
     console = Console()
 
@@ -2479,6 +2484,7 @@ async def cost_analysis_command_handler(
     try:
         # Initialize Neo4j driver
         from neo4j import AsyncGraphDatabase
+
         driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
         # Initialize Azure credential
@@ -2503,11 +2509,15 @@ async def cost_analysis_command_handler(
                     time_frame=TimeFrame.CUSTOM,
                     start_date=start_date,
                     end_date=end_date,
-                    granularity=Granularity.DAILY if granularity == "daily" else Granularity.MONTHLY,
+                    granularity=Granularity.DAILY
+                    if granularity == "daily"
+                    else Granularity.MONTHLY,
                 )
 
                 stored_count = await service.store_costs(costs)
-                console.print(f"[green]✅ Synced {stored_count} cost records from Azure[/green]")
+                console.print(
+                    f"[green]✅ Synced {stored_count} cost records from Azure[/green]"
+                )
 
         # Query costs from Neo4j
         summary = await service.query_costs(
@@ -2531,23 +2541,23 @@ async def cost_analysis_command_handler(
 
         # Display service breakdown if available
         if summary.service_breakdown:
-            table = Table(title="Cost by Service", show_header=True, header_style="bold magenta")
+            table = Table(
+                title="Cost by Service", show_header=True, header_style="bold magenta"
+            )
             table.add_column("Service", style="cyan")
             table.add_column("Cost", justify="right", style="green")
             table.add_column("Percentage", justify="right", style="yellow")
 
             sorted_services = sorted(
-                summary.service_breakdown.items(),
-                key=lambda x: x[1],
-                reverse=True
+                summary.service_breakdown.items(), key=lambda x: x[1], reverse=True
             )
 
             for service, cost in sorted_services:
-                percentage = (cost / summary.total_cost * 100) if summary.total_cost > 0 else 0
+                percentage = (
+                    (cost / summary.total_cost * 100) if summary.total_cost > 0 else 0
+                )
                 table.add_row(
-                    service,
-                    f"{cost:.2f} {summary.currency}",
-                    f"{percentage:.1f}%"
+                    service, f"{cost:.2f} {summary.currency}", f"{percentage:.1f}%"
                 )
 
             console.print(table)
@@ -2561,6 +2571,7 @@ async def cost_analysis_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Unexpected error: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -2584,9 +2595,13 @@ async def cost_forecast_command_handler(
     """
     from azure.identity import DefaultAzureCredential
     from rich.console import Console
-    from rich.table import Table
     from rich.panel import Panel
-    from src.services.cost_management_service import CostManagementService, CostManagementError
+    from rich.table import Table
+
+    from src.services.cost_management_service import (
+        CostManagementError,
+        CostManagementService,
+    )
 
     console = Console()
 
@@ -2616,6 +2631,7 @@ async def cost_forecast_command_handler(
     try:
         # Initialize Neo4j driver
         from neo4j import AsyncGraphDatabase
+
         driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
         # Initialize Azure credential
@@ -2630,7 +2646,9 @@ async def cost_forecast_command_handler(
         forecasts = await service.forecast_costs(scope, forecast_days=days)
 
         if not forecasts:
-            console.print("[yellow]⚠️  No forecast data generated (insufficient historical data)[/yellow]")
+            console.print(
+                "[yellow]⚠️  No forecast data generated (insufficient historical data)[/yellow]"
+            )
             await driver.close()
             return
 
@@ -2644,10 +2662,16 @@ async def cost_forecast_command_handler(
 [bold]Total Predicted Cost:[/bold] {total_predicted:.2f} USD
 [bold]Average Daily Cost:[/bold] {total_predicted / days:.2f} USD
         """
-        console.print(Panel(summary_text, title="Forecast Summary", border_style="blue"))
+        console.print(
+            Panel(summary_text, title="Forecast Summary", border_style="blue")
+        )
 
         # Display forecast table (first 7 days)
-        table = Table(title=f"Cost Forecast (first 7 days)", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Cost Forecast (first 7 days)",
+            show_header=True,
+            header_style="bold magenta",
+        )
         table.add_column("Date", style="cyan")
         table.add_column("Predicted Cost", justify="right", style="green")
         table.add_column("Confidence Range", justify="right", style="yellow")
@@ -2656,7 +2680,7 @@ async def cost_forecast_command_handler(
             table.add_row(
                 str(forecast.forecast_date),
                 f"{forecast.predicted_cost:.2f} USD",
-                f"{forecast.confidence_lower:.2f} - {forecast.confidence_upper:.2f}"
+                f"{forecast.confidence_lower:.2f} - {forecast.confidence_upper:.2f}",
             )
 
         console.print(table)
@@ -2664,6 +2688,7 @@ async def cost_forecast_command_handler(
         # Write to output file if specified
         if output:
             import json
+
             forecast_data = [
                 {
                     "date": f.forecast_date.isoformat(),
@@ -2686,6 +2711,7 @@ async def cost_forecast_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Unexpected error: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -2716,9 +2742,14 @@ async def cost_report_command_handler(
         output: Optional output file path
     """
     from datetime import date, timedelta
+
     from azure.identity import DefaultAzureCredential
     from rich.console import Console
-    from src.services.cost_management_service import CostManagementService, CostManagementError
+
+    from src.services.cost_management_service import (
+        CostManagementError,
+        CostManagementService,
+    )
 
     console = Console()
 
@@ -2764,6 +2795,7 @@ async def cost_report_command_handler(
     try:
         # Initialize Neo4j driver
         from neo4j import AsyncGraphDatabase
+
         driver = AsyncGraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
         # Initialize Azure credential
@@ -2796,6 +2828,7 @@ async def cost_report_command_handler(
             else:
                 # Pretty print markdown
                 from rich.markdown import Markdown
+
                 md = Markdown(report_content)
                 console.print(md)
 
@@ -2808,5 +2841,6 @@ async def cost_report_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Unexpected error: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

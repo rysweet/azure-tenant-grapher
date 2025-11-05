@@ -7,15 +7,13 @@ anomaly detection, and report generation.
 
 import json
 from datetime import date, datetime, timedelta
-from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from azure.core.exceptions import HttpResponseError
 from neo4j import AsyncDriver, AsyncGraphDatabase
 
 from src.models.cost_models import (
-    CostAnomaly,
     CostData,
     CostSummary,
     ForecastData,
@@ -312,7 +310,9 @@ class TestCostManagementService:
         def mock_usage(*args, **kwargs):
             call_count["count"] += 1
             if call_count["count"] == 1:
-                raise HttpResponseError(message="Transient error", response=Mock(status_code=500))
+                raise HttpResponseError(
+                    message="Transient error", response=Mock(status_code=500)
+                )
 
             # Return successful result on retry
             mock_result = Mock()
@@ -676,9 +676,7 @@ class TestCostManagementService:
         assert len(anomalies) > 0
 
         # Verify spike was detected
-        spike_anomaly = next(
-            (a for a in anomalies if a.actual_cost == 500.0), None
-        )
+        spike_anomaly = next((a for a in anomalies if a.actual_cost == 500.0), None)
         assert spike_anomaly is not None
         assert spike_anomaly.severity in [SeverityLevel.HIGH, SeverityLevel.CRITICAL]
         assert spike_anomaly.actual_cost > spike_anomaly.expected_cost
@@ -720,7 +718,9 @@ class TestCostManagementService:
         assert len(anomalies) == 0
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires APOC plugin installed in Neo4j - install APOC or mock for production testing")
+    @pytest.mark.skip(
+        reason="Requires APOC plugin installed in Neo4j - install APOC or mock for production testing"
+    )
     async def test_allocate_by_tags(
         self, cost_service: CostManagementService, neo4j_driver: AsyncDriver
     ) -> None:

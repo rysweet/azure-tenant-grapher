@@ -66,13 +66,19 @@ def test_identity_rule_role_assignment_user():
     assert rule.applies(resource)
     rule.emit(resource, db)
     # RoleAssignment node with complete properties
-    assert ("upsert", "RoleAssignment", "id", "ra1", {
-        "id": "ra1",
-        "principalId": "user1",
-        "principalType": "User",
-        "roleDefinitionId": "roledef1",
-        "scope": None,
-    }) in db.calls
+    assert (
+        "upsert",
+        "RoleAssignment",
+        "id",
+        "ra1",
+        {
+            "id": "ra1",
+            "principalId": "user1",
+            "principalType": "User",
+            "roleDefinitionId": "roledef1",
+            "scope": None,
+        },
+    ) in db.calls
     # User node with IaC-standard properties
     assert (
         "upsert",
@@ -114,13 +120,19 @@ def test_identity_rule_role_assignment_service_principal():
     assert rule.applies(resource)
     rule.emit(resource, db)
     # RoleAssignment node with complete properties
-    assert ("upsert", "RoleAssignment", "id", "ra2", {
-        "id": "ra2",
-        "principalId": "sp1",
-        "principalType": "ServicePrincipal",
-        "roleDefinitionId": "roledef2",
-        "scope": None,
-    }) in db.calls
+    assert (
+        "upsert",
+        "RoleAssignment",
+        "id",
+        "ra2",
+        {
+            "id": "ra2",
+            "principalId": "sp1",
+            "principalType": "ServicePrincipal",
+            "roleDefinitionId": "roledef2",
+            "scope": None,
+        },
+    ) in db.calls
     # ServicePrincipal node with IaC-standard properties
     assert (
         "upsert",
@@ -156,13 +168,19 @@ def test_identity_rule_role_assignment_managed_identity():
     assert rule.applies(resource)
     rule.emit(resource, db)
     # RoleAssignment node with complete properties
-    assert ("upsert", "RoleAssignment", "id", "ra3", {
-        "id": "ra3",
-        "principalId": "mi1",
-        "principalType": "ManagedIdentity",
-        "roleDefinitionId": "roledef3",
-        "scope": None,
-    }) in db.calls
+    assert (
+        "upsert",
+        "RoleAssignment",
+        "id",
+        "ra3",
+        {
+            "id": "ra3",
+            "principalId": "mi1",
+            "principalType": "ManagedIdentity",
+            "roleDefinitionId": "roledef3",
+            "scope": None,
+        },
+    ) in db.calls
     # ManagedIdentity node with IaC-standard properties
     assert (
         "upsert",
@@ -198,13 +216,19 @@ def test_identity_rule_role_assignment_group():
     assert rule.applies(resource)
     rule.emit(resource, db)
     # RoleAssignment node with complete properties
-    assert ("upsert", "RoleAssignment", "id", "ra4", {
-        "id": "ra4",
-        "principalId": "group1",
-        "principalType": "Group",
-        "roleDefinitionId": "roledef4",
-        "scope": None,
-    }) in db.calls
+    assert (
+        "upsert",
+        "RoleAssignment",
+        "id",
+        "ra4",
+        {
+            "id": "ra4",
+            "principalId": "group1",
+            "principalType": "Group",
+            "roleDefinitionId": "roledef4",
+            "scope": None,
+        },
+    ) in db.calls
     # IdentityGroup node with IaC-standard properties
     assert (
         "upsert",

@@ -567,7 +567,7 @@ class AzureDiscoveryService:
 
             return role_assignments
 
-        except Exception as exc:
+        except Exception:
             # Catch-all for unexpected errors
             logger.exception(
                 f"Unexpected error discovering role assignments in subscription {subscription_id}"

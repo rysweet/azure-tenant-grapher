@@ -5,13 +5,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
 
 
 class ReplicationMode(Enum):
     """Data plane replication modes."""
+
     NONE = "none"
     TEMPLATE = "template"  # Structure only, no data
     REPLICATION = "replication"  # Full data copy
@@ -77,14 +78,14 @@ def orchestrate_dataplane_replication(
 
     # Import plugins
     try:
-        from src.iac.data_plane_plugins.vm_plugin import VMPlugin
         from src.iac.data_plane_plugins.acr_plugin import ContainerRegistryPlugin
         from src.iac.data_plane_plugins.cosmosdb_plugin import CosmosDBPlugin
-        from src.iac.plugins.storage_plugin import StorageAccountPlugin
+        from src.iac.data_plane_plugins.vm_plugin import VMPlugin
+        from src.iac.plugins.apim_plugin import APIManagementPlugin
+        from src.iac.plugins.appservice_plugin import AppServicePlugin
         from src.iac.plugins.keyvault_plugin import KeyVaultPlugin
         from src.iac.plugins.sql_plugin import SQLDatabasePlugin
-        from src.iac.plugins.appservice_plugin import AppServicePlugin
-        from src.iac.plugins.apim_plugin import APIManagementPlugin
+        from src.iac.plugins.storage_plugin import StorageAccountPlugin
     except ImportError as e:
         logger.error(f"Failed to import data plane plugins: {e}")
         return {
@@ -122,7 +123,9 @@ def orchestrate_dataplane_replication(
         "resources_processed": 0,
         "plugins_executed": [],
         "errors": [],
-        "warnings": ["Data plane replication not yet fully integrated with Neo4j discovery"],
+        "warnings": [
+            "Data plane replication not yet fully integrated with Neo4j discovery"
+        ],
     }
 
     # Execute replication for each resource
@@ -148,7 +151,9 @@ def orchestrate_dataplane_replication(
         try:
             # Map source resource to target resource
             # TODO: Implement resource mapping logic
-            source_resource_id = resource_id.replace(target_subscription_id, source_subscription_id)
+            source_resource_id = resource_id.replace(
+                target_subscription_id, source_subscription_id
+            )
             target_resource_id = resource_id
 
             # Execute replication
@@ -166,7 +171,7 @@ def orchestrate_dataplane_replication(
 
         except Exception as e:
             logger.error(f"Error replicating {resource_id}: {e}")
-            results["errors"].append(f"{resource_id}: {str(e)}")
+            results["errors"].append(f"{resource_id}: {e!s}")
 
     # Determine overall status
     if results["errors"]:

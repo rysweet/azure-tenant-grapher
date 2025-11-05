@@ -272,7 +272,9 @@ class AppServiceTranslator(BaseTranslator):
         # Defensive type check: ensure settings is a dict
         if not isinstance(settings, dict):
             if settings is not None:
-                warnings.append(f"App settings is not a dict (got {type(settings).__name__}), skipping translation")
+                warnings.append(
+                    f"App settings is not a dict (got {type(settings).__name__}), skipping translation"
+                )
             return settings, warnings
 
         if not settings:

@@ -184,7 +184,9 @@ class TerraformImporter:
         Raises:
             AzureError: If Azure API calls fail
         """
-        logger.info(f"Detecting existing resources in subscription {self.subscription_id}")
+        logger.info(
+            f"Detecting existing resources in subscription {self.subscription_id}"
+        )
         resources = []
 
         try:
@@ -224,7 +226,9 @@ class TerraformImporter:
         if self.import_strategy == ImportStrategy.RESOURCE_GROUPS:
             # Only return resource groups
             return [
-                r for r in resources if r["type"] == "Microsoft.Resources/resourceGroups"
+                r
+                for r in resources
+                if r["type"] == "Microsoft.Resources/resourceGroups"
             ]
         elif self.import_strategy == ImportStrategy.ALL_RESOURCES:
             # Return all resources
@@ -232,9 +236,13 @@ class TerraformImporter:
         elif self.import_strategy == ImportStrategy.SELECTIVE:
             # This would integrate with ConflictDetector
             # For now, just return resource groups
-            logger.warning("Selective strategy not fully implemented, using resource_groups")
+            logger.warning(
+                "Selective strategy not fully implemented, using resource_groups"
+            )
             return [
-                r for r in resources if r["type"] == "Microsoft.Resources/resourceGroups"
+                r
+                for r in resources
+                if r["type"] == "Microsoft.Resources/resourceGroups"
             ]
         else:
             return []
@@ -360,9 +368,7 @@ class TerraformImporter:
 
         # Check Terraform is installed and initialized
         if not self._check_terraform_ready():
-            report.warnings.append(
-                "Terraform not ready. Run 'terraform init' first."
-            )
+            report.warnings.append("Terraform not ready. Run 'terraform init' first.")
             return report
 
         # Backup state before importing
@@ -437,7 +443,12 @@ class TerraformImporter:
         try:
             # Run terraform import command
             process = subprocess.run(
-                ["terraform", "import", command.terraform_address, command.azure_resource_id],
+                [
+                    "terraform",
+                    "import",
+                    command.terraform_address,
+                    command.azure_resource_id,
+                ],
                 cwd=self.terraform_dir,
                 capture_output=True,
                 text=True,
@@ -448,7 +459,9 @@ class TerraformImporter:
             error_message = None
 
             if not success:
-                error_message = process.stderr or f"Command failed with code {process.returncode}"
+                error_message = (
+                    process.stderr or f"Command failed with code {process.returncode}"
+                )
 
             return ImportResult(
                 command=command,

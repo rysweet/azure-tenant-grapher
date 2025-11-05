@@ -68,7 +68,10 @@ class StateAssessor:
         """Check if Neo4j is accessible"""
         try:
             import neo4j
-            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD))
+
+            driver = neo4j.GraphDatabase.driver(
+                NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD)
+            )
             with driver.session() as session:
                 session.run("RETURN 1")
             driver.close()
@@ -84,7 +87,10 @@ class StateAssessor:
 
         try:
             import neo4j
-            driver = neo4j.GraphDatabase.driver(NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD))
+
+            driver = neo4j.GraphDatabase.driver(
+                NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD)
+            )
 
             state = {}
 
@@ -102,8 +108,9 @@ class StateAssessor:
                     RETURN r.tenantId as tenant, count(r) as count
                     ORDER BY tenant
                 """)
-                state["resources_by_tenant"] = {record["tenant"] or "unknown": record["count"]
-                                                for record in result}
+                state["resources_by_tenant"] = {
+                    record["tenant"] or "unknown": record["count"] for record in result
+                }
 
                 # Entra ID resources
                 result = session.run("""
@@ -112,8 +119,9 @@ class StateAssessor:
                     RETURN n.type as type, count(n) as count
                     ORDER BY count DESC
                 """)
-                state["entra_id_resources"] = {record["type"]: record["count"]
-                                               for record in result}
+                state["entra_id_resources"] = {
+                    record["type"]: record["count"] for record in result
+                }
 
                 # Resource types
                 result = session.run("""
@@ -122,8 +130,11 @@ class StateAssessor:
                     ORDER BY count DESC
                     LIMIT 20
                 """)
-                state["top_resource_types"] = {record["type"]: record["count"]
-                                               for record in result if record["type"]}
+                state["top_resource_types"] = {
+                    record["type"]: record["count"]
+                    for record in result
+                    if record["type"]
+                }
 
             driver.close()
             return state
@@ -133,8 +144,13 @@ class StateAssessor:
 
     def get_iteration_state(self) -> Dict[str, Any]:
         """Get current iteration state"""
-        iterations = sorted([d for d in DEMOS_DIR.iterdir()
-                           if d.is_dir() and d.name.startswith("iteration")])
+        iterations = sorted(
+            [
+                d
+                for d in DEMOS_DIR.iterdir()
+                if d.is_dir() and d.name.startswith("iteration")
+            ]
+        )
 
         if not iterations:
             return {"latest_iteration": 0, "iterations": []}
@@ -158,7 +174,9 @@ class StateAssessor:
             "terraform_initialized": terraform_init,
             "has_plan": has_plan,
             "is_deployed": has_state,
-            "iterations": [int(d.name.replace("iteration", "")) for d in iterations[-10:]]
+            "iterations": [
+                int(d.name.replace("iteration", "")) for d in iterations[-10:]
+            ],
         }
 
     def get_deployment_state(self) -> Dict[str, Any]:
@@ -175,10 +193,12 @@ class StateAssessor:
 
         # Check Azure CLI connection
         try:
-            result = subprocess.run(["az", "account", "show"],
-                                  capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["az", "account", "show"], capture_output=True, text=True, timeout=10
+            )
             if result.returncode == 0:
                 import json
+
                 account = json.loads(result.stdout)
                 current_tenant = account.get("name")
                 logged_in = True
@@ -194,7 +214,7 @@ class StateAssessor:
             "logged_in_to_azure": logged_in,
             "current_tenant": current_tenant,
             "target_tenant": TARGET_TENANT,
-            "credentials_complete": env_vars
+            "credentials_complete": env_vars,
         }
 
     def assess_full_state(self) -> Dict[str, Any]:
@@ -203,7 +223,7 @@ class StateAssessor:
             "timestamp": datetime.utcnow().isoformat(),
             "neo4j": self.get_neo4j_state(),
             "iterations": self.get_iteration_state(),
-            "deployment": self.get_deployment_state()
+            "deployment": self.get_deployment_state(),
         }
 
 
@@ -214,15 +234,13 @@ class WorkstreamOrchestrator:
         self.reporter = reporter
         self.workstreams = {}
 
-    def run_command(self, cmd: List[str], cwd: Path = REPO_ROOT, timeout: int = 300) -> Tuple[int, str, str]:
+    def run_command(
+        self, cmd: List[str], cwd: Path = REPO_ROOT, timeout: int = 300
+    ) -> Tuple[int, str, str]:
         """Run a command and return exit code, stdout, stderr"""
         try:
             result = subprocess.run(
-                cmd,
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
+                cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout
             )
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
@@ -252,10 +270,15 @@ class WorkstreamOrchestrator:
         output_dir = DEMOS_DIR / f"iteration{iteration_num}"
 
         cmd = [
-            "uv", "run", "atg", "generate-iac",
-            "--resource-group-prefix", f"ITERATION{iteration_num}_",
+            "uv",
+            "run",
+            "atg",
+            "generate-iac",
+            "--resource-group-prefix",
+            f"ITERATION{iteration_num}_",
             "--skip-name-validation",
-            "--output", str(output_dir)
+            "--output",
+            str(output_dir),
         ]
 
         code, stdout, stderr = self.run_command(cmd, timeout=600)
@@ -264,7 +287,9 @@ class WorkstreamOrchestrator:
             self.reporter.send(f"✅ Generated iteration {iteration_num}")
             return True
         else:
-            self.reporter.send(f"❌ Failed to generate iteration {iteration_num}: {stderr[:200]}")
+            self.reporter.send(
+                f"❌ Failed to generate iteration {iteration_num}: {stderr[:200]}"
+            )
             return False
 
     def validate_iteration(self, iteration_num: int) -> Tuple[bool, List[str]]:
@@ -275,8 +300,7 @@ class WorkstreamOrchestrator:
 
         # Initialize terraform
         code, stdout, stderr = self.run_command(
-            ["terraform", "init", "-upgrade"],
-            cwd=iteration_dir
+            ["terraform", "init", "-upgrade"], cwd=iteration_dir
         )
 
         if code != 0:
@@ -284,8 +308,7 @@ class WorkstreamOrchestrator:
 
         # Validate
         code, stdout, stderr = self.run_command(
-            ["terraform", "validate", "-json"],
-            cwd=iteration_dir
+            ["terraform", "validate", "-json"], cwd=iteration_dir
         )
 
         if code == 0:
@@ -294,6 +317,7 @@ class WorkstreamOrchestrator:
             # Parse errors from JSON output
             try:
                 import json
+
                 result = json.loads(stdout)
                 errors = []
                 for diag in result.get("diagnostics", []):
@@ -311,9 +335,7 @@ class WorkstreamOrchestrator:
 
         # Create plan
         code, stdout, stderr = self.run_command(
-            ["terraform", "plan", "-out=tfplan"],
-            cwd=iteration_dir,
-            timeout=900
+            ["terraform", "plan", "-out=tfplan"], cwd=iteration_dir, timeout=900
         )
 
         if code != 0:
@@ -324,7 +346,7 @@ class WorkstreamOrchestrator:
         code, stdout, stderr = self.run_command(
             ["terraform", "apply", "-auto-approve", "tfplan"],
             cwd=iteration_dir,
-            timeout=3600  # 1 hour for deployment
+            timeout=3600,  # 1 hour for deployment
         )
 
         if code == 0:
@@ -356,7 +378,7 @@ class AutonomousEngine:
                 "phase": "assessment",
                 "completed_phases": [],
                 "iterations_deployed": [],
-                "errors": []
+                "errors": [],
             }
 
     def save_status(self):
@@ -407,7 +429,9 @@ class AutonomousEngine:
         is_valid, errors = self.orchestrator.validate_iteration(iteration_num)
 
         if not is_valid:
-            self.reporter.send(f"⚠️ Iteration {iteration_num} has {len(errors)} validation errors")
+            self.reporter.send(
+                f"⚠️ Iteration {iteration_num} has {len(errors)} validation errors"
+            )
             # Log errors but continue - we'll fix in next iteration
             self.status.setdefault("validation_errors", {})[str(iteration_num)] = errors
             self.save_status()
@@ -418,19 +442,22 @@ class AutonomousEngine:
         # Check if we should deploy (3 consecutive passes)
         recent_iters = list(range(max(1, iteration_num - 2), iteration_num + 1))
         all_valid = all(
-            str(i) not in self.status.get("validation_errors", {})
-            for i in recent_iters
+            str(i) not in self.status.get("validation_errors", {}) for i in recent_iters
         )
 
         if all_valid and len(recent_iters) >= 3:
-            self.reporter.send(f"🎯 3 consecutive validations passed, deploying iteration {iteration_num}")
+            self.reporter.send(
+                f"🎯 3 consecutive validations passed, deploying iteration {iteration_num}"
+            )
             success = self.orchestrator.deploy_iteration(iteration_num)
             if success:
                 self.status.setdefault("iterations_deployed", []).append(iteration_num)
                 self.save_status()
             return success
         else:
-            self.reporter.send("⏭️ Continuing to next iteration (need 3 consecutive passes)")
+            self.reporter.send(
+                "⏭️ Continuing to next iteration (need 3 consecutive passes)"
+            )
             return True
 
     def run_continuous_loop(self):
@@ -449,7 +476,9 @@ class AutonomousEngine:
                 # Assess and plan
                 plan = self.assess_and_plan()
 
-                self.reporter.send(f"📋 Cycle {iteration_count}: Phase={self.status.get('phase')}")
+                self.reporter.send(
+                    f"📋 Cycle {iteration_count}: Phase={self.status.get('phase')}"
+                )
 
                 # Execute plan
                 if plan["generate_iteration_needed"] or iteration_count == 1:
@@ -464,7 +493,9 @@ class AutonomousEngine:
                 # Check if we've achieved control plane fidelity
                 if self.status.get("iterations_deployed"):
                     last_deployed = self.status["iterations_deployed"][-1]
-                    self.reporter.send(f"✅ Control plane deployed (iteration {last_deployed})")
+                    self.reporter.send(
+                        f"✅ Control plane deployed (iteration {last_deployed})"
+                    )
 
                     # Move to Entra ID phase
                     if "entra_id" not in self.status.get("completed_phases", []):
@@ -486,18 +517,22 @@ class AutonomousEngine:
             except Exception as e:
                 error_msg = f"❌ Error in iteration {iteration_count}: {e!s}"
                 self.reporter.send(error_msg)
-                self.status.setdefault("errors", []).append({
-                    "iteration": iteration_count,
-                    "error": str(e),
-                    "traceback": traceback.format_exc(),
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                self.status.setdefault("errors", []).append(
+                    {
+                        "iteration": iteration_count,
+                        "error": str(e),
+                        "traceback": traceback.format_exc(),
+                        "timestamp": datetime.utcnow().isoformat(),
+                    }
+                )
                 self.save_status()
 
                 # Wait before retry
                 time.sleep(30)
 
-        self.reporter.send(f"🏁 Autonomous engine completed {iteration_count} iterations")
+        self.reporter.send(
+            f"🏁 Autonomous engine completed {iteration_count} iterations"
+        )
 
 
 def main():

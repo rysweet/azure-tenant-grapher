@@ -993,9 +993,7 @@ class APIMPlugin(DataPlanePlugin):
                         )
 
                 except (AzureError, HttpResponseError) as e:
-                    errors.append(
-                        f"Failed to replicate policy for '{api_name}': {e!s}"
-                    )
+                    errors.append(f"Failed to replicate policy for '{api_name}': {e!s}")
                     skipped += 1
 
         # Products, backends, named values replication

@@ -771,7 +771,9 @@ def generate_spec(
 )
 @click.option(
     "--import-strategy",
-    type=click.Choice(["resource_groups", "all_resources", "selective"], case_sensitive=False),
+    type=click.Choice(
+        ["resource_groups", "all_resources", "selective"], case_sensitive=False
+    ),
     default="resource_groups",
     help="Strategy for importing existing resources: resource_groups (default), all_resources, or selective (Issue #412)",
 )

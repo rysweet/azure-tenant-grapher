@@ -240,34 +240,52 @@ class AzureTenantGrapher:
 
                 try:
                     # Fetch service principals
-                    logger.info("Fetching service principals from Microsoft Graph API...")
-                    service_principals = await self.aad_graph_service.get_service_principals()
-                    logger.info(f"Successfully fetched {len(service_principals)} service principals from Graph API")
+                    logger.info(
+                        "Fetching service principals from Microsoft Graph API..."
+                    )
+                    service_principals = (
+                        await self.aad_graph_service.get_service_principals()
+                    )
+                    logger.info(
+                        f"Successfully fetched {len(service_principals)} service principals from Graph API"
+                    )
 
                     # Convert service principals to resource format and add to all_resources
                     sp_count_before = len(all_resources)
                     for sp in service_principals:
                         sp_resource = {
                             "id": f"/servicePrincipals/{sp['id']}",
-                            "name": sp.get("displayName", sp['id']),
+                            "name": sp.get("displayName", sp["id"]),
                             "type": "Microsoft.Graph/servicePrincipals",
                             "properties": sp,
-                            "subscription_id": subscriptions[0]["id"] if subscriptions else "",
+                            "subscription_id": subscriptions[0]["id"]
+                            if subscriptions
+                            else "",
                             "resource_group": None,  # Service principals are tenant-level
                             "location": "global",
                             "tags": {},
                         }
                         all_resources.append(sp_resource)
-                        logger.debug(f"Added service principal: {sp_resource['name']} (ID: {sp['id']})")
+                        logger.debug(
+                            f"Added service principal: {sp_resource['name']} (ID: {sp['id']})"
+                        )
 
-                    logger.info(f"Successfully added {len(service_principals)} service principals to processing queue")
-                    logger.info(f"Total resources after AAD enrichment: {len(all_resources)} (was {sp_count_before})")
+                    logger.info(
+                        f"Successfully added {len(service_principals)} service principals to processing queue"
+                    )
+                    logger.info(
+                        f"Total resources after AAD enrichment: {len(all_resources)} (was {sp_count_before})"
+                    )
 
                 except Exception as e:
-                    logger.exception(f"Failed to fetch service principals from Graph API: {e}")
+                    logger.exception(
+                        f"Failed to fetch service principals from Graph API: {e}"
+                    )
                     logger.warning("Continuing without service principal enrichment")
             else:
-                logger.info("AAD enrichment disabled (enable_aad_import=False or AAD service failed to initialize)")
+                logger.info(
+                    "AAD enrichment disabled (enable_aad_import=False or AAD service failed to initialize)"
+                )
                 logger.info("Skipping service principal discovery")
 
             # 4. Process resources

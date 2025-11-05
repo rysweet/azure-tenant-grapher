@@ -9,11 +9,11 @@ Tests cover:
 - Edge cases and error handling
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from src.iac.plugins.base_plugin import DataPlaneItem, ReplicationResult
+from src.iac.plugins.base_plugin import DataPlaneItem
 from src.iac.plugins.functionapp_plugin import FunctionAppPlugin
 
 
@@ -191,8 +191,11 @@ class TestFunctionAppDiscovery:
 
         # Mock other methods to return empty
         from azure.core.exceptions import HttpResponseError
+
         mock_client.web_apps.list_functions.return_value = []
-        mock_client.web_apps.get_configuration.side_effect = HttpResponseError("Not found")
+        mock_client.web_apps.get_configuration.side_effect = HttpResponseError(
+            "Not found"
+        )
         mock_client.web_apps.list_connection_strings.return_value = Mock(properties={})
 
         resource = {
@@ -239,9 +242,7 @@ class TestFunctionAppDiscovery:
         mock_function1.href = "https://..."
         mock_function1.properties = Mock()
         mock_function1.properties.config = {
-            "bindings": [
-                {"type": "httpTrigger", "direction": "in", "name": "req"}
-            ]
+            "bindings": [{"type": "httpTrigger", "direction": "in", "name": "req"}]
         }
 
         mock_function2 = Mock()
@@ -363,7 +364,10 @@ class TestFunctionAppDiscovery:
         )
         mock_client.web_apps.list_functions.return_value = []
         from azure.core.exceptions import HttpResponseError
-        mock_client.web_apps.get_configuration.side_effect = HttpResponseError("Not found")
+
+        mock_client.web_apps.get_configuration.side_effect = HttpResponseError(
+            "Not found"
+        )
 
         resource = {
             "id": "/subscriptions/sub-123/resourceGroups/rg-1/providers/Microsoft.Web/sites/func-app",

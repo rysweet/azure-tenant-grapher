@@ -111,17 +111,18 @@ def deploy_command(
         if dataplane != "none" and not dry_run:
             click.echo(f"\nStarting data plane replication ({dataplane} mode)...")
 
-            from ..deployment.dataplane_orchestrator import (
-                orchestrate_dataplane_replication,
-                ReplicationMode,
-            )
-
             # Need source subscription/tenant for replication
             # TODO: Get these from Neo4j or user input
             # For now, warn that this requires additional configuration
-            click.echo("⚠️  Data plane replication requires source tenant/subscription configuration")
-            click.echo("    This feature is in development. Control plane deployment completed successfully.")
-            click.echo("    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication instructions.")
+            click.echo(
+                "⚠️  Data plane replication requires source tenant/subscription configuration"
+            )
+            click.echo(
+                "    This feature is in development. Control plane deployment completed successfully."
+            )
+            click.echo(
+                "    See docs/DATAPLANE_PLUGIN_ARCHITECTURE.md for manual replication instructions."
+            )
 
             # Placeholder for future implementation
             # dataplane_result = orchestrate_dataplane_replication(

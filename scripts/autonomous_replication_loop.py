@@ -72,9 +72,7 @@ class AutonomousReplicationLoop:
         try:
             if IMESSAGE_TOOL.exists():
                 subprocess.run(
-                    [str(IMESSAGE_TOOL), message],
-                    capture_output=True,
-                    timeout=10
+                    [str(IMESSAGE_TOOL), message], capture_output=True, timeout=10
                 )
         except Exception as e:
             print(f"Failed to send iMessage: {e}")
@@ -92,12 +90,14 @@ class AutonomousReplicationLoop:
         }
 
         # Check if all criteria met
-        all_met = all([
-            results["graph_fidelity"]["met"],
-            results["control_plane_fidelity"]["met"],
-            results["validation_status"]["met"],
-            results["deployment_status"]["met"],
-        ])
+        all_met = all(
+            [
+                results["graph_fidelity"]["met"],
+                results["control_plane_fidelity"]["met"],
+                results["validation_status"]["met"],
+                results["deployment_status"]["met"],
+            ]
+        )
 
         return all_met, results
 
@@ -146,41 +146,53 @@ class AutonomousReplicationLoop:
             # Success = target has at least as many resources as source
             met = target_count >= source_count and source_count > 0
 
-            delta_pct = abs(target_count - source_count) / max(source_count, 1) if source_count > 0 else 0
+            delta_pct = (
+                abs(target_count - source_count) / max(source_count, 1)
+                if source_count > 0
+                else 0
+            )
 
             return {
                 "met": met,
                 "source_nodes": source_count,
                 "target_nodes": target_count,
                 "delta_percent": delta_pct * 100,
-                "note": "Target should have >= source due to multiple iterations"
+                "note": "Target should have >= source due to multiple iterations",
             }
         except Exception as e:
             print(f"Graph fidelity check failed: {e}")
             import traceback
+
             traceback.print_exc()
             return {"met": False, "error": str(e)}
-
 
     def check_control_plane_fidelity(self) -> Dict:
         """Check control plane resource coverage"""
         # Check latest iteration validation
-        latest_iter = max([
-            int(d.name.replace("iteration", ""))
-            for d in ITERATION_DIR.glob("iteration*")
-            if d.is_dir() and d.name.replace("iteration", "").isdigit()
-        ])
+        latest_iter = max(
+            [
+                int(d.name.replace("iteration", ""))
+                for d in ITERATION_DIR.glob("iteration*")
+                if d.is_dir() and d.name.replace("iteration", "").isdigit()
+            ]
+        )
 
         iter_path = ITERATION_DIR / f"iteration{latest_iter}"
 
         # Run validation
         try:
             result = subprocess.run(
-                ["uv", "run", "python", "scripts/validate_generated_iac.py", str(iter_path)],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "scripts/validate_generated_iac.py",
+                    str(iter_path),
+                ],
                 capture_output=True,
                 text=True,
                 timeout=60,
-                cwd=PROJECT_ROOT
+                cwd=PROJECT_ROOT,
             )
 
             # Parse validation output
@@ -189,7 +201,7 @@ class AutonomousReplicationLoop:
             return {
                 "met": valid,
                 "latest_iteration": latest_iter,
-                "validation_output": result.stdout[-500:] if result.stdout else ""
+                "validation_output": result.stdout[-500:] if result.stdout else "",
             }
         except Exception as e:
             return {"met": False, "error": str(e)}
@@ -200,16 +212,13 @@ class AutonomousReplicationLoop:
         return {
             "met": consecutive >= 3,
             "consecutive_valid": consecutive,
-            "required": 3
+            "required": 3,
         }
 
     def check_deployment_status(self) -> Dict:
         """Check if deployment succeeded"""
         deployed = self.deployment_iteration > 0
-        return {
-            "met": deployed,
-            "last_deployment": self.deployment_iteration
-        }
+        return {"met": deployed, "last_deployment": self.deployment_iteration}
 
     def identify_gaps(self) -> List[Dict]:
         """Identify gaps between source and target tenants"""
@@ -246,14 +255,17 @@ class AutonomousReplicationLoop:
 
             if result:
                 # Check which are supported in terraform_emitter
-                gaps.append({
-                    "type": "missing_resource_types",
-                    "details": result[:10],  # Top 10
-                    "priority": "P0"
-                })
+                gaps.append(
+                    {
+                        "type": "missing_resource_types",
+                        "details": result[:10],  # Top 10
+                        "priority": "P0",
+                    }
+                )
         except Exception as e:
             print(f"Gap identification failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         return gaps
@@ -272,16 +284,16 @@ class AutonomousReplicationLoop:
         prompt = f"""
 You are working on fixing a gap in the Azure Tenant Grapher replication.
 
-Gap Type: {gap['type']}
-Priority: {gap['priority']}
-Details: {json.dumps(gap['details'], indent=2)}
+Gap Type: {gap["type"]}
+Priority: {gap["priority"]}
+Details: {json.dumps(gap["details"], indent=2)}
 
 Your task:
 1. Analyze the gap
 2. Implement a fix following @.claude/workflow/DEFAULT_WORKFLOW.md
 3. Test the fix
 4. Commit the fix
-5. Report back to {ws_dir / 'status.json'}
+5. Report back to {ws_dir / "status.json"}
 
 Do not stop until the gap is fixed.
 """
@@ -295,12 +307,14 @@ Do not stop until the gap is fixed.
         cmd = f"copilot --allow-all-tools -p '{prompt}' > {log_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=PROJECT_ROOT)
 
-        self.workstreams.append({
-            "id": workstream_id,
-            "gap": gap,
-            "started_at": datetime.utcnow().isoformat(),
-            "status": "running"
-        })
+        self.workstreams.append(
+            {
+                "id": workstream_id,
+                "gap": gap,
+                "started_at": datetime.utcnow().isoformat(),
+                "status": "running",
+            }
+        )
 
         return workstream_id
 
@@ -325,13 +339,25 @@ Do not stop until the gap is fixed.
         output_dir = ITERATION_DIR / f"iteration{iteration_num}"
 
         try:
-            result = subprocess.run([
-                "uv", "run", "atg", "generate-iac",
-                "--resource-filters", "resourceGroup=~'(?i).*(simuland|SimuLand).*'",
-                "--resource-group-prefix", f"ITERATION{iteration_num}_",
-                "--skip-name-validation",
-                "--output", str(output_dir)
-            ], capture_output=True, text=True, timeout=300, cwd=PROJECT_ROOT)
+            result = subprocess.run(
+                [
+                    "uv",
+                    "run",
+                    "atg",
+                    "generate-iac",
+                    "--resource-filters",
+                    "resourceGroup=~'(?i).*(simuland|SimuLand).*'",
+                    "--resource-group-prefix",
+                    f"ITERATION{iteration_num}_",
+                    "--skip-name-validation",
+                    "--output",
+                    str(output_dir),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=300,
+                cwd=PROJECT_ROOT,
+            )
 
             success = result.returncode == 0
             if success:
@@ -354,10 +380,7 @@ Do not stop until the gap is fixed.
         try:
             # Terraform init
             subprocess.run(
-                ["terraform", "init"],
-                cwd=iter_dir,
-                capture_output=True,
-                timeout=120
+                ["terraform", "init"], cwd=iter_dir, capture_output=True, timeout=120
             )
 
             # Terraform validate
@@ -366,7 +389,7 @@ Do not stop until the gap is fixed.
                 cwd=iter_dir,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
 
             valid = result.returncode == 0
@@ -374,8 +397,8 @@ Do not stop until the gap is fixed.
 
             if not valid:
                 # Parse errors
-                for line in result.stderr.split('\n'):
-                    if 'Error:' in line:
+                for line in result.stderr.split("\n"):
+                    if "Error:" in line:
                         errors.append(line)
 
             if valid:
@@ -408,7 +431,7 @@ Do not stop until the gap is fixed.
                 ["az", "account", "set", "--subscription", TARGET_SUBSCRIPTION],
                 capture_output=True,
                 timeout=30,
-                check=True
+                check=True,
             )
         except Exception as e:
             print(f"Failed to switch subscription: {e}")
@@ -421,13 +444,15 @@ Do not stop until the gap is fixed.
                 ["az", "account", "show", "--query", "id", "-o", "tsv"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             subscription_id = sub_result.stdout.strip()
             print(f"Confirmed subscription: {subscription_id}")
 
             if subscription_id != TARGET_SUBSCRIPTION:
-                print(f"WARNING: Subscription mismatch! Expected {TARGET_SUBSCRIPTION}, got {subscription_id}")
+                print(
+                    f"WARNING: Subscription mismatch! Expected {TARGET_SUBSCRIPTION}, got {subscription_id}"
+                )
                 self.send_imessage("⚠️ Subscription mismatch in deployment")
         except Exception as e:
             print(f"Failed to get subscription ID: {e}")
@@ -447,7 +472,7 @@ Do not stop until the gap is fixed.
                 capture_output=True,
                 text=True,
                 timeout=600,
-                env=env
+                env=env,
             )
 
             if plan_result.returncode != 0:
@@ -464,14 +489,16 @@ Do not stop until the gap is fixed.
                 capture_output=True,
                 text=True,
                 timeout=3600,  # 1 hour
-                env=env
+                env=env,
             )
 
             success = apply_result.returncode == 0
 
             if success:
                 print(f"✓ Iteration {iteration_num} deployed successfully")
-                self.send_imessage(f"✅ Iteration {iteration_num} deployed successfully!")
+                self.send_imessage(
+                    f"✅ Iteration {iteration_num} deployed successfully!"
+                )
                 self.deployment_iteration = iteration_num
             else:
                 print(f"✗ Iteration {iteration_num} deployment failed")
@@ -481,7 +508,9 @@ Do not stop until the gap is fixed.
             return success
         except Exception as e:
             print(f"Deployment failed: {e}")
-            self.send_imessage(f"❌ Iteration {iteration_num} deployment exception: {e}")
+            self.send_imessage(
+                f"❌ Iteration {iteration_num} deployment exception: {e}"
+            )
             return False
 
     def scan_target_tenant(self) -> bool:
@@ -494,7 +523,7 @@ Do not stop until the gap is fixed.
                 capture_output=True,
                 text=True,
                 timeout=1800,  # 30 minutes
-                cwd=PROJECT_ROOT
+                cwd=PROJECT_ROOT,
             )
 
             success = result.returncode == 0
@@ -539,26 +568,42 @@ Do not stop until the gap is fixed.
 
             # Report status
             print("\nObjective Status:")
-            print(f"  Graph Fidelity: {'✓' if results['graph_fidelity']['met'] else '✗'}")
-            print(f"  Control Plane: {'✓' if results['control_plane_fidelity']['met'] else '✗'}")
-            print(f"  Validation: {'✓' if results['validation_status']['met'] else '✗'}")
-            print(f"  Deployment: {'✓' if results['deployment_status']['met'] else '✗'}")
+            print(
+                f"  Graph Fidelity: {'✓' if results['graph_fidelity']['met'] else '✗'}"
+            )
+            print(
+                f"  Control Plane: {'✓' if results['control_plane_fidelity']['met'] else '✗'}"
+            )
+            print(
+                f"  Validation: {'✓' if results['validation_status']['met'] else '✗'}"
+            )
+            print(
+                f"  Deployment: {'✓' if results['deployment_status']['met'] else '✗'}"
+            )
 
             # 2. Identify gaps
             gaps = self.identify_gaps()
 
             # 3. Spawn workstreams to fix gaps (parallel)
             for gap in gaps[:3]:  # Top 3 priorities
-                if not any(ws['gap']['type'] == gap['type'] and ws['status'] == 'running'
-                          for ws in self.workstreams):
+                if not any(
+                    ws["gap"]["type"] == gap["type"] and ws["status"] == "running"
+                    for ws in self.workstreams
+                ):
                     self.spawn_fix_workstream(gap)
 
             # 4. Check workstream status
             self.check_workstream_status()
-            active_workstreams = [ws for ws in self.workstreams if ws['status'] == 'running']
-            completed_workstreams = [ws for ws in self.workstreams if ws['status'] == 'completed']
+            active_workstreams = [
+                ws for ws in self.workstreams if ws["status"] == "running"
+            ]
+            completed_workstreams = [
+                ws for ws in self.workstreams if ws["status"] == "completed"
+            ]
 
-            print(f"\nWorkstreams: {len(active_workstreams)} active, {len(completed_workstreams)} completed")
+            print(
+                f"\nWorkstreams: {len(active_workstreams)} active, {len(completed_workstreams)} completed"
+            )
 
             # 5. Generate next iteration
             self.iteration_count += 1
@@ -571,8 +616,9 @@ Do not stop until the gap is fixed.
             valid, errors = self.validate_iteration(self.iteration_count)
 
             if valid:
-                self.status["consecutive_valid_iterations"] = \
+                self.status["consecutive_valid_iterations"] = (
                     self.status.get("consecutive_valid_iterations", 0) + 1
+                )
             else:
                 self.status["consecutive_valid_iterations"] = 0
                 # Log errors for analysis
@@ -581,8 +627,10 @@ Do not stop until the gap is fixed.
                     print(f"  {err}")
 
             # 7. Deploy if we have 3 consecutive valid iterations and haven't deployed yet
-            if (self.status.get("consecutive_valid_iterations", 0) >= 3 and
-                self.deployment_iteration == 0):
+            if (
+                self.status.get("consecutive_valid_iterations", 0) >= 3
+                and self.deployment_iteration == 0
+            ):
                 if self.deploy_iteration(self.iteration_count):
                     # Scan target after deployment
                     self.scan_target_tenant()
@@ -607,7 +655,9 @@ Do not stop until the gap is fixed.
         print(f"Total loop iterations: {loop_count}")
         print(f"Final IaC iteration: {self.iteration_count}")
         print(f"Deployed iteration: {self.deployment_iteration}")
-        print(f"Workstreams completed: {len([ws for ws in self.workstreams if ws['status'] == 'completed'])}")
+        print(
+            f"Workstreams completed: {len([ws for ws in self.workstreams if ws['status'] == 'completed'])}"
+        )
         print("=" * 80 + "\n")
 
 
@@ -624,6 +674,7 @@ def main():
     except Exception as e:
         print(f"\n\nLoop failed with exception: {e}")
         import traceback
+
         traceback.print_exc()
         loop.send_imessage(f"❌ Autonomous loop crashed: {e}")
         loop.save_status()

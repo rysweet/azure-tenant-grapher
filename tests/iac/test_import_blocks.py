@@ -1,9 +1,5 @@
 """Tests for Terraform import blocks generation (Issue #412)."""
 
-import json
-from pathlib import Path
-from unittest.mock import MagicMock
-
 import pytest
 
 from src.iac.emitters.terraform_emitter import TerraformEmitter
@@ -21,22 +17,36 @@ class TestImportBlocksGeneration:
 
     def test_import_blocks_enabled_with_flag(self, tmp_path):
         """Test that import blocks are generated when flag is enabled."""
-        emitter = TerraformEmitter(auto_import_existing=True, import_strategy="resource_groups")
+        emitter = TerraformEmitter(
+            auto_import_existing=True, import_strategy="resource_groups"
+        )
         assert emitter.auto_import_existing is True
         assert emitter.import_strategy == "resource_groups"
 
     def test_import_blocks_list_format(self, tmp_path):
         """Test that import blocks use correct list format for Terraform 1.5+."""
         # Create mock graph with resource groups
-        graph = TenantGraph(resources=[
-            {"type": "Microsoft.Compute/resourceGroups", "name": "rg1", "location": "eastus", "id": "/subscriptions/sub1/resourceGroups/rg1"},
-            {"type": "Microsoft.Compute/resourceGroups", "name": "rg2", "location": "westus", "id": "/subscriptions/sub1/resourceGroups/rg2"}
-        ])
+        graph = TenantGraph(
+            resources=[
+                {
+                    "type": "Microsoft.Compute/resourceGroups",
+                    "name": "rg1",
+                    "location": "eastus",
+                    "id": "/subscriptions/sub1/resourceGroups/rg1",
+                },
+                {
+                    "type": "Microsoft.Compute/resourceGroups",
+                    "name": "rg2",
+                    "location": "westus",
+                    "id": "/subscriptions/sub1/resourceGroups/rg2",
+                },
+            ]
+        )
 
         emitter = TerraformEmitter(
             auto_import_existing=True,
             import_strategy="resource_groups",
-            target_subscription_id="sub1"
+            target_subscription_id="sub1",
         )
 
         # Generate mock terraform config
@@ -44,13 +54,15 @@ class TestImportBlocksGeneration:
             "resource": {
                 "azurerm_resource_group": {
                     "rg1": {"name": "rg1", "location": "eastus"},
-                    "rg2": {"name": "rg2", "location": "westus"}
+                    "rg2": {"name": "rg2", "location": "westus"},
                 }
             }
         }
 
         # Generate import blocks
-        import_blocks = emitter._generate_import_blocks(terraform_config, graph.resources)
+        import_blocks = emitter._generate_import_blocks(
+            terraform_config, graph.resources
+        )
 
         # Verify format
         assert isinstance(import_blocks, list), "Import blocks must be a list"
@@ -72,7 +84,7 @@ class TestImportBlocksGeneration:
         emitter = TerraformEmitter(
             auto_import_existing=True,
             import_strategy="resource_groups",
-            target_subscription_id="test-sub"
+            target_subscription_id="test-sub",
         )
 
         import_blocks = emitter._generate_import_blocks(terraform_config, [])
@@ -94,14 +106,14 @@ if __name__ == "__main__":
                 },
                 "azurerm_storage_account": {
                     "storage1": {"name": "storage1", "location": "eastus"}
-                }
+                },
             }
         }
 
         emitter = TerraformEmitter(
             auto_import_existing=True,
             import_strategy="all_resources",
-            target_subscription_id="test-sub"
+            target_subscription_id="test-sub",
         )
 
         import_blocks = emitter._generate_import_blocks(terraform_config, [])
@@ -126,7 +138,7 @@ if __name__ == "__main__":
             auto_import_existing=True,
             import_strategy="resource_groups",
             source_subscription_id="source-sub-123",
-            target_subscription_id="target-sub-456"
+            target_subscription_id="target-sub-456",
         )
 
         import_blocks = emitter._generate_import_blocks(terraform_config, [])

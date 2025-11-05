@@ -4,13 +4,14 @@ Continuous Autonomous Replication Engine
 Runs continuously until 100% tenant replication is achieved.
 Does NOT stop. Spawns parallel workstreams to fix gaps.
 """
-import os
-import sys
+
 import json
-import time
+import os
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
+
 from neo4j import GraphDatabase
 
 # Configuration
@@ -30,6 +31,7 @@ if not NEO4J_PASSWORD:
 FIDELITY_TARGET = 95.0  # 95%+ considered success
 CONSECUTIVE_PASSES_REQUIRED = 3
 
+
 class ContinuousEngine:
     def __init__(self):
         self.driver = GraphDatabase.driver(NEO4J_URI, auth=("neo4j", NEO4J_PASSWORD))
@@ -48,11 +50,11 @@ class ContinuousEngine:
     def send_imessage(self, message):
         """Send status update via iMessage."""
         try:
-            subprocess.run([
-                "/Users/ryan/.local/bin/imessR",
-                "send",
-                message
-            ], timeout=10, capture_output=True)
+            subprocess.run(
+                ["/Users/ryan/.local/bin/imessR", "send", message],
+                timeout=10,
+                capture_output=True,
+            )
         except Exception as e:
             self.log(f"iMessage failed: {e}")
 
@@ -74,19 +76,25 @@ class ContinuousEngine:
         """Check current replication fidelity."""
         with self.driver.session() as session:
             # Source count
-            source_result = session.run("""
+            source_result = session.run(
+                """
                 MATCH (r:Resource)
                 WHERE r.subscription_id = $sub
                 RETURN count(r) as count
-            """, sub=SOURCE_SUB)
+            """,
+                sub=SOURCE_SUB,
+            )
             source_count = source_result.single()["count"]
 
             # Target count
-            target_result = session.run("""
+            target_result = session.run(
+                """
                 MATCH (r:Resource)
                 WHERE r.subscription_id = $sub
                 RETURN count(r) as count
-            """, sub=TARGET_SUB)
+            """,
+                sub=TARGET_SUB,
+            )
             target_count = target_result.single()["count"]
 
             fidelity = (target_count / source_count * 100) if source_count > 0 else 0
@@ -97,13 +105,14 @@ class ContinuousEngine:
                 "target_count": target_count,
                 "fidelity": fidelity,
                 "gap": gap,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
     def identify_missing_types(self):
         """Identify resource types missing from target."""
         with self.driver.session() as session:
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH (r:Resource)
                 WHERE r.subscription_id = $source_sub
                 AND NOT EXISTS {
@@ -112,7 +121,10 @@ class ContinuousEngine:
                 }
                 RETURN DISTINCT r.type as type, count(*) as count
                 ORDER BY count DESC
-            """, source_sub=SOURCE_SUB, target_sub=TARGET_SUB)
+            """,
+                source_sub=SOURCE_SUB,
+                target_sub=TARGET_SUB,
+            )
 
             return [(rec["type"], rec["count"]) for rec in result]
 
@@ -142,18 +154,19 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         self.log(f"Spawning workstream: {workstream_id} for {resource_type}")
 
         # Launch copilot agent
-        proc = subprocess.Popen([
-            "copilot",
-            "--allow-all-tools",
-            "-p",
-            prompt
-        ], cwd=REPO_ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(
+            ["copilot", "--allow-all-tools", "-p", prompt],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
 
         self.parallel_workstreams[workstream_id] = {
             "process": proc,
             "resource_type": resource_type,
             "count": count,
-            "started": datetime.utcnow().isoformat()
+            "started": datetime.utcnow().isoformat(),
         }
 
         return workstream_id
@@ -187,14 +200,22 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         self.log(f"Generating ITERATION {self.current_iteration}...")
 
         cmd = [
-            "uv", "run", "atg", "generate-iac",
-            "--resource-filters", "subscription_id=~'9b00bc5e-9abc-45de-9958-02a9d9277b16'",
-            "--resource-group-prefix", f"ITERATION{self.current_iteration}_",
+            "uv",
+            "run",
+            "atg",
+            "generate-iac",
+            "--resource-filters",
+            "subscription_id=~'9b00bc5e-9abc-45de-9958-02a9d9277b16'",
+            "--resource-group-prefix",
+            f"ITERATION{self.current_iteration}_",
             "--skip-name-validation",
-            "--output", str(iteration_dir)
+            "--output",
+            str(iteration_dir),
         ]
 
-        result = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(
+            cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=600
+        )
 
         if result.returncode == 0:
             self.log(f"  ✓ Generated iteration{self.current_iteration}")
@@ -211,7 +232,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
 
         # Check if directory exists
         if not iteration_dir.exists():
-            self.log(f"  ✗ Iteration directory does not exist")
+            self.log("  ✗ Iteration directory does not exist")
             return False
 
         # Run terraform init
@@ -220,11 +241,11 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             cwd=iteration_dir,
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
 
         if result.returncode != 0:
-            self.log(f"  ✗ terraform init failed")
+            self.log("  ✗ terraform init failed")
             return False
 
         # Run terraform validate
@@ -233,20 +254,20 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             cwd=iteration_dir,
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
         )
 
         if result.returncode == 0:
             try:
                 validation_result = json.loads(result.stdout)
                 if validation_result.get("valid"):
-                    self.log(f"  ✓ Validation PASSED")
+                    self.log("  ✓ Validation PASSED")
                     self.consecutive_passes += 1
                     return True
             except:
                 pass
 
-        self.log(f"  ✗ Validation FAILED")
+        self.log("  ✗ Validation FAILED")
         self.consecutive_passes = 0
         return False
 
@@ -263,11 +284,11 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             cwd=iteration_dir,
             capture_output=True,
             text=True,
-            timeout=600
+            timeout=600,
         )
 
         if plan_result.returncode != 0:
-            self.log(f"  ✗ terraform plan failed")
+            self.log("  ✗ terraform plan failed")
             return False
 
         # Run terraform apply
@@ -276,16 +297,20 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             cwd=iteration_dir,
             capture_output=True,
             text=True,
-            timeout=3600  # 1 hour timeout
+            timeout=3600,  # 1 hour timeout
         )
 
         if apply_result.returncode == 0:
-            self.log(f"  ✓ Deployment SUCCEEDED")
-            self.send_imessage(f"✅ ITERATION {self.current_iteration} deployed successfully")
+            self.log("  ✓ Deployment SUCCEEDED")
+            self.send_imessage(
+                f"✅ ITERATION {self.current_iteration} deployed successfully"
+            )
             return True
         else:
             self.log(f"  ✗ Deployment FAILED: {apply_result.stderr[-500:]}")
-            self.send_imessage(f"❌ ITERATION {self.current_iteration} deployment failed")
+            self.send_imessage(
+                f"❌ ITERATION {self.current_iteration} deployment failed"
+            )
             return False
 
     def rescan_target(self):
@@ -297,7 +322,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
-            timeout=1800  # 30 minutes
+            timeout=1800,  # 30 minutes
         )
 
         if result.returncode == 0:
@@ -317,7 +342,9 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         self.log("=" * 80)
         self.log("CONTINUOUS AUTONOMOUS REPLICATION ENGINE STARTED")
         self.log("=" * 80)
-        self.send_imessage("🤖 Autonomous replication engine started. Target: 100% fidelity.")
+        self.send_imessage(
+            "🤖 Autonomous replication engine started. Target: 100% fidelity."
+        )
 
         iteration_count = 0
 
@@ -330,25 +357,36 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
 
                 # Check current fidelity
                 fidelity_status = self.check_fidelity()
-                self.log(f"Current Fidelity: {fidelity_status['fidelity']:.1f}% ({fidelity_status['target_count']}/{fidelity_status['source_count']})")
+                self.log(
+                    f"Current Fidelity: {fidelity_status['fidelity']:.1f}% ({fidelity_status['target_count']}/{fidelity_status['source_count']})"
+                )
                 self.log(f"Gap: {fidelity_status['gap']} resources")
 
                 # Check if objective achieved
-                if (fidelity_status['fidelity'] >= FIDELITY_TARGET and
-                    self.consecutive_passes >= CONSECUTIVE_PASSES_REQUIRED):
+                if (
+                    fidelity_status["fidelity"] >= FIDELITY_TARGET
+                    and self.consecutive_passes >= CONSECUTIVE_PASSES_REQUIRED
+                ):
                     self.log("=" * 80)
                     self.log("🎉 OBJECTIVE ACHIEVED!")
                     self.log(f"Fidelity: {fidelity_status['fidelity']:.1f}%")
                     self.log(f"Consecutive Passes: {self.consecutive_passes}")
                     self.log("=" * 80)
-                    self.send_imessage(f"🎉 OBJECTIVE ACHIEVED! Fidelity: {fidelity_status['fidelity']:.1f}%")
+                    self.send_imessage(
+                        f"🎉 OBJECTIVE ACHIEVED! Fidelity: {fidelity_status['fidelity']:.1f}%"
+                    )
                     break  # Only exit point
 
                 # Identify missing types and spawn fix workstreams
                 missing_types = self.identify_missing_types()
-                if missing_types and len(self.parallel_workstreams) < 3:  # Limit to 3 parallel workstreams
+                if (
+                    missing_types and len(self.parallel_workstreams) < 3
+                ):  # Limit to 3 parallel workstreams
                     for resource_type, count in missing_types[:3]:  # Fix top 3 types
-                        if resource_type not in [ws['resource_type'] for ws in self.parallel_workstreams.values()]:
+                        if resource_type not in [
+                            ws["resource_type"]
+                            for ws in self.parallel_workstreams.values()
+                        ]:
                             self.spawn_fix_workstream(resource_type, count)
 
                 # Check workstream progress
@@ -369,7 +407,9 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
                                 self.consecutive_passes = 0
                     else:
                         # Validation failed - workstreams should fix issues
-                        self.log("Validation failed - relying on parallel workstreams to fix")
+                        self.log(
+                            "Validation failed - relying on parallel workstreams to fix"
+                        )
 
                 # Save status
                 status = {
@@ -378,7 +418,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
                     "fidelity": fidelity_status,
                     "consecutive_passes": self.consecutive_passes,
                     "active_workstreams": len(self.parallel_workstreams),
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.utcnow().isoformat(),
                 }
                 self.save_status(status)
 
@@ -399,12 +439,14 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             except Exception as e:
                 self.log(f"Error in main loop: {e}")
                 import traceback
+
                 self.log(traceback.format_exc())
                 # Don't stop - just log and continue
                 time.sleep(60)
 
         self.log("Engine stopped")
         self.driver.close()
+
 
 if __name__ == "__main__":
     engine = ContinuousEngine()

@@ -107,7 +107,9 @@ class TestTerraformImporterInitialization:
                 credential=mock_credential,
             )
 
-    def test_initialization_invalid_import_strategy(self, temp_terraform_dir, mock_credential):
+    def test_initialization_invalid_import_strategy(
+        self, temp_terraform_dir, mock_credential
+    ):
         """Test initialization fails with invalid import strategy."""
         with pytest.raises(ValueError, match="Invalid import strategy"):
             TerraformImporter(
@@ -119,7 +121,9 @@ class TestTerraformImporterInitialization:
 
     def test_default_credential_initialization(self, temp_terraform_dir):
         """Test that DefaultAzureCredential is used when credential is None."""
-        with patch("src.iac.importers.terraform_importer.DefaultAzureCredential") as mock_default:
+        with patch(
+            "src.iac.importers.terraform_importer.DefaultAzureCredential"
+        ) as mock_default:
             mock_default.return_value = Mock()
             importer = TerraformImporter(
                 subscription_id="test-sub-id",
@@ -138,7 +142,9 @@ class TestTerraformImporterInitialization:
         assert importer._resource_client is None
 
         # Access property to trigger initialization
-        with patch("src.iac.importers.terraform_importer.ResourceManagementClient") as mock_client:
+        with patch(
+            "src.iac.importers.terraform_importer.ResourceManagementClient"
+        ) as mock_client:
             mock_client.return_value = Mock()
             _ = importer.resource_client
             assert importer._resource_client is not None
@@ -165,7 +171,10 @@ class TestAzureResourceDetection:
         mock_resource2.id = "/subscriptions/sub-id/resourceGroups/test-rg"
         mock_resource2.location = "eastus"
 
-        mock_resource_client.resources.list.return_value = [mock_resource1, mock_resource2]
+        mock_resource_client.resources.list.return_value = [
+            mock_resource1,
+            mock_resource2,
+        ]
 
         importer = TerraformImporter(
             subscription_id="test-sub-id",
@@ -321,7 +330,9 @@ class TestImportStrategyFiltering:
 class TestImportCommandGeneration:
     """Test generation of Terraform import commands."""
 
-    def test_generate_import_commands_success(self, temp_terraform_dir, mock_credential):
+    def test_generate_import_commands_success(
+        self, temp_terraform_dir, mock_credential
+    ):
         """Test successful generation of import commands for matching resources."""
         importer = TerraformImporter(
             subscription_id="test-sub-id",
@@ -405,7 +416,10 @@ class TestImportCommandGeneration:
 
         cmd_string = command.to_command()
 
-        assert cmd_string == "terraform import azurerm_resource_group.main /subscriptions/sub-id/resourceGroups/test-rg"
+        assert (
+            cmd_string
+            == "terraform import azurerm_resource_group.main /subscriptions/sub-id/resourceGroups/test-rg"
+        )
 
     def test_to_terraform_name_conversion(self, temp_terraform_dir, mock_credential):
         """Test conversion of Azure names to Terraform-safe names."""
@@ -520,7 +534,9 @@ class TestImportExecution:
         self, mock_subprocess, temp_terraform_dir, mock_credential
     ):
         """Test handling of command timeout."""
-        mock_subprocess.side_effect = subprocess.TimeoutExpired(cmd="terraform", timeout=300)
+        mock_subprocess.side_effect = subprocess.TimeoutExpired(
+            cmd="terraform", timeout=300
+        )
 
         importer = TerraformImporter(
             subscription_id="test-sub-id",
@@ -548,7 +564,9 @@ class TestImportExecution:
         """Test executing multiple import commands successfully."""
         mock_subprocess.return_value = Mock(returncode=0, stdout="Success", stderr="")
 
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=True):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=True
+        ):
             with patch.object(TerraformImporter, "_backup_terraform_state"):
                 importer = TerraformImporter(
                     subscription_id="test-sub-id",
@@ -589,7 +607,9 @@ class TestImportExecution:
             Mock(returncode=1, stdout="", stderr="Error"),
         ]
 
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=True):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=True
+        ):
             with patch.object(TerraformImporter, "_backup_terraform_state"):
                 importer = TerraformImporter(
                     subscription_id="test-sub-id",
@@ -668,7 +688,9 @@ class TestTerraformReadiness:
         self, temp_terraform_dir, mock_credential
     ):
         """Test execution aborts when Terraform is not ready."""
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=False):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=False
+        ):
             importer = TerraformImporter(
                 subscription_id="test-sub-id",
                 terraform_dir=str(temp_terraform_dir),
@@ -751,7 +773,9 @@ class TestStateBackup:
         """Test import continues even if backup fails."""
         mock_subprocess.return_value = Mock(returncode=0, stdout="Success", stderr="")
 
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=True):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=True
+        ):
             with patch.object(
                 TerraformImporter,
                 "_backup_terraform_state",
@@ -916,7 +940,9 @@ class TestFullImportWorkflow:
         # Mock successful import
         mock_subprocess.return_value = Mock(returncode=0, stdout="Success", stderr="")
 
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=True):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=True
+        ):
             with patch.object(TerraformImporter, "_backup_terraform_state"):
                 importer = TerraformImporter(
                     subscription_id="test-sub-id",
@@ -943,7 +969,9 @@ class TestFullImportWorkflow:
             },
         ]
 
-        with patch.object(TerraformImporter, "_check_terraform_ready", return_value=True):
+        with patch.object(
+            TerraformImporter, "_check_terraform_ready", return_value=True
+        ):
             with patch.object(TerraformImporter, "_backup_terraform_state"):
                 importer = TerraformImporter(
                     subscription_id="test-sub-id",

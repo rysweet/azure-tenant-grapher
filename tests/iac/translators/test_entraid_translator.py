@@ -163,9 +163,7 @@ class TestEntraIdTranslator:
 
         assert translator.can_translate(resource) is True
 
-    def test_can_translate_key_vault_without_access_policies(
-        self, translation_context
-    ):
+    def test_can_translate_key_vault_without_access_policies(self, translation_context):
         """Test that Key Vault without access policies is not translated."""
         translator = EntraIdTranslator(translation_context)
 
@@ -960,9 +958,7 @@ class TestEntraIdTranslatorEdgeCases:
         group_mapping = IdentityMapping(
             source_object_id="group-1", target_object_id="group-2"
         )
-        sp_mapping = IdentityMapping(
-            source_object_id="sp-1", target_object_id="sp-2"
-        )
+        sp_mapping = IdentityMapping(source_object_id="sp-1", target_object_id="sp-2")
 
         manifest = IdentityMappingManifest(
             tenant_mapping=tenant_mapping,
@@ -1023,12 +1019,8 @@ class TestEntraIdTranslatorEdgeCases:
         translator = EntraIdTranslator(translation_context)
 
         # Valid UUIDs
-        assert (
-            translator._is_valid_uuid("11111111-1111-1111-1111-111111111111") is True
-        )
-        assert (
-            translator._is_valid_uuid("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA") is True
-        )
+        assert translator._is_valid_uuid("11111111-1111-1111-1111-111111111111") is True
+        assert translator._is_valid_uuid("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA") is True
 
         # Invalid UUIDs
         assert translator._is_valid_uuid("not-a-uuid") is False

@@ -341,9 +341,7 @@ class ResourceCoverageAnalyzer:
             for t in self.missing_emitters.union(self.unsupported_types)
             if t in self.resource_counts
         ]
-        return sorted(unsupported_with_counts, key=lambda x: x[1], reverse=True)[
-            :limit
-        ]
+        return sorted(unsupported_with_counts, key=lambda x: x[1], reverse=True)[:limit]
 
     def generate_markdown_report(self) -> str:
         """Generate a comprehensive markdown report.
@@ -364,23 +362,23 @@ This report analyzes the gap between scanned Azure resources and generated Terra
 
 ### Key Findings
 
-- **Total Resources Scanned**: {stats['total_resources']:,}
-- **Total Resource Types**: {stats['total_types']}
-- **Expected in Terraform**: {stats['expected_in_terraform']:,} resources ({stats['supported']['percentage']:.1f}%)
-- **Actual Gap**: {stats['actual_gap']:,} resources
+- **Total Resources Scanned**: {stats["total_resources"]:,}
+- **Total Resource Types**: {stats["total_types"]}
+- **Expected in Terraform**: {stats["expected_in_terraform"]:,} resources ({stats["supported"]["percentage"]:.1f}%)
+- **Actual Gap**: {stats["actual_gap"]:,} resources
 
 ### Gap Breakdown
 
 | Category | Count | Types | Percentage | Description |
 |----------|-------|-------|------------|-------------|
-| **Supported** | {stats['supported']['count']:,} | {stats['supported']['types']} | {stats['supported']['percentage']:.1f}% | Resources with Terraform emitters |
-| **Non-Deployable** | {stats['non_deployable']['count']:,} | {stats['non_deployable']['types']} | {stats['non_deployable']['percentage']:.1f}% | Graph API objects (Users, Groups, SPs) |
-| **Unsupported** | {stats['unsupported']['count']:,} | {stats['unsupported']['types']} | {stats['unsupported']['percentage']:.1f}% | No Terraform provider support |
-| **Missing Emitters** | {stats['missing_emitters']['count']:,} | {stats['missing_emitters']['types']} | {stats['missing_emitters']['percentage']:.1f}% | Could add but haven't yet |
+| **Supported** | {stats["supported"]["count"]:,} | {stats["supported"]["types"]} | {stats["supported"]["percentage"]:.1f}% | Resources with Terraform emitters |
+| **Non-Deployable** | {stats["non_deployable"]["count"]:,} | {stats["non_deployable"]["types"]} | {stats["non_deployable"]["percentage"]:.1f}% | Graph API objects (Users, Groups, SPs) |
+| **Unsupported** | {stats["unsupported"]["count"]:,} | {stats["unsupported"]["types"]} | {stats["unsupported"]["percentage"]:.1f}% | No Terraform provider support |
+| **Missing Emitters** | {stats["missing_emitters"]["count"]:,} | {stats["missing_emitters"]["types"]} | {stats["missing_emitters"]["percentage"]:.1f}% | Could add but haven't yet |
 
 ## Detailed Analysis
 
-### 1. Supported Resources ({stats['supported']['count']:,} resources)
+### 1. Supported Resources ({stats["supported"]["count"]:,} resources)
 
 These resources have Terraform emitters and should be included in IaC generation:
 
@@ -400,11 +398,13 @@ These resources have Terraform emitters and should be included in IaC generation
             report += f"| `{resource_type}` | {count:,} | `{tf_type}` |\n"
 
         if len(supported_with_counts) > 20:
-            report += f"\n_... and {len(supported_with_counts) - 20} more supported types_\n"
+            report += (
+                f"\n_... and {len(supported_with_counts) - 20} more supported types_\n"
+            )
 
         report += f"""
 
-### 2. Non-Deployable Resources ({stats['non_deployable']['count']:,} resources)
+### 2. Non-Deployable Resources ({stats["non_deployable"]["count"]:,} resources)
 
 These are Graph API objects (Users, Groups, Service Principals) that are not deployed via ARM/Terraform:
 
@@ -422,14 +422,16 @@ These are Graph API objects (Users, Groups, Service Principals) that are not dep
         for resource_type, count in non_deployable_with_counts:
             reason = "Graph API identity object"
             if "roleassignment" in resource_type.lower():
-                reason = "RBAC assignment (can be in Terraform but often managed separately)"
+                reason = (
+                    "RBAC assignment (can be in Terraform but often managed separately)"
+                )
             report += f"| `{resource_type}` | {count:,} | {reason} |\n"
 
         report += f"""
 
-**Note**: These resources are expected to be missing from Terraform output. They represent ~{stats['non_deployable']['percentage']:.1f}% of scanned resources.
+**Note**: These resources are expected to be missing from Terraform output. They represent ~{stats["non_deployable"]["percentage"]:.1f}% of scanned resources.
 
-### 3. Unsupported Resources ({stats['unsupported']['count']:,} resources)
+### 3. Unsupported Resources ({stats["unsupported"]["count"]:,} resources)
 
 These Azure resource types have no Terraform provider support:
 
@@ -454,7 +456,7 @@ These Azure resource types have no Terraform provider support:
 
         report += f"""
 
-### 4. Missing Emitters ({stats['missing_emitters']['count']:,} resources)
+### 4. Missing Emitters ({stats["missing_emitters"]["count"]:,} resources)
 
 These resource types COULD be added to Terraform generation but don't have emitters yet:
 
@@ -462,9 +464,7 @@ These resource types COULD be added to Terraform generation but don't have emitt
 
         # Add top missing emitters table
         top_missing = self.get_top_unsupported(20)
-        missing_only = [
-            (t, c) for t, c in top_missing if t in self.missing_emitters
-        ]
+        missing_only = [(t, c) for t, c in top_missing if t in self.missing_emitters]
 
         report += "| Resource Type | Count | Priority | Notes |\n"
         report += "|---------------|-------|----------|-------|\n"
@@ -531,16 +531,16 @@ This suggests:
 - Run with --debug flag to see detailed skipping reasons
 
 """.format(
-            expected=stats['expected_in_terraform'],
-            total=stats['total_resources'],
-            non_deployable=stats['non_deployable']['count'],
-            non_deployable_pct=stats['non_deployable']['percentage'],
-            actual_gap=stats['actual_gap'],
-            unsupported=stats['unsupported']['count'],
-            unsupported_pct=stats['unsupported']['percentage'],
-            missing=stats['missing_emitters']['count'],
-            missing_pct=stats['missing_emitters']['percentage'],
-            gap_estimate=stats['expected_in_terraform'] - 1777,
+            expected=stats["expected_in_terraform"],
+            total=stats["total_resources"],
+            non_deployable=stats["non_deployable"]["count"],
+            non_deployable_pct=stats["non_deployable"]["percentage"],
+            actual_gap=stats["actual_gap"],
+            unsupported=stats["unsupported"]["count"],
+            unsupported_pct=stats["unsupported"]["percentage"],
+            missing=stats["missing_emitters"]["count"],
+            missing_pct=stats["missing_emitters"]["percentage"],
+            gap_estimate=stats["expected_in_terraform"] - 1777,
         )
 
         return report

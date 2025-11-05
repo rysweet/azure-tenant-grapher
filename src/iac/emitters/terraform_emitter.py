@@ -570,7 +570,9 @@ class TerraformEmitter(IaCEmitter):
 
         # Generate import blocks if requested (Issue #412)
         if self.auto_import_existing:
-            import_blocks = self._generate_import_blocks(terraform_config, graph.resources)
+            import_blocks = self._generate_import_blocks(
+                terraform_config, graph.resources
+            )
             if import_blocks:
                 terraform_config["import"] = import_blocks
                 self._import_blocks_generated = len(import_blocks)
@@ -753,13 +755,19 @@ class TerraformEmitter(IaCEmitter):
                 rg_location = rg_config.get("location")
                 if rg_name and rg_location:
                     # Build Azure resource ID
-                    subscription_id = self.target_subscription_id or self.source_subscription_id
+                    subscription_id = (
+                        self.target_subscription_id or self.source_subscription_id
+                    )
                     if subscription_id:
-                        azure_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
-                        import_blocks.append({
-                            "to": f"azurerm_resource_group.{rg_tf_name}",
-                            "id": azure_id
-                        })
+                        azure_id = (
+                            f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
+                        )
+                        import_blocks.append(
+                            {
+                                "to": f"azurerm_resource_group.{rg_tf_name}",
+                                "id": azure_id,
+                            }
+                        )
         elif self.import_strategy == "all_resources":
             # Import all resources (aggressive strategy)
             subscription_id = self.target_subscription_id or self.source_subscription_id

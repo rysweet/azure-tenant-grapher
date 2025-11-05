@@ -414,7 +414,9 @@ class EntraIdTranslator(BaseTranslator):
 
         # Defensive type check: ensure properties is a dict
         if not isinstance(properties, dict):
-            warnings.append("Role assignment properties is not a dict, skipping translation")
+            warnings.append(
+                "Role assignment properties is not a dict, skipping translation"
+            )
             return resource, warnings
 
         principal_id = properties.get("principalId")
@@ -461,7 +463,9 @@ class EntraIdTranslator(BaseTranslator):
 
         # Defensive type check: ensure properties is a dict
         if not isinstance(properties, dict):
-            warnings.append("Key Vault properties is not a dict, skipping access policy translation")
+            warnings.append(
+                "Key Vault properties is not a dict, skipping access policy translation"
+            )
             return resource, warnings
 
         access_policies = properties.get("accessPolicies", [])

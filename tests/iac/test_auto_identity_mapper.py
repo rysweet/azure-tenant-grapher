@@ -479,7 +479,8 @@ async def test_no_match_warns_but_continues(
 
         # Should have logged warning
         assert any(
-            "no match" in record.message.lower() or "not found" in record.message.lower()
+            "no match" in record.message.lower()
+            or "not found" in record.message.lower()
             for record in caplog.records
         )
 
@@ -776,7 +777,11 @@ async def test_auto_mapper_called_during_iac_generation(
                     "source_tenant_id": source_tenant_id,
                     "target_tenant_id": target_tenant_id,
                 },
-                "identity_mappings": {"users": {}, "groups": {}, "service_principals": {}},
+                "identity_mappings": {
+                    "users": {},
+                    "groups": {},
+                    "service_principals": {},
+                },
             }
             return auto_mapper_called["mapping"]
 
@@ -874,7 +879,11 @@ async def test_cli_triggers_auto_mapping(
                     "source_tenant_id": source_tenant_id,
                     "target_tenant_id": target_tenant_id,
                 },
-                "identity_mappings": {"users": {}, "groups": {}, "service_principals": {}},
+                "identity_mappings": {
+                    "users": {},
+                    "groups": {},
+                    "service_principals": {},
+                },
             }
 
         def save_mapping(self, mapping: Dict[str, Any], output_file: Path) -> None:
@@ -925,7 +934,9 @@ async def test_cli_triggers_auto_mapping(
     )
 
     # Verify auto-mapper was invoked
-    assert auto_mapper_invoked["invoked"], "AutoIdentityMapper should be triggered by CLI"
+    assert auto_mapper_invoked["invoked"], (
+        "AutoIdentityMapper should be triggered by CLI"
+    )
 
 
 @pytest.mark.asyncio

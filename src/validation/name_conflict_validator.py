@@ -400,8 +400,16 @@ class NameConflictValidator:
             if resource_type == "Microsoft.Storage/storageAccounts":
                 if self.storage_client:
                     params = StorageAccountCheckNameAvailabilityParameters(name=name)
-                    result = self.storage_client.storage_accounts.check_name_availability(params)
-                    return result.name_available if result.name_available is not None else True
+                    result = (
+                        self.storage_client.storage_accounts.check_name_availability(
+                            params
+                        )
+                    )
+                    return (
+                        result.name_available
+                        if result.name_available is not None
+                        else True
+                    )
                 return True  # Can't check, assume available
 
             # Key Vault name availability
@@ -531,7 +539,9 @@ class NameConflictValidator:
 
         return resources
 
-    def _extract_resource_info(self, resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _extract_resource_info(
+        self, resource: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Extract relevant info from a single resource.
 
         Args:

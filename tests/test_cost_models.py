@@ -1,18 +1,17 @@
 """Unit tests for cost data models."""
 
 from datetime import date
-from decimal import Decimal
 
 import pytest
 
 from src.models.cost_models import (
-    CostData,
-    ForecastData,
     CostAnomaly,
+    CostData,
     CostSummary,
+    ForecastData,
     Granularity,
-    TimeFrame,
     SeverityLevel,
+    TimeFrame,
 )
 
 

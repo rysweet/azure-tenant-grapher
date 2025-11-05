@@ -266,7 +266,9 @@ class KeyVaultTranslator(BaseTranslator):
 
         # Defensive type check: ensure policies is a list
         if not isinstance(policies, list):
-            warnings.append(f"Access policies is not a list (got {type(policies).__name__}), skipping translation")
+            warnings.append(
+                f"Access policies is not a list (got {type(policies).__name__}), skipping translation"
+            )
             return [] if policies is None else policies, warnings
 
         if not policies:

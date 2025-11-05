@@ -8,10 +8,7 @@ This test ensures that:
 4. Service principals are processed and stored in Neo4j
 """
 
-import asyncio
 import logging
-import os
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -66,7 +63,9 @@ async def test_aad_enrichment_executes(mock_config, mock_aad_service, caplog):
     # Mock the session manager to avoid Neo4j connection
     with patch("src.utils.session_manager.Neo4jSessionManager"):
         # Mock discovery service to return minimal data
-        with patch("src.services.azure_discovery_service.AzureDiscoveryService") as MockDiscovery:
+        with patch(
+            "src.services.azure_discovery_service.AzureDiscoveryService"
+        ) as MockDiscovery:
             mock_discovery = MockDiscovery.return_value
             mock_discovery.discover_subscriptions = AsyncMock(
                 return_value=[{"id": "sub-test-1", "display_name": "Test Subscription"}]
@@ -139,7 +138,11 @@ async def test_aad_enrichment_executes(mock_config, mock_aad_service, caplog):
 
                     # Verify service principal properties
                     sp1 = next(
-                        (r for r in sp_resources if r["name"] == "Test Service Principal 1"),
+                        (
+                            r
+                            for r in sp_resources
+                            if r["name"] == "Test Service Principal 1"
+                        ),
                         None,
                     )
                     assert sp1 is not None, "Should find first service principal"
@@ -149,7 +152,11 @@ async def test_aad_enrichment_executes(mock_config, mock_aad_service, caplog):
                     assert sp1["resource_group"] is None
 
                     sp2 = next(
-                        (r for r in sp_resources if r["name"] == "Test Service Principal 2"),
+                        (
+                            r
+                            for r in sp_resources
+                            if r["name"] == "Test Service Principal 2"
+                        ),
                         None,
                     )
                     assert sp2 is not None, "Should find second service principal"
@@ -158,7 +165,8 @@ async def test_aad_enrichment_executes(mock_config, mock_aad_service, caplog):
 
                     # Verify logging output
                     assert (
-                        "Enriching with Entra ID (Azure AD) identity data" in caplog.text
+                        "Enriching with Entra ID (Azure AD) identity data"
+                        in caplog.text
                     ), "Should log AAD enrichment start"
                     assert (
                         "Fetching service principals from Microsoft Graph API"
@@ -182,7 +190,9 @@ async def test_aad_enrichment_handles_errors(mock_config, caplog):
     # Mock the session manager
     with patch("src.utils.session_manager.Neo4jSessionManager"):
         # Mock discovery service
-        with patch("src.services.azure_discovery_service.AzureDiscoveryService") as MockDiscovery:
+        with patch(
+            "src.services.azure_discovery_service.AzureDiscoveryService"
+        ) as MockDiscovery:
             mock_discovery = MockDiscovery.return_value
             mock_discovery.discover_subscriptions = AsyncMock(
                 return_value=[{"id": "sub-test-1", "display_name": "Test Subscription"}]
@@ -210,7 +220,9 @@ async def test_aad_enrichment_handles_errors(mock_config, caplog):
                 )
 
                 # Mock processing service
-                with patch("src.services.resource_processing_service.ResourceProcessingService") as MockProcessing:
+                with patch(
+                    "src.services.resource_processing_service.ResourceProcessingService"
+                ) as MockProcessing:
                     mock_processing = MockProcessing.return_value
                     stats = MagicMock()
                     stats.to_dict = MagicMock(
@@ -233,8 +245,13 @@ async def test_aad_enrichment_handles_errors(mock_config, caplog):
                     )
 
                     # Verify error was logged
-                    assert "Failed to fetch service principals from Graph API" in caplog.text
-                    assert "Continuing without service principal enrichment" in caplog.text
+                    assert (
+                        "Failed to fetch service principals from Graph API"
+                        in caplog.text
+                    )
+                    assert (
+                        "Continuing without service principal enrichment" in caplog.text
+                    )
 
 
 @pytest.mark.asyncio
@@ -248,7 +265,9 @@ async def test_aad_enrichment_disabled(mock_config, caplog):
     # Mock the session manager
     with patch("src.utils.session_manager.Neo4jSessionManager"):
         # Mock discovery service
-        with patch("src.services.azure_discovery_service.AzureDiscoveryService") as MockDiscovery:
+        with patch(
+            "src.services.azure_discovery_service.AzureDiscoveryService"
+        ) as MockDiscovery:
             mock_discovery = MockDiscovery.return_value
             mock_discovery.discover_subscriptions = AsyncMock(
                 return_value=[{"id": "sub-test-1", "display_name": "Test Subscription"}]
@@ -269,7 +288,9 @@ async def test_aad_enrichment_disabled(mock_config, caplog):
             )
 
             # Mock processing service
-            with patch("src.services.resource_processing_service.ResourceProcessingService") as MockProcessing:
+            with patch(
+                "src.services.resource_processing_service.ResourceProcessingService"
+            ) as MockProcessing:
                 mock_processing = MockProcessing.return_value
                 received_resources = []
 
@@ -286,7 +307,9 @@ async def test_aad_enrichment_disabled(mock_config, caplog):
                     )
                     return stats
 
-                mock_processing.process_resources = AsyncMock(side_effect=capture_resources)
+                mock_processing.process_resources = AsyncMock(
+                    side_effect=capture_resources
+                )
 
                 # Create grapher and run build_graph
                 grapher = AzureTenantGrapher(mock_config)
@@ -298,7 +321,9 @@ async def test_aad_enrichment_disabled(mock_config, caplog):
                     for r in received_resources
                     if r.get("type") == "Microsoft.Graph/servicePrincipals"
                 ]
-                assert len(sp_resources) == 0, "Should have no service principal resources"
+                assert len(sp_resources) == 0, (
+                    "Should have no service principal resources"
+                )
 
                 # Verify logging output
                 assert "AAD enrichment disabled" in caplog.text
