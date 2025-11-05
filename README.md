@@ -407,6 +407,7 @@ All test output artifacts are excluded from version control via `.gitignore`.
 
 - [Product Requirements](.github/azure-tenant-grapher-prd.md)
 - [Project Specification](.github/azure-tenant-grapher-spec.md)
+- [Neo4j Graph Schema Reference](docs/NEO4J_SCHEMA_REFERENCE.md) - Complete reference for node types, relationships, and schema assembly
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 - [3D Visualization](docs/design/iac_subset_bicep.md)
 - [Testing](tests/)

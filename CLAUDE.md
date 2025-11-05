@@ -111,10 +111,13 @@ uv run atg stop     # Stop GUI application
 
 ### Neo4j Graph Schema
 
+For complete schema documentation, see [docs/NEO4J_SCHEMA_REFERENCE.md](docs/NEO4J_SCHEMA_REFERENCE.md).
+
 - **Nodes**: Resource, Subscription, Tenant, ResourceGroup, User, ServicePrincipal, etc.
 - **Relationships**: CONTAINS, USES_IDENTITY, CONNECTED_TO, DEPENDS_ON, etc.
 - **Indexes**: On resource IDs for fast lookups
 - **Constraints**: Ensure data integrity
+- **Schema Assembly**: Dynamic schema built through rule-based relationship emission
 
 ### Testing Strategy
 

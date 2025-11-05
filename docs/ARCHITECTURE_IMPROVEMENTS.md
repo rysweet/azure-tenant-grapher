@@ -2,6 +2,8 @@
 
 _This document expands the previously-agreed roadmap into discrete, numbered recommendations with narrative detail, expected changes, and noted dependencies._
 
+> **See Also:** [Neo4j Graph Schema Reference](NEO4J_SCHEMA_REFERENCE.md) - Complete documentation of current node types, relationships, and schema assembly process.
+
 ---
 
 ## 1. Resource-Change Tracking & Delta Ingestion
