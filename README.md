@@ -230,6 +230,20 @@ azure-tenant-grapher generate-iac \
   --location "East US" \
   --output ./my-deployment
 
+# Generate Terraform with automatic import blocks (Issue #412)
+azure-tenant-grapher generate-iac \
+  --format terraform \
+  --auto-import-existing \
+  --import-strategy resource_groups \
+  --target-subscription <TARGET_SUB_ID>
+
+# Cross-tenant deployment with import blocks
+azure-tenant-grapher generate-iac \
+  --target-tenant-id <TARGET_TENANT> \
+  --target-subscription <TARGET_SUB> \
+  --auto-import-existing \
+  --import-strategy resource_groups
+
 # Deploy the generated templates
 cd my-deployment
 ./deploy.sh
