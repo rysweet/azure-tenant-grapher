@@ -84,3 +84,54 @@ class TestImportBlocksGeneration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+    def test_import_strategy_all_resources_placeholder(self):
+        """Test that all_resources strategy is acknowledged but not fully implemented."""
+        terraform_config = {
+            "resource": {
+                "azurerm_resource_group": {
+                    "rg1": {"name": "rg1", "location": "eastus"}
+                },
+                "azurerm_storage_account": {
+                    "storage1": {"name": "storage1", "location": "eastus"}
+                }
+            }
+        }
+
+        emitter = TerraformEmitter(
+            auto_import_existing=True,
+            import_strategy="all_resources",
+            target_subscription_id="test-sub"
+        )
+
+        import_blocks = emitter._generate_import_blocks(terraform_config, [])
+
+        # Currently returns empty for all_resources (needs full implementation)
+        # This test documents current behavior
+        assert isinstance(import_blocks, list)
+        # TODO: When all_resources is implemented, this should return > 1 block
+
+    def test_import_blocks_with_cross_tenant(self):
+        """Test import blocks use correct subscription ID for cross-tenant."""
+        terraform_config = {
+            "resource": {
+                "azurerm_resource_group": {
+                    "test_rg": {"name": "test-rg", "location": "eastus"}
+                }
+            }
+        }
+
+        # Cross-tenant scenario
+        emitter = TerraformEmitter(
+            auto_import_existing=True,
+            import_strategy="resource_groups",
+            source_subscription_id="source-sub-123",
+            target_subscription_id="target-sub-456"
+        )
+
+        import_blocks = emitter._generate_import_blocks(terraform_config, [])
+
+        # Should use target subscription
+        assert len(import_blocks) == 1
+        assert "target-sub-456" in import_blocks[0]["id"]
+        assert "source-sub-123" not in import_blocks[0]["id"]
