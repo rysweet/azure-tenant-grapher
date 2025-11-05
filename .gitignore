@@ -248,6 +248,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Git worktrees
+worktrees/
+
 # Claude Code runtime artifacts
 .claude-trace/
 .claude/runtime/
