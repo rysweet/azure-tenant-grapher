@@ -1,6 +1,6 @@
 // Migration 0010 - Dual-Graph Architecture Schema
 // Constraints and indexes for dual-graph architecture (Original + Abstracted nodes)
-
+;
 CREATE CONSTRAINT original_resource_id_unique IF NOT EXISTS
 FOR (r:Original)
 REQUIRE r.id IS UNIQUE;
