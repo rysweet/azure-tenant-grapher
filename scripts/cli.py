@@ -764,6 +764,17 @@ def generate_spec(
     "--resource-group-prefix",
     help="Prefix to add to all resource group names (e.g., 'ITERATION15_') for non-destructive iterations",
 )
+@click.option(
+    "--auto-import-existing",
+    is_flag=True,
+    help="Automatically import pre-existing Azure resources into Terraform state (Issue #412)",
+)
+@click.option(
+    "--import-strategy",
+    type=click.Choice(["resource_groups", "all_resources", "selective"], case_sensitive=False),
+    default="resource_groups",
+    help="Strategy for importing existing resources: resource_groups (default), all_resources, or selective (Issue #412)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -801,6 +812,8 @@ async def generate_iac(
     auto_cleanup: bool,
     fail_on_conflicts: bool,
     resource_group_prefix: Optional[str],
+    auto_import_existing: bool,
+    import_strategy: str,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -871,6 +884,8 @@ async def generate_iac(
         auto_cleanup=auto_cleanup,
         fail_on_conflicts=fail_on_conflicts,
         resource_group_prefix=resource_group_prefix,
+        auto_import_existing=auto_import_existing,
+        import_strategy=import_strategy,
     )
 
 

@@ -80,6 +80,92 @@ def _get_default_subscription_from_azure_cli() -> Optional[tuple[str, str]]:
     return None
 
 
+async def _handle_terraform_import(
+    subscription_id: str,
+    terraform_dir: Path,
+    import_strategy_str: str,
+) -> None:
+    """Handle Terraform import of pre-existing resources.
+
+    This function integrates TerraformImporter into the IaC generation workflow.
+    It's non-blocking - if import fails, we log the error and continue.
+
+    Args:
+        subscription_id: Target Azure subscription ID
+        terraform_dir: Directory containing generated Terraform files
+        import_strategy_str: Strategy string from CLI (resource_groups, all_resources, selective)
+
+    Raises:
+        Does not raise - errors are logged and reported but don't block IaC generation
+    """
+    import shutil
+
+    import click
+
+    from .importers.terraform_importer import ImportStrategy, TerraformImporter
+
+    try:
+        # Check if terraform is installed
+        if not shutil.which("terraform"):
+            logger.warning(
+                "Terraform not found in PATH - skipping import. "
+                "Install Terraform to enable auto-import functionality."
+            )
+            click.echo(
+                "⚠️  Warning: Terraform not found in PATH. "
+                "Skipping import of pre-existing resources."
+            )
+            return
+
+        # Convert strategy string to enum
+        strategy_map = {
+            "resource_groups": ImportStrategy.RESOURCE_GROUPS,
+            "all_resources": ImportStrategy.ALL_RESOURCES,
+            "selective": ImportStrategy.SELECTIVE,
+        }
+        strategy = strategy_map.get(
+            import_strategy_str.lower(), ImportStrategy.RESOURCE_GROUPS
+        )
+
+        logger.info(
+            f"Starting Terraform import with strategy: {strategy.value} (Issue #412)"
+        )
+        click.echo(f"\n🔄 Importing pre-existing Azure resources ({strategy.value})...")
+
+        # Initialize importer
+        importer = TerraformImporter(
+            subscription_id=subscription_id,
+            terraform_dir=str(terraform_dir),
+            import_strategy=strategy,
+            dry_run=False,
+        )
+
+        # Run import workflow
+        report = await importer.run_import()
+
+        # Display report
+        click.echo("\n" + report.format_report())
+
+        # Log summary
+        if report.successes > 0:
+            logger.info(
+                f"Successfully imported {report.successes} resources into Terraform state"
+            )
+        if report.failures > 0:
+            logger.warning(
+                f"Failed to import {report.failures} resources. Check report for details."
+            )
+
+    except Exception as e:
+        # Non-blocking error - log and continue
+        logger.error(f"Terraform import failed: {e}", exc_info=True)
+        click.echo(
+            f"⚠️  Warning: Terraform import failed: {e}. "
+            f"IaC generation completed, but resources may need manual import.",
+            err=True,
+        )
+
+
 async def generate_iac_command_handler(
     tenant_id: Optional[str] = None,
     format_type: str = "terraform",
@@ -114,6 +200,9 @@ async def generate_iac_command_handler(
     target_tenant_id: Optional[str] = None,
     identity_mapping_file: Optional[str] = None,
     strict_translation: bool = False,
+    # Terraform import parameters (Issue #412)
+    auto_import_existing: bool = False,
+    import_strategy: str = "resource_groups",
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -149,6 +238,8 @@ async def generate_iac_command_handler(
         target_tenant_id: Target tenant ID for cross-tenant deployment
         identity_mapping_file: Path to identity mapping JSON file for Entra ID object translation
         strict_translation: Fail on missing identity mappings (default: warn only)
+        auto_import_existing: Automatically import pre-existing Azure resources (Issue #412)
+        import_strategy: Strategy for importing resources (resource_groups, all_resources, selective)
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -732,6 +823,19 @@ async def generate_iac_command_handler(
                     return 1
             else:
                 click.echo("✅ Terraform validation passed")
+
+        # Import pre-existing resources if requested (Issue #412)
+        if (
+            auto_import_existing
+            and format_type.lower() == "terraform"
+            and subscription_id
+            and not dry_run
+        ):
+            await _handle_terraform_import(
+                subscription_id=subscription_id,
+                terraform_dir=out_dir,
+                import_strategy_str=import_strategy,
+            )
 
         # Register deployment if not a dry run
         if not dry_run:
