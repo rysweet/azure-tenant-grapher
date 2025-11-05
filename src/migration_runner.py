@@ -42,9 +42,16 @@ def run_pending_migrations():
                     "CREATE INDEX",
                     "DROP INDEX",
                 ]
-                return any(
-                    stmt.strip().upper().startswith(kw) for kw in schema_keywords
-                )
+                # Check if any non-comment line starts with a schema keyword
+                for line in stmt.split('\n'):
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('//'):
+                        # Found a non-comment line, check if it's a schema statement
+                        return any(
+                            stripped.upper().startswith(kw) for kw in schema_keywords
+                        )
+                # All lines are comments or empty
+                return False
 
             stmts = [s.strip() for s in cypher.split(";") if s.strip()]
             schema_stmts = [s for s in stmts if is_schema_stmt(s)]
