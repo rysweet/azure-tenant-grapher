@@ -748,6 +748,14 @@ async def generate_iac_command_handler(
             ):
                 metrics.terraform_resources_generated = emitter.get_resource_count()  # type: ignore[attr-defined]
                 metrics.terraform_files_created = emitter.get_files_created_count()  # type: ignore[attr-defined]
+
+                # Track import blocks if generated (Issue #412)
+                if hasattr(emitter, "get_import_blocks_count"):
+                    import_count = emitter.get_import_blocks_count()  # type: ignore[attr-defined]
+                    if import_count > 0:
+                        metrics.import_enabled = True
+                        metrics.import_strategy = emitter.import_strategy  # type: ignore[attr-defined]
+                        metrics.import_commands_generated = import_count
                 translation_stats = emitter.get_translation_stats()  # type: ignore[attr-defined]
                 if translation_stats:
                     metrics.translation_enabled = True
@@ -845,6 +853,14 @@ async def generate_iac_command_handler(
         ):
             metrics.terraform_resources_generated = emitter.get_resource_count()  # type: ignore[attr-defined]
             metrics.terraform_files_created = emitter.get_files_created_count()  # type: ignore[attr-defined]
+
+            # Track import blocks if generated (Issue #412)
+            if hasattr(emitter, "get_import_blocks_count"):
+                import_count = emitter.get_import_blocks_count()  # type: ignore[attr-defined]
+                if import_count > 0:
+                    metrics.import_enabled = True
+                    metrics.import_strategy = emitter.import_strategy  # type: ignore[attr-defined]
+                    metrics.import_commands_generated = import_count
 
             # Get translation stats if available
             translation_stats = emitter.get_translation_stats()  # type: ignore[attr-defined]
