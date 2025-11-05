@@ -701,9 +701,15 @@ async def generate_iac_command_handler(
             emitter_cls = get_emitter(format_type)
             # Pass cross-tenant translation parameters to emitter (only for Terraform)
             if format_type.lower() == "terraform":
-                # Create credential for import blocks existence checking
-                from azure.identity import DefaultAzureCredential
-                credential = DefaultAzureCredential()
+                # Create credential for TARGET tenant (not source)
+                from azure.identity import ClientSecretCredential
+                import os
+                target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                credential = ClientSecretCredential(
+                    tenant_id=target_tenant,
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+                )
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                     resource_group_prefix=resource_group_prefix,
@@ -813,9 +819,15 @@ async def generate_iac_command_handler(
         emitter_cls = get_emitter(format_type)
         # Pass cross-tenant translation parameters to emitter (only for Terraform)
         if format_type.lower() == "terraform":
-            # Create credential for import blocks existence checking
-            from azure.identity import DefaultAzureCredential
-            credential = DefaultAzureCredential()
+            # Create credential for TARGET tenant (not source)
+            from azure.identity import ClientSecretCredential
+            import os
+            target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+            credential = ClientSecretCredential(
+                tenant_id=target_tenant,
+                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
+                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+            )
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                 resource_group_prefix=resource_group_prefix,
