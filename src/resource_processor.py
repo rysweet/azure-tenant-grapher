@@ -25,7 +25,7 @@ configure_logging()
 logger = structlog.get_logger(__name__)
 
 # Feature flag for dual-graph architecture (Issue #420)
-ENABLE_DUAL_GRAPH = os.getenv("ENABLE_DUAL_GRAPH", "false").lower() == "true"
+ENABLE_DUAL_GRAPH = os.getenv("ENABLE_DUAL_GRAPH", "true").lower() == "true"
 
 
 @retry_neo4j_operation()
