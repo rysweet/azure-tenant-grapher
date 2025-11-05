@@ -6,6 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Azure Tenant Grapher is a security-focused tool that builds a Neo4j graph database representation of Azure tenant resources and their relationships. It generates Infrastructure-as-Code (IaC) in multiple formats (Terraform, ARM, Bicep) and provides threat modeling capabilities.
 
+### Dual-Graph Architecture
+
+The system uses a **dual-graph architecture** where every Azure resource is stored as two nodes:
+- **Original nodes** (`:Resource:Original`): Real Azure IDs from the source tenant
+- **Abstracted nodes** (`:Resource`): Translated IDs suitable for cross-tenant deployment
+- Linked by `SCAN_SOURCE_NODE` relationships
+
+This architecture enables:
+- Cross-tenant deployments with safe ID abstraction
+- Query flexibility (original topology OR deployment view)
+- Simplified IaC generation (no runtime translation needed)
+- Graph-based validation of abstractions
+
+**Key Services:**
+- `IDAbstractionService`: Deterministic hash-based ID abstraction (e.g., `vm-a1b2c3d4`)
+- `TenantSeedManager`: Per-tenant cryptographic seeds for reproducible abstraction
+
 ## Development Commands
 
 ### Testing
@@ -125,10 +142,18 @@ uv run atg stop     # Stop GUI application
 
 For complete schema documentation, see [docs/NEO4J_SCHEMA_REFERENCE.md](docs/NEO4J_SCHEMA_REFERENCE.md).
 
-- **Nodes**: Resource, Subscription, Tenant, ResourceGroup, User, ServicePrincipal, etc.
-- **Relationships**: CONTAINS, USES_IDENTITY, CONNECTED_TO, DEPENDS_ON, etc.
-- **Indexes**: On resource IDs for fast lookups
-- **Constraints**: Ensure data integrity
+**Node Types:**
+- **Resource nodes** (dual-graph architecture):
+  - `:Resource` - Abstracted nodes with translated IDs (default for queries)
+  - `:Resource:Original` - Original nodes with real Azure IDs
+  - Linked by `(abstracted)-[:SCAN_SOURCE_NODE]->(original)`
+- **Other nodes**: Subscription, Tenant, ResourceGroup, User, ServicePrincipal, etc.
+
+**Relationships:**
+- Resource relationships duplicated in both graphs: CONTAINS, USES_IDENTITY, CONNECTED_TO, DEPENDS_ON, USES_SUBNET, SECURED_BY
+- Shared relationships to non-Resource nodes: TAGGED_WITH, LOCATED_IN, CREATED_BY
+- **Indexes**: On both abstracted and original resource IDs for fast lookups
+- **Constraints**: Unique constraints on both node types
 - **Schema Assembly**: Dynamic schema built through rule-based relationship emission
 
 ### Testing Strategy
