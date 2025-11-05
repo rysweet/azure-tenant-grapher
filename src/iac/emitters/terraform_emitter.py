@@ -565,6 +565,13 @@ class TerraformEmitter(IaCEmitter):
                     f"Generated NSG association: {assoc_name} (Subnet: {subnet_name}, NSG: {nsg_name})"
                 )
 
+        # Generate import blocks if requested (Issue #412)
+        if self.auto_import_existing:
+            import_blocks = self._generate_import_blocks(terraform_config, graph.resources)
+            if import_blocks:
+                terraform_config["import"] = import_blocks
+                logger.info(f"Generated {len(import_blocks)} import blocks")
+
         # Write main.tf.json
         output_file = out_dir / "main.tf.json"
         with open(output_file, "w") as f:
@@ -716,6 +723,57 @@ class TerraformEmitter(IaCEmitter):
             "files_written": [str(f) for f in written_files],
             "resource_count": len(tenant_graph.resources),
         }
+
+    def _generate_import_blocks(
+        self, terraform_config: Dict[str, Any], resources: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Generate Terraform 1.5+ import blocks for existing resources (Issue #412).
+
+        Args:
+            terraform_config: The generated Terraform configuration
+            resources: Original resources from graph
+
+        Returns:
+            Dictionary of import blocks in Terraform 1.5+ format
+        """
+        import_blocks = {}
+
+        # Get all resource groups from terraform config
+        tf_resources = terraform_config.get("resource", {})
+        resource_groups = tf_resources.get("azurerm_resource_group", {})
+
+        if self.import_strategy == "resource_groups":
+            # Import only resource groups
+            for rg_tf_name, rg_config in resource_groups.items():
+                rg_name = rg_config.get("name")
+                rg_location = rg_config.get("location")
+                if rg_name and rg_location:
+                    # Build Azure resource ID
+                    subscription_id = self.target_subscription_id or self.source_subscription_id
+                    if subscription_id:
+                        azure_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
+                        import_blocks[rg_tf_name] = {
+                            "to": f"azurerm_resource_group.{rg_tf_name}",
+                            "id": azure_id
+                        }
+        elif self.import_strategy == "all_resources":
+            # Import all resources (aggressive strategy)
+            subscription_id = self.target_subscription_id or self.source_subscription_id
+            if subscription_id:
+                for resource_type, resources_dict in tf_resources.items():
+                    for resource_tf_name, resource_config in resources_dict.items():
+                        # Try to build Azure ID from resource config
+                        if "name" in resource_config:
+                            # This is a simplified approach - would need full ID construction per type
+                            logger.debug(
+                                f"Would import {resource_type}.{resource_tf_name} "
+                                f"(full implementation needed)"
+                            )
+
+        logger.info(
+            f"Import strategy '{self.import_strategy}' generated {len(import_blocks)} import blocks"
+        )
+        return import_blocks
 
     def _parse_tags(self, tags: Any, resource_name: str) -> Optional[Dict[str, str]]:
         """Parse and validate resource tags from Neo4j (JSON string or dict)."""

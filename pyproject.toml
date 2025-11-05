@@ -104,6 +104,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "azure: marks tests that require Azure credentials",
     "timeout(n): set a timeout for a test",
 ]
 asyncio_mode = "auto"

@@ -709,6 +709,8 @@ async def generate_iac_command_handler(
                     source_tenant_id=resolved_source_tenant_id,
                     identity_mapping_file=identity_mapping_file,
                     strict_mode=strict_translation,
+                    auto_import_existing=auto_import_existing,
+                    import_strategy=import_strategy,
                 )
             else:
                 emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
@@ -806,6 +808,8 @@ async def generate_iac_command_handler(
                 source_tenant_id=resolved_source_tenant_id,
                 identity_mapping_file=identity_mapping_file,
                 strict_mode=strict_translation,
+                auto_import_existing=auto_import_existing,
+                import_strategy=import_strategy,
             )
         else:
             emitter = emitter_cls(resource_group_prefix=resource_group_prefix)

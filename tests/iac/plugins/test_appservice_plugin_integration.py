@@ -13,7 +13,7 @@ import pytest
 
 from src.iac.plugins.appservice_plugin import AppServicePlugin
 from src.iac.plugins.base_plugin import ReplicationMode
-from src.iac.plugins.credential_manager import CredentialConfig, CredentialManager
+from src.iac.data_plane_plugins.credential_provider import CredentialConfig, CredentialProvider
 
 
 @pytest.mark.integration
@@ -34,10 +34,10 @@ class TestAppServicePluginIntegration:
                 client_secret=os.getenv("AZURE_CLIENT_SECRET"),
                 tenant_id=os.getenv("AZURE_TENANT_ID"),
             )
-            return CredentialManager(config)
+            return CredentialProvider(config)
         else:
             # Use default credential chain
-            return CredentialManager()
+            return CredentialProvider()
 
     @pytest.fixture(scope="class")
     def plugin(self, credentials):
