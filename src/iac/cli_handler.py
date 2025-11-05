@@ -20,6 +20,7 @@ from ..utils.session_manager import create_session_manager
 from .auto_identity_mapper import AutoIdentityMapper
 from .emitters import get_emitter
 from .engine import TransformationEngine
+from .generation_report import GenerationMetrics, GenerationReport, UnsupportedTypeInfo
 from .subset import SubsetFilter
 from .traverser import GraphTraverser
 
@@ -245,6 +246,9 @@ async def generate_iac_command_handler(
         Exit code (0 for success, non-zero for failure)
     """
     try:
+        # Initialize generation metrics (Issue #413)
+        metrics = GenerationMetrics()
+
         logger.info("🏗️ Starting IaC generation")
         logger.info(f"Format: {format_type}")
 
@@ -339,6 +343,66 @@ async def generate_iac_command_handler(
         # Traverse graph
         graph = await traverser.traverse(filter_cypher)
         logger.info(f"Extracted {len(graph.resources)} resources")
+
+        # Collect source analysis metrics (Issue #413)
+        metrics.source_resources_scanned = len(graph.resources)
+
+        # Analyze resource types for metrics (Issue #413)
+        non_deployable_types = {
+            "Microsoft.Resources/subscriptions",
+            "Microsoft.Resources/tenants",
+            "Microsoft.Resources/resourceGroups",
+            "Subscription",
+            "Tenant",
+            "ResourceGroup",
+        }
+
+        # Get emitter to check supported types
+        temp_emitter_cls = get_emitter(format_type)
+        if format_type.lower() == "terraform":
+            temp_emitter = temp_emitter_cls()
+            # Use hasattr to check for terraform-specific attribute
+            if hasattr(temp_emitter, "AZURE_TO_TERRAFORM_MAPPING"):
+                supported_types = set(temp_emitter.AZURE_TO_TERRAFORM_MAPPING.keys())  # type: ignore[attr-defined]
+            else:
+                supported_types = set()
+        else:
+            supported_types = set()
+
+        # Analyze each resource
+        unsupported_by_type = {}
+        for resource in graph.resources:
+            resource_type = resource.get("type", "unknown")
+            resource_name = resource.get("name", "unknown")
+
+            # Categorize resource
+            if resource_type in non_deployable_types:
+                metrics.source_non_deployable += 1
+            elif (
+                supported_types
+                and resource_type not in supported_types
+                and not resource_type.startswith("Microsoft.Graph/")
+                and not resource_type.startswith("Microsoft.AAD/")
+            ):
+                # Unsupported type
+                metrics.source_unsupported += 1
+                if resource_type not in unsupported_by_type:
+                    unsupported_by_type[resource_type] = []
+                if len(unsupported_by_type[resource_type]) < 3:  # Keep up to 3 examples
+                    unsupported_by_type[resource_type].append(resource_name)
+            else:
+                # Deployable
+                metrics.source_deployable += 1
+
+        # Store unsupported type info
+        for resource_type, examples in unsupported_by_type.items():
+            metrics.unsupported_types[resource_type] = UnsupportedTypeInfo(
+                resource_type=resource_type,
+                count=len(
+                    [r for r in graph.resources if r.get("type") == resource_type]
+                ),
+                examples=examples,
+            )
 
         # Determine target subscription ID
         # Priority: 1) Explicit --target-subscription parameter
@@ -437,7 +501,9 @@ async def generate_iac_command_handler(
                         source_tenant_id=resolved_source_tenant_id,
                         target_tenant_id=resolved_target_tenant_id,
                         manual_mapping_file=(
-                            Path(identity_mapping_file) if identity_mapping_file else None
+                            Path(identity_mapping_file)
+                            if identity_mapping_file
+                            else None
                         ),
                         neo4j_driver=driver,
                     )
@@ -465,6 +531,15 @@ async def generate_iac_command_handler(
                     sps_count = len(identity_mapping["service_principals"])
                     click.echo(
                         f"Mapped {users_count} users, {groups_count} groups, {sps_count} service principals"
+                    )
+
+                    # Collect translation metrics (Issue #413)
+                    metrics.translation_enabled = True
+                    metrics.translation_users_mapped = users_count
+                    metrics.translation_groups_mapped = groups_count
+                    metrics.translation_sps_mapped = sps_count
+                    metrics.translation_identities_mapped = (
+                        users_count + groups_count + sps_count
                     )
 
                 except Exception as e:
@@ -664,6 +739,45 @@ async def generate_iac_command_handler(
             click.echo(f"✅ Wrote {len(paths)} files to {out_dir}")
             for path in paths:
                 click.echo(f"  📄 {path}")
+
+            # Collect metrics for early return path (Issue #413)
+            if format_type.lower() == "terraform" and hasattr(
+                emitter, "get_resource_count"
+            ):
+                metrics.terraform_resources_generated = emitter.get_resource_count()  # type: ignore[attr-defined]
+                metrics.terraform_files_created = emitter.get_files_created_count()  # type: ignore[attr-defined]
+                translation_stats = emitter.get_translation_stats()  # type: ignore[attr-defined]
+                if translation_stats:
+                    metrics.translation_enabled = True
+                    metrics.translation_users_mapped = translation_stats.get(
+                        "users_mapped", 0
+                    )
+                    metrics.translation_groups_mapped = translation_stats.get(
+                        "groups_mapped", 0
+                    )
+                    metrics.translation_sps_mapped = translation_stats.get(
+                        "service_principals_mapped", 0
+                    )
+                    metrics.translation_identities_mapped = (
+                        metrics.translation_users_mapped
+                        + metrics.translation_groups_mapped
+                        + metrics.translation_sps_mapped
+                    )
+                metrics.calculate_success_rate()
+
+                # Generate and display report
+                try:
+                    report = GenerationReport(
+                        metrics=metrics,
+                        output_directory=out_dir,
+                        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    )
+                    click.echo(report.format_report())
+                    report_path = report.save_to_file()
+                    logger.info(f"Generation report saved to: {report_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to generate report: {e}")
+
             return 0
 
         # Default: apply rules to all resources
@@ -720,6 +834,35 @@ async def generate_iac_command_handler(
             emit_kwargs["neo4j_driver"] = driver
 
         paths = emitter.emit(graph, out_dir, **emit_kwargs)
+
+        # Collect generation metrics from emitter (Issue #413)
+        if format_type.lower() == "terraform" and hasattr(
+            emitter, "get_resource_count"
+        ):
+            metrics.terraform_resources_generated = emitter.get_resource_count()  # type: ignore[attr-defined]
+            metrics.terraform_files_created = emitter.get_files_created_count()  # type: ignore[attr-defined]
+
+            # Get translation stats if available
+            translation_stats = emitter.get_translation_stats()  # type: ignore[attr-defined]
+            if translation_stats:
+                metrics.translation_enabled = True
+                metrics.translation_users_mapped = translation_stats.get(
+                    "users_mapped", 0
+                )
+                metrics.translation_groups_mapped = translation_stats.get(
+                    "groups_mapped", 0
+                )
+                metrics.translation_sps_mapped = translation_stats.get(
+                    "service_principals_mapped", 0
+                )
+                metrics.translation_identities_mapped = (
+                    metrics.translation_users_mapped
+                    + metrics.translation_groups_mapped
+                    + metrics.translation_sps_mapped
+                )
+
+        # Calculate success rate (Issue #413)
+        metrics.calculate_success_rate()
 
         # Validate and fix global name conflicts (GAP-014)
         if format_type.lower() == "terraform" and not skip_name_validation:
@@ -859,6 +1002,25 @@ async def generate_iac_command_handler(
 
             click.echo(f"📝 Registered deployment: {deployment_id}")
             click.echo("   Use 'atg undeploy' to destroy these resources")
+
+        # Generate and display generation report (Issue #413)
+        try:
+            report = GenerationReport(
+                metrics=metrics,
+                output_directory=out_dir,
+                timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            )
+
+            # Display report
+            click.echo(report.format_report())
+
+            # Save report to file
+            report_path = report.save_to_file()
+            logger.info(f"Generation report saved to: {report_path}")
+
+        except Exception as e:
+            logger.warning(f"Failed to generate report: {e}")
+            # Non-blocking - don't fail generation if reporting fails
 
         return 0
 
