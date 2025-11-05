@@ -21,12 +21,10 @@ Options:
 import argparse
 import json
 import logging
-import os
 import sys
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -204,9 +202,8 @@ class ResourceCoverageAnalyzer:
         """Categorize resources into supported, unsupported, and non-deployable."""
         logger.info("Categorizing resources...")
 
-        for resource_type, count in self.resource_counts.items():
+        for resource_type, _count in self.resource_counts.items():
             # Normalize type for comparison
-            normalized_type = resource_type
 
             # Check if it's a non-deployable type (Graph API)
             if self._is_non_deployable(resource_type):
@@ -560,10 +557,10 @@ This suggests:
             "timestamp": datetime.now().isoformat(),
             "statistics": stats,
             "resource_counts": self.resource_counts,
-            "supported_types": sorted(list(self.supported_types)),
-            "non_deployable_types": sorted(list(self.non_deployable_types)),
-            "unsupported_types": sorted(list(self.unsupported_types)),
-            "missing_emitters": sorted(list(self.missing_emitters)),
+            "supported_types": sorted(self.supported_types),
+            "non_deployable_types": sorted(self.non_deployable_types),
+            "unsupported_types": sorted(self.unsupported_types),
+            "missing_emitters": sorted(self.missing_emitters),
             "top_missing_emitters": [
                 {"type": t, "count": c} for t, c in self.get_top_unsupported(20)
             ],
