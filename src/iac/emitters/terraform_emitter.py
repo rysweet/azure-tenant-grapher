@@ -39,6 +39,8 @@ class TerraformEmitter(IaCEmitter):
         identity_mapping: Optional[Dict[str, Any]] = None,
         identity_mapping_file: Optional[str] = None,
         strict_mode: bool = False,
+        auto_import_existing: bool = False,
+        import_strategy: Optional[str] = None,
     ):
         """Initialize the TerraformEmitter.
 
@@ -52,6 +54,8 @@ class TerraformEmitter(IaCEmitter):
             identity_mapping: Identity mapping dictionary for Entra ID translation
             identity_mapping_file: Path to identity mapping JSON file
             strict_mode: If True, fail on missing mappings. If False, warn.
+            auto_import_existing: If True, generate import blocks for existing resources (Issue #412)
+            import_strategy: Strategy for importing ("resource_groups", "all_resources", "selective")
         """
         super().__init__(config)
         self.resource_group_prefix = resource_group_prefix or ""
@@ -76,6 +80,10 @@ class TerraformEmitter(IaCEmitter):
 
         # Translation coordinator (initialized in emit() when resources are available)
         self._translation_coordinator: Optional[TranslationCoordinator] = None
+
+        # Import configuration (Issue #412)
+        self.auto_import_existing = auto_import_existing
+        self.import_strategy = import_strategy or "resource_groups"
 
         # Generation metrics tracking (Issue #413)
         self._resource_count: int = 0
