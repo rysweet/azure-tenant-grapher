@@ -36,7 +36,7 @@ The Neo4j schema in Azure Tenant Grapher is **dynamically assembled** during res
 
 - **Schema-on-write**: The schema evolves as resources are discovered
 - **Extensible**: New node and relationship types can be added via rules
-- **Type-safe models**: Pydantic models define the structure (see `src/tenant_spec_models.py`)
+- **Type-safe models**: Pydantic models define the structure (see [`src/tenant_spec_models.py`](../src/tenant_spec_models.py))
 - **Cypher-based**: All database operations use parameterized Cypher queries
 
 ---
@@ -54,7 +54,7 @@ Represents the Azure Active Directory tenant (root of the hierarchy).
 - `domain`: Primary domain
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/tenant_creator.py:674`
+**Created in:** [`src/tenant_creator.py:674`](../src/tenant_creator.py#L674)
 
 ---
 
@@ -67,7 +67,7 @@ Represents an Azure subscription.
 - `state`: Subscription state (Enabled, Disabled, etc.)
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/resource_processor.py:185-191`
+**Created in:** [`src/resource_processor.py:185-191`](../src/resource_processor.py#L185-L191)
 
 **Example Cypher:**
 ```cypher
@@ -89,7 +89,7 @@ Represents an Azure resource group.
 - `llm_description`: AI-generated description (optional)
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/resource_processor.py:205-215`
+**Created in:** [`src/resource_processor.py:205-215`](../src/resource_processor.py#L205-L215)
 
 ---
 
@@ -110,7 +110,7 @@ Represents any Azure resource (VMs, storage accounts, databases, etc.).
 - `tags`: Resource tags (if any)
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/resource_processor.py:262-295`
+**Created in:** [`src/resource_processor.py:262-295`](../src/resource_processor.py#L262-L295)
 
 **Notes:**
 - This is the most common node type
@@ -127,7 +127,7 @@ Represents an Azure resource tag (key-value pair).
 - `value`: Tag value
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/resource_processor.py:534`
+**Created in:** [`src/resource_processor.py:534`](../src/resource_processor.py#L534)
 
 ---
 
@@ -145,7 +145,7 @@ Represents an Azure AD user.
 - `mail`: Email address
 - `updated_at`: Last update timestamp
 
-**Data Model:** `src/tenant_spec_models.py:58-136`
+**Data Model:** [`src/tenant_spec_models.py:58-136`](../src/tenant_spec_models.py#L58-L136)
 
 **Created by:** Azure AD identity import process
 
@@ -163,9 +163,9 @@ Represents an Azure AD group.
 - `securityEnabled`: Whether security is enabled
 - `updated_at`: Last update timestamp
 
-**Data Model:** `src/tenant_spec_models.py:139-219`
+**Data Model:** [`src/tenant_spec_models.py:139-219`](../src/tenant_spec_models.py#L139-L219)
 
-**Created in:** `src/tenant_creator.py:655`
+**Created in:** [`src/tenant_creator.py:655`](../src/tenant_creator.py#L655)
 
 ---
 
@@ -180,7 +180,7 @@ Represents an Azure AD service principal (application identity).
 - `accountEnabled`: Whether enabled
 - `updated_at`: Last update timestamp
 
-**Data Model:** `src/tenant_spec_models.py:263-347`
+**Data Model:** [`src/tenant_spec_models.py:263-347`](../src/tenant_spec_models.py#L263-L347)
 
 ---
 
@@ -194,9 +194,9 @@ Represents a system-assigned or user-assigned managed identity.
 - `clientId`: Client ID (for user-assigned)
 - `updated_at`: Last update timestamp
 
-**Data Model:** `src/tenant_spec_models.py:350-364`
+**Data Model:** [`src/tenant_spec_models.py:350-364`](../src/tenant_spec_models.py#L350-L364)
 
-**Created in:** `src/relationship_rules/identity_rule.py:10`
+**Created in:** [`src/relationship_rules/identity_rule.py:10`](../src/relationship_rules/identity_rule.py#L10)
 
 ---
 
@@ -211,7 +211,7 @@ Represents an Azure RBAC role definition.
 - `permissions`: JSON array of permissions
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/relationship_rules/identity_rule.py:6`
+**Created in:** [`src/relationship_rules/identity_rule.py:6`](../src/relationship_rules/identity_rule.py#L6)
 
 ---
 
@@ -226,7 +226,7 @@ Represents an Azure RBAC role assignment (connects identity to role).
 - `principalType`: Principal type (User, Group, ServicePrincipal)
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/relationship_rules/identity_rule.py:7`
+**Created in:** [`src/relationship_rules/identity_rule.py:7`](../src/relationship_rules/identity_rule.py#L7)
 
 ---
 
@@ -240,7 +240,7 @@ Represents an Azure AD administrative unit.
 - `visibility`: Visibility setting
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/tenant_creator.py:658`
+**Created in:** [`src/tenant_creator.py:658`](../src/tenant_creator.py#L658)
 
 ---
 
@@ -257,7 +257,7 @@ Represents an Azure private endpoint (secure network connection).
 - `connection_state`: Connection state
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/relationship_rules/network_rule.py:6`
+**Created in:** [`src/relationship_rules/network_rule.py:6`](../src/relationship_rules/network_rule.py#L6)
 
 ---
 
@@ -271,7 +271,7 @@ Represents an Azure DNS zone (public or private).
 - `recordCount`: Number of DNS records
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/relationship_rules/network_rule.py:7`
+**Created in:** [`src/relationship_rules/network_rule.py:7`](../src/relationship_rules/network_rule.py#L7)
 
 ---
 
@@ -288,7 +288,7 @@ Represents a security group used for identity management.
 - `description`: Description
 - `updated_at`: Last update timestamp
 
-**Created in:** `src/relationship_rules/identity_rule.py:11`
+**Created in:** [`src/relationship_rules/identity_rule.py:11`](../src/relationship_rules/identity_rule.py#L11)
 
 ---
 
@@ -298,7 +298,7 @@ Represents a security group used for identity management.
 
 These are the seven core relationship types that form the backbone of the graph schema. They are defined as the standard relationship semantics for the system.
 
-**Definition Location:** `src/tenant_creator.py:79-86`
+**Definition Location:** [`src/tenant_creator.py:79-86`](../src/tenant_creator.py#L79-L86)
 
 #### 1. DEPENDS_ON
 Represents resource dependencies.
@@ -314,7 +314,7 @@ Represents resource dependencies.
 - `dependency_type`: Type of dependency (Hard, Soft, Optional)
 - `created_at`: When relationship was created
 
-**Emitted by:** `DependsOnRule` (`src/relationship_rules/depends_on_rule.py`)
+**Emitted by:** `DependsOnRule` ([`src/relationship_rules/depends_on_rule.py`](../src/relationship_rules/depends_on_rule.py))
 
 ---
 
@@ -348,7 +348,7 @@ Represents network connections.
 - `connection_type`: Type of connection (Peering, VPN, ExpressRoute)
 - `created_at`: When relationship was created
 
-**Emitted by:** `NetworkRule` (`src/relationship_rules/network_rule.py`)
+**Emitted by:** `NetworkRule` ([`src/relationship_rules/network_rule.py`](../src/relationship_rules/network_rule.py))
 
 ---
 
@@ -366,7 +366,7 @@ Represents hierarchical containment.
 - `hierarchy_level`: Level in hierarchy (1 = Subscription→RG, 2 = RG→Resource)
 - `created_at`: When relationship was created
 
-**Emitted by:** `SubnetExtractionRule` (`src/relationship_rules/subnet_extraction_rule.py:87`)
+**Emitted by:** `SubnetExtractionRule` ([`src/relationship_rules/subnet_extraction_rule.py:87`](../src/relationship_rules/subnet_extraction_rule.py#L87))
 
 ---
 
@@ -401,7 +401,7 @@ Represents RBAC role assignments.
 - `scope`: Assignment scope
 - `created_at`: When relationship was created
 
-**Emitted by:** `IdentityRule` (`src/relationship_rules/identity_rule.py`)
+**Emitted by:** `IdentityRule` ([`src/relationship_rules/identity_rule.py`](../src/relationship_rules/identity_rule.py))
 
 ---
 
@@ -425,7 +425,7 @@ Represents service integrations.
 
 These relationships are specific to identity and RBAC processing.
 
-**Definition Location:** `src/relationship_rules/identity_rule.py:14-16`
+**Definition Location:** [`src/relationship_rules/identity_rule.py:14-16`](../src/relationship_rules/identity_rule.py#L14-L16)
 
 #### ASSIGNED_TO
 Connects a role assignment to the identity it's assigned to.
@@ -462,7 +462,7 @@ Connects a resource to the managed identity it uses.
 
 These relationships model network connectivity and security.
 
-**Definition Location:** `src/relationship_rules/network_rule.py`
+**Definition Location:** [`src/relationship_rules/network_rule.py`](../src/relationship_rules/network_rule.py)
 
 #### CONNECTED_TO_PE
 Connects a resource to a private endpoint.
@@ -471,7 +471,7 @@ Connects a resource to a private endpoint.
 
 **Semantics:** Resource is accessible via this private endpoint
 
-**Defined at:** `src/relationship_rules/network_rule.py:10`
+**Defined at:** [`src/relationship_rules/network_rule.py:10`](../src/relationship_rules/network_rule.py#L10)
 
 ---
 
@@ -482,7 +482,7 @@ Connects a DNS zone to a resource.
 
 **Semantics:** This DNS zone resolves to this resource
 
-**Defined at:** `src/relationship_rules/network_rule.py:11`
+**Defined at:** [`src/relationship_rules/network_rule.py:11`](../src/relationship_rules/network_rule.py#L11)
 
 ---
 
@@ -493,7 +493,7 @@ Connects a resource to a subnet.
 
 **Semantics:** Resource is deployed in this subnet
 
-**Defined at:** `src/relationship_rules/network_rule.py:49`
+**Defined at:** [`src/relationship_rules/network_rule.py:49`](../src/relationship_rules/network_rule.py#L49)
 
 **Examples:**
 - Virtual machine USES_SUBNET "default"
@@ -508,7 +508,7 @@ Connects a subnet to a network security group.
 
 **Semantics:** This subnet's traffic is controlled by this NSG
 
-**Defined at:** `src/relationship_rules/network_rule.py:62`
+**Defined at:** [`src/relationship_rules/network_rule.py:62`](../src/relationship_rules/network_rule.py#L62)
 
 ---
 
@@ -521,9 +521,9 @@ Connects a resource to a tag.
 
 **Semantics:** This resource has this tag applied
 
-**Defined at:** `src/resource_processor.py:534`
+**Defined at:** [`src/resource_processor.py:534`](../src/resource_processor.py#L534)
 
-**Emitted by:** `TagRule` (`src/relationship_rules/tag_rule.py`)
+**Emitted by:** `TagRule` ([`src/relationship_rules/tag_rule.py`](../src/relationship_rules/tag_rule.py))
 
 ---
 
@@ -532,14 +532,14 @@ Connects a resource to a tag.
 The graph schema is assembled through a multi-stage process:
 
 ### Stage 1: Resource Discovery
-**File:** `src/services/azure_discovery_service.py`
+**File:** [`src/services/azure_discovery_service.py`](../src/services/azure_discovery_service.py)
 
 1. Azure SDK queries all subscriptions
 2. Resources are discovered with pagination
 3. Raw Azure API responses are collected
 
 ### Stage 2: Node Creation
-**File:** `src/resource_processor.py`
+**File:** [`src/resource_processor.py`](../src/resource_processor.py)
 
 The `DatabaseOperations` class provides generic methods for creating nodes:
 
@@ -624,11 +624,11 @@ This enables **rule-based relationship creation** without hardcoded Cypher.
 ---
 
 ### Stage 3: Relationship Rules Execution
-**File:** `src/relationship_rules/__init__.py`
+**File:** [`src/relationship_rules/__init__.py`](../src/relationship_rules/__init__.py)
 
 Relationship rules are executed in a specific order to build the graph topology. Each rule implements the `RelationshipRule` base class.
 
-**Base Class:** `src/relationship_rules/relationship_rule.py:5-22`
+**Base Class:** [`src/relationship_rules/relationship_rule.py:5-22`](../src/relationship_rules/relationship_rule.py#L5-L22)
 
 **Abstract Methods:**
 - `applies(resource)`: Determines if rule applies to a resource
@@ -680,7 +680,7 @@ Relationship rules are executed in a specific order to build the graph topology.
 ---
 
 ### Stage 4: Azure AD Identity Import
-**File:** `src/services/azure_discovery_service.py`
+**File:** [`src/services/azure_discovery_service.py`](../src/services/azure_discovery_service.py)
 
 If enabled, imports identity information from Microsoft Graph API:
 
@@ -693,7 +693,7 @@ If enabled, imports identity information from Microsoft Graph API:
 ---
 
 ### Stage 5: Relationship Enrichment
-**File:** `src/services/resource_processing_service.py`
+**File:** [`src/services/resource_processing_service.py`](../src/services/resource_processing_service.py)
 
 After all rules execute:
 
@@ -708,7 +708,7 @@ After all rules execute:
 
 ### Pydantic Schema Definitions
 
-**File:** `src/tenant_spec_models.py` (Lines 1-963)
+**File:** [`src/tenant_spec_models.py`](../src/tenant_spec_models.py) (Lines 1-963)
 
 This file contains the complete Pydantic models that serve as the **schema definition layer** for the graph database. While Neo4j stores data dynamically, these Pydantic models provide type safety, validation, and structure for the Python application layer.
 
@@ -767,17 +767,17 @@ The `Relationship` class defines relationship properties:
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `src/resource_processor.py` | Database operations, node/relationship creation | 172-477 |
-| `src/tenant_spec_models.py` | Pydantic data models for all node types | 1-963 |
-| `src/tenant_creator.py` | Canonical relationship type definitions | 79-86 |
-| `src/relationship_rules/__init__.py` | Rule execution order | Full file |
-| `src/relationship_rules/relationship_rule.py` | Base class for all rules | 5-22 |
-| `src/relationship_rules/identity_rule.py` | Identity and RBAC relationships | Full file |
-| `src/relationship_rules/network_rule.py` | Network relationships | Full file |
-| `src/relationship_rules/subnet_extraction_rule.py` | Subnet relationships | Full file |
-| `src/services/azure_discovery_service.py` | Azure resource discovery | Full file |
-| `src/services/resource_processing_service.py` | Resource processing orchestration | Full file |
-| `src/utils/session_manager.py` | Neo4j connection management | 86-150 |
+| [`src/resource_processor.py`](../src/resource_processor.py) | Database operations, node/relationship creation | 172-477 |
+| [`src/tenant_spec_models.py`](../src/tenant_spec_models.py) | Pydantic data models for all node types | 1-963 |
+| [`src/tenant_creator.py`](../src/tenant_creator.py) | Canonical relationship type definitions | 79-86 |
+| [`src/relationship_rules/__init__.py`](../src/relationship_rules/__init__.py) | Rule execution order | Full file |
+| [`src/relationship_rules/relationship_rule.py`](../src/relationship_rules/relationship_rule.py) | Base class for all rules | 5-22 |
+| [`src/relationship_rules/identity_rule.py`](../src/relationship_rules/identity_rule.py) | Identity and RBAC relationships | Full file |
+| [`src/relationship_rules/network_rule.py`](../src/relationship_rules/network_rule.py) | Network relationships | Full file |
+| [`src/relationship_rules/subnet_extraction_rule.py`](../src/relationship_rules/subnet_extraction_rule.py) | Subnet relationships | Full file |
+| [`src/services/azure_discovery_service.py`](../src/services/azure_discovery_service.py) | Azure resource discovery | Full file |
+| [`src/services/resource_processing_service.py`](../src/services/resource_processing_service.py) | Resource processing orchestration | Full file |
+| [`src/utils/session_manager.py`](../src/utils/session_manager.py) | Neo4j connection management | 86-150 |
 
 ### Migration System
 
@@ -796,7 +796,7 @@ Database schema versioning and migrations are managed here. Each migration file:
 
 The 3D visualization assigns colors to relationship types for visual clarity.
 
-**File:** `src/visualization/javascript_builder.py:533-539`
+**File:** [`src/visualization/javascript_builder.py:533-539`](../src/visualization/javascript_builder.py#L533-L539)
 
 | Relationship | Color | Hex Code |
 |--------------|-------|----------|
@@ -855,7 +855,7 @@ Note: Neo4j does not enforce cardinality - these patterns are logical constraint
 
 ### Adding New Node Types
 
-1. **Define Pydantic model** in `src/tenant_spec_models.py`
+1. **Define Pydantic model** in [`src/tenant_spec_models.py`](../src/tenant_spec_models.py)
 2. **Create node** using `DatabaseOperations.upsert_generic()`
 3. **Add to visualization** in `javascript_builder.py` (if needed)
 4. **Document here** with properties and examples
@@ -865,7 +865,7 @@ Note: Neo4j does not enforce cardinality - these patterns are logical constraint
 1. **Choose semantic type** from canonical relationships (or create new)
 2. **Create relationship rule** class inheriting from `RelationshipRule`
 3. **Implement `applies()` and `emit()` methods**
-4. **Register rule** in `src/relationship_rules/__init__.py`
+4. **Register rule** in [`src/relationship_rules/__init__.py`](../src/relationship_rules/__init__.py)
 5. **Add color mapping** in `javascript_builder.py`
 6. **Document here** with pattern and examples
 
