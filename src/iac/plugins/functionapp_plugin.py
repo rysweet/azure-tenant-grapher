@@ -12,11 +12,7 @@ The plugin integrates with the IaC generation process to ensure that Function Ap
 configurations are preserved when deploying to new environments.
 """
 
-import json
 import logging
-import os
-import tempfile
-import zipfile
 from typing import Any, Dict, List
 
 from .base_plugin import DataPlaneItem, DataPlanePlugin, ReplicationResult
@@ -679,8 +675,8 @@ class FunctionAppPlugin(DataPlanePlugin):
                 warnings=[],
             )
 
-        source_subscription_id = source_id_parts[2]
-        source_resource_group = source_id_parts[4]
+        source_id_parts[2]
+        source_id_parts[4]
 
         target_subscription_id = target_id_parts[2]
         target_resource_group = target_id_parts[4]

@@ -340,7 +340,7 @@ class AutoIdentityMapper:
         target_by_email = {
             u["mail"]: u for u in target_users if u.get("mail") is not None
         }
-        target_by_upn = {
+        {
             u["userPrincipalName"]: u
             for u in target_users
             if u.get("userPrincipalName") is not None
