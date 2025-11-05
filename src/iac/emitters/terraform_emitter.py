@@ -726,7 +726,7 @@ class TerraformEmitter(IaCEmitter):
 
     def _generate_import_blocks(
         self, terraform_config: Dict[str, Any], resources: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, str]]:
         """Generate Terraform 1.5+ import blocks for existing resources (Issue #412).
 
         Args:
@@ -734,9 +734,9 @@ class TerraformEmitter(IaCEmitter):
             resources: Original resources from graph
 
         Returns:
-            Dictionary of import blocks in Terraform 1.5+ format
+            List of import blocks in Terraform 1.5+ format
         """
-        import_blocks = {}
+        import_blocks = []
 
         # Get all resource groups from terraform config
         tf_resources = terraform_config.get("resource", {})
@@ -752,10 +752,10 @@ class TerraformEmitter(IaCEmitter):
                     subscription_id = self.target_subscription_id or self.source_subscription_id
                     if subscription_id:
                         azure_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
-                        import_blocks[rg_tf_name] = {
+                        import_blocks.append({
                             "to": f"azurerm_resource_group.{rg_tf_name}",
                             "id": azure_id
-                        }
+                        })
         elif self.import_strategy == "all_resources":
             # Import all resources (aggressive strategy)
             subscription_id = self.target_subscription_id or self.source_subscription_id
