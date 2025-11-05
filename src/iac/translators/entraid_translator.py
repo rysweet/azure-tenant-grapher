@@ -381,7 +381,7 @@ class EntraIdTranslator(BaseTranslator):
         warnings: List[str] = []
 
         # Convert to JSON string, replace all occurrences, convert back
-        resource_json = json.dumps(resource)
+        resource_json = json.dumps(resource, default=str)
 
         # Count occurrences for reporting
         occurrence_count = resource_json.count(self.context.source_tenant_id)
@@ -612,7 +612,7 @@ class EntraIdTranslator(BaseTranslator):
             return resource, warnings
 
         # Convert to JSON string for easier text replacement
-        resource_json = json.dumps(resource)
+        resource_json = json.dumps(resource, default=str)
 
         # Replace all UPNs with source domain
         # Pattern: anything@source.domain -> anything@target.domain
