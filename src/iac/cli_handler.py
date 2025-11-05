@@ -701,6 +701,10 @@ async def generate_iac_command_handler(
             emitter_cls = get_emitter(format_type)
             # Pass cross-tenant translation parameters to emitter (only for Terraform)
             if format_type.lower() == "terraform":
+                # Create credential for import blocks existence checking
+                from azure.identity import DefaultAzureCredential
+                credential = DefaultAzureCredential()
+
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                     resource_group_prefix=resource_group_prefix,
                     target_subscription_id=subscription_id,
@@ -711,6 +715,7 @@ async def generate_iac_command_handler(
                     strict_mode=strict_translation,
                     auto_import_existing=auto_import_existing,
                     import_strategy=import_strategy,
+                    credential=credential,
                 )
             else:
                 emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
@@ -808,6 +813,10 @@ async def generate_iac_command_handler(
         emitter_cls = get_emitter(format_type)
         # Pass cross-tenant translation parameters to emitter (only for Terraform)
         if format_type.lower() == "terraform":
+            # Create credential for import blocks existence checking
+            from azure.identity import DefaultAzureCredential
+            credential = DefaultAzureCredential()
+
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
                 resource_group_prefix=resource_group_prefix,
                 target_subscription_id=subscription_id,
@@ -818,6 +827,7 @@ async def generate_iac_command_handler(
                 strict_mode=strict_translation,
                 auto_import_existing=auto_import_existing,
                 import_strategy=import_strategy,
+                credential=credential,
             )
         else:
             emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
