@@ -2602,15 +2602,21 @@ class TerraformEmitter(IaCEmitter):
 
         return {
             "users_mapped": len(
-                self._translation_coordinator.identity_mapping.get("users", {})
+                self._translation_coordinator.context.identity_mapping.get("users", {})
+                if self._translation_coordinator.context.identity_mapping
+                else {}
             ),
             "groups_mapped": len(
-                self._translation_coordinator.identity_mapping.get("groups", {})
+                self._translation_coordinator.context.identity_mapping.get("groups", {})
+                if self._translation_coordinator.context.identity_mapping
+                else {}
             ),
             "service_principals_mapped": len(
-                self._translation_coordinator.identity_mapping.get(
+                self._translation_coordinator.context.identity_mapping.get(
                     "service_principals", {}
                 )
+                if self._translation_coordinator.context.identity_mapping
+                else {}
             ),
         }
 
