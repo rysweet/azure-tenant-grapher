@@ -40,14 +40,14 @@ export class CredentialManager {
   static initialize() {
     // Try to get master key from environment
     const masterKeyEnv = process.env.CREDENTIAL_MASTER_KEY;
-    
+
     if (masterKeyEnv) {
       this.masterKey = Buffer.from(masterKeyEnv, 'hex');
       logger.info('Credential manager initialized with environment key');
     } else {
       // Generate a key for development (NOT for production)
       const keyPath = path.join(process.cwd(), '.credential-key');
-      
+
       if (fs.existsSync(keyPath)) {
         this.masterKey = fs.readFileSync(keyPath);
         logger.info('Credential manager initialized with stored key');
@@ -79,7 +79,7 @@ export class CredentialManager {
 
     // Try to load from encrypted file
     const credPath = path.join(process.cwd(), '.neo4j-credentials.enc');
-    
+
     if (fs.existsSync(credPath)) {
       try {
         const encryptedData = JSON.parse(fs.readFileSync(credPath, 'utf8'));
@@ -117,7 +117,7 @@ export class CredentialManager {
 
     const encrypted = this.encryptCredentials(credentials);
     const credPath = path.join(process.cwd(), '.neo4j-credentials.enc');
-    
+
     fs.writeFileSync(credPath, JSON.stringify(encrypted, null, 2));
     logger.info('Neo4j credentials saved to encrypted storage');
   }
@@ -133,15 +133,15 @@ export class CredentialManager {
     const salt = randomBytes(CONFIG.SALT_LENGTH);
     const key = scryptSync(this.masterKey, salt, CONFIG.KEY_LENGTH);
     const iv = randomBytes(CONFIG.IV_LENGTH);
-    
+
     const cipher = createCipheriv(CONFIG.ENCRYPTION_ALGORITHM, key, iv) as any;
-    
+
     const plaintext = JSON.stringify(credentials);
     const encrypted = Buffer.concat([
       cipher.update(plaintext, 'utf8'),
       cipher.final()
     ]);
-    
+
     const authTag = cipher.getAuthTag();
 
     return {
@@ -164,10 +164,10 @@ export class CredentialManager {
     const key = scryptSync(this.masterKey, salt, CONFIG.KEY_LENGTH);
     const iv = Buffer.from(encryptedData.iv, 'base64');
     const authTag = Buffer.from(encryptedData.authTag, 'base64');
-    
+
     const decipher = createDecipheriv(CONFIG.ENCRYPTION_ALGORITHM, key, iv) as any;
     decipher.setAuthTag(authTag);
-    
+
     const decrypted = Buffer.concat([
       decipher.update(Buffer.from(encryptedData.encrypted, 'base64')),
       decipher.final()
@@ -244,17 +244,17 @@ export class CredentialManager {
 
     for (const [key, value] of Object.entries(process.env)) {
       if (!value) continue;
-      
+
       let sanitized = value;
-      
+
       // Check if key contains sensitive pattern
       const isSensitive = sensitiveKeys.some(pattern => key.toUpperCase().includes(pattern));
-      
+
       if (isSensitive) {
         // Show only first 4 characters
         sanitized = value.substring(0, 4) + '****';
       }
-      
+
       env[key] = sanitized;
     }
 
@@ -266,29 +266,29 @@ export class CredentialManager {
    */
   static async rotateCredentials(): Promise<void> {
     logger.info('Starting credential rotation');
-    
+
     // Generate new master key
     const oldKey = this.masterKey;
     this.masterKey = randomBytes(CONFIG.KEY_LENGTH);
-    
+
     // Re-encrypt stored credentials with new key
     const credPath = path.join(process.cwd(), '.neo4j-credentials.enc');
-    
+
     if (fs.existsSync(credPath)) {
       try {
         // Decrypt with old key
         this.masterKey = oldKey;
         const encryptedData = JSON.parse(fs.readFileSync(credPath, 'utf8'));
         const credentials = this.decryptCredentials(encryptedData);
-        
+
         // Encrypt with new key
         this.masterKey = randomBytes(CONFIG.KEY_LENGTH);
         this.saveNeo4jCredentials(credentials);
-        
+
         // Save new key
         const keyPath = path.join(process.cwd(), '.credential-key');
         fs.writeFileSync(keyPath, this.masterKey);
-        
+
         logger.info('Credential rotation completed successfully');
       } catch (error) {
         logger.error('Failed to rotate credentials', error);
