@@ -287,12 +287,22 @@ class EntraIdTranslator(BaseTranslator):
             return True
 
         # Check for tenant_id field anywhere in resource
-        resource_json = json.dumps(resource)
-        if (
-            self.context.source_tenant_id
-            and self.context.source_tenant_id in resource_json
-        ):
-            return True
+        try:
+            resource_json = json.dumps(resource, default=str)
+            if (
+                self.context.source_tenant_id
+                and self.context.source_tenant_id in resource_json
+            ):
+                return True
+        except (TypeError, ValueError) as e:
+            # If serialization fails, fall back to string search in resource dict
+            logger.debug(f"Failed to serialize resource for tenant_id check: {e}")
+            resource_str = str(resource)
+            if (
+                self.context.source_tenant_id
+                and self.context.source_tenant_id in resource_str
+            ):
+                return True
 
         return False
 
