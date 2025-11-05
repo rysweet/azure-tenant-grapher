@@ -98,9 +98,7 @@ RETURN count(r) as resources_marked_abstracted;
 
 MATCH (t:Tenant)
 WHERE t.abstraction_seed IS NULL
-SET t.abstraction_seed = null,
-    t.seed_algorithm = "sha256-truncated",
-    t.seed_created_at = null
+SET t.seed_algorithm = "sha256-truncated"
 RETURN count(t) as tenants_prepared;
 
 // ============================================================================
