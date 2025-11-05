@@ -10,10 +10,13 @@ import re
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
+from azure.identity import DefaultAzureCredential
+
 from ..dependency_analyzer import DependencyAnalyzer
 from ..translators import TranslationContext, TranslationCoordinator
 from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 from ..traverser import TenantGraph
+from ..validators import ResourceExistenceValidator
 from . import register_emitter
 from .base import IaCEmitter
 from .private_endpoint_emitter import (
@@ -41,6 +44,7 @@ class TerraformEmitter(IaCEmitter):
         strict_mode: bool = False,
         auto_import_existing: bool = False,
         import_strategy: Optional[str] = None,
+        credential: Optional[Any] = None,
     ):
         """Initialize the TerraformEmitter.
 
@@ -56,6 +60,7 @@ class TerraformEmitter(IaCEmitter):
             strict_mode: If True, fail on missing mappings. If False, warn.
             auto_import_existing: If True, generate import blocks for existing resources (Issue #412)
             import_strategy: Strategy for importing ("resource_groups", "all_resources", "selective")
+            credential: Azure credential for resource existence validation (Issue #422)
         """
         super().__init__(config)
         self.resource_group_prefix = resource_group_prefix or ""
@@ -81,9 +86,13 @@ class TerraformEmitter(IaCEmitter):
         # Translation coordinator (initialized in emit() when resources are available)
         self._translation_coordinator: Optional[TranslationCoordinator] = None
 
-        # Import configuration (Issue #412)
+        # Import configuration (Issue #412, #422)
         self.auto_import_existing = auto_import_existing
         self.import_strategy = import_strategy or "resource_groups"
+        self.credential = credential
+
+        # Resource existence validator (Issue #422)
+        self._existence_validator: Optional[ResourceExistenceValidator] = None
 
         # Generation metrics tracking (Issue #413)
         self._resource_count: int = 0
@@ -733,57 +742,152 @@ class TerraformEmitter(IaCEmitter):
     def _generate_import_blocks(
         self, terraform_config: Dict[str, Any], resources: List[Dict[str, Any]]
     ) -> List[Dict[str, str]]:
-        """Generate Terraform 1.5+ import blocks for existing resources (Issue #412).
+        """Generate Terraform 1.5+ import blocks for existing resources (Issue #412, #422).
+
+        With Issue #422 enhancements:
+        - Checks resource existence before generating import blocks
+        - Uses Azure SDK to verify resources actually exist in target
+        - Caches existence checks to minimize API calls
+        - Graceful error handling for transient failures
 
         Args:
             terraform_config: The generated Terraform configuration
             resources: Original resources from graph
 
         Returns:
-            List of import blocks in Terraform 1.5+ format
+            List of import blocks in Terraform 1.5+ format (only for existing resources)
         """
         import_blocks = []
+
+        # Get subscription ID for validation
+        subscription_id = self.target_subscription_id or self.source_subscription_id
+        if not subscription_id:
+            logger.warning(
+                "Cannot validate resource existence: no subscription ID available"
+            )
+            # Fall back to old behavior (no validation)
+            return self._generate_import_blocks_no_validation(terraform_config)
+
+        # Initialize existence validator if needed (Issue #422)
+        if self._existence_validator is None:
+            credential = self.credential or DefaultAzureCredential()
+            self._existence_validator = ResourceExistenceValidator(
+                subscription_id=subscription_id, credential=credential
+            )
+            logger.info(
+                f"Initialized resource existence validator for subscription {subscription_id}"
+            )
 
         # Get all resource groups from terraform config
         tf_resources = terraform_config.get("resource", {})
         resource_groups = tf_resources.get("azurerm_resource_group", {})
 
         if self.import_strategy == "resource_groups":
-            # Import only resource groups
+            # Import only resource groups (with existence validation)
+            candidate_imports = []
+
             for rg_tf_name, rg_config in resource_groups.items():
                 rg_name = rg_config.get("name")
                 rg_location = rg_config.get("location")
                 if rg_name and rg_location:
                     # Build Azure resource ID
-                    subscription_id = (
-                        self.target_subscription_id or self.source_subscription_id
+                    azure_id = (
+                        f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
                     )
-                    if subscription_id:
-                        azure_id = (
-                            f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
-                        )
+                    candidate_imports.append(
+                        {
+                            "to": f"azurerm_resource_group.{rg_tf_name}",
+                            "id": azure_id,
+                            "name": rg_name,
+                        }
+                    )
+
+            # Batch validate existence (Issue #422)
+            if candidate_imports:
+                logger.info(
+                    f"Validating existence of {len(candidate_imports)} resource groups..."
+                )
+                resource_ids = [imp["id"] for imp in candidate_imports]
+                existence_results = self._existence_validator.batch_check_resources(
+                    resource_ids
+                )
+
+                # Filter to only existing resources
+                for candidate in candidate_imports:
+                    result = existence_results.get(candidate["id"])
+                    if result and result.exists:
                         import_blocks.append(
-                            {
-                                "to": f"azurerm_resource_group.{rg_tf_name}",
-                                "id": azure_id,
-                            }
+                            {"to": candidate["to"], "id": candidate["id"]}
                         )
+                        logger.debug(
+                            f"✓ Resource exists: {candidate['name']} (cached: {result.cached})"
+                        )
+                    else:
+                        error_msg = (
+                            f" (error: {result.error})"
+                            if result and result.error
+                            else ""
+                        )
+                        logger.warning(
+                            f"✗ Resource does not exist, skipping import: {candidate['name']}{error_msg}"
+                        )
+
         elif self.import_strategy == "all_resources":
             # Import all resources (aggressive strategy)
-            subscription_id = self.target_subscription_id or self.source_subscription_id
-            if subscription_id:
-                for resource_type, resources_dict in tf_resources.items():
-                    for resource_tf_name, resource_config in resources_dict.items():
-                        # Try to build Azure ID from resource config
-                        if "name" in resource_config:
-                            # This is a simplified approach - would need full ID construction per type
-                            logger.debug(
-                                f"Would import {resource_type}.{resource_tf_name} "
-                                f"(full implementation needed)"
-                            )
+            # TODO: Implement full resource ID construction for all resource types
+            logger.warning(
+                "all_resources strategy with existence validation not yet implemented"
+            )
 
+        # Log cache statistics
+        if self._existence_validator:
+            cache_stats = self._existence_validator.get_cache_stats()
+            logger.info(
+                f"Existence validation cache: {cache_stats['valid']} valid, "
+                f"{cache_stats['expired']} expired entries"
+            )
+
+        validated_count = len(import_blocks)
         logger.info(
-            f"Import strategy '{self.import_strategy}' generated {len(import_blocks)} import blocks"
+            f"Import strategy '{self.import_strategy}' generated {validated_count} "
+            f"validated import blocks (existence-checked)"
+        )
+        return import_blocks
+
+    def _generate_import_blocks_no_validation(
+        self, terraform_config: Dict[str, Any]
+    ) -> List[Dict[str, str]]:
+        """Generate import blocks without existence validation (fallback).
+
+        Used when subscription ID is not available for validation.
+
+        Args:
+            terraform_config: The generated Terraform configuration
+
+        Returns:
+            List of import blocks without validation
+        """
+        import_blocks = []
+        tf_resources = terraform_config.get("resource", {})
+        resource_groups = tf_resources.get("azurerm_resource_group", {})
+
+        if self.import_strategy == "resource_groups":
+            subscription_id = self.target_subscription_id or self.source_subscription_id
+            for rg_tf_name, rg_config in resource_groups.items():
+                rg_name = rg_config.get("name")
+                if rg_name and subscription_id:
+                    azure_id = (
+                        f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}"
+                    )
+                    import_blocks.append(
+                        {
+                            "to": f"azurerm_resource_group.{rg_tf_name}",
+                            "id": azure_id,
+                        }
+                    )
+
+        logger.warning(
+            f"Generated {len(import_blocks)} import blocks WITHOUT existence validation"
         )
         return import_blocks
 
