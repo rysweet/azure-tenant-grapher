@@ -18,6 +18,8 @@ class NetworkRule(RelationshipRule):
     - (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
     - (Resource) -[:CONNECTED_TO_PE]- (PrivateEndpoint)
     - (DNSZone) -[:RESOLVES_TO]-> (Resource)
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -44,12 +46,12 @@ class NetworkRule(RelationshipRule):
                     if subnet and isinstance(subnet, dict):
                         subnet_id = subnet.get("id")
                         if subnet_id and rid:
-                            db_ops.create_generic_rel(
+                            # Use dual-graph helper instead of direct db_ops call
+                            self.create_dual_graph_relationship(
+                                db_ops,
                                 str(rid),
                                 "USES_SUBNET",
                                 str(subnet_id),
-                                "Resource",
-                                "id",
                             )
 
         # (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)
@@ -58,8 +60,12 @@ class NetworkRule(RelationshipRule):
             if nsg and isinstance(nsg, dict):
                 nsg_id = nsg.get("id")
                 if nsg_id and rid:
-                    db_ops.create_generic_rel(
-                        str(rid), "SECURED_BY", str(nsg_id), "Resource", "id"
+                    # Use dual-graph helper instead of direct db_ops call
+                    self.create_dual_graph_relationship(
+                        db_ops,
+                        str(rid),
+                        "SECURED_BY",
+                        str(nsg_id),
                     )
 
         # (PrivateEndpoint) node and CONNECTED_TO_PE edges
@@ -78,11 +84,18 @@ class NetworkRule(RelationshipRule):
             for conn in connections:
                 pe_target_id = conn.get("privateLinkServiceId")
                 if pe_target_id:
-                    # Edge: Resource <-> PrivateEndpoint (bidirectional)
-                    db_ops.create_generic_rel(
-                        str(rid), CONNECTED_TO_PE, str(pe_target_id), "Resource", "id"
+                    # Edge: PrivateEndpoint -> Resource (use dual-graph)
+                    self.create_dual_graph_relationship(
+                        db_ops,
+                        str(rid),
+                        CONNECTED_TO_PE,
+                        str(pe_target_id),
                     )
-                    db_ops.create_generic_rel(
+                    # Edge: Resource -> PrivateEndpoint (reverse direction)
+                    # Note: PrivateEndpoint is not a Resource node, so we use generic rel
+                    # This creates from both original and abstracted Resource nodes
+                    self.create_dual_graph_generic_rel(
+                        db_ops,
                         str(pe_target_id),
                         CONNECTED_TO_PE,
                         str(rid),
@@ -103,13 +116,25 @@ class NetworkRule(RelationshipRule):
             # But if the resource has a 'resolves_to' property (for testability), emit edges.
             resolves_to = resource.get("resolves_to", [])
             for res_id in resolves_to:
-                db_ops.create_generic_rel(
-                    str(rid), RESOLVES_TO, str(res_id), "Resource", "id"
+                # DNSZone -> Resource (use generic rel since DNSZone is source)
+                self.create_dual_graph_generic_rel(
+                    db_ops,
+                    str(rid),
+                    RESOLVES_TO,
+                    str(res_id),
+                    "Resource",
+                    "id",
                 )
 
         # (Resource) with dnsZoneId property: create RESOLVES_TO edge from DNSZone
         dns_zone_id = resource.get("dnsZoneId")
         if dns_zone_id and rid:
-            db_ops.create_generic_rel(
-                str(dns_zone_id), RESOLVES_TO, str(rid), "Resource", "id"
+            # DNSZone -> Resource relationship
+            self.create_dual_graph_generic_rel(
+                db_ops,
+                str(dns_zone_id),
+                RESOLVES_TO,
+                str(rid),
+                "Resource",
+                "id",
             )

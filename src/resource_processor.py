@@ -7,6 +7,7 @@ with improved error handling, progress tracking, and database operations.
 
 import asyncio
 import json
+import os
 import re
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -22,6 +23,9 @@ from .llm_descriptions import AzureLLMDescriptionGenerator, should_generate_desc
 
 configure_logging()
 logger = structlog.get_logger(__name__)
+
+# Feature flag for dual-graph architecture (Issue #420)
+ENABLE_DUAL_GRAPH = os.getenv("ENABLE_DUAL_GRAPH", "false").lower() == "true"
 
 
 @retry_neo4j_operation()
@@ -183,8 +187,46 @@ class ResourceState:
 class DatabaseOperations:
     """Handles all database operations for resources."""
 
-    def __init__(self, session_manager: Any) -> None:
+    def __init__(
+        self,
+        session_manager: Any,
+        tenant_id: Optional[str] = None,
+        enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
+    ) -> None:
         self.session_manager = session_manager
+        self.tenant_id = tenant_id
+        self.enable_dual_graph = enable_dual_graph
+        self._tenant_seed_manager = None
+        self._id_abstraction_service = None
+
+        # Initialize dual-graph services if enabled
+        if self.enable_dual_graph and self.tenant_id:
+            self._initialize_dual_graph_services()
+
+    def _initialize_dual_graph_services(self) -> None:
+        """Initialize services needed for dual-graph architecture."""
+        try:
+            from src.services.tenant_seed_manager import TenantSeedManager
+            from src.services.id_abstraction_service import IDAbstractionService
+
+            # Initialize tenant seed manager
+            self._tenant_seed_manager = TenantSeedManager(self.session_manager)
+
+            # Get or create tenant seed
+            tenant_seed = self._tenant_seed_manager.get_or_create_seed(self.tenant_id)
+
+            # Initialize ID abstraction service
+            self._id_abstraction_service = IDAbstractionService(
+                tenant_seed=tenant_seed, hash_length=16
+            )
+
+            logger.info(f"Initialized dual-graph services for tenant {self.tenant_id}")
+
+        except Exception as e:
+            logger.exception(f"Failed to initialize dual-graph services: {e}")
+            # Disable dual-graph if initialization fails
+            self.enable_dual_graph = False
+            raise
 
     def upsert_subscription(
         self, subscription_id: str, subscription_name: str = ""
@@ -235,9 +277,33 @@ class DatabaseOperations:
         """
         Create or update a resource node in Neo4j with enhanced metadata.
 
+        If dual-graph mode is enabled, creates both Original and Abstracted nodes.
+        Otherwise, creates a single node (legacy behavior).
+
         Args:
             resource: Resource dictionary
             processing_status: Status of processing (pending, processing, completed, failed)
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        from .exceptions import ResourceDataValidationError, wrap_neo4j_exception
+
+        # Route to appropriate implementation based on feature flag
+        if self.enable_dual_graph:
+            return self._upsert_dual_graph_resource(resource, processing_status)
+        else:
+            return self._upsert_single_resource(resource, processing_status)
+
+    def _upsert_single_resource(
+        self, resource: Dict[str, Any], processing_status: str = "completed"
+    ) -> bool:
+        """
+        Create or update a single resource node (legacy behavior).
+
+        Args:
+            resource: Resource dictionary
+            processing_status: Status of processing
 
         Returns:
             bool: True if successful, False otherwise
@@ -357,6 +423,225 @@ class DatabaseOperations:
                 f"Error upserting resource {resource.get('id', 'Unknown')}: {exc}"
             )
             return False
+
+    def _upsert_dual_graph_resource(
+        self, resource: Dict[str, Any], processing_status: str = "completed"
+    ) -> bool:
+        """
+        Create or update both Original and Abstracted nodes for a resource.
+
+        This implements the dual-graph architecture where every resource exists as:
+        1. Original node (:Resource:Original) with real Azure IDs
+        2. Abstracted node (:Resource) with type-prefixed hash IDs
+        3. SCAN_SOURCE_NODE relationship linking them
+
+        Args:
+            resource: Resource dictionary
+            processing_status: Status of processing
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        from .exceptions import ResourceDataValidationError, wrap_neo4j_exception
+
+        try:
+            # Defensive validation of required fields
+            required_fields = [
+                "id",
+                "name",
+                "type",
+                "location",
+                "resource_group",
+                "subscription_id",
+            ]
+            # Accept id from resource_id if present
+            if not resource.get("id") and resource.get("resource_id"):
+                resource["id"] = resource["resource_id"]
+
+            missing_or_null = [
+                f for f in required_fields if resource.get(f) in (None, "")
+            ]
+            if missing_or_null:
+                logger.exception(
+                    f"Resource data missing/null for required fields: {missing_or_null} (resource: {resource})"
+                )
+                raise ResourceDataValidationError(missing_fields=missing_or_null)
+
+            # Upsert Subscription node before relationships
+            self.upsert_subscription(resource["subscription_id"])
+
+            # Generate abstracted ID
+            if not self._id_abstraction_service:
+                raise ValueError("ID abstraction service not initialized")
+
+            original_id = resource["id"]
+            abstracted_id = self._id_abstraction_service.abstract_resource_id(
+                original_id
+            )
+
+            logger.debug(
+                f"Dual-graph: original_id={original_id}, abstracted_id={abstracted_id}"
+            )
+
+            # Prepare resource data (common properties)
+            resource_data = resource.copy()
+            resource_data["llm_description"] = resource.get("llm_description", "")
+            resource_data["processing_status"] = processing_status
+
+            # Extract critical VNet properties BEFORE serialization
+            if resource_data.get("type") == "Microsoft.Network/virtualNetworks":
+                properties_raw = resource_data.get("properties")
+                if properties_raw:
+                    try:
+                        if isinstance(properties_raw, dict):
+                            props_dict = properties_raw
+                        elif isinstance(properties_raw, str):
+                            props_dict = json.loads(properties_raw)
+                        else:
+                            props_dict = {}
+
+                        address_space = props_dict.get("addressSpace", {})
+                        if address_space:
+                            address_prefixes = address_space.get("addressPrefixes", [])
+                            if address_prefixes:
+                                resource_data["addressSpace"] = json.dumps(
+                                    address_prefixes
+                                )
+                                logger.debug(
+                                    f"Extracted addressSpace for VNet '{resource.get('name')}': {address_prefixes}"
+                                )
+                    except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                        logger.warning(
+                            f"Failed to extract addressSpace from VNet '{resource.get('name')}': {e}"
+                        )
+
+            # Prevent empty properties from overwriting existing data
+            if resource_data.get("properties") == {}:
+                logger.debug(
+                    f"Skipping empty properties update for {resource.get('id')} to preserve existing data"
+                )
+                resource_data.pop("properties", None)
+
+            # Serialize all values for Neo4j compatibility
+            try:
+                serialized_data = {}
+                for k, v in resource_data.items():
+                    serialized_data[k] = serialize_value(v)
+            except Exception as ser_exc:
+                logger.exception(
+                    f"Serialization error for resource {resource.get('id', 'Unknown')}: {ser_exc}"
+                )
+                return False
+
+            # Create both nodes in a single transaction for atomicity
+            try:
+                with self.session_manager.session() as session:
+                    with session.begin_transaction() as tx:
+                        # Create Original node
+                        self._create_original_node(
+                            tx, original_id, abstracted_id, serialized_data
+                        )
+
+                        # Create Abstracted node
+                        self._create_abstracted_node(
+                            tx, abstracted_id, original_id, serialized_data
+                        )
+
+                        # Create SCAN_SOURCE_NODE relationship
+                        self._create_scan_source_relationship(
+                            tx,
+                            abstracted_id,
+                            original_id,
+                            resource.get("scan_id"),
+                            resource.get("tenant_id"),
+                        )
+
+                        tx.commit()
+
+                logger.debug(
+                    f"Successfully created dual-graph nodes for {resource.get('name')}"
+                )
+                return True
+
+            except Exception as neo4j_exc:
+                logger.error(
+                    f"Neo4j dual-graph upsert error for resource {resource.get('id', 'Unknown')}: {neo4j_exc}"
+                )
+                wrapped_exc = wrap_neo4j_exception(
+                    neo4j_exc, context={"resource_id": resource.get("id", "Unknown")}
+                )
+                logger.error(str(wrapped_exc))
+                return False
+
+        except ResourceDataValidationError:
+            # Already logged above
+            return False
+        except Exception as exc:
+            logger.exception(
+                f"Error creating dual-graph resource {resource.get('id', 'Unknown')}: {exc}"
+            )
+            return False
+
+    def _create_original_node(
+        self, tx: Any, original_id: str, abstracted_id: str, properties: Dict[str, Any]
+    ) -> None:
+        """Create the Original node with real Azure IDs."""
+        query = """
+        MERGE (r:Resource:Original {id: $props.id})
+        SET r += $props,
+            r.abstracted_id = $abstracted_id,
+            r.updated_at = datetime()
+        """
+        tx.run(query, props=properties, abstracted_id=abstracted_id)
+
+    def _create_abstracted_node(
+        self, tx: Any, abstracted_id: str, original_id: str, properties: Dict[str, Any]
+    ) -> None:
+        """Create the Abstracted node with hash IDs."""
+        # Create a copy of properties with abstracted ID
+        abstracted_props = properties.copy()
+        abstracted_props["id"] = abstracted_id
+
+        # Store reference to original ID
+        abstracted_props["original_id"] = original_id
+
+        # Add abstraction metadata
+        abstracted_props["abstracted_id"] = abstracted_id
+        prefix = abstracted_id.split("-")[0] if "-" in abstracted_id else "resource"
+        abstracted_props["abstraction_type"] = prefix
+
+        query = """
+        MERGE (r:Resource {id: $abstracted_id})
+        SET r += $props,
+            r.updated_at = datetime()
+        """
+        tx.run(query, abstracted_id=abstracted_id, props=abstracted_props)
+
+    def _create_scan_source_relationship(
+        self,
+        tx: Any,
+        abstracted_id: str,
+        original_id: str,
+        scan_id: Optional[str],
+        tenant_id: Optional[str],
+    ) -> None:
+        """Create SCAN_SOURCE_NODE relationship from abstracted to original."""
+        query = """
+        MATCH (abs:Resource {id: $abstracted_id})
+        MATCH (orig:Resource:Original {id: $original_id})
+        MERGE (abs)-[rel:SCAN_SOURCE_NODE]->(orig)
+        SET rel.created_at = datetime(),
+            rel.scan_id = $scan_id,
+            rel.tenant_id = $tenant_id,
+            rel.confidence = 'exact'
+        """
+        tx.run(
+            query,
+            abstracted_id=abstracted_id,
+            original_id=original_id,
+            scan_id=scan_id,
+            tenant_id=tenant_id,
+        )
 
     def create_subscription_relationship(
         self, subscription_id: str, resource_id: str
@@ -554,6 +839,8 @@ class ResourceProcessor:
         llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
         resource_limit: Optional[int] = None,
         max_retries: int = 3,
+        tenant_id: Optional[str] = None,
+        enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
     ):
         """
         Initialize the resource processor.
@@ -563,15 +850,23 @@ class ResourceProcessor:
             llm_generator: Optional LLM description generator
             resource_limit: Optional limit on number of resources to process
             max_retries: Maximum number of retries for failed resources
+            tenant_id: Tenant ID for dual-graph mode (required if enable_dual_graph=True)
+            enable_dual_graph: Enable dual-graph architecture (creates Original and Abstracted nodes)
         """
         self.session_manager = session_manager
         self.llm_generator = llm_generator
         self.resource_limit = resource_limit
         self.max_retries = max_retries
+        self.tenant_id = tenant_id
+        self.enable_dual_graph = enable_dual_graph
 
         # Initialize helper classes
         self.state = ResourceState(session_manager)
-        self.db_ops = DatabaseOperations(session_manager)
+        self.db_ops = DatabaseOperations(
+            session_manager,
+            tenant_id=tenant_id,
+            enable_dual_graph=enable_dual_graph,
+        )
 
         # Processing statistics
         self.stats = ProcessingStats()
@@ -580,8 +875,10 @@ class ResourceProcessor:
         self._seen_ids: set[str] = set()
         self._seen_lock = threading.Lock()
 
+        dual_graph_status = "enabled" if enable_dual_graph else "disabled"
         logger.info(
-            f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}, max_retries: {max_retries}"
+            f"Initialized ResourceProcessor with LLM: {'enabled' if llm_generator else 'disabled'}, "
+            f"max_retries: {max_retries}, dual-graph: {dual_graph_status}"
         )
 
     def _should_process_resource(self, resource: Dict[str, Any]) -> Tuple[bool, str]:
@@ -1421,6 +1718,8 @@ def create_resource_processor(
     llm_generator: Optional[AzureLLMDescriptionGenerator] = None,
     resource_limit: Optional[int] = None,
     max_retries: int = 3,
+    tenant_id: Optional[str] = None,
+    enable_dual_graph: bool = ENABLE_DUAL_GRAPH,
 ) -> ResourceProcessor:
     """
     Factory function to create a ResourceProcessor instance.
@@ -1430,10 +1729,17 @@ def create_resource_processor(
         llm_generator: Optional LLM description generator
         resource_limit: Optional limit on number of resources to process
         max_retries: Maximum number of retries for failed resources
+        tenant_id: Tenant ID for dual-graph mode (required if enable_dual_graph=True)
+        enable_dual_graph: Enable dual-graph architecture (creates Original and Abstracted nodes)
 
     Returns:
         ResourceProcessor: Configured resource processor instance
     """
     return ResourceProcessor(
-        session_manager, llm_generator, resource_limit, max_retries
+        session_manager,
+        llm_generator,
+        resource_limit,
+        max_retries,
+        tenant_id,
+        enable_dual_graph,
     )

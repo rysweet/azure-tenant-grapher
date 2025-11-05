@@ -1,8 +1,16 @@
 """
 Private Endpoint Resource ID Translation for IaC Generation
 
-Translates cross-subscription resource IDs in private endpoint connections
-when generating IaC for a different target subscription.
+DEPRECATED: This module is deprecated as of the dual-graph architecture (Issue #420).
+ID translation now happens at graph creation time via the ID Abstraction Service.
+IaC generation uses the abstracted graph by default, eliminating the need for
+runtime translation.
+
+This module is kept for backward compatibility but will be removed in a future version.
+Use the dual-graph architecture instead:
+- Resources are stored as both Original (Azure IDs) and Abstracted (hash IDs)
+- IaC generation queries abstracted nodes by default
+- No runtime translation needed
 
 For example:
 - Source: /subscriptions/SOURCE-SUB/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/storage1
@@ -14,10 +22,21 @@ from a different subscription than the deployment target.
 
 import logging
 import re
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "PrivateEndpointTranslator is deprecated. "
+    "ID translation now happens at graph creation time via dual-graph architecture (Issue #420). "
+    "IaC generation uses abstracted IDs by default. "
+    "This module will be removed in a future version.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # Azure Resource ID pattern:
 # /subscriptions/{sub}/resourceGroups/{rg}/providers/{provider}/{type}/{name}[/...]

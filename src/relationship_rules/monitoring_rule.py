@@ -7,6 +7,8 @@ class MonitoringRule(RelationshipRule):
     """
     Emits monitoring-related relationships:
     - (Resource) -[:LOGS_TO]-> (LogAnalyticsWorkspace)
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -19,6 +21,7 @@ class MonitoringRule(RelationshipRule):
         for ds in diag_settings:
             ws = ds.get("workspaceId")
             if ws and rid:
-                db_ops.create_generic_rel(
-                    str(rid), "LOGS_TO", str(ws), "Resource", "id"
+                # Use dual-graph helper for Resource-to-Resource relationships
+                self.create_dual_graph_relationship(
+                    db_ops, str(rid), "LOGS_TO", str(ws)
                 )

@@ -7,6 +7,9 @@ class CreatorRule(RelationshipRule):
     """
     Emits created-by relationships:
     - (Resource) -[:CREATED_BY]-> (User/ServicePrincipal)
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
+    Note: User/ServicePrincipal nodes are shared between graphs (not duplicated).
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -22,6 +25,9 @@ class CreatorRule(RelationshipRule):
         created_by = sysdata.get("createdBy") or props.get("createdBy")
         if not (rid and created_by):
             return
-        # Upsert User/ServicePrincipal node (type detection could be improved)
+        # Upsert User/ServicePrincipal node (shared between graphs)
         db_ops.upsert_generic("User", "id", created_by, {"id": created_by})
-        db_ops.create_generic_rel(str(rid), "CREATED_BY", created_by, "User", "id")
+        # Create relationship using dual-graph helper
+        self.create_dual_graph_generic_rel(
+            db_ops, str(rid), "CREATED_BY", created_by, "User", "id"
+        )

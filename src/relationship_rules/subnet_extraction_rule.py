@@ -25,6 +25,8 @@ class SubnetExtractionRule(RelationshipRule):
     3. Creates CONTAINS relationships: (VNet)-[:CONTAINS]->(Subnet)
 
     This enables IaC generators to reference subnets as independent resources.
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -80,13 +82,12 @@ class SubnetExtractionRule(RelationshipRule):
                         subnet_resource, processing_status="completed"
                     )
 
-                    # Create VNet -> Subnet relationship
-                    db_ops.create_generic_rel(
+                    # Create VNet -> Subnet relationship (use dual-graph helper)
+                    self.create_dual_graph_relationship(
+                        db_ops,
                         str(vnet_id),
                         "CONTAINS",
                         str(subnet_resource["id"]),
-                        "Resource",
-                        "id",
                     )
 
                     logger.debug(f"Created subnet node: {subnet_resource['id']}")

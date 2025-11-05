@@ -36,11 +36,14 @@ class GraphTraverser:
         self.driver = driver
         self.transformation_rules = transformation_rules or []
 
-    async def traverse(self, filter_cypher: Optional[str] = None) -> TenantGraph:
+    async def traverse(
+        self, filter_cypher: Optional[str] = None, use_original_ids: bool = False
+    ) -> TenantGraph:
         """Traverse and extract tenant graph data.
 
         Args:
             filter_cypher: Optional Cypher filter string
+            use_original_ids: If True, query Original nodes; if False (default), query Abstracted nodes
 
         Returns:
             TenantGraph instance with extracted data
@@ -85,17 +88,33 @@ class GraphTraverser:
         if filter_cypher:
             query = filter_cypher
         else:
-            # Default query as specified - include relationship properties
-            query = """
-            MATCH (r:Resource)
-            OPTIONAL MATCH (r)-[rel]->(t:Resource)
-            RETURN r, collect({
-                type: type(rel),
-                target: t.id,
-                original_type: rel.original_type,
-                narrative_context: rel.narrative_context
-            }) AS rels
-            """
+            # Default query - use abstracted nodes unless explicitly requesting original
+            if use_original_ids:
+                # Query Original nodes only (for legacy/debug purposes)
+                query = """
+                MATCH (r:Resource:Original)
+                OPTIONAL MATCH (r)-[rel]->(t:Resource:Original)
+                RETURN r, collect({
+                    type: type(rel),
+                    target: t.id,
+                    original_type: rel.original_type,
+                    narrative_context: rel.narrative_context
+                }) AS rels
+                """
+            else:
+                # Query Abstracted nodes (default for IaC generation)
+                query = """
+                MATCH (r:Resource)
+                WHERE NOT r:Original
+                OPTIONAL MATCH (r)-[rel]->(t:Resource)
+                WHERE NOT t:Original
+                RETURN r, collect({
+                    type: type(rel),
+                    target: t.id,
+                    original_type: rel.original_type,
+                    narrative_context: rel.narrative_context
+                }) AS rels
+                """
 
         resources = []
         relationships = []
@@ -107,20 +126,38 @@ class GraphTraverser:
                 result_list = list(result)
                 if not result_list and not filter_cypher:
                     # Fallback query if no :Resource nodes found and not using a filter
-                    fallback_query = """
-                    MATCH (r)
-                    WHERE r.type IS NOT NULL
-                    OPTIONAL MATCH (r)-[rel]->(t)
-                    RETURN r, collect({
-                        type: type(rel),
-                        target: t.id,
-                        original_type: rel.original_type,
-                        narrative_context: rel.narrative_context
-                    }) AS rels
-                    """
-                    logger.info(
-                        "No :Resource nodes found, running fallback query for nodes with 'type' property"
-                    )
+                    # Respect use_original_ids flag in fallback too
+                    if use_original_ids:
+                        fallback_query = """
+                        MATCH (r)
+                        WHERE r.type IS NOT NULL
+                        OPTIONAL MATCH (r)-[rel]->(t)
+                        RETURN r, collect({
+                            type: type(rel),
+                            target: t.id,
+                            original_type: rel.original_type,
+                            narrative_context: rel.narrative_context
+                        }) AS rels
+                        """
+                        logger.info(
+                            "No :Resource:Original nodes found, running fallback query for any nodes with 'type' property"
+                        )
+                    else:
+                        fallback_query = """
+                        MATCH (r)
+                        WHERE r.type IS NOT NULL AND NOT EXISTS {MATCH (r:Original)}
+                        OPTIONAL MATCH (r)-[rel]->(t)
+                        WHERE NOT EXISTS {MATCH (t:Original)}
+                        RETURN r, collect({
+                            type: type(rel),
+                            target: t.id,
+                            original_type: rel.original_type,
+                            narrative_context: rel.narrative_context
+                        }) AS rels
+                        """
+                        logger.info(
+                            "No abstracted :Resource nodes found, running fallback query for non-Original nodes with 'type' property"
+                        )
                     result = session.run(cast("LiteralString", fallback_query))
                     result_list = list(result)
                 process_result(result_list, resources, relationships)

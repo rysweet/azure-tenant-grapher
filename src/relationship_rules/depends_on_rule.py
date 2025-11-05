@@ -7,6 +7,8 @@ class DependsOnRule(RelationshipRule):
     """
     Emits ARM dependency relationships:
     - (Resource) -[:DEPENDS_ON]-> (target Resource)
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -18,6 +20,7 @@ class DependsOnRule(RelationshipRule):
         depends_on = resource.get("dependsOn", [])
         for dep_id in depends_on:
             if isinstance(dep_id, str) and rid:
-                db_ops.create_generic_rel(
-                    str(rid), "DEPENDS_ON", str(dep_id), "Resource", "id"
+                # Use dual-graph helper for Resource-to-Resource relationships
+                self.create_dual_graph_relationship(
+                    db_ops, str(rid), "DEPENDS_ON", str(dep_id)
                 )

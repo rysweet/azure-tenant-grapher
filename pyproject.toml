@@ -106,6 +106,7 @@ markers = [
     "unit: marks tests as unit tests",
     "azure: marks tests that require Azure credentials",
     "timeout(n): set a timeout for a test",
+    "dual_graph: marks tests as part of dual graph architecture feature (Issue #420)",
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
