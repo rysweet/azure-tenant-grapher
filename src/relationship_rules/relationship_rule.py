@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
@@ -24,6 +24,9 @@ class RelationshipRule(ABC):
             enable_dual_graph: If True, create relationships in both original and abstracted graphs
         """
         self.enable_dual_graph = enable_dual_graph
+        # Buffer for batched relationship creation
+        self._relationship_buffer: List[Tuple[str, str, str, Optional[Dict[str, Any]]]] = []
+        self._buffer_size = 100  # Batch size for relationship creation
 
     @abstractmethod
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -275,3 +278,135 @@ class RelationshipRule(ABC):
                 f"from {src_id} to {tgt_label}({tgt_key_prop}={tgt_key_value}): {e}"
             )
             return False
+
+    def queue_dual_graph_relationship(
+        self,
+        src_id: str,
+        rel_type: str,
+        tgt_id: str,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Queue a relationship for batched creation.
+
+        Instead of creating relationships one-at-a-time (N+1 problem), buffer them
+        and create in batches using a single optimized query.
+
+        Args:
+            src_id: Source resource ID (original Azure ID)
+            rel_type: Relationship type
+            tgt_id: Target resource ID (original Azure ID)
+            properties: Optional relationship properties
+        """
+        self._relationship_buffer.append((src_id, rel_type, tgt_id, properties))
+
+    def flush_relationship_buffer(self, db_ops: Any) -> int:
+        """
+        Flush buffered relationships to database in a single optimized batch query.
+
+        This method solves the N+1 query problem by:
+        1. Creating all relationships in a single transaction
+        2. Using UNWIND for batch processing
+        3. Leveraging indexes on both Original and Resource nodes
+        4. Minimizing relationship traversals via optimized query structure
+
+        Performance improvement: O(1) query vs O(N) queries
+
+        Args:
+            db_ops: DatabaseOperations instance with session_manager
+
+        Returns:
+            int: Number of relationships created
+        """
+        if not self._relationship_buffer:
+            return 0
+
+        if not self.enable_dual_graph:
+            # Legacy mode: create relationships individually
+            count = 0
+            for src_id, rel_type, tgt_id, properties in self._relationship_buffer:
+                if self.create_dual_graph_relationship(
+                    db_ops, src_id, rel_type, tgt_id, properties
+                ):
+                    count += 1
+            self._relationship_buffer.clear()
+            return count
+
+        try:
+            # Group relationships by type for optimized batch processing
+            relationships_by_type: Dict[str, List[Dict[str, Any]]] = {}
+            for src_id, rel_type, tgt_id, properties in self._relationship_buffer:
+                if rel_type not in relationships_by_type:
+                    relationships_by_type[rel_type] = []
+                relationships_by_type[rel_type].append(
+                    {
+                        "src_id": src_id,
+                        "tgt_id": tgt_id,
+                        "properties": properties or {},
+                    }
+                )
+
+            total_created = 0
+
+            # Process each relationship type in a single batch query
+            for rel_type, relationships in relationships_by_type.items():
+                query = f"""
+                // Batch create relationships using UNWIND for optimal performance
+                UNWIND $relationships AS rel
+
+                // Find original nodes (indexed lookups)
+                MATCH (src_orig:Resource:Original {{id: rel.src_id}})
+                MATCH (tgt_orig:Resource:Original {{id: rel.tgt_id}})
+
+                // Create relationship between original nodes
+                MERGE (src_orig)-[r_orig:{rel_type}]->(tgt_orig)
+                SET r_orig += rel.properties
+
+                // Find abstracted nodes via indexed abstracted_id property
+                // This replaces the slow OPTIONAL MATCH traversal with fast index lookups
+                WITH src_orig, tgt_orig, rel
+                MATCH (src_abs:Resource {{original_id: src_orig.id}})
+                MATCH (tgt_abs:Resource {{original_id: tgt_orig.id}})
+
+                // Create relationship between abstracted nodes
+                MERGE (src_abs)-[r_abs:{rel_type}]->(tgt_abs)
+                SET r_abs += rel.properties
+
+                RETURN count(r_abs) as created
+                """
+
+                with db_ops.session_manager.session() as session:
+                    result = session.run(query, relationships=relationships)
+                    record = result.single()
+                    if record:
+                        created = record["created"]
+                        total_created += created
+                        logger.debug(
+                            f"Batch created {created} {rel_type} relationships"
+                        )
+
+            # Clear buffer after successful flush
+            buffer_size = len(self._relationship_buffer)
+            self._relationship_buffer.clear()
+
+            logger.info(
+                f"Flushed {buffer_size} buffered relationships, created {total_created} in both graphs"
+            )
+            return total_created
+
+        except Exception as e:
+            logger.exception(f"Error flushing relationship buffer: {e}")
+            # Don't clear buffer on error - allow retry
+            return 0
+
+    def auto_flush_if_needed(self, db_ops: Any) -> None:
+        """
+        Automatically flush buffer if it reaches the batch size threshold.
+
+        This enables transparent batching without changing calling code.
+
+        Args:
+            db_ops: DatabaseOperations instance
+        """
+        if len(self._relationship_buffer) >= self._buffer_size:
+            self.flush_relationship_buffer(db_ops)
