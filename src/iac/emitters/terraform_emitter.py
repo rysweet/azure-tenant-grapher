@@ -1475,7 +1475,7 @@ class TerraformEmitter(IaCEmitter):
                 # Construct default service plan ID with actual subscription
                 resource_group = resource.get("resource_group", "default-rg")
                 service_plan_id = (
-                    f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}/"
+                    f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{resource_group}/"
                     f"providers/Microsoft.Web/serverFarms/default-plan"
                 )
 
@@ -1868,7 +1868,7 @@ class TerraformEmitter(IaCEmitter):
                 subscription_id = resource.get(
                     "subscription_id", "00000000-0000-0000-0000-000000000000"
                 )
-                lab_virtual_network_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
+                lab_virtual_network_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
 
             # Get gallery image reference from properties
             gallery_image_ref = properties.get("galleryImageReference", {})
@@ -1947,7 +1947,7 @@ class TerraformEmitter(IaCEmitter):
                         subscription_id = parts[2]
                         rg_name = parts[4]
                         ag_name = parts[8] if len(parts) > 8 else ""
-                        formatted_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/microsoft.insights/actionGroups/{ag_name}"
+                        formatted_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/microsoft.insights/actionGroups/{ag_name}"
                         formatted_ids.append(formatted_id)
                         logger.debug(f"Formatted action group ID: {formatted_id}")
                     else:
@@ -1973,7 +1973,7 @@ class TerraformEmitter(IaCEmitter):
             storage_account_id = properties.get("storageAccount")
             if not storage_account_id:
                 # Create placeholder - should be replaced with actual storage account reference
-                storage_account_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/mlworkspace{resource_name[:8]}"
+                storage_account_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/mlworkspace{resource_name[:8]}"
             else:
                 # Normalize casing in resource ID
                 storage_account_id = self._normalize_resource_id(storage_account_id)
@@ -1982,7 +1982,7 @@ class TerraformEmitter(IaCEmitter):
             key_vault_id = properties.get("keyVault")
             if not key_vault_id:
                 # Create placeholder
-                key_vault_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.KeyVault/vaults/mlworkspace{resource_name[:8]}"
+                key_vault_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.KeyVault/vaults/mlworkspace{resource_name[:8]}"
             else:
                 # Normalize casing in resource ID (Microsoft.Keyvault -> Microsoft.KeyVault)
                 key_vault_id = self._normalize_resource_id(key_vault_id)
@@ -1991,7 +1991,7 @@ class TerraformEmitter(IaCEmitter):
             application_insights_id = properties.get("applicationInsights")
             if not application_insights_id:
                 # Create placeholder - note: provider must be Microsoft.Insights (capital M and I)
-                application_insights_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.Insights/components/mlworkspace{resource_name[:8]}"
+                application_insights_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.Insights/components/mlworkspace{resource_name[:8]}"
             else:
                 # Normalize casing in resource ID (Microsoft.insights -> Microsoft.Insights)
                 application_insights_id = self._normalize_resource_id(
@@ -2031,7 +2031,7 @@ class TerraformEmitter(IaCEmitter):
             )
 
             # Construct workspace ID
-            machine_learning_workspace_id = f"/subscriptions/{subscription_id}/resourceGroups/{rg_name}/providers/Microsoft.MachineLearningServices/workspaces/{workspace_name}"
+            machine_learning_workspace_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.MachineLearningServices/workspaces/{workspace_name}"
 
             resource_config.update(
                 {
