@@ -101,6 +101,24 @@ class TerraformEmitter(IaCEmitter):
         # Import blocks tracking (Issue #412)
         self._import_blocks_generated: int = 0
 
+    def _get_effective_subscription_id(self, resource: Dict[str, Any]) -> str:
+        """Get the subscription ID to use for resource construction.
+
+        In cross-tenant mode, returns target subscription ID.
+        Otherwise returns the resource's original subscription ID.
+
+        Args:
+            resource: Resource dictionary with subscription_id field
+
+        Returns:
+            Subscription ID to use in constructed resource IDs
+        """
+        # If we have a target subscription (cross-tenant), use it
+        if self.target_subscription_id:
+            return self.target_subscription_id
+        # Otherwise use the resource's subscription
+        return resource.get("subscription_id", "")
+
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
