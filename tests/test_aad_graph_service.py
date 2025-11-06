@@ -19,7 +19,10 @@ class MockDBOps:
         self.rels = []
 
     def upsert_generic(self, label, key_prop, key_value, properties):
-        self.upserts.append((label, key_prop, key_value, dict(properties)))
+        # Mock the real upsert_generic behavior: filter out None values
+        # This simulates what the actual DatabaseOperations.upsert_generic does
+        filtered_props = {k: v for k, v in properties.items() if v is not None}
+        self.upserts.append((label, key_prop, key_value, filtered_props))
 
     def create_generic_rel(
         self, src_id, rel_type, tgt_key_value, tgt_label, tgt_key_prop
@@ -165,3 +168,62 @@ async def test_ingest_into_graph_dry_run(monkeypatch):
     # No upserts or rels should be recorded in dry_run
     assert not db_ops.upserts
     assert not db_ops.rels
+
+
+@pytest.mark.asyncio
+async def test_ingest_users_with_none_values():
+    """Test that User nodes with None values for mail/userPrincipalName are handled correctly."""
+    # Create test users with None values (common in real Azure AD)
+    users_with_none = [
+        {
+            "id": "user-1",
+            "displayName": "User With Mail",
+            "userPrincipalName": "user1@example.com",
+            "mail": "user1@example.com"
+        },
+        {
+            "id": "user-2",
+            "displayName": "User Without Mail",
+            "userPrincipalName": "user2@example.com",
+            "mail": None  # This was causing CypherTypeError
+        },
+        {
+            "id": "user-3",
+            "displayName": "Guest User",
+            "userPrincipalName": None,  # Guest users may have None
+            "mail": None
+        }
+    ]
+
+    class FixtureAADGraphService(AADGraphService):
+        def __init__(self):
+            self.use_mock = True
+            self.client = None
+
+        async def get_users(self):
+            return users_with_none
+
+        async def get_groups(self):
+            return []
+
+        async def get_group_memberships(self, group_id):
+            return []
+
+    db_ops = MockDBOps()
+    service = FixtureAADGraphService()
+    await service.ingest_into_graph(db_ops)
+
+    # Verify all users were upserted
+    user_upserts = [(label, kv, props) for (label, _, kv, props) in db_ops.upserts if label == "User"]
+    assert len(user_upserts) == 3
+
+    # Verify None values were filtered out in properties
+    for label, key_value, props in user_upserts:
+        # None values should not be present in the properties dict
+        for prop_key, prop_value in props.items():
+            assert prop_value is not None, f"Property {prop_key} should not be None in upserted data"
+
+        # Required fields should always be present
+        assert "id" in props
+        assert "display_name" in props
+        assert "type" in props

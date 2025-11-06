@@ -605,13 +605,19 @@ class DatabaseOperations:
             bool: True if successful, False otherwise
         """
         try:
-            # Serialize all property values
+            # Serialize all property values and filter out None values
+            # Neo4j 5.x does not allow None values in SET operations with += operator
             serialized_props = {}
             for k, v in properties.items():
-                serialized_props[k] = serialize_value(v)
+                serialized_val = serialize_value(v)
+                # Only include non-None values to avoid CypherTypeError
+                if serialized_val is not None:
+                    serialized_props[k] = serialized_val
 
             # Add the key property
-            serialized_props[key_prop] = serialize_value(key_value)
+            key_val_serialized = serialize_value(key_value)
+            if key_val_serialized is not None:
+                serialized_props[key_prop] = key_val_serialized
 
             query = f"""
             MERGE (n:{label} {{{key_prop}: $key_value}})
@@ -1180,6 +1186,22 @@ class ResourceProcessor:
             loop_counter += 1
         logger.info("[DEBUG][RP] Exited main processing loop")
         print("[DEBUG][RP] Exited main processing loop", flush=True)
+
+        # Flush any remaining buffered relationships
+        logger.info("🔄 Flushing buffered relationships from all rules...")
+        print("[DEBUG][RP] Flushing buffered relationships from all rules...", flush=True)
+        try:
+            from src.relationship_rules import ALL_RELATIONSHIP_RULES
+            total_flushed = 0
+            for rule in ALL_RELATIONSHIP_RULES:
+                if hasattr(rule, 'flush_relationship_buffer'):
+                    flushed = rule.flush_relationship_buffer(self.db_ops)
+                    total_flushed += flushed
+            logger.info(f"✅ Flushed {total_flushed} buffered relationships")
+            print(f"[DEBUG][RP] Flushed {total_flushed} buffered relationships", flush=True)
+        except Exception as e:
+            logger.exception(f"Error flushing relationship buffers: {e}")
+            print(f"[DEBUG][RP] Error flushing relationship buffers: {e}", flush=True)
 
         if self.llm_generator:
             logger.info("🤖 Generating LLM summaries for ResourceGroups and Tags...")
