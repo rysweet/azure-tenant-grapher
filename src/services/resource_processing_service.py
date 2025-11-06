@@ -41,6 +41,7 @@ class ResourceProcessingService:
         progress_callback: Optional[Callable[[ProcessingStats], None]] = None,
         max_workers: Optional[int] = None,
         filter_config: Optional[Any] = None,
+        tenant_id: Optional[str] = None,
     ) -> ProcessingStats:
         logger.info("[DEBUG][RPS] Entered ResourceProcessingService.process_resources")
         """
@@ -51,6 +52,7 @@ class ResourceProcessingService:
             resources: List of resource dicts to process
             progress_callback: Optional callback for progress updates
             max_workers: Maximum number of concurrent threads (defaults to config)
+            tenant_id: Tenant ID for dual-graph architecture (required)
 
         Returns:
             ProcessingStats: Final processing statistics
@@ -60,6 +62,7 @@ class ResourceProcessingService:
             self.llm_generator,
             getattr(self.config, "resource_limit", None),
             getattr(self.config, "max_retries", 3),
+            tenant_id,
         )
 
         # --- AAD Graph Ingestion ---

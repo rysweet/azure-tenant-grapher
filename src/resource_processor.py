@@ -445,12 +445,13 @@ class DatabaseOperations:
     ) -> None:
         """Create the Original node with real Azure IDs."""
         query = """
-        MERGE (r:Resource:Original {id: $props.id})
+        MERGE (r:Resource:Original {id: $original_id})
         SET r += $props,
+            r.id = $original_id,
             r.abstracted_id = $abstracted_id,
             r.updated_at = datetime()
         """
-        tx.run(query, props=properties, abstracted_id=abstracted_id)
+        tx.run(query, original_id=original_id, props=properties, abstracted_id=abstracted_id)
 
     def _create_abstracted_node(
         self, tx: Any, abstracted_id: str, original_id: str, properties: Dict[str, Any]
@@ -471,9 +472,13 @@ class DatabaseOperations:
         query = """
         MERGE (r:Resource {id: $abstracted_id})
         SET r += $props,
+            r.id = $abstracted_id,
+            r.original_id = $original_id,
+            r.abstracted_id = $abstracted_id,
+            r.abstraction_type = $abstraction_type,
             r.updated_at = datetime()
         """
-        tx.run(query, abstracted_id=abstracted_id, props=abstracted_props)
+        tx.run(query, abstracted_id=abstracted_id, original_id=original_id, abstraction_type=prefix, props=abstracted_props)
 
     def _create_scan_source_relationship(
         self,

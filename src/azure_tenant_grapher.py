@@ -328,6 +328,8 @@ class AzureTenantGrapher:
                         self.session_manager,
                         self.processing_service.llm_generator,
                         getattr(self.config.processing, "resource_limit", None),
+                        getattr(self.config.processing, "max_retries", 3),
+                        self.config.tenant_id,
                     )
 
                     # Clear existing non-containment relationships first
@@ -389,6 +391,7 @@ class AzureTenantGrapher:
                         all_resources,
                         progress_callback=progress_callback,
                         filter_config=filter_config,
+                        tenant_id=self.config.tenant_id,
                     )
                     logger.info(
                         f"[DEBUG][BUILD_GRAPH] Completed resource processing. Stats: {stats.to_dict() if hasattr(stats, 'to_dict') else stats}"
