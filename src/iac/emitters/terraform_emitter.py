@@ -757,6 +757,45 @@ class TerraformEmitter(IaCEmitter):
             "resource_count": len(tenant_graph.resources),
         }
 
+    def _build_azure_resource_id(
+        self, tf_resource_type: str, resource_config: Dict[str, Any], subscription_id: str
+    ) -> Optional[str]:
+        """Build Azure resource ID from Terraform resource config.
+
+        Args:
+            tf_resource_type: Terraform resource type (e.g., "azurerm_storage_account")
+            resource_config: Terraform resource configuration dict
+            subscription_id: Azure subscription ID
+
+        Returns:
+            Azure resource ID string or None if cannot be constructed
+        """
+        resource_name = resource_config.get("name")
+        if not resource_name:
+            return None
+
+        # Resource groups are special - no provider namespace needed
+        if tf_resource_type == "azurerm_resource_group":
+            return f"/subscriptions/{subscription_id}/resourceGroups/{resource_name}"
+
+        # All other resources need resource group and provider namespace
+        resource_group = resource_config.get("resource_group_name")
+        if not resource_group:
+            return None
+
+        # Map Terraform type back to Azure provider/resource type
+        # Create reverse mapping from AZURE_TO_TERRAFORM_MAPPING
+        terraform_to_azure = {v: k for k, v in self.AZURE_TO_TERRAFORM_MAPPING.items()}
+        azure_type = terraform_to_azure.get(tf_resource_type)
+
+        if not azure_type:
+            # Unknown type - cannot construct ID
+            return None
+
+        # Standard Azure resource ID format:
+        # /subscriptions/{sub}/resourceGroups/{rg}/providers/{provider}/{type}/{name}
+        return f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/{azure_type}/{resource_name}"
+
     def _generate_import_blocks(
         self, terraform_config: Dict[str, Any], resources: List[Dict[str, Any]]
     ) -> List[Dict[str, str]]:
@@ -852,10 +891,85 @@ class TerraformEmitter(IaCEmitter):
 
         elif self.import_strategy == "all_resources":
             # Import all resources (aggressive strategy)
-            # TODO: Implement full resource ID construction for all resource types
-            logger.warning(
-                "all_resources strategy with existence validation not yet implemented"
+            # Build import blocks for ALL resource types, not just resource groups
+            candidate_imports = []
+
+            logger.info(
+                "Using all_resources strategy - checking existence of ALL planned resources"
             )
+
+            # Iterate through ALL resource types in terraform config
+            for tf_resource_type, resources_of_type in tf_resources.items():
+                # Skip if not a dict (shouldn't happen but safety check)
+                if not isinstance(resources_of_type, dict):
+                    continue
+
+                for tf_name, resource_config in resources_of_type.items():
+                    # Build Azure resource ID based on resource type
+                    azure_id = self._build_azure_resource_id(
+                        tf_resource_type, resource_config, subscription_id
+                    )
+
+                    if azure_id:
+                        resource_name = resource_config.get("name", tf_name)
+                        candidate_imports.append(
+                            {
+                                "to": f"{tf_resource_type}.{tf_name}",
+                                "id": azure_id,
+                                "name": resource_name,
+                                "type": tf_resource_type,
+                            }
+                        )
+
+            # Batch validate existence of ALL candidates
+            if candidate_imports:
+                logger.info(
+                    f"Validating existence of {len(candidate_imports)} resources across all types..."
+                )
+                resource_ids = [imp["id"] for imp in candidate_imports]
+
+                # Process in batches to avoid overwhelming the API
+                batch_size = 100
+                all_existence_results = {}
+
+                for i in range(0, len(resource_ids), batch_size):
+                    batch = resource_ids[i:i + batch_size]
+                    batch_results = self._existence_validator.batch_check_resources(batch)
+                    all_existence_results.update(batch_results)
+                    logger.info(
+                        f"Validated batch {i//batch_size + 1}/{(len(resource_ids) + batch_size - 1)//batch_size}"
+                    )
+
+                # Filter to only existing resources
+                exists_count = 0
+                skip_count = 0
+
+                for candidate in candidate_imports:
+                    result = all_existence_results.get(candidate["id"])
+                    if result and result.exists:
+                        import_blocks.append(
+                            {"to": candidate["to"], "id": candidate["id"]}
+                        )
+                        exists_count += 1
+                        logger.debug(
+                            f"✓ {candidate['type']}: {candidate['name']} exists (cached: {result.cached})"
+                        )
+                    else:
+                        skip_count += 1
+                        if skip_count <= 10:  # Only log first 10 to avoid spam
+                            error_msg = (
+                                f" (error: {result.error})"
+                                if result and result.error
+                                else ""
+                            )
+                            logger.debug(
+                                f"✗ {candidate['type']}: {candidate['name']} does not exist{error_msg}"
+                            )
+
+                logger.info(
+                    f"all_resources strategy: {exists_count} resources exist, "
+                    f"{skip_count} will be created (not imported)"
+                )
 
         # Log cache statistics
         if self._existence_validator:
