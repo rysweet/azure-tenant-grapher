@@ -52,6 +52,9 @@ class RelationshipRule(ABC):
         """
         Create relationship in both graphs if dual-graph is enabled.
 
+        Uses batched approach for performance - queues relationships and
+        flushes in batches of 100 to avoid N+1 query problem.
+
         This method ensures relationship topology is preserved across both graphs:
         1. Creates relationship between original nodes (:Resource:Original)
         2. Finds abstracted equivalents via SCAN_SOURCE_NODE
@@ -86,58 +89,10 @@ class RelationshipRule(ABC):
                 db_ops, src_id, rel_type, tgt_id, properties
             )
 
-        try:
-            # Build property string for Cypher query
-            prop_string = ""
-            if properties:
-                prop_string = " SET rel += $properties"
-
-            # Dual-graph mode: Create relationships in both graphs
-            query = f"""
-            // Create relationship between original nodes
-            MATCH (src_orig:Resource:Original {{id: $src_id}})
-            MATCH (tgt_orig:Resource:Original {{id: $tgt_id}})
-            MERGE (src_orig)-[rel_orig:{rel_type}]->(tgt_orig)
-            {prop_string.replace("rel", "rel_orig") if prop_string else ""}
-
-            // Find abstracted nodes via SCAN_SOURCE_NODE
-            WITH src_orig, tgt_orig
-            OPTIONAL MATCH (src_abs:Resource)<-[:SCAN_SOURCE_NODE]-(src_orig)
-            OPTIONAL MATCH (tgt_abs:Resource)<-[:SCAN_SOURCE_NODE]-(tgt_orig)
-
-            // Create relationship between abstracted nodes if both exist
-            WITH src_abs, tgt_abs
-            WHERE src_abs IS NOT NULL AND tgt_abs IS NOT NULL
-            MERGE (src_abs)-[rel_abs:{rel_type}]->(tgt_abs)
-            {prop_string.replace("rel", "rel_abs") if prop_string else ""}
-
-            RETURN count(rel_abs) as abstracted_count
-            """
-
-            with db_ops.session_manager.session() as session:
-                result = session.run(
-                    query,
-                    src_id=src_id,
-                    tgt_id=tgt_id,
-                    properties=properties or {},
-                )
-                record = result.single()
-
-                # Log if abstracted relationship wasn't created (nodes might not exist yet)
-                if record and record["abstracted_count"] == 0:
-                    logger.debug(
-                        f"Abstracted relationship not created (nodes may not exist): "
-                        f"{src_id} -{rel_type}-> {tgt_id}"
-                    )
-
-            return True
-
-        except Exception as e:
-            logger.exception(
-                f"Error creating dual-graph relationship {rel_type} "
-                f"from {src_id} to {tgt_id}: {e}"
-            )
-            return False
+        # Use batched approach for performance
+        self.queue_dual_graph_relationship(src_id, rel_type, tgt_id, properties)
+        self.auto_flush_if_needed(db_ops)
+        return True
 
     def _create_legacy_relationship(
         self,
