@@ -558,13 +558,23 @@ async def generate_iac_command_handler(
         if should_check_conflicts and subscription_id and not dry_run:
             from .cleanup_integration import invoke_cleanup_script, parse_cleanup_result
             from .conflict_detector import ConflictDetector
+            from azure.identity import ClientSecretCredential
+            import os
 
             logger.info("Running pre-deployment conflict detection...")
             click.echo("Checking for deployment conflicts...")
 
             try:
-                # Initialize detector
-                detector = ConflictDetector(subscription_id)
+                # Create credential for TARGET tenant (not source) for conflict detection
+                target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                conflict_detector_credential = ClientSecretCredential(
+                    tenant_id=target_tenant,
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+                )
+
+                # Initialize detector with proper credential
+                detector = ConflictDetector(subscription_id, credential=conflict_detector_credential)
 
                 # Detect conflicts
                 conflict_report = await detector.detect_conflicts(graph.resources)

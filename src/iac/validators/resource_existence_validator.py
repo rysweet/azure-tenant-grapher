@@ -217,8 +217,13 @@ class ResourceExistenceValidator:
                         "virtualNetworks": "2023-05-01",
                         "subnets": "2023-05-01",
                         "networkInterfaces": "2023-05-01",
+                        "disks": "2023-04-02",
+                        "userAssignedIdentities": "2023-01-31",
                         "publicIPAddresses": "2023-05-01",
                         "networkSecurityGroups": "2023-05-01",
+                        "workspaces": "2022-10-01",
+                        "networkWatchers": "2023-05-01",
+                        "accounts": "2023-05-01",
                         "loadBalancers": "2023-05-01",
                         "applicationGateways": "2023-05-01",
                         "managedClusters": "2023-10-01",  # AKS
