@@ -24,14 +24,3 @@ ON (r.id);
 CREATE INDEX resource_original_composite IF NOT EXISTS
 FOR (r:Original)
 ON (r.id);
-
-// ANALYSIS: Verify indexes are used
-// Run EXPLAIN on the problematic query to confirm index usage:
-// EXPLAIN
-// MATCH (src_orig:Resource:Original {id: "..."})
-// MATCH (tgt_orig:Resource:Original {id: "..."})
-// MATCH (src_abs:Resource {original_id: src_orig.id})
-// MATCH (tgt_abs:Resource {original_id: tgt_orig.id})
-// RETURN src_abs, tgt_abs;
-
-// Expected: All MATCH operations should show "NodeIndexSeek" in query plan
