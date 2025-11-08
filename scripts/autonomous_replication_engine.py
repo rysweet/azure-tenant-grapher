@@ -22,11 +22,12 @@ Date: 2025-10-15
 import json
 import os
 import subprocess
+import sys
 import time
-import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Any, Tuple
+import traceback
 
 # Configuration
 REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
@@ -205,7 +206,7 @@ class StateAssessor:
             else:
                 current_tenant = None
                 logged_in = False
-        except Exception:
+        except Exception as e:
             current_tenant = None
             logged_in = False
 
@@ -243,7 +244,7 @@ class WorkstreamOrchestrator:
                 cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout
             )
             return result.returncode, result.stdout, result.stderr
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as e:
             return -1, "", f"Timeout after {timeout}s"
         except Exception as e:
             return -1, "", str(e)
@@ -324,8 +325,8 @@ class WorkstreamOrchestrator:
                     if diag.get("severity") == "error":
                         errors.append(diag.get("summary", "Unknown error"))
                 return False, errors
-            except Exception as e:
-                return False, [f"{stderr[:500]} (Exception: {e})"]
+            except:
+                return False, [stderr[:500]]
 
     def deploy_iteration(self, iteration_num: int) -> bool:
         """Deploy an iteration to target tenant"""
@@ -456,7 +457,7 @@ class AutonomousEngine:
             return success
         else:
             self.reporter.send(
-                "⏭️ Continuing to next iteration (need 3 consecutive passes)"
+                f"⏭️ Continuing to next iteration (need 3 consecutive passes)"
             )
             return True
 
@@ -515,7 +516,7 @@ class AutonomousEngine:
                 break
 
             except Exception as e:
-                error_msg = f"❌ Error in iteration {iteration_count}: {e!s}"
+                error_msg = f"❌ Error in iteration {iteration_count}: {str(e)}"
                 self.reporter.send(error_msg)
                 self.status.setdefault("errors", []).append(
                     {

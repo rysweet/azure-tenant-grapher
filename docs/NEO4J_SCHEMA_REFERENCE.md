@@ -4,6 +4,24 @@
 
 Azure Tenant Grapher builds a comprehensive Neo4j graph database representing Azure tenant resources, their relationships, and identity/RBAC information. This document provides the complete reference for the graph schema, including all node types, relationship types, and how the schema is dynamically assembled.
 
+### Dual-Graph Architecture
+
+The system uses a **dual-graph architecture** where every Azure resource is stored as two parallel nodes:
+
+- **Abstracted nodes** (`:Resource`): IDs are translated to type-prefixed hashes (e.g., `vm-a1b2c3d4`, `storage-e5f6g7h8`) suitable for cross-tenant deployment
+- **Original nodes** (`:Resource:Original`): Real Azure IDs from the source tenant for reference and audit
+- **Linking relationship**: `(abstracted)-[:SCAN_SOURCE_NODE]->(original)` connects the parallel nodes
+
+This architecture enables:
+- **Cross-tenant deployments** with safe ID abstraction
+- **Query flexibility**: Query original topology OR deployment-ready abstracted view
+- **IaC simplification**: No runtime ID translation needed during IaC generation
+- **Graph validation**: Validate abstractions before deployment
+
+**Key services:**
+- `IDAbstractionService` (`src/services/id_abstraction_service.py`): Deterministic hash-based ID generation
+- `TenantSeedManager` (`src/services/tenant_seed_manager.py`): Per-tenant cryptographic seeds for reproducible abstraction
+
 ## Table of Contents
 
 - [Schema Architecture](#schema-architecture)
@@ -52,9 +70,16 @@ Represents the Azure Active Directory tenant (root of the hierarchy).
 - `id`: Tenant ID (GUID)
 - `name`: Tenant display name
 - `domain`: Primary domain
+- `abstraction_seed`: Cryptographic seed for deterministic ID abstraction (64-char hex string)
 - `updated_at`: Last update timestamp
 
+**Dual-Graph Support:**
+- The `abstraction_seed` property stores a per-tenant cryptographic seed used by `IDAbstractionService` for reproducible ID abstraction
+- Generated using `secrets.token_hex(32)` (256-bit entropy)
+- Stored persistently and never regenerated (ensures consistent abstractions)
+
 **Created in:** [`src/tenant_creator.py:674`](../src/tenant_creator.py#L674)
+**Seed managed by:** [`src/services/tenant_seed_manager.py`](../src/services/tenant_seed_manager.py)
 
 ---
 
@@ -96,13 +121,25 @@ Represents an Azure resource group.
 #### Resource
 Represents any Azure resource (VMs, storage accounts, databases, etc.).
 
+**Dual-Graph Architecture:**
+
+Every resource exists as TWO nodes with identical topology but different IDs:
+
+##### Abstracted Resource Nodes (`:Resource`)
+**Default for all queries.** These nodes have type-prefixed hash IDs suitable for cross-tenant deployment.
+
+**Labels:** `:Resource` (no `:Original` label)
+
 **Properties:**
-- `id`: Resource ID (full Azure resource ID)
-- `name`: Resource name
+- `id`: **Abstracted** resource ID with type-prefixed hash (e.g., `vm-a1b2c3d4e5f6g7h8`)
+- `original_id`: Reference to original Azure ID
+- `name`: Resource name (unchanged from original)
 - `type`: Resource type (e.g., "Microsoft.Compute/virtualMachines")
 - `location`: Azure region
-- `resource_group`: Parent resource group name
-- `subscription_id`: Parent subscription ID
+- `resource_group`: Parent resource group name (abstracted)
+- `subscription_id`: Parent subscription ID (abstracted)
+- `abstraction_type`: "hash-based" (metadata)
+- `abstraction_seed`: Reference to tenant seed used
 - `llm_description`: AI-generated description (optional)
 - `processing_status`: Processing state
 - `properties`: JSON blob with resource-specific properties
@@ -110,12 +147,44 @@ Represents any Azure resource (VMs, storage accounts, databases, etc.).
 - `tags`: Resource tags (if any)
 - `updated_at`: Last update timestamp
 
-**Created in:** [`src/resource_processor.py:262-295`](../src/resource_processor.py#L262-L295)
+##### Original Resource Nodes (`:Resource:Original`)
+**Requires explicit label in queries.** These nodes preserve real Azure IDs from source tenant.
+
+**Labels:** `:Resource:Original`
+
+**Properties:**
+- `id`: **Original** Azure resource ID (e.g., `/subscriptions/{guid}/resourceGroups/{name}/...`)
+- `abstracted_id`: Reference to abstracted ID
+- `name`: Resource name
+- `type`: Resource type
+- `location`: Azure region
+- `resource_group`: Parent resource group name (original)
+- `subscription_id`: Parent subscription ID (original GUID)
+- `llm_description`: AI-generated description (optional)
+- `processing_status`: Processing state
+- `properties`: JSON blob with resource-specific properties
+- `sku`: SKU information (if applicable)
+- `tags`: Resource tags (if any)
+- `updated_at`: Last update timestamp
+
+**Created in:** [`src/resource_processor.py:582-645`](../src/resource_processor.py#L582-L645) (dual-node creation logic)
 
 **Notes:**
 - This is the most common node type
 - The `type` property determines resource-specific processing
 - Properties vary widely based on resource type
+- All resource relationships are duplicated in both graphs
+- Default queries `MATCH (r:Resource)` return only abstracted nodes
+- To query originals: `MATCH (r:Resource:Original)` or `MATCH (r:Resource) WHERE r:Original`
+
+**ID Abstraction Examples:**
+```
+Original ID:    /subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm
+Abstracted ID:  vm-a1b2c3d4e5f6g7h8
+
+Original ID:    /subscriptions/12345678.../Microsoft.Storage/storageAccounts/mystorageacct
+Abstracted ID:  storage-e5f6g7h8i9j0k1l2
+```
 
 ---
 
@@ -514,6 +583,42 @@ Connects a subnet to a network security group.
 
 ### Other Relationships
 
+#### SCAN_SOURCE_NODE
+**Dual-Graph Linking Relationship**
+
+Connects an abstracted resource node to its original source node.
+
+**Pattern:** `(abstracted:Resource)-[:SCAN_SOURCE_NODE]->(original:Resource:Original)`
+
+**Semantics:** This abstracted node was created from this original node during scan
+
+**Properties:**
+- `scan_id`: ID of the scan that created both nodes
+- `tenant_id`: Tenant ID
+- `confidence`: Confidence level in the abstraction (typically 1.0)
+- `created_at`: When relationship was created
+
+**Created in:** [`src/resource_processor.py:647-672`](../src/resource_processor.py#L647-L672)
+
+**Usage:**
+```cypher
+# Find original node from abstracted
+MATCH (a:Resource {id: 'vm-a1b2c3d4'})-[:SCAN_SOURCE_NODE]->(o:Resource:Original)
+RETURN o.id
+
+# Find abstracted node from original
+MATCH (o:Resource:Original)-[:SCAN_SOURCE_NODE]-(a:Resource)
+WHERE o.id = '/subscriptions/12345.../my-vm'
+RETURN a.id
+```
+
+**Notes:**
+- Every abstracted resource node has exactly ONE outgoing SCAN_SOURCE_NODE relationship
+- Every original resource node has exactly ONE incoming SCAN_SOURCE_NODE relationship
+- This relationship enables bidirectional lookup between graph views
+
+---
+
 #### TAGGED_WITH
 Connects a resource to a tag.
 
@@ -524,6 +629,10 @@ Connects a resource to a tag.
 **Defined at:** [`src/resource_processor.py:534`](../src/resource_processor.py#L534)
 
 **Emitted by:** `TagRule` ([`src/relationship_rules/tag_rule.py`](../src/relationship_rules/tag_rule.py))
+
+**Notes (Dual-Graph):**
+- Both abstracted and original resource nodes can have TAGGED_WITH relationships
+- Tag nodes are shared between graphs (not duplicated)
 
 ---
 
@@ -871,16 +980,50 @@ Note: Neo4j does not enforce cardinality - these patterns are logical constraint
 
 ### Querying the Graph
 
+#### Dual-Graph Query Patterns
+
+**Query abstracted resources (DEFAULT):**
+```cypher
+// Returns only abstracted nodes (IaC-ready IDs)
+MATCH (r:Resource {type: 'Microsoft.Compute/virtualMachines'})
+WHERE NOT r:Original
+RETURN r.name, r.id, r.location
+```
+
+**Query original resources:**
+```cypher
+// Returns only original nodes (real Azure IDs)
+MATCH (r:Resource:Original {type: 'Microsoft.Compute/virtualMachines'})
+RETURN r.name, r.id, r.location
+```
+
+**Find original from abstracted:**
+```cypher
+// Traverse SCAN_SOURCE_NODE to find source
+MATCH (a:Resource {id: 'vm-a1b2c3d4'})-[:SCAN_SOURCE_NODE]->(o:Resource:Original)
+RETURN o.id AS original_azure_id, a.id AS abstracted_id
+```
+
+**Compare both graphs:**
+```cypher
+// Count nodes in each graph
+MATCH (a:Resource) WHERE NOT a:Original
+WITH count(a) AS abstracted_count
+MATCH (o:Resource:Original)
+RETURN abstracted_count, count(o) AS original_count
+```
+
 #### Find all resources of a specific type
 ```cypher
 MATCH (r:Resource {type: 'Microsoft.Compute/virtualMachines'})
+WHERE NOT r:Original  // Ensures we get abstracted nodes
 RETURN r.name, r.location
 ```
 
 #### Find resources with specific tag
 ```cypher
 MATCH (r:Resource)-[:TAGGED_WITH]->(t:Tag {key: 'environment'})
-WHERE t.value = 'production'
+WHERE t.value = 'production' AND NOT r:Original
 RETURN r.name, r.type
 ```
 
@@ -893,14 +1036,14 @@ RETURN u.displayName, u.userPrincipalName
 #### Find resource dependencies
 ```cypher
 MATCH path = (r1:Resource)-[:DEPENDS_ON*]->(r2:Resource)
-WHERE r1.name = 'my-web-app'
+WHERE r1.name = 'my-web-app' AND NOT r1:Original
 RETURN path
 ```
 
 #### Find network connectivity
 ```cypher
 MATCH (r:Resource)-[:USES_SUBNET]->(subnet:Resource)-[:SECURED_BY]->(nsg:Resource)
-WHERE r.type = 'Microsoft.Compute/virtualMachines'
+WHERE r.type = 'Microsoft.Compute/virtualMachines' AND NOT r:Original
 RETURN r.name, subnet.name, nsg.name
 ```
 
@@ -974,6 +1117,7 @@ RETURN r.name, subnet.name, nsg.name
 - SECURED_BY
 
 **Other:**
+- SCAN_SOURCE_NODE (dual-graph linking)
 - TAGGED_WITH
 - LOCATED_IN
 - CREATED_BY
@@ -984,4 +1128,4 @@ RETURN r.name, subnet.name, nsg.name
 ---
 
 *Last Updated: 2025-11-05*
-*Related Issue: #423*
+*Related Issues: #420 (dual-graph architecture), #423 (schema documentation)*

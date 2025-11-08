@@ -1,0 +1,521 @@
+================================================================================
+                    DUAL-GRAPH ARCHITECTURE DIAGRAM
+================================================================================
+
+                         Azure Tenant Grapher
+                    Dual-Graph Architecture Overview
+
+================================================================================
+1. HIGH-LEVEL ARCHITECTURE
+================================================================================
+
+                           ┌─────────────────┐
+                           │  Azure Tenant   │
+                           │   (Real IDs)    │
+                           └────────┬────────┘
+                                    │
+                                    │ Scan
+                                    ▼
+                         ┌──────────────────┐
+                         │ Resource         │
+                         │ Processing       │
+                         │ Service          │
+                         └────────┬─────────┘
+                                  │
+                    Dual Creation │
+                    ┌─────────────┴──────────────┐
+                    ▼                            ▼
+        ┌────────────────────┐      ┌────────────────────┐
+        │ Original Graph     │      │ Abstracted Graph   │
+        │ (Azure IDs)        │◄─────┤ (Hash IDs)         │
+        │                    │      │                    │
+        │ id: /sub/rg/vm-001 │      │ id: vm-a1b2c3d4    │
+        └────────────────────┘      └───────────┬────────┘
+                                                 │
+                                                 │ IaC Generation
+                                                 ▼
+                                    ┌────────────────────┐
+                                    │ Terraform / ARM    │
+                                    │ / Bicep            │
+                                    └────────────────────┘
+
+
+================================================================================
+2. NODE STRUCTURE
+================================================================================
+
+    ORIGINAL NODE                          ABSTRACTED NODE
+    (:Resource:Original)                   (:Resource:Abstracted)
+
+┌─────────────────────────────┐       ┌─────────────────────────────┐
+│ id: /subscriptions/abc-123/ │       │ id: vm-a1b2c3d4             │
+│     resourceGroups/rg-prod/ │       │                             │
+│     providers/Microsoft.    │       │ abstracted_id: vm-a1b2c3d4  │
+│     Compute/virtualMachines/│       │ original_id: /subscriptions/│
+│     web-vm-001              │       │              .../web-vm-001 │
+│                             │◄──────┤                             │
+│ abstracted_id: vm-a1b2c3d4  │ SCAN  │ abstraction_seed: "xyz..."  │
+│                             │SOURCE │ abstraction_type: "vm"      │
+│ name: web-vm-001            │ NODE  │                             │
+│ type: Microsoft.Compute/... │       │ name: web-vm-001            │
+│ location: eastus            │       │ type: Microsoft.Compute/... │
+│ resource_group: rg-prod     │       │ location: eastus            │
+│ subscription_id: /sub/...   │       │ resource_group: rg-prod     │
+│                             │       │ subscription_id: /sub/...   │
+│ properties: {...full...}    │       │                             │
+│                             │       │ properties: {...filtered...}│
+│ scan_id: scan-2025-11-05-...│       │                             │
+│ tenant_id: /providers/...   │       │ scan_id: scan-2025-11-05-...│
+│                             │       │ tenant_id: /providers/...   │
+│ created_at: 2025-11-05T...  │       │                             │
+│ updated_at: 2025-11-05T...  │       │ created_at: 2025-11-05T...  │
+│                             │       │ updated_at: 2025-11-05T...  │
+└─────────────────────────────┘       └─────────────────────────────┘
+
+            ▲                                      ▲
+            │                                      │
+            │                                      │
+         Azure                              IaC Generation
+         Truth                             Deterministic IDs
+
+
+================================================================================
+3. RELATIONSHIP DUPLICATION
+================================================================================
+
+    ORIGINAL GRAPH                      ABSTRACTED GRAPH
+
+  ┌──────────────┐                    ┌──────────────┐
+  │ VirtualMachine│                    │ VirtualMachine│
+  │ :Original    │                    │ :Abstracted  │
+  │              │                    │              │
+  │ /sub/.../    │                    │ vm-a1b2c3d4  │
+  │ web-vm-001   │                    │              │
+  └──────┬───────┘                    └──────┬───────┘
+         │                                   │
+         │ USES_SUBNET                       │ USES_SUBNET
+         │                                   │
+         ▼                                   ▼
+  ┌──────────────┐                    ┌──────────────┐
+  │ Subnet       │                    │ Subnet       │
+  │ :Original    │                    │ :Abstracted  │
+  │              │                    │              │
+  │ /sub/.../    │                    │ subnet-e5f6  │
+  │ subnet-web   │                    │              │
+  └──────┬───────┘                    └──────┬───────┘
+         │                                   │
+         │ SECURED_BY                        │ SECURED_BY
+         │                                   │
+         ▼                                   ▼
+  ┌──────────────┐                    ┌──────────────┐
+  │ NSG          │                    │ NSG          │
+  │ :Original    │                    │ :Abstracted  │
+  │              │                    │              │
+  │ /sub/.../    │                    │ nsg-7h8i9j0k │
+  │ nsg-web      │                    │              │
+  └──────────────┘                    └──────────────┘
+
+     Both graphs have the SAME topology structure!
+     Original uses Azure IDs, Abstracted uses hash IDs.
+
+
+================================================================================
+4. ABSTRACTION ID GENERATION
+================================================================================
+
+    Input: Azure Resource
+    ┌─────────────────────────────────────────────────────┐
+    │ id: /subscriptions/abc-123/resourceGroups/rg-prod/ │
+    │     providers/Microsoft.Compute/virtualMachines/   │
+    │     web-vm-001                                      │
+    │                                                     │
+    │ type: Microsoft.Compute/virtualMachines            │
+    └───────────────────────┬─────────────────────────────┘
+                            │
+                            ▼
+              ┌─────────────────────────┐
+              │ Type Prefix Lookup      │
+              │                         │
+              │ Microsoft.Compute/      │
+              │ virtualMachines → "vm" │
+              └────────────┬────────────┘
+                           │
+                           ▼
+            ┌──────────────────────────────┐
+            │ Hash Generation              │
+            │                              │
+            │ Input: Azure ID + Tenant Seed│
+            │ Algorithm: SHA256            │
+            │ Output: 8-char hex           │
+            │                              │
+            │ Hash("...vm-001:seed-xyz")   │
+            │     → "a1b2c3d4"             │
+            └───────────┬──────────────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ Combine         │
+              │                 │
+              │ "vm" + "-" +    │
+              │ "a1b2c3d4"      │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Result:         │
+              │                 │
+              │ "vm-a1b2c3d4"   │
+              └─────────────────┘
+
+    Properties:
+    ✓ Deterministic (same input → same output)
+    ✓ Type-safe (prefix indicates resource type)
+    ✓ Collision-resistant (8 hex chars = 4B combinations)
+    ✓ Readable (human can identify resource type)
+
+
+================================================================================
+5. TENANT SEED MANAGEMENT
+================================================================================
+
+                           ┌─────────────────┐
+                           │ Tenant Node     │
+                           │                 │
+                           │ id: /providers/ │
+                           │     .../tenant  │
+                           │                 │
+                           │ abstraction_seed│
+                           │   = "xyz123..."  │
+                           │                 │
+                           │ seed_algorithm  │
+                           │   = "sha256"    │
+                           │                 │
+                           │ seed_created_at │
+                           │   = 2025-11-05  │
+                           └────────┬────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+         ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+         │ Resource 1      │ │ Resource 2      │ │ Resource 3      │
+         │ :Abstracted     │ │ :Abstracted     │ │ :Abstracted     │
+         │                 │ │                 │ │                 │
+         │ abstraction_seed│ │ abstraction_seed│ │ abstraction_seed│
+         │   = "xyz123..." │ │   = "xyz123..." │ │   = "xyz123..." │
+         └─────────────────┘ └─────────────────┘ └─────────────────┘
+
+    All resources in a tenant use the SAME seed.
+    This ensures consistency within a tenant.
+
+
+================================================================================
+6. QUERY FLOW - IAC GENERATION
+================================================================================
+
+    User Request: Generate Terraform
+    ─────────────────────────────────
+              │
+              ▼
+    ┌──────────────────┐
+    │ IaC Traverser    │
+    └────────┬─────────┘
+             │
+             │ Query: MATCH (r:Resource:Abstracted)
+             │        WHERE r.tenant_id = $tenant_id
+             ▼
+    ┌──────────────────┐
+    │ Neo4j Database   │
+    │                  │
+    │ Returns ONLY     │
+    │ Abstracted nodes │
+    └────────┬─────────┘
+             │
+             │ vm-a1b2c3d4, subnet-e5f6, nsg-7h8i, ...
+             ▼
+    ┌──────────────────┐
+    │ Terraform Emitter│
+    └────────┬─────────┘
+             │
+             │ resource "azurerm_virtual_machine" "vm-a1b2c3d4" {
+             │   name = "web-vm-001"
+             │   ...
+             │ }
+             ▼
+    ┌──────────────────┐
+    │ main.tf          │
+    └──────────────────┘
+
+    Key Point: IaC generation NEVER sees Original nodes.
+               It only works with Abstracted nodes.
+
+
+================================================================================
+7. QUERY FLOW - COMPARISON
+================================================================================
+
+    User Request: Compare Original vs Abstracted Topology
+    ──────────────────────────────────────────────────────
+              │
+              ▼
+    ┌──────────────────────────────────────────┐
+    │ Query both graphs simultaneously         │
+    │                                          │
+    │ MATCH (orig1:Original)-[rel]->(orig2)    │
+    │ MATCH (abs1:Abstracted)                  │
+    │ WHERE abs1.original_id = orig1.id        │
+    │ MATCH (abs2:Abstracted)                  │
+    │ WHERE abs2.original_id = orig2.id        │
+    │ WHERE NOT (abs1)-[rel]->(abs2)           │
+    └────────┬─────────────────────────────────┘
+             │
+             │ Results: Missing relationships
+             ▼
+    ┌──────────────────────────────────┐
+    │ Report:                          │
+    │                                  │
+    │ Missing in abstracted graph:     │
+    │ - (vm-001) -[DEPENDS_ON]-> (db) │
+    │                                  │
+    │ Action: Investigate why          │
+    │ relationship wasn't duplicated   │
+    └──────────────────────────────────┘
+
+
+================================================================================
+8. DATA FLOW - SCAN OPERATION
+================================================================================
+
+    ┌─────────────┐
+    │ Azure API   │
+    └──────┬──────┘
+           │
+           │ GET /subscriptions/abc-123/resources
+           ▼
+    ┌──────────────────────────────────────┐
+    │ Azure Discovery Service              │
+    │                                      │
+    │ Returns: List of Azure resources     │
+    │ with full Azure resource IDs         │
+    └───────────────┬──────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────────────┐
+    │ Resource Processing Service           │
+    │                                       │
+    │ For each resource:                    │
+    │ 1. Get/create tenant seed             │
+    │ 2. Generate abstracted ID             │
+    │ 3. Create both nodes (transaction)    │
+    │ 4. Create SCAN_SOURCE_NODE rel        │
+    └───────────────┬───────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────────────┐
+    │ Relationship Rules                    │
+    │                                       │
+    │ For each relationship:                │
+    │ 1. Create in Original graph           │
+    │ 2. Lookup abstracted IDs              │
+    │ 3. Create in Abstracted graph         │
+    └───────────────┬───────────────────────┘
+                    │
+                    ▼
+    ┌───────────────────────────────────────┐
+    │ Neo4j Database                        │
+    │                                       │
+    │ ┌─────────────────────────────────┐   │
+    │ │ Original Graph (Azure IDs)      │   │
+    │ └─────────────────────────────────┘   │
+    │                                       │
+    │ ┌─────────────────────────────────┐   │
+    │ │ Abstracted Graph (Hash IDs)     │   │
+    │ └─────────────────────────────────┘   │
+    │                                       │
+    │ ┌─────────────────────────────────┐   │
+    │ │ SCAN_SOURCE_NODE relationships  │   │
+    │ └─────────────────────────────────┘   │
+    └───────────────────────────────────────┘
+
+
+================================================================================
+9. LABEL STRATEGY
+================================================================================
+
+    All Resource nodes have :Resource label
+    Plus one of: :Original or :Abstracted
+
+    ┌──────────────────────────────────────────────┐
+    │ :Resource (base label)                       │
+    │                                              │
+    │  ┌─────────────────┐    ┌─────────────────┐ │
+    │  │ :Resource       │    │ :Resource       │ │
+    │  │ :Original       │    │ :Abstracted     │ │
+    │  │                 │    │                 │ │
+    │  │ Azure IDs       │    │ Hash IDs        │ │
+    │  │                 │    │                 │ │
+    │  │ Source of truth │    │ For IaC         │ │
+    │  └─────────────────┘    └─────────────────┘ │
+    └──────────────────────────────────────────────┘
+
+    Query Patterns:
+    ───────────────
+    MATCH (r:Resource:Abstracted)     → Get abstracted only
+    MATCH (r:Resource:Original)       → Get original only
+    MATCH (r:Resource)                → Get all resources
+    WHERE NOT r:Original
+    MATCH (r:Resource)                → Get all (both types)
+
+
+================================================================================
+10. FEATURE FLAG FLOW
+================================================================================
+
+    ┌─────────────────────────────────┐
+    │ Environment Variable            │
+    │                                 │
+    │ ENABLE_DUAL_GRAPH=true/false    │
+    └────────────┬────────────────────┘
+                 │
+                 ▼
+    ┌──────────────────────────────────────┐
+    │ Config Manager                       │
+    │                                      │
+    │ config.enable_dual_graph = boolean   │
+    └────────────┬─────────────────────────┘
+                 │
+                 ▼
+    ┌──────────────────────────────────────┐
+    │ Resource Processor                   │
+    │                                      │
+    │ if config.enable_dual_graph:         │
+    │     upsert_dual_graph_resource()     │
+    │ else:                                │
+    │     upsert_single_resource()         │
+    │     (existing behavior)              │
+    └──────────────────────────────────────┘
+
+    Benefits:
+    ─────────
+    ✓ Easy rollback (just toggle flag)
+    ✓ No code changes needed to disable
+    ✓ Can test both modes
+    ✓ Gradual rollout possible
+
+
+================================================================================
+11. COMPLETE EXAMPLE - VM WITH SUBNET AND NSG
+================================================================================
+
+                        ORIGINAL GRAPH
+
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Original                       │
+    │ id: /subscriptions/.../web-vm-001        │
+    │ name: web-vm-001                         │
+    │ type: Microsoft.Compute/virtualMachines  │
+    └────────────┬─────────────────────────────┘
+                 │
+                 │ USES_SUBNET
+                 ▼
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Original                       │
+    │ id: /subscriptions/.../subnet-web        │
+    │ name: subnet-web                         │
+    │ type: Microsoft.Network/subnets          │
+    └────────────┬─────────────────────────────┘
+                 │
+                 │ SECURED_BY
+                 ▼
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Original                       │
+    │ id: /subscriptions/.../nsg-web           │
+    │ name: nsg-web                            │
+    │ type: Microsoft.Network/nsg              │
+    └──────────────────────────────────────────┘
+
+
+                       ABSTRACTED GRAPH
+
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Abstracted                     │
+    │ id: vm-a1b2c3d4                          │
+    │ name: web-vm-001                         │
+    │ type: Microsoft.Compute/virtualMachines  │
+    │ original_id: /subscriptions/.../web-vm-001│
+    └────────────┬─────────────────────────────┘
+                 │
+                 │ USES_SUBNET
+                 ▼
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Abstracted                     │
+    │ id: subnet-e5f6g7h8                      │
+    │ name: subnet-web                         │
+    │ type: Microsoft.Network/subnets          │
+    │ original_id: /subscriptions/.../subnet-web│
+    └────────────┬─────────────────────────────┘
+                 │
+                 │ SECURED_BY
+                 ▼
+    ┌──────────────────────────────────────────┐
+    │ :Resource:Abstracted                     │
+    │ id: nsg-i9j0k1l2                         │
+    │ name: nsg-web                            │
+    │ type: Microsoft.Network/nsg              │
+    │ original_id: /subscriptions/.../nsg-web  │
+    └──────────────────────────────────────────┘
+
+
+                    CROSS-GRAPH LINKS
+
+    ┌──────────────────────┐    SCAN_SOURCE_NODE    ┌──────────────────────┐
+    │ vm-a1b2c3d4          │──────────────────────►  │ /subscriptions/.../  │
+    │ :Abstracted          │                         │ web-vm-001           │
+    └──────────────────────┘                         │ :Original            │
+                                                     └──────────────────────┘
+
+
+================================================================================
+12. BENEFITS VISUALIZATION
+================================================================================
+
+    WITHOUT DUAL-GRAPH                WITH DUAL-GRAPH
+    ──────────────────                ─────────────────
+
+    Azure IDs                         Azure IDs         Hash IDs
+    (non-deterministic)              (preserved)     (deterministic)
+           │                               │              │
+           ▼                               ▼              ▼
+    ┌─────────────┐                 ┌──────────┐  ┌──────────┐
+    │ Single      │                 │ Original │  │Abstracted│
+    │ Resource    │                 │  Graph   │  │  Graph   │
+    │ Nodes       │                 └──────────┘  └──────────┘
+    └─────────────┘                       │              │
+           │                               │              │
+           ▼                               ▼              ▼
+    ┌─────────────┐                 ┌──────────┐  ┌──────────┐
+    │ IaC with    │                 │ Compare  │  │   IaC    │
+    │ Azure IDs   │                 │ Topology │  │   with   │
+    │             │                 │          │  │ Hashed   │
+    │ ❌ Changes  │                 │ ✓ Audit  │  │   IDs    │
+    │   every     │                 │   trail  │  │          │
+    │   time      │                 └──────────┘  │ ✓ Stable │
+    │             │                               │ ✓ Reusable│
+    │ ❌ Not      │                               └──────────┘
+    │   reusable  │
+    │             │
+    │ ❌ No audit │
+    │   trail     │
+    └─────────────┘
+
+
+================================================================================
+End of Diagram
+================================================================================
+
+For detailed documentation, see:
+- DUAL_GRAPH_SCHEMA.md - Complete schema specification
+- DUAL_GRAPH_QUERIES.cypher - Query examples
+- DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py - Code examples
+- DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md - Implementation plan
+- DUAL_GRAPH_DESIGN_SUMMARY.md - Quick reference

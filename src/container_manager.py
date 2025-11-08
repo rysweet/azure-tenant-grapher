@@ -467,15 +467,71 @@ class Neo4jContainerManager:
             logger.exception(event=f"Failed to get container logs: {e}")
             return None
 
-    def setup_neo4j(self, debug: bool = False) -> bool:
+    def is_neo4j_reachable(self, timeout: int = 5) -> bool:
         """
-        Complete Neo4j setup: start container and wait for readiness.
+        Check if Neo4j is already reachable at the configured URI.
+
+        Args:
+            timeout: Maximum time to wait for connection attempt
 
         Returns:
-            True if setup successful, False otherwise
+            True if Neo4j is reachable and accepts queries, False otherwise
         """
-        # self._print_env_block("SETUP_NEO4J")  # Removed per instructions
-        logger.info(event="Setting up Neo4j container...")
+        try:
+            driver = GraphDatabase.driver(
+                self.neo4j_uri,
+                auth=(self.neo4j_user, self.neo4j_password),
+                connection_timeout=timeout
+            )
+
+            with driver.session() as session:
+                result = session.run("RETURN 1 as test")
+                record = result.single()
+                if record and record["test"] == 1:
+                    driver.close()
+                    logger.info(
+                        event="Neo4j is already reachable",
+                        uri=self.neo4j_uri
+                    )
+                    return True
+
+            driver.close()
+            return False
+        except Exception as e:
+            logger.debug(
+                event="Neo4j not reachable yet",
+                uri=self.neo4j_uri,
+                error=str(e)
+            )
+            return False
+
+    def setup_neo4j(self, debug: bool = False) -> bool:
+        """
+        Complete Neo4j setup: ensure Neo4j is reachable.
+
+        If Neo4j is already reachable at the configured URI, returns immediately.
+        Otherwise, attempts to start a container and wait for readiness.
+
+        This allows the manager to work in environments where Neo4j is provided
+        externally (e.g., CI service containers) or needs to be started locally.
+
+        Returns:
+            True if Neo4j is reachable, False otherwise
+        """
+        logger.info(event="Setting up Neo4j...")
+
+        # Check if Neo4j is already reachable
+        if self.is_neo4j_reachable():
+            logger.info(
+                event="Neo4j is already running and reachable, skipping container startup",
+                uri=self.neo4j_uri
+            )
+            return True
+
+        logger.info(
+            event="Neo4j not reachable, attempting to start container",
+            uri=self.neo4j_uri
+        )
 
         # Start the container
         if not self.start_neo4j_container():

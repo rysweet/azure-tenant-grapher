@@ -29,6 +29,9 @@ class IdentityRule(RelationshipRule):
     - (RoleAssignment) -[:ASSIGNED_TO]-> (Identity)
     - (Identity) -[:HAS_ROLE]-> (RoleDefinition)
     - (Resource with identity.principalId) -[:USES_IDENTITY]-> (ManagedIdentity)
+
+    Supports dual-graph architecture - creates relationships in both original and abstracted graphs.
+    Note: Identity nodes (User, ServicePrincipal, ManagedIdentity, etc.) are shared between graphs.
     """
 
     def applies(self, resource: Dict[str, Any]) -> bool:
@@ -128,12 +131,14 @@ class IdentityRule(RelationshipRule):
                     identity_props,
                 )
                 # ASSIGNED_TO: RoleAssignment → Identity
+                # Note: RoleAssignment is not a Resource, so we use db_ops directly
                 db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, label, "id")
                 # HAS_ROLE: Identity → RoleDefinition
                 if role_def_id:
                     db_ops.upsert_generic(
                         ROLE_DEFINITION, "id", role_def_id, {"id": role_def_id}
                     )
+                    # Identity → RoleDefinition (both non-Resource nodes)
                     db_ops.create_generic_rel(
                         principal_id, HAS_ROLE, role_def_id, ROLE_DEFINITION, "id"
                     )
@@ -180,8 +185,9 @@ class IdentityRule(RelationshipRule):
                             "resourceGroup": "identity-resources",
                         },
                     )
-                    # USES_IDENTITY edge
-                    db_ops.create_generic_rel(
+                    # USES_IDENTITY edge: Resource → ManagedIdentity (use dual-graph helper)
+                    self.create_dual_graph_generic_rel(
+                        db_ops,
                         str(rid),
                         USES_IDENTITY,
                         str(principal_id),
@@ -212,9 +218,14 @@ class IdentityRule(RelationshipRule):
                             "resourceGroup": "identity-resources",
                         },
                     )
-                    # USES_IDENTITY edge
-                    db_ops.create_generic_rel(
-                        str(rid), USES_IDENTITY, str(uai_id), MANAGED_IDENTITY, "id"
+                    # USES_IDENTITY edge: Resource → ManagedIdentity (use dual-graph helper)
+                    self.create_dual_graph_generic_rel(
+                        db_ops,
+                        str(rid),
+                        USES_IDENTITY,
+                        str(uai_id),
+                        MANAGED_IDENTITY,
+                        "id",
                     )
             # If principalId present (legacy or fallback)
             principal_id = identity.get("principalId")
@@ -238,6 +249,12 @@ class IdentityRule(RelationshipRule):
                         "resourceGroup": "identity-resources",
                     },
                 )
-                db_ops.create_generic_rel(
-                    str(rid), USES_IDENTITY, str(principal_id), MANAGED_IDENTITY, "id"
+                # USES_IDENTITY edge: Resource → ManagedIdentity (use dual-graph helper)
+                self.create_dual_graph_generic_rel(
+                    db_ops,
+                    str(rid),
+                    USES_IDENTITY,
+                    str(principal_id),
+                    MANAGED_IDENTITY,
+                    "id",
                 )
