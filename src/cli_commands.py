@@ -18,6 +18,8 @@ import click
 import structlog
 
 from src.azure_tenant_grapher import AzureTenantGrapher
+
+# Scale operations command handlers (Issue #427)
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
 from src.config_manager import (
     create_config_from_env,

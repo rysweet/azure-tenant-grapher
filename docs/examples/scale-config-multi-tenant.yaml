@@ -1,0 +1,59 @@
+# Multi-Tenant Configuration Example
+# ====================================
+# Shows how to configure different settings for different tenants
+
+default_tenant_id: "default-tenant-id"
+
+# Global defaults
+scale_up:
+  default_strategy: template
+  default_scale_factor: 2.0
+
+  template:
+    preserve_proportions: true
+    variation_percentage: 0.1
+
+scale_down:
+  default_algorithm: forest-fire
+  default_target_size: 0.1
+
+performance:
+  batch_size: 500
+  memory_limit_mb: 2048
+  timeout_seconds: 300
+  max_workers: 4
+
+# Tenant-specific overrides
+tenant_overrides:
+  # Production tenant: Conservative scaling
+  - tenant_id: "prod-tenant-id"
+    scale_up:
+      default_scale_factor: 1.5  # Smaller scale factor
+      template:
+        variation_percentage: 0.05  # Less variation
+    scale_down:
+      default_target_size: 0.2  # Keep more resources
+    performance:
+      timeout_seconds: 600  # More time for prod
+
+  # Development tenant: Aggressive scaling for testing
+  - tenant_id: "dev-tenant-id"
+    scale_up:
+      default_scale_factor: 5.0  # Large scale factor
+      template:
+        variation_percentage: 0.2  # More variation for diversity
+    scale_down:
+      default_target_size: 0.05  # Aggressive reduction
+      default_algorithm: random-node  # Faster algorithm
+
+  # Performance testing tenant: Maximum resources
+  - tenant_id: "perf-tenant-id"
+    scale_up:
+      default_strategy: random
+      random:
+        default_target_count: 5000
+    performance:
+      batch_size: 2000
+      memory_limit_mb: 8192
+      max_workers: 16
+      timeout_seconds: 1200
