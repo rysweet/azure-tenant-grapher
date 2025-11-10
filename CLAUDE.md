@@ -87,6 +87,10 @@ uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --identity-mapping
 uv run atg generate-iac --auto-import-existing --import-strategy resource_groups  # Generates Terraform 1.5+ import blocks
 uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Cross-tenant with imports
 
+# Azure provider registration - FULLY IMPLEMENTED
+uv run atg generate-iac --auto-register-providers  # Automatically register required Azure providers without prompting
+# By default (without --auto-register-providers), atg will detect required providers and prompt user to register them
+
 # SPA/GUI commands
 uv run atg start    # Launch Electron GUI
 uv run atg stop     # Stop GUI application
