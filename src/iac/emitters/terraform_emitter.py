@@ -2029,6 +2029,27 @@ class TerraformEmitter(IaCEmitter):
             # Get scope (Application Insights resource IDs)
             scope_resource_ids = properties.get("scope", [])
 
+            # Translate scope resource IDs to use target subscription in cross-tenant scenarios
+            translated_scope_ids = []
+            for scope_id in scope_resource_ids:
+                parts = scope_id.split("/")
+                if len(parts) >= 9:
+                    # Reconstruct with target subscription ID
+                    # Format: /subscriptions/{sid}/resourceGroups/{rg}/providers/{provider}/{type}/{name}
+                    rg_name = parts[4]
+                    provider = parts[6]
+                    resource_type = parts[7]
+                    resource_name = parts[8] if len(parts) > 8 else ""
+                    translated_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/{provider}/{resource_type}/{resource_name}"
+                    translated_scope_ids.append(translated_id)
+                    logger.debug(f"Translated scope resource ID from {scope_id} to {translated_id}")
+                else:
+                    # Keep original if can't parse
+                    logger.warning(
+                        f"Could not parse scope resource ID (unexpected format): {scope_id}, using original"
+                    )
+                    translated_scope_ids.append(scope_id)
+
             # Keep severity in Azure format (Sev0-Sev4) - Terraform expects this format
             severity = properties.get("severity", "Sev3")
 
@@ -2038,8 +2059,8 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update(
                 {
                     "detector_type": detector_id,
-                    "scope_resource_ids": scope_resource_ids
-                    if scope_resource_ids
+                    "scope_resource_ids": translated_scope_ids
+                    if translated_scope_ids
                     else [],
                     "severity": severity,  # Keep as "SevN" format
                     "frequency": frequency,

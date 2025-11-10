@@ -777,6 +777,11 @@ def generate_spec(
     default="resource_groups",
     help="Strategy for importing existing resources: resource_groups (default), all_resources, or selective (Issue #412)",
 )
+@click.option(
+    "--auto-register-providers",
+    is_flag=True,
+    help="Automatically register required Azure resource providers without prompting",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -816,6 +821,7 @@ async def generate_iac(
     resource_group_prefix: Optional[str],
     auto_import_existing: bool,
     import_strategy: str,
+    auto_register_providers: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -888,6 +894,7 @@ async def generate_iac(
         resource_group_prefix=resource_group_prefix,
         auto_import_existing=auto_import_existing,
         import_strategy=import_strategy,
+        auto_register_providers=auto_register_providers,
     )
 
 

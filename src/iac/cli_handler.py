@@ -204,6 +204,8 @@ async def generate_iac_command_handler(
     # Terraform import parameters (Issue #412)
     auto_import_existing: bool = False,
     import_strategy: str = "resource_groups",
+    # Provider registration parameters
+    auto_register_providers: bool = False,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -241,6 +243,7 @@ async def generate_iac_command_handler(
         strict_translation: Fail on missing identity mappings (default: warn only)
         auto_import_existing: Automatically import pre-existing Azure resources (Issue #412)
         import_strategy: Strategy for importing resources (resource_groups, all_resources, selective)
+        auto_register_providers: Automatically register required Azure resource providers
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -997,6 +1000,35 @@ async def generate_iac_command_handler(
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
             click.echo(f"  📄 {path}")
+
+        # Check Azure resource provider registration (before validation/deployment)
+        if format_type.lower() == "terraform" and subscription_id and not dry_run:
+            from .provider_manager import ProviderManager
+
+            try:
+                logger.info("Checking Azure resource provider registration...")
+                provider_manager = ProviderManager(subscription_id=subscription_id)
+                provider_report = await provider_manager.validate_before_deploy(
+                    terraform_path=out_dir,
+                    auto_register=auto_register_providers,
+                )
+
+                # Display report
+                click.echo(provider_report.format_report())
+
+                # Warn if any providers failed to register
+                if provider_report.failed_providers:
+                    click.echo(
+                        f"⚠️  Warning: {len(provider_report.failed_providers)} providers "
+                        f"failed to register. Deployment may fail."
+                    )
+
+            except Exception as e:
+                logger.warning(f"Provider check failed: {e}")
+                click.echo(
+                    f"⚠️  Warning: Provider check failed: {e}. Proceeding anyway...",
+                    err=True,
+                )
 
         # Validate Terraform if format is terraform and not skipped
         if format_type.lower() == "terraform" and not skip_validation:
