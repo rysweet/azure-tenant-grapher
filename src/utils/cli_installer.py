@@ -50,9 +50,13 @@ def detect_installer() -> Optional[Literal["brew", "apt", "winget", "choco"]]:
     return None
 
 
-def install_tool(tool: str) -> bool:
+def install_tool(tool: str, non_interactive: bool = False) -> bool:
     """Prompt user to install the tool using the detected package manager.
     Returns True if install attempted, False if declined or not possible.
+
+    Args:
+        tool: Name of the tool to install
+        non_interactive: If True, skip interactive prompt and return False
     """
     if tool not in TOOL_REGISTRY:
         print(f"Tool '{tool}' is not registered in the tool registry.")
@@ -67,6 +71,16 @@ def install_tool(tool: str) -> bool:
         return False
     cmd = tool_obj.installers[installer]
     print(f"Installing {tool} using {installer}: {cmd}")
+
+    # Check if running in non-interactive mode
+    import sys
+    is_non_interactive = non_interactive or not sys.stdin.isatty()
+
+    if is_non_interactive:
+        print("Non-interactive mode detected. Skipping installation prompt.")
+        print(f"Please install {tool} manually using: {cmd}")
+        return False
+
     proceed = input("Proceed? [y/N] ").strip().lower()
     if proceed == "y":
         print(cmd)
@@ -81,27 +95,37 @@ def install_tool(tool: str) -> bool:
         return False
 
 
-def ensure_tool(tool: str, auto_prompt: bool = True) -> None:
+def ensure_tool(tool: str, auto_prompt: bool = True, non_interactive: bool = False) -> None:
     """
     Ensure the given CLI tool is installed (by name, must be registered).
     If not installed and auto_prompt is True, prompt to install.
     If user declines, aborts the command with a message.
+
+    Args:
+        tool: Name of the tool to check/install
+        auto_prompt: If True, prompt user to install if missing
+        non_interactive: If True, skip interactive prompts (for background/CI mode)
     """
     if tool not in TOOL_REGISTRY:
         raise ValueError(f"Tool '{tool}' is not registered in TOOL_REGISTRY.")
     if is_tool_installed(tool):
         return
-    if auto_prompt:
-        installed = install_tool(tool)
+
+    # Detect non-interactive mode
+    import sys
+    is_non_interactive = non_interactive or not sys.stdin.isatty()
+
+    if auto_prompt and not is_non_interactive:
+        installed = install_tool(tool, non_interactive=False)
         if not installed:
             print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
-            import sys
-
             sys.exit(1)
     else:
-        print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
-        import sys
-
+        if is_non_interactive:
+            print(f"Error: '{tool}' is required but not installed (non-interactive mode).", flush=True)
+            print(f"Please install {tool} manually before running this command.", flush=True)
+        else:
+            print(f"Aborting: '{tool}' is required but was not installed.", flush=True)
         sys.exit(1)
 
 
