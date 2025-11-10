@@ -287,7 +287,7 @@ class TerraformEmitter(IaCEmitter):
                 "subscription_id": {
                     "description": "Azure subscription ID for deployment",
                     "type": "string",
-                    "default": subscription_id or "",
+                    "default": self.target_subscription_id or subscription_id or "",
                 }
             },
             "resource": {},
@@ -358,7 +358,8 @@ class TerraformEmitter(IaCEmitter):
 
                 # For subnets, also track VNet-scoped names
                 if azure_type == "Microsoft.Network/subnets":
-                    subnet_id = resource.get("id", "")
+                    # For abstracted nodes, use original_id which contains the full Azure resource path
+                    subnet_id = resource.get("original_id") or resource.get("id", "")
                     vnet_name = self._extract_resource_name_from_id(
                         subnet_id, "virtualNetworks"
                     )
@@ -1488,7 +1489,8 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # Extract parent VNet name from subnet ID
-            subnet_id = resource.get("id", "")
+            # For abstracted nodes, use original_id which contains the full Azure resource path
+            subnet_id = resource.get("original_id") or resource.get("id", "")
             vnet_name = self._extract_resource_name_from_id(
                 subnet_id, "virtualNetworks"
             )
