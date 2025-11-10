@@ -19,6 +19,7 @@ Performance target: 1000 resources in <30 seconds
 """
 
 import logging
+import re
 import random
 from collections import defaultdict
 from dataclasses import dataclass
@@ -585,25 +586,45 @@ class ScaleUpService(BaseScaleService):
 
         Returns:
             List of resource dictionaries with id, type, properties
-        """
-        type_filter = ""
-        if resource_types:
-            # Create type filter: r.type IN ['type1', 'type2']
-            type_list = ", ".join(f"'{t}'" for t in resource_types)
-            type_filter = f"AND r.type IN [{type_list}]"
 
-        query = f"""
-        MATCH (r:Resource)
-        WHERE NOT r:Original
-          AND r.tenant_id = $tenant_id
-          AND (r.synthetic IS NULL OR r.synthetic = false)
-          {type_filter}
-        RETURN r.id as id, r.type as type, properties(r) as props
-        LIMIT 10000
+        Raises:
+            ValueError: If resource_types contain invalid values
         """
+        # Validate resource types if provided
+        if resource_types:
+            # Whitelist validation: Azure resource types have specific format
+            # Format: Provider.Service/resourceType (e.g., Microsoft.Compute/virtualMachines)
+            for rt in resource_types:
+                if not re.match(r'^[A-Za-z0-9]+\.[A-Za-z0-9]+/[A-Za-z0-9]+$', rt):
+                    raise ValueError(f"Invalid resource type format: {rt}")
+                if len(rt) > 200:  # Reasonable max length
+                    raise ValueError(f"Resource type too long: {rt}")
+
+        # Build query with parameterized resource types (no string interpolation)
+        if resource_types:
+            query = """
+            MATCH (r:Resource)
+            WHERE NOT r:Original
+              AND r.tenant_id = $tenant_id
+              AND (r.synthetic IS NULL OR r.synthetic = false)
+              AND r.type IN $resource_types
+            RETURN r.id as id, r.type as type, properties(r) as props
+            LIMIT 10000
+            """
+            params = {"tenant_id": tenant_id, "resource_types": resource_types}
+        else:
+            query = """
+            MATCH (r:Resource)
+            WHERE NOT r:Original
+              AND r.tenant_id = $tenant_id
+              AND (r.synthetic IS NULL OR r.synthetic = false)
+            RETURN r.id as id, r.type as type, properties(r) as props
+            LIMIT 10000
+            """
+            params = {"tenant_id": tenant_id}
 
         with self.session_manager.session() as session:
-            result = session.run(query, {"tenant_id": tenant_id})
+            result = session.run(query, params)
             resources = [
                 {"id": record["id"], "type": record["type"], "props": record["props"]}
                 for record in result
@@ -864,14 +885,12 @@ class ScaleUpService(BaseScaleService):
         if not base_ids:
             return []
 
-        # Create parameter for IN clause
-        id_list = ", ".join(f"'{id}'" for id in base_ids)
-
-        query = f"""
+        # Use parameterized query - Neo4j will handle the list safely
+        query = """
         MATCH (source:Resource)-[rel]->(target:Resource)
         WHERE NOT source:Original AND NOT target:Original
-          AND source.id IN [{id_list}]
-          AND target.id IN [{id_list}]
+          AND source.id IN $base_ids
+          AND target.id IN $base_ids
         RETURN source.id as source_id,
                target.id as target_id,
                type(rel) as rel_type,
@@ -881,7 +900,7 @@ class ScaleUpService(BaseScaleService):
 
         patterns = []
         with self.session_manager.session() as session:
-            result = session.run(query)
+            result = session.run(query, {"base_ids": base_ids})
             for record in result:
                 patterns.append(
                     {

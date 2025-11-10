@@ -26,6 +26,7 @@ Performance Target: 10% of 10K nodes in <10 seconds
 
 import json
 import logging
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -43,6 +44,83 @@ from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
+
+
+# Whitelist of allowed properties for pattern matching (security: prevent injection)
+ALLOWED_PATTERN_PROPERTIES = {
+    # Resource properties
+    "type",
+    "name",
+    "location",
+    "id",
+    "tenant_id",
+    "resource_group",
+    "sku",
+    "kind",
+    "provisioning_state",
+    # Tag properties (nested)
+    "tags.environment",
+    "tags.owner",
+    "tags.cost_center",
+    "tags.project",
+    "tags.application",
+    "tags.department",
+    # Network properties
+    "subnet_id",
+    "vnet_id",
+    "nsg_id",
+    # Identity properties
+    "identity_type",
+    "principal_id",
+    # Synthetic properties
+    "synthetic",
+    "scale_operation_id",
+}
+
+
+def _escape_cypher_string(value: str) -> str:
+    """
+    Escape special characters for Cypher string literals.
+
+    Args:
+        value: String value to escape
+
+    Returns:
+        Safely escaped string for Cypher
+    """
+    # Escape backslashes first
+    value = value.replace("\\", "\\\\")
+    # Escape double quotes
+    value = value.replace('"', '\\"')
+    # Escape newlines
+    value = value.replace("\n", "\\n")
+    value = value.replace("\r", "\\r")
+    value = value.replace("\t", "\\t")
+    return value
+
+
+def _escape_cypher_identifier(name: str) -> str:
+    """
+    Escape identifiers (property names, relationship types) for Cypher.
+
+    Args:
+        name: Identifier to escape
+
+    Returns:
+        Safely escaped identifier for Cypher
+    """
+    # If identifier contains only alphanumeric and underscore, no escaping needed
+    if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name):
+        return name
+
+    # Otherwise, use backticks and escape any backticks in the name
+    escaped = name.replace("`", "``")
+    return f"`{escaped}`"
+
+
+def _is_safe_cypher_identifier(name: str) -> bool:
+    """Check if identifier is safe without escaping."""
+    return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name)) and len(name) <= 100
 
 
 @dataclass
@@ -855,7 +933,8 @@ class ScaleDownService(BaseScaleService):
             >>> print(f"Found {len(node_ids)} matching nodes")
         """
         self.logger.info(
-            f"Sampling by pattern for tenant {tenant_id} with criteria: {criteria}"
+            f"Sampling by pattern for tenant {tenant_id[:8]}... "
+            f"with {len(criteria)} criteria"
         )
 
         # Validate tenant exists
@@ -865,21 +944,35 @@ class ScaleDownService(BaseScaleService):
         if not criteria:
             raise ValueError("Criteria cannot be empty")
 
-        # Build Cypher query dynamically
-        where_clauses = ["NOT r:Original", "r.tenant_id = $tenant_id"]
+        if len(criteria) > 20:
+            raise ValueError("Too many criteria (max 20)")
 
+        # Validate all property keys against whitelist
+        for key in criteria.keys():
+            if key not in ALLOWED_PATTERN_PROPERTIES:
+                raise ValueError(
+                    f"Invalid pattern property: {key}. "
+                    f"Allowed properties: {sorted(ALLOWED_PATTERN_PROPERTIES)}"
+                )
+
+        # Build query with property accessor syntax for nested properties
+        where_clauses = ["NOT r:Original", "r.tenant_id = $tenant_id"]
         params: Dict[str, Any] = {"tenant_id": tenant_id}
 
         for key, value in criteria.items():
-            if "." in key:
-                # Handle nested properties (e.g., tags.environment)
-                parts = key.split(".", 1)
-                property_path = f"r.{parts[0]}.{parts[1]}"
-            else:
-                property_path = f"r.{key}"
+            param_name = f"param_{key.replace('.', '_')}"
 
-            param_name = key.replace(".", "_")
-            where_clauses.append(f"{property_path} = ${param_name}")
+            # Use Cypher property accessor for nested properties
+            # Since key is validated against whitelist, this is safe
+            if "." in key:
+                # For tags.environment, we need r.tags.environment
+                parts = key.split(".")
+                # Build nested property access safely
+                property_ref = f"r.{parts[0]}.{parts[1]}"
+            else:
+                property_ref = f"r.{key}"
+
+            where_clauses.append(f"{property_ref} = ${param_name}")
             params[param_name] = value
 
         where_clause = " AND ".join(where_clauses)
@@ -890,8 +983,7 @@ class ScaleDownService(BaseScaleService):
         RETURN r.id as id
         """
 
-        self.logger.debug(f"Pattern query: {query}")
-        self.logger.debug(f"Pattern params: {params}")
+        self.logger.debug(f"Pattern matching with {len(criteria)} validated criteria")
 
         matching_ids: Set[str] = set()
 
@@ -1069,56 +1161,118 @@ class ScaleDownService(BaseScaleService):
         output_path: str,
     ) -> None:
         """
-        Export sample to new Neo4j database.
+        Export sample to new Neo4j database as Cypher statements.
+
+        Creates properly escaped Cypher statements for importing into a new database.
 
         Note: This creates Cypher statements in a file.
         Actual database creation would require separate Neo4j instance.
+
+        Args:
+            node_ids: Set of node IDs to export
+            node_properties: Properties for all nodes
+            sampled_graph: NetworkX graph of sample
+            output_path: Output file path
+
+        Raises:
+            ValueError: If export fails
         """
         cypher_statements = []
 
-        # Add header
+        # Add header with metadata
         cypher_statements.append("// Neo4j Import Cypher Statements")
         cypher_statements.append(f"// Generated: {datetime.now(UTC).isoformat()}")
         cypher_statements.append(f"// Nodes: {len(node_ids)}")
         cypher_statements.append(f"// Relationships: {sampled_graph.number_of_edges()}")
+        cypher_statements.append("// WARNING: Review this file before executing")
         cypher_statements.append("")
 
-        # Create nodes
+        # Create nodes with proper escaping
         cypher_statements.append("// Create nodes")
-        for node_id in node_ids:
-            if node_id in node_properties:
-                props = node_properties[node_id]
 
-                # Format properties for Cypher
-                prop_strings = []
-                for key, value in props.items():
-                    if isinstance(value, str):
-                        prop_strings.append(f'{key}: "{value}"')
-                    elif isinstance(value, (int, float, bool)):
-                        prop_strings.append(f"{key}: {value}")
-                    # Skip complex types
+        for node_id in sorted(node_ids):  # Sort for deterministic output
+            if node_id not in node_properties:
+                continue
 
-                props_str = ", ".join(prop_strings) if prop_strings else ""
+            props = node_properties[node_id]
 
-                # Get resource type for label
-                resource_type = props.get("type", "Resource")
-                label = (
-                    resource_type.split("/")[-1] if "/" in resource_type else "Resource"
-                )
+            # Build property map with proper escaping
+            prop_strings = []
+            for key, value in props.items():
+                # Validate and escape property name
+                if not _is_safe_cypher_identifier(key):
+                    self.logger.warning(f"Skipping property with unsafe name: {key}")
+                    continue
 
-                cypher_statements.append(f"CREATE (:{label}:Resource {{{props_str}}});")
+                safe_key = _escape_cypher_identifier(key)
+
+                # Handle different value types
+                if value is None:
+                    # Skip null values
+                    continue
+                elif isinstance(value, str):
+                    # Escape string values
+                    safe_value = _escape_cypher_string(value)
+                    prop_strings.append(f'{safe_key}: "{safe_value}"')
+                elif isinstance(value, bool):
+                    # Use lowercase boolean literals
+                    prop_strings.append(f"{safe_key}: {str(value).lower()}")
+                elif isinstance(value, (int, float)):
+                    # Numbers are safe
+                    prop_strings.append(f"{safe_key}: {json.dumps(value)}")
+                elif isinstance(value, (list, dict)):
+                    # Use JSON representation for complex types
+                    json_value = json.dumps(value)
+                    safe_value = _escape_cypher_string(json_value)
+                    prop_strings.append(f'{safe_key}: "{safe_value}"')
+                else:
+                    # Skip unsupported types
+                    self.logger.warning(
+                        f"Skipping property {key} with unsupported type {type(value)}"
+                    )
+                    continue
+
+            props_str = ", ".join(prop_strings) if prop_strings else ""
+
+            # Get resource type for label
+            resource_type = props.get("type", "Resource")
+
+            # Extract last part of resource type for label
+            # e.g., "Microsoft.Compute/virtualMachines" -> "virtualMachines"
+            if "/" in resource_type:
+                label_name = resource_type.split("/")[-1]
+            else:
+                label_name = "Resource"
+
+            # Validate and escape label
+            safe_label = _escape_cypher_identifier(label_name)
+
+            # Generate CREATE statement
+            cypher_statements.append(f"CREATE (:{safe_label}:Resource {{{props_str}}});")
 
         cypher_statements.append("")
 
-        # Create relationships
+        # Create relationships with proper escaping
         cypher_statements.append("// Create relationships")
-        for source, target, data in sampled_graph.edges(data=True):
-            rel_type = data.get("relationship_type", "RELATED_TO")
 
+        for source, target, data in sampled_graph.edges(data=True):
+            # Escape node IDs
+            safe_source = _escape_cypher_string(source)
+            safe_target = _escape_cypher_string(target)
+
+            # Get and validate relationship type
+            rel_type = data.get("relationship_type", "RELATED_TO")
+            if not _is_safe_cypher_identifier(rel_type):
+                self.logger.warning(f"Skipping relationship with unsafe type: {rel_type}")
+                continue
+
+            safe_rel_type = _escape_cypher_identifier(rel_type)
+
+            # Generate MATCH + CREATE statement
             cypher_statements.append(
-                f'MATCH (a:Resource {{id: "{source}"}}), '
-                f'(b:Resource {{id: "{target}"}}) '
-                f"CREATE (a)-[:{rel_type}]->(b);"
+                f'MATCH (a:Resource {{id: "{safe_source}"}}), '
+                f'(b:Resource {{id: "{safe_target}"}}) '
+                f"CREATE (a)-[:{safe_rel_type}]->(b);"
             )
 
         # Write to file
