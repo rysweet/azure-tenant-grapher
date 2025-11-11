@@ -67,20 +67,20 @@ sleep 15
 ```bash
 # Prepare role assignment data
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-ROLE_DEF_ID=$(az role definition list --name "Contributor" --query "[0].id" -o tsv)
-UUID=$(uuidgen)
+CONTRIBUTOR_ROLE_ID=$(az role definition list --name "Contributor" --query "[0].id" -o tsv)
+UUID_CONTRIBUTOR=$(uuidgen)
 
 # Get fresh token
 TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
 
 # Assign Contributor role via REST API
 curl -X PUT \
-  "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleAssignments/${UUID}?api-version=2022-04-01" \
+  "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleAssignments/${UUID_CONTRIBUTOR}?api-version=2022-04-01" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
     \"properties\": {
-      \"roleDefinitionId\": \"${ROLE_DEF_ID}\",
+      \"roleDefinitionId\": \"${CONTRIBUTOR_ROLE_ID}\",
       \"principalId\": \"${SP_OBJECT_ID}\",
       \"principalType\": \"ServicePrincipal\"
     }
@@ -89,7 +89,36 @@ curl -X PUT \
 echo "✅ Contributor role assigned"
 ```
 
-### Step 4: Verify Role Assignment
+### Step 4: Assign Security Reader Role (CRITICAL for Role Assignment Scanning)
+
+**NEW**: Role assignment scanning requires Security Reader, User Access Administrator, or Owner role.
+
+```bash
+# Get Security Reader role definition
+SECURITY_READER_ROLE_ID=$(az role definition list --name "Security Reader" --query "[0].id" -o tsv)
+UUID_SECURITY=$(uuidgen)
+
+# Get fresh token
+TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
+
+# Assign Security Reader role via REST API
+curl -X PUT \
+  "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleAssignments/${UUID_SECURITY}?api-version=2022-04-01" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"properties\": {
+      \"roleDefinitionId\": \"${SECURITY_READER_ROLE_ID}\",
+      \"principalId\": \"${SP_OBJECT_ID}\",
+      \"principalType\": \"ServicePrincipal\"
+    }
+  }"
+
+echo "✅ Security Reader role assigned"
+echo "⚠️  CRITICAL: Without Security Reader, role assignments cannot be scanned!"
+```
+
+### Step 5: Verify Role Assignments
 
 ```bash
 az role assignment list --assignee $APP_ID --output table
