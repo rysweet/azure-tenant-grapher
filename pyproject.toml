@@ -56,9 +56,10 @@ dependencies = [
     # Graph sampling dependencies (Issue #427)
     "littleballoffur>=2.3.1",
     "networkx>=3.0",
-    "numpy>=1.24.0,<2.0.0",  # littleballoffur requires pandas<2.0 which needs numpy<2.0
+    "numpy>=1.24.0,<2.0.0", # littleballoffur requires pandas<2.0 which needs numpy<2.0
     # Pydantic for configuration validation
     "pydantic>=2.0",
+    "python-pptx>=1.0.2",
 ]
 
 
