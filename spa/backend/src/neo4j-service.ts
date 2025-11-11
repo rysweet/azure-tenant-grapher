@@ -500,6 +500,20 @@ export class Neo4jService {
     }
   }
 
+  async query(cypher: string, params?: Record<string, any>) {
+    if (!this.driver) {
+      throw new Error('Neo4j connection not available');
+    }
+
+    const session = this.driver.session();
+
+    try {
+      return await session.run(cypher, params);
+    } finally {
+      await session.close();
+    }
+  }
+
   async close() {
     if (this.driver) {
       await this.driver.close();
