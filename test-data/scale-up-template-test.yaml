@@ -1,0 +1,90 @@
+# Sample Scale-Up Template for Testing
+# This template is used for testing the scale-up template command
+# Issue #427 - Scale Operations
+
+# Template metadata
+metadata:
+  name: "Test Scale-Up Template"
+  description: "Simple template for testing scale-up operations"
+  version: "1.0.0"
+  author: "agentic-testing-system"
+
+# Resource generation configuration
+resources:
+  # Generate virtual machines
+  - type: "VirtualMachine"
+    count: 5
+    name_prefix: "test-vm"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      vm_size: "Standard_B2s"
+      os_type: "Linux"
+
+  # Generate virtual networks
+  - type: "VirtualNetwork"
+    count: 2
+    name_prefix: "test-vnet"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      address_space: "10.0.0.0/16"
+
+  # Generate subnets
+  - type: "Subnet"
+    count: 4
+    name_prefix: "test-subnet"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      address_prefix: "10.0.1.0/24"
+
+  # Generate storage accounts
+  - type: "StorageAccount"
+    count: 3
+    name_prefix: "teststorage"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard_LRS"
+      kind: "StorageV2"
+
+# Relationship generation rules
+relationships:
+  # VMs in VNets
+  - source_type: "VirtualMachine"
+    target_type: "VirtualNetwork"
+    relationship_type: "CONNECTED_TO"
+    connection_ratio: 0.8  # 80% of VMs connected to VNets
+
+  # Subnets in VNets
+  - source_type: "Subnet"
+    target_type: "VirtualNetwork"
+    relationship_type: "CONTAINS"
+    connection_ratio: 1.0  # All subnets in VNets
+
+  # VMs use Subnets
+  - source_type: "VirtualMachine"
+    target_type: "Subnet"
+    relationship_type: "USES_SUBNET"
+    connection_ratio: 0.9  # 90% of VMs in subnets
+
+# Scaling configuration
+scaling:
+  strategy: "proportional"  # Scale all resources proportionally
+  maintain_relationships: true  # Keep relationship ratios
+  batch_size: 100  # Process in batches of 100 nodes
+
+# Validation rules
+validation:
+  check_duplicates: true
+  check_relationships: true
+  check_labels: true
+  check_properties: true

@@ -35,6 +35,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import littleballoffur as lbof
 import networkx as nx
 import yaml
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
 
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.emitters.bicep_emitter import BicepEmitter
@@ -543,19 +544,25 @@ class ScaleDownService(BaseScaleService):
             clustering_original = nx.average_clustering(original_undirected)
             clustering_sampled = nx.average_clustering(sampled_undirected)
             clustering_diff = abs(clustering_original - clustering_sampled)
-        except Exception as e:
+        except (ValueError, ZeroDivisionError, nx.NetworkXError) as e:
             self.logger.warning(f"Failed to calculate clustering coefficient: {e}")
             clustering_diff = 0.0
+        except Exception as e:
+            self.logger.exception(f"Unexpected error calculating clustering coefficient: {e}")
+            raise
 
         # Connected components
         try:
             # Use weakly connected for directed graphs
             components_original = nx.number_weakly_connected_components(original_graph)
             components_sampled = nx.number_weakly_connected_components(sampled_graph)
-        except Exception as e:
+        except (ValueError, nx.NetworkXError) as e:
             self.logger.warning(f"Failed to calculate connected components: {e}")
             components_original = 0
             components_sampled = 0
+        except Exception as e:
+            self.logger.exception(f"Unexpected error calculating connected components: {e}")
+            raise
 
         # Resource type preservation
         try:
@@ -575,9 +582,12 @@ class ScaleDownService(BaseScaleService):
             type_preservation = (
                 len(sampled_types) / len(original_types) if original_types else 0.0
             )
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             self.logger.warning(f"Failed to calculate type preservation: {e}")
             type_preservation = 0.0
+        except Exception as e:
+            self.logger.exception(f"Unexpected error calculating type preservation: {e}")
+            raise
 
         metrics = QualityMetrics(
             original_nodes=original_nodes,
@@ -795,8 +805,11 @@ class ScaleDownService(BaseScaleService):
 
             return sampled_node_ids
 
-        except Exception as e:
+        except (ValueError, nx.NetworkXError) as e:
             self.logger.exception(f"Forest Fire sampling failed: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during Forest Fire sampling: {e}")
             raise
 
     async def _sample_mhrw(
@@ -842,8 +855,11 @@ class ScaleDownService(BaseScaleService):
 
             return sampled_node_ids
 
-        except Exception as e:
+        except (ValueError, nx.NetworkXError) as e:
             self.logger.exception(f"MHRW sampling failed: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during MHRW sampling: {e}")
             raise
 
     async def _sample_random_walk(
@@ -888,8 +904,11 @@ class ScaleDownService(BaseScaleService):
 
             return sampled_node_ids
 
-        except Exception as e:
+        except (ValueError, nx.NetworkXError) as e:
             self.logger.exception(f"Random Walk sampling failed: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during Random Walk sampling: {e}")
             raise
 
     async def sample_by_pattern(
@@ -1005,8 +1024,11 @@ class ScaleDownService(BaseScaleService):
 
             return matching_ids
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Pattern matching failed: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during pattern matching: {e}")
             raise
 
     async def export_sample(

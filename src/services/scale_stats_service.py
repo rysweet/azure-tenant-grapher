@@ -21,6 +21,8 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager
 
@@ -232,8 +234,11 @@ class ScaleStatsService(BaseScaleService):
 
             return stats
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to get tenant stats: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error getting tenant stats: {e}")
             raise
 
     async def compare_tenants(
@@ -352,8 +357,11 @@ class ScaleStatsService(BaseScaleService):
 
             return result
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to compare tenants: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error comparing tenants: {e}")
             raise
 
     async def get_session_history(self, tenant_id: str) -> List[Dict[str, Any]]:
@@ -438,8 +446,11 @@ class ScaleStatsService(BaseScaleService):
 
             return history
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to get session history: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error getting session history: {e}")
             raise
 
     async def export_stats(

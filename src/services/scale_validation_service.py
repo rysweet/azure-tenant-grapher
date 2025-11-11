@@ -20,6 +20,8 @@ import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager
 
@@ -238,9 +240,27 @@ class ScaleValidationService(BaseScaleService):
 
             return result
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Validation failed with error: {e}")
+
+            return {
+                "success": False,
+                "tenant_id": tenant_id,
+                "check_type": check_type,
+                "checks_run": checks_run,
+                "checks_passed": checks_passed,
+                "checks_failed": checks_failed,
+                "issues": issues,
+                "issue_count": len(issues),
+                "auto_fix_applied": auto_fix,
+                "fixes_applied": 0,
+                "duration_seconds": duration,
+                "error_message": str(e),
+            }
+        except Exception as e:
+            duration = (datetime.now() - start_time).total_seconds()
+            self.logger.exception(f"Unexpected error during validation: {e}")
 
             return {
                 "success": False,
@@ -366,7 +386,7 @@ class ScaleValidationService(BaseScaleService):
                             }
                         )
 
-                except Exception as fix_error:
+                except (Neo4jError, ValueError, RuntimeError) as fix_error:
                     fixes_failed += 1
                     fix_details.append(
                         {
@@ -376,6 +396,16 @@ class ScaleValidationService(BaseScaleService):
                         }
                     )
                     self.logger.error(f"Failed to fix issue {issue}: {fix_error}")
+                except Exception as unexpected_error:
+                    fixes_failed += 1
+                    fix_details.append(
+                        {
+                            "issue": issue,
+                            "success": False,
+                            "message": f"Unexpected error during fix: {unexpected_error!s}",
+                        }
+                    )
+                    self.logger.exception(f"Unexpected error fixing issue {issue}: {unexpected_error}")
 
             duration = (datetime.now() - start_time).total_seconds()
 
@@ -400,9 +430,24 @@ class ScaleValidationService(BaseScaleService):
 
             return result
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Fixing failed: {e}")
+
+            return {
+                "success": False,
+                "tenant_id": tenant_id,
+                "issues_provided": len(issues),
+                "fixes_attempted": fixes_attempted,
+                "fixes_succeeded": fixes_succeeded,
+                "fixes_failed": fixes_failed,
+                "fix_details": fix_details,
+                "duration_seconds": duration,
+                "error_message": str(e),
+            }
+        except Exception as e:
+            duration = (datetime.now() - start_time).total_seconds()
+            self.logger.exception(f"Unexpected error during fixing: {e}")
 
             return {
                 "success": False,
@@ -461,8 +506,11 @@ class ScaleValidationService(BaseScaleService):
                     f"Found {len(issues)} Original contamination issues"
                 )
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check Original contamination: {e}")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error checking Original contamination: {e}")
+            raise
 
         return issues
 
@@ -507,8 +555,11 @@ class ScaleValidationService(BaseScaleService):
                     f"Found {len(issues)} invalid SCAN_SOURCE_NODE links"
                 )
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check SCAN_SOURCE_NODE links: {e}")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error checking SCAN_SOURCE_NODE links: {e}")
+            raise
 
         return issues
 
@@ -565,8 +616,11 @@ class ScaleValidationService(BaseScaleService):
             if issues:
                 self.logger.warning(f"Found {len(issues)} marker issues")
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check synthetic markers: {e}")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error checking synthetic markers: {e}")
+            raise
 
         return issues
 
@@ -609,8 +663,11 @@ class ScaleValidationService(BaseScaleService):
             if issues:
                 self.logger.info(f"Found {len(issues)} orphaned nodes (low severity)")
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check graph structure: {e}")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error checking graph structure: {e}")
+            raise
 
         return issues
 
@@ -637,8 +694,11 @@ class ScaleValidationService(BaseScaleService):
                     self.logger.warning(
                         f"Original contamination detected but not auto-fixed: {issue}"
                     )
-            except Exception as e:
+            except (Neo4jError, ValueError, RuntimeError) as e:
                 self.logger.error(f"Auto-fix failed for issue {issue}: {e}")
+            except Exception as e:
+                self.logger.exception(f"Unexpected error during auto-fix for issue {issue}: {e}")
+                # Don't raise here - continue with other fixes
 
         return fixes_applied
 

@@ -9,7 +9,7 @@ This module contains all command handlers for scale operations:
 
 import os
 import sys
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import click
 
@@ -31,6 +31,7 @@ async def scale_up_template_command_handler(
     config_path: Optional[str],
     output_format: str,
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-up template command.
@@ -45,6 +46,7 @@ async def scale_up_template_command_handler(
         config_path: Path to configuration file
         output_format: Output format (table/json/markdown)
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -81,6 +83,14 @@ async def scale_up_template_command_handler(
         console.print(f"[dim]Batch size: {batch_size}[/dim]")
         console.print(f"[dim]Dry run: {dry_run}[/dim]")
 
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         # Connect to Neo4j
         config = create_neo4j_config_from_env()
         session_manager = Neo4jSessionManager(config.neo4j)
@@ -112,11 +122,11 @@ async def scale_up_template_command_handler(
             task = progress.add_task("Scaling up graph...", total=100)
 
             # Execute template-based scale-up
-            result = await service.scale_up_from_template(
-                template_path=template_file,
+            result = await service.scale_up_template(
+                tenant_id=effective_tenant_id,
                 scale_factor=scale_factor,
-                batch_size=batch_size,
-                dry_run=dry_run,
+                resource_types=None,  # Could be added as CLI option
+                progress_callback=None,  # Progress shown via rich Progress
             )
             progress.update(task, completed=100)
 
@@ -133,13 +143,14 @@ async def scale_up_template_command_handler(
             import json
 
             output_data = {
-                "success": True,
+                "success": result.success,
                 "operation": "scale-up-template",
                 "template_file": template_file,
                 "scale_factor": scale_factor,
-                "nodes_created": result.get("nodes_created", 0),
-                "relationships_created": result.get("relationships_created", 0),
+                "resources_created": result.resources_created,
+                "relationships_created": result.relationships_created,
                 "dry_run": dry_run,
+                "validation_passed": result.validation_passed,
             }
             console.print(json.dumps(output_data, indent=2))
         elif output_format == "markdown":
@@ -147,9 +158,9 @@ async def scale_up_template_command_handler(
             console.print("- **Operation**: Template-based scale-up")
             console.print(f"- **Template**: {template_file}")
             console.print(f"- **Scale Factor**: {scale_factor}x")
-            console.print(f"- **Nodes Created**: {result.get('nodes_created', 0)}")
+            console.print(f"- **Resources Created**: {result.resources_created}")
             console.print(
-                f"- **Relationships Created**: {result.get('relationships_created', 0)}"
+                f"- **Relationships Created**: {result.relationships_created}"
             )
         else:  # table format
             table = Table(title="Scale-Up Results")
@@ -158,9 +169,9 @@ async def scale_up_template_command_handler(
             table.add_row("Operation", "Template-based scale-up")
             table.add_row("Template", template_file)
             table.add_row("Scale Factor", f"{scale_factor}x")
-            table.add_row("Nodes Created", str(result.get("nodes_created", 0)))
+            table.add_row("Resources Created", str(result.resources_created))
             table.add_row(
-                "Relationships Created", str(result.get("relationships_created", 0))
+                "Relationships Created", str(result.relationships_created)
             )
             console.print("\n")
             console.print(table)
@@ -188,6 +199,7 @@ async def scale_up_scenario_command_handler(
     config_path: Optional[str],
     output_format: str,
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-up scenario command.
@@ -203,6 +215,7 @@ async def scale_up_scenario_command_handler(
         config_path: Path to configuration file
         output_format: Output format
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -231,6 +244,14 @@ async def scale_up_scenario_command_handler(
             console.print(f"[dim]Regions: {', '.join(regions)}[/dim]")
         console.print(f"[dim]Dry run: {dry_run}[/dim]")
 
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         # Connect to Neo4j
         config = create_neo4j_config_from_env()
         session_manager = Neo4jSessionManager(config.neo4j)
@@ -250,12 +271,24 @@ async def scale_up_scenario_command_handler(
         ) as progress:
             task = progress.add_task(f"Generating {scenario} scenario...", total=100)
 
-            result = await service.scale_up_from_scenario(
-                scenario_name=scenario,
-                scale_factor=scale_factor,
-                regions=regions,
-                spoke_count=spoke_count if scenario == "hub-spoke" else None,
-                dry_run=dry_run,
+            # Build params dict for scenario
+            params = {
+                "scale_factor": scale_factor,
+            }
+            if scenario == "hub-spoke":
+                params["spoke_count"] = spoke_count
+                params["resources_per_spoke"] = 10  # Default
+            elif scenario == "multi-region":
+                params["region_count"] = len(regions) if regions else 3
+                params["resources_per_region"] = 20  # Default
+            elif scenario == "dev-test-prod":
+                params["resources_per_env"] = 15  # Default
+
+            result = await service.scale_up_scenario(
+                tenant_id=effective_tenant_id,
+                scenario=scenario,
+                params=params,
+                progress_callback=None,  # Progress shown via rich Progress
             )
             progress.update(task, completed=100)
 
@@ -269,9 +302,9 @@ async def scale_up_scenario_command_handler(
             table.add_column("Value", style="green")
             table.add_row("Operation", f"Scenario-based ({scenario})")
             table.add_row("Scale Factor", f"{scale_factor}x")
-            table.add_row("Nodes Created", str(result.get("nodes_created", 0)))
+            table.add_row("Resources Created", str(result.resources_created))
             table.add_row(
-                "Relationships Created", str(result.get("relationships_created", 0))
+                "Relationships Created", str(result.relationships_created)
             )
             console.print("\n")
             console.print(table)
@@ -308,6 +341,7 @@ async def scale_down_algorithm_command_handler(
     validate: bool,
     config_path: Optional[str],
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-down algorithm command.
@@ -328,6 +362,7 @@ async def scale_down_algorithm_command_handler(
         validate: Run validation checks
         config_path: Path to configuration file
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -355,6 +390,14 @@ async def scale_down_algorithm_command_handler(
         console.print(f"[dim]Output mode: {output_mode}[/dim]")
         console.print(f"[dim]Dry run: {dry_run}[/dim]")
 
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         # Connect to Neo4j
         config = create_neo4j_config_from_env()
         session_manager = Neo4jSessionManager(config.neo4j)
@@ -374,20 +417,27 @@ async def scale_down_algorithm_command_handler(
         ) as progress:
             task = progress.add_task(f"Running {algorithm} algorithm...", total=100)
 
-            result = await service.sample_by_algorithm(
+            # Use the correct method: sample_graph()
+            # Note: burn_in, burning_prob, walk_length, alpha are algorithm-specific
+            # and not exposed in the current API. They would need to be added
+            # to the service if needed.
+            sampled_node_ids, metrics = await service.sample_graph(
+                tenant_id=effective_tenant_id,
                 algorithm=algorithm,
-                target_size=target_size,
-                target_count=target_count,
-                burn_in=burn_in,
-                burning_prob=burning_prob,
-                walk_length=walk_length,
-                alpha=alpha,
+                target_size=target_size if not target_count else target_count,
                 output_mode=output_mode,
-                output_file=output_file,
-                output_format=output_format,
-                dry_run=dry_run,
+                output_path=output_file,
+                progress_callback=None,  # Progress shown via rich Progress
             )
             progress.update(task, completed=100)
+
+            # Build result dict from metrics
+            result = {
+                "nodes_sampled": metrics.sampled_nodes,
+                "nodes_deleted": 0,  # sample_graph doesn't delete, only samples
+                "edges_sampled": metrics.sampled_edges,
+                "quality_metrics": metrics.to_dict(),
+            }
 
         # Display results
         console.print(
@@ -430,6 +480,7 @@ async def scale_down_pattern_command_handler(
     validate: bool,
     config_path: Optional[str],
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-down pattern command.
@@ -446,6 +497,7 @@ async def scale_down_pattern_command_handler(
         validate: Run validation checks
         config_path: Path to configuration file
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -470,6 +522,14 @@ async def scale_down_pattern_command_handler(
         if resource_types:
             console.print(f"[dim]Resource types: {', '.join(resource_types)}[/dim]")
 
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         config = create_neo4j_config_from_env()
         from src.utils.session_manager import Neo4jSessionManager
 
@@ -487,14 +547,28 @@ async def scale_down_pattern_command_handler(
         ) as progress:
             task = progress.add_task(f"Filtering by {pattern} pattern...", total=100)
 
-            result = await service.sample_by_pattern(
-                pattern=pattern,
-                resource_types=resource_types,
-                target_size=target_size,
-                output_mode=output_mode,
-                output_file=output_file,
-                output_format=output_format,
-                dry_run=dry_run,
+            # Build criteria dict based on pattern
+            criteria: Dict[str, Any] = {}
+
+            # Map pattern name to criteria
+            if pattern == "production":
+                criteria["tags.environment"] = "production"
+            elif pattern == "test":
+                criteria["tags.environment"] = "test"
+            elif pattern == "dev":
+                criteria["tags.environment"] = "dev"
+            elif resource_types:
+                # If resource types specified, use the first one
+                criteria["type"] = resource_types[0]
+            else:
+                # Default: match any resource
+                console.print("[yellow]⚠️  No specific pattern criteria, matching all resources[/yellow]")
+
+            # Call sample_by_pattern with correct signature
+            sampled_node_ids = await service.sample_by_pattern(
+                tenant_id=effective_tenant_id,
+                criteria=criteria,
+                progress_callback=None,  # Progress shown via rich Progress
             )
             progress.update(task, completed=100)
 
@@ -506,8 +580,8 @@ async def scale_down_pattern_command_handler(
         table.add_column("Metric", style="cyan")
         table.add_column("Value", style="green")
         table.add_row("Operation", f"Pattern-based ({pattern})")
-        table.add_row("Nodes Matched", str(result.get("nodes_matched", 0)))
-        table.add_row("Nodes Sampled", str(result.get("nodes_sampled", 0)))
+        table.add_row("Nodes Matched", str(len(sampled_node_ids)))
+        table.add_row("Criteria", str(criteria))
         console.print("\n")
         console.print(table)
 
@@ -533,6 +607,7 @@ async def scale_clean_command_handler(
     dry_run: bool,
     output_format: str,
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-clean command to remove synthetic data.
@@ -543,6 +618,7 @@ async def scale_clean_command_handler(
         dry_run: Preview only flag
         output_format: Output format
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -550,6 +626,14 @@ async def scale_clean_command_handler(
     console = Console()
 
     try:
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         config = create_neo4j_config_from_env()
         from src.utils.session_manager import Neo4jSessionManager
 
@@ -614,6 +698,7 @@ async def scale_validate_command_handler(
     fix: bool,
     output_format: str,
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-validate command to check graph integrity.
@@ -623,6 +708,7 @@ async def scale_validate_command_handler(
         fix: Auto-fix issues flag
         output_format: Output format
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -635,12 +721,19 @@ async def scale_validate_command_handler(
     try:
         console.print("[blue]🔍 Running graph validation checks...[/blue]")
 
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
+
         config = create_neo4j_config_from_env()
         from src.utils.session_manager import Neo4jSessionManager
 
         session_manager = Neo4jSessionManager(config.neo4j)
         session_manager.connect()
-
         service = ScaleValidationService(session_manager)
 
         # Run validation
@@ -705,6 +798,7 @@ async def scale_stats_command_handler(
     detailed: bool,
     output_format: str,
     debug: bool = False,
+    no_container: bool = False,
 ) -> None:
     """
     Handle scale-stats command to show graph statistics.
@@ -714,6 +808,7 @@ async def scale_stats_command_handler(
         detailed: Show detailed stats flag
         output_format: Output format
         debug: Debug mode flag
+        no_container: Skip Neo4j container check
     """
     from rich.console import Console
     from rich.table import Table
@@ -722,6 +817,14 @@ async def scale_stats_command_handler(
 
     try:
         console.print("[blue]📊 Gathering graph statistics...[/blue]")
+
+        # Check if --no-container was specified
+        if no_container:
+            console.print(
+                "[red]❌ Neo4j connection required but --no-container was specified[/red]"
+            )
+            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            sys.exit(1)
 
         config = create_neo4j_config_from_env()
         from src.utils.session_manager import Neo4jSessionManager

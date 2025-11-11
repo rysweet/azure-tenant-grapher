@@ -1821,6 +1821,7 @@ async def scale_up_template(
         config_path=config,
         output_format=output_format,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -1941,6 +1942,7 @@ async def scale_up_scenario(
         config_path=config,
         output_format=output_format,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -2104,6 +2106,7 @@ async def scale_down_algorithm(
         validate=not no_validate,
         config_path=config,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -2234,6 +2237,7 @@ async def scale_down_pattern(
         validate=not no_validate,
         config_path=config,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -2307,6 +2311,7 @@ async def scale_clean(
         dry_run=dry_run,
         output_format=output_format,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -2379,6 +2384,7 @@ async def scale_validate(
         fix=fix,
         output_format=output_format,
         debug=debug,
+        no_container=no_container,
     )
 
 
@@ -2450,6 +2456,7 @@ async def scale_stats(
         detailed=detailed,
         output_format=output_format,
         debug=debug,
+        no_container=no_container,
     )
 
 

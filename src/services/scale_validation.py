@@ -13,6 +13,8 @@ All validations operate ONLY on the abstracted graph layer.
 import logging
 from typing import Any, Tuple
 
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,12 +80,18 @@ class ScaleValidation:
             logger.info(message)
             return True, message
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             message = (
                 f"Validation error: Failed to check Original layer contamination: {e}"
             )
             logger.exception(message)
             return False, message
+        except Exception as e:
+            message = (
+                f"Unexpected error checking Original layer contamination: {e}"
+            )
+            logger.exception(message)
+            return False, f"Validation error: {e}"
 
     @staticmethod
     async def check_no_scan_source_links(
@@ -139,10 +147,14 @@ class ScaleValidation:
             logger.info(message)
             return True, message
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             message = f"Validation error: Failed to check SCAN_SOURCE_NODE links: {e}"
             logger.exception(message)
             return False, message
+        except Exception as e:
+            message = f"Unexpected error checking SCAN_SOURCE_NODE links: {e}"
+            logger.exception(message)
+            return False, f"Validation error: {e}"
 
     @staticmethod
     async def check_synthetic_markers(
@@ -239,10 +251,14 @@ class ScaleValidation:
             logger.info(message)
             return True, message
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             message = f"Validation error: Failed to check synthetic markers: {e}"
             logger.exception(message)
             return False, message
+        except Exception as e:
+            message = f"Unexpected error checking synthetic markers: {e}"
+            logger.exception(message)
+            return False, f"Validation error: {e}"
 
     @staticmethod
     async def validate_operation(session: Any, operation_id: str) -> Tuple[bool, str]:

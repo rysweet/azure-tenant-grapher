@@ -804,12 +804,14 @@ async def test_validation_disabled(mock_session_manager):
 @pytest.mark.asyncio
 async def test_template_scale_up_rollback_on_error(scale_up_service):
     """Test that rollback is attempted on template scale-up failure."""
+    from neo4j.exceptions import Neo4jError
+
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
     ), patch.object(
         scale_up_service,
         "_get_base_resources",
-        side_effect=Exception("Database error"),
+        side_effect=Neo4jError("Database error"),
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:
@@ -825,12 +827,14 @@ async def test_template_scale_up_rollback_on_error(scale_up_service):
 @pytest.mark.asyncio
 async def test_scenario_scale_up_rollback_on_error(scale_up_service):
     """Test that rollback is attempted on scenario scale-up failure."""
+    from neo4j.exceptions import Neo4jError
+
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
     ), patch.object(
         scale_up_service,
         "_generate_hub_spoke",
-        side_effect=Exception("Generation error"),
+        side_effect=Neo4jError("Generation error"),
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:
@@ -846,6 +850,8 @@ async def test_scenario_scale_up_rollback_on_error(scale_up_service):
 @pytest.mark.asyncio
 async def test_random_scale_up_rollback_on_error(scale_up_service):
     """Test that rollback is attempted on random scale-up failure."""
+    from neo4j.exceptions import Neo4jError
+
     config = {"resource_type_distribution": {"Microsoft.Compute/virtualMachines": 1.0}}
 
     with patch.object(
@@ -853,7 +859,7 @@ async def test_random_scale_up_rollback_on_error(scale_up_service):
     ), patch.object(
         scale_up_service,
         "_generate_random_resources",
-        side_effect=Exception("Generation error"),
+        side_effect=Neo4jError("Generation error"),
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:

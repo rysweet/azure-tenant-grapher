@@ -87,24 +87,24 @@ class TestScaleUpCommands:
         assert "multi-region" in result.output
         assert "dev-test-prod" in result.output
 
+    @patch("src.utils.session_manager.Neo4jSessionManager")
     @patch("src.config_manager.create_neo4j_config_from_env")
-    @patch("src.services.scale_up_service.ScaleUpService")
     @patch.dict("os.environ", {"AZURE_TENANT_ID": "test-tenant-id"})
     def test_scale_up_template_dry_run_mode(
-        self, mock_service_class, mock_neo4j_config
+        self, mock_neo4j_config, mock_session_manager_class
     ):
         """Test scale-up template with dry-run flag."""
-        # Mock Neo4j driver
-        mock_driver = MagicMock()
-        mock_driver.close = AsyncMock()
-        mock_neo4j_config.return_value.get_driver.return_value = mock_driver
+        # Mock Neo4j config with proper structure
+        mock_config = MagicMock()
+        mock_config.neo4j.uri = "bolt://localhost:7687"
+        mock_config.neo4j.version = "5.0.0"
+        mock_neo4j_config.return_value = mock_config
 
-        # Mock service
-        mock_service = MagicMock()
-        mock_service.scale_up_from_template = AsyncMock(
-            return_value={"nodes_created": 100, "relationships_created": 200}
-        )
-        mock_service_class.return_value = mock_service
+        # Mock session manager
+        mock_session_manager = MagicMock()
+        mock_session_manager.connect = MagicMock()  # Don't actually connect
+        mock_session_manager.close = AsyncMock()
+        mock_session_manager_class.return_value = mock_session_manager
 
         runner = click.testing.CliRunner()
 

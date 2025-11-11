@@ -26,6 +26,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+
 from src.services.base_scale_service import BaseScaleService
 from src.services.scale_validation import ScaleValidation
 from src.utils.session_manager import Neo4jSessionManager
@@ -231,15 +233,18 @@ class ScaleUpService(BaseScaleService):
                 },
             )
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Scale-up failed: {e}")
 
             # Attempt rollback
             try:
                 await self.rollback_operation(operation_id)
-            except Exception as rollback_error:
+            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
                 self.logger.error(f"Rollback failed: {rollback_error}")
+            except Exception as unexpected_error:
+                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                raise
 
             return ScaleUpResult(
                 operation_id=operation_id,
@@ -354,14 +359,17 @@ class ScaleUpService(BaseScaleService):
                 metadata={"scenario": scenario, "params": params},
             )
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Scenario scale-up failed: {e}")
 
             try:
                 await self.rollback_operation(operation_id)
-            except Exception as rollback_error:
+            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
                 self.logger.error(f"Rollback failed: {rollback_error}")
+            except Exception as unexpected_error:
+                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                raise
 
             return ScaleUpResult(
                 operation_id=operation_id,
@@ -498,14 +506,17 @@ class ScaleUpService(BaseScaleService):
                 },
             )
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Random scale-up failed: {e}")
 
             try:
                 await self.rollback_operation(operation_id)
-            except Exception as rollback_error:
+            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
                 self.logger.error(f"Rollback failed: {rollback_error}")
+            except Exception as unexpected_error:
+                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                raise
 
             return ScaleUpResult(
                 operation_id=operation_id,
@@ -566,8 +577,11 @@ class ScaleUpService(BaseScaleService):
             )
             return deleted_count
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Rollback failed for operation {operation_id}: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during rollback for operation {operation_id}: {e}")
             raise
 
     # =========================================================================

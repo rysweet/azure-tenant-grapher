@@ -20,6 +20,8 @@ import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
+from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager
 
@@ -217,8 +219,11 @@ class ScaleCleanupService(BaseScaleService):
 
             return preview_result
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Preview cleanup failed: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during preview cleanup: {e}")
             raise
 
     async def cleanup_synthetic_data(
@@ -312,8 +317,11 @@ class ScaleCleanupService(BaseScaleService):
                 sessions_cleaned = [
                     record["session_id"] for record in result if record["session_id"]
                 ]
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to get session IDs: {e}")
+        except Exception as e:
+            self.logger.exception(f"Unexpected error getting session IDs: {e}")
+            # Don't raise - continue with cleanup even if session ID retrieval fails
 
         # Delete synthetic resources in batches
         # DETACH DELETE removes all relationships automatically
@@ -398,9 +406,25 @@ class ScaleCleanupService(BaseScaleService):
 
             return result
 
-        except Exception as e:
+        except (Neo4jError, ValueError, RuntimeError) as e:
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Cleanup failed: {e}")
+
+            return {
+                "success": False,
+                "tenant_id": tenant_id,
+                "clean_all": clean_all,
+                "session_id": session_id,
+                "before_date": before_date.isoformat() if before_date else None,
+                "resources_deleted": resources_deleted,
+                "relationships_deleted": relationships_deleted,
+                "sessions_cleaned": sessions_cleaned,
+                "duration_seconds": duration,
+                "error_message": str(e),
+            }
+        except Exception as e:
+            duration = (datetime.now() - start_time).total_seconds()
+            self.logger.exception(f"Unexpected error during cleanup: {e}")
 
             return {
                 "success": False,
@@ -486,6 +510,9 @@ class ScaleCleanupService(BaseScaleService):
 
             return sessions
 
-        except Exception as e:
+        except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to get cleanable sessions: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error getting cleanable sessions: {e}")
             raise
