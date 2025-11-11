@@ -2571,6 +2571,111 @@ class TerraformEmitter(IaCEmitter):
             )
             return None
 
+        elif azure_type == "Microsoft.ContainerService/managedClusters":
+            # AKS Clusters require default_node_pool configuration
+            properties = self._parse_properties(resource)
+            agent_pools = properties.get("agentPoolProfiles", [])
+
+            if agent_pools:
+                first_pool = agent_pools[0]
+                # Extract node pool configuration
+                node_pool = {
+                    "name": first_pool.get("name", "default"),
+                    "vm_size": first_pool.get("vmSize", "Standard_DS2_v2"),
+                    "node_count": first_pool.get("count", 1),
+                }
+
+                # Add optional node pool properties
+                if "vnetSubnetId" in first_pool:
+                    node_pool["vnet_subnet_id"] = first_pool["vnetSubnetId"]
+                if "osDiskSizeGB" in first_pool:
+                    node_pool["os_disk_size_gb"] = first_pool["osDiskSizeGB"]
+                if "maxPods" in first_pool:
+                    node_pool["max_pods"] = first_pool["maxPods"]
+
+                resource_config["default_node_pool"] = node_pool
+            else:
+                # Skip AKS clusters without node pools
+                logger.warning(
+                    f"Skipping AKS cluster '{resource_name}' - no agent pool profiles found in properties"
+                )
+                return None
+
+            # Add DNS prefix (required)
+            dns_prefix = properties.get("dnsPrefix") or resource_name.lower()
+            resource_config["dns_prefix"] = dns_prefix
+
+            # Add identity (required - AKS clusters must have either identity or service_principal)
+            # Prefer SystemAssigned identity (modern approach)
+            identity = properties.get("identity", {})
+            identity_type = identity.get("type", "").lower() if identity else ""
+
+            if "systemassigned" in identity_type or not identity:
+                # Use SystemAssigned if present or if no identity specified (safer default)
+                resource_config["identity"] = {"type": "SystemAssigned"}
+            # Note: UserAssigned identities and service principals require additional configuration
+
+        elif azure_type == "Microsoft.Compute/snapshots":
+            # Snapshots require create_option and source_resource_id
+            properties = self._parse_properties(resource)
+
+            # create_option is required: "Copy" for snapshots
+            resource_config["create_option"] = properties.get("creationData", {}).get("createOption", "Copy")
+
+            # source_resource_id might be present
+            source_resource_id = properties.get("creationData", {}).get("sourceResourceId")
+            if source_resource_id:
+                resource_config["source_resource_id"] = source_resource_id
+
+            # disk_size_gb
+            disk_size_gb = properties.get("diskSizeGB") or resource.get("diskSizeGB")
+            if disk_size_gb:
+                resource_config["disk_size_gb"] = disk_size_gb
+
+        elif azure_type == "Microsoft.Insights/metricalerts":
+            # Metric Alerts require scopes and don't have location
+            properties = self._parse_properties(resource)
+
+            # Extract scopes (required - list of resource IDs to monitor)
+            scopes = properties.get("scopes", [])
+            if not scopes:
+                logger.warning(
+                    f"Skipping metric alert '{resource_name}' - no scopes found in properties"
+                )
+                return None
+
+            # Remove location from resource_config (metric alerts are global)
+            resource_config.pop("location", None)
+
+            resource_config.update({
+                "scopes": scopes,
+                "severity": properties.get("severity", 3),
+                "enabled": properties.get("enabled", True),
+                "frequency": properties.get("evaluationFrequency", "PT1M"),
+                "window_size": properties.get("windowSize", "PT5M"),
+            })
+
+            # Add criteria (simplified - use dynamic_criteria or criteria)
+            criteria = properties.get("criteria", {})
+            if criteria:
+                # For now, add as a simple criteria block
+                # Full implementation would parse allOf, anyOf, etc.
+                resource_config["criteria"] = [
+                    {
+                        "metric_namespace": criteria.get("odata.type", "").replace("Microsoft.Azure.Monitor.", ""),
+                        "metric_name": "Percentage CPU",  # Default - should extract from criteria
+                        "aggregation": "Average",
+                        "operator": "GreaterThan",
+                        "threshold": 80,
+                    }
+                ]
+            else:
+                # Skip alerts without criteria
+                logger.warning(
+                    f"Skipping metric alert '{resource_name}' - no criteria found"
+                )
+                return None
+
         return terraform_type, safe_name, resource_config
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
