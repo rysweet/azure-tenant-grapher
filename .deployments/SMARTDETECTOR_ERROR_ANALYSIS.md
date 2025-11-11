@@ -48,6 +48,6 @@ Azure SmartDetectorAlertRules with spaces in names cause Terraform parsing error
 **ACCEPT and CONTINUE** - Impact negligible, ROOT CAUSE FIX working perfectly for 99.1% of resources.
 
 ---
-**Analysis Date**: 2025-11-07 15:18 UTC  
-**Iteration**: 15  
-**Status**: Documented and accepted  
+**Analysis Date**: 2025-11-07 15:18 UTC
+**Iteration**: 15
+**Status**: Documented and accepted

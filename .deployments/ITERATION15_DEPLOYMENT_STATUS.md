@@ -23,7 +23,7 @@ Plan: 540 to import, 1,292 to add, 29 to change, 69 to destroy
 - **Issue**: Terraform provider parsing error (case sensitivity in provider namespace)
 - **Examples**:
   - "Failure Anomalies - simuland"
-  - "Failure Anomalies - ingressor-app-insights-test"  
+  - "Failure Anomalies - ingressor-app-insights-test"
   - "Failure Anomalies - simAI160224hpcp4rein6"
   - "Failure Anomalies - simAI090824g961kjf0od"
   - "Failure Anomalies - simAI080824tjybh9dnin"

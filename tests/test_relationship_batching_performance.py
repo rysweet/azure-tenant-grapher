@@ -5,10 +5,7 @@ This test demonstrates the performance improvement from batching vs N+1 queries.
 """
 
 import time
-from typing import Any, Dict
-from unittest.mock import MagicMock, Mock
-
-import pytest
+from unittest.mock import Mock
 
 from src.relationship_rules.relationship_rule import RelationshipRule
 
@@ -36,7 +33,9 @@ class MockDatabaseOperations:
 
             # Return mock result
             mock_result = Mock()
-            mock_result.single = Mock(return_value={"created": 1, "abstracted_count": 1})
+            mock_result.single = Mock(
+                return_value={"created": 1, "abstracted_count": 1}
+            )
             return mock_result
 
         mock_session.run = mock_run
@@ -67,9 +66,9 @@ class TestRelationshipBatchingPerformance:
         rule.__init__(enable_dual_graph=True)
 
         # Test 1: N+1 approach (old code)
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("TEST 1: N+1 Query Approach (Old Code)")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         db_ops_n_plus_one = MockDatabaseOperations(query_latency_ms=query_latency_ms)
         rule_n_plus_one = RelationshipRule.__new__(RelationshipRule)
@@ -89,12 +88,14 @@ class TestRelationshipBatchingPerformance:
         print(f"Relationships created: {num_relationships}")
         print(f"Database queries executed: {db_ops_n_plus_one.query_count}")
         print(f"Time elapsed: {n_plus_one_time:.3f} seconds")
-        print(f"Time per relationship: {(n_plus_one_time * 1000 / num_relationships):.1f}ms")
+        print(
+            f"Time per relationship: {(n_plus_one_time * 1000 / num_relationships):.1f}ms"
+        )
 
         # Test 2: Batched approach (new code)
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("TEST 2: Batched Query Approach (New Code)")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         db_ops_batched = MockDatabaseOperations(query_latency_ms=query_latency_ms)
         rule_batched = RelationshipRule.__new__(RelationshipRule)
@@ -116,26 +117,36 @@ class TestRelationshipBatchingPerformance:
         print(f"Relationships created: {num_relationships}")
         print(f"Database queries executed: {db_ops_batched.query_count}")
         print(f"Time elapsed: {batched_time:.3f} seconds")
-        print(f"Time per relationship: {(batched_time * 1000 / num_relationships):.1f}ms")
+        print(
+            f"Time per relationship: {(batched_time * 1000 / num_relationships):.1f}ms"
+        )
 
         # Performance comparison
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("PERFORMANCE COMPARISON")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
-        speedup = n_plus_one_time / batched_time if batched_time > 0 else float('inf')
+        speedup = n_plus_one_time / batched_time if batched_time > 0 else float("inf")
         time_saved = n_plus_one_time - batched_time
 
-        print(f"N+1 approach:      {n_plus_one_time:.3f}s ({db_ops_n_plus_one.query_count} queries)")
-        print(f"Batched approach:  {batched_time:.3f}s ({db_ops_batched.query_count} queries)")
+        print(
+            f"N+1 approach:      {n_plus_one_time:.3f}s ({db_ops_n_plus_one.query_count} queries)"
+        )
+        print(
+            f"Batched approach:  {batched_time:.3f}s ({db_ops_batched.query_count} queries)"
+        )
         print(f"Speedup:           {speedup:.1f}x faster")
-        print(f"Time saved:        {time_saved:.3f}s ({time_saved * 100 / n_plus_one_time:.1f}% reduction)")
-        print(f"Query reduction:   {db_ops_n_plus_one.query_count - db_ops_batched.query_count} fewer queries")
+        print(
+            f"Time saved:        {time_saved:.3f}s ({time_saved * 100 / n_plus_one_time:.1f}% reduction)"
+        )
+        print(
+            f"Query reduction:   {db_ops_n_plus_one.query_count - db_ops_batched.query_count} fewer queries"
+        )
 
         # Extrapolate to full scan
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print("EXTRAPOLATION TO FULL SCAN (2,891 resources × 3 rels = 8,673 rels)")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         total_relationships = 8673
         scale_factor = total_relationships / num_relationships
@@ -146,14 +157,18 @@ class TestRelationshipBatchingPerformance:
 
         print(f"N+1 approach:      {n_plus_one_full / 60:.1f} minutes")
         print(f"Batched approach:  {batched_full / 60:.1f} minutes")
-        print(f"Time saved:        {time_saved_full / 60:.1f} minutes ({time_saved_full / 3600:.2f} hours)")
-        print(f"Query reduction:   {total_relationships - (total_relationships // 100)} queries")
+        print(
+            f"Time saved:        {time_saved_full / 60:.1f} minutes ({time_saved_full / 3600:.2f} hours)"
+        )
+        print(
+            f"Query reduction:   {total_relationships - (total_relationships // 100)} queries"
+        )
 
         # Assertions
-        assert db_ops_batched.query_count < db_ops_n_plus_one.query_count, \
+        assert db_ops_batched.query_count < db_ops_n_plus_one.query_count, (
             "Batched approach should use fewer queries"
-        assert speedup > 10, \
-            f"Expected at least 10x speedup, got {speedup:.1f}x"
+        )
+        assert speedup > 10, f"Expected at least 10x speedup, got {speedup:.1f}x"
 
     def test_auto_flush_mechanism(self):
         """Test that auto-flush triggers at buffer threshold."""
@@ -165,9 +180,7 @@ class TestRelationshipBatchingPerformance:
 
         # Add 9 relationships - should not flush yet
         for i in range(9):
-            rule.queue_dual_graph_relationship(
-                f"src{i}", "REL_TYPE", f"tgt{i}"
-            )
+            rule.queue_dual_graph_relationship(f"src{i}", "REL_TYPE", f"tgt{i}")
 
         assert len(rule._relationship_buffer) == 9
         assert db_ops.query_count == 0
@@ -207,6 +220,6 @@ if __name__ == "__main__":
     """Run performance test standalone."""
     test = TestRelationshipBatchingPerformance()
     test.test_n_plus_one_vs_batching_performance()
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("Performance test completed successfully!")
-    print("="*80)
+    print("=" * 80)

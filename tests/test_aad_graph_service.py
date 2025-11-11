@@ -179,20 +179,20 @@ async def test_ingest_users_with_none_values():
             "id": "user-1",
             "displayName": "User With Mail",
             "userPrincipalName": "user1@example.com",
-            "mail": "user1@example.com"
+            "mail": "user1@example.com",
         },
         {
             "id": "user-2",
             "displayName": "User Without Mail",
             "userPrincipalName": "user2@example.com",
-            "mail": None  # This was causing CypherTypeError
+            "mail": None,  # This was causing CypherTypeError
         },
         {
             "id": "user-3",
             "displayName": "Guest User",
             "userPrincipalName": None,  # Guest users may have None
-            "mail": None
-        }
+            "mail": None,
+        },
     ]
 
     class FixtureAADGraphService(AADGraphService):
@@ -214,14 +214,20 @@ async def test_ingest_users_with_none_values():
     await service.ingest_into_graph(db_ops)
 
     # Verify all users were upserted
-    user_upserts = [(label, kv, props) for (label, _, kv, props) in db_ops.upserts if label == "User"]
+    user_upserts = [
+        (label, kv, props)
+        for (label, _, kv, props) in db_ops.upserts
+        if label == "User"
+    ]
     assert len(user_upserts) == 3
 
     # Verify None values were filtered out in properties
     for label, key_value, props in user_upserts:
         # None values should not be present in the properties dict
         for prop_key, prop_value in props.items():
-            assert prop_value is not None, f"Property {prop_key} should not be None in upserted data"
+            assert prop_value is not None, (
+                f"Property {prop_key} should not be None in upserted data"
+            )
 
         # Required fields should always be present
         assert "id" in props

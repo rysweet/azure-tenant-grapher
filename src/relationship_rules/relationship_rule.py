@@ -25,7 +25,9 @@ class RelationshipRule(ABC):
         """
         self.enable_dual_graph = enable_dual_graph
         # Buffer for batched relationship creation
-        self._relationship_buffer: List[Tuple[str, str, str, Optional[Dict[str, Any]]]] = []
+        self._relationship_buffer: List[
+            Tuple[str, str, str, Optional[Dict[str, Any]]]
+        ] = []
         self._buffer_size = 100  # Batch size for relationship creation
 
     @abstractmethod

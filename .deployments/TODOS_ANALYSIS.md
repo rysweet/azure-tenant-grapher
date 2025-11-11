@@ -30,15 +30,15 @@
 1. Key Vault soft-delete conflict detection (keyvault_handler.py)
    - **Status**: Known issue, documented in session reports
    - **Impact**: Causes some vault errors but not blocking
-   
+
 2. Complete emitter registry (emitters/__init__.py)
    - **Status**: Current emitters work fine
    - **Impact**: Future extensibility only
-   
+
 3. Additional dependency extraction (dependency_analyzer.py)
    - **Status**: Current dependency handling sufficient
    - **Impact**: Could improve ordering slightly
-   
+
 4. Subscription ID from config (cli_handler.py)
    - **Status**: Works with command-line args
    - **Impact**: Convenience feature only
@@ -47,7 +47,7 @@
 
 ### For Faithful Replica Objective
 **Action**: SKIP all TODOs
-**Reasoning**: 
+**Reasoning**:
 - ROOT CAUSE FIX (all_resources strategy) is the critical blocker
 - All TODOs are enhancements, not blockers
 - Current code successfully deploys resources

@@ -5,13 +5,13 @@ Runs continuously until 100% tenant replication is achieved.
 Does NOT stop. Spawns parallel workstreams to fix gaps.
 """
 
-import os
-import sys
 import json
-import time
+import os
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
+
 from neo4j import GraphDatabase
 
 # Configuration
@@ -232,7 +232,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
 
         # Check if directory exists
         if not iteration_dir.exists():
-            self.log(f"  ✗ Iteration directory does not exist")
+            self.log("  ✗ Iteration directory does not exist")
             return False
 
         # Run terraform init
@@ -245,7 +245,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         )
 
         if result.returncode != 0:
-            self.log(f"  ✗ terraform init failed")
+            self.log("  ✗ terraform init failed")
             return False
 
         # Run terraform validate
@@ -261,13 +261,13 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
             try:
                 validation_result = json.loads(result.stdout)
                 if validation_result.get("valid"):
-                    self.log(f"  ✓ Validation PASSED")
+                    self.log("  ✓ Validation PASSED")
                     self.consecutive_passes += 1
                     return True
             except:
                 pass
 
-        self.log(f"  ✗ Validation FAILED")
+        self.log("  ✗ Validation FAILED")
         self.consecutive_passes = 0
         return False
 
@@ -288,7 +288,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         )
 
         if plan_result.returncode != 0:
-            self.log(f"  ✗ terraform plan failed")
+            self.log("  ✗ terraform plan failed")
             return False
 
         # Run terraform apply
@@ -301,7 +301,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
         )
 
         if apply_result.returncode == 0:
-            self.log(f"  ✓ Deployment SUCCEEDED")
+            self.log("  ✓ Deployment SUCCEEDED")
             self.send_imessage(
                 f"✅ ITERATION {self.current_iteration} deployed successfully"
             )

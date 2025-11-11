@@ -18,6 +18,7 @@ All synthetic resources are marked with:
 Performance target: 1000 resources in <30 seconds
 """
 
+import asyncio
 import logging
 import random
 import re
@@ -29,6 +30,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from neo4j.exceptions import Neo4jError
 
 from src.services.base_scale_service import BaseScaleService
+from src.services.scale_performance import (
+    AdaptiveBatchSizer,
+    PerformanceMonitor,
+    QueryOptimizer,
+)
 from src.services.scale_validation import ScaleValidation
 from src.utils.session_manager import Neo4jSessionManager
 from src.utils.synthetic_id import generate_synthetic_id
@@ -92,6 +98,8 @@ class ScaleUpService(BaseScaleService):
         session_manager: Neo4jSessionManager,
         batch_size: int = 500,
         validation_enabled: bool = True,
+        enable_performance_monitoring: bool = True,
+        enable_adaptive_batching: bool = True,
     ) -> None:
         """
         Initialize the scale-up service.
@@ -100,10 +108,17 @@ class ScaleUpService(BaseScaleService):
             session_manager: Neo4j session manager for database operations
             batch_size: Number of resources to process per batch (default: 500)
             validation_enabled: Enable post-operation validation (default: True)
+            enable_performance_monitoring: Enable performance metrics collection
+            enable_adaptive_batching: Use adaptive batch sizing for large operations
         """
         super().__init__(session_manager)
         self.batch_size = batch_size
         self.validation_enabled = validation_enabled
+        self.enable_performance_monitoring = enable_performance_monitoring
+        self.enable_adaptive_batching = enable_adaptive_batching
+
+        # Ensure critical indexes exist for optimal performance
+        self._ensure_indexes()
 
     async def scale_up_template(
         self,
@@ -629,6 +644,34 @@ class ScaleUpService(BaseScaleService):
     # Private Helper Methods
     # =========================================================================
 
+    def _ensure_indexes(self) -> None:
+        """Ensure critical Neo4j indexes exist for optimal performance."""
+        try:
+            with self.session_manager.session() as session:
+                QueryOptimizer.ensure_indexes(session, self.logger)
+        except Exception as e:
+            self.logger.warning(f"Failed to ensure indexes: {e}")
+            # Don't fail initialization if index creation fails
+
+    def _get_adaptive_batch_size(
+        self, total_items: int, operation_type: str = "write"
+    ) -> int:
+        """
+        Get batch size, using adaptive sizing if enabled.
+
+        Args:
+            total_items: Total number of items to process
+            operation_type: "read" or "write"
+
+        Returns:
+            Batch size to use
+        """
+        if self.enable_adaptive_batching and total_items > 1000:
+            return AdaptiveBatchSizer.calculate_batch_size(
+                total_items, operation_type, min_size=100, max_size=self.batch_size * 2
+            )
+        return self.batch_size
+
     async def _get_base_resources(
         self, tenant_id: str, resource_types: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
@@ -701,6 +744,7 @@ class ScaleUpService(BaseScaleService):
         Replicate base resources to create synthetic copies.
 
         Uses round-robin selection from base resources with property variations.
+        Optimized with adaptive batching and parallel batch inserts for large operations.
 
         Args:
             tenant_id: Azure tenant ID
@@ -714,64 +758,184 @@ class ScaleUpService(BaseScaleService):
         Returns:
             Number of resources created
         """
-        created_count = 0
-        generation_timestamp = datetime.now().isoformat()
-
-        # Batch resources
-        batches = []
-        current_batch = []
-
-        for i in range(target_count):
-            # Round-robin selection from base resources
-            base = base_resources[i % len(base_resources)]
-
-            # Generate synthetic ID
-            synthetic_id = generate_synthetic_id(base["type"])
-
-            # Copy properties and add synthetic markers
-            props = dict(base["props"])
-            props.update(
-                {
-                    "id": synthetic_id,
-                    "synthetic": True,
-                    "scale_operation_id": operation_id,
-                    "generation_strategy": "template",
-                    "generation_timestamp": generation_timestamp,
-                    "template_source_id": base["id"],
-                }
-            )
-
-            current_batch.append(
-                {"id": synthetic_id, "type": base["type"], "props": props}
-            )
-
-            if len(current_batch) >= self.batch_size:
-                batches.append(current_batch)
-                current_batch = []
-
-        # Add remaining
-        if current_batch:
-            batches.append(current_batch)
-
-        # Insert batches
-        for batch_idx, batch in enumerate(batches):
-            await self._insert_resource_batch(batch)
-            created_count += len(batch)
-
-            # Update progress
-            if progress_callback:
-                progress = progress_start + int(
-                    ((batch_idx + 1) / len(batches)) * (progress_end - progress_start)
-                )
-                progress_callback(
-                    f"Created {created_count}/{target_count} resources...",
-                    progress,
-                    100,
-                )
-
-        self.logger.info(
-            f"Created {created_count} synthetic resources in {len(batches)} batches"
+        # Use performance monitoring if enabled
+        monitor = (
+            PerformanceMonitor(f"replicate_resources_{target_count}")
+            if self.enable_performance_monitoring
+            else None
         )
+
+        if monitor:
+            monitor.__enter__()
+
+        try:
+            created_count = 0
+            generation_timestamp = datetime.now().isoformat()
+
+            # Use adaptive batch size for large operations
+            adaptive_batch_size = self._get_adaptive_batch_size(
+                target_count, operation_type="write"
+            )
+
+            self.logger.info(
+                f"Replicating {target_count} resources with batch size {adaptive_batch_size}"
+            )
+
+            # Batch resources
+            batches = []
+            current_batch = []
+
+            for i in range(target_count):
+                # Round-robin selection from base resources
+                base = base_resources[i % len(base_resources)]
+
+                # Generate synthetic ID
+                synthetic_id = generate_synthetic_id(base["type"])
+
+                # Copy properties and add synthetic markers
+                props = dict(base["props"])
+                props.update(
+                    {
+                        "id": synthetic_id,
+                        "synthetic": True,
+                        "scale_operation_id": operation_id,
+                        "generation_strategy": "template",
+                        "generation_timestamp": generation_timestamp,
+                        "template_source_id": base["id"],
+                    }
+                )
+
+                current_batch.append(
+                    {"id": synthetic_id, "type": base["type"], "props": props}
+                )
+
+                if len(current_batch) >= adaptive_batch_size:
+                    batches.append(current_batch)
+                    current_batch = []
+
+            # Add remaining
+            if current_batch:
+                batches.append(current_batch)
+
+            # For very large operations (>10k resources), process batches in parallel
+            # with controlled concurrency to avoid overwhelming Neo4j
+            if target_count > 10000 and len(batches) > 10:
+                created_count = await self._insert_batches_parallel(
+                    batches,
+                    target_count,
+                    progress_callback,
+                    progress_start,
+                    progress_end,
+                    monitor,
+                )
+            else:
+                # Standard sequential processing for smaller operations
+                for batch_idx, batch in enumerate(batches):
+                    await self._insert_resource_batch(batch)
+                    created_count += len(batch)
+
+                    if monitor:
+                        monitor.record_items(len(batch))
+                        monitor.record_batch(len(batch))
+
+                    # Update progress
+                    if progress_callback:
+                        progress = progress_start + int(
+                            ((batch_idx + 1) / len(batches))
+                            * (progress_end - progress_start)
+                        )
+                        progress_callback(
+                            f"Created {created_count}/{target_count} resources...",
+                            progress,
+                            100,
+                        )
+
+            self.logger.info(
+                f"Created {created_count} synthetic resources in {len(batches)} batches "
+                f"(batch_size={adaptive_batch_size})"
+            )
+
+            if monitor:
+                monitor.add_metadata("adaptive_batch_size", adaptive_batch_size)
+                monitor.add_metadata("num_batches", len(batches))
+
+            return created_count
+
+        finally:
+            if monitor:
+                monitor.__exit__(None, None, None)
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(str(monitor.get_metrics()))
+
+    async def _insert_batches_parallel(
+        self,
+        batches: List[List[Dict[str, Any]]],
+        target_count: int,
+        progress_callback: Optional[Callable[[str, int, int], None]],
+        progress_start: int,
+        progress_end: int,
+        monitor: Optional[PerformanceMonitor] = None,
+    ) -> int:
+        """
+        Insert resource batches in parallel with controlled concurrency.
+
+        Uses asyncio.gather with semaphore to limit concurrent database operations.
+
+        Args:
+            batches: List of resource batches
+            target_count: Total target count (for progress reporting)
+            progress_callback: Optional progress callback
+            progress_start: Progress start percentage
+            progress_end: Progress end percentage
+            monitor: Optional performance monitor
+
+        Returns:
+            Total number of resources created
+        """
+        # Limit concurrent batch inserts to avoid overwhelming Neo4j
+        max_concurrent_batches = min(5, len(batches) // 10)
+        semaphore = asyncio.Semaphore(max_concurrent_batches)
+        created_count = 0
+        completed_batches = 0
+
+        async def insert_with_semaphore(batch: List[Dict[str, Any]]) -> int:
+            """Insert batch with semaphore control."""
+            nonlocal created_count, completed_batches
+
+            async with semaphore:
+                await self._insert_resource_batch(batch)
+                count = len(batch)
+
+                # Thread-safe counter update
+                created_count += count
+                completed_batches += 1
+
+                if monitor:
+                    monitor.record_items(count)
+                    monitor.record_batch(count)
+
+                # Update progress
+                if progress_callback:
+                    progress = progress_start + int(
+                        (completed_batches / len(batches))
+                        * (progress_end - progress_start)
+                    )
+                    progress_callback(
+                        f"Created {created_count}/{target_count} resources...",
+                        progress,
+                        100,
+                    )
+
+                return count
+
+        # Execute all batch inserts with limited concurrency
+        self.logger.info(
+            f"Inserting {len(batches)} batches in parallel "
+            f"(max_concurrent={max_concurrent_batches})"
+        )
+
+        await asyncio.gather(*[insert_with_semaphore(batch) for batch in batches])
+
         return created_count
 
     async def _insert_resource_batch(self, resources: List[Dict[str, Any]]) -> None:
@@ -803,7 +967,8 @@ class ScaleUpService(BaseScaleService):
         Clone relationships between synthetic resources.
 
         Finds relationship patterns between base resources and replicates
-        them for synthetic resources.
+        them for synthetic resources. Optimized with adaptive batching
+        and parallel processing for large graphs.
 
         Args:
             tenant_id: Azure tenant ID
@@ -816,79 +981,194 @@ class ScaleUpService(BaseScaleService):
         Returns:
             Number of relationships created
         """
-        # Build mapping: base_id -> list of synthetic_ids
-        base_to_synthetic = await self._build_resource_mapping(
-            operation_id, base_resources
+        monitor = (
+            PerformanceMonitor(f"clone_relationships_{len(base_resources)}")
+            if self.enable_performance_monitoring
+            else None
         )
 
-        if progress_callback:
-            progress_callback("Analyzing relationship patterns...", progress_start, 100)
+        if monitor:
+            monitor.__enter__()
 
-        # Get relationship patterns from base resources
-        patterns = await self._get_relationship_patterns(base_resources)
-
-        if not patterns:
-            self.logger.info("No relationship patterns found to clone")
-            return 0
-
-        if progress_callback:
-            progress_callback(
-                f"Cloning {len(patterns)} relationship patterns...",
-                progress_start + 10,
-                100,
+        try:
+            # Build mapping: base_id -> list of synthetic_ids
+            base_to_synthetic = await self._build_resource_mapping(
+                operation_id, base_resources
             )
 
-        # Clone relationships in batches
-        relationships_created = 0
-        batches = []
-        current_batch = []
+            if progress_callback:
+                progress_callback("Analyzing relationship patterns...", progress_start, 100)
 
-        for pattern in patterns:
-            source_base_id = pattern["source_id"]
-            target_base_id = pattern["target_id"]
-            rel_type = pattern["rel_type"]
-            rel_props = pattern["rel_props"]
+            # Get relationship patterns from base resources
+            patterns = await self._get_relationship_patterns(base_resources)
 
-            # Get synthetic IDs for source and target
-            source_synthetic_ids = base_to_synthetic.get(source_base_id, [])
-            target_synthetic_ids = base_to_synthetic.get(target_base_id, [])
-
-            # Create relationships for all synthetic pairs
-            for src_id in source_synthetic_ids:
-                for tgt_id in target_synthetic_ids:
-                    current_batch.append(
-                        {
-                            "source_id": src_id,
-                            "target_id": tgt_id,
-                            "rel_type": rel_type,
-                            "rel_props": rel_props,
-                        }
-                    )
-
-                    if len(current_batch) >= self.batch_size:
-                        batches.append(current_batch)
-                        current_batch = []
-
-        if current_batch:
-            batches.append(current_batch)
-
-        # Insert relationship batches
-        for batch_idx, batch in enumerate(batches):
-            await self._insert_relationship_batch(batch)
-            relationships_created += len(batch)
+            if not patterns:
+                self.logger.info("No relationship patterns found to clone")
+                return 0
 
             if progress_callback:
-                progress = progress_start + int(
-                    ((batch_idx + 1) / len(batches)) * (progress_end - progress_start)
-                )
                 progress_callback(
-                    f"Created {relationships_created} relationships...", progress, 100
+                    f"Cloning {len(patterns)} relationship patterns...",
+                    progress_start + 10,
+                    100,
                 )
 
+            # Estimate total relationships (for adaptive batching)
+            total_synthetic_resources = sum(
+                len(ids) for ids in base_to_synthetic.values()
+            )
+            estimated_relationships = len(patterns) * (
+                total_synthetic_resources // len(base_resources)
+            )
+
+            adaptive_batch_size = self._get_adaptive_batch_size(
+                estimated_relationships, operation_type="write"
+            )
+
+            self.logger.info(
+                f"Cloning {len(patterns)} patterns for ~{estimated_relationships} relationships "
+                f"(batch_size={adaptive_batch_size})"
+            )
+
+            # Clone relationships in batches
+            relationships_created = 0
+            batches = []
+            current_batch = []
+
+            for pattern in patterns:
+                source_base_id = pattern["source_id"]
+                target_base_id = pattern["target_id"]
+                rel_type = pattern["rel_type"]
+                rel_props = pattern["rel_props"]
+
+                # Get synthetic IDs for source and target
+                source_synthetic_ids = base_to_synthetic.get(source_base_id, [])
+                target_synthetic_ids = base_to_synthetic.get(target_base_id, [])
+
+                # Create relationships for all synthetic pairs
+                for src_id in source_synthetic_ids:
+                    for tgt_id in target_synthetic_ids:
+                        current_batch.append(
+                            {
+                                "source_id": src_id,
+                                "target_id": tgt_id,
+                                "rel_type": rel_type,
+                                "rel_props": rel_props,
+                            }
+                        )
+
+                        if len(current_batch) >= adaptive_batch_size:
+                            batches.append(current_batch)
+                            current_batch = []
+
+            if current_batch:
+                batches.append(current_batch)
+
+            # For large operations, use parallel batch inserts
+            if estimated_relationships > 10000 and len(batches) > 10:
+                relationships_created = await self._insert_relationship_batches_parallel(
+                    batches, progress_callback, progress_start, progress_end, monitor
+                )
+            else:
+                # Standard sequential processing
+                for batch_idx, batch in enumerate(batches):
+                    await self._insert_relationship_batch(batch)
+                    relationships_created += len(batch)
+
+                    if monitor:
+                        monitor.record_items(len(batch))
+                        monitor.record_batch(len(batch))
+
+                    if progress_callback:
+                        progress = progress_start + int(
+                            ((batch_idx + 1) / len(batches))
+                            * (progress_end - progress_start)
+                        )
+                        progress_callback(
+                            f"Created {relationships_created} relationships...",
+                            progress,
+                            100,
+                        )
+
+            self.logger.info(
+                f"Created {relationships_created} relationships in {len(batches)} batches "
+                f"(batch_size={adaptive_batch_size})"
+            )
+
+            if monitor:
+                monitor.add_metadata("adaptive_batch_size", adaptive_batch_size)
+                monitor.add_metadata("num_batches", len(batches))
+                monitor.add_metadata("num_patterns", len(patterns))
+
+            return relationships_created
+
+        finally:
+            if monitor:
+                monitor.__exit__(None, None, None)
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(str(monitor.get_metrics()))
+
+    async def _insert_relationship_batches_parallel(
+        self,
+        batches: List[List[Dict[str, Any]]],
+        progress_callback: Optional[Callable[[str, int, int], None]],
+        progress_start: int,
+        progress_end: int,
+        monitor: Optional[PerformanceMonitor] = None,
+    ) -> int:
+        """
+        Insert relationship batches in parallel with controlled concurrency.
+
+        Args:
+            batches: List of relationship batches
+            progress_callback: Optional progress callback
+            progress_start: Progress start percentage
+            progress_end: Progress end percentage
+            monitor: Optional performance monitor
+
+        Returns:
+            Total number of relationships created
+        """
+        # Limit concurrent batch inserts
+        max_concurrent_batches = min(5, len(batches) // 10)
+        semaphore = asyncio.Semaphore(max_concurrent_batches)
+        created_count = 0
+        completed_batches = 0
+
+        async def insert_with_semaphore(batch: List[Dict[str, Any]]) -> int:
+            """Insert batch with semaphore control."""
+            nonlocal created_count, completed_batches
+
+            async with semaphore:
+                await self._insert_relationship_batch(batch)
+                count = len(batch)
+
+                created_count += count
+                completed_batches += 1
+
+                if monitor:
+                    monitor.record_items(count)
+                    monitor.record_batch(count)
+
+                if progress_callback:
+                    progress = progress_start + int(
+                        (completed_batches / len(batches))
+                        * (progress_end - progress_start)
+                    )
+                    progress_callback(
+                        f"Created {created_count} relationships...", progress, 100
+                    )
+
+                return count
+
         self.logger.info(
-            f"Created {relationships_created} relationships in {len(batches)} batches"
+            f"Inserting {len(batches)} relationship batches in parallel "
+            f"(max_concurrent={max_concurrent_batches})"
         )
-        return relationships_created
+
+        await asyncio.gather(*[insert_with_semaphore(batch) for batch in batches])
+
+        return created_count
 
     async def _build_resource_mapping(
         self, operation_id: str, base_resources: List[Dict[str, Any]]

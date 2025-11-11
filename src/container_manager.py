@@ -481,7 +481,7 @@ class Neo4jContainerManager:
             driver = GraphDatabase.driver(
                 self.neo4j_uri,
                 auth=(self.neo4j_user, self.neo4j_password),
-                connection_timeout=timeout
+                connection_timeout=timeout,
             )
 
             with driver.session() as session:
@@ -489,19 +489,14 @@ class Neo4jContainerManager:
                 record = result.single()
                 if record and record["test"] == 1:
                     driver.close()
-                    logger.info(
-                        event="Neo4j is already reachable",
-                        uri=self.neo4j_uri
-                    )
+                    logger.info(event="Neo4j is already reachable", uri=self.neo4j_uri)
                     return True
 
             driver.close()
             return False
         except Exception as e:
             logger.debug(
-                event="Neo4j not reachable yet",
-                uri=self.neo4j_uri,
-                error=str(e)
+                event="Neo4j not reachable yet", uri=self.neo4j_uri, error=str(e)
             )
             return False
 
@@ -524,13 +519,13 @@ class Neo4jContainerManager:
         if self.is_neo4j_reachable():
             logger.info(
                 event="Neo4j is already running and reachable, skipping container startup",
-                uri=self.neo4j_uri
+                uri=self.neo4j_uri,
             )
             return True
 
         logger.info(
             event="Neo4j not reachable, attempting to start container",
-            uri=self.neo4j_uri
+            uri=self.neo4j_uri,
         )
 
         # Start the container

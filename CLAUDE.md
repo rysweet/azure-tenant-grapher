@@ -88,8 +88,12 @@ uv run atg generate-iac --auto-import-existing --import-strategy resource_groups
 uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Cross-tenant with imports
 
 # SPA/GUI commands
-uv run atg start    # Launch Electron GUI
+uv run atg start    # Launch Electron GUI (desktop mode)
 uv run atg stop     # Stop GUI application
+
+# Web App Mode (NEW)
+cd spa && npm run start:web       # Run as web server (accessible from other machines)
+cd spa && npm run start:web:dev   # Run web server in dev mode with hot reload
 ```
 
 ## Architecture Overview
@@ -165,12 +169,15 @@ For complete schema documentation, see [docs/NEO4J_SCHEMA_REFERENCE.md](docs/NEO
 
 ### SPA/GUI Architecture
 
+The SPA can run in two modes:
+
+#### Desktop Mode (Electron)
 The Electron-based desktop GUI provides a full-featured interface for all CLI functionality:
 
 **Key Directories:**
 - `spa/main/`: Electron main process (app lifecycle, IPC, subprocess management)
 - `spa/renderer/`: React frontend (UI components, context providers, hooks)
-- `spa/backend/`: Express server (optional API layer)
+- `spa/backend/`: Express server (API layer)
 - `spa/tests/`: Comprehensive test suites (unit, integration, e2e)
 
 **Core Features:**
@@ -178,6 +185,39 @@ The Electron-based desktop GUI provides a full-featured interface for all CLI fu
 - **Real-time Communication**: WebSocket for live logs and progress updates
 - **Process Management**: Spawns and manages CLI subprocesses
 - **Cross-Platform**: Windows, macOS, and Linux support
+
+#### Web App Mode (NEW)
+Run the SPA as a standalone web application accessible from other machines:
+
+**Key Files:**
+- `spa/backend/src/web-server.ts`: Web server entry point
+- `spa/config/web-server.config.js`: Configuration file
+- `spa/docs/WEB_APP_MODE.md`: Complete setup guide
+
+**Features:**
+- Network-accessible from any browser
+- SSH tunneling support (Azure Bastion)
+- Configurable CORS for remote access
+- Same functionality as desktop mode
+- Lower resource footprint
+
+**Quick Start:**
+```bash
+cd spa
+npm run build:web
+npm run start:web
+# Access at http://localhost:3000
+```
+
+**Configuration:**
+```bash
+export WEB_SERVER_PORT=3000
+export WEB_SERVER_HOST=0.0.0.0  # Listen on all interfaces
+export ENABLE_CORS=true
+export ALLOWED_ORIGINS="*"  # Or specific origins
+```
+
+For detailed setup including Azure Bastion connection, see [Web App Mode Guide](spa/docs/WEB_APP_MODE.md) and [Azure Bastion Connection Guide](docs/AZURE_BASTION_CONNECTION_GUIDE.md).
 
 ## Common Development Tasks
 

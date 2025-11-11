@@ -585,9 +585,27 @@ except ConfigError as e:
     print(f"Error: {e}")
 ```
 
+## Visualization Configuration
+
+### Synthetic Node Visualization
+
+Synthetic nodes created during scale operations are automatically detected and styled in the graph visualizer. No configuration is required, but you can customize the appearance:
+
+**Default Colors:**
+- Primary: Orange (`#FFA500`)
+- Border: Gold (`#FFD700`)
+- Style: Dashed border with 'S' indicator
+
+**Show/Hide Synthetic Nodes:**
+- Use the toggle in the graph visualization UI
+- Or filter in the 3D HTML visualization
+
+For detailed information on visualization features, see [Synthetic Node Visualization Guide](SYNTHETIC_NODE_VISUALIZATION.md).
+
 ## See Also
 
 - [Scale Operations Specification](SCALE_OPERATIONS_SPEC.md)
 - [Scale-Up Command Reference](SCALE_UP_REFERENCE.md)
 - [Scale-Down Command Reference](SCALE_DOWN_REFERENCE.md)
+- [Synthetic Node Visualization](SYNTHETIC_NODE_VISUALIZATION.md)
 - [Example Configurations](examples/)

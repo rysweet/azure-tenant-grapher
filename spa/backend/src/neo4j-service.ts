@@ -11,6 +11,7 @@ export interface GraphNode {
   properties: Record<string, any>;
   resourceName?: string;  // Actual resource name for filtering (e.g., for ResourceGroup nodes)
   azureId?: string;  // Azure resource ID if available
+  synthetic?: boolean;  // Whether this is a synthetic node from scale operations
 }
 
 export interface GraphEdge {
@@ -131,12 +132,16 @@ export class Neo4jService {
                             node.elementId ||
                             'Unnamed';
 
+          // Check if this is a synthetic node (scale operations)
+          const isSynthetic = labels.includes('Synthetic') || props.synthetic === true;
+
           // Create the node object with additional metadata
           const graphNode: GraphNode = {
             id: node.elementId || node.identity.toString(),
             label: displayName,
             type: nodeType,
-            properties: props
+            properties: props,
+            synthetic: isSynthetic
           };
 
           // For ResourceGroup nodes, add the actual name for filtering
@@ -222,11 +227,15 @@ export class Neo4jService {
                           node.elementId ||
                           'Unnamed';
 
+        // Check if this is a synthetic node
+        const isSynthetic = labels.includes('Synthetic') || props.synthetic === true;
+
         return {
           id: node.elementId || node.identity.toString(),
           label: displayName,
           type: nodeType,
-          properties: props
+          properties: props,
+          synthetic: isSynthetic
         };
       });
     } finally {

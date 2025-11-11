@@ -695,9 +695,14 @@ class ScaleDownService(BaseScaleService):
             target_node_count, G.number_of_nodes()
         )  # At most all nodes
 
+        # Calculate sampling ratio for logging (avoid division by zero)
+        if G.number_of_nodes() > 0:
+            sampling_ratio_pct = f"({target_node_count / G.number_of_nodes():.1%})"
+        else:
+            sampling_ratio_pct = "(0%)"
+
         self.logger.info(
-            f"Target sample size: {target_node_count} nodes "
-            f"({target_node_count / G.number_of_nodes():.1%})"
+            f"Target sample size: {target_node_count} nodes {sampling_ratio_pct}"
         )
 
         # Stage 2: Sample - Apply algorithm
@@ -795,10 +800,20 @@ class ScaleDownService(BaseScaleService):
         p = min(0.7, sampling_ratio * 2)  # Heuristic: scale p with ratio
 
         try:
-            sampler = lbof.ForestFireSampler(number_of_nodes=target_count, p=p)
-            sampled_graph = sampler.sample(G_undirected)
+            # littleballoffur requires integer node IDs
+            # Create bidirectional mapping: string <-> integer
+            node_to_int = {node: i for i, node in enumerate(G_undirected.nodes())}
+            int_to_node = {i: node for node, i in node_to_int.items()}
 
-            sampled_node_ids = set(sampled_graph.nodes())
+            # Relabel graph to use integer IDs
+            G_int = nx.relabel_nodes(G_undirected, node_to_int)
+
+            # Apply sampler with integer IDs
+            sampler = lbof.ForestFireSampler(number_of_nodes=target_count, p=p)
+            sampled_graph = sampler.sample(G_int)
+
+            # Convert integer IDs back to original string IDs
+            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
 
             self.logger.info(
                 f"Forest Fire sampling completed: {len(sampled_node_ids)} nodes"
@@ -845,12 +860,22 @@ class ScaleDownService(BaseScaleService):
         G_undirected = G.to_undirected()
 
         try:
+            # littleballoffur requires integer node IDs
+            # Create bidirectional mapping: string <-> integer
+            node_to_int = {node: i for i, node in enumerate(G_undirected.nodes())}
+            int_to_node = {i: node for node, i in node_to_int.items()}
+
+            # Relabel graph to use integer IDs
+            G_int = nx.relabel_nodes(G_undirected, node_to_int)
+
+            # Apply sampler with integer IDs
             sampler = lbof.MetropolisHastingsRandomWalkSampler(
                 number_of_nodes=target_count
             )
-            sampled_graph = sampler.sample(G_undirected)
+            sampled_graph = sampler.sample(G_int)
 
-            sampled_node_ids = set(sampled_graph.nodes())
+            # Convert integer IDs back to original string IDs
+            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
 
             self.logger.info(f"MHRW sampling completed: {len(sampled_node_ids)} nodes")
 
@@ -894,10 +919,20 @@ class ScaleDownService(BaseScaleService):
         G_undirected = G.to_undirected()
 
         try:
-            sampler = lbof.RandomWalkSampler(number_of_nodes=target_count)
-            sampled_graph = sampler.sample(G_undirected)
+            # littleballoffur requires integer node IDs
+            # Create bidirectional mapping: string <-> integer
+            node_to_int = {node: i for i, node in enumerate(G_undirected.nodes())}
+            int_to_node = {i: node for node, i in node_to_int.items()}
 
-            sampled_node_ids = set(sampled_graph.nodes())
+            # Relabel graph to use integer IDs
+            G_int = nx.relabel_nodes(G_undirected, node_to_int)
+
+            # Apply sampler with integer IDs
+            sampler = lbof.RandomWalkSampler(number_of_nodes=target_count)
+            sampled_graph = sampler.sample(G_int)
+
+            # Convert integer IDs back to original string IDs
+            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
 
             self.logger.info(
                 f"Random Walk sampling completed: {len(sampled_node_ids)} nodes"

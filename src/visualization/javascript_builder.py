@@ -161,6 +161,51 @@ class JavaScriptBuilder:
             .nodeColor(node => node.color)
             .nodeVal(node => node.size)
             .nodeThreeObject(node => {
+                // Synthetic nodes get special rendering with dashed border
+                if (node.synthetic) {
+                    const group = new window.THREE.Group();
+
+                    // Main sphere
+                    const geometry = new window.THREE.SphereGeometry(node.size || 8, 32, 32);
+                    const material = new window.THREE.MeshBasicMaterial({ color: node.color || '#FFA500' });
+                    const sphere = new window.THREE.Mesh(geometry, material);
+                    group.add(sphere);
+
+                    // Dashed ring around synthetic node
+                    const ringGeometry = new window.THREE.RingGeometry((node.size || 8) * 1.2, (node.size || 8) * 1.3, 32);
+                    const ringMaterial = new window.THREE.LineDashedMaterial({
+                        color: '#FFD700',
+                        dashSize: 2,
+                        gapSize: 1,
+                        linewidth: 2
+                    });
+                    const ring = new window.THREE.Line(ringGeometry, ringMaterial);
+                    ring.computeLineDistances();
+                    group.add(ring);
+
+                    // Add 'S' label for synthetic
+                    const canvas = document.createElement('canvas');
+                    const size = 64;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = 'bold 48px Arial';
+                    ctx.fillStyle = '#FFD700';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText('S', size / 2, size / 2);
+                    const texture = new window.THREE.CanvasTexture(canvas);
+                    const spriteMaterial = new window.THREE.SpriteMaterial({ map: texture, depthTest: false });
+                    const sprite = new window.THREE.Sprite(spriteMaterial);
+                    sprite.position.set(0, (node.size || 8) + 8, 0);
+                    sprite.scale.set(8, 8, 1);
+                    group.add(sprite);
+
+                    return group;
+                }
+
                 if (node.type === "Region") {
                     // Create a sprite for always-visible region label
                     const sprite = new window.THREE.Sprite(
@@ -298,6 +343,16 @@ class JavaScriptBuilder:
             const nodeFiltersContainer = document.getElementById('nodeFilters');
             const relationshipFiltersContainer = document.getElementById('relationshipFilters');
 
+            // Add synthetic node filter at the top
+            const syntheticFilterItem = createSyntheticFilterItem();
+            nodeFiltersContainer.appendChild(syntheticFilterItem);
+
+            // Add divider
+            const divider = document.createElement('hr');
+            divider.style.margin = '10px 0';
+            divider.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            nodeFiltersContainer.appendChild(divider);
+
             // Node type filters
             originalGraphData.node_types.forEach(nodeType => {
                 const filterItem = createFilterItem(nodeType, getNodeColor(nodeType), 'node');
@@ -309,6 +364,60 @@ class JavaScriptBuilder:
                 const filterItem = createFilterItem(relType, getRelationshipColor(relType), 'relationship');
                 relationshipFiltersContainer.appendChild(filterItem);
             });
+        }
+
+        function createSyntheticFilterItem() {
+            const item = document.createElement('div');
+            item.className = 'filter-item synthetic-filter';
+            item.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
+            item.style.border = '2px dashed #FFD700';
+            item.style.padding = '8px';
+            item.style.marginBottom = '10px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'filter-checkbox';
+            checkbox.checked = true;
+            checkbox.id = 'syntheticFilter';
+            checkbox.addEventListener('change', () => toggleSyntheticFilter(checkbox.checked));
+
+            const colorBox = document.createElement('div');
+            colorBox.className = 'filter-color';
+            colorBox.style.backgroundColor = '#FFA500';
+            colorBox.style.border = '2px dashed #FFD700';
+
+            const label = document.createElement('span');
+            label.className = 'filter-label';
+            label.style.fontWeight = 'bold';
+            label.textContent = '🔶 Synthetic Nodes';
+
+            const countLabel = document.createElement('span');
+            countLabel.style.marginLeft = '8px';
+            countLabel.style.color = '#FFD700';
+            countLabel.style.fontSize = '0.9em';
+            const syntheticCount = originalGraphData.nodes.filter(n => n.synthetic).length;
+            countLabel.textContent = `(${syntheticCount})`;
+
+            item.appendChild(checkbox);
+            item.appendChild(colorBox);
+            item.appendChild(label);
+            item.appendChild(countLabel);
+
+            item.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    toggleSyntheticFilter(checkbox.checked);
+                }
+            });
+
+            return item;
+        }
+
+        let showSyntheticNodes = true;
+
+        function toggleSyntheticFilter(isActive) {
+            showSyntheticNodes = isActive;
+            updateVisualization();
         }
 
         function createFilterItem(type, color, filterType) {
@@ -377,11 +486,12 @@ class JavaScriptBuilder:
             // Filter nodes
             const filteredNodes = originalGraphData.nodes.filter(node => {
                 const typeMatch = activeNodeFilters.has(node.type);
+                const syntheticMatch = showSyntheticNodes || !node.synthetic;
                 const searchMatch = searchTerm === '' ||
                     node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     node.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     JSON.stringify(node.properties).toLowerCase().includes(searchTerm.toLowerCase());
-                return typeMatch && searchMatch;
+                return typeMatch && syntheticMatch && searchMatch;
             });
 
             // Get set of visible node IDs

@@ -12,10 +12,9 @@ Fixtures provided:
 """
 
 from typing import Any, Dict, List, Set, Tuple
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ============================================================================
 # Mock Neo4j Fixtures

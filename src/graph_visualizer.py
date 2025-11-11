@@ -249,6 +249,12 @@ class GraphVisualizer:
                     "name",
                     properties.get("display_name", f"{node_type}_{node_id}"),
                 )
+
+                # Check if this is a synthetic node
+                is_synthetic = (
+                    "Synthetic" in labels or properties.get("synthetic") is True
+                )
+
                 node_data = {
                     "id": node_id,
                     "name": node_name,
@@ -256,8 +262,9 @@ class GraphVisualizer:
                     "labels": labels,
                     "properties": properties,
                     "group": self._get_node_group(node_type),
-                    "color": self._get_node_color(node_type),
+                    "color": self._get_node_color(node_type, is_synthetic),
                     "size": self._get_node_size(node_type, properties),
+                    "synthetic": is_synthetic,
                 }
 
                 # Add label for ResourceGroup and Region nodes to show their names in the visualization
@@ -409,8 +416,20 @@ class GraphVisualizer:
 
         return group_mapping.get(node_type, 99)
 
-    def _get_node_color(self, node_type: str) -> str:
-        """Get node color based on type."""
+    def _get_node_color(self, node_type: str, is_synthetic: bool = False) -> str:
+        """Get node color based on type and synthetic status.
+
+        Args:
+            node_type: The type of the node
+            is_synthetic: Whether this is a synthetic node
+
+        Returns:
+            Color hex code for the node
+        """
+        # Synthetic nodes get orange/yellow colors to distinguish them
+        if is_synthetic:
+            return "#FFA500"  # Orange for synthetic nodes
+
         color_mapping = {
             # Non-resource node types
             "Subscription": "#ff6b6b",  # Red

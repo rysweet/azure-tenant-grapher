@@ -451,7 +451,12 @@ class DatabaseOperations:
             r.abstracted_id = $abstracted_id,
             r.updated_at = datetime()
         """
-        tx.run(query, original_id=original_id, props=properties, abstracted_id=abstracted_id)
+        tx.run(
+            query,
+            original_id=original_id,
+            props=properties,
+            abstracted_id=abstracted_id,
+        )
 
     def _create_abstracted_node(
         self, tx: Any, abstracted_id: str, original_id: str, properties: Dict[str, Any]
@@ -478,7 +483,13 @@ class DatabaseOperations:
             r.abstraction_type = $abstraction_type,
             r.updated_at = datetime()
         """
-        tx.run(query, abstracted_id=abstracted_id, original_id=original_id, abstraction_type=prefix, props=abstracted_props)
+        tx.run(
+            query,
+            abstracted_id=abstracted_id,
+            original_id=original_id,
+            abstraction_type=prefix,
+            props=abstracted_props,
+        )
 
     def _create_scan_source_relationship(
         self,
@@ -1189,16 +1200,22 @@ class ResourceProcessor:
 
         # Flush any remaining buffered relationships
         logger.info("🔄 Flushing buffered relationships from all rules...")
-        print("[DEBUG][RP] Flushing buffered relationships from all rules...", flush=True)
+        print(
+            "[DEBUG][RP] Flushing buffered relationships from all rules...", flush=True
+        )
         try:
             from src.relationship_rules import ALL_RELATIONSHIP_RULES
+
             total_flushed = 0
             for rule in ALL_RELATIONSHIP_RULES:
-                if hasattr(rule, 'flush_relationship_buffer'):
+                if hasattr(rule, "flush_relationship_buffer"):
                     flushed = rule.flush_relationship_buffer(self.db_ops)
                     total_flushed += flushed
             logger.info(f"✅ Flushed {total_flushed} buffered relationships")
-            print(f"[DEBUG][RP] Flushed {total_flushed} buffered relationships", flush=True)
+            print(
+                f"[DEBUG][RP] Flushed {total_flushed} buffered relationships",
+                flush=True,
+            )
         except Exception as e:
             logger.exception(f"Error flushing relationship buffers: {e}")
             print(f"[DEBUG][RP] Error flushing relationship buffers: {e}", flush=True)
