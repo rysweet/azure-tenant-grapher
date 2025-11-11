@@ -2543,6 +2543,34 @@ class TerraformEmitter(IaCEmitter):
             sign_in_audience = resource.get("signInAudience", "AzureADMyOrg")
             resource_config["sign_in_audience"] = sign_in_audience
 
+        elif azure_type == "Microsoft.ContainerRegistry/registries":
+            # Container Registry requires SKU
+            properties = self._parse_properties(resource)
+            # Extract SKU from properties or use default
+            sku_obj = properties.get("sku", {})
+            sku_name = sku_obj.get("name") if isinstance(sku_obj, dict) else sku_obj
+            if not sku_name:
+                sku_name = resource.get("sku", "Basic")
+
+            resource_config.update({
+                "sku": sku_name if sku_name else "Basic",
+            })
+
+            # Add admin_enabled if present
+            if "adminUserEnabled" in properties:
+                resource_config["admin_enabled"] = properties.get("adminUserEnabled", False)
+
+        elif azure_type == "Microsoft.App/containerApps":
+            # Container Apps require environment, revision mode, and template
+            # For now, skip Container Apps as they require complex environment references
+            # This will be handled in a future iteration
+            logger.warning(
+                f"Skipping Container App '{resource_name}' - Container Apps require "
+                f"complex environment and template configuration that is not yet supported. "
+                f"Add support for Microsoft.App/managedEnvironments first."
+            )
+            return None
+
         return terraform_type, safe_name, resource_config
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
