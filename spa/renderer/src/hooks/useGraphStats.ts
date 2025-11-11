@@ -38,7 +38,8 @@ export function useGraphStats(tenantId: string | null, autoLoad: boolean = false
     if (autoLoad && tenantId) {
       refreshStats();
     }
-  }, [autoLoad, tenantId, refreshStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLoad, tenantId]);
 
   return { refreshStats, loading, error };
 }

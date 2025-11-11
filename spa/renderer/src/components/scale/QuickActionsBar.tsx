@@ -20,6 +20,7 @@ import {
 import {
   CleaningServices as CleanIcon,
   CheckCircle as ValidateIcon,
+  CheckCircle,
   Assessment as StatsIcon,
   Help as HelpIcon,
 } from '@mui/icons-material';
@@ -295,7 +296,7 @@ const QuickActionsBar: React.FC = () => {
                     </Box>
                     <LinearProgress
                       variant="determinate"
-                      value={(count / state.currentGraphStats.totalNodes) * 100}
+                      value={(count / (state.currentGraphStats?.totalNodes || 1)) * 100}
                       sx={{ height: 6, borderRadius: 1 }}
                     />
                   </Box>
@@ -316,7 +317,7 @@ const QuickActionsBar: React.FC = () => {
                     </Box>
                     <LinearProgress
                       variant="determinate"
-                      value={(count / state.currentGraphStats.totalRelationships) * 100}
+                      value={(count / (state.currentGraphStats?.totalRelationships || 1)) * 100}
                       sx={{ height: 6, borderRadius: 1 }}
                     />
                   </Box>

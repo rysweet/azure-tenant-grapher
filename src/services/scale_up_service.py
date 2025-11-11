@@ -19,14 +19,14 @@ Performance target: 1000 resources in <30 seconds
 """
 
 import logging
-import re
 import random
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+from neo4j.exceptions import Neo4jError
 
 from src.services.base_scale_service import BaseScaleService
 from src.services.scale_validation import ScaleValidation
@@ -52,6 +52,9 @@ class ScaleUpResult:
         validation_passed: Whether post-operation validation passed
         error_message: Error message if operation failed
         metadata: Additional operation-specific data
+        rollback_attempted: Whether rollback was attempted on failure
+        rollback_succeeded: Whether rollback succeeded (if attempted)
+        rollback_error: Error message from rollback (if failed)
     """
 
     operation_id: str
@@ -64,6 +67,9 @@ class ScaleUpResult:
     validation_passed: bool
     error_message: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    rollback_attempted: bool = False
+    rollback_succeeded: bool = False
+    rollback_error: Optional[str] = None
 
 
 class ScaleUpService(BaseScaleService):
@@ -237,12 +243,20 @@ class ScaleUpService(BaseScaleService):
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Scale-up failed: {e}")
 
-            # Attempt rollback
+            # Attempt rollback and track outcome
+            rollback_attempted = True
+            rollback_succeeded = False
+            rollback_error = None
+
             try:
                 await self.rollback_operation(operation_id)
-            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
-                self.logger.error(f"Rollback failed: {rollback_error}")
+                rollback_succeeded = True
+                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+            except (Neo4jError, ValueError, RuntimeError) as rollback_err:
+                rollback_error = str(rollback_err)
+                self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
+                rollback_error = str(unexpected_error)
                 self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
                 raise
 
@@ -256,6 +270,9 @@ class ScaleUpService(BaseScaleService):
                 success=False,
                 validation_passed=False,
                 error_message=str(e),
+                rollback_attempted=rollback_attempted,
+                rollback_succeeded=rollback_succeeded,
+                rollback_error=rollback_error,
             )
 
     async def scale_up_scenario(
@@ -363,11 +380,20 @@ class ScaleUpService(BaseScaleService):
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Scenario scale-up failed: {e}")
 
+            # Attempt rollback and track outcome
+            rollback_attempted = True
+            rollback_succeeded = False
+            rollback_error = None
+
             try:
                 await self.rollback_operation(operation_id)
-            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
-                self.logger.error(f"Rollback failed: {rollback_error}")
+                rollback_succeeded = True
+                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+            except (Neo4jError, ValueError, RuntimeError) as rollback_err:
+                rollback_error = str(rollback_err)
+                self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
+                rollback_error = str(unexpected_error)
                 self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
                 raise
 
@@ -382,6 +408,9 @@ class ScaleUpService(BaseScaleService):
                 validation_passed=False,
                 error_message=str(e),
                 metadata={"scenario": scenario, "params": params},
+                rollback_attempted=rollback_attempted,
+                rollback_succeeded=rollback_succeeded,
+                rollback_error=rollback_error,
             )
 
     async def scale_up_random(
@@ -510,11 +539,20 @@ class ScaleUpService(BaseScaleService):
             duration = (datetime.now() - start_time).total_seconds()
             self.logger.exception(f"Random scale-up failed: {e}")
 
+            # Attempt rollback and track outcome
+            rollback_attempted = True
+            rollback_succeeded = False
+            rollback_error = None
+
             try:
                 await self.rollback_operation(operation_id)
-            except (Neo4jError, ValueError, RuntimeError) as rollback_error:
-                self.logger.error(f"Rollback failed: {rollback_error}")
+                rollback_succeeded = True
+                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+            except (Neo4jError, ValueError, RuntimeError) as rollback_err:
+                rollback_error = str(rollback_err)
+                self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
+                rollback_error = str(unexpected_error)
                 self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
                 raise
 
@@ -528,6 +566,9 @@ class ScaleUpService(BaseScaleService):
                 success=False,
                 validation_passed=False,
                 error_message=str(e),
+                rollback_attempted=rollback_attempted,
+                rollback_succeeded=rollback_succeeded,
+                rollback_error=rollback_error,
             )
 
     async def rollback_operation(self, operation_id: str) -> int:
@@ -615,27 +656,27 @@ class ScaleUpService(BaseScaleService):
                     raise ValueError(f"Resource type too long: {rt}")
 
         # Build query with parameterized resource types (no string interpolation)
+        # Note: Query without tenant/subscription filter since Resource nodes may not have tenant_id
+        # Instead, rely on the Tenant validation earlier to ensure tenant exists in DB
         if resource_types:
             query = """
             MATCH (r:Resource)
             WHERE NOT r:Original
-              AND r.tenant_id = $tenant_id
               AND (r.synthetic IS NULL OR r.synthetic = false)
               AND r.type IN $resource_types
             RETURN r.id as id, r.type as type, properties(r) as props
             LIMIT 10000
             """
-            params = {"tenant_id": tenant_id, "resource_types": resource_types}
+            params = {"resource_types": resource_types}
         else:
             query = """
             MATCH (r:Resource)
             WHERE NOT r:Original
-              AND r.tenant_id = $tenant_id
               AND (r.synthetic IS NULL OR r.synthetic = false)
             RETURN r.id as id, r.type as type, properties(r) as props
             LIMIT 10000
             """
-            params = {"tenant_id": tenant_id}
+            params = {}
 
         with self.session_manager.session() as session:
             result = session.run(query, params)
@@ -889,6 +930,9 @@ class ScaleUpService(BaseScaleService):
         """
         Extract relationship patterns from base resources.
 
+        For large resource lists (>5000), chunks the query to avoid
+        Neo4j performance issues with large IN clauses.
+
         Args:
             base_resources: List of base resources
 
@@ -899,7 +943,41 @@ class ScaleUpService(BaseScaleService):
         if not base_ids:
             return []
 
-        # Use parameterized query - Neo4j will handle the list safely
+        # Chunk large lists to avoid Neo4j performance issues with large IN clauses
+        chunk_size = 5000
+        patterns = []
+
+        if len(base_ids) <= chunk_size:
+            # Small list - single query
+            patterns = await self._get_relationship_patterns_chunk(base_ids)
+        else:
+            # Large list - chunk and combine
+            self.logger.info(
+                f"Chunking {len(base_ids)} base IDs into {chunk_size}-ID chunks"
+            )
+            for i in range(0, len(base_ids), chunk_size):
+                chunk = base_ids[i : i + chunk_size]
+                chunk_patterns = await self._get_relationship_patterns_chunk(chunk)
+                patterns.extend(chunk_patterns)
+                self.logger.debug(
+                    f"Processed chunk {i // chunk_size + 1}/{(len(base_ids) + chunk_size - 1) // chunk_size}: "
+                    f"{len(chunk_patterns)} patterns"
+                )
+
+        return patterns
+
+    async def _get_relationship_patterns_chunk(
+        self, base_ids: List[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Extract relationship patterns for a chunk of base resources.
+
+        Args:
+            base_ids: List of base resource IDs (should be <= 5000)
+
+        Returns:
+            List of relationship patterns
+        """
         query = """
         MATCH (source:Resource)-[rel]->(target:Resource)
         WHERE NOT source:Original AND NOT target:Original

@@ -233,7 +233,7 @@ const ScaleUpPanel: React.FC = () => {
               </Typography>
               <Slider
                 value={scaleFactor}
-                onChange={(e, value) => setScaleFactor(value as number)}
+                onChange={(_e, value) => setScaleFactor(value as number)}
                 disabled={isRunning}
                 min={1}
                 max={10}

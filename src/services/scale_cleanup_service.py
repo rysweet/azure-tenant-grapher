@@ -20,7 +20,7 @@ import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+from neo4j.exceptions import Neo4jError
 
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager
@@ -226,6 +226,25 @@ class ScaleCleanupService(BaseScaleService):
             self.logger.exception(f"Unexpected error during preview cleanup: {e}")
             raise
 
+    def _validate_cleanup_params(
+        self, clean_all: bool, session_id: Optional[str], before_date: Optional[datetime]
+    ) -> None:
+        """
+        Validate cleanup operation parameters.
+
+        Args:
+            clean_all: If True, clean ALL synthetic data
+            session_id: Optional session/operation ID to clean
+            before_date: Optional date to clean data before
+
+        Raises:
+            ValueError: If parameters are invalid
+        """
+        if not clean_all and not session_id and not before_date:
+            raise ValueError(
+                "Must specify either clean_all=True, session_id, or before_date"
+            )
+
     async def cleanup_synthetic_data(
         self,
         tenant_id: str,
@@ -280,10 +299,7 @@ class ScaleCleanupService(BaseScaleService):
             raise ValueError(f"Tenant {tenant_id} not found in database")
 
         # Validate parameters
-        if not clean_all and not session_id and not before_date:
-            raise ValueError(
-                "Must specify either clean_all=True, session_id, or before_date"
-            )
+        self._validate_cleanup_params(clean_all, session_id, before_date)
 
         # Build WHERE clause based on parameters
         where_clauses = [

@@ -15,6 +15,7 @@ import ScaleDownPanel from '../scale/ScaleDownPanel';
 import ProgressMonitor from '../scale/ProgressMonitor';
 import ResultsPanel from '../scale/ResultsPanel';
 import QuickActionsBar from '../scale/QuickActionsBar';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 const ScaleOperationsTabContent: React.FC = () => {
   const { state, dispatch } = useScaleOperations();
@@ -22,7 +23,7 @@ const ScaleOperationsTabContent: React.FC = () => {
   const [operationType, setOperationType] = useState<'scale-up' | 'scale-down'>('scale-up');
 
   const handleOperationTypeChange = (
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newType: 'scale-up' | 'scale-down' | null
   ) => {
     if (newType !== null) {
@@ -104,9 +105,16 @@ const ScaleOperationsTabContent: React.FC = () => {
 // Wrap with provider for context
 const ScaleOperationsTab: React.FC = () => {
   return (
-    <ScaleOperationsProvider>
-      <ScaleOperationsTabContent />
-    </ScaleOperationsProvider>
+    <ErrorBoundary
+      isolate={false}
+      onReset={() => {
+        console.log('Scale Operations tab reset after error');
+      }}
+    >
+      <ScaleOperationsProvider>
+        <ScaleOperationsTabContent />
+      </ScaleOperationsProvider>
+    </ErrorBoundary>
   );
 };
 

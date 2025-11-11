@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
   Typography,
   Button,
-  Grid,
   Card,
   CardContent,
   Table,
@@ -35,6 +34,14 @@ interface ResultsPanelProps {
 const ResultsPanel: React.FC<ResultsPanelProps> = ({ result }) => {
   const { dispatch } = useScaleOperations();
   const { dispatch: appDispatch } = useApp();
+  const firstActionButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Focus first action button when results are displayed for accessibility
+  useEffect(() => {
+    if (firstActionButtonRef.current) {
+      firstActionButtonRef.current.focus();
+    }
+  }, []);
 
   const handleRunAnother = () => {
     dispatch({ type: 'SET_SHOW_RESULTS', payload: false });
@@ -243,6 +250,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ result }) => {
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         <Button
+          ref={firstActionButtonRef}
           variant="outlined"
           startIcon={<VisualizeIcon />}
           onClick={handleViewGraph}

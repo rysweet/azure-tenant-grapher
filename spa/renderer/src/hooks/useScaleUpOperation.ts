@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useScaleOperations } from '../context/ScaleOperationsContext';
 import { useWebSocket } from './useWebSocket';
@@ -9,19 +9,34 @@ const API_BASE_URL = 'http://localhost:3001';
 export function useScaleUpOperation() {
   const { state, dispatch } = useScaleOperations();
   const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
+  const lastLogCountRef = useRef(0);
 
-  // Listen for WebSocket events
+  // Listen for WebSocket events - only depend on processId, not log length
   useEffect(() => {
     if (!state.currentOperation.processId) return;
 
     const processId = state.currentOperation.processId;
-    const output = getProcessOutput(processId);
 
-    if (output.length > state.currentOperation.logs.length) {
-      const newLogs = output.slice(state.currentOperation.logs.length);
-      dispatch({ type: 'APPEND_LOGS', payload: newLogs });
-    }
-  }, [state.currentOperation.processId, getProcessOutput, state.currentOperation.logs.length, dispatch]);
+    // Use interval to check for new logs instead of effect dependency
+    const intervalId = setInterval(() => {
+      const output = getProcessOutput(processId);
+
+      if (output.length > lastLogCountRef.current) {
+        const newLogs = output.slice(lastLogCountRef.current);
+        lastLogCountRef.current = output.length;
+        dispatch({ type: 'APPEND_LOGS', payload: newLogs });
+      }
+    }, 500); // Check every 500ms
+
+    // Cleanup function to unsubscribe from WebSocket when component unmounts
+    return () => {
+      clearInterval(intervalId);
+      if (processId) {
+        unsubscribeFromProcess(processId);
+      }
+      lastLogCountRef.current = 0;
+    };
+  }, [state.currentOperation.processId, getProcessOutput, dispatch, unsubscribeFromProcess]);
 
   const executeScaleUp = useCallback(async (config: ScaleUpConfig): Promise<ExecuteResponse> => {
     try {

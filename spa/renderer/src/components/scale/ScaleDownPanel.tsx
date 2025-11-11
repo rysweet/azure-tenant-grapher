@@ -243,7 +243,7 @@ const ScaleDownPanel: React.FC = () => {
               </Typography>
               <Slider
                 value={forwardProbability}
-                onChange={(e, value) => setForwardProbability(value as number)}
+                onChange={(_e, value) => setForwardProbability(value as number)}
                 disabled={isRunning}
                 min={0.0}
                 max={1.0}

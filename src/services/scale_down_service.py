@@ -35,7 +35,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import littleballoffur as lbof
 import networkx as nx
 import yaml
-from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+from neo4j.exceptions import Neo4jError
 
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.emitters.bicep_emitter import BicepEmitter
@@ -139,7 +139,8 @@ class QualityMetrics:
         original_edges: Number of edges in original graph
         sampled_edges: Number of edges in sampled graph
         sampling_ratio: Ratio of sampled to original nodes
-        degree_distribution_similarity: KL divergence of degree distributions (0=identical)
+        degree_distribution_similarity: KL divergence of degree distributions
+            (0=identical)
         clustering_coefficient_diff: Difference in average clustering coefficient
         connected_components_original: Number of connected components in original
         connected_components_sampled: Number of connected components in sample
@@ -1362,6 +1363,16 @@ class ScaleDownService(BaseScaleService):
 
         Motifs are small, recurring subgraph patterns that represent
         common architectural patterns in the Azure tenant.
+
+        Note: This is a simplified motif discovery implementation using
+        breadth-first traversal. For production use with large graphs,
+        consider using specialized algorithms like:
+        - FANMOD (Fast Network Motif Detection)
+        - MODA (Motif Discovery Algorithm)
+        - ESU (Enumerate Subgraphs)
+
+        These algorithms provide better performance and statistical
+        significance testing for motif discovery in large networks.
 
         Args:
             tenant_id: Azure tenant ID to analyze

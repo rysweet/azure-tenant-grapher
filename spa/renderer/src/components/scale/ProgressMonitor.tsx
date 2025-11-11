@@ -179,12 +179,22 @@ const ProgressMonitor: React.FC = () => {
               size="small"
               color={state.autoScroll ? 'primary' : 'default'}
               onClick={() => dispatch({ type: 'TOGGLE_AUTO_SCROLL' })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  dispatch({ type: 'TOGGLE_AUTO_SCROLL' });
+                }
+              }}
               clickable
+              tabIndex={0}
+              role="button"
+              aria-label={state.autoScroll ? 'Disable auto-scroll' : 'Enable auto-scroll'}
             />
             <Chip
               label={`${logs.length} lines`}
               size="small"
               variant="outlined"
+              aria-label={`Log viewer has ${logs.length} lines`}
             />
           </Box>
         </Box>

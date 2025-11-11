@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -24,10 +25,39 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure Socket.IO CORS for both Electron and web mode
+const socketCorsOrigins = [
+  'http://localhost:5173',  // Vite dev server
+  'app://./',                // Electron
+  'http://localhost:3000',   // Web mode
+  'http://127.0.0.1:3000',   // Web mode localhost
+];
+
+// Add custom origins from environment variable
+if (process.env.ALLOWED_ORIGINS) {
+  const customOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  socketCorsOrigins.push(...customOrigins);
+}
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'app://./'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+
+      // Check if origin is allowed
+      if (socketCorsOrigins.includes(origin) ||
+          socketCorsOrigins.includes('*') ||
+          origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
+        callback(null, true);
+      } else {
+        logger.warn(`Socket.IO CORS: Blocked connection from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -48,8 +78,39 @@ logger.debug('Environment variables:', {
   NEO4J_PORT: process.env.NEO4J_PORT || 'NOT SET'
 });
 
-// Middleware
-app.use(cors());
+// CORS middleware - configure for both Electron and remote access
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:5173',  // Vite dev server
+      'app://./',                // Electron
+      'http://localhost:3000',   // Web mode
+      'http://127.0.0.1:3000',   // Web mode localhost
+    ];
+
+    // Check if origin is in allowed list or matches pattern
+    if (allowedOrigins.includes(origin) || origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
+      callback(null, true);
+    } else {
+      // For production web mode, check environment variable
+      const customOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+      if (customOrigins.includes(origin) || customOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS: Blocked request from origin: ${origin}`);
+        callback(null, false);
+      }
+    }
+  },
+  methods: ['GET', 'POST'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Store active processes
@@ -1362,9 +1423,20 @@ app.post('/api/scale/up/execute', async (req, res) => {
 });
 
 /**
+ * Rate limiter for preview endpoint - 10 requests per minute per IP
+ */
+const previewRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: 'Too many preview requests, please try again later.',
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+/**
  * Preview scale-up operation
  */
-app.post('/api/scale/up/preview', async (req, res) => {
+app.post('/api/scale/up/preview', previewRateLimiter, async (req, res) => {
   try {
     const { tenantId, strategy } = req.body;
 
