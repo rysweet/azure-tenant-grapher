@@ -1,0 +1,107 @@
+%% Scale-Down Pipeline Diagram
+%% Shows the complete flow from Neo4j to NetworkX to Sample to Export
+
+graph LR
+    subgraph "Stage 1: Extract"
+        N1["Neo4j Database<br/>10,000 nodes<br/>25,000 relationships"]
+        Q1["Query: MATCH (r:Resource)<br/>WHERE NOT r:Original<br/>Batch size: 5000"]
+        NX1["NetworkX DiGraph<br/>G = nx.DiGraph()<br/>node_properties: Dict"]
+
+        N1 -->|Stream batches| Q1
+        Q1 -->|Load nodes & edges| NX1
+    end
+
+    subgraph "Stage 2: Sample"
+        NX1 -->|Input graph| ALG["Sampling Algorithm"]
+
+        subgraph "Algorithm Choice"
+            FF["Forest Fire<br/>Preserves local structure<br/>p=0.7 parameter"]
+            MHRW["Metropolis-Hastings<br/>Unbiased uniform sampling<br/>Random walk"]
+            RW["Random Walk<br/>Simple traversal<br/>Biased to high-degree"]
+            PAT["Pattern-Based<br/>Filter by criteria<br/>tags, type, location"]
+        end
+
+        ALG -->|if algorithm=forest_fire| FF
+        ALG -->|if algorithm=mhrw| MHRW
+        ALG -->|if algorithm=random_walk| RW
+        ALG -->|if algorithm=pattern| PAT
+
+        FF -->|sampled_node_ids| SAMP["Sampled Subgraph<br/>1,000 nodes (10%)<br/>2,500 relationships"]
+        MHRW -->|sampled_node_ids| SAMP
+        RW -->|sampled_node_ids| SAMP
+        PAT -->|sampled_node_ids| SAMP
+    end
+
+    subgraph "Stage 3: Validate Quality"
+        SAMP -->|Calculate metrics| QUAL["Quality Metrics"]
+
+        subgraph "Metrics Calculated"
+            M1["Sampling Ratio: 10%"]
+            M2["Degree Distribution<br/>KL Divergence: 0.05"]
+            M3["Clustering Coefficient<br/>Diff: 0.02"]
+            M4["Connected Components<br/>Original: 1, Sample: 1"]
+            M5["Resource Type<br/>Preservation: 95%"]
+        end
+
+        QUAL --> M1
+        QUAL --> M2
+        QUAL --> M3
+        QUAL --> M4
+        QUAL --> M5
+    end
+
+    subgraph "Stage 4: Export"
+        SAMP -->|Export format| EXP["Export Handler"]
+
+        subgraph "Export Formats"
+            YAML["YAML<br/>Human-readable<br/>nodes + relationships"]
+            JSON["JSON<br/>Machine-readable<br/>structured data"]
+            NEO4J["Neo4j Cypher<br/>CREATE statements<br/>with proper escaping"]
+            IaC["IaC Templates<br/>Terraform/ARM/Bicep<br/>via emitters"]
+        end
+
+        EXP -->|if format=yaml| YAML
+        EXP -->|if format=json| JSON
+        EXP -->|if format=neo4j| NEO4J
+        EXP -->|if format=terraform/arm/bicep| IaC
+
+        YAML -->|Write to| OUT["Output Files"]
+        JSON -->|Write to| OUT
+        NEO4J -->|Write to| OUT
+        IaC -->|Write to| OUT
+    end
+
+    OUT -->|sample.yaml<br/>sample.json<br/>sample.cypher<br/>sample.tf| RES["Deliverables"]
+
+    %% Styling
+    style N1 fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px
+    style NX1 fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+    style SAMP fill:#69db7c,stroke:#2f9e44,stroke-width:2px
+    style QUAL fill:#ffd43b,stroke:#f08c00,stroke-width:2px
+    style RES fill:#da77f2,stroke:#9c36b5,stroke-width:2px
+
+    style FF fill:#e3fafc,stroke:#0b7285,stroke-width:1px
+    style MHRW fill:#e3fafc,stroke:#0b7285,stroke-width:1px
+    style RW fill:#e3fafc,stroke:#0b7285,stroke-width:1px
+    style PAT fill:#e3fafc,stroke:#0b7285,stroke-width:1px
+
+    style YAML fill:#fff3bf,stroke:#f59f00,stroke-width:1px
+    style JSON fill:#fff3bf,stroke:#f59f00,stroke-width:1px
+    style NEO4J fill:#fff3bf,stroke:#f59f00,stroke-width:1px
+    style IaC fill:#fff3bf,stroke:#f59f00,stroke-width:1px
+
+    style M1 fill:#d0ebff,stroke:#1971c2,stroke-width:1px
+    style M2 fill:#d0ebff,stroke:#1971c2,stroke-width:1px
+    style M3 fill:#d0ebff,stroke:#1971c2,stroke-width:1px
+    style M4 fill:#d0ebff,stroke:#1971c2,stroke-width:1px
+    style M5 fill:#d0ebff,stroke:#1971c2,stroke-width:1px
+
+    %% Performance annotation
+    classDef perfNote fill:#fce7f3,stroke:#be185d,stroke-width:1px,stroke-dasharray: 5 5
+    class ALG,QUAL perfNote
+
+    %% Add performance targets
+    N1 -.->|Target: <2s for 10K nodes| NX1
+    NX1 -.->|Target: <5s for sampling| SAMP
+    SAMP -.->|Target: <1s for metrics| QUAL
+    QUAL -.->|Target: <2s for export| RES
