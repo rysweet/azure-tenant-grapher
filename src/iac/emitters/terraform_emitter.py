@@ -190,6 +190,20 @@ class TerraformEmitter(IaCEmitter):
         # Role-Based Access Control (RBAC)
         "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
         "Microsoft.Authorization/roleDefinitions": "azurerm_role_definition",
+        # Container and Kubernetes resources (azurerm v3.43.0+)
+        "Microsoft.App/containerApps": "azurerm_container_app",
+        "Microsoft.ContainerService/managedClusters": "azurerm_kubernetes_cluster",
+        "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
+        # Additional Compute resources
+        "Microsoft.Compute/virtualMachineScaleSets": "azurerm_linux_virtual_machine_scale_set",
+        "Microsoft.Compute/snapshots": "azurerm_snapshot",
+        # Additional Network resources
+        "Microsoft.Network/loadBalancers": "azurerm_lb",
+        # Additional Monitoring resources
+        "Microsoft.Insights/metricAlerts": "azurerm_monitor_metric_alert",
+        "Microsoft.Insights/metricalerts": "azurerm_monitor_metric_alert",  # Case variant
+        # Cache resources
+        "Microsoft.Cache/Redis": "azurerm_redis_cache",
     }
 
     def _extract_resource_groups(
@@ -1744,9 +1758,14 @@ class TerraformEmitter(IaCEmitter):
             resource_config = emit_private_dns_zone(resource)
         elif azure_type == "Microsoft.Network/privateDnsZones/virtualNetworkLinks":
             # Private DNS Zone Virtual Network Link specific properties
-            # Need to build set of available VNets for validation
+            # Need to build set of available VNets and DNS Zones for validation
             available_vnets = (
                 self._available_resources.get("azurerm_virtual_network", set())
+                if self._available_resources
+                else set()
+            )
+            available_dns_zones = (
+                self._available_resources.get("azurerm_private_dns_zone", set())
                 if self._available_resources
                 else set()
             )
@@ -1756,6 +1775,7 @@ class TerraformEmitter(IaCEmitter):
                 sanitize_name_fn=self._sanitize_terraform_name,
                 extract_name_fn=self._extract_resource_name_from_id,
                 available_vnets=available_vnets,
+                available_dns_zones=available_dns_zones,
                 missing_references=missing_references,
             )
             if resource_config is None:
