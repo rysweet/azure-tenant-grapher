@@ -570,10 +570,12 @@ async def generate_iac_command_handler(
             try:
                 # Create credential for TARGET tenant (not source) for conflict detection
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                # Use target tenant credentials if different from source
+                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
                 conflict_detector_credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 # Initialize detector with proper credential
@@ -718,10 +720,12 @@ async def generate_iac_command_handler(
                 from azure.identity import ClientSecretCredential
                 import os
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                # Use target tenant credentials if different from source
+                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
                 credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -836,10 +840,12 @@ async def generate_iac_command_handler(
             from azure.identity import ClientSecretCredential
             import os
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+            # Use target tenant credentials if different from source
+            use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
             credential = ClientSecretCredential(
                 tenant_id=target_tenant,
-                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e" else os.getenv("AZURE_CLIENT_SECRET"),
+                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
             )
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]

@@ -227,9 +227,20 @@ def emit_private_dns_zone(resource: Dict[str, Any]) -> Dict[str, Any]:
     """
     resource_name = resource.get("name", "unknown")
 
+    # Extract RG from original_id (abstracted resources have hash IDs)
+    resource_group = resource.get("resource_group")
+    if not resource_group:
+        # Parse from original_id: /subscriptions/.../resourceGroups/RG_NAME/...
+        original_id = resource.get("original_id") or resource.get("id", "")
+        if "/resourceGroups/" in original_id:
+            rg_part = original_id.split("/resourceGroups/")[1]
+            resource_group = rg_part.split("/")[0] if "/" in rg_part else rg_part
+        else:
+            resource_group = "default-rg"
+
     config = {
         "name": resource_name,
-        "resource_group_name": resource.get("resource_group", "default-rg"),
+        "resource_group_name": resource_group,
     }
 
     # Add tags if present
@@ -253,6 +264,7 @@ def emit_private_dns_zone_vnet_link(
     sanitize_name_fn: Optional[callable] = None,
     extract_name_fn: Optional[callable] = None,
     available_vnets: Optional[set] = None,
+    available_dns_zones: Optional[set] = None,
     missing_references: Optional[List[Dict[str, str]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Generate azurerm_private_dns_zone_virtual_network_link resource configuration.
@@ -262,6 +274,7 @@ def emit_private_dns_zone_vnet_link(
         sanitize_name_fn: Function to sanitize resource names (optional)
         extract_name_fn: Function to extract names from resource IDs (optional)
         available_vnets: Set of available VNet names for validation
+        available_dns_zones: Set of available Private DNS Zone names for validation
         missing_references: List to append missing reference information to
 
     Returns:
@@ -315,6 +328,26 @@ def emit_private_dns_zone_vnet_link(
             )
 
     dns_zone_name_safe = sanitize(dns_zone_name)
+
+    # Validate DNS Zone exists if validation set provided
+    if available_dns_zones is not None and dns_zone_name_safe not in available_dns_zones:
+        logger.error(
+            f"Virtual Network Link '{resource_name}' references Private DNS Zone that doesn't exist:\n"
+            f"  DNS Zone Terraform name: {dns_zone_name_safe}\n"
+            f"  DNS Zone Azure name: {dns_zone_name}\n"
+            f"  This DNS Zone must be emitted before the VNet Link can reference it."
+        )
+        if missing_references is not None:
+            missing_references.append(
+                {
+                    "resource_name": resource_name,
+                    "resource_type": "private_dns_zone",
+                    "missing_resource_name": dns_zone_name,
+                    "expected_terraform_name": dns_zone_name_safe,
+                }
+            )
+        # Return None to skip this VNet Link (cannot deploy without parent DNS Zone)
+        return None
 
     # Build link name from zone and VNet
     link_name = f"{dns_zone_name_safe}_{vnet_name_safe}_link"
