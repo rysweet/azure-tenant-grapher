@@ -346,9 +346,13 @@ async def scale_down_algorithm_command_handler(
     """
     Handle scale-down algorithm command.
 
+    IMPORTANT: Algorithm names from CLI use dashes (forest-fire)
+    but service expects underscores (forest_fire). This handler
+    normalizes the input before calling the service.
+
     Args:
         tenant_id: Azure tenant ID
-        algorithm: Sampling algorithm name
+        algorithm: Sampling algorithm name (with dashes normalized to underscores)
         target_size: Target size as fraction
         target_count: Target absolute count
         burn_in: Burn-in steps for forest-fire
@@ -373,6 +377,11 @@ async def scale_down_algorithm_command_handler(
     console = Console()
 
     try:
+        # BUG FIX #1: Normalize algorithm name from dash to underscore
+        # CLI accepts: forest-fire, random-walk
+        # Service expects: forest_fire, random_walk
+        normalized_algorithm = algorithm.replace("-", "_")
+
         # Get effective tenant ID
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
@@ -382,7 +391,7 @@ async def scale_down_algorithm_command_handler(
             sys.exit(1)
 
         console.print(
-            f"[blue]🚀 Starting scale-down operation (algorithm: {algorithm})...[/blue]"
+            f"[blue]🚀 Starting scale-down operation (algorithm: {normalized_algorithm})...[/blue]"
         )
         console.print(
             f"[dim]Target size: {target_size if not target_count else f'{target_count} nodes'}[/dim]"
@@ -423,7 +432,7 @@ async def scale_down_algorithm_command_handler(
             # to the service if needed.
             sampled_node_ids, metrics = await service.sample_graph(
                 tenant_id=effective_tenant_id,
-                algorithm=algorithm,
+                algorithm=normalized_algorithm,  # Use normalized algorithm name
                 target_size=target_size if not target_count else target_count,
                 output_mode=output_mode,
                 output_path=output_file,

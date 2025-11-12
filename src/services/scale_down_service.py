@@ -666,7 +666,11 @@ class ScaleDownService(BaseScaleService):
                 f"Invalid algorithm: {algorithm}. Must be one of: {valid_algorithms}"
             )
 
-        valid_output_modes = ["yaml", "json", "neo4j", "terraform", "arm", "bicep"]
+        # BUG FIX #2: Align valid_output_modes with what CLI offers
+        # CLI offers: delete, export, new-tenant
+        # But 'export' mode requires a format: yaml, json, neo4j, terraform, arm, bicep
+        # Keep both sets for compatibility, but validate properly
+        valid_output_modes = ["delete", "export", "new-tenant", "yaml", "json", "neo4j", "terraform", "arm", "bicep"]
         if output_mode not in valid_output_modes:
             raise ValueError(
                 f"Invalid output_mode: {output_mode}. "
@@ -1039,6 +1043,8 @@ class ScaleDownService(BaseScaleService):
         """
 
         self.logger.debug(f"Pattern matching with {len(criteria)} validated criteria")
+        self.logger.debug(f"Cypher query: {query}")
+        self.logger.debug(f"Query parameters: {params}")
 
         matching_ids: Set[str] = set()
 
@@ -1057,6 +1063,15 @@ class ScaleDownService(BaseScaleService):
             self.logger.info(
                 f"Pattern matching completed: {len(matching_ids)} nodes matched"
             )
+
+            # BUG FIX #3: Add helpful message when no nodes match
+            if len(matching_ids) == 0:
+                self.logger.warning(
+                    f"No resources found matching criteria: {criteria}. "
+                    f"Check that resources with these properties exist in tenant {tenant_id}. "
+                    f"For resource type matching, verify the 'type' property matches exactly "
+                    f"(e.g., 'Microsoft.Network/virtualNetworks')."
+                )
 
             return matching_ids
 
