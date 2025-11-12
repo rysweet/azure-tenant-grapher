@@ -325,10 +325,10 @@ class ScaleDownService(BaseScaleService):
         batch_size = 5000
 
         # Step 1: Load nodes
+        # Note: Resource nodes don't have tenant_id property, validated separately above
         node_query = """
         MATCH (r:Resource)
         WHERE NOT r:Original
-          AND r.tenant_id = $tenant_id
         RETURN r.id as id, properties(r) as props
         SKIP $skip
         LIMIT $limit
@@ -375,10 +375,10 @@ class ScaleDownService(BaseScaleService):
             raise ValueError(f"No resources found for tenant {tenant_id}")
 
         # Step 2: Load relationships (exclude SCAN_SOURCE_NODE)
+        # Note: Resource nodes don't have tenant_id, we get all abstracted relationships
         edge_query = """
         MATCH (r1:Resource)-[rel]->(r2:Resource)
         WHERE NOT r1:Original AND NOT r2:Original
-          AND (r1.tenant_id = $tenant_id OR r2.tenant_id = $tenant_id)
           AND type(rel) <> 'SCAN_SOURCE_NODE'
         RETURN r1.id as source, r2.id as target, type(rel) as rel_type,
                properties(rel) as rel_props
