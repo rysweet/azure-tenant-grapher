@@ -1602,12 +1602,28 @@ class TerraformEmitter(IaCEmitter):
             # Build service plan ID with proper subscription
             service_plan_id = resource.get("app_service_plan_id")
             if not service_plan_id:
-                # Construct default service plan ID with actual subscription
+                # If no service plan, create a default one for this App Service
                 resource_group = resource.get("resource_group", "default-rg")
-                service_plan_id = (
-                    f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{resource_group}/"
-                    f"providers/Microsoft.Web/serverFarms/default-plan"
-                )
+                plan_name = f"{resource_name}-plan"
+                plan_safe_name = self._sanitize_terraform_name(plan_name)
+
+                # Create the service plan resource
+                if "azurerm_service_plan" not in terraform_config["resource"]:
+                    terraform_config["resource"]["azurerm_service_plan"] = {}
+
+                # Only create if not already exists
+                if plan_safe_name not in terraform_config["resource"]["azurerm_service_plan"]:
+                    terraform_config["resource"]["azurerm_service_plan"][plan_safe_name] = {
+                        "name": plan_name,
+                        "location": location,
+                        "resource_group_name": resource_group,
+                        "os_type": "Windows" if not is_linux else "Linux",
+                        "sku_name": "B1",  # Basic tier
+                    }
+                    logger.debug(f"Created default service plan '{plan_name}' for App Service '{resource_name}'")
+
+                # Reference the created plan
+                service_plan_id = f"${{azurerm_service_plan.{plan_safe_name}.id}}"
 
             resource_config.update(
                 {
@@ -2631,6 +2647,109 @@ class TerraformEmitter(IaCEmitter):
             disk_size_gb = properties.get("diskSizeGB") or resource.get("diskSizeGB")
             if disk_size_gb:
                 resource_config["disk_size_gb"] = disk_size_gb
+
+        elif azure_type == "Microsoft.Compute/virtualMachineScaleSets":
+            # VM Scale Sets require complex configuration
+            properties = self._parse_properties(resource)
+
+            # Extract VM profile
+            vm_profile = properties.get("virtualMachineProfile", {})
+            os_profile = vm_profile.get("osProfile", {})
+            storage_profile = vm_profile.get("storageProfile", {})
+            network_profile = vm_profile.get("networkProfile", {})
+
+            # Admin username (required)
+            admin_username = os_profile.get("adminUsername", "azureuser")
+            resource_config["admin_username"] = admin_username
+
+            # SKU (required)
+            sku_obj = properties.get("sku", {})
+            sku_name = sku_obj.get("name") if isinstance(sku_obj, dict) else sku_obj
+            if not sku_name:
+                sku_name = resource.get("sku", "Standard_DS2_v2")
+            resource_config["sku"] = sku_name
+
+            # Instances (optional, defaults from sku.capacity)
+            instances = sku_obj.get("capacity", 1) if isinstance(sku_obj, dict) else 1
+            resource_config["instances"] = instances
+
+            # OS disk (required block)
+            os_disk = storage_profile.get("osDisk", {})
+            resource_config["os_disk"] = {
+                "caching": os_disk.get("caching", "ReadWrite"),
+                "storage_account_type": os_disk.get("managedDisk", {}).get("storageAccountType", "Standard_LRS"),
+            }
+
+            # Network interface (required block)
+            network_interfaces = network_profile.get("networkInterfaceConfigurations", [])
+            if network_interfaces:
+                first_nic = network_interfaces[0]
+                ip_configs = first_nic.get("ipConfigurations", [])
+                if ip_configs:
+                    first_ip_config = ip_configs[0]
+                    resource_config["network_interface"] = [{
+                        "name": first_nic.get("name", "default"),
+                        "primary": first_nic.get("primary", True),
+                        "ip_configuration": [{
+                            "name": first_ip_config.get("name", "internal"),
+                            "primary": first_ip_config.get("primary", True),
+                            "subnet_id": first_ip_config.get("subnet", {}).get("id", ""),
+                        }]
+                    }]
+                else:
+                    # No IP config - skip this VMSS
+                    logger.warning(
+                        f"Skipping VM Scale Set '{resource_name}' - no IP configurations found"
+                    )
+                    return None
+            else:
+                # No network interfaces - skip
+                logger.warning(
+                    f"Skipping VM Scale Set '{resource_name}' - no network interface configurations found"
+                )
+                return None
+
+            # Source image reference
+            image_reference = storage_profile.get("imageReference", {})
+            if image_reference:
+                resource_config["source_image_reference"] = {
+                    "publisher": image_reference.get("publisher", "Canonical"),
+                    "offer": image_reference.get("offer", "0001-com-ubuntu-server-jammy"),
+                    "sku": image_reference.get("sku", "22_04-lts"),
+                    "version": image_reference.get("version", "latest"),
+                }
+
+        elif azure_type == "Microsoft.Cache/Redis":
+            # Redis Cache requires SKU configuration
+            properties = self._parse_properties(resource)
+
+            # Extract SKU - can be at top level or in properties
+            sku_obj = properties.get("sku", resource.get("sku", {}))
+            if isinstance(sku_obj, dict):
+                sku_name = sku_obj.get("name", "Basic")
+                capacity = sku_obj.get("capacity", 0)
+                family = sku_obj.get("family", "C")
+            else:
+                # SKU might be string or missing
+                sku_name = "Basic"
+                capacity = 0
+                family = "C"
+
+            # Validate SKU
+            if not capacity or capacity == 0:
+                logger.warning(
+                    f"Skipping Redis Cache '{resource_name}' - invalid SKU capacity: {capacity}"
+                )
+                return None
+
+            resource_config.update({
+                "capacity": capacity,
+                "sku_name": sku_name,
+                "family": family,
+            })
+
+            # Note: enable_non_ssl_port and minimum_tls_version are not valid azurerm_redis_cache arguments
+            # These are managed through redis_configuration block or other mechanisms
 
         elif azure_type == "Microsoft.Insights/metricalerts":
             # Metric Alerts require scopes and don't have location
