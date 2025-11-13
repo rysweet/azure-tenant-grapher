@@ -758,7 +758,10 @@ class TerraformEmitter(IaCEmitter):
         }
 
     def _build_azure_resource_id(
-        self, tf_resource_type: str, resource_config: Dict[str, Any], subscription_id: str
+        self,
+        tf_resource_type: str,
+        resource_config: Dict[str, Any],
+        subscription_id: str,
     ) -> Optional[str]:
         """Build Azure resource ID from Terraform resource config.
 
@@ -933,11 +936,13 @@ class TerraformEmitter(IaCEmitter):
                 all_existence_results = {}
 
                 for i in range(0, len(resource_ids), batch_size):
-                    batch = resource_ids[i:i + batch_size]
-                    batch_results = self._existence_validator.batch_check_resources(batch)
+                    batch = resource_ids[i : i + batch_size]
+                    batch_results = self._existence_validator.batch_check_resources(
+                        batch
+                    )
                     all_existence_results.update(batch_results)
                     logger.info(
-                        f"Validated batch {i//batch_size + 1}/{(len(resource_ids) + batch_size - 1)//batch_size}"
+                        f"Validated batch {i // batch_size + 1}/{(len(resource_ids) + batch_size - 1) // batch_size}"
                     )
 
                 # Filter to only existing resources

@@ -12,11 +12,10 @@ Test Categories:
 - Identity reference maintenance
 """
 
-from typing import Any, Dict, List, Set
-from unittest.mock import Mock, MagicMock, patch
+from typing import Any, Dict, List
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # Pytest marker for dual-graph feature tests
 pytestmark = pytest.mark.dual_graph

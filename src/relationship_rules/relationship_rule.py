@@ -25,7 +25,9 @@ class RelationshipRule(ABC):
         """
         self.enable_dual_graph = enable_dual_graph
         # Buffer for batched relationship creation
-        self._relationship_buffer: List[Tuple[str, str, str, Optional[Dict[str, Any]]]] = []
+        self._relationship_buffer: List[
+            Tuple[str, str, str, Optional[Dict[str, Any]]]
+        ] = []
         self._buffer_size = 100  # Batch size for relationship creation
 
     @abstractmethod
@@ -48,12 +50,16 @@ class RelationshipRule(ABC):
         rel_type: str,
         tgt_id: str,
         properties: Optional[Dict[str, Any]] = None,
+        immediate_flush: bool = False,
     ) -> bool:
         """
         Create relationship in both graphs if dual-graph is enabled.
 
-        Uses batched approach for performance - queues relationships and
+        Uses batched approach for performance by default - queues relationships and
         flushes in batches of 100 to avoid N+1 query problem.
+
+        For critical hierarchical relationships (CONTAINS, USES_SUBNET), set
+        immediate_flush=True to create relationships synchronously.
 
         This method ensures relationship topology is preserved across both graphs:
         1. Creates relationship between original nodes (:Resource:Original)
@@ -66,16 +72,27 @@ class RelationshipRule(ABC):
             rel_type: Relationship type (e.g., "USES_SUBNET", "SECURED_BY")
             tgt_id: Target resource ID (original Azure ID)
             properties: Optional relationship properties
+            immediate_flush: If True, create relationship immediately without buffering.
+                           Use for critical hierarchical relationships (CONTAINS, USES_SUBNET).
 
         Returns:
             bool: True if successful, False otherwise
 
         Example:
+            >>> # Batched (default)
             >>> self.create_dual_graph_relationship(
             ...     db_ops,
             ...     vm_id,
-            ...     "USES_SUBNET",
-            ...     subnet_id
+            ...     "SECURED_BY",
+            ...     nsg_id
+            ... )
+            >>> # Immediate (for critical relationships)
+            >>> self.create_dual_graph_relationship(
+            ...     db_ops,
+            ...     vnet_id,
+            ...     "CONTAINS",
+            ...     subnet_id,
+            ...     immediate_flush=True
             ... )
         """
         if not self.enable_dual_graph:
@@ -89,7 +106,13 @@ class RelationshipRule(ABC):
                 db_ops, src_id, rel_type, tgt_id, properties
             )
 
-        # Use batched approach for performance
+        # If immediate flush requested, create synchronously
+        if immediate_flush:
+            return self._create_dual_graph_relationship_immediate(
+                db_ops, src_id, rel_type, tgt_id, properties
+            )
+
+        # Otherwise, use batched approach for performance
         self.queue_dual_graph_relationship(src_id, rel_type, tgt_id, properties)
         self.auto_flush_if_needed(db_ops)
         return True
@@ -153,6 +176,119 @@ class RelationshipRule(ABC):
         except Exception as e:
             logger.exception(
                 f"Error creating legacy relationship {rel_type} "
+                f"from {src_id} to {tgt_id}: {e}"
+            )
+            return False
+
+    def _create_dual_graph_relationship_immediate(
+        self,
+        db_ops: Any,
+        src_id: str,
+        rel_type: str,
+        tgt_id: str,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Create relationship immediately in both graphs with validation.
+
+        This method creates relationships synchronously without buffering,
+        ensuring critical hierarchical relationships (CONTAINS, USES_SUBNET)
+        are created immediately when target nodes exist.
+
+        Verifies all four nodes exist before creating relationships:
+        - src_orig: Original source node (:Resource:Original)
+        - tgt_orig: Original target node (:Resource:Original)
+        - src_abs: Abstracted source node (:Resource)
+        - tgt_abs: Abstracted target node (:Resource)
+
+        Uses MERGE for idempotency - safe to call multiple times.
+
+        Args:
+            db_ops: DatabaseOperations instance with session_manager
+            src_id: Source resource ID (original Azure ID)
+            rel_type: Relationship type (e.g., "CONTAINS", "USES_SUBNET")
+            tgt_id: Target resource ID (original Azure ID)
+            properties: Optional relationship properties
+
+        Returns:
+            bool: True if both relationships created, False if any node missing
+
+        Example:
+            >>> self._create_dual_graph_relationship_immediate(
+            ...     db_ops,
+            ...     vnet_id,
+            ...     "CONTAINS",
+            ...     subnet_id,
+            ...     immediate_flush=True
+            ... )
+        """
+        if not self.enable_dual_graph:
+            return self._create_legacy_relationship(
+                db_ops, src_id, rel_type, tgt_id, properties
+            )
+
+        try:
+            # Single query that verifies all nodes exist and creates both relationships
+            prop_string = ""
+            if properties:
+                prop_string = """
+                SET r_orig += $properties
+                SET r_abs += $properties
+                """
+
+            query = f"""
+            // Find original nodes (indexed lookups)
+            MATCH (src_orig:Resource:Original {{id: $src_id}})
+            MATCH (tgt_orig:Resource:Original {{id: $tgt_id}})
+
+            // Find abstracted nodes via indexed original_id property
+            MATCH (src_abs:Resource {{original_id: $src_id}})
+            MATCH (tgt_abs:Resource {{original_id: $tgt_id}})
+
+            // Create relationships in both graphs using MERGE for idempotency
+            MERGE (src_orig)-[r_orig:{rel_type}]->(tgt_orig)
+            MERGE (src_abs)-[r_abs:{rel_type}]->(tgt_abs)
+
+            {prop_string}
+
+            // Return counts to verify creation
+            RETURN
+                count(r_orig) as orig_created,
+                count(r_abs) as abs_created
+            """
+
+            with db_ops.session_manager.session() as session:
+                result = session.run(
+                    query,
+                    src_id=src_id,
+                    tgt_id=tgt_id,
+                    properties=properties or {},
+                )
+                record = result.single()
+
+                if record:
+                    orig_created = record["orig_created"]
+                    abs_created = record["abs_created"]
+
+                    if orig_created == 1 and abs_created == 1:
+                        logger.debug(
+                            f"✅ Created immediate {rel_type} relationship: {src_id} -> {tgt_id}"
+                        )
+                        return True
+                    else:
+                        logger.warning(
+                            f"⚠️ Incomplete relationship creation for {rel_type}: "
+                            f"{src_id} -> {tgt_id} "
+                            f"(orig={orig_created}, abs={abs_created})"
+                        )
+                        return False
+
+                return False
+
+        except Exception as e:
+            # Log warning instead of exception - missing nodes are expected during processing
+            logger.warning(
+                f"Could not create immediate {rel_type} relationship "
                 f"from {src_id} to {tgt_id}: {e}"
             )
             return False
@@ -302,9 +438,13 @@ class RelationshipRule(ABC):
                 )
 
             total_created = 0
+            total_expected = 0
 
             # Process each relationship type in a single batch query
             for rel_type, relationships in relationships_by_type.items():
+                expected_count = len(relationships)
+                total_expected += expected_count
+
                 query = f"""
                 // Batch create relationships using UNWIND for optimal performance
                 UNWIND $relationships AS rel
@@ -336,17 +476,50 @@ class RelationshipRule(ABC):
                     if record:
                         created = record["created"]
                         total_created += created
-                        logger.debug(
-                            f"Batch created {created} {rel_type} relationships"
+
+                        # Calculate success rate
+                        success_rate = (
+                            (created / expected_count * 100)
+                            if expected_count > 0
+                            else 0
                         )
+
+                        # Log with appropriate level based on success rate
+                        if created == expected_count:
+                            logger.info(
+                                f"✅ Batch created {created}/{expected_count} {rel_type} relationships (100%)"
+                            )
+                        elif created > 0:
+                            logger.warning(
+                                f"⚠️ Partial batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%) - some nodes may be missing"
+                            )
+                        else:
+                            logger.warning(
+                                f"❌ Failed to create any {rel_type} relationships (0/{expected_count}) - all nodes missing"
+                            )
 
             # Clear buffer after successful flush
             buffer_size = len(self._relationship_buffer)
             self._relationship_buffer.clear()
 
-            logger.info(
-                f"Flushed {buffer_size} buffered relationships, created {total_created} in both graphs"
+            # Calculate overall success rate
+            overall_success_rate = (
+                (total_created / total_expected * 100) if total_expected > 0 else 0
             )
+
+            if total_created == total_expected:
+                logger.info(
+                    f"✅ Flushed {buffer_size} buffered relationships, created {total_created}/{total_expected} in both graphs (100%)"
+                )
+            elif total_created > 0:
+                logger.warning(
+                    f"⚠️ Flushed {buffer_size} buffered relationships, created {total_created}/{total_expected} in both graphs ({overall_success_rate:.1f}%)"
+                )
+            else:
+                logger.warning(
+                    f"❌ Flushed {buffer_size} buffered relationships, created 0/{total_expected} in both graphs (0%)"
+                )
+
             return total_created
 
         except Exception as e:

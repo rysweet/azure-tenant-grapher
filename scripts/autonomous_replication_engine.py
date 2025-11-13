@@ -22,12 +22,11 @@ Date: 2025-10-15
 import json
 import os
 import subprocess
-import sys
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
-import traceback
+from typing import Any, Dict, List, Tuple
 
 # Configuration
 REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
@@ -206,7 +205,7 @@ class StateAssessor:
             else:
                 current_tenant = None
                 logged_in = False
-        except Exception as e:
+        except Exception:
             current_tenant = None
             logged_in = False
 
@@ -244,7 +243,7 @@ class WorkstreamOrchestrator:
                 cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout
             )
             return result.returncode, result.stdout, result.stderr
-        except subprocess.TimeoutExpired as e:
+        except subprocess.TimeoutExpired:
             return -1, "", f"Timeout after {timeout}s"
         except Exception as e:
             return -1, "", str(e)
@@ -457,7 +456,7 @@ class AutonomousEngine:
             return success
         else:
             self.reporter.send(
-                f"⏭️ Continuing to next iteration (need 3 consecutive passes)"
+                "⏭️ Continuing to next iteration (need 3 consecutive passes)"
             )
             return True
 
@@ -516,7 +515,7 @@ class AutonomousEngine:
                 break
 
             except Exception as e:
-                error_msg = f"❌ Error in iteration {iteration_count}: {str(e)}"
+                error_msg = f"❌ Error in iteration {iteration_count}: {e!s}"
                 self.reporter.send(error_msg)
                 self.status.setdefault("errors", []).append(
                     {

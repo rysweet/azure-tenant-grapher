@@ -14,10 +14,9 @@ Test Categories:
 """
 
 from typing import Any, Dict, List
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # Pytest marker for dual-graph feature tests
 pytestmark = pytest.mark.dual_graph
