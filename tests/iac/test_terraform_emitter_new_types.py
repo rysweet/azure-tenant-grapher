@@ -544,3 +544,53 @@ class TestSmartDetectorAlertRuleMapping:
         assert result is not None
         _, _, config = result
         assert config["enabled"] is False
+
+    def test_smart_detector_cross_tenant_scope_translation(self):
+        """Test that scope resource IDs are translated to target subscription in cross-tenant mode."""
+        # Create emitter with target subscription (cross-tenant mode)
+        target_subscription = "target-subscription-id"
+        emitter = TerraformEmitter(target_subscription_id=target_subscription)
+
+        # Resource from source tenant with source subscription in scope
+        resource = {
+            "id": "/subscriptions/source-sub/resourceGroups/test-rg/providers/microsoft.alertsmanagement/smartDetectorAlertRules/test",
+            "name": "test-rule",
+            "type": "microsoft.alertsmanagement/smartDetectorAlertRules",
+            "location": "global",
+            "resource_group": "test-rg",
+            "subscription_id": "source-sub",
+            "properties": json.dumps(
+                {
+                    "state": "Enabled",
+                    "severity": "Sev3",
+                    "frequency": "PT1M",
+                    "detector": {"id": "FailureAnomaliesDetector"},
+                    "scope": [
+                        "/subscriptions/source-sub/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+                    ],
+                    "actionGroups": {
+                        "groupIds": [
+                            "/subscriptions/source-sub/resourceGroups/test-rg/providers/microsoft.insights/actionGroups/test-ag"
+                        ]
+                    },
+                }
+            ),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        assert result is not None
+        _, _, config = result
+
+        # Verify scope resource IDs use target subscription
+        assert len(config["scope_resource_ids"]) == 1
+        scope_id = config["scope_resource_ids"][0]
+        assert target_subscription in scope_id
+        assert "source-sub" not in scope_id
+        assert scope_id == f"/subscriptions/{target_subscription}/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+
+        # Verify action group IDs also use target subscription
+        assert "action_group" in config
+        assert len(config["action_group"]["ids"]) == 1
+        ag_id = config["action_group"]["ids"][0]
+        assert target_subscription in ag_id
+        assert "source-sub" not in ag_id

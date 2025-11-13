@@ -190,6 +190,20 @@ class TerraformEmitter(IaCEmitter):
         # Role-Based Access Control (RBAC)
         "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
         "Microsoft.Authorization/roleDefinitions": "azurerm_role_definition",
+        # Container and Kubernetes resources (azurerm v3.43.0+)
+        "Microsoft.App/containerApps": "azurerm_container_app",
+        "Microsoft.ContainerService/managedClusters": "azurerm_kubernetes_cluster",
+        "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
+        # Additional Compute resources
+        "Microsoft.Compute/virtualMachineScaleSets": "azurerm_linux_virtual_machine_scale_set",
+        "Microsoft.Compute/snapshots": "azurerm_snapshot",
+        # Additional Network resources
+        "Microsoft.Network/loadBalancers": "azurerm_lb",
+        # Additional Monitoring resources
+        "Microsoft.Insights/metricAlerts": "azurerm_monitor_metric_alert",
+        "Microsoft.Insights/metricalerts": "azurerm_monitor_metric_alert",  # Case variant
+        # Cache resources
+        "Microsoft.Cache/Redis": "azurerm_redis_cache",
     }
 
     def _extract_resource_groups(
@@ -287,7 +301,7 @@ class TerraformEmitter(IaCEmitter):
                 "subscription_id": {
                     "description": "Azure subscription ID for deployment",
                     "type": "string",
-                    "default": subscription_id or "",
+                    "default": self.target_subscription_id or subscription_id or "",
                 }
             },
             "resource": {},
@@ -358,7 +372,8 @@ class TerraformEmitter(IaCEmitter):
 
                 # For subnets, also track VNet-scoped names
                 if azure_type == "Microsoft.Network/subnets":
-                    subnet_id = resource.get("id", "")
+                    # For abstracted nodes, use original_id which contains the full Azure resource path
+                    subnet_id = resource.get("original_id") or resource.get("id", "")
                     vnet_name = self._extract_resource_name_from_id(
                         subnet_id, "virtualNetworks"
                     )
@@ -1493,7 +1508,8 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # Extract parent VNet name from subnet ID
-            subnet_id = resource.get("id", "")
+            # For abstracted nodes, use original_id which contains the full Azure resource path
+            subnet_id = resource.get("original_id") or resource.get("id", "")
             vnet_name = self._extract_resource_name_from_id(
                 subnet_id, "virtualNetworks"
             )
@@ -1591,12 +1607,28 @@ class TerraformEmitter(IaCEmitter):
             # Build service plan ID with proper subscription
             service_plan_id = resource.get("app_service_plan_id")
             if not service_plan_id:
-                # Construct default service plan ID with actual subscription
+                # If no service plan, create a default one for this App Service
                 resource_group = resource.get("resource_group", "default-rg")
-                service_plan_id = (
-                    f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{resource_group}/"
-                    f"providers/Microsoft.Web/serverFarms/default-plan"
-                )
+                plan_name = f"{resource_name}-plan"
+                plan_safe_name = self._sanitize_terraform_name(plan_name)
+
+                # Create the service plan resource
+                if "azurerm_service_plan" not in terraform_config["resource"]:
+                    terraform_config["resource"]["azurerm_service_plan"] = {}
+
+                # Only create if not already exists
+                if plan_safe_name not in terraform_config["resource"]["azurerm_service_plan"]:
+                    terraform_config["resource"]["azurerm_service_plan"][plan_safe_name] = {
+                        "name": plan_name,
+                        "location": location,
+                        "resource_group_name": resource_group,
+                        "os_type": "Windows" if not is_linux else "Linux",
+                        "sku_name": "B1",  # Basic tier
+                    }
+                    logger.debug(f"Created default service plan '{plan_name}' for App Service '{resource_name}'")
+
+                # Reference the created plan
+                service_plan_id = f"${{azurerm_service_plan.{plan_safe_name}.id}}"
 
             resource_config.update(
                 {
@@ -1747,9 +1779,14 @@ class TerraformEmitter(IaCEmitter):
             resource_config = emit_private_dns_zone(resource)
         elif azure_type == "Microsoft.Network/privateDnsZones/virtualNetworkLinks":
             # Private DNS Zone Virtual Network Link specific properties
-            # Need to build set of available VNets for validation
+            # Need to build set of available VNets and DNS Zones for validation
             available_vnets = (
                 self._available_resources.get("azurerm_virtual_network", set())
+                if self._available_resources
+                else set()
+            )
+            available_dns_zones = (
+                self._available_resources.get("azurerm_private_dns_zone", set())
                 if self._available_resources
                 else set()
             )
@@ -1759,6 +1796,7 @@ class TerraformEmitter(IaCEmitter):
                 sanitize_name_fn=self._sanitize_terraform_name,
                 extract_name_fn=self._extract_resource_name_from_id,
                 available_vnets=available_vnets,
+                available_dns_zones=available_dns_zones,
                 missing_references=missing_references,
             )
             if resource_config is None:
@@ -2032,6 +2070,27 @@ class TerraformEmitter(IaCEmitter):
             # Get scope (Application Insights resource IDs)
             scope_resource_ids = properties.get("scope", [])
 
+            # Translate scope resource IDs to use target subscription in cross-tenant scenarios
+            translated_scope_ids = []
+            for scope_id in scope_resource_ids:
+                parts = scope_id.split("/")
+                if len(parts) >= 9:
+                    # Reconstruct with target subscription ID
+                    # Format: /subscriptions/{sid}/resourceGroups/{rg}/providers/{provider}/{type}/{name}
+                    rg_name = parts[4]
+                    provider = parts[6]
+                    resource_type = parts[7]
+                    resource_name = parts[8] if len(parts) > 8 else ""
+                    translated_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/{provider}/{resource_type}/{resource_name}"
+                    translated_scope_ids.append(translated_id)
+                    logger.debug(f"Translated scope resource ID from {scope_id} to {translated_id}")
+                else:
+                    # Keep original if can't parse
+                    logger.warning(
+                        f"Could not parse scope resource ID (unexpected format): {scope_id}, using original"
+                    )
+                    translated_scope_ids.append(scope_id)
+
             # Keep severity in Azure format (Sev0-Sev4) - Terraform expects this format
             severity = properties.get("severity", "Sev3")
 
@@ -2041,8 +2100,8 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update(
                 {
                     "detector_type": detector_id,
-                    "scope_resource_ids": scope_resource_ids
-                    if scope_resource_ids
+                    "scope_resource_ids": translated_scope_ids
+                    if translated_scope_ids
                     else [],
                     "severity": severity,  # Keep as "SevN" format
                     "frequency": frequency,
@@ -2504,6 +2563,242 @@ class TerraformEmitter(IaCEmitter):
             # Add sign_in_audience if present
             sign_in_audience = resource.get("signInAudience", "AzureADMyOrg")
             resource_config["sign_in_audience"] = sign_in_audience
+
+        elif azure_type == "Microsoft.ContainerRegistry/registries":
+            # Container Registry requires SKU
+            properties = self._parse_properties(resource)
+            # Extract SKU from properties or use default
+            sku_obj = properties.get("sku", {})
+            sku_name = sku_obj.get("name") if isinstance(sku_obj, dict) else sku_obj
+            if not sku_name:
+                sku_name = resource.get("sku", "Basic")
+
+            resource_config.update({
+                "sku": sku_name if sku_name else "Basic",
+            })
+
+            # Add admin_enabled if present
+            if "adminUserEnabled" in properties:
+                resource_config["admin_enabled"] = properties.get("adminUserEnabled", False)
+
+        elif azure_type == "Microsoft.App/containerApps":
+            # Container Apps require environment, revision mode, and template
+            # For now, skip Container Apps as they require complex environment references
+            # This will be handled in a future iteration
+            logger.warning(
+                f"Skipping Container App '{resource_name}' - Container Apps require "
+                f"complex environment and template configuration that is not yet supported. "
+                f"Add support for Microsoft.App/managedEnvironments first."
+            )
+            return None
+
+        elif azure_type == "Microsoft.ContainerService/managedClusters":
+            # AKS Clusters require default_node_pool configuration
+            properties = self._parse_properties(resource)
+            agent_pools = properties.get("agentPoolProfiles", [])
+
+            if agent_pools:
+                first_pool = agent_pools[0]
+                # Extract node pool configuration
+                node_pool = {
+                    "name": first_pool.get("name", "default"),
+                    "vm_size": first_pool.get("vmSize", "Standard_DS2_v2"),
+                    "node_count": first_pool.get("count", 1),
+                }
+
+                # Add optional node pool properties
+                if "vnetSubnetId" in first_pool:
+                    node_pool["vnet_subnet_id"] = first_pool["vnetSubnetId"]
+                if "osDiskSizeGB" in first_pool:
+                    node_pool["os_disk_size_gb"] = first_pool["osDiskSizeGB"]
+                if "maxPods" in first_pool:
+                    node_pool["max_pods"] = first_pool["maxPods"]
+
+                resource_config["default_node_pool"] = node_pool
+            else:
+                # Skip AKS clusters without node pools
+                logger.warning(
+                    f"Skipping AKS cluster '{resource_name}' - no agent pool profiles found in properties"
+                )
+                return None
+
+            # Add DNS prefix (required)
+            dns_prefix = properties.get("dnsPrefix") or resource_name.lower()
+            resource_config["dns_prefix"] = dns_prefix
+
+            # Add identity (required - AKS clusters must have either identity or service_principal)
+            # Prefer SystemAssigned identity (modern approach)
+            identity = properties.get("identity", {})
+            identity_type = identity.get("type", "").lower() if identity else ""
+
+            if "systemassigned" in identity_type or not identity:
+                # Use SystemAssigned if present or if no identity specified (safer default)
+                resource_config["identity"] = {"type": "SystemAssigned"}
+            # Note: UserAssigned identities and service principals require additional configuration
+
+        elif azure_type == "Microsoft.Compute/snapshots":
+            # Snapshots require create_option and source_resource_id
+            properties = self._parse_properties(resource)
+
+            # create_option is required: "Copy" for snapshots
+            resource_config["create_option"] = properties.get("creationData", {}).get("createOption", "Copy")
+
+            # source_resource_id might be present
+            source_resource_id = properties.get("creationData", {}).get("sourceResourceId")
+            if source_resource_id:
+                resource_config["source_resource_id"] = source_resource_id
+
+            # disk_size_gb
+            disk_size_gb = properties.get("diskSizeGB") or resource.get("diskSizeGB")
+            if disk_size_gb:
+                resource_config["disk_size_gb"] = disk_size_gb
+
+        elif azure_type == "Microsoft.Compute/virtualMachineScaleSets":
+            # VM Scale Sets require complex configuration
+            properties = self._parse_properties(resource)
+
+            # Extract VM profile
+            vm_profile = properties.get("virtualMachineProfile", {})
+            os_profile = vm_profile.get("osProfile", {})
+            storage_profile = vm_profile.get("storageProfile", {})
+            network_profile = vm_profile.get("networkProfile", {})
+
+            # Admin username (required)
+            admin_username = os_profile.get("adminUsername", "azureuser")
+            resource_config["admin_username"] = admin_username
+
+            # SKU (required)
+            sku_obj = properties.get("sku", {})
+            sku_name = sku_obj.get("name") if isinstance(sku_obj, dict) else sku_obj
+            if not sku_name:
+                sku_name = resource.get("sku", "Standard_DS2_v2")
+            resource_config["sku"] = sku_name
+
+            # Instances (optional, defaults from sku.capacity)
+            instances = sku_obj.get("capacity", 1) if isinstance(sku_obj, dict) else 1
+            resource_config["instances"] = instances
+
+            # OS disk (required block)
+            os_disk = storage_profile.get("osDisk", {})
+            resource_config["os_disk"] = {
+                "caching": os_disk.get("caching", "ReadWrite"),
+                "storage_account_type": os_disk.get("managedDisk", {}).get("storageAccountType", "Standard_LRS"),
+            }
+
+            # Network interface (required block)
+            network_interfaces = network_profile.get("networkInterfaceConfigurations", [])
+            if network_interfaces:
+                first_nic = network_interfaces[0]
+                ip_configs = first_nic.get("ipConfigurations", [])
+                if ip_configs:
+                    first_ip_config = ip_configs[0]
+                    resource_config["network_interface"] = [{
+                        "name": first_nic.get("name", "default"),
+                        "primary": first_nic.get("primary", True),
+                        "ip_configuration": [{
+                            "name": first_ip_config.get("name", "internal"),
+                            "primary": first_ip_config.get("primary", True),
+                            "subnet_id": first_ip_config.get("subnet", {}).get("id", ""),
+                        }]
+                    }]
+                else:
+                    # No IP config - skip this VMSS
+                    logger.warning(
+                        f"Skipping VM Scale Set '{resource_name}' - no IP configurations found"
+                    )
+                    return None
+            else:
+                # No network interfaces - skip
+                logger.warning(
+                    f"Skipping VM Scale Set '{resource_name}' - no network interface configurations found"
+                )
+                return None
+
+            # Source image reference
+            image_reference = storage_profile.get("imageReference", {})
+            if image_reference:
+                resource_config["source_image_reference"] = {
+                    "publisher": image_reference.get("publisher", "Canonical"),
+                    "offer": image_reference.get("offer", "0001-com-ubuntu-server-jammy"),
+                    "sku": image_reference.get("sku", "22_04-lts"),
+                    "version": image_reference.get("version", "latest"),
+                }
+
+        elif azure_type == "Microsoft.Cache/Redis":
+            # Redis Cache requires SKU configuration
+            properties = self._parse_properties(resource)
+
+            # Extract SKU - can be at top level or in properties
+            sku_obj = properties.get("sku", resource.get("sku", {}))
+            if isinstance(sku_obj, dict):
+                sku_name = sku_obj.get("name", "Basic")
+                capacity = sku_obj.get("capacity", 0)
+                family = sku_obj.get("family", "C")
+            else:
+                # SKU might be string or missing
+                sku_name = "Basic"
+                capacity = 0
+                family = "C"
+
+            # Validate SKU
+            if not capacity or capacity == 0:
+                logger.warning(
+                    f"Skipping Redis Cache '{resource_name}' - invalid SKU capacity: {capacity}"
+                )
+                return None
+
+            resource_config.update({
+                "capacity": capacity,
+                "sku_name": sku_name,
+                "family": family,
+            })
+
+            # Note: enable_non_ssl_port and minimum_tls_version are not valid azurerm_redis_cache arguments
+            # These are managed through redis_configuration block or other mechanisms
+
+        elif azure_type == "Microsoft.Insights/metricalerts":
+            # Metric Alerts require scopes and don't have location
+            properties = self._parse_properties(resource)
+
+            # Extract scopes (required - list of resource IDs to monitor)
+            scopes = properties.get("scopes", [])
+            if not scopes:
+                logger.warning(
+                    f"Skipping metric alert '{resource_name}' - no scopes found in properties"
+                )
+                return None
+
+            # Remove location from resource_config (metric alerts are global)
+            resource_config.pop("location", None)
+
+            resource_config.update({
+                "scopes": scopes,
+                "severity": properties.get("severity", 3),
+                "enabled": properties.get("enabled", True),
+                "frequency": properties.get("evaluationFrequency", "PT1M"),
+                "window_size": properties.get("windowSize", "PT5M"),
+            })
+
+            # Add criteria (simplified - use dynamic_criteria or criteria)
+            criteria = properties.get("criteria", {})
+            if criteria:
+                # For now, add as a simple criteria block
+                # Full implementation would parse allOf, anyOf, etc.
+                resource_config["criteria"] = [
+                    {
+                        "metric_namespace": criteria.get("odata.type", "").replace("Microsoft.Azure.Monitor.", ""),
+                        "metric_name": "Percentage CPU",  # Default - should extract from criteria
+                        "aggregation": "Average",
+                        "operator": "GreaterThan",
+                        "threshold": 80,
+                    }
+                ]
+            else:
+                # Skip alerts without criteria
+                logger.warning(
+                    f"Skipping metric alert '{resource_name}' - no criteria found"
+                )
+                return None
 
         return terraform_type, safe_name, resource_config
 

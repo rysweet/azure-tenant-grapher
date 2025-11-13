@@ -304,14 +304,28 @@ class DatabaseOperations:
 
         try:
             # Defensive validation of required fields
-            required_fields = [
-                "id",
-                "name",
-                "type",
-                "location",
-                "resource_group",
-                "subscription_id",
-            ]
+            # Note: Some resources (role assignments, policy assignments) don't have location or resource_group
+            resource_type = resource.get("type", "")
+
+            # Role assignments and other global resources don't have location/resource_group
+            global_resource_types = {
+                "Microsoft.Authorization/roleAssignments",
+                "Microsoft.Authorization/policyAssignments",
+                "Microsoft.Authorization/roleDefinitions",
+            }
+
+            if resource_type in global_resource_types:
+                required_fields = ["id", "name", "type", "subscription_id"]
+            else:
+                required_fields = [
+                    "id",
+                    "name",
+                    "type",
+                    "location",
+                    "resource_group",
+                    "subscription_id",
+                ]
+
             # Accept id from resource_id if present
             if not resource.get("id") and resource.get("resource_id"):
                 resource["id"] = resource["resource_id"]
@@ -1219,6 +1233,86 @@ class ResourceProcessor:
         except Exception as e:
             logger.exception(f"Error flushing relationship buffers: {e}")
             print(f"[DEBUG][RP] Error flushing relationship buffers: {e}", flush=True)
+
+        # Verify dual-graph relationship duplication
+        logger.info("🔍 Verifying dual-graph relationship duplication...")
+        print(
+            "[DEBUG][RP] Verifying dual-graph relationship duplication...", flush=True
+        )
+        try:
+            # Query to count relationships in both Original and Abstracted graphs
+            verification_query = """
+            // Count relationships in Original graph (between :Resource:Original nodes)
+            MATCH (src:Resource:Original)-[r]->(tgt:Resource:Original)
+            WITH type(r) as rel_type, count(r) as orig_count
+
+            // Count relationships in Abstracted graph (between :Resource nodes, excluding :Original)
+            MATCH (src_abs:Resource)-[r_abs]->(tgt_abs:Resource)
+            WHERE NOT src_abs:Original AND NOT tgt_abs:Original
+            WITH rel_type, orig_count, type(r_abs) as abs_rel_type, count(r_abs) as abs_count
+            WHERE rel_type = abs_rel_type
+
+            RETURN rel_type, orig_count, abs_count,
+                   CASE WHEN orig_count = abs_count THEN '✅' ELSE '⚠️' END as status
+            ORDER BY rel_type
+            """
+
+            with self.db_ops.session_manager.session() as session:
+                result = session.run(verification_query)
+                records = list(result)
+
+                if records:
+                    logger.info("📊 Dual-Graph Relationship Verification:")
+                    print(
+                        "[DEBUG][RP] Dual-Graph Relationship Verification:", flush=True
+                    )
+
+                    all_matched = True
+                    for record in records:
+                        rel_type = record["rel_type"]
+                        orig_count = record["orig_count"]
+                        abs_count = record["abs_count"]
+                        status = record["status"]
+
+                        log_msg = f"{status} {rel_type}: Original={orig_count}, Abstracted={abs_count}"
+
+                        if orig_count == abs_count:
+                            logger.info(log_msg)
+                        else:
+                            logger.warning(log_msg)
+                            all_matched = False
+
+                        print(f"[DEBUG][RP] {log_msg}", flush=True)
+
+                    if all_matched:
+                        logger.info(
+                            "✅ All relationship types matched between Original and Abstracted graphs"
+                        )
+                        print(
+                            "[DEBUG][RP] ✅ All relationship types matched", flush=True
+                        )
+                    else:
+                        logger.warning(
+                            "⚠️ Some relationship types have mismatches - this may indicate missing nodes during relationship creation"
+                        )
+                        print(
+                            "[DEBUG][RP] ⚠️ Some relationship types have mismatches",
+                            flush=True,
+                        )
+                else:
+                    logger.info(
+                        "No Resource-to-Resource relationships found in either graph"
+                    )
+                    print(
+                        "[DEBUG][RP] No Resource-to-Resource relationships found",
+                        flush=True,
+                    )
+
+        except Exception as e:
+            logger.exception(f"Error verifying dual-graph relationships: {e}")
+            print(
+                f"[DEBUG][RP] Error verifying dual-graph relationships: {e}", flush=True
+            )
 
         if self.llm_generator:
             logger.info("🤖 Generating LLM summaries for ResourceGroups and Tags...")

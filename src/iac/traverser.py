@@ -102,12 +102,24 @@ class GraphTraverser:
                 }) AS rels
                 """
             else:
-                # Query Abstracted nodes (default for IaC generation)
+                # Query ALL Resource nodes (both Original and Abstracted for IaC generation)
+                # Priority: Abstracted nodes are preferred when both exist
+                # This ensures we get all resources while using abstracted IDs when available
                 query = """
                 MATCH (r:Resource)
-                WHERE NOT r:Original
+                WHERE NOT EXISTS {
+                    MATCH (abstracted:Resource)
+                    WHERE NOT abstracted:Original
+                    AND abstracted.original_id = r.id
+                    AND r:Original
+                }
                 OPTIONAL MATCH (r)-[rel]->(t:Resource)
-                WHERE NOT t:Original
+                WHERE NOT EXISTS {
+                    MATCH (t_abstracted:Resource)
+                    WHERE NOT t_abstracted:Original
+                    AND t_abstracted.original_id = t.id
+                    AND t:Original
+                }
                 RETURN r, collect({
                     type: type(rel),
                     target: t.id,

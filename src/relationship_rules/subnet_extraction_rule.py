@@ -83,11 +83,14 @@ class SubnetExtractionRule(RelationshipRule):
                     )
 
                     # Create VNet -> Subnet relationship (use dual-graph helper)
+                    # Use immediate_flush=True to ensure CONTAINS relationships are created
+                    # immediately since subnet node now exists
                     self.create_dual_graph_relationship(
                         db_ops,
                         str(vnet_id),
                         "CONTAINS",
                         str(subnet_resource["id"]),
+                        immediate_flush=True,
                     )
 
                     logger.debug(f"Created subnet node: {subnet_resource['id']}")
