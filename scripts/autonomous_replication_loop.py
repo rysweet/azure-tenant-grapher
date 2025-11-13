@@ -20,7 +20,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -157,7 +157,7 @@ class AutonomousReplicationLoop:
                 "source_nodes": source_count,
                 "target_nodes": target_count,
                 "delta_percent": delta_pct * 100,
-                "note": f"Target should have >= source due to multiple iterations",
+                "note": "Target should have >= source due to multiple iterations",
             }
         except Exception as e:
             print(f"Graph fidelity check failed: {e}")
@@ -435,7 +435,7 @@ Do not stop until the gap is fixed.
             )
         except Exception as e:
             print(f"Failed to switch subscription: {e}")
-            self.send_imessage(f"❌ Failed to switch to target subscription")
+            self.send_imessage("❌ Failed to switch to target subscription")
             return False
 
         # Get subscription ID from Azure CLI (should be target now)
@@ -453,7 +453,7 @@ Do not stop until the gap is fixed.
                 print(
                     f"WARNING: Subscription mismatch! Expected {TARGET_SUBSCRIPTION}, got {subscription_id}"
                 )
-                self.send_imessage(f"⚠️ Subscription mismatch in deployment")
+                self.send_imessage("⚠️ Subscription mismatch in deployment")
         except Exception as e:
             print(f"Failed to get subscription ID: {e}")
             subscription_id = TARGET_SUBSCRIPTION
@@ -567,7 +567,7 @@ Do not stop until the gap is fixed.
                 break
 
             # Report status
-            print(f"\nObjective Status:")
+            print("\nObjective Status:")
             print(
                 f"  Graph Fidelity: {'✓' if results['graph_fidelity']['met'] else '✗'}"
             )

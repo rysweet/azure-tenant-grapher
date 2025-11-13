@@ -153,7 +153,7 @@ if __name__ == "__main__":
         emitter = TerraformEmitter(
             auto_import_existing=True,
             import_strategy="resource_groups",
-            target_subscription_id="test-sub"
+            target_subscription_id="test-sub",
         )
 
         # Initially should be 0
@@ -167,9 +167,9 @@ if __name__ == "__main__":
                 }
             }
         }
-        
+
         import_blocks = emitter._generate_import_blocks(terraform_config, [])
-        
+
         # This doesn't set the counter (that happens in emit())
         # but we can verify the method works
         assert len(import_blocks) == 1

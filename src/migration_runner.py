@@ -43,9 +43,9 @@ def run_pending_migrations():
                     "DROP INDEX",
                 ]
                 # Check if any non-comment line starts with a schema keyword
-                for line in stmt.split('\n'):
+                for line in stmt.split("\n"):
                     stripped = line.strip()
-                    if stripped and not stripped.startswith('//'):
+                    if stripped and not stripped.startswith("//"):
                         # Found a non-comment line, check if it's a schema statement
                         return any(
                             stripped.upper().startswith(kw) for kw in schema_keywords

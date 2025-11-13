@@ -11,11 +11,9 @@ Test Categories:
 - Count queries work correctly for both graphs
 """
 
-from typing import Any, Dict, List
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # Pytest marker for dual-graph feature tests
 pytestmark = pytest.mark.dual_graph

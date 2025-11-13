@@ -46,12 +46,14 @@ class NetworkRule(RelationshipRule):
                     if subnet and isinstance(subnet, dict):
                         subnet_id = subnet.get("id")
                         if subnet_id and rid:
-                            # Use dual-graph helper instead of direct db_ops call
+                            # Use dual-graph helper with immediate_flush for critical relationship
+                            # This ensures USES_SUBNET relationships are created when both nodes exist
                             self.create_dual_graph_relationship(
                                 db_ops,
                                 str(rid),
                                 "USES_SUBNET",
                                 str(subnet_id),
+                                immediate_flush=True,
                             )
 
         # (Subnet) -[:SECURED_BY]-> (NetworkSecurityGroup)

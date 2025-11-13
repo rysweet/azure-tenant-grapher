@@ -191,7 +191,9 @@ class DualGraphDatabaseOperations:
             with self.session_manager.session() as session:
                 with session.begin_transaction() as tx:
                     # Create Original node
-                    self._create_original_node(tx, resource, abstracted_id, processing_status)
+                    self._create_original_node(
+                        tx, resource, abstracted_id, processing_status
+                    )
 
                     # Create Abstracted node
                     self._create_abstracted_node(
@@ -565,7 +567,9 @@ class DualGraphNetworkRule:
         rtype = resource.get("type", "")
         return rtype.endswith("virtualMachines") or rtype.endswith("subnets")
 
-    def emit(self, resource: Dict[str, Any], db_ops: DualGraphDatabaseOperations) -> None:
+    def emit(
+        self, resource: Dict[str, Any], db_ops: DualGraphDatabaseOperations
+    ) -> None:
         """
         Emit network relationships in both graphs.
 
@@ -735,6 +739,8 @@ if __name__ == "__main__":
     print("This is a design reference. See docstring for integration notes.")
     print("Key classes:")
     print("  - AbstractionIDGenerator: Generate deterministic hash IDs")
-    print("  - DualGraphDatabaseOperations: Create nodes and relationships in both graphs")
+    print(
+        "  - DualGraphDatabaseOperations: Create nodes and relationships in both graphs"
+    )
     print("  - TenantSeedManager: Manage per-tenant abstraction seeds")
     print("  - DualGraphNetworkRule: Example of modified relationship rule")
