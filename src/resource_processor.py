@@ -304,14 +304,28 @@ class DatabaseOperations:
 
         try:
             # Defensive validation of required fields
-            required_fields = [
-                "id",
-                "name",
-                "type",
-                "location",
-                "resource_group",
-                "subscription_id",
-            ]
+            # Note: Some resources (role assignments, policy assignments) don't have location or resource_group
+            resource_type = resource.get("type", "")
+
+            # Role assignments and other global resources don't have location/resource_group
+            global_resource_types = {
+                "Microsoft.Authorization/roleAssignments",
+                "Microsoft.Authorization/policyAssignments",
+                "Microsoft.Authorization/roleDefinitions",
+            }
+
+            if resource_type in global_resource_types:
+                required_fields = ["id", "name", "type", "subscription_id"]
+            else:
+                required_fields = [
+                    "id",
+                    "name",
+                    "type",
+                    "location",
+                    "resource_group",
+                    "subscription_id",
+                ]
+
             # Accept id from resource_id if present
             if not resource.get("id") and resource.get("resource_id"):
                 resource["id"] = resource["resource_id"]

@@ -777,6 +777,11 @@ def generate_spec(
     default="resource_groups",
     help="Strategy for importing existing resources: resource_groups (default), all_resources, or selective (Issue #412)",
 )
+@click.option(
+    "--auto-register-providers",
+    is_flag=True,
+    help="Automatically register required Azure resource providers without prompting",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -816,6 +821,7 @@ async def generate_iac(
     resource_group_prefix: Optional[str],
     auto_import_existing: bool,
     import_strategy: str,
+    auto_register_providers: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -888,6 +894,7 @@ async def generate_iac(
         resource_group_prefix=resource_group_prefix,
         auto_import_existing=auto_import_existing,
         import_strategy=import_strategy,
+        auto_register_providers=auto_register_providers,
     )
 
 
@@ -1693,13 +1700,20 @@ def check_permissions() -> None:
 
 @cli.command()
 def doctor() -> None:
-    """Check for all registered CLI tools and offer to install if missing."""
+    """Check for all registered CLI tools and offer to install if missing.
+
+    Also validates Azure service principal permissions for role assignment scanning.
+    """
     try:
         from src.utils.cli_installer import TOOL_REGISTRY
     except ImportError:
         print("Could not import TOOL_REGISTRY. Please check your installation.")
         return
 
+    # Check CLI tools
+    print("=" * 60)
+    print("🔧 Checking CLI Tools")
+    print("=" * 60)
     for tool in TOOL_REGISTRY.values():
         print(f"Checking for '{tool.name}' CLI...")
         if is_tool_installed(tool.name):
@@ -1707,7 +1721,93 @@ def doctor() -> None:
         else:
             print(f"❌ {tool.name} is NOT installed.")
             install_tool(tool.name)
+
+    # Check Azure permissions
+    print("\n" + "=" * 60)
+    print("🔐 Checking Azure Service Principal Permissions")
+    print("=" * 60)
+
+    try:
+        import subprocess
+        import os
+
+        client_id = os.getenv("AZURE_CLIENT_ID")
+        subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
+
+        if not client_id or not subscription_id:
+            print("⚠️  AZURE_CLIENT_ID or AZURE_SUBSCRIPTION_ID not set in environment")
+            print("   Cannot validate permissions without these values")
+            print("")
+            print("Doctor check complete.")
+            return
+
+        print(f"Service Principal: {client_id}")
+        print(f"Subscription: {subscription_id}")
+        print("")
+
+        # Check role assignments
+        result = subprocess.run(
+            ["az", "role", "assignment", "list", "--assignee", client_id, "--output", "json"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        if result.returncode != 0:
+            print(f"❌ Failed to check role assignments: {result.stderr}")
+            print("")
+            print("Doctor check complete.")
+            return
+
+        import json
+        roles = json.loads(result.stdout)
+        role_names = [r.get("roleDefinitionName") for r in roles]
+
+        print("Assigned Roles:")
+        for role_name in role_names:
+            print(f"  ✅ {role_name}")
+
+        # Check for required roles
+        has_reader = "Reader" in role_names or "Contributor" in role_names or "Owner" in role_names
+        has_security_reader = "Security Reader" in role_names or "Owner" in role_names or "User Access Administrator" in role_names
+
+        print("")
+        print("Permission Requirements for Full Functionality:")
+
+        if has_reader:
+            print("  ✅ Resource Scanning: Reader, Contributor, or Owner (PRESENT)")
+        else:
+            print("  ❌ Resource Scanning: Reader, Contributor, or Owner (MISSING)")
+            print("     Impact: Cannot scan Azure resources")
+
+        if has_security_reader:
+            print("  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)")
+        else:
+            print("  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)")
+            print("     Impact: Cannot scan role assignments (RBAC will not be replicated!)")
+            print("")
+            print("     FIX: Run this command to add Security Reader role:")
+            print(f"     az role assignment create \\")
+            print(f"       --assignee {client_id} \\")
+            print(f"       --role 'Security Reader' \\")
+            print(f"       --scope '/subscriptions/{subscription_id}'")
+            print("")
+            print("     OR use the automated script:")
+            print(f"     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>")
+
+        print("")
+        if has_reader and has_security_reader:
+            print("✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!")
+        else:
+            print("⚠️  MISSING PERMISSIONS - Scanning will be limited!")
+
+    except Exception as e:
+        print(f"⚠️  Could not validate Azure permissions: {e}")
+
+    print("")
+    print("=" * 60)
     print("Doctor check complete.")
+    print("=" * 60)
 
 
 def main() -> None:

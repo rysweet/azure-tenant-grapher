@@ -538,24 +538,29 @@ class AADGraphService:
 
     async def ingest_into_graph(self, db_ops: Any, dry_run: bool = False) -> None:
         """
-        Ingests AAD users and groups into the graph.
-        - Upserts User and IdentityGroup nodes.
+        Ingests AAD users, groups, and service principals into the graph.
+        - Upserts User, IdentityGroup, and ServicePrincipal nodes.
         - Upserts MEMBER_OF edges for group memberships.
         - db_ops: DatabaseOperations instance (from resource_processor).
         - dry_run: If True, skips DB operations (for tests).
         """
         logger.info("Starting AAD graph ingestion")
 
-        # Fetch users and groups concurrently if not using mock
+        # Fetch users, groups, and service principals concurrently if not using mock
         if self.use_mock:
             users = await self.get_users()
             groups = await self.get_groups()
+            service_principals = await self.get_service_principals()
         else:
             import asyncio
 
-            users, groups = await asyncio.gather(self.get_users(), self.get_groups())
+            users, groups, service_principals = await asyncio.gather(
+                self.get_users(), self.get_groups(), self.get_service_principals()
+            )
 
-        logger.info(f"Ingesting {len(users)} users and {len(groups)} groups")
+        logger.info(
+            f"Ingesting {len(users)} users, {len(groups)} groups, and {len(service_principals)} service principals"
+        )
 
         # Upsert User nodes with IaC-standard properties
         for user in users:
@@ -596,6 +601,26 @@ class AADGraphService:
             }
             if not dry_run:
                 db_ops.upsert_generic("IdentityGroup", "id", group_id, props)
+
+        # Upsert ServicePrincipal nodes with IaC-standard properties
+        for sp in service_principals:
+            sp_id = sp.get("id")
+            if not sp_id:
+                continue
+            display_name = sp.get("displayName", sp_id)
+            props = {
+                "id": sp_id,
+                "display_name": display_name,
+                "app_id": sp.get("appId"),
+                "service_principal_type": sp.get("servicePrincipalType"),
+                "type": "Microsoft.Graph/servicePrincipals",
+                "name": display_name,
+                "displayName": display_name,
+                "location": "global",
+                "resourceGroup": "identity-resources",
+            }
+            if not dry_run:
+                db_ops.upsert_generic("ServicePrincipal", "id", sp_id, props)
 
         # Upsert group memberships (MEMBER_OF edges)
         for group in groups:

@@ -204,6 +204,8 @@ async def generate_iac_command_handler(
     # Terraform import parameters (Issue #412)
     auto_import_existing: bool = False,
     import_strategy: str = "resource_groups",
+    # Provider registration parameters
+    auto_register_providers: bool = False,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -241,6 +243,7 @@ async def generate_iac_command_handler(
         strict_translation: Fail on missing identity mappings (default: warn only)
         auto_import_existing: Automatically import pre-existing Azure resources (Issue #412)
         import_strategy: Strategy for importing resources (resource_groups, all_resources, selective)
+        auto_register_providers: Automatically register required Azure resource providers
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -556,12 +559,10 @@ async def generate_iac_command_handler(
         # Pre-deployment conflict detection (Issue #336)
         should_check_conflicts = check_conflicts and not skip_conflict_check
         if should_check_conflicts and subscription_id and not dry_run:
-            import os
-
-            from azure.identity import ClientSecretCredential
-
             from .cleanup_integration import invoke_cleanup_script, parse_cleanup_result
             from .conflict_detector import ConflictDetector
+            from azure.identity import ClientSecretCredential
+            import os
 
             logger.info("Running pre-deployment conflict detection...")
             click.echo("Checking for deployment conflicts...")
@@ -569,20 +570,16 @@ async def generate_iac_command_handler(
             try:
                 # Create credential for TARGET tenant (not source) for conflict detection
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                # Use target tenant credentials if different from source
+                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
                 conflict_detector_credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
-                    if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                    else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
-                    if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                    else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 # Initialize detector with proper credential
-                detector = ConflictDetector(
-                    subscription_id, credential=conflict_detector_credential
-                )
+                detector = ConflictDetector(subscription_id, credential=conflict_detector_credential)
 
                 # Detect conflicts
                 conflict_report = await detector.detect_conflicts(graph.resources)
@@ -720,19 +717,15 @@ async def generate_iac_command_handler(
             # Pass cross-tenant translation parameters to emitter (only for Terraform)
             if format_type.lower() == "terraform":
                 # Create credential for TARGET tenant (not source)
-                import os
-
                 from azure.identity import ClientSecretCredential
-
+                import os
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+                # Use target tenant credentials if different from source
+                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
                 credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
-                    if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                    else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
-                    if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                    else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -844,19 +837,15 @@ async def generate_iac_command_handler(
         # Pass cross-tenant translation parameters to emitter (only for Terraform)
         if format_type.lower() == "terraform":
             # Create credential for TARGET tenant (not source)
-            import os
-
             from azure.identity import ClientSecretCredential
-
+            import os
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
+            # Use target tenant credentials if different from source
+            use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
             credential = ClientSecretCredential(
                 tenant_id=target_tenant,
-                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
-                if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                else os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
-                if target_tenant == "c7674d41-af6c-46f5-89a5-d41495d2151e"
-                else os.getenv("AZURE_CLIENT_SECRET"),
+                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
+                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
             )
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -1017,6 +1006,35 @@ async def generate_iac_command_handler(
         click.echo(f"✅ Wrote {len(paths)} files to {paths[0].parent}")
         for path in paths:
             click.echo(f"  📄 {path}")
+
+        # Check Azure resource provider registration (before validation/deployment)
+        if format_type.lower() == "terraform" and subscription_id and not dry_run:
+            from .provider_manager import ProviderManager
+
+            try:
+                logger.info("Checking Azure resource provider registration...")
+                provider_manager = ProviderManager(subscription_id=subscription_id)
+                provider_report = await provider_manager.validate_before_deploy(
+                    terraform_path=out_dir,
+                    auto_register=auto_register_providers,
+                )
+
+                # Display report
+                click.echo(provider_report.format_report())
+
+                # Warn if any providers failed to register
+                if provider_report.failed_providers:
+                    click.echo(
+                        f"⚠️  Warning: {len(provider_report.failed_providers)} providers "
+                        f"failed to register. Deployment may fail."
+                    )
+
+            except Exception as e:
+                logger.warning(f"Provider check failed: {e}")
+                click.echo(
+                    f"⚠️  Warning: Provider check failed: {e}. Proceeding anyway...",
+                    err=True,
+                )
 
         # Validate Terraform if format is terraform and not skipped
         if format_type.lower() == "terraform" and not skip_validation:
