@@ -375,7 +375,8 @@ class ScaleDownService(BaseScaleService):
             raise ValueError(f"No resources found for tenant {tenant_id}")
 
         # Step 2: Load relationships (exclude SCAN_SOURCE_NODE)
-        # Note: Resource nodes don't have tenant_id, we get all abstracted relationships
+        # Note: Only include Resource->Resource for NetworkX (sampling needs consistent node types)
+        # LOCATED_IN, TAGGED_WITH go to non-Resource nodes, exclude from sampling graph
         edge_query = """
         MATCH (r1:Resource)-[rel]->(r2:Resource)
         WHERE NOT r1:Original AND NOT r2:Original
