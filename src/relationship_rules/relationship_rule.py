@@ -16,6 +16,26 @@ class RelationshipRule(ABC):
     2. Abstracted graph (:Resource nodes with type-prefixed hash IDs)
     """
 
+    # SECURITY FIX (H1): Whitelist of valid relationship types to prevent Cypher injection
+    # Relationship types are interpolated directly into Cypher queries, so we validate
+    # them against this whitelist before use.
+    VALID_RELATIONSHIP_TYPES = {
+        "CONTAINS",
+        "USES_SUBNET",
+        "SECURED_BY",
+        "CONNECTED_TO",
+        "DEPENDS_ON",
+        "USES_IDENTITY",
+        "RESOLVES_TO",
+        "CONNECTED_TO_PE",
+        "MONITORS",
+        "LOGS_TO",
+        "USES_NETWORK",
+        "TAGGED_WITH",
+        "LOCATED_IN",
+        "CREATED_BY",
+    }
+
     def __init__(self, enable_dual_graph: bool = False):
         """
         Initialize relationship rule.
@@ -227,6 +247,13 @@ class RelationshipRule(ABC):
                 db_ops, src_id, rel_type, tgt_id, properties
             )
 
+        # SECURITY FIX (H1): Validate relationship type to prevent Cypher injection
+        if rel_type not in self.VALID_RELATIONSHIP_TYPES:
+            raise ValueError(
+                f"Invalid relationship type: {rel_type}. "
+                f"Must be one of {self.VALID_RELATIONSHIP_TYPES}"
+            )
+
         try:
             # Single query that verifies all nodes exist and creates both relationships
             prop_string = ""
@@ -266,6 +293,7 @@ class RelationshipRule(ABC):
                 )
                 record = result.single()
 
+                # ROBUSTNESS FIX (H2): Improved node existence verification
                 if record:
                     orig_created = record["orig_created"]
                     abs_created = record["abs_created"]
@@ -276,13 +304,31 @@ class RelationshipRule(ABC):
                         )
                         return True
                     else:
-                        logger.warning(
-                            f"⚠️ Incomplete relationship creation for {rel_type}: "
-                            f"{src_id} -> {tgt_id} "
-                            f"(orig={orig_created}, abs={abs_created})"
-                        )
+                        # Provide clear diagnostic information about which nodes are missing
+                        if orig_created == 0 and abs_created == 0:
+                            logger.warning(
+                                f"⚠️ Failed to create {rel_type} relationship: "
+                                f"Both original AND abstracted nodes missing. "
+                                f"Source: {src_id}, Target: {tgt_id}"
+                            )
+                        elif orig_created == 0:
+                            logger.warning(
+                                f"⚠️ Failed to create {rel_type} relationship: "
+                                f"Original nodes missing (graph inconsistency). "
+                                f"Source: {src_id}, Target: {tgt_id}"
+                            )
+                        elif abs_created == 0:
+                            logger.warning(
+                                f"⚠️ Failed to create {rel_type} relationship: "
+                                f"Abstracted nodes missing (graph inconsistency). "
+                                f"Source: {src_id}, Target: {tgt_id}"
+                            )
                         return False
 
+                logger.warning(
+                    f"⚠️ No result returned when creating {rel_type} relationship: "
+                    f"{src_id} -> {tgt_id}"
+                )
                 return False
 
         except Exception as e:
@@ -412,6 +458,18 @@ class RelationshipRule(ABC):
         if not self._relationship_buffer:
             return 0
 
+        # ROBUSTNESS FIX (M2): Buffer size protection to prevent unbounded growth
+        # If buffer exceeds max size (10x batch size), it indicates persistent flush failures
+        max_buffer_size = self._buffer_size * 10
+        if len(self._relationship_buffer) > max_buffer_size:
+            logger.error(
+                f"Buffer exceeded max size ({max_buffer_size}), forcibly clearing. "
+                f"This indicates persistent flush failures. "
+                f"Current buffer size: {len(self._relationship_buffer)}"
+            )
+            self._relationship_buffer.clear()
+            return 0
+
         if not self.enable_dual_graph:
             # Legacy mode: create relationships individually
             count = 0
@@ -427,6 +485,14 @@ class RelationshipRule(ABC):
             # Group relationships by type for optimized batch processing
             relationships_by_type: Dict[str, List[Dict[str, Any]]] = {}
             for src_id, rel_type, tgt_id, properties in self._relationship_buffer:
+                # SECURITY FIX (H1): Validate relationship type to prevent Cypher injection
+                if rel_type not in self.VALID_RELATIONSHIP_TYPES:
+                    logger.error(
+                        f"Invalid relationship type '{rel_type}' in buffer, skipping. "
+                        f"Valid types: {self.VALID_RELATIONSHIP_TYPES}"
+                    )
+                    continue
+
                 if rel_type not in relationships_by_type:
                     relationships_by_type[rel_type] = []
                 relationships_by_type[rel_type].append(
@@ -440,63 +506,70 @@ class RelationshipRule(ABC):
             total_created = 0
             total_expected = 0
 
-            # Process each relationship type in a single batch query
-            for rel_type, relationships in relationships_by_type.items():
-                expected_count = len(relationships)
-                total_expected += expected_count
+            # TRANSACTIONAL FIX (C1): Wrap all relationship creation in a single transaction
+            # This prevents partial state if any batch fails - all relationships created
+            # or none are created (atomic operation)
+            with db_ops.session_manager.session() as session:
+                with session.begin_transaction() as tx:
+                    # Process each relationship type in a single batch query
+                    for rel_type, relationships in relationships_by_type.items():
+                        expected_count = len(relationships)
+                        total_expected += expected_count
 
-                query = f"""
-                // Batch create relationships using UNWIND for optimal performance
-                UNWIND $relationships AS rel
+                        query = f"""
+                        // Batch create relationships using UNWIND for optimal performance
+                        UNWIND $relationships AS rel
 
-                // Find original nodes (indexed lookups)
-                MATCH (src_orig:Resource:Original {{id: rel.src_id}})
-                MATCH (tgt_orig:Resource:Original {{id: rel.tgt_id}})
+                        // Find original nodes (indexed lookups)
+                        MATCH (src_orig:Resource:Original {{id: rel.src_id}})
+                        MATCH (tgt_orig:Resource:Original {{id: rel.tgt_id}})
 
-                // Create relationship between original nodes
-                MERGE (src_orig)-[r_orig:{rel_type}]->(tgt_orig)
-                SET r_orig += rel.properties
+                        // Create relationship between original nodes
+                        MERGE (src_orig)-[r_orig:{rel_type}]->(tgt_orig)
+                        SET r_orig += rel.properties
 
-                // Find abstracted nodes via indexed abstracted_id property
-                // This replaces the slow OPTIONAL MATCH traversal with fast index lookups
-                WITH src_orig, tgt_orig, rel
-                MATCH (src_abs:Resource {{original_id: src_orig.id}})
-                MATCH (tgt_abs:Resource {{original_id: tgt_orig.id}})
+                        // Find abstracted nodes via indexed abstracted_id property
+                        // This replaces the slow OPTIONAL MATCH traversal with fast index lookups
+                        WITH src_orig, tgt_orig, rel
+                        MATCH (src_abs:Resource {{original_id: src_orig.id}})
+                        MATCH (tgt_abs:Resource {{original_id: tgt_orig.id}})
 
-                // Create relationship between abstracted nodes
-                MERGE (src_abs)-[r_abs:{rel_type}]->(tgt_abs)
-                SET r_abs += rel.properties
+                        // Create relationship between abstracted nodes
+                        MERGE (src_abs)-[r_abs:{rel_type}]->(tgt_abs)
+                        SET r_abs += rel.properties
 
-                RETURN count(r_abs) as created
-                """
+                        RETURN count(r_abs) as created
+                        """
 
-                with db_ops.session_manager.session() as session:
-                    result = session.run(query, relationships=relationships)
-                    record = result.single()
-                    if record:
-                        created = record["created"]
-                        total_created += created
+                        result = tx.run(query, relationships=relationships)
+                        record = result.single()
+                        if record:
+                            created = record["created"]
+                            total_created += created
 
-                        # Calculate success rate
-                        success_rate = (
-                            (created / expected_count * 100)
-                            if expected_count > 0
-                            else 0
-                        )
-
-                        # Log with appropriate level based on success rate
-                        if created == expected_count:
-                            logger.info(
-                                f"✅ Batch created {created}/{expected_count} {rel_type} relationships (100%)"
+                            # Calculate success rate
+                            success_rate = (
+                                (created / expected_count * 100)
+                                if expected_count > 0
+                                else 0
                             )
-                        elif created > 0:
-                            logger.warning(
-                                f"⚠️ Partial batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%) - some nodes may be missing"
-                            )
-                        else:
-                            logger.warning(
-                                f"❌ Failed to create any {rel_type} relationships (0/{expected_count}) - all nodes missing"
-                            )
+
+                            # Log with appropriate level based on success rate
+                            if created == expected_count:
+                                logger.info(
+                                    f"✅ Batch created {created}/{expected_count} {rel_type} relationships (100%)"
+                                )
+                            elif created > 0:
+                                logger.warning(
+                                    f"⚠️ Partial batch created {created}/{expected_count} {rel_type} relationships ({success_rate:.1f}%) - some nodes may be missing"
+                                )
+                            else:
+                                logger.warning(
+                                    f"❌ Failed to create any {rel_type} relationships (0/{expected_count}) - all nodes missing"
+                                )
+
+                    # Commit the transaction (all relationships created atomically)
+                    tx.commit()
 
             # Clear buffer after successful flush
             buffer_size = len(self._relationship_buffer)
