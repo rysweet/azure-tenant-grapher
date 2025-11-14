@@ -1008,12 +1008,14 @@ async def generate_iac_command_handler(
             click.echo(f"  📄 {path}")
 
         # Check Azure resource provider registration (before validation/deployment)
-        if format_type.lower() == "terraform" and subscription_id and not dry_run:
+        # Use target_subscription if provided (cross-tenant), otherwise use source subscription
+        provider_check_subscription = target_subscription if target_subscription else subscription_id
+        if format_type.lower() == "terraform" and provider_check_subscription and not dry_run:
             from .provider_manager import ProviderManager
 
             try:
-                logger.info("Checking Azure resource provider registration...")
-                provider_manager = ProviderManager(subscription_id=subscription_id)
+                logger.info(f"Checking Azure resource provider registration in subscription {provider_check_subscription}...")
+                provider_manager = ProviderManager(subscription_id=provider_check_subscription)
                 provider_report = await provider_manager.validate_before_deploy(
                     terraform_path=out_dir,
                     auto_register=auto_register_providers,
