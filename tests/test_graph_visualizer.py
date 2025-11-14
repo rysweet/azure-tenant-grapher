@@ -704,3 +704,96 @@ def test_network_topology_enrichment_visualizer_types():
             # Check for dashed/solid style logic in JS for CONNECTED_TO_PE/RESOLVES_TO
             assert "LineDashedMaterial" in html
             assert "LineBasicMaterial" in html
+
+
+def test_synthetic_node_visualization():
+    """
+    Test that synthetic nodes are visually distinct in the graph visualization:
+    - Orange color (#FFA500)
+    - Larger size (30% bigger)
+    - Special 'S' label marker
+    - Display name includes synthetic indicator
+    - Filter toggle for synthetic nodes
+    """
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from src.graph_visualizer import GraphVisualizer
+
+    # Build mock graph with synthetic and regular nodes
+    mock_graph_data = {
+        "nodes": [
+            {
+                "id": "real-vm-1",
+                "name": "RealVM",
+                "display_name": "RealVM",
+                "type": "Microsoft.Compute/virtualMachines",
+                "labels": ["Resource"],
+                "properties": {"synthetic": False},
+                "group": 10,
+                "color": "#6c5ce7",  # Regular purple color for VMs
+                "size": 12,
+                "synthetic": False,
+            },
+            {
+                "id": "synthetic-vm-a1b2c3d4",
+                "name": "SyntheticVM",
+                "display_name": "🔶 SYNTHETIC: SyntheticVM",
+                "type": "Microsoft.Compute/virtualMachines",
+                "labels": ["Resource"],
+                "properties": {"synthetic": True, "scale_operation_id": "op-123"},
+                "group": 10,
+                "color": "#FFA500",  # Orange for synthetic nodes
+                "size": 16,  # 30% larger than regular (12 * 1.3 = 15.6 ≈ 16)
+                "synthetic": True,
+            },
+        ],
+        "links": [],
+        "node_types": ["Microsoft.Compute/virtualMachines"],
+        "relationship_types": [],
+    }
+
+    with patch.object(
+        GraphVisualizer, "extract_graph_data", return_value=mock_graph_data
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = os.path.join(tmpdir, "test_synthetic_nodes.html")
+            visualizer = GraphVisualizer("bolt://localhost:7687", "neo4j", "password")
+            visualizer.generate_html_visualization(output_path=output_path)
+            with open(output_path, encoding="utf-8") as f:
+                html = f.read()
+
+            # Check for orange color for synthetic nodes
+            assert "#FFA500" in html  # Orange color
+
+            # Check for synthetic indicator in display name (JSON encoded or raw)
+            # The emoji might be JSON-encoded as \ud83d\udd36 or displayed as 🔶
+            assert ("🔶 SYNTHETIC: SyntheticVM" in html or
+                    "\\ud83d\\udd36 SYNTHETIC: SyntheticVM" in html or
+                    "SYNTHETIC: SyntheticVM" in html)
+
+            # Check for synthetic filter UI (emoji might be JSON-encoded)
+            assert "syntheticFilter" in html
+            assert ("🔶 Synthetic Nodes" in html or
+                    "\\ud83d\\udd36 Synthetic Nodes" in html or
+                    "Synthetic Nodes" in html)
+
+            # Check for synthetic node special rendering (with 'S' label)
+            assert "node.synthetic" in html
+            assert "fillText('S'" in html  # Check for 'S' label in canvas
+
+            # Check for synthetic toggle function
+            assert "toggleSyntheticFilter" in html
+            assert "showSyntheticNodes" in html
+
+            # Check for synthetic indicator in node info panel
+            assert "SYNTHETIC NODE" in html
+            assert "This is a synthetic resource created by scale operations" in html
+
+            # Verify both regular and synthetic nodes are present
+            assert "RealVM" in html
+            assert "SyntheticVM" in html
+
+            # Check that display_name is used in node label
+            assert "display_name" in html

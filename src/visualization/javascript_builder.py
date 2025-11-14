@@ -153,10 +153,12 @@ class JavaScriptBuilder:
             .backgroundColor('#1a1a1a')
             .nodeId('id')
             .nodeLabel(node => {
+                // Use display_name if available (includes synthetic indicator)
+                const displayName = node.display_name || node.name;
                 if (node.type === "Subscription") {
-                    return "Subscription: " + node.name;
+                    return "Subscription: " + displayName;
                 }
-                return node.name;
+                return displayName;
             })
             .nodeColor(node => node.color)
             .nodeVal(node => node.size)
@@ -542,7 +544,9 @@ class JavaScriptBuilder:
             const nodeInfoTitle = document.getElementById('nodeInfoTitle');
             const nodeInfoContent = document.getElementById('nodeInfoContent');
 
-            nodeInfoTitle.textContent = `${node.name} (${node.type})`;
+            // Use display_name for title if available (includes synthetic indicator)
+            const displayName = node.display_name || node.name;
+            nodeInfoTitle.textContent = `${displayName} (${node.type})`;
 
             let content = '';
 
@@ -551,6 +555,14 @@ class JavaScriptBuilder:
                 content += '<div style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
                 content += '<h4 style="color: #4ecdc4; margin: 0 0 10px 0; font-size: 16px;">🤖 AI Summary</h4>';
                 content += '<div style="color: #ffffff; font-style: italic; line-height: 1.4;">' + node.properties.llm_description + '</div>';
+                content += '</div>';
+            }
+
+            // Synthetic node indicator
+            if (node.synthetic) {
+                content += '<div style="background: rgba(255, 165, 0, 0.15); border: 2px dashed #FFD700; padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center;">';
+                content += '<span style="color: #FFA500; font-weight: bold; font-size: 14px;">🔶 SYNTHETIC NODE</span>';
+                content += '<div style="color: #FFD700; font-size: 11px; margin-top: 5px;">This is a synthetic resource created by scale operations</div>';
                 content += '</div>';
             }
 

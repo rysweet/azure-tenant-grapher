@@ -70,6 +70,7 @@ async def build_command_handler(
     max_llm_threads: int,
     max_build_threads: int,
     max_retries: int,
+    max_concurrency: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -101,9 +102,9 @@ async def build_command_handler(
             sys.exit(1)
 
         config = create_config_from_env(
-            effective_tenant_id, resource_limit, max_retries, max_build_threads, debug
+            effective_tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
         )
-        config.processing.max_concurrency = max_llm_threads
+        # max_concurrency already set by create_config_from_env, don't override
         config.processing.auto_start_container = not no_container
         config.processing.enable_aad_import = not no_aad_import
         config.logging.level = ctx.obj["log_level"]

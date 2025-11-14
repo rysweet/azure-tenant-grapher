@@ -805,26 +805,60 @@ class ScaleDownService(BaseScaleService):
         p = min(0.7, sampling_ratio * 2)  # Heuristic: scale p with ratio
 
         try:
-            # littleballoffur requires integer node IDs
-            # Create bidirectional mapping: string <-> integer
-            node_to_int = {node: i for i, node in enumerate(G_undirected.nodes())}
-            int_to_node = {i: node for node, i in node_to_int.items()}
+            # Custom Forest Fire implementation to handle sparse graphs
+            # and avoid littleballoffur library bugs
+            import random
 
-            # Relabel graph to use integer IDs
-            G_int = nx.relabel_nodes(G_undirected, node_to_int)
+            sampled_nodes = set()
+            nodes_list = list(G_undirected.nodes())
 
-            # Apply sampler with integer IDs
-            sampler = lbof.ForestFireSampler(number_of_nodes=target_count, p=p)
-            sampled_graph = sampler.sample(G_int)
+            if not nodes_list:
+                raise ValueError("Graph has no nodes")
 
-            # Convert integer IDs back to original string IDs
-            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
+            # Start from random seed node
+            seed = random.choice(nodes_list)
+            queue = [seed]
+            sampled_nodes.add(seed)
+
+            # Spread the fire
+            while len(sampled_nodes) < target_count and queue:
+                current = queue.pop(0)
+
+                # Get neighbors
+                neighbors = list(G_undirected.neighbors(current))
+                if not neighbors:
+                    # If current node has no neighbors, pick a random unvisited node
+                    unvisited = [n for n in nodes_list if n not in sampled_nodes]
+                    if unvisited and len(sampled_nodes) < target_count:
+                        new_seed = random.choice(unvisited)
+                        queue.append(new_seed)
+                        sampled_nodes.add(new_seed)
+                    continue
+
+                # Sample neighbors with probability p
+                unvisited_neighbors = [n for n in neighbors if n not in sampled_nodes]
+                if unvisited_neighbors:
+                    num_to_burn = min(
+                        len(unvisited_neighbors),
+                        max(1, int(len(unvisited_neighbors) * p)),
+                        target_count - len(sampled_nodes)
+                    )
+                    burned = random.sample(unvisited_neighbors, num_to_burn)
+                    for node in burned:
+                        sampled_nodes.add(node)
+                        queue.append(node)
+
+            # If we didn't reach target (disconnected graph), add random nodes
+            if len(sampled_nodes) < target_count:
+                remaining = [n for n in nodes_list if n not in sampled_nodes]
+                needed = min(target_count - len(sampled_nodes), len(remaining))
+                sampled_nodes.update(random.sample(remaining, needed))
 
             self.logger.info(
-                f"Forest Fire sampling completed: {len(sampled_node_ids)} nodes"
+                f"Forest Fire sampling completed: {len(sampled_nodes)} nodes"
             )
 
-            return sampled_node_ids
+            return sampled_nodes
 
         except (ValueError, nx.NetworkXError) as e:
             self.logger.exception(f"Forest Fire sampling failed: {e}")
@@ -924,26 +958,45 @@ class ScaleDownService(BaseScaleService):
         G_undirected = G.to_undirected()
 
         try:
-            # littleballoffur requires integer node IDs
-            # Create bidirectional mapping: string <-> integer
-            node_to_int = {node: i for i, node in enumerate(G_undirected.nodes())}
-            int_to_node = {i: node for node, i in node_to_int.items()}
+            # Custom Random Walk implementation to handle sparse graphs
+            # and avoid littleballoffur library bugs with empty sequences
+            import random
 
-            # Relabel graph to use integer IDs
-            G_int = nx.relabel_nodes(G_undirected, node_to_int)
+            sampled_nodes = set()
+            nodes_list = list(G_undirected.nodes())
 
-            # Apply sampler with integer IDs
-            sampler = lbof.RandomWalkSampler(number_of_nodes=target_count)
-            sampled_graph = sampler.sample(G_int)
+            if not nodes_list:
+                raise ValueError("Graph has no nodes")
 
-            # Convert integer IDs back to original string IDs
-            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
+            # Start from random seed node
+            current = random.choice(nodes_list)
+            sampled_nodes.add(current)
+
+            # Perform random walk
+            while len(sampled_nodes) < target_count:
+                # Get unvisited neighbors
+                neighbors = list(G_undirected.neighbors(current))
+                unvisited_neighbors = [n for n in neighbors if n not in sampled_nodes]
+
+                if unvisited_neighbors:
+                    # Walk to random unvisited neighbor
+                    current = random.choice(unvisited_neighbors)
+                    sampled_nodes.add(current)
+                else:
+                    # Stuck - no unvisited neighbors
+                    # Jump to random unvisited node
+                    unvisited = [n for n in nodes_list if n not in sampled_nodes]
+                    if not unvisited:
+                        # All nodes visited
+                        break
+                    current = random.choice(unvisited)
+                    sampled_nodes.add(current)
 
             self.logger.info(
-                f"Random Walk sampling completed: {len(sampled_node_ids)} nodes"
+                f"Random Walk sampling completed: {len(sampled_nodes)} nodes"
             )
 
-            return sampled_node_ids
+            return sampled_nodes
 
         except (ValueError, nx.NetworkXError) as e:
             self.logger.exception(f"Random Walk sampling failed: {e}")

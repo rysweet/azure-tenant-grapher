@@ -374,6 +374,7 @@ async def build(
         max_llm_threads,
         max_build_threads,
         max_retries,
+        max_concurrency,
         no_container,
         generate_spec,
         visualize,
@@ -420,6 +421,12 @@ async def build(
     type=int,
     default=3,
     help="Maximum number of retries for failed resources (default: 3)",
+)
+@click.option(
+    "--max-concurrency",
+    type=int,
+    default=100,
+    help="Maximum concurrent resource processing workers (default: 100)",
 )
 @click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
 @click.option(
@@ -477,6 +484,7 @@ async def scan(
     max_llm_threads: int,
     max_build_threads: int,
     max_retries: int,
+    max_concurrency: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -509,6 +517,7 @@ async def scan(
         max_llm_threads,
         max_build_threads,
         max_retries,
+        max_concurrency,
         no_container,
         generate_spec,
         visualize,

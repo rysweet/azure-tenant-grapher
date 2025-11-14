@@ -255,9 +255,13 @@ class GraphVisualizer:
                     "Synthetic" in labels or properties.get("synthetic") is True
                 )
 
+                # Add synthetic indicator to display name
+                display_name = f"🔶 SYNTHETIC: {node_name}" if is_synthetic else node_name
+
                 node_data = {
                     "id": node_id,
-                    "name": node_name,
+                    "name": node_name,  # Original name for search/filtering
+                    "display_name": display_name,  # Display name with synthetic indicator
                     "type": node_type,
                     "labels": labels,
                     "properties": properties,
@@ -485,7 +489,15 @@ class GraphVisualizer:
         return color_mapping.get(node_type, "#74b9ff")  # Default blue
 
     def _get_node_size(self, node_type: str, properties: Dict[str, Any]) -> int:
-        """Get node size based on type and properties."""
+        """Get node size based on type and properties.
+
+        Args:
+            node_type: The type of the node
+            properties: Node properties dictionary
+
+        Returns:
+            Size value for the node
+        """
         base_sizes = {
             "Subscription": 15,
             "Resource": 8,
@@ -500,7 +512,14 @@ class GraphVisualizer:
             "SqlServer": 10,
             "WebSite": 8,
         }
-        return base_sizes.get(node_type, 8)
+        base_size = base_sizes.get(node_type, 8)
+
+        # Make synthetic nodes slightly larger for easier identification
+        is_synthetic = properties.get("synthetic") is True
+        if is_synthetic:
+            return int(base_size * 1.3)  # 30% larger
+
+        return base_size
 
     def _get_relationship_color(self, rel_type: str) -> str:
         """Get relationship color based on type."""
