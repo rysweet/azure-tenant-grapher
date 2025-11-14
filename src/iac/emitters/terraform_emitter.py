@@ -2388,11 +2388,13 @@ class TerraformEmitter(IaCEmitter):
             # If we have a target subscription, translate subscription IDs in the scope
             if self.target_subscription_id and scope:
                 # Replace source subscription ID with target subscription ID in scope
-                # Scope format: /subscriptions/{sub-id}/resourceGroups/...
+                # Scope formats:
+                #   - /subscriptions/{sub-id}/resourceGroups/... (resource-level, with slash)
+                #   - /subscriptions/{sub-id} (subscription-level, no trailing slash)
                 import re
                 scope = re.sub(
-                    r'/subscriptions/[a-f0-9-]+/',
-                    f'/subscriptions/{self.target_subscription_id}/',
+                    r'/subscriptions/[a-f0-9-]+(/|$)',
+                    f'/subscriptions/{self.target_subscription_id}\\1',
                     scope,
                     flags=re.IGNORECASE
                 )
