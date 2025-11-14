@@ -1320,11 +1320,18 @@ class TerraformEmitter(IaCEmitter):
 
                 if nic_refs:
                     resource_config["network_interface_ids"] = nic_refs
+                else:
+                    # No valid NIC references found - skip this VM
+                    logger.warning(
+                        f"Skipping VM '{resource_name}' - all NIC references missing or invalid"
+                    )
+                    return None
             else:
+                # No network interfaces in properties - skip this VM
                 logger.warning(
-                    f"VM '{resource_name}' has no network interfaces in properties. "
-                    "Generated Terraform may be invalid."
+                    f"Skipping VM '{resource_name}' - no network interfaces in properties"
                 )
+                return None
 
             # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
             ssh_key_resource_name = f"{safe_name}_ssh_key"
