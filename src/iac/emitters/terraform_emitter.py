@@ -1320,11 +1320,18 @@ class TerraformEmitter(IaCEmitter):
 
                 if nic_refs:
                     resource_config["network_interface_ids"] = nic_refs
+                else:
+                    # No valid NIC references found - skip this VM
+                    logger.warning(
+                        f"Skipping VM '{resource_name}' - all NIC references missing or invalid"
+                    )
+                    return None
             else:
+                # No network interfaces in properties - skip this VM
                 logger.warning(
-                    f"VM '{resource_name}' has no network interfaces in properties. "
-                    "Generated Terraform may be invalid."
+                    f"Skipping VM '{resource_name}' - no network interfaces in properties"
                 )
+                return None
 
             # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
             ssh_key_resource_name = f"{safe_name}_ssh_key"
@@ -2388,11 +2395,13 @@ class TerraformEmitter(IaCEmitter):
             # If we have a target subscription, translate subscription IDs in the scope
             if self.target_subscription_id and scope:
                 # Replace source subscription ID with target subscription ID in scope
-                # Scope format: /subscriptions/{sub-id}/resourceGroups/...
+                # Scope formats:
+                #   - /subscriptions/{sub-id}/resourceGroups/... (resource-level, with slash)
+                #   - /subscriptions/{sub-id} (subscription-level, no trailing slash)
                 import re
                 scope = re.sub(
-                    r'/subscriptions/[a-f0-9-]+/',
-                    f'/subscriptions/{self.target_subscription_id}/',
+                    r'/subscriptions/[a-f0-9-]+(/|$)',
+                    f'/subscriptions/{self.target_subscription_id}\\1',
                     scope,
                     flags=re.IGNORECASE
                 )
