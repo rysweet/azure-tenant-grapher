@@ -560,18 +560,29 @@ async def scale_down_pattern_command_handler(
             criteria: Dict[str, Any] = {}
 
             # Map pattern name to criteria
-            if pattern == "production":
+            # Note: sample_by_pattern expects exact property matches, not patterns
+            # For broader filtering, use multiple calls or enhance service layer
+            if pattern == "security":
+                criteria["type"] = "Microsoft.KeyVault/vaults"  # Most common security resource
+            elif pattern == "network":
+                criteria["type"] = "Microsoft.Network/virtualNetworks"  # Core network resource
+            elif pattern == "compute":
+                criteria["type"] = "Microsoft.Compute/virtualMachines"  # Most common compute
+            elif pattern == "storage":
+                criteria["type"] = "Microsoft.Storage/storageAccounts"  # Core storage
+            elif pattern == "production":
                 criteria["tags.environment"] = "production"
             elif pattern == "test":
                 criteria["tags.environment"] = "test"
             elif pattern == "dev":
                 criteria["tags.environment"] = "dev"
-            elif resource_types:
-                # If resource types specified, use the first one
-                criteria["type"] = resource_types[0]
+            elif pattern == "resource-type" and resource_types:
+                # Explicit resource type from CLI (use first one)
+                criteria["type"] = resource_types.split(",")[0].strip()
             else:
-                # Default: match any resource
-                console.print("[yellow]⚠️  No specific pattern criteria, matching all resources[/yellow]")
+                # No pattern matched - error out
+                console.print("[red]❌ Invalid pattern or missing resource types[/red]")
+                raise ValueError(f"Pattern '{pattern}' requires additional configuration")
 
             # Call sample_by_pattern with correct signature
             sampled_node_ids = await service.sample_by_pattern(
