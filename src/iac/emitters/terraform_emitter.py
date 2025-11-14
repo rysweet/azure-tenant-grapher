@@ -2382,11 +2382,35 @@ class TerraformEmitter(IaCEmitter):
             # Role Assignments - RBAC configuration (no location, scoped resources)
             properties = self._parse_properties(resource)
 
+            # Get scope and translate subscription ID for cross-tenant deployments
+            scope = properties.get("scope", resource.get("scope", ""))
+
+            # If we have a target subscription, translate subscription IDs in the scope
+            if self.target_subscription_id and scope:
+                # Replace source subscription ID with target subscription ID in scope
+                # Scope format: /subscriptions/{sub-id}/resourceGroups/...
+                import re
+                scope = re.sub(
+                    r'/subscriptions/[a-f0-9-]+/',
+                    f'/subscriptions/{self.target_subscription_id}/',
+                    scope,
+                    flags=re.IGNORECASE
+                )
+                logger.debug(f"Translated role assignment scope for cross-tenant deployment")
+
+            # Also translate role definition ID (contains subscription)
+            role_def_id = properties.get("roleDefinitionId", resource.get("roleDefinitionId", ""))
+            if self.target_subscription_id and role_def_id:
+                role_def_id = re.sub(
+                    r'/subscriptions/[a-f0-9-]+/',
+                    f'/subscriptions/{self.target_subscription_id}/',
+                    role_def_id,
+                    flags=re.IGNORECASE
+                )
+
             resource_config = {
-                "scope": properties.get("scope", resource.get("scope", "")),
-                "role_definition_id": properties.get(
-                    "roleDefinitionId", resource.get("roleDefinitionId", "")
-                ),
+                "scope": scope,
+                "role_definition_id": role_def_id,
                 "principal_id": properties.get(
                     "principalId", resource.get("principalId", "")
                 ),
