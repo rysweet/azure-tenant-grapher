@@ -150,17 +150,64 @@ class JavaScriptBuilder:
         // Initialize 3D force graph
         const Graph = ForceGraph3D()
             (document.getElementById('visualization'))
-            .backgroundColor('#1a1a1a')
+            .backgroundColor('#000000') // Pure black to match GUI
             .nodeId('id')
             .nodeLabel(node => {
+                // Use display_name if available (includes synthetic indicator)
+                const displayName = node.display_name || node.name;
                 if (node.type === "Subscription") {
-                    return "Subscription: " + node.name;
+                    return "Subscription: " + displayName;
                 }
-                return node.name;
+                return displayName;
             })
             .nodeColor(node => node.color)
             .nodeVal(node => node.size)
             .nodeThreeObject(node => {
+                // Synthetic nodes get special rendering with dashed border
+                if (node.synthetic) {
+                    const group = new window.THREE.Group();
+
+                    // Main sphere
+                    const geometry = new window.THREE.SphereGeometry(node.size || 8, 32, 32);
+                    const material = new window.THREE.MeshBasicMaterial({ color: node.color || '#FFA500' });
+                    const sphere = new window.THREE.Mesh(geometry, material);
+                    group.add(sphere);
+
+                    // Dashed ring around synthetic node
+                    const ringGeometry = new window.THREE.RingGeometry((node.size || 8) * 1.2, (node.size || 8) * 1.3, 32);
+                    const ringMaterial = new window.THREE.LineDashedMaterial({
+                        color: '#FFD700',
+                        dashSize: 2,
+                        gapSize: 1,
+                        linewidth: 2
+                    });
+                    const ring = new window.THREE.Line(ringGeometry, ringMaterial);
+                    ring.computeLineDistances();
+                    group.add(ring);
+
+                    // Add 'S' label for synthetic
+                    const canvas = document.createElement('canvas');
+                    const size = 64;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.font = 'bold 48px Arial';
+                    ctx.fillStyle = '#FFD700';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText('S', size / 2, size / 2);
+                    const texture = new window.THREE.CanvasTexture(canvas);
+                    const spriteMaterial = new window.THREE.SpriteMaterial({ map: texture, depthTest: false });
+                    const sprite = new window.THREE.Sprite(spriteMaterial);
+                    sprite.position.set(0, (node.size || 8) + 8, 0);
+                    sprite.scale.set(8, 8, 1);
+                    group.add(sprite);
+
+                    return group;
+                }
+
                 if (node.type === "Region") {
                     // Create a sprite for always-visible region label
                     const sprite = new window.THREE.Sprite(
@@ -298,6 +345,16 @@ class JavaScriptBuilder:
             const nodeFiltersContainer = document.getElementById('nodeFilters');
             const relationshipFiltersContainer = document.getElementById('relationshipFilters');
 
+            // Add synthetic node filter at the top
+            const syntheticFilterItem = createSyntheticFilterItem();
+            nodeFiltersContainer.appendChild(syntheticFilterItem);
+
+            // Add divider
+            const divider = document.createElement('hr');
+            divider.style.margin = '10px 0';
+            divider.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            nodeFiltersContainer.appendChild(divider);
+
             // Node type filters
             originalGraphData.node_types.forEach(nodeType => {
                 const filterItem = createFilterItem(nodeType, getNodeColor(nodeType), 'node');
@@ -309,6 +366,60 @@ class JavaScriptBuilder:
                 const filterItem = createFilterItem(relType, getRelationshipColor(relType), 'relationship');
                 relationshipFiltersContainer.appendChild(filterItem);
             });
+        }
+
+        function createSyntheticFilterItem() {
+            const item = document.createElement('div');
+            item.className = 'filter-item synthetic-filter';
+            item.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
+            item.style.border = '2px dashed #FFD700';
+            item.style.padding = '8px';
+            item.style.marginBottom = '10px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'filter-checkbox';
+            checkbox.checked = true;
+            checkbox.id = 'syntheticFilter';
+            checkbox.addEventListener('change', () => toggleSyntheticFilter(checkbox.checked));
+
+            const colorBox = document.createElement('div');
+            colorBox.className = 'filter-color';
+            colorBox.style.backgroundColor = '#FFA500';
+            colorBox.style.border = '2px dashed #FFD700';
+
+            const label = document.createElement('span');
+            label.className = 'filter-label';
+            label.style.fontWeight = 'bold';
+            label.textContent = '🔶 Synthetic Nodes';
+
+            const countLabel = document.createElement('span');
+            countLabel.style.marginLeft = '8px';
+            countLabel.style.color = '#FFD700';
+            countLabel.style.fontSize = '0.9em';
+            const syntheticCount = originalGraphData.nodes.filter(n => n.synthetic).length;
+            countLabel.textContent = `(${syntheticCount})`;
+
+            item.appendChild(checkbox);
+            item.appendChild(colorBox);
+            item.appendChild(label);
+            item.appendChild(countLabel);
+
+            item.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    toggleSyntheticFilter(checkbox.checked);
+                }
+            });
+
+            return item;
+        }
+
+        let showSyntheticNodes = true;
+
+        function toggleSyntheticFilter(isActive) {
+            showSyntheticNodes = isActive;
+            updateVisualization();
         }
 
         function createFilterItem(type, color, filterType) {
@@ -377,11 +488,12 @@ class JavaScriptBuilder:
             // Filter nodes
             const filteredNodes = originalGraphData.nodes.filter(node => {
                 const typeMatch = activeNodeFilters.has(node.type);
+                const syntheticMatch = showSyntheticNodes || !node.synthetic;
                 const searchMatch = searchTerm === '' ||
                     node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     node.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     JSON.stringify(node.properties).toLowerCase().includes(searchTerm.toLowerCase());
-                return typeMatch && searchMatch;
+                return typeMatch && syntheticMatch && searchMatch;
             });
 
             // Get set of visible node IDs
@@ -432,7 +544,9 @@ class JavaScriptBuilder:
             const nodeInfoTitle = document.getElementById('nodeInfoTitle');
             const nodeInfoContent = document.getElementById('nodeInfoContent');
 
-            nodeInfoTitle.textContent = `${node.name} (${node.type})`;
+            // Use display_name for title if available (includes synthetic indicator)
+            const displayName = node.display_name || node.name;
+            nodeInfoTitle.textContent = `${displayName} (${node.type})`;
 
             let content = '';
 
@@ -441,6 +555,14 @@ class JavaScriptBuilder:
                 content += '<div style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
                 content += '<h4 style="color: #4ecdc4; margin: 0 0 10px 0; font-size: 16px;">🤖 AI Summary</h4>';
                 content += '<div style="color: #ffffff; font-style: italic; line-height: 1.4;">' + node.properties.llm_description + '</div>';
+                content += '</div>';
+            }
+
+            // Synthetic node indicator
+            if (node.synthetic) {
+                content += '<div style="background: rgba(255, 165, 0, 0.15); border: 2px dashed #FFD700; padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center;">';
+                content += '<span style="color: #FFA500; font-weight: bold; font-size: 14px;">🔶 SYNTHETIC NODE</span>';
+                content += '<div style="color: #FFD700; font-size: 11px; margin-top: 5px;">This is a synthetic resource created by scale operations</div>';
                 content += '</div>';
             }
 
@@ -482,63 +604,136 @@ class JavaScriptBuilder:
         """Build control and utility functions."""
         return """
         function getNodeColor(nodeType) {
+            // Color palette aligned with GUI (GraphVisualization.tsx)
             const colorMapping = {
-                // Non-resource node types
-                'Subscription': '#ff6b6b',
-                'ResourceGroup': '#45b7d1',
-                'PrivateEndpoint': '#b388ff', // Violet
-                'DNSZone': '#00bfae',        // Teal-green
+                // Special markers
+                'Synthetic': '#FFA500', // Orange for synthetic nodes
 
-                // Azure resource types
-                'Microsoft.Compute/virtualMachines': '#6c5ce7',
-                'Microsoft.Network/networkInterfaces': '#a55eea',
-                'Microsoft.Network/virtualNetworks': '#26de81',
-                'Microsoft.Network/networkSecurityGroups': '#00d2d3',
-                'Microsoft.Network/publicIPAddresses': '#81ecec',
-                'Microsoft.Network/loadBalancers': '#00b894',
-                'Microsoft.Storage/storageAccounts': '#f9ca24',
-                'Microsoft.KeyVault/vaults': '#fd79a8',
-                'Microsoft.Sql/servers': '#fdcb6e',
-                'Microsoft.Web/sites': '#e17055',
-                'Microsoft.ContainerService/managedClusters': '#0984e3',
-                'Microsoft.DBforPostgreSQL/servers': '#a29bfe',
-                'Microsoft.DBforMySQL/servers': '#74b9ff',
-                'Microsoft.DocumentDB/databaseAccounts': '#e84393',
-                'Microsoft.OperationalInsights/workspaces': '#636e72',
-                'Microsoft.Insights/components': '#2d3436',
-                'Microsoft.Authorization/roleAssignments': '#fab1a0',
-                'Microsoft.ManagedIdentity/userAssignedIdentities': '#00cec9',
-                'Microsoft.Security/assessments': '#fd79a8',
-                'Microsoft.Security/securityContacts': '#e84393'
+                // Core Azure hierarchy
+                'Tenant': '#FF6B6B',
+                'Subscription': '#4ECDC4',
+                'ResourceGroup': '#45B7D1',
+                'Resource': '#96CEB4', // Fallback for generic resources
+                'Region': '#FFB347', // Light orange for regions
+
+                // Compute resources
+                'VirtualMachines': '#FFEAA7',
+                'VirtualMachine': '#FFEAA7',
+                'Microsoft.Compute/virtualMachines': '#FFEAA7',
+                'Disks': '#DDA0DD',
+                'AvailabilitySets': '#F0E68C',
+                'VirtualMachineScaleSets': '#FFB347',
+
+                // Storage resources
+                'StorageAccounts': '#74B9FF',
+                'StorageAccount': '#74B9FF',
+                'Microsoft.Storage/storageAccounts': '#74B9FF',
+
+                // Network resources
+                'VirtualNetworks': '#6C5CE7',
+                'VirtualNetwork': '#6C5CE7',
+                'Microsoft.Network/virtualNetworks': '#6C5CE7',
+                'PrivateEndpoint': '#FF69B4', // Hot pink for private endpoints
+                'NetworkInterfaces': '#A29BFE',
+                'NetworkInterface': '#A29BFE',
+                'Microsoft.Network/networkInterfaces': '#A29BFE',
+                'NetworkSecurityGroups': '#9966CC',
+                'Microsoft.Network/networkSecurityGroups': '#9966CC',
+                'PublicIPAddresses': '#87CEEB',
+                'Microsoft.Network/publicIPAddresses': '#87CEEB',
+                'LoadBalancers': '#20B2AA',
+                'Microsoft.Network/loadBalancers': '#20B2AA',
+                'ApplicationGateways': '#4682B4',
+                'Microsoft.Network/applicationGateways': '#4682B4',
+
+                // Security resources
+                'KeyVaults': '#DC143C',
+                'Microsoft.KeyVault/vaults': '#DC143C',
+                'SecurityCenter': '#8B0000',
+
+                // Database resources
+                'SqlServers': '#FF4500',
+                'Microsoft.Sql/servers': '#FF4500',
+                'CosmosDBAccounts': '#FF6347',
+                'Microsoft.DocumentDB/databaseAccounts': '#FF6347',
+                'Microsoft.DBforPostgreSQL/servers': '#FF4500',
+                'Microsoft.DBforMySQL/servers': '#FF4500',
+
+                // Web resources
+                'Websites': '#32CD32',
+                'Microsoft.Web/sites': '#32CD32',
+                'AppServicePlans': '#228B22',
+                'FunctionApps': '#9ACD32',
+
+                // Container resources
+                'ContainerInstances': '#48D1CC',
+                'ContainerRegistries': '#00CED1',
+                'KubernetesClusters': '#5F9EA0',
+                'Microsoft.ContainerService/managedClusters': '#5F9EA0',
+
+                // Identity and access
+                'User': '#FD79A8',
+                'ServicePrincipal': '#FDCB6E',
+                'Application': '#E17055',
+                'Group': '#00B894',
+                'Role': '#00CEC9',
+                'Microsoft.Authorization/roleAssignments': '#E17055',
+                'Microsoft.ManagedIdentity/userAssignedIdentities': '#00CEC9',
+
+                // Monitoring and management
+                'LogAnalytics': '#CD853F',
+                'ApplicationInsights': '#D2691E',
+                'Microsoft.OperationalInsights/workspaces': '#CD853F',
+                'Microsoft.Insights/components': '#D2691E',
+
+                // Security
+                'Microsoft.Security/assessments': '#DC143C',
+                'Microsoft.Security/securityContacts': '#8B0000',
+
+                // DNS
+                'DNSZone': '#00bfae'
             };
 
-            // If exact match not found, try to match by service provider
+            // If exact match not found, try to match by service provider prefix
             if (!(nodeType in colorMapping)) {
-                if (nodeType.startsWith('Microsoft.Compute')) return '#6c5ce7';
-                if (nodeType.startsWith('Microsoft.Network')) return '#26de81';
-                if (nodeType.startsWith('Microsoft.Storage')) return '#f9ca24';
-                if (nodeType.startsWith('Microsoft.Web')) return '#e17055';
-                if (nodeType.startsWith('Microsoft.Sql') || nodeType.startsWith('Microsoft.DB')) return '#fdcb6e';
-                if (nodeType.startsWith('Microsoft.KeyVault')) return '#fd79a8';
-                if (nodeType.startsWith('Microsoft.ContainerService')) return '#0984e3';
-                if (nodeType.startsWith('Microsoft.Security')) return '#e84393';
-                if (nodeType.startsWith('Microsoft.Authorization')) return '#fab1a0';
+                if (nodeType.startsWith('Microsoft.Compute')) return '#FFEAA7'; // Light yellow
+                if (nodeType.startsWith('Microsoft.Network')) return '#6C5CE7'; // Purple
+                if (nodeType.startsWith('Microsoft.Storage')) return '#74B9FF'; // Light blue
+                if (nodeType.startsWith('Microsoft.Web')) return '#32CD32'; // Green
+                if (nodeType.startsWith('Microsoft.Sql') || nodeType.startsWith('Microsoft.DB')) return '#FF4500'; // Orange-red
+                if (nodeType.startsWith('Microsoft.KeyVault')) return '#DC143C'; // Crimson
+                if (nodeType.startsWith('Microsoft.ContainerService')) return '#5F9EA0'; // Cadet blue
+                if (nodeType.startsWith('Microsoft.Security')) return '#8B0000'; // Dark red
+                if (nodeType.startsWith('Microsoft.Authorization')) return '#E17055'; // Coral
+                if (nodeType.startsWith('Microsoft.Insights') || nodeType.startsWith('Microsoft.OperationalInsights')) return '#CD853F'; // Peru
             }
 
-            return colorMapping[nodeType] || '#74b9ff';
+            return colorMapping[nodeType] || '#95A5A6'; // Default gray
         }
 
         function getRelationshipColor(relType) {
+            // Edge color palette aligned with GUI (GraphVisualization.tsx)
             const colorMapping = {
-                'CONTAINS': '#74b9ff',
-                'BELONGS_TO': '#a29bfe',
-                'CONNECTED_TO': '#fd79a8',
-                'CONNECTED_TO_PE': '#b388ff', // Violet
-                'RESOLVES_TO': '#00bfae',    // Teal-green
-                'DEPENDS_ON': '#fdcb6e',
-                'MANAGES': '#e17055'
+                'CONTAINS': '#2E86DE', // Blue
+                'USES_IDENTITY': '#10AC84', // Green
+                'CONNECTED_TO': '#FF9F43', // Orange
+                'CONNECTED_TO_PE': '#b388ff', // Violet (private endpoint)
+                'RESOLVES_TO': '#00bfae', // Teal-green (DNS)
+                'DEPENDS_ON': '#A55EEA', // Purple
+                'HAS_ROLE': '#EE5A52', // Red
+                'MEMBER_OF': '#FD79A8', // Pink
+                'ASSIGNED_TO': '#00CEC9', // Teal
+                'MANAGES': '#FDCB6E', // Yellow
+                'INHERITS': '#6C5CE7', // Indigo
+                'ACCESSES': '#A29BFE', // Light Purple
+                'OWNS': '#00B894', // Dark Green
+                'SUBSCRIBES_TO': '#E17055', // Coral
+                'PART_OF': '#74B9FF', // Light Blue
+                'DELEGATES_TO': '#55A3FF', // Sky Blue
+                'ENABLES': '#26DE81', // Mint Green
+                'BELONGS_TO': '#A29BFE' // Light Purple (legacy)
             };
-            return colorMapping[relType] || '#ddd';
+            return colorMapping[relType] || '#95A5A6'; // Default gray
         }
 
         // Zoom controls

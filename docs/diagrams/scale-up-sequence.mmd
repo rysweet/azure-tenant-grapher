@@ -1,0 +1,128 @@
+%% Scale-Up Operation Sequence Diagram
+%% Shows step-by-step flow of a scale-up operation with validation and rollback
+
+sequenceDiagram
+    actor User
+    participant CLI as CLI Handler
+    participant Service as ScaleUpService
+    participant Validation as ScaleValidation
+    participant Neo4j as Neo4j Database
+    participant Performance as PerformanceMonitor
+
+    User->>CLI: atg scale-up template<br/>--tenant-id abc123<br/>--scale-factor 2.0
+    activate CLI
+
+    CLI->>Service: scale_up_template(tenant_id, scale_factor)
+    activate Service
+
+    Note over Service: Generate session_id:<br/>scale-20250110T123045-a1b2c3d4
+
+    Service->>Neo4j: Validate tenant exists
+    activate Neo4j
+    Neo4j-->>Service: Tenant found ✓
+    deactivate Neo4j
+
+    Service->>Neo4j: Query base resources<br/>(abstracted layer only)
+    activate Neo4j
+    Neo4j-->>Service: 1000 base resources
+    deactivate Neo4j
+
+    Note over Service: Calculate target:<br/>1000 × (2.0 - 1) = 1000 new resources
+
+    Service->>Performance: Start monitoring
+    activate Performance
+
+    rect rgb(200, 230, 255)
+        Note over Service,Neo4j: Phase 1: Generate Synthetic Resources
+
+        loop For each batch (adaptive size: 500)
+            Service->>Service: Generate synthetic IDs<br/>Copy properties<br/>Mark as synthetic
+            Service->>Neo4j: UNWIND CREATE batch
+            activate Neo4j
+            Neo4j-->>Service: Batch created ✓
+            deactivate Neo4j
+            Service->>CLI: Progress: 200/1000 resources
+            CLI->>User: Progress update
+        end
+    end
+
+    rect rgb(200, 255, 230)
+        Note over Service,Neo4j: Phase 2: Clone Relationships
+
+        Service->>Neo4j: Get relationship patterns<br/>from base resources
+        activate Neo4j
+        Neo4j-->>Service: 500 patterns found
+        deactivate Neo4j
+
+        Service->>Service: Build base→synthetic mapping
+
+        loop For each batch (adaptive size: 500)
+            Service->>Service: Generate relationship pairs<br/>from patterns
+            Service->>Neo4j: CREATE relationships batch
+            activate Neo4j
+            Neo4j-->>Service: Batch created ✓
+            deactivate Neo4j
+            Service->>CLI: Progress: 250/500 relationships
+            CLI->>User: Progress update
+        end
+    end
+
+    Performance-->>Service: Metrics collected
+    deactivate Performance
+
+    rect rgb(255, 250, 200)
+        Note over Service,Neo4j: Phase 3: Validation
+
+        Service->>Validation: validate_operation(operation_id)
+        activate Validation
+
+        Validation->>Neo4j: Check synthetic resources exist
+        activate Neo4j
+        Neo4j-->>Validation: 1000 resources found
+        deactivate Neo4j
+
+        Validation->>Neo4j: Check SCAN_SOURCE_NODE absent
+        activate Neo4j
+        Neo4j-->>Validation: No SCAN_SOURCE_NODE ✓
+        deactivate Neo4j
+
+        Validation->>Neo4j: Check required properties
+        activate Neo4j
+        Neo4j-->>Validation: All properties valid ✓
+        deactivate Neo4j
+
+        Validation-->>Service: Validation passed ✓
+        deactivate Validation
+    end
+
+    Service-->>CLI: ScaleUpResult(success=true,<br/>resources_created=1000,<br/>relationships_created=500,<br/>duration=12.5s)
+    deactivate Service
+
+    CLI-->>User: ✓ Scale-up completed!<br/>1000 resources, 500 relationships<br/>Duration: 12.5s
+
+    deactivate CLI
+
+    Note over User,Neo4j: Happy Path Complete
+
+    %% Alternative: Failure Path
+    rect rgb(255, 220, 220)
+        Note over Service,Neo4j: Alternative: Failure & Rollback
+
+        Service->>Neo4j: Operation fails<br/>(e.g., database error)
+        activate Service
+        activate Neo4j
+        Neo4j-->>Service: Neo4jError
+        deactivate Neo4j
+
+        Service->>Service: Catch exception
+
+        Service->>Neo4j: rollback_operation(operation_id)<br/>DETACH DELETE synthetic resources
+        activate Neo4j
+        Neo4j-->>Service: 234 resources deleted
+        deactivate Neo4j
+
+        Service-->>CLI: ScaleUpResult(success=false,<br/>error_message="...",<br/>rollback_succeeded=true)
+        deactivate Service
+
+        CLI-->>User: ✗ Scale-up failed<br/>Rollback succeeded<br/>234 resources removed
+    end

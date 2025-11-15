@@ -67,7 +67,7 @@ class TransformationEngine:
                 return rules
 
             with open(rules_path) as f:
-                rules_data = yaml.load(f)
+                rules_data = yaml.safe_load(f)  # Security: Use safe_load to prevent arbitrary code execution
 
             if not rules_data or "rules" not in rules_data:
                 logger.warning(f"No rules found in file: {rules_file}")

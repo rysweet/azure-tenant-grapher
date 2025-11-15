@@ -1,0 +1,40 @@
+SCALE OPERATIONS SCREENSHOTS - QUICK ACCESS
+
+Location: /home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/spa/screenshots/scale-operations/
+
+FILES (14 screenshots):
+  01-initial-scale-up.png          - Initial state, Scale-Up mode
+  02-scale-down-mode.png           - Scale-Down mode toggle
+  03-template-strategy-form.png    - Template strategy config
+  04-scenario-hub-spoke.png        - Scenario strategy (hub-spoke)
+  05-random-strategy-form.png      - Random strategy config
+  06-scale-down-forest-fire.png    - Forest Fire algorithm
+  07-ready-for-preview.png         - Ready for preview state
+  08-ready-for-execution.png       - Ready for execution state
+  09-quick-actions.png             - Quick actions bar
+  10-validation-options.png        - Validation settings
+  11-scale-factor-slider.png       - Scale factor control
+  12-complete-form.png             - Complete Scale-Up form
+  13-scale-down-complete.png       - Complete Scale-Down form
+  14-help-text.png                 - Help and guidance
+
+DOCUMENTATION:
+  README.md              - Full documentation with detailed descriptions
+  QUICK_REFERENCE.md     - Quick lookup table and PowerPoint tips
+  SUMMARY.md             - Technical capture session details
+  ACCESS.txt             - This file
+
+QUALITY:
+  Resolution: 1920x1080 (Full HD)
+  Format: PNG
+  Size: ~77KB each
+  Total: ~1.1MB
+
+BEST FOR POWERPOINT:
+  Opening slide:     01-initial-scale-up.png
+  Technical detail:  06-scale-down-forest-fire.png
+  Workflow demo:     12-complete-form.png → 07-ready-for-preview.png
+
+STATUS: ✅ READY FOR USE
+
+For detailed information, see README.md

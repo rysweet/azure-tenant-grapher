@@ -46,6 +46,7 @@ interface GraphNode {
   label: string;
   type: string;
   properties: Record<string, any>;
+  synthetic?: boolean;
 }
 
 interface GraphEdge {
@@ -69,12 +70,15 @@ interface GraphData {
 
 // Define color palette for different node types
 const NODE_COLORS: Record<string, string> = {
+  // Special markers
+  Synthetic: '#FFA500', // Orange for synthetic nodes (scale operations)
+
   // Core Azure hierarchy
   Tenant: '#FF6B6B',
   Subscription: '#4ECDC4',
   ResourceGroup: '#45B7D1',
   Resource: '#96CEB4', // Fallback for generic resources
-  Region: '#FFA500', // Orange for regions
+  Region: '#FFB347', // Light orange for regions
 
   // Compute resources
   VirtualMachines: '#FFEAA7',
@@ -187,6 +191,7 @@ export const GraphVisualization: React.FC = () => {
   const [legendOpen, setLegendOpen] = useState(false);
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<string>>(new Set());
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(new Set());
+  const [showSyntheticNodes, setShowSyntheticNodes] = useState(true);
 
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -332,6 +337,11 @@ export const GraphVisualization: React.FC = () => {
   const nodeMatchesFilters = useCallback((node: GraphNode) => {
     const props = node.properties;
 
+    // Synthetic filter
+    if (!showSyntheticNodes && node.synthetic) {
+      return false;
+    }
+
     // Name filter
     if (nameFilter && !node.label.toLowerCase().includes(nameFilter.toLowerCase()) &&
         !(props.name && props.name.toLowerCase().includes(nameFilter.toLowerCase())) &&
@@ -378,7 +388,7 @@ export const GraphVisualization: React.FC = () => {
     }
 
     return true;
-  }, [nameFilter, selectedTags, selectedRegions, selectedResourceGroups, selectedSubscriptions]);
+  }, [nameFilter, selectedTags, selectedRegions, selectedResourceGroups, selectedSubscriptions, showSyntheticNodes]);
 
   // Render the graph with vis-network
   const renderGraph = useCallback((data: GraphData, nodeFilter?: Set<string>, edgeFilter?: Set<string>) => {
@@ -408,20 +418,34 @@ export const GraphVisualization: React.FC = () => {
           <div class="vis-tooltip-hint">Click for more details</div>
         `;
 
+        // Apply synthetic styling
+        const isSynthetic = node.synthetic || node.properties?.synthetic;
+        const nodeColor = isSynthetic ? NODE_COLORS.Synthetic : (NODE_COLORS[node.type] || NODE_COLORS.Default);
+
         return {
           ...node,
           id: node.id,
           label: node.label,
-          title: tooltipContent,
-          color: NODE_COLORS[node.type] || NODE_COLORS.Default,
+          title: tooltipContent + (isSynthetic ? '<div class="vis-tooltip-row" style="color: #FFA500; font-weight: bold;">🔶 SYNTHETIC NODE</div>' : ''),
+          color: {
+            background: nodeColor,
+            border: isSynthetic ? '#FFD700' : nodeColor,
+            highlight: {
+              background: nodeColor,
+              border: isSynthetic ? '#FFD700' : nodeColor
+            }
+          },
           shape: 'dot',
           size: 20,
           font: {
             size: 12,
             color: '#2c3e50'
           },
-          borderWidth: 2,
-          borderWidthSelected: 4
+          borderWidth: isSynthetic ? 3 : 2,
+          borderWidthSelected: isSynthetic ? 5 : 4,
+          shapeProperties: {
+            borderDashes: isSynthetic ? [5, 5] : false
+          }
         };
       });
 
@@ -662,7 +686,7 @@ export const GraphVisualization: React.FC = () => {
 
   useEffect(() => {
     handleFilterChange();
-  }, [visibleNodeTypes, visibleEdgeTypes, nameFilter, selectedTags, selectedRegions, selectedResourceGroups, selectedSubscriptions, handleFilterChange]);
+  }, [visibleNodeTypes, visibleEdgeTypes, nameFilter, selectedTags, selectedRegions, selectedResourceGroups, selectedSubscriptions, showSyntheticNodes, handleFilterChange]);
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'row' }}>
@@ -1219,6 +1243,48 @@ export const GraphVisualization: React.FC = () => {
           </Box>
         </Collapse>
 
+        {/* Synthetic Node Toggle */}
+        <Box sx={{ mb: 2 }}>
+          <Paper sx={{
+            p: 1.5,
+            backgroundColor: showSyntheticNodes ? 'rgba(255, 165, 0, 0.1)' : 'rgba(128, 128, 128, 0.1)',
+            border: showSyntheticNodes ? '2px dashed #FFD700' : '2px dashed rgba(255, 255, 255, 0.3)',
+            cursor: 'pointer'
+          }}
+          onClick={() => setShowSyntheticNodes(!showSyntheticNodes)}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  backgroundColor: '#FFA500',
+                  border: '2px dashed #FFD700'
+                }} />
+                <Typography variant="subtitle2" sx={{ color: showSyntheticNodes ? '#FFD700' : 'rgba(255, 255, 255, 0.5)', fontWeight: 'bold' }}>
+                  🔶 Synthetic Nodes
+                </Typography>
+              </Box>
+              <Chip
+                label={showSyntheticNodes ? 'Shown' : 'Hidden'}
+                size="small"
+                sx={{
+                  backgroundColor: showSyntheticNodes ? '#FFD700' : 'rgba(128, 128, 128, 0.5)',
+                  color: showSyntheticNodes ? '#000' : '#fff',
+                  fontWeight: 'bold',
+                  fontSize: '0.7rem'
+                }}
+              />
+            </Box>
+            {graphData && (
+              <Typography variant="caption" sx={{ color: '#FFD700', mt: 0.5, display: 'block' }}>
+                {graphData.nodes.filter(n => n.synthetic || n.properties?.synthetic).length} synthetic nodes
+              </Typography>
+            )}
+          </Paper>
+        </Box>
+
         {/* Node and Edge Type Filters */}
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="subtitle2" sx={{ color: 'white', mb: 1 }}>Node Types</Typography>
@@ -1282,10 +1348,46 @@ export const GraphVisualization: React.FC = () => {
       }}>
         <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.85rem', color: '#4caf50' }}>Legend</Typography>
 
+        {/* Synthetic Nodes */}
+        <Typography variant="caption" sx={{ color: '#FFD700', fontSize: '0.7rem', fontWeight: 'bold' }}>Special</Typography>
+        <Box sx={{ mb: 1, mt: 0.5 }}>
+          <Box
+            key="Synthetic"
+            onClick={() => setShowSyntheticNodes(!showSyntheticNodes)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              mb: 0.5,
+              cursor: 'pointer',
+              opacity: showSyntheticNodes ? 1 : 0.4,
+              backgroundColor: showSyntheticNodes ? 'rgba(255, 165, 0, 0.1)' : 'transparent',
+              padding: '4px',
+              borderRadius: '4px',
+              '&:hover': {
+                opacity: 0.8,
+                backgroundColor: 'rgba(255, 165, 0, 0.2)'
+              }
+            }}
+          >
+            <Box sx={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              backgroundColor: '#FFA500',
+              border: showSyntheticNodes ? '2px dashed #FFD700' : '1px solid #FFD700',
+              flexShrink: 0
+            }} />
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: showSyntheticNodes ? '#FFD700' : 'rgba(255,255,255,0.8)', fontWeight: 'bold' }}>
+              🔶 Synthetic
+            </Typography>
+          </Box>
+        </Box>
+
         {/* Node Types */}
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem' }}>Nodes</Typography>
         <Box sx={{ mb: 1, mt: 0.5 }}>
-          {Object.entries(NODE_COLORS).slice(0, 10).map(([type, color]) => {
+          {Object.entries(NODE_COLORS).filter(([type]) => type !== 'Synthetic').slice(0, 10).map(([type, color]) => {
             const isVisible = visibleNodeTypes.has(type);
             return (
               <Box

@@ -1,0 +1,297 @@
+# ============================================================================
+# Azure Tenant Grapher - Scale Operations Configuration
+# ============================================================================
+#
+# This file provides comprehensive configuration for scale-up and scale-down
+# operations in Azure Tenant Grapher. Configuration can be loaded from:
+#
+#   1. CLI arguments (highest priority)
+#   2. Environment variables (ATG_SCALE_*)
+#   3. Configuration file (this file)
+#   4. Default values (lowest priority)
+#
+# To use this configuration:
+#   1. Copy this file to ~/.config/azure-tenant-grapher/scale-config.yaml
+#   2. Uncomment and modify settings as needed
+#   3. Or set SCALE_CONFIG_PATH environment variable to custom location
+#
+# Environment variable format:
+#   ATG_SCALE_SCALE_UP__DEFAULT_STRATEGY=template
+#   ATG_SCALE_SCALE_DOWN__DEFAULT_ALGORITHM=forest-fire
+#   ATG_SCALE_PERFORMANCE__BATCH_SIZE=1000
+#
+# (Double underscore __ separates nested keys)
+#
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Global Settings
+# ----------------------------------------------------------------------------
+
+# Default tenant ID to use when not specified via CLI
+# This is optional - if not set, tenant ID must be provided via CLI
+# default_tenant_id: "00000000-0000-0000-0000-000000000000"
+
+# ----------------------------------------------------------------------------
+# Scale-Up Operation Settings
+# ----------------------------------------------------------------------------
+# Scale-up operations multiply existing graph structures to create larger
+# test environments. Multiple strategies are available for different use cases.
+
+scale_up:
+  # Default strategy to use when not specified via CLI
+  # Options: template, scenario, random
+  #   - template: Scale based on existing graph structure (preserves topology)
+  #   - scenario: Use predefined scenario templates (hub-spoke, etc.)
+  #   - random: Generate random resources with realistic distributions
+  default_strategy: template
+
+  # Default scale factor (multiplier for resource counts)
+  # Example: 2.0 will double the number of resources
+  # Range: Must be greater than 0 and less than or equal to 1000
+  default_scale_factor: 2.0
+
+  # Number of resources to process per batch
+  # Larger batches are faster but use more memory
+  # Range: Must be greater than 0
+  batch_size: 500
+
+  # -------------------------------------------------------------------------
+  # Template Strategy Settings
+  # -------------------------------------------------------------------------
+  # Template strategy analyzes the existing graph and scales it up while
+  # preserving topology and proportions. Best for realistic test data.
+
+  template:
+    # Maintain relative proportions of resource types
+    # If true, scales each resource type proportionally
+    # If false, may add resources more flexibly
+    preserve_proportions: true
+
+    # Amount of random variation to introduce (0.0-1.0)
+    # 0.0 = exact proportional scaling
+    # 0.1 = 10% variation in resource counts
+    # 1.0 = 100% variation (effectively random)
+    # Range: 0.0 to 1.0
+    variation_percentage: 0.1
+
+  # -------------------------------------------------------------------------
+  # Scenario Strategy Settings
+  # -------------------------------------------------------------------------
+  # Scenario strategy uses predefined templates for common Azure architectures.
+  # Useful for testing specific configurations.
+
+  scenario:
+    # Default scenario template to use
+    # Built-in scenarios:
+    #   - hub-spoke: Hub and spoke network topology
+    #   - multi-region: Multi-region deployment with replication
+    #   - microservices: Microservices architecture with AKS
+    #   - data-platform: Data platform with storage and analytics
+    default_scenario: "hub-spoke"
+
+    # Path to custom scenario library directory (optional)
+    # If provided, scenarios will be loaded from this directory
+    # in addition to built-in scenarios
+    # scenario_library_path: "/path/to/custom/scenarios"
+
+  # -------------------------------------------------------------------------
+  # Random Strategy Settings
+  # -------------------------------------------------------------------------
+  # Random strategy generates resources with realistic distributions and
+  # relationships. Useful for stress testing and performance analysis.
+
+  random:
+    # Default target resource count for random generation
+    # This is the total number of resources to generate
+    # Range: Must be greater than 0
+    default_target_count: 1000
+
+    # Random seed for reproducible generation (optional)
+    # If set, the same seed will always generate the same graph
+    # If not set, generation will be non-deterministic
+    # seed: 42
+
+# ----------------------------------------------------------------------------
+# Scale-Down Operation Settings
+# ----------------------------------------------------------------------------
+# Scale-down operations sample subgraphs from large graphs to create smaller
+# test environments. Multiple sampling algorithms are available.
+
+scale_down:
+  # Default algorithm to use when not specified via CLI
+  # Options: forest-fire, mhrw, random-node, random-edge
+  #   - forest-fire: Breadth-first sampling with probabilistic expansion
+  #   - mhrw: Metropolis-Hastings Random Walk (unbiased sampling)
+  #   - random-node: Simple random node sampling
+  #   - random-edge: Simple random edge sampling
+  default_algorithm: forest-fire
+
+  # Default target size as fraction of original (0.0-1.0)
+  # Example: 0.1 will sample 10% of the original graph
+  # Range: Must be greater than 0 and less than or equal to 1
+  default_target_size: 0.1
+
+  # Output format for scale-down specification
+  # Options: yaml, json
+  # The spec describes which resources to keep/remove
+  output_format: yaml
+
+  # -------------------------------------------------------------------------
+  # Forest Fire Algorithm Settings
+  # -------------------------------------------------------------------------
+  # Forest Fire sampling starts from a random node and "burns" (selects)
+  # neighbors with a given probability. Produces connected subgraphs with
+  # community structure similar to the original graph.
+
+  forest_fire:
+    # Probability of 'burning' (selecting) a neighbor node
+    # Higher values create more connected subgraphs
+    # Lower values create sparser subgraphs
+    # Range: 0.0 to 1.0
+    burning_probability: 0.4
+
+    # Random seed for reproducible sampling (optional)
+    # If set, the same seed will always produce the same sample
+    seed: 42
+
+    # Whether to treat graph as directed
+    # true: Follow edge directions when burning
+    # false: Ignore edge directions (undirected sampling)
+    directed: false
+
+  # -------------------------------------------------------------------------
+  # Metropolis-Hastings Random Walk Settings
+  # -------------------------------------------------------------------------
+  # MHRW performs an unbiased random walk on the graph, sampling nodes
+  # uniformly regardless of degree. Produces statistically unbiased samples.
+
+  mhrw:
+    # Bias parameter (alpha)
+    # α = 1.0: Unbiased walk (uniform sampling)
+    # α < 1.0: Bias toward low-degree nodes
+    # α > 1.0: Bias toward high-degree nodes
+    # Range: Must be greater than or equal to 0
+    alpha: 1.0
+
+    # Random seed for reproducible sampling (optional)
+    seed: 42
+
+    # Maximum walk iterations
+    # The walk will stop after this many steps even if target size not reached
+    # Range: Must be greater than 0
+    max_iterations: 1000000
+
+  # -------------------------------------------------------------------------
+  # Random Node Sampling Settings
+  # -------------------------------------------------------------------------
+  # Random Node sampling selects nodes uniformly at random. Simple but may
+  # produce disconnected subgraphs.
+
+  random_node:
+    # Random seed for reproducible sampling (optional)
+    seed: 42
+
+    # Attempt to preserve graph connectivity
+    # true: Prefer sampling nodes that keep graph connected
+    # false: Pure random sampling (may disconnect graph)
+    preserve_connectivity: false
+
+  # -------------------------------------------------------------------------
+  # Random Edge Sampling Settings
+  # -------------------------------------------------------------------------
+  # Random Edge sampling selects edges uniformly at random. Simple but may
+  # bias toward high-degree nodes.
+
+  random_edge:
+    # Random seed for reproducible sampling (optional)
+    seed: 42
+
+# ----------------------------------------------------------------------------
+# Performance and Resource Limits
+# ----------------------------------------------------------------------------
+# These settings control resource usage during scale operations.
+
+performance:
+  # Default batch size for operations
+  # Larger batches are faster but use more memory
+  # Range: Must be greater than 0
+  batch_size: 500
+
+  # Memory limit in megabytes
+  # Operations will attempt to stay within this limit
+  # Range: Must be greater than 0
+  memory_limit_mb: 2048
+
+  # Operation timeout in seconds
+  # Operations will be cancelled if they exceed this time
+  # Range: Must be greater than 0
+  timeout_seconds: 300
+
+  # Maximum number of worker threads/processes
+  # Higher values enable more parallelism but use more resources
+  # Range: 1 to 32
+  max_workers: 4
+
+# ----------------------------------------------------------------------------
+# Validation Settings
+# ----------------------------------------------------------------------------
+# Control validation behavior for scale operations.
+
+validation:
+  # Validate configuration before operation
+  # Checks that all settings are valid before starting
+  pre_operation: true
+
+  # Validate results after operation
+  # Checks that output meets quality criteria
+  post_operation: true
+
+  # Fail on validation warnings (not just errors)
+  # true: Treat warnings as errors (strict mode)
+  # false: Only fail on actual errors (permissive mode)
+  strict_mode: true
+
+# ----------------------------------------------------------------------------
+# Tenant-Specific Overrides
+# ----------------------------------------------------------------------------
+# Override settings for specific tenants. This is useful when working with
+# multiple tenants that have different requirements or constraints.
+#
+# Tenant overrides are merged with the base configuration, allowing you to
+# customize only the settings that differ for each tenant.
+
+# Example tenant overrides (uncomment and modify as needed):
+#
+# tenant_overrides:
+#   # Production tenant with larger scale factors
+#   - tenant_id: "prod-tenant-id-here"
+#     scale_up:
+#       default_scale_factor: 3.0
+#       batch_size: 1000
+#     performance:
+#       batch_size: 1000
+#       max_workers: 8
+#
+#   # Development tenant with smaller scale factors
+#   - tenant_id: "dev-tenant-id-here"
+#     scale_up:
+#       default_scale_factor: 1.5
+#     scale_down:
+#       default_algorithm: random-node
+#       default_target_size: 0.2
+#     performance:
+#       timeout_seconds: 600
+#
+#   # Test tenant with specific scenario
+#   - tenant_id: "test-tenant-id-here"
+#     scale_up:
+#       default_strategy: scenario
+#       scenario:
+#         default_scenario: "microservices"
+#     validation:
+#       strict_mode: false
+
+# ============================================================================
+# End of Configuration
+# ============================================================================

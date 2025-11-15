@@ -1,0 +1,81 @@
+<testsuites id="" name="" tests="9" failures="1" skipped="0" errors="0" time="76.08805899999999">
+<testsuite name="screenshot-scale-ops.spec.ts" timestamp="2025-11-11T17:03:26.950Z" hostname="chromium" tests="9" failures="1" skipped="0" time="70.731" errors="0">
+<testcase name="Scale Operations UI Screenshots › 07 - Preview results display" classname="screenshot-scale-ops.spec.ts" time="7.168">
+<system-out>
+<![CDATA[Note: Preview results require backend. Screenshot shows ready state.
+]]>
+</system-out>
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 08 - Progress monitor during operation" classname="screenshot-scale-ops.spec.ts" time="5.621">
+<system-out>
+<![CDATA[Note: Progress monitor requires running operation. Consider mocking backend responses.
+]]>
+</system-out>
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 09 - Quick actions menu" classname="screenshot-scale-ops.spec.ts" time="6.113">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 10 - Validation checkbox and options" classname="screenshot-scale-ops.spec.ts" time="6.651">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 11 - Scale factor slider (Template mode)" classname="screenshot-scale-ops.spec.ts" time="6.898">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 12 - Complete Scale-Up configuration form" classname="screenshot-scale-ops.spec.ts" time="7">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 13 - Scale-Down complete configuration" classname="screenshot-scale-ops.spec.ts" time="7.117">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 14 - Help text and tooltips" classname="screenshot-scale-ops.spec.ts" time="7.483">
+</testcase>
+<testcase name="Scale Operations UI Screenshots › 15 - Error state display" classname="screenshot-scale-ops.spec.ts" time="16.68">
+<failure message="screenshot-scale-ops.spec.ts:487:7 15 - Error state display" type="FAILURE">
+<![CDATA[  [chromium] › screenshot-scale-ops.spec.ts:487:7 › Scale Operations UI Screenshots › 15 - Error state display 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Execute")').first()
+        - locator resolved to <button disabled tabindex="-1" type="button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeLarge MuiButton-containedSizeLarge MuiButton-colorPrimary Mui-disabled MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeLarge MuiButton-containedSizeLarge MuiButton-colorPrimary css-96w1g1-MuiButtonBase-root-MuiButton-root">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not enabled
+        - retrying click action
+          - waiting 100ms
+        19 × waiting for element to be visible, enabled and stable
+           - element is not enabled
+         - retrying click action
+           - waiting 500ms
+
+
+      503 |     const executeButton = page.locator('button:has-text("Execute")').first();
+      504 |     if (await executeButton.isVisible()) {
+    > 505 |       await executeButton.click();
+          |                           ^
+      506 |       await page.waitForTimeout(1000);
+      507 |     }
+      508 |
+        at /home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/spa/tests/e2e/screenshot-scale-ops.spec.ts:505:27
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/video.webm]]
+
+[[ATTACHMENT|test-results/screenshot-scale-ops-Scale-d62c2-ts-15---Error-state-display-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

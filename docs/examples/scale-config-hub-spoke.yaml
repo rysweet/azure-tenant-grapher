@@ -1,0 +1,37 @@
+# Hub-Spoke Scenario Configuration Example
+# ==========================================
+# Optimized for scaling hub-spoke network architectures
+
+default_tenant_id: "00000000-0000-0000-0000-000000000000"
+
+scale_up:
+  default_strategy: scenario
+  default_scale_factor: 3.0
+
+  scenario:
+    default_scenario: "hub-spoke"
+
+  # Template fallback settings
+  template:
+    preserve_proportions: true
+    variation_percentage: 0.05  # Low variation for consistent topology
+
+scale_down:
+  default_algorithm: forest-fire
+  default_target_size: 0.2  # Keep 20% of original
+
+  forest_fire:
+    burning_probability: 0.3  # Lower probability for more controlled sampling
+    seed: 12345
+    directed: true  # Hub-spoke is often directional
+
+performance:
+  batch_size: 1000  # Larger batches for network resources
+  memory_limit_mb: 4096  # More memory for complex topology
+  timeout_seconds: 600  # Longer timeout for large networks
+  max_workers: 8
+
+validation:
+  pre_operation: true
+  post_operation: true
+  strict_mode: true

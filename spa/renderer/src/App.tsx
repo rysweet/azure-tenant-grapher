@@ -25,6 +25,7 @@ const CreateTenantTab = lazy(() => import('./components/tabs/CreateTenantTab'));
 const VisualizeTab = lazy(() => import('./components/tabs/VisualizeTab'));
 const AgentModeTab = lazy(() => import('./components/tabs/AgentModeTab'));
 const ThreatModelTab = lazy(() => import('./components/tabs/ThreatModelTab'));
+const ScaleOperationsTab = lazy(() => import('./components/tabs/ScaleOperationsTab'));
 const DocsTab = lazy(() => import('./components/tabs/DocsTab'));
 const ConfigTab = lazy(() => import('./components/tabs/ConfigTab'));
 
@@ -216,6 +217,11 @@ const App: React.FC = () => {
                 <Route path="/threat-model" element={
                   <TabErrorBoundary tabName="Threat Model">
                     <ThreatModelTab />
+                  </TabErrorBoundary>
+                } />
+                <Route path="/scale-operations" element={
+                  <TabErrorBoundary tabName="Scale Operations">
+                    <ScaleOperationsTab />
                   </TabErrorBoundary>
                 } />
                 <Route path="/docs" element={

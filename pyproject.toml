@@ -45,6 +45,7 @@ dependencies = [
     "readchar>=4.0.0",
     # Logging and configuration
     "pyyaml>=6.0",
+    "pydantic>=2.0",
     "colorlog>=6.8.0",
     "autogen-ext[mcp]>=0.6.1",
     "autogen_agentchat",
@@ -52,6 +53,13 @@ dependencies = [
     "ruamel.yaml",
     # Logging dependencies
     "structlog>=24.1.0",
+    # Graph sampling dependencies (Issue #427)
+    "littleballoffur>=2.3.1",
+    "networkx>=3.0",
+    "numpy>=1.24.0,<2.0.0", # littleballoffur requires pandas<2.0 which needs numpy<2.0
+    # Pydantic for configuration validation
+    "pydantic>=2.0",
+    "python-pptx>=1.0.2",
 ]
 
 

@@ -1,0 +1,214 @@
+%% Component Architecture for Scale Operations
+%% Shows services, dependencies, and their relationships
+
+classDiagram
+    %% Core Base Service
+    class BaseScaleService {
+        +Neo4jSessionManager session_manager
+        +Logger logger
+        +validate_tenant_exists(tenant_id) bool
+        +count_resources(tenant_id, synthetic_only) int
+        +generate_session_id() str
+        +get_tenant_info(tenant_id) Dict
+        +count_relationships(tenant_id, synthetic_only) int
+    }
+
+    %% Scale-Up Service
+    class ScaleUpService {
+        +int batch_size
+        +bool validation_enabled
+        +bool enable_performance_monitoring
+        +bool enable_adaptive_batching
+        +scale_up_template(tenant_id, scale_factor, resource_types, callback) ScaleUpResult
+        +scale_up_scenario(tenant_id, scenario, params, callback) ScaleUpResult
+        +scale_up_random(tenant_id, target_count, config, callback) ScaleUpResult
+        +rollback_operation(operation_id) int
+        -_ensure_indexes()
+        -_get_base_resources(tenant_id, resource_types) List
+        -_replicate_resources(...) int
+        -_clone_relationships(...) int
+        -_generate_hub_spoke(...) Tuple
+        -_generate_multi_region(...) Tuple
+        -_generate_dev_test_prod(...) Tuple
+        -_validate_operation(operation_id) bool
+    }
+
+    %% Scale-Down Service
+    class ScaleDownService {
+        +neo4j_to_networkx(tenant_id, callback) Tuple[DiGraph, Dict]
+        +sample_graph(tenant_id, algorithm, target_size, output_mode, output_path, callback) Tuple[Set, QualityMetrics]
+        +sample_by_pattern(tenant_id, criteria, callback) Set
+        +export_sample(node_ids, node_props, graph, format, path) None
+        +discover_motifs(tenant_id, motif_size, max_motifs, callback) List
+        -_sample_forest_fire(G, target_count, callback) Set
+        -_sample_mhrw(G, target_count, callback) Set
+        -_sample_random_walk(G, target_count, callback) Set
+        -_calculate_quality_metrics(...) QualityMetrics
+        -_export_yaml(...) None
+        -_export_json(...) None
+        -_export_neo4j(...) None
+        -_export_iac(...) None
+    }
+
+    %% Validation Service
+    class ScaleValidationService {
+        +validate_operation(session, operation_id) Tuple[bool, str]
+        +validate_synthetic_resources(session, operation_id) Tuple[bool, str]
+        +validate_no_scan_source_node(session, operation_id) Tuple[bool, str]
+        +validate_required_properties(session, operation_id) Tuple[bool, str]
+        +get_validation_report(session, operation_id) Dict
+    }
+
+    %% Stats Service
+    class ScaleStatsService {
+        +get_operation_stats(operation_id) Dict
+        +get_tenant_stats(tenant_id) Dict
+        +get_resource_type_distribution(tenant_id, synthetic_only) Dict
+        +get_relationship_type_distribution(tenant_id, synthetic_only) Dict
+        +get_all_operations(tenant_id, limit) List
+        +compare_operations(operation_id1, operation_id2) Dict
+    }
+
+    %% Cleanup Service
+    class ScaleCleanupService {
+        +cleanup_operation(operation_id) int
+        +cleanup_tenant_synthetics(tenant_id, older_than_days) int
+        +cleanup_orphaned_relationships() int
+        +get_cleanup_report(tenant_id) Dict
+    }
+
+    %% Performance Module
+    class PerformanceMonitor {
+        +str operation_name
+        +datetime start_time
+        +int total_items
+        +int batch_count
+        +Dict metadata
+        +record_items(count) None
+        +record_batch(size) None
+        +add_metadata(key, value) None
+        +get_metrics() Dict
+        +__enter__() PerformanceMonitor
+        +__exit__(exc_type, exc_val, exc_tb) None
+    }
+
+    class AdaptiveBatchSizer {
+        +calculate_batch_size(total_items, operation_type, min_size, max_size) int
+    }
+
+    class QueryOptimizer {
+        +ensure_indexes(session, logger) None
+        +optimize_query(query, params) Tuple[str, Dict]
+    }
+
+    %% Validation Module
+    class ScaleValidation {
+        +validate_operation(session, operation_id) Tuple[bool, str]
+        +validate_synthetic_resources(session, operation_id) Tuple[bool, str]
+        +validate_no_scan_source_node(session, operation_id) Tuple[bool, str]
+        +validate_required_properties(session, operation_id) Tuple[bool, str]
+    }
+
+    %% Data Models
+    class ScaleUpResult {
+        +str operation_id
+        +str tenant_id
+        +str strategy
+        +int resources_created
+        +int relationships_created
+        +float duration_seconds
+        +bool success
+        +bool validation_passed
+        +str error_message
+        +Dict metadata
+        +bool rollback_attempted
+        +bool rollback_succeeded
+        +str rollback_error
+    }
+
+    class QualityMetrics {
+        +int original_nodes
+        +int sampled_nodes
+        +int original_edges
+        +int sampled_edges
+        +float sampling_ratio
+        +float degree_distribution_similarity
+        +float clustering_coefficient_diff
+        +int connected_components_original
+        +int connected_components_sampled
+        +float resource_type_preservation
+        +float avg_degree_original
+        +float avg_degree_sampled
+        +float computation_time_seconds
+        +Dict additional_metrics
+        +to_dict() Dict
+        +__str__() str
+    }
+
+    %% External Dependencies
+    class Neo4jSessionManager {
+        +connect() None
+        +session() Session
+        +close() None
+    }
+
+    class NetworkX {
+        <<external library>>
+        +DiGraph
+        +to_undirected()
+        +subgraph()
+        +number_of_nodes()
+        +number_of_edges()
+    }
+
+    class LittleBallOfFur {
+        <<external library>>
+        +ForestFireSampler
+        +MetropolisHastingsRandomWalkSampler
+        +RandomWalkSampler
+    }
+
+    class IaCEmitters {
+        <<existing module>>
+        +TerraformEmitter
+        +ArmEmitter
+        +BicepEmitter
+    }
+
+    %% Inheritance
+    BaseScaleService <|-- ScaleUpService
+    BaseScaleService <|-- ScaleDownService
+    BaseScaleService <|-- ScaleValidationService
+    BaseScaleService <|-- ScaleStatsService
+    BaseScaleService <|-- ScaleCleanupService
+
+    %% Composition
+    ScaleUpService *-- PerformanceMonitor : uses
+    ScaleUpService *-- AdaptiveBatchSizer : uses
+    ScaleUpService *-- QueryOptimizer : uses
+    ScaleUpService *-- ScaleValidation : uses
+    ScaleUpService --> ScaleUpResult : returns
+
+    ScaleDownService *-- NetworkX : uses
+    ScaleDownService *-- LittleBallOfFur : uses
+    ScaleDownService *-- IaCEmitters : uses
+    ScaleDownService --> QualityMetrics : returns
+
+    ScaleUpService --> Neo4jSessionManager : depends on
+    ScaleDownService --> Neo4jSessionManager : depends on
+    ScaleValidationService --> Neo4jSessionManager : depends on
+    ScaleStatsService --> Neo4jSessionManager : depends on
+    ScaleCleanupService --> Neo4jSessionManager : depends on
+
+    BaseScaleService --> Neo4jSessionManager : depends on
+
+    %% Notes
+    note for BaseScaleService "Provides common functionality:\n- Tenant validation\n- Resource counting\n- Session ID generation\n- Operates ONLY on abstracted layer"
+
+    note for ScaleUpService "Three strategies:\n1. Template: Replicate existing\n2. Scenario: Generate topology\n3. Random: Constrained generation\n\nTarget: 1000 resources in <30s"
+
+    note for ScaleDownService "Four algorithms:\n1. Forest Fire: Local structure\n2. MHRW: Uniform sampling\n3. Random Walk: Simple traversal\n4. Pattern: Criteria-based\n\nTarget: 10% of 10K nodes in <10s"
+
+    note for PerformanceMonitor "Tracks:\n- Items processed\n- Batch counts\n- Duration\n- Throughput\n- Adaptive batch sizing"
+
+    note for QualityMetrics "Compares original vs sample:\n- Degree distribution\n- Clustering coefficient\n- Connected components\n- Resource type preservation"

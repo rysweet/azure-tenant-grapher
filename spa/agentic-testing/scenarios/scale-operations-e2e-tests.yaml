@@ -1,0 +1,477 @@
+# Scale Operations End-to-End Testing Scenarios
+# Comprehensive E2E test scenarios for Azure Tenant Grapher scale operations
+# Tests real execution with template files and parameters
+# Issue #427
+
+name: "Scale Operations E2E Tests"
+description: "End-to-end tests for scale operations with real template execution and validation"
+version: "1.0.0"
+
+# Test configuration
+config:
+  timeout: 300000  # 5 minutes for E2E operations
+  retries: 1
+  parallel: false
+
+# Environment requirements
+environment:
+  requires:
+    - AZURE_TENANT_ID
+    - NEO4J_PASSWORD
+    - NEO4J_PORT
+  optional:
+    - AZURE_CLIENT_ID
+    - AZURE_CLIENT_SECRET
+
+# Agents involved in this scenario
+agents:
+  - name: "cli-agent"
+    type: "system"
+    config:
+      shell: "bash"
+      cwd: "/home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations"
+      timeout: 180000
+      capture_output: true
+
+# Test steps
+steps:
+  # ============================================================================
+  # Setup: Ensure Neo4j is available and get baseline stats
+  # ============================================================================
+
+  - name: "Check Neo4j container status"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "docker ps --filter 'name=neo4j' --format '{{.Status}}'"
+    expect:
+      exit_code: 0
+    timeout: 30000
+
+  - name: "Get baseline graph statistics"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-stats --output-format json --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "{"
+    timeout: 60000
+
+  # ============================================================================
+  # Test scale-up template with real template file (dry-run)
+  # ============================================================================
+
+  - name: "Verify template file exists"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "test -f test-data/scale-up-template-test.yaml && echo 'Template found' || echo 'Template not found'"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Template found"
+    timeout: 10000
+
+  - name: "Test scale-up template with dry-run (scale factor 2)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up template --template-file test-data/scale-up-template-test.yaml --scale-factor 2.0 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "scale-up"
+        - "Dry run"
+    timeout: 90000
+
+  - name: "Test scale-up template with custom batch size"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up template --template-file test-data/scale-up-template-test.yaml --scale-factor 1.5 --batch-size 50 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Batch size: 50"
+    timeout: 90000
+
+  - name: "Test scale-up template with JSON output"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up template --template-file test-data/scale-up-template-test.yaml --scale-factor 2.0 --dry-run --output-format json --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "{"
+        - "}"
+    timeout: 90000
+
+  # ============================================================================
+  # Test scale-up scenario variations (dry-run)
+  # ============================================================================
+
+  - name: "Test scale-up scenario hub-spoke (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up scenario --scenario hub-spoke --scale-factor 2.0 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "hub-spoke"
+        - "Dry run"
+    timeout: 90000
+
+  - name: "Test scale-up scenario multi-region (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up scenario --scenario multi-region --scale-factor 1.5 --regions eastus,westus --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "multi-region"
+    timeout: 90000
+
+  - name: "Test scale-up scenario dev-test-prod (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up scenario --scenario dev-test-prod --scale-factor 2.0 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "dev-test-prod"
+    timeout: 90000
+
+  # ============================================================================
+  # Test scale-down operations (dry-run)
+  # ============================================================================
+
+  - name: "Test scale-down algorithm random (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm random --sample-size 0.5 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "random"
+        - "Dry run"
+    timeout: 90000
+
+  - name: "Test scale-down algorithm proportional (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm proportional --sample-size 0.3 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "proportional"
+    timeout: 90000
+
+  - name: "Test scale-down algorithm stratified (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm stratified --sample-size 0.5 --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "stratified"
+    timeout: 90000
+
+  - name: "Test scale-down pattern by resource type (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down pattern --pattern 'type:VirtualMachine' --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "pattern"
+        - "VirtualMachine"
+    timeout: 90000
+
+  - name: "Test scale-down pattern by location (dry-run)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down pattern --pattern 'location:eastus' --dry-run --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "location"
+    timeout: 90000
+
+  # ============================================================================
+  # Test scale validation and cleanup
+  # ============================================================================
+
+  - name: "Test scale-validate comprehensive check"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-validate --output-format json --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "{"
+        - "}"
+    timeout: 120000
+
+  - name: "Test scale-validate with detailed table output"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-validate --output-format table --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Validation"
+    timeout: 120000
+
+  - name: "Test scale-clean dry-run shows what would be cleaned"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-clean --dry-run --output-format table --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Dry Run"
+    timeout: 90000
+
+  - name: "Test scale-clean with JSON output shows cleanup summary"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-clean --dry-run --output-format json --no-container"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "{"
+        - "}"
+    timeout: 90000
+
+  # ============================================================================
+  # Test workflow: stats -> validate -> clean
+  # ============================================================================
+
+  - name: "Workflow Step 1: Get current stats"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-stats --detailed --output-format table --no-container"
+    expect:
+      exit_code: 0
+    timeout: 60000
+
+  - name: "Workflow Step 2: Run validation"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-validate --output-format table --no-container"
+    expect:
+      exit_code: 0
+    timeout: 120000
+
+  - name: "Workflow Step 3: Preview cleanup"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-clean --dry-run --output-format table --no-container"
+    expect:
+      exit_code: 0
+    timeout: 90000
+
+  # ============================================================================
+  # Test error handling and parameter validation
+  # ============================================================================
+
+  - name: "Test scale-up with invalid scale factor (negative)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up template --template-file test-data/scale-up-template-test.yaml --scale-factor -1.0 --dry-run --no-container"
+    expect:
+      exit_code: [1, 2]
+    timeout: 60000
+
+  - name: "Test scale-up with invalid scale factor (zero)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up template --template-file test-data/scale-up-template-test.yaml --scale-factor 0 --dry-run --no-container"
+    expect:
+      exit_code: [1, 2]
+    timeout: 60000
+
+  - name: "Test scale-down with invalid sample size (>1.0)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm random --sample-size 1.5 --dry-run --no-container"
+    expect:
+      exit_code: [1, 2]
+    timeout: 60000
+
+  - name: "Test scale-down with invalid sample size (negative)"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm random --sample-size -0.5 --dry-run --no-container"
+    expect:
+      exit_code: [1, 2]
+    timeout: 60000
+
+  - name: "Test scale-up with invalid scenario type"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-up scenario --scenario invalid-scenario --scale-factor 2.0 --dry-run --no-container"
+    expect:
+      exit_code: 2
+    timeout: 60000
+
+  - name: "Test scale-down with invalid algorithm type"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-down algorithm --algorithm invalid-algo --sample-size 0.5 --dry-run --no-container"
+    expect:
+      exit_code: 2
+    timeout: 60000
+
+  # ============================================================================
+  # Test output format consistency
+  # ============================================================================
+
+  - name: "Verify scale-stats JSON is valid"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-stats --output-format json --no-container | python -m json.tool > /dev/null && echo 'Valid JSON'"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Valid JSON"
+    timeout: 60000
+
+  - name: "Verify scale-validate JSON is valid"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-validate --output-format json --no-container | python -m json.tool > /dev/null && echo 'Valid JSON'"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Valid JSON"
+    timeout: 120000
+
+  - name: "Verify scale-clean JSON is valid"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "uv run atg scale-clean --dry-run --output-format json --no-container | python -m json.tool > /dev/null && echo 'Valid JSON'"
+    expect:
+      exit_code: 0
+      stdout_contains:
+        - "Valid JSON"
+    timeout: 90000
+
+# Assertions to validate test success
+assertions:
+  - name: "Baseline Stats Retrieved Successfully"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Get baseline graph statistics"
+
+  - name: "Template File Found"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Verify template file exists"
+
+  - name: "Scale-up Template Dry-run Successful"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-up template with dry-run (scale factor 2)"
+
+  - name: "Scale-up Scenarios Work"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-up scenario hub-spoke (dry-run)"
+
+  - name: "Scale-down Algorithms Work"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-down algorithm random (dry-run)"
+
+  - name: "Scale-down Patterns Work"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-down pattern by resource type (dry-run)"
+
+  - name: "Scale-validate Comprehensive Check Works"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-validate comprehensive check"
+
+  - name: "Scale-clean Dry-run Works"
+    type: "command_success"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-clean dry-run shows what would be cleaned"
+
+  - name: "Invalid Parameters Rejected"
+    type: "command_failure_expected"
+    agent: "cli-agent"
+    params:
+      step: "Test scale-up with invalid scale factor (negative)"
+      expected_exit_code: [1, 2]
+
+  - name: "JSON Output Valid for All Commands"
+    type: "output_contains_all"
+    agent: "cli-agent"
+    params:
+      step: "Verify scale-stats JSON is valid"
+      required_strings:
+        - "Valid JSON"
+
+# Cleanup actions
+cleanup:
+  - name: "Remove temporary test files"
+    agent: "cli-agent"
+    action: "execute_command"
+    params:
+      command: "rm -f /tmp/atg-scale-test-* /tmp/scale-test-output-*.json"
+
+# Test metadata
+metadata:
+  tags:
+    - "cli"
+    - "scale-operations"
+    - "e2e"
+    - "integration"
+    - "scale-up"
+    - "scale-down"
+    - "scale-stats"
+    - "scale-clean"
+    - "scale-validate"
+  priority: "critical"
+  author: "agentic-testing-system"
+  created: "2025-11-11T00:00:00Z"
+  updated: "2025-11-11T00:00:00Z"
+  issue: "427"
+  test_type: "end-to-end"

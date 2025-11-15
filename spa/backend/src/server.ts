@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -24,10 +25,39 @@ dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure Socket.IO CORS for both Electron and web mode
+const socketCorsOrigins = [
+  'http://localhost:5173',  // Vite dev server
+  'app://./',                // Electron
+  'http://localhost:3000',   // Web mode
+  'http://127.0.0.1:3000',   // Web mode localhost
+];
+
+// Add custom origins from environment variable
+if (process.env.ALLOWED_ORIGINS) {
+  const customOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  socketCorsOrigins.push(...customOrigins);
+}
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'app://./'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+
+      // Check if origin is allowed
+      if (socketCorsOrigins.includes(origin) ||
+          socketCorsOrigins.includes('*') ||
+          origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
+        callback(null, true);
+      } else {
+        logger.warn(`Socket.IO CORS: Blocked connection from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -48,8 +78,39 @@ logger.debug('Environment variables:', {
   NEO4J_PORT: process.env.NEO4J_PORT || 'NOT SET'
 });
 
-// Middleware
-app.use(cors());
+// CORS middleware - configure for both Electron and remote access
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:5173',  // Vite dev server
+      'app://./',                // Electron
+      'http://localhost:3000',   // Web mode
+      'http://127.0.0.1:3000',   // Web mode localhost
+    ];
+
+    // Check if origin is in allowed list or matches pattern
+    if (allowedOrigins.includes(origin) || origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
+      callback(null, true);
+    } else {
+      // For production web mode, check environment variable
+      const customOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+      if (customOrigins.includes(origin) || customOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS: Blocked request from origin: ${origin}`);
+        callback(null, false);
+      }
+    }
+  },
+  methods: ['GET', 'POST'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Store active processes
@@ -1270,6 +1331,475 @@ app.get('/api/test/graph-permissions', async (req, res) => {
     });
   }
 });
+
+// ==================== Scale Operations API Routes ====================
+
+/**
+ * Execute scale-up operation
+ */
+app.post('/api/scale/up/execute', async (req, res) => {
+  try {
+    const { tenantId, strategy, validate, templateFile, scaleFactor, scenarioType, nodeCount, pattern } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    const processId = uuidv4();
+    const args = ['scale-up', '--tenant-id', tenantId, '--strategy', strategy];
+
+    if (validate) {
+      args.push('--validate');
+    }
+
+    if (strategy === 'template') {
+      if (templateFile) args.push('--template-file', templateFile);
+      if (scaleFactor) args.push('--scale-factor', scaleFactor.toString());
+    } else if (strategy === 'scenario') {
+      if (scenarioType) args.push('--scenario-type', scenarioType);
+    } else if (strategy === 'random') {
+      if (nodeCount) args.push('--node-count', nodeCount.toString());
+      if (pattern) args.push('--pattern', pattern);
+    }
+
+    const uvPath = process.env.UV_PATH || 'uv';
+    const projectRoot = path.resolve(__dirname, '../../..');
+    const fullArgs = ['run', 'atg', ...args];
+
+    logger.info('Starting scale-up operation', { processId, args });
+
+    const childProcess = spawn(uvPath, fullArgs, {
+      cwd: projectRoot,
+      env: { ...process.env },
+    });
+
+    activeProcesses.set(processId, childProcess);
+
+    childProcess.stdout.on('data', (data) => {
+      const lines = data.toString().split('\n').filter((line: string) => line.trim());
+      io.to(`process-${processId}`).emit('output', {
+        processId,
+        type: 'stdout',
+        data: lines,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    childProcess.stderr.on('data', (data) => {
+      const lines = data.toString().split('\n').filter((line: string) => line.trim());
+      io.to(`process-${processId}`).emit('output', {
+        processId,
+        type: 'stderr',
+        data: lines,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    childProcess.on('close', (code) => {
+      io.to(`process-${processId}`).emit('process-exit', {
+        processId,
+        code,
+        timestamp: new Date().toISOString(),
+      });
+      activeProcesses.delete(processId);
+      logger.info('Scale-up operation completed', { processId, exitCode: code });
+    });
+
+    childProcess.on('error', (error) => {
+      io.to(`process-${processId}`).emit('process-error', {
+        processId,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      activeProcesses.delete(processId);
+      logger.error('Scale-up operation failed', { processId, error });
+    });
+
+    res.json({ success: true, processId });
+  } catch (error: any) {
+    logger.error('Failed to start scale-up operation', { error });
+    res.status(500).json({ error: error.message || 'Failed to start scale-up operation' });
+  }
+});
+
+/**
+ * Rate limiter for preview endpoint - 10 requests per minute per IP
+ */
+const previewRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: 'Too many preview requests, please try again later.',
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+/**
+ * Preview scale-up operation
+ */
+app.post('/api/scale/up/preview', previewRateLimiter, async (req, res) => {
+  try {
+    const { tenantId, strategy } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    // Mock preview result for now - in production this would analyze the template/strategy
+    res.json({
+      estimatedNodes: strategy === 'template' ? 2500 : strategy === 'random' ? 1000 : 500,
+      estimatedRelationships: strategy === 'template' ? 5000 : strategy === 'random' ? 2000 : 1000,
+      estimatedDuration: 120,
+      warnings: [],
+      canProceed: true,
+    });
+  } catch (error: any) {
+    logger.error('Failed to preview scale-up', { error });
+    res.status(500).json({ error: error.message || 'Failed to preview scale-up' });
+  }
+});
+
+/**
+ * Execute scale-down operation
+ */
+app.post('/api/scale/down/execute', async (req, res) => {
+  try {
+    const {
+      tenantId,
+      algorithm,
+      sampleSize,
+      validate,
+      outputMode,
+      burnInSteps,
+      forwardProbability,
+      walkLength,
+      pattern,
+      outputPath,
+      iacFormat,
+      newTenantId,
+      preserveRelationships,
+      includeProperties,
+    } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    const processId = uuidv4();
+    const args = ['scale-down', '--tenant-id', tenantId, '--algorithm', algorithm, '--sample-size', sampleSize.toString()];
+
+    if (validate) {
+      args.push('--validate');
+    }
+
+    if (algorithm === 'forest-fire') {
+      if (burnInSteps) args.push('--burn-in', burnInSteps.toString());
+      if (forwardProbability !== undefined) args.push('--forward-probability', forwardProbability.toString());
+    } else if (algorithm === 'mhrw') {
+      if (walkLength) args.push('--walk-length', walkLength.toString());
+    } else if (algorithm === 'pattern') {
+      if (pattern) args.push('--pattern', pattern);
+    }
+
+    if (outputMode === 'file' && outputPath) {
+      args.push('--output-path', outputPath);
+    } else if (outputMode === 'iac' && iacFormat) {
+      args.push('--iac-format', iacFormat);
+    } else if (outputMode === 'new-tenant' && newTenantId) {
+      args.push('--new-tenant-id', newTenantId);
+    }
+
+    if (preserveRelationships) {
+      args.push('--preserve-relationships');
+    }
+
+    if (includeProperties) {
+      args.push('--include-properties');
+    }
+
+    const uvPath = process.env.UV_PATH || 'uv';
+    const projectRoot = path.resolve(__dirname, '../../..');
+    const fullArgs = ['run', 'atg', ...args];
+
+    logger.info('Starting scale-down operation', { processId, args });
+
+    const childProcess = spawn(uvPath, fullArgs, {
+      cwd: projectRoot,
+      env: { ...process.env },
+    });
+
+    activeProcesses.set(processId, childProcess);
+
+    childProcess.stdout.on('data', (data) => {
+      const lines = data.toString().split('\n').filter((line: string) => line.trim());
+      io.to(`process-${processId}`).emit('output', {
+        processId,
+        type: 'stdout',
+        data: lines,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    childProcess.stderr.on('data', (data) => {
+      const lines = data.toString().split('\n').filter((line: string) => line.trim());
+      io.to(`process-${processId}`).emit('output', {
+        processId,
+        type: 'stderr',
+        data: lines,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    childProcess.on('close', (code) => {
+      io.to(`process-${processId}`).emit('process-exit', {
+        processId,
+        code,
+        timestamp: new Date().toISOString(),
+      });
+      activeProcesses.delete(processId);
+      logger.info('Scale-down operation completed', { processId, exitCode: code });
+    });
+
+    childProcess.on('error', (error) => {
+      io.to(`process-${processId}`).emit('process-error', {
+        processId,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      activeProcesses.delete(processId);
+      logger.error('Scale-down operation failed', { processId, error });
+    });
+
+    res.json({ success: true, processId });
+  } catch (error: any) {
+    logger.error('Failed to start scale-down operation', { error });
+    res.status(500).json({ error: error.message || 'Failed to start scale-down operation' });
+  }
+});
+
+/**
+ * Preview scale-down operation
+ */
+app.post('/api/scale/down/preview', async (req, res) => {
+  try {
+    const { tenantId, sampleSize } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    // Mock preview result for now
+    res.json({
+      estimatedNodes: sampleSize || 500,
+      estimatedRelationships: (sampleSize || 500) * 2,
+      estimatedDuration: 60,
+      warnings: [],
+      canProceed: true,
+    });
+  } catch (error: any) {
+    logger.error('Failed to preview scale-down', { error });
+    res.status(500).json({ error: error.message || 'Failed to preview scale-down' });
+  }
+});
+
+/**
+ * Cancel scale operation
+ */
+app.post('/api/scale/cancel/:processId', (req, res) => {
+  try {
+    const { processId } = req.params;
+    const process = activeProcesses.get(processId);
+
+    if (!process) {
+      return res.status(404).json({ error: 'Process not found' });
+    }
+
+    process.kill('SIGTERM');
+    activeProcesses.delete(processId);
+    logger.info('Scale operation cancelled', { processId });
+
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Failed to cancel operation', { error });
+    res.status(500).json({ error: error.message || 'Failed to cancel operation' });
+  }
+});
+
+/**
+ * Clean synthetic data
+ */
+app.post('/api/scale/clean-synthetic', async (req, res) => {
+  try {
+    const { tenantId } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    // Execute clean synthetic command
+    const result = await neo4jService.query(
+      `MATCH (n {synthetic: true, tenantId: $tenantId})
+       OPTIONAL MATCH (n)-[r]-()
+       WITH n, count(r) as relCount
+       DETACH DELETE n
+       RETURN count(n) as nodesDeleted, sum(relCount) as relationshipsDeleted`,
+      { tenantId }
+    );
+
+    const nodesDeleted = result.records[0]?.get('nodesDeleted')?.toNumber() || 0;
+    const relationshipsDeleted = result.records[0]?.get('relationshipsDeleted')?.toNumber() || 0;
+
+    logger.info('Cleaned synthetic data', { tenantId, nodesDeleted, relationshipsDeleted });
+
+    res.json({
+      success: true,
+      nodesDeleted,
+      relationshipsDeleted,
+    });
+  } catch (error: any) {
+    logger.error('Failed to clean synthetic data', { error });
+    res.status(500).json({ error: error.message || 'Failed to clean synthetic data' });
+  }
+});
+
+/**
+ * Validate graph
+ */
+app.post('/api/scale/validate', async (req, res) => {
+  try {
+    const { tenantId } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    const validationResults = [];
+
+    // Check for orphaned nodes
+    const orphanedCheck = await neo4jService.query(
+      `MATCH (n {tenantId: $tenantId})
+       WHERE NOT (n)-[]-()
+       RETURN count(n) as orphanedCount`,
+      { tenantId }
+    );
+    const orphanedCount = orphanedCheck.records[0]?.get('orphanedCount')?.toNumber() || 0;
+    validationResults.push({
+      checkName: 'Orphaned Nodes',
+      passed: orphanedCount === 0,
+      message: orphanedCount === 0 ? 'No orphaned nodes found' : `Found ${orphanedCount} orphaned nodes`,
+    });
+
+    // Check for broken relationships
+    const brokenRelCheck = await neo4jService.query(
+      `MATCH (n {tenantId: $tenantId})-[r]->(m)
+       WHERE m.tenantId IS NULL OR m.tenantId <> $tenantId
+       RETURN count(r) as brokenCount`,
+      { tenantId }
+    );
+    const brokenCount = brokenRelCheck.records[0]?.get('brokenCount')?.toNumber() || 0;
+    validationResults.push({
+      checkName: 'Relationship Integrity',
+      passed: brokenCount === 0,
+      message: brokenCount === 0 ? 'All relationships are valid' : `Found ${brokenCount} broken relationships`,
+    });
+
+    // Check synthetic node labeling
+    const syntheticCheck = await neo4jService.query(
+      `MATCH (n {tenantId: $tenantId, synthetic: true})
+       WHERE NOT 'Synthetic' IN labels(n)
+       RETURN count(n) as unlabeledCount`,
+      { tenantId }
+    );
+    const unlabeledCount = syntheticCheck.records[0]?.get('unlabeledCount')?.toNumber() || 0;
+    validationResults.push({
+      checkName: 'Synthetic Node Labeling',
+      passed: unlabeledCount === 0,
+      message: unlabeledCount === 0 ? 'All synthetic nodes properly labeled' : `Found ${unlabeledCount} improperly labeled synthetic nodes`,
+    });
+
+    logger.info('Graph validation completed', { tenantId, validationResults });
+
+    res.json(validationResults);
+  } catch (error: any) {
+    logger.error('Failed to validate graph', { error });
+    res.status(500).json({ error: error.message || 'Failed to validate graph' });
+  }
+});
+
+/**
+ * Get graph statistics
+ */
+app.get('/api/scale/stats/:tenantId', async (req, res) => {
+  try {
+    const { tenantId } = req.params;
+
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID is required' });
+    }
+
+    // Get node counts
+    const nodeStatsResult = await neo4jService.query(
+      `MATCH (n {tenantId: $tenantId})
+       OPTIONAL MATCH (s {tenantId: $tenantId, synthetic: true})
+       RETURN count(n) as totalNodes, count(s) as syntheticNodes`,
+      { tenantId }
+    );
+
+    const totalNodes = nodeStatsResult.records[0]?.get('totalNodes')?.toNumber() || 0;
+    const syntheticNodes = nodeStatsResult.records[0]?.get('syntheticNodes')?.toNumber() || 0;
+
+    // Get relationship count
+    const relStatsResult = await neo4jService.query(
+      `MATCH ({tenantId: $tenantId})-[r]->({tenantId: $tenantId})
+       RETURN count(r) as totalRelationships`,
+      { tenantId }
+    );
+
+    const totalRelationships = relStatsResult.records[0]?.get('totalRelationships')?.toNumber() || 0;
+
+    // Get node type distribution
+    const nodeTypesResult = await neo4jService.query(
+      `MATCH (n {tenantId: $tenantId})
+       UNWIND labels(n) as label
+       WITH label, count(*) as count
+       WHERE label <> 'Synthetic'
+       RETURN label, count
+       ORDER BY count DESC`,
+      { tenantId }
+    );
+
+    const nodeTypes: Record<string, number> = {};
+    nodeTypesResult.records.forEach(record => {
+      nodeTypes[record.get('label')] = record.get('count').toNumber();
+    });
+
+    // Get relationship type distribution
+    const relTypesResult = await neo4jService.query(
+      `MATCH ({tenantId: $tenantId})-[r]->({tenantId: $tenantId})
+       RETURN type(r) as relType, count(*) as count
+       ORDER BY count DESC`,
+      { tenantId }
+    );
+
+    const relationshipTypes: Record<string, number> = {};
+    relTypesResult.records.forEach(record => {
+      relationshipTypes[record.get('relType')] = record.get('count').toNumber();
+    });
+
+    res.json({
+      totalNodes,
+      totalRelationships,
+      syntheticNodes,
+      nodeTypes,
+      relationshipTypes,
+      lastUpdate: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    logger.error('Failed to get graph statistics', { error });
+    res.status(500).json({ error: error.message || 'Failed to get graph statistics' });
+  }
+});
+
+// ==================== End Scale Operations Routes ====================
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

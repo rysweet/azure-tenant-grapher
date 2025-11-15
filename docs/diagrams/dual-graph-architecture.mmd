@@ -1,0 +1,82 @@
+%% Dual-Graph Architecture for Scale Operations
+%% Shows how Original and Abstracted layers work together
+
+graph TB
+    subgraph "Azure Source Tenant"
+        AzureVM["Azure VM<br/>/subscriptions/.../vm-prod-01"]
+        AzureVNet["Azure VNet<br/>/subscriptions/.../vnet-hub"]
+        AzureStorage["Azure Storage<br/>/subscriptions/.../storageacct"]
+    end
+
+    subgraph "Neo4j Dual-Graph Database"
+        subgraph "Original Layer (:Resource:Original)"
+            OrigVM["VM<br/>id: /subscriptions/.../vm-prod-01<br/>label: :Resource:Original<br/>name: vm-prod-01"]
+            OrigVNet["VNet<br/>id: /subscriptions/.../vnet-hub<br/>label: :Resource:Original<br/>name: vnet-hub"]
+            OrigStorage["Storage<br/>id: /subscriptions/.../storageacct<br/>label: :Resource:Original<br/>name: storageacct"]
+
+            OrigVM -->|USES_SUBNET| OrigVNet
+            OrigVM -->|DEPENDS_ON| OrigStorage
+        end
+
+        subgraph "Abstracted Layer (:Resource)"
+            AbsVM["VM<br/>id: vm-a1b2c3d4<br/>label: :Resource<br/>name: vm-prod-01<br/>synthetic: false"]
+            AbsVNet["VNet<br/>id: vnet-e5f6g7h8<br/>label: :Resource<br/>name: vnet-hub<br/>synthetic: false"]
+            AbsStorage["Storage<br/>id: storage-i9j0k1l2<br/>label: :Resource<br/>name: storageacct<br/>synthetic: false"]
+
+            AbsVM -->|USES_SUBNET| AbsVNet
+            AbsVM -->|DEPENDS_ON| AbsStorage
+        end
+
+        subgraph "Synthetic Resources (Scale Operations)"
+            SynVM1["VM<br/>id: vm-m3n4o5p6<br/>synthetic: true<br/>scale_operation_id: scale-20250110-abc123"]
+            SynVM2["VM<br/>id: vm-q7r8s9t0<br/>synthetic: true<br/>scale_operation_id: scale-20250110-abc123"]
+
+            SynVM1 -->|USES_SUBNET| AbsVNet
+            SynVM2 -->|USES_SUBNET| AbsVNet
+        end
+
+        AbsVM -.->|SCAN_SOURCE_NODE| OrigVM
+        AbsVNet -.->|SCAN_SOURCE_NODE| OrigVNet
+        AbsStorage -.->|SCAN_SOURCE_NODE| OrigStorage
+    end
+
+    subgraph "Scale Operations Work Here"
+        ScaleUp["Scale-Up Service<br/>- Template replication<br/>- Scenario generation<br/>- Random generation"]
+        ScaleDown["Scale-Down Service<br/>- Graph sampling<br/>- Pattern extraction<br/>- Export"]
+    end
+
+    AzureVM -->|Scanned| OrigVM
+    AzureVNet -->|Scanned| OrigVNet
+    AzureStorage -->|Scanned| OrigStorage
+
+    ScaleUp -->|Creates synthetic nodes| SynVM1
+    ScaleUp -->|Creates synthetic nodes| SynVM2
+    ScaleDown -->|Samples from| AbsVM
+    ScaleDown -->|Samples from| AbsVNet
+
+    style OrigVM fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px
+    style OrigVNet fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px
+    style OrigStorage fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px
+
+    style AbsVM fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+    style AbsVNet fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+    style AbsStorage fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+
+    style SynVM1 fill:#69db7c,stroke:#2f9e44,stroke-width:2px,stroke-dasharray: 5 5
+    style SynVM2 fill:#69db7c,stroke:#2f9e44,stroke-width:2px,stroke-dasharray: 5 5
+
+    style ScaleUp fill:#ffd43b,stroke:#f08c00,stroke-width:3px
+    style ScaleDown fill:#ffd43b,stroke:#f08c00,stroke-width:3px
+
+    %% Legend
+    subgraph "Legend"
+        L1["Original Layer (Real Azure IDs)"]
+        L2["Abstracted Layer (IaC-ready IDs)"]
+        L3["Synthetic Resources (Test Data)"]
+        L4["SCAN_SOURCE_NODE Link"]
+    end
+
+    style L1 fill:#ff6b6b,stroke:#c92a2a,stroke-width:2px
+    style L2 fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+    style L3 fill:#69db7c,stroke:#2f9e44,stroke-width:2px,stroke-dasharray: 5 5
+    style L4 fill:#ffffff,stroke:#868e96,stroke-width:1px,stroke-dasharray: 3 3

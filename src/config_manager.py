@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 """
 Configuration Management for Azure Tenant Grapher
@@ -124,10 +124,10 @@ class ProcessingConfig:
     # Remove batch_size, add max_concurrency with migration shim
     max_concurrency: int = field(
         default_factory=lambda: (
-            int(os.getenv("MAX_CONCURRENCY", "5"))
+            int(os.getenv("MAX_CONCURRENCY", "100"))
             if "MAX_CONCURRENCY" in os.environ
             or "PROCESSING_BATCH_SIZE" not in os.environ
-            else int(os.getenv("PROCESSING_BATCH_SIZE", "5"))
+            else int(os.getenv("PROCESSING_BATCH_SIZE", "100"))
         )
     )
     max_retries: int = field(
@@ -315,6 +315,7 @@ class AzureTenantGrapherConfig:
         resource_limit: Optional[int] = None,
         max_retries: Optional[int] = None,
         max_build_threads: Optional[int] = None,
+        max_concurrency: Optional[int] = None,
         debug: bool = False,
         tenant_config: Optional[TenantConfig] = None,
     ) -> "AzureTenantGrapherConfig":
@@ -326,6 +327,7 @@ class AzureTenantGrapherConfig:
             resource_limit: Optional limit on resources to process
             max_retries: Optional max retries for failed resources
             max_build_threads: Optional max build threads
+            max_concurrency: Optional max concurrent workers
             debug: Enable debug output
             tenant_config: Optional tenant configuration
 
@@ -350,6 +352,8 @@ class AzureTenantGrapherConfig:
             config.processing.max_retries = max_retries
         if max_build_threads is not None:
             config.processing.max_build_threads = max_build_threads
+        if max_concurrency is not None:
+            config.processing.max_concurrency = max_concurrency
 
         # Debug output after Neo4j config is initialized
         if debug:
@@ -546,6 +550,7 @@ def create_config_from_env(
     resource_limit: Optional[int] = None,
     max_retries: Optional[int] = None,
     max_build_threads: Optional[int] = None,
+    max_concurrency: Optional[int] = None,
     debug: bool = False,
 ) -> AzureTenantGrapherConfig:
     """
@@ -555,6 +560,7 @@ def create_config_from_env(
         tenant_id: Azure tenant ID
         resource_limit: Optional limit on resources to process
         max_retries: Optional max retries for failed resources
+        max_concurrency: Optional max concurrent workers
 
     Returns:
         AzureTenantGrapherConfig: Validated configuration instance
@@ -563,7 +569,7 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries, max_build_threads, debug
+        tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
     )
     config.validate_all()
     return config

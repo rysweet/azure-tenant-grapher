@@ -1,0 +1,874 @@
+# Extreme Scale Template for DefenderATEVET17
+# Target: 10x multiplication from ~4k to ~40k abstracted resources
+# Created: 2025-11-11
+
+metadata:
+  name: "Extreme Scale Infrastructure"
+  description: "Massive scale-up to 40,000+ resources for performance testing"
+  version: "1.0.0"
+  scale_target: 40000
+  baseline_count: 4092
+
+# Resource multipliers based on current distribution
+# Targeting proportional growth across all major types
+resources:
+  # Network Infrastructure (largest category - 1000 resources)
+  - type: "Microsoft.Network/virtualNetworks"
+    count: 1000
+    template:
+      name_pattern: "vnet-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        addressSpace:
+          addressPrefixes:
+            - "10.{{ (index // 256) % 256 }}.0.0/16"
+        subnets:
+          - name: "default"
+            properties:
+              addressPrefix: "10.{{ (index // 256) % 256 }}.0.0/24"
+          - name: "backend"
+            properties:
+              addressPrefix: "10.{{ (index // 256) % 256 }}.1.0/24"
+
+  - type: "Microsoft.Network/networkSecurityGroups"
+    count: 1000
+    template:
+      name_pattern: "nsg-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        securityRules:
+          - name: "AllowHTTPS"
+            properties:
+              protocol: "Tcp"
+              sourcePortRange: "*"
+              destinationPortRange: "443"
+              sourceAddressPrefix: "*"
+              destinationAddressPrefix: "*"
+              access: "Allow"
+              priority: 100
+              direction: "Inbound"
+
+  - type: "Microsoft.Network/subnets"
+    count: 2000
+    template:
+      name_pattern: "subnet-scale-{index}"
+      properties:
+        addressPrefix: "10.{{ (index // 256) % 256 }}.{{ index % 256 }}.0/24"
+
+  - type: "Microsoft.Network/networkInterfaces"
+    count: 1500
+    template:
+      name_pattern: "nic-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        ipConfigurations:
+          - name: "ipconfig1"
+            properties:
+              privateIPAllocationMethod: "Dynamic"
+
+  - type: "Microsoft.Network/publicIPAddresses"
+    count: 800
+    template:
+      name_pattern: "pip-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        publicIPAllocationMethod: "Static"
+        sku:
+          name: "Standard"
+
+  - type: "Microsoft.Network/privateEndpoints"
+    count: 700
+    template:
+      name_pattern: "pe-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        privateLinkServiceConnections:
+          - name: "connection"
+            properties:
+              privateLinkServiceId: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Storage/storageAccounts/storage{{ index }}"
+
+  # Compute Resources (1500 total)
+  - type: "Microsoft.Compute/virtualMachines"
+    count: 800
+    template:
+      name_pattern: "vm-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        hardwareProfile:
+          vmSize: "Standard_D2s_v3"
+        osProfile:
+          computerName: "vm-scale-{{ index }}"
+          adminUsername: "azureuser"
+        storageProfile:
+          imageReference:
+            publisher: "Canonical"
+            offer: "0001-com-ubuntu-server-jammy"
+            sku: "22_04-lts-gen2"
+            version: "latest"
+          osDisk:
+            name: "osdisk-scale-{{ index }}"
+            createOption: "FromImage"
+            managedDisk:
+              storageAccountType: "Premium_LRS"
+
+  - type: "Microsoft.Compute/disks"
+    count: 1000
+    template:
+      name_pattern: "disk-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        diskSizeGB: 128
+        creationData:
+          createOption: "Empty"
+        sku:
+          name: "Premium_LRS"
+
+  - type: "Microsoft.Compute/virtualMachineScaleSets"
+    count: 250
+    template:
+      name_pattern: "vmss-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard_D2s_v3"
+        tier: "Standard"
+        capacity: 2
+      properties:
+        upgradePolicy:
+          mode: "Manual"
+        virtualMachineProfile:
+          osProfile:
+            computerNamePrefix: "vmss{{ index }}"
+            adminUsername: "azureuser"
+          storageProfile:
+            imageReference:
+              publisher: "Canonical"
+              offer: "0001-com-ubuntu-server-jammy"
+              sku: "22_04-lts-gen2"
+              version: "latest"
+
+  - type: "Microsoft.Compute/snapshots"
+    count: 150
+    template:
+      name_pattern: "snapshot-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        creationData:
+          createOption: "Copy"
+          sourceResourceId: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Compute/disks/disk-scale-{{ index }}"
+
+  - type: "Microsoft.Compute/virtualMachines/extensions"
+    count: 200
+    template:
+      name_pattern: "extension-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        publisher: "Microsoft.Azure.Extensions"
+        type: "CustomScript"
+        typeHandlerVersion: "2.1"
+
+  - type: "Microsoft.Compute/virtualMachines/runCommands"
+    count: 200
+    template:
+      name_pattern: "runcommand-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        source:
+          script: "echo 'Scale test command {{ index }}'"
+
+  # Storage (900 total)
+  - type: "Microsoft.Storage/storageAccounts"
+    count: 900
+    template:
+      name_pattern: "stscale{index:010d}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard_LRS"
+      kind: "StorageV2"
+      properties:
+        supportsHttpsTrafficOnly: true
+        minimumTlsVersion: "TLS1_2"
+
+  # Identity (1200 total)
+  - type: "Microsoft.ManagedIdentity/userAssignedIdentities"
+    count: 1200
+    template:
+      name_pattern: "id-scale-{index}"
+      location: "{{ random_location }}"
+
+  # Key Management (800 total)
+  - type: "Microsoft.KeyVault/vaults"
+    count: 800
+    template:
+      name_pattern: "kv-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        sku:
+          family: "A"
+          name: "standard"
+        tenantId: "{{ tenant_id }}"
+        enabledForDeployment: true
+        enabledForDiskEncryption: true
+        enabledForTemplateDeployment: true
+
+  # Monitoring & Observability (900 total)
+  - type: "Microsoft.OperationalInsights/workspaces"
+    count: 350
+    template:
+      name_pattern: "log-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        sku:
+          name: "PerGB2018"
+        retentionInDays: 30
+
+  - type: "Microsoft.Insights/dataCollectionRules"
+    count: 450
+    template:
+      name_pattern: "dcr-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        dataSources:
+          performanceCounters:
+            - name: "perfCounterDataSource"
+              streams:
+                - "Microsoft-Perf"
+              samplingFrequencyInSeconds: 60
+
+  - type: "Microsoft.Insights/components"
+    count: 200
+    template:
+      name_pattern: "appi-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "web"
+      properties:
+        Application_Type: "web"
+
+  - type: "microsoft.alertsmanagement/smartDetectorAlertRules"
+    count: 280
+    template:
+      name_pattern: "alert-scale-{index}"
+      properties:
+        severity: "Sev3"
+        frequency: "PT5M"
+        detector:
+          id: "FailureAnomaliesDetector"
+
+  - type: "Microsoft.Insights/metricalerts"
+    count: 140
+    template:
+      name_pattern: "metricalert-scale-{index}"
+      location: "global"
+      properties:
+        severity: 3
+        enabled: true
+        evaluationFrequency: "PT5M"
+        windowSize: "PT5M"
+
+  - type: "Microsoft.Insights/actiongroups"
+    count: 130
+    template:
+      name_pattern: "ag-scale-{index}"
+      location: "global"
+      properties:
+        groupShortName: "ag{{ index }}"
+        enabled: true
+
+  - type: "Microsoft.Insights/dataCollectionEndpoints"
+    count: 70
+    template:
+      name_pattern: "dce-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        networkAcls:
+          publicNetworkAccess: "Enabled"
+
+  - type: "Microsoft.OperationsManagement/solutions"
+    count: 80
+    template:
+      name_pattern: "solution-scale-{index}"
+      location: "{{ random_location }}"
+      plan:
+        name: "solution-scale-{{ index }}"
+        publisher: "Microsoft"
+        product: "OMSGallery/ContainerInsights"
+
+  # Container Services (700 total)
+  - type: "Microsoft.App/containerApps"
+    count: 370
+    template:
+      name_pattern: "ca-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        configuration:
+          ingress:
+            external: true
+            targetPort: 80
+        template:
+          containers:
+            - name: "main"
+              image: "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+
+  - type: "Microsoft.ContainerService/managedClusters"
+    count: 260
+    template:
+      name_pattern: "aks-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        kubernetesVersion: "1.27.0"
+        dnsPrefix: "aks-scale-{{ index }}"
+        agentPoolProfiles:
+          - name: "agentpool"
+            count: 2
+            vmSize: "Standard_D2s_v3"
+            mode: "System"
+
+  - type: "Microsoft.ContainerRegistry/registries"
+    count: 240
+    template:
+      name_pattern: "acrscale{index:010d}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Basic"
+      properties:
+        adminUserEnabled: false
+
+  - type: "Microsoft.App/managedEnvironments"
+    count: 90
+    template:
+      name_pattern: "cae-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        appLogsConfiguration:
+          destination: "log-analytics"
+
+  - type: "Microsoft.ContainerInstance/containerGroups"
+    count: 70
+    template:
+      name_pattern: "ci-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        containers:
+          - name: "container1"
+            properties:
+              image: "mcr.microsoft.com/azuredocs/aci-helloworld"
+              resources:
+                requests:
+                  cpu: 1
+                  memoryInGB: 1.5
+        osType: "Linux"
+
+  # Network Advanced (400 total)
+  - type: "Microsoft.Network/bastionHosts"
+    count: 280
+    template:
+      name_pattern: "bastion-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+
+  - type: "Microsoft.Network/applicationGateways"
+    count: 120
+    template:
+      name_pattern: "agw-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        sku:
+          name: "Standard_v2"
+          tier: "Standard_v2"
+          capacity: 2
+
+  - type: "Microsoft.Network/privateDnsZones"
+    count: 160
+    template:
+      name_pattern: "privatelink.scale-{index}.azure.com"
+      location: "global"
+
+  - type: "Microsoft.Network/privateDnsZones/virtualNetworkLinks"
+    count: 290
+    template:
+      name_pattern: "vnetlink-scale-{index}"
+      location: "global"
+      properties:
+        registrationEnabled: false
+
+  - type: "Microsoft.Network/networkWatchers"
+    count: 110
+    template:
+      name_pattern: "nw-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Network/dnszones"
+    count: 110
+    template:
+      name_pattern: "scale-{index}.com"
+      location: "global"
+
+  - type: "Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies"
+    count: 110
+    template:
+      name_pattern: "waf-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        policySettings:
+          mode: "Prevention"
+          state: "Enabled"
+
+  - type: "Microsoft.Network/natGateways"
+    count: 60
+    template:
+      name_pattern: "nat-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+
+  - type: "Microsoft.Network/loadBalancers"
+    count: 20
+    template:
+      name_pattern: "lb-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+
+  - type: "Microsoft.Network/routeTables"
+    count: 10
+    template:
+      name_pattern: "rt-scale-{index}"
+      location: "{{ random_location }}"
+
+  # Cognitive Services (250 total)
+  - type: "Microsoft.CognitiveServices/accounts"
+    count: 250
+    template:
+      name_pattern: "cog-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "CognitiveServices"
+      sku:
+        name: "S0"
+
+  - type: "Microsoft.CognitiveServices/accounts/projects"
+    count: 60
+    template:
+      name_pattern: "project-scale-{index}"
+      properties:
+        description: "Scale test project {{ index }}"
+
+  # Database Services (150 total)
+  - type: "Microsoft.DocumentDB/databaseAccounts"
+    count: 120
+    template:
+      name_pattern: "cosmos-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "GlobalDocumentDB"
+      properties:
+        databaseAccountOfferType: "Standard"
+        consistencyPolicy:
+          defaultConsistencyLevel: "Session"
+
+  - type: "Microsoft.DBforPostgreSQL/flexibleServers"
+    count: 50
+    template:
+      name_pattern: "psql-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard_B1ms"
+        tier: "Burstable"
+      properties:
+        version: "14"
+        storage:
+          storageSizeGB: 32
+
+  - type: "Microsoft.Sql/servers"
+    count: 40
+    template:
+      name_pattern: "sql-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        administratorLogin: "sqladmin"
+        version: "12.0"
+
+  - type: "Microsoft.Sql/servers/databases"
+    count: 40
+    template:
+      name_pattern: "sqldb-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Basic"
+        tier: "Basic"
+
+  - type: "Microsoft.Cache/Redis"
+    count: 130
+    template:
+      name_pattern: "redis-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        sku:
+          name: "Basic"
+          family: "C"
+          capacity: 0
+        enableNonSslPort: false
+        minimumTlsVersion: "1.2"
+
+  # Web & App Services (100 total)
+  - type: "Microsoft.Web/serverFarms"
+    count: 100
+    template:
+      name_pattern: "asp-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "B1"
+        tier: "Basic"
+        capacity: 1
+
+  - type: "Microsoft.Web/sites"
+    count: 90
+    template:
+      name_pattern: "app-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "app"
+      properties:
+        serverFarmId: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Web/serverFarms/asp-scale-{{ index }}"
+        httpsOnly: true
+
+  # Machine Learning (100 total)
+  - type: "Microsoft.MachineLearningServices/workspaces"
+    count: 100
+    template:
+      name_pattern: "mlw-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Basic"
+      properties:
+        friendlyName: "ML Workspace Scale {{ index }}"
+
+  - type: "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints"
+    count: 40
+    template:
+      name_pattern: "mlendpoint-scale-{index}"
+      properties:
+        modelId: "model-{{ index }}"
+
+  # Event & Messaging (200 total)
+  - type: "Microsoft.EventHub/namespaces"
+    count: 210
+    template:
+      name_pattern: "evhns-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+        tier: "Standard"
+        capacity: 1
+
+  - type: "Microsoft.ServiceBus/namespaces"
+    count: 30
+    template:
+      name_pattern: "sb-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+        tier: "Standard"
+
+  # Automation (130 total)
+  - type: "Microsoft.Automation/automationAccounts"
+    count: 70
+    template:
+      name_pattern: "aa-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        sku:
+          name: "Basic"
+
+  - type: "Microsoft.Automation/automationAccounts/runbooks"
+    count: 130
+    template:
+      name_pattern: "runbook-scale-{index}"
+      properties:
+        runbookType: "PowerShell"
+        logProgress: false
+        logVerbose: false
+
+  # SSH Keys & Misc Compute (110 total)
+  - type: "Microsoft.Compute/sshPublicKeys"
+    count: 110
+    template:
+      name_pattern: "ssh-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Compute/images"
+    count: 20
+    template:
+      name_pattern: "img-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Compute/galleries"
+    count: 10
+    template:
+      name_pattern: "gal_scale_{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Compute/galleries/images"
+    count: 10
+    template:
+      name_pattern: "galimg-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        osType: "Linux"
+        osState: "Generalized"
+
+  # Data Analytics (50 total)
+  - type: "Microsoft.DataFactory/factories"
+    count: 40
+    template:
+      name_pattern: "adf-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Kusto/clusters"
+    count: 20
+    template:
+      name_pattern: "kustoscale{index:010d}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Dev(No SLA)_Standard_E2a_v4"
+        tier: "Basic"
+        capacity: 1
+
+  - type: "Microsoft.Search/searchServices"
+    count: 20
+    template:
+      name_pattern: "srch-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "basic"
+
+  # Prometheus & Advanced Monitoring (60 total)
+  - type: "Microsoft.AlertsManagement/prometheusRuleGroups"
+    count: 60
+    template:
+      name_pattern: "prom-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        scopes:
+          - "/subscriptions/{{ subscription_id }}"
+        enabled: true
+        interval: "PT1M"
+
+  # Specialized Services (80 total)
+  - type: "Microsoft.App/builders"
+    count: 10
+    template:
+      name_pattern: "builder-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.App/jobs"
+    count: 10
+    template:
+      name_pattern: "job-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        configuration:
+          triggerType: "Manual"
+
+  - type: "Microsoft.AppConfiguration/configurationStores"
+    count: 10
+    template:
+      name_pattern: "appconfig-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "standard"
+
+  - type: "Microsoft.Communication/CommunicationServices"
+    count: 10
+    template:
+      name_pattern: "acs-scale-{index}"
+      location: "global"
+      properties:
+        dataLocation: "UnitedStates"
+
+  - type: "Microsoft.Communication/EmailServices"
+    count: 10
+    template:
+      name_pattern: "email-scale-{index}"
+      location: "global"
+      properties:
+        dataLocation: "UnitedStates"
+
+  - type: "Microsoft.Communication/EmailServices/Domains"
+    count: 20
+    template:
+      name_pattern: "domain-scale-{index}.azurecomm.net"
+      location: "global"
+
+  - type: "Microsoft.Databricks/workspaces"
+    count: 10
+    template:
+      name_pattern: "dbw-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "standard"
+
+  - type: "Microsoft.Databricks/accessConnectors"
+    count: 10
+    template:
+      name_pattern: "dbac-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.DevTestLab/schedules"
+    count: 10
+    template:
+      name_pattern: "schedule-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        status: "Enabled"
+        taskType: "ComputeVmShutdownTask"
+        timeZoneId: "UTC"
+
+  - type: "Microsoft.Insights/scheduledqueryrules"
+    count: 10
+    template:
+      name_pattern: "sqr-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        enabled: true
+        evaluationFrequency: "PT5M"
+        windowSize: "PT5M"
+
+  - type: "Microsoft.Insights/webtests"
+    count: 20
+    template:
+      name_pattern: "webtest-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "ping"
+      properties:
+        syntheticMonitorId: "webtest-scale-{{ index }}"
+        enabled: true
+
+  - type: "Microsoft.Insights/workbooks"
+    count: 10
+    template:
+      name_pattern: "workbook-scale-{index}"
+      location: "{{ random_location }}"
+      kind: "shared"
+
+  - type: "Microsoft.Migrate/moveCollections"
+    count: 10
+    template:
+      name_pattern: "move-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Portal/dashboards"
+    count: 10
+    template:
+      name_pattern: "dashboard-scale-{index}"
+      location: "{{ random_location }}"
+      properties:
+        lenses:
+          - order: 0
+            parts: []
+
+  - type: "Microsoft.Purview/accounts"
+    count: 10
+    template:
+      name_pattern: "purview-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.RecoveryServices/vaults"
+    count: 10
+    template:
+      name_pattern: "rsv-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "RS0"
+        tier: "Standard"
+
+  - type: "Microsoft.Resources/templateSpecs"
+    count: 10
+    template:
+      name_pattern: "ts-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Resources/templateSpecs/versions"
+    count: 10
+    template:
+      name_pattern: "1.0.{{ index }}"
+
+  - type: "Microsoft.SecurityCopilot/capacities"
+    count: 10
+    template:
+      name_pattern: "copilot-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.SentinelPlatformServices/sentinelPlatformServices"
+    count: 10
+    template:
+      name_pattern: "sentinel-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Synapse/workspaces"
+    count: 10
+    template:
+      name_pattern: "synapse-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "Microsoft.Web/staticSites"
+    count: 10
+    template:
+      name_pattern: "swa-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Free"
+        tier: "Free"
+
+  - type: "microsoft.dashboard/grafana"
+    count: 10
+    template:
+      name_pattern: "grafana-scale-{index}"
+      location: "{{ random_location }}"
+      sku:
+        name: "Standard"
+
+  - type: "microsoft.monitor/accounts"
+    count: 10
+    template:
+      name_pattern: "monitor-scale-{index}"
+      location: "{{ random_location }}"
+
+  - type: "microsoft.operationalInsights/querypacks"
+    count: 10
+    template:
+      name_pattern: "qp-scale-{index}"
+      location: "{{ random_location }}"
+
+# Configuration
+config:
+  random_locations:
+    - "eastus"
+    - "eastus2"
+    - "westus"
+    - "westus2"
+    - "centralus"
+    - "northcentralus"
+    - "southcentralus"
+    - "westcentralus"
+    - "northeurope"
+    - "westeurope"
+
+  resource_group_pattern: "rg-scale-{index}"
+  tag_prefix: "scale-test"
+
+  # Performance tuning
+  batch_size: 100
+  max_parallel: 10
+  rate_limit_delay_ms: 50
+
+# Expected totals:
+# Network: ~7,000 resources
+# Compute: ~2,600 resources
+# Storage: 900 resources
+# Identity: 1,200 resources
+# Monitoring: 1,700 resources
+# Containers: 1,030 resources
+# Databases: 380 resources
+# Web/App: 190 resources
+# ML: 140 resources
+# Events: 240 resources
+# Other specialized: ~840 resources
+# Total target: ~40,220 abstracted resources

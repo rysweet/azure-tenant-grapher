@@ -23,6 +23,7 @@ import {
   Settings as ConfigIcon,
   Terminal as TerminalIcon,
   MenuBook as DocsIcon,
+  ZoomOutMap as ScaleIcon,
 } from '@mui/icons-material';
 
 // All tabs in a simple flat array
@@ -38,6 +39,7 @@ const allTabs = [
   { label: 'Create Tenant', path: '/create-tenant', icon: <CreateIcon /> },
   { label: 'Agent Mode', path: '/agent-mode', icon: <AgentIcon /> },
   { label: 'Threat Model', path: '/threat-model', icon: <ThreatIcon /> },
+  { label: 'Scale Operations', path: '/scale-operations', icon: <ScaleIcon /> },
   { label: 'Docs', path: '/docs', icon: <DocsIcon /> },
   { label: 'Logs', path: '/logs', icon: <LogsIcon /> },
   { label: 'CLI', path: '/cli', icon: <TerminalIcon /> },
