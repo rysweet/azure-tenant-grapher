@@ -434,59 +434,110 @@ class GraphVisualizer:
         if is_synthetic:
             return "#FFA500"  # Orange for synthetic nodes
 
+        # Color palette aligned with GUI (GraphVisualization.tsx)
         color_mapping = {
-            # Non-resource node types
-            "Subscription": "#ff6b6b",  # Red
-            "ResourceGroup": "#45b7d1",  # Blue
-            "PrivateEndpoint": "#b388ff",  # Violet (unused)
-            "DNSZone": "#00bfae",  # Teal-green (unused)
-            # Azure resource types
-            "Microsoft.Compute/virtualMachines": "#6c5ce7",  # Purple
-            "Microsoft.Network/networkInterfaces": "#a55eea",  # Light Purple
-            "Microsoft.Network/virtualNetworks": "#26de81",  # Green
-            "Microsoft.Network/networkSecurityGroups": "#00d2d3",  # Cyan
-            "Microsoft.Network/publicIPAddresses": "#81ecec",  # Light Cyan
-            "Microsoft.Network/loadBalancers": "#00b894",  # Dark Green
-            "Microsoft.Storage/storageAccounts": "#f9ca24",  # Yellow
-            "Microsoft.KeyVault/vaults": "#fd79a8",  # Pink
-            "Microsoft.Sql/servers": "#fdcb6e",  # Orange
-            "Microsoft.Web/sites": "#e17055",  # Dark Orange
-            "Microsoft.ContainerService/managedClusters": "#0984e3",  # Blue
-            "Microsoft.DBforPostgreSQL/servers": "#a29bfe",  # Light Purple
-            "Microsoft.DBforMySQL/servers": "#74b9ff",  # Light Blue
-            "Microsoft.DocumentDB/databaseAccounts": "#e84393",  # Pink
-            "Microsoft.OperationalInsights/workspaces": "#636e72",  # Gray
-            "Microsoft.Insights/components": "#2d3436",  # Dark Gray
-            "Microsoft.Authorization/roleAssignments": "#fab1a0",  # Light Orange
-            "Microsoft.ManagedIdentity/userAssignedIdentities": "#00cec9",  # Teal
-            "Microsoft.Security/assessments": "#fd79a8",  # Pink
-            "Microsoft.Security/securityContacts": "#e84393",  # Pink
+            # Core Azure hierarchy
+            "Tenant": "#FF6B6B",
+            "Subscription": "#4ECDC4",
+            "ResourceGroup": "#45B7D1",
+            "Resource": "#96CEB4",  # Fallback for generic resources
+            "Region": "#FFB347",  # Light orange for regions
+            # Compute resources
+            "VirtualMachines": "#FFEAA7",
+            "VirtualMachine": "#FFEAA7",
+            "Microsoft.Compute/virtualMachines": "#FFEAA7",
+            "Disks": "#DDA0DD",
+            "AvailabilitySets": "#F0E68C",
+            "VirtualMachineScaleSets": "#FFB347",
+            # Storage resources
+            "StorageAccounts": "#74B9FF",
+            "StorageAccount": "#74B9FF",
+            "Microsoft.Storage/storageAccounts": "#74B9FF",
+            # Network resources
+            "VirtualNetworks": "#6C5CE7",
+            "VirtualNetwork": "#6C5CE7",
+            "Microsoft.Network/virtualNetworks": "#6C5CE7",
+            "PrivateEndpoint": "#FF69B4",  # Hot pink for private endpoints
+            "NetworkInterfaces": "#A29BFE",
+            "NetworkInterface": "#A29BFE",
+            "Microsoft.Network/networkInterfaces": "#A29BFE",
+            "NetworkSecurityGroups": "#9966CC",
+            "Microsoft.Network/networkSecurityGroups": "#9966CC",
+            "PublicIPAddresses": "#87CEEB",
+            "Microsoft.Network/publicIPAddresses": "#87CEEB",
+            "LoadBalancers": "#20B2AA",
+            "Microsoft.Network/loadBalancers": "#20B2AA",
+            "ApplicationGateways": "#4682B4",
+            "Microsoft.Network/applicationGateways": "#4682B4",
+            # Security resources
+            "KeyVaults": "#DC143C",
+            "Microsoft.KeyVault/vaults": "#DC143C",
+            "SecurityCenter": "#8B0000",
+            # Database resources
+            "SqlServers": "#FF4500",
+            "Microsoft.Sql/servers": "#FF4500",
+            "CosmosDBAccounts": "#FF6347",
+            "Microsoft.DocumentDB/databaseAccounts": "#FF6347",
+            "Microsoft.DBforPostgreSQL/servers": "#FF4500",
+            "Microsoft.DBforMySQL/servers": "#FF4500",
+            # Web resources
+            "Websites": "#32CD32",
+            "Microsoft.Web/sites": "#32CD32",
+            "AppServicePlans": "#228B22",
+            "FunctionApps": "#9ACD32",
+            # Container resources
+            "ContainerInstances": "#48D1CC",
+            "ContainerRegistries": "#00CED1",
+            "KubernetesClusters": "#5F9EA0",
+            "Microsoft.ContainerService/managedClusters": "#5F9EA0",
+            # Identity and access
+            "User": "#FD79A8",
+            "ServicePrincipal": "#FDCB6E",
+            "Application": "#E17055",
+            "Group": "#00B894",
+            "Role": "#00CEC9",
+            "Microsoft.Authorization/roleAssignments": "#E17055",
+            "Microsoft.ManagedIdentity/userAssignedIdentities": "#00CEC9",
+            # Monitoring and management
+            "LogAnalytics": "#CD853F",
+            "ApplicationInsights": "#D2691E",
+            "Microsoft.OperationalInsights/workspaces": "#CD853F",
+            "Microsoft.Insights/components": "#D2691E",
+            # Security
+            "Microsoft.Security/assessments": "#DC143C",
+            "Microsoft.Security/securityContacts": "#8B0000",
+            # DNS
+            "DNSZone": "#00bfae",
         }
 
-        # If exact match not found, try to match by service provider
+        # If exact match not found, try to match by service provider prefix
         if node_type not in color_mapping:
             if node_type.startswith("Microsoft.Compute"):
-                return "#6c5ce7"  # Purple for compute
+                return "#FFEAA7"  # Light yellow for compute
             elif node_type.startswith("Microsoft.Network"):
-                return "#26de81"  # Green for networking
+                return "#6C5CE7"  # Purple for networking
             elif node_type.startswith("Microsoft.Storage"):
-                return "#f9ca24"  # Yellow for storage
+                return "#74B9FF"  # Light blue for storage
             elif node_type.startswith("Microsoft.Web"):
-                return "#e17055"  # Orange for web
+                return "#32CD32"  # Green for web
             elif node_type.startswith("Microsoft.Sql") or node_type.startswith(
                 "Microsoft.DB"
             ):
-                return "#fdcb6e"  # Orange for databases
+                return "#FF4500"  # Orange-red for databases
             elif node_type.startswith("Microsoft.KeyVault"):
-                return "#fd79a8"  # Pink for security
+                return "#DC143C"  # Crimson for security
             elif node_type.startswith("Microsoft.ContainerService"):
-                return "#0984e3"  # Blue for containers
+                return "#5F9EA0"  # Cadet blue for containers
             elif node_type.startswith("Microsoft.Security"):
-                return "#e84393"  # Pink for security
+                return "#8B0000"  # Dark red for security
             elif node_type.startswith("Microsoft.Authorization"):
-                return "#fab1a0"  # Light orange for identity
+                return "#E17055"  # Coral for identity
+            elif node_type.startswith("Microsoft.Insights") or node_type.startswith(
+                "Microsoft.OperationalInsights"
+            ):
+                return "#CD853F"  # Peru for monitoring
 
-        return color_mapping.get(node_type, "#74b9ff")  # Default blue
+        return color_mapping.get(node_type, "#95A5A6")  # Default gray
 
     def _get_node_size(self, node_type: str, properties: Dict[str, Any]) -> int:
         """Get node size based on type and properties.
@@ -522,18 +573,32 @@ class GraphVisualizer:
         return base_size
 
     def _get_relationship_color(self, rel_type: str) -> str:
-        """Get relationship color based on type."""
+        """Get relationship color based on type.
+
+        Color palette aligned with GUI (GraphVisualization.tsx)
+        """
         color_mapping = {
-            "CONTAINS": "#74b9ff",
-            "BELONGS_TO": "#a29bfe",
-            "CONNECTED_TO": "#fd79a8",
-            "CONNECTED_TO_PE": "#b388ff",  # Violet, matches PrivateEndpoint
-            "RESOLVES_TO": "#00bfae",  # Teal-green, matches DNSZone
-            "DEPENDS_ON": "#fdcb6e",
-            "MANAGES": "#e17055",
+            "CONTAINS": "#2E86DE",  # Blue
+            "USES_IDENTITY": "#10AC84",  # Green
+            "CONNECTED_TO": "#FF9F43",  # Orange
+            "CONNECTED_TO_PE": "#b388ff",  # Violet (private endpoint)
+            "RESOLVES_TO": "#00bfae",  # Teal-green (DNS)
+            "DEPENDS_ON": "#A55EEA",  # Purple
+            "HAS_ROLE": "#EE5A52",  # Red
+            "MEMBER_OF": "#FD79A8",  # Pink
+            "ASSIGNED_TO": "#00CEC9",  # Teal
+            "MANAGES": "#FDCB6E",  # Yellow
+            "INHERITS": "#6C5CE7",  # Indigo
+            "ACCESSES": "#A29BFE",  # Light Purple
+            "OWNS": "#00B894",  # Dark Green
+            "SUBSCRIBES_TO": "#E17055",  # Coral
+            "PART_OF": "#74B9FF",  # Light Blue
+            "DELEGATES_TO": "#55A3FF",  # Sky Blue
+            "ENABLES": "#26DE81",  # Mint Green
+            "BELONGS_TO": "#A29BFE",  # Light Purple (legacy)
             "GENERIC_RELATIONSHIP": "#ff6b9d",  # Pink to distinguish generic relationships
         }
-        return color_mapping.get(rel_type, "#ddd")
+        return color_mapping.get(rel_type, "#95A5A6")  # Default gray
 
     def _get_relationship_width(self, rel_type: str) -> int:
         """Get relationship width based on type."""

@@ -150,7 +150,7 @@ class JavaScriptBuilder:
         // Initialize 3D force graph
         const Graph = ForceGraph3D()
             (document.getElementById('visualization'))
-            .backgroundColor('#1a1a1a')
+            .backgroundColor('#000000') // Pure black to match GUI
             .nodeId('id')
             .nodeLabel(node => {
                 // Use display_name if available (includes synthetic indicator)
@@ -604,63 +604,136 @@ class JavaScriptBuilder:
         """Build control and utility functions."""
         return """
         function getNodeColor(nodeType) {
+            // Color palette aligned with GUI (GraphVisualization.tsx)
             const colorMapping = {
-                // Non-resource node types
-                'Subscription': '#ff6b6b',
-                'ResourceGroup': '#45b7d1',
-                'PrivateEndpoint': '#b388ff', // Violet
-                'DNSZone': '#00bfae',        // Teal-green
+                // Special markers
+                'Synthetic': '#FFA500', // Orange for synthetic nodes
 
-                // Azure resource types
-                'Microsoft.Compute/virtualMachines': '#6c5ce7',
-                'Microsoft.Network/networkInterfaces': '#a55eea',
-                'Microsoft.Network/virtualNetworks': '#26de81',
-                'Microsoft.Network/networkSecurityGroups': '#00d2d3',
-                'Microsoft.Network/publicIPAddresses': '#81ecec',
-                'Microsoft.Network/loadBalancers': '#00b894',
-                'Microsoft.Storage/storageAccounts': '#f9ca24',
-                'Microsoft.KeyVault/vaults': '#fd79a8',
-                'Microsoft.Sql/servers': '#fdcb6e',
-                'Microsoft.Web/sites': '#e17055',
-                'Microsoft.ContainerService/managedClusters': '#0984e3',
-                'Microsoft.DBforPostgreSQL/servers': '#a29bfe',
-                'Microsoft.DBforMySQL/servers': '#74b9ff',
-                'Microsoft.DocumentDB/databaseAccounts': '#e84393',
-                'Microsoft.OperationalInsights/workspaces': '#636e72',
-                'Microsoft.Insights/components': '#2d3436',
-                'Microsoft.Authorization/roleAssignments': '#fab1a0',
-                'Microsoft.ManagedIdentity/userAssignedIdentities': '#00cec9',
-                'Microsoft.Security/assessments': '#fd79a8',
-                'Microsoft.Security/securityContacts': '#e84393'
+                // Core Azure hierarchy
+                'Tenant': '#FF6B6B',
+                'Subscription': '#4ECDC4',
+                'ResourceGroup': '#45B7D1',
+                'Resource': '#96CEB4', // Fallback for generic resources
+                'Region': '#FFB347', // Light orange for regions
+
+                // Compute resources
+                'VirtualMachines': '#FFEAA7',
+                'VirtualMachine': '#FFEAA7',
+                'Microsoft.Compute/virtualMachines': '#FFEAA7',
+                'Disks': '#DDA0DD',
+                'AvailabilitySets': '#F0E68C',
+                'VirtualMachineScaleSets': '#FFB347',
+
+                // Storage resources
+                'StorageAccounts': '#74B9FF',
+                'StorageAccount': '#74B9FF',
+                'Microsoft.Storage/storageAccounts': '#74B9FF',
+
+                // Network resources
+                'VirtualNetworks': '#6C5CE7',
+                'VirtualNetwork': '#6C5CE7',
+                'Microsoft.Network/virtualNetworks': '#6C5CE7',
+                'PrivateEndpoint': '#FF69B4', // Hot pink for private endpoints
+                'NetworkInterfaces': '#A29BFE',
+                'NetworkInterface': '#A29BFE',
+                'Microsoft.Network/networkInterfaces': '#A29BFE',
+                'NetworkSecurityGroups': '#9966CC',
+                'Microsoft.Network/networkSecurityGroups': '#9966CC',
+                'PublicIPAddresses': '#87CEEB',
+                'Microsoft.Network/publicIPAddresses': '#87CEEB',
+                'LoadBalancers': '#20B2AA',
+                'Microsoft.Network/loadBalancers': '#20B2AA',
+                'ApplicationGateways': '#4682B4',
+                'Microsoft.Network/applicationGateways': '#4682B4',
+
+                // Security resources
+                'KeyVaults': '#DC143C',
+                'Microsoft.KeyVault/vaults': '#DC143C',
+                'SecurityCenter': '#8B0000',
+
+                // Database resources
+                'SqlServers': '#FF4500',
+                'Microsoft.Sql/servers': '#FF4500',
+                'CosmosDBAccounts': '#FF6347',
+                'Microsoft.DocumentDB/databaseAccounts': '#FF6347',
+                'Microsoft.DBforPostgreSQL/servers': '#FF4500',
+                'Microsoft.DBforMySQL/servers': '#FF4500',
+
+                // Web resources
+                'Websites': '#32CD32',
+                'Microsoft.Web/sites': '#32CD32',
+                'AppServicePlans': '#228B22',
+                'FunctionApps': '#9ACD32',
+
+                // Container resources
+                'ContainerInstances': '#48D1CC',
+                'ContainerRegistries': '#00CED1',
+                'KubernetesClusters': '#5F9EA0',
+                'Microsoft.ContainerService/managedClusters': '#5F9EA0',
+
+                // Identity and access
+                'User': '#FD79A8',
+                'ServicePrincipal': '#FDCB6E',
+                'Application': '#E17055',
+                'Group': '#00B894',
+                'Role': '#00CEC9',
+                'Microsoft.Authorization/roleAssignments': '#E17055',
+                'Microsoft.ManagedIdentity/userAssignedIdentities': '#00CEC9',
+
+                // Monitoring and management
+                'LogAnalytics': '#CD853F',
+                'ApplicationInsights': '#D2691E',
+                'Microsoft.OperationalInsights/workspaces': '#CD853F',
+                'Microsoft.Insights/components': '#D2691E',
+
+                // Security
+                'Microsoft.Security/assessments': '#DC143C',
+                'Microsoft.Security/securityContacts': '#8B0000',
+
+                // DNS
+                'DNSZone': '#00bfae'
             };
 
-            // If exact match not found, try to match by service provider
+            // If exact match not found, try to match by service provider prefix
             if (!(nodeType in colorMapping)) {
-                if (nodeType.startsWith('Microsoft.Compute')) return '#6c5ce7';
-                if (nodeType.startsWith('Microsoft.Network')) return '#26de81';
-                if (nodeType.startsWith('Microsoft.Storage')) return '#f9ca24';
-                if (nodeType.startsWith('Microsoft.Web')) return '#e17055';
-                if (nodeType.startsWith('Microsoft.Sql') || nodeType.startsWith('Microsoft.DB')) return '#fdcb6e';
-                if (nodeType.startsWith('Microsoft.KeyVault')) return '#fd79a8';
-                if (nodeType.startsWith('Microsoft.ContainerService')) return '#0984e3';
-                if (nodeType.startsWith('Microsoft.Security')) return '#e84393';
-                if (nodeType.startsWith('Microsoft.Authorization')) return '#fab1a0';
+                if (nodeType.startsWith('Microsoft.Compute')) return '#FFEAA7'; // Light yellow
+                if (nodeType.startsWith('Microsoft.Network')) return '#6C5CE7'; // Purple
+                if (nodeType.startsWith('Microsoft.Storage')) return '#74B9FF'; // Light blue
+                if (nodeType.startsWith('Microsoft.Web')) return '#32CD32'; // Green
+                if (nodeType.startsWith('Microsoft.Sql') || nodeType.startsWith('Microsoft.DB')) return '#FF4500'; // Orange-red
+                if (nodeType.startsWith('Microsoft.KeyVault')) return '#DC143C'; // Crimson
+                if (nodeType.startsWith('Microsoft.ContainerService')) return '#5F9EA0'; // Cadet blue
+                if (nodeType.startsWith('Microsoft.Security')) return '#8B0000'; // Dark red
+                if (nodeType.startsWith('Microsoft.Authorization')) return '#E17055'; // Coral
+                if (nodeType.startsWith('Microsoft.Insights') || nodeType.startsWith('Microsoft.OperationalInsights')) return '#CD853F'; // Peru
             }
 
-            return colorMapping[nodeType] || '#74b9ff';
+            return colorMapping[nodeType] || '#95A5A6'; // Default gray
         }
 
         function getRelationshipColor(relType) {
+            // Edge color palette aligned with GUI (GraphVisualization.tsx)
             const colorMapping = {
-                'CONTAINS': '#74b9ff',
-                'BELONGS_TO': '#a29bfe',
-                'CONNECTED_TO': '#fd79a8',
-                'CONNECTED_TO_PE': '#b388ff', // Violet
-                'RESOLVES_TO': '#00bfae',    // Teal-green
-                'DEPENDS_ON': '#fdcb6e',
-                'MANAGES': '#e17055'
+                'CONTAINS': '#2E86DE', // Blue
+                'USES_IDENTITY': '#10AC84', // Green
+                'CONNECTED_TO': '#FF9F43', // Orange
+                'CONNECTED_TO_PE': '#b388ff', // Violet (private endpoint)
+                'RESOLVES_TO': '#00bfae', // Teal-green (DNS)
+                'DEPENDS_ON': '#A55EEA', // Purple
+                'HAS_ROLE': '#EE5A52', // Red
+                'MEMBER_OF': '#FD79A8', // Pink
+                'ASSIGNED_TO': '#00CEC9', // Teal
+                'MANAGES': '#FDCB6E', // Yellow
+                'INHERITS': '#6C5CE7', // Indigo
+                'ACCESSES': '#A29BFE', // Light Purple
+                'OWNS': '#00B894', // Dark Green
+                'SUBSCRIBES_TO': '#E17055', // Coral
+                'PART_OF': '#74B9FF', // Light Blue
+                'DELEGATES_TO': '#55A3FF', // Sky Blue
+                'ENABLES': '#26DE81', // Mint Green
+                'BELONGS_TO': '#A29BFE' // Light Purple (legacy)
             };
-            return colorMapping[relType] || '#ddd';
+            return colorMapping[relType] || '#95A5A6'; // Default gray
         }
 
         // Zoom controls
