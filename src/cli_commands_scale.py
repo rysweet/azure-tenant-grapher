@@ -430,7 +430,7 @@ async def scale_down_algorithm_command_handler(
             # Note: burn_in, burning_prob, walk_length, alpha are algorithm-specific
             # and not exposed in the current API. They would need to be added
             # to the service if needed.
-            sampled_node_ids, metrics = await service.sample_graph(
+            sampled_node_ids, metrics, nodes_deleted = await service.sample_graph(
                 tenant_id=effective_tenant_id,
                 algorithm=normalized_algorithm,  # Use normalized algorithm name
                 target_size=target_size if not target_count else target_count,
@@ -443,7 +443,7 @@ async def scale_down_algorithm_command_handler(
             # Build result dict from metrics
             result = {
                 "nodes_sampled": metrics.sampled_nodes,
-                "nodes_deleted": 0,  # sample_graph doesn't delete, only samples
+                "nodes_deleted": nodes_deleted,  # BUG FIX: Use actual deletion count
                 "edges_sampled": metrics.sampled_edges,
                 "quality_metrics": metrics.to_dict(),
             }
@@ -662,7 +662,7 @@ async def scale_clean_command_handler(
 
         # Count synthetic nodes
         with session_manager.get_session() as session:
-            result = session.run("MATCH (n:Synthetic) RETURN count(n) as count")
+            result = session.run("MATCH (n) WHERE n.synthetic = true RETURN count(n) as count")
             synthetic_count = result.single()["count"]
 
         if synthetic_count == 0:
@@ -694,7 +694,7 @@ async def scale_clean_command_handler(
 
                 with session_manager.get_session() as session:
                     # Delete synthetic nodes and their relationships
-                    session.run("MATCH (n:Synthetic) DETACH DELETE n")
+                    session.run("MATCH (n) WHERE n.synthetic = true DETACH DELETE n")
 
                 progress.update(task, completed=100)
 
@@ -865,7 +865,7 @@ async def scale_stats_command_handler(
             stats["total_relationships"] = result.single()["count"]
 
             # Synthetic nodes
-            result = session.run("MATCH (n:Synthetic) RETURN count(n) as count")
+            result = session.run("MATCH (n) WHERE n.synthetic = true RETURN count(n) as count")
             stats["synthetic_nodes"] = result.single()["count"]
 
             # Original nodes

@@ -619,39 +619,39 @@ class ScaleDownService(BaseScaleService):
         output_mode: str,
         output_path: Optional[str] = None,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
-    ) -> Tuple[Set[str], QualityMetrics]:
+    ) -> Tuple[Set[str], QualityMetrics, int]:
         """
         Sample a tenant graph using specified algorithm.
 
         This is the main entry point for graph sampling operations.
-        It coordinates extraction, sampling, and optional export.
+        It coordinates extraction, sampling, and optional export/deletion.
 
         Args:
             tenant_id: Azure tenant ID to sample
             algorithm: Sampling algorithm (forest_fire, mhrw, random_walk)
             target_size: Target sample size as fraction (0.0-1.0) or node count (>1)
-            output_mode: Export format (yaml, json, neo4j, terraform, arm, bicep)
+            output_mode: Mode (delete, export, new-tenant, yaml, json, neo4j, terraform, arm, bicep)
             output_path: Optional output path for export
             progress_callback: Optional callback(phase, current, total)
 
         Returns:
-            Tuple[Set[str], QualityMetrics]:
-                - Set of sampled node IDs
+            Tuple[Set[str], QualityMetrics, int]:
+                - Set of sampled node IDs (nodes to KEEP)
                 - Quality metrics comparing original and sample
+                - Number of nodes deleted (0 if not in delete mode)
 
         Raises:
             ValueError: If parameters are invalid
             Exception: If sampling or export fails
 
         Example:
-            >>> node_ids, metrics = await service.sample_graph(
+            >>> node_ids, metrics, deleted = await service.sample_graph(
             ...     tenant_id="00000000-0000-0000-0000-000000000000",
             ...     algorithm="forest_fire",
             ...     target_size=0.1,
-            ...     output_mode="yaml",
-            ...     output_path="/tmp/sample.yaml"
+            ...     output_mode="delete"
             ... )
-            >>> print(f"Sampled {len(node_ids)} nodes with quality score {metrics.sampling_ratio}")
+            >>> print(f"Kept {len(node_ids)} nodes, deleted {deleted} nodes")
         """
         start_time = datetime.now(UTC)
 
@@ -748,8 +748,23 @@ class ScaleDownService(BaseScaleService):
             G, sampled_graph, node_properties, sampled_node_ids, sampling_time
         )
 
-        # Stage 4: Export (if requested)
-        if output_path:
+        # Stage 4: Handle output mode
+        nodes_deleted = 0
+
+        if output_mode == "delete":
+            # BUG FIX: Implement deletion logic
+            # Delete all nodes NOT in sampled_node_ids (abstracted layer only)
+            if progress_callback:
+                progress_callback("Deleting non-sampled nodes", 0, 100)
+
+            nodes_deleted = await self._delete_non_sampled_nodes(
+                sampled_node_ids,
+                progress_callback
+            )
+
+            self.logger.info(f"Deleted {nodes_deleted} non-sampled nodes")
+        elif output_path:
+            # Export mode
             if progress_callback:
                 progress_callback("Exporting sample", 0, 100)
 
@@ -764,10 +779,10 @@ class ScaleDownService(BaseScaleService):
         total_time = (datetime.now(UTC) - start_time).total_seconds()
         self.logger.info(
             f"Graph sampling completed in {total_time:.2f}s: "
-            f"{len(sampled_node_ids)} nodes sampled"
+            f"{len(sampled_node_ids)} nodes sampled, {nodes_deleted} nodes deleted"
         )
 
-        return sampled_node_ids, metrics
+        return sampled_node_ids, metrics, nodes_deleted
 
     async def _sample_forest_fire(
         self,
@@ -1454,6 +1469,76 @@ class ScaleDownService(BaseScaleService):
         await emitter.emit_template(tenant_graph, output_path)
 
         self.logger.info(f"IaC export completed ({format}): {output_path}")
+
+    async def _delete_non_sampled_nodes(
+        self,
+        sampled_node_ids: Set[str],
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
+    ) -> int:
+        """
+        Delete all nodes NOT in the sampled set (abstracted layer only).
+
+        This method implements the deletion logic for scale-down delete mode.
+        It deletes all abstracted Resource nodes that are NOT in the sampled set.
+        Original nodes (:Resource:Original) are preserved.
+
+        Args:
+            sampled_node_ids: Set of node IDs to KEEP
+            progress_callback: Optional progress callback
+
+        Returns:
+            int: Number of nodes deleted
+
+        Raises:
+            Neo4jError: If deletion fails
+            Exception: If unexpected error occurs
+
+        Example:
+            >>> deleted = await service._delete_non_sampled_nodes(
+            ...     {"node1", "node2", "node3"}
+            ... )
+            >>> print(f"Deleted {deleted} nodes")
+        """
+        self.logger.info(f"Deleting non-sampled nodes (keeping {len(sampled_node_ids)} nodes)")
+
+        if not sampled_node_ids:
+            self.logger.warning("No nodes to keep - would delete entire graph. Aborting deletion.")
+            return 0
+
+        try:
+            # Build parameterized query to delete nodes NOT in sampled set
+            # IMPORTANT: Only delete abstracted layer (:Resource without :Original)
+            # Use DETACH DELETE to remove relationships automatically
+            query = """
+            MATCH (r:Resource)
+            WHERE NOT r:Original
+              AND NOT r.id IN $keep_ids
+            DETACH DELETE r
+            RETURN count(r) as deleted_count
+            """
+
+            nodes_deleted = 0
+
+            with self.session_manager.session() as session:
+                result = session.run(query, {"keep_ids": list(sampled_node_ids)})
+                record = result.single()
+
+                if record:
+                    nodes_deleted = record["deleted_count"]
+
+            self.logger.info(f"Successfully deleted {nodes_deleted} non-sampled nodes")
+
+            if progress_callback:
+                progress_callback("Deletion complete", nodes_deleted, nodes_deleted)
+
+            return nodes_deleted
+
+        except Neo4jError as e:
+            self.logger.exception(f"Neo4j error during deletion: {e}")
+            raise
+        except Exception as e:
+            self.logger.exception(f"Unexpected error during deletion: {e}")
+            raise
 
     async def discover_motifs(
         self,
