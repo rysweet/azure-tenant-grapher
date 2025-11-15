@@ -289,11 +289,23 @@ All scale-up relationships properly created in abstracted layer only:
 
 ---
 
-## Known Issues
+## Bugs Discovered and FIXED
 
-1. **Scale-Clean Label Query:** Command uses `:Synthetic` label instead of `synthetic: true` property
-2. **Scale-Down Delete Mode:** Sampling works but deletion fails (0 nodes deleted)
-3. **Screenshot Mismatch:** Existing screenshots in `spa/screenshots/` are from 10,254-node graph, not this 510-node demonstration
+### Bug #1: Scale-Clean Label Query ✅ FIXED
+- **Issue:** Command used `:Synthetic` label instead of `synthetic: true` property
+- **Status:** FIXED in commit c2d1000
+- **Verification:** Command now correctly finds and deletes synthetic nodes
+- **Details:** See `docs/SCALE_OPERATIONS_BUG_FIXES.md`
+
+### Bug #2: Scale-Down Delete Mode ✅ FIXED
+- **Issue:** Sampling worked but deletion failed (0 nodes deleted)
+- **Status:** FIXED in commit c2d1000
+- **Verification:** Delete mode now correctly removes non-sampled nodes
+- **Test Results:** Sampled 3 nodes, deleted 28 nodes successfully
+- **Details:** See `docs/SCALE_OPERATIONS_BUG_FIXES.md`
+
+### Note: Screenshot Mismatch
+Existing screenshots in `spa/screenshots/` are from 10,254-node graph, not this 510-node demonstration.
 
 ---
 
