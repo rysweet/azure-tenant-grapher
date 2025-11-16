@@ -496,7 +496,7 @@ async def generate_iac_command_handler(
                     # 2. Compare using ResourceComparator
                     from src.utils.session_manager import Neo4jSessionManager
 
-                    neo4j = Neo4jSessionManager(config=discovery_config)
+                    neo4j = Neo4jSessionManager(config=discovery_config.neo4j)
                     await neo4j.connect()
                     comparator = ResourceComparator(neo4j)
 
