@@ -126,6 +126,8 @@ class ScaleUpService(BaseScaleService):
         scale_factor: float,
         resource_types: Optional[List[str]] = None,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        target_layer_id: Optional[str] = None,
+        new_layer: Optional[str] = None,
     ) -> ScaleUpResult:
         """
         Scale up resources using template-based replication.
@@ -138,6 +140,8 @@ class ScaleUpService(BaseScaleService):
             scale_factor: Multiplier for resource counts (e.g., 2.0 = double resources)
             resource_types: Optional list of resource types to scale (None = all types)
             progress_callback: Optional callback(message, current, total)
+            target_layer_id: Specific layer to write synthetic resources to (mutually exclusive with new_layer)
+            new_layer: Auto-create new layer with this ID for synthetic resources (mutually exclusive with target_layer_id)
 
         Returns:
             ScaleUpResult: Operation results including counts and validation status
@@ -150,9 +154,10 @@ class ScaleUpService(BaseScaleService):
             >>> result = await service.scale_up_template(
             ...     tenant_id="abc123",
             ...     scale_factor=2.0,
-            ...     resource_types=["Microsoft.Compute/virtualMachines"]
+            ...     resource_types=["Microsoft.Compute/virtualMachines"],
+            ...     new_layer="scaled-up-v1"
             ... )
-            >>> print(f"Created {result.resources_created} synthetic resources")
+            >>> print(f"Created {result.resources_created} synthetic resources in layer scaled-up-v1")
         """
         start_time = datetime.now()
         operation_id = await self.generate_session_id()
@@ -296,6 +301,8 @@ class ScaleUpService(BaseScaleService):
         scenario: str,
         params: Dict[str, Any],
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        target_layer_id: Optional[str] = None,
+        new_layer: Optional[str] = None,
     ) -> ScaleUpResult:
         """
         Scale up resources using scenario-based topology generation.
@@ -434,6 +441,8 @@ class ScaleUpService(BaseScaleService):
         target_count: int,
         config: Dict[str, Any],
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        target_layer_id: Optional[str] = None,
+        new_layer: Optional[str] = None,
     ) -> ScaleUpResult:
         """
         Scale up resources using random generation with constraints.
