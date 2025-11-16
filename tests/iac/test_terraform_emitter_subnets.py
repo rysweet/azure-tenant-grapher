@@ -655,8 +655,22 @@ def test_terraform_validate_passes_with_subnets(
     Expected to FAIL: Without subnet resources, validation will fail with
     'Reference to undeclared resource: azurerm_subnet.default'.
     """
+    # Create VNet resource that the subnet belongs to
+    vnet_resource = {
+        "id": "/subscriptions/12345/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+        "name": "test-vnet",
+        "type": "Microsoft.Network/virtualNetworks",
+        "location": "eastus",
+        "resourceGroup": "test-rg",
+        "properties": json.dumps(
+            {
+                "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+            }
+        ),
+    }
+
     graph = TenantGraph()
-    graph.resources = [sample_standalone_subnet, sample_network_interface]
+    graph.resources = [vnet_resource, sample_standalone_subnet, sample_network_interface]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         out_dir = Path(temp_dir)

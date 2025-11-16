@@ -790,6 +790,21 @@ def generate_spec(
     is_flag=True,
     help="Automatically register required Azure resource providers without prompting",
 )
+@click.option(
+    "--scan-target",
+    is_flag=True,
+    help="Enable smart import by scanning target tenant for existing resources",
+)
+@click.option(
+    "--scan-target-tenant-id",
+    required=False,
+    help="Target tenant ID to scan for smart import (required if --scan-target is enabled)",
+)
+@click.option(
+    "--scan-target-subscription-id",
+    required=False,
+    help="Target subscription ID to scan for smart import (optional, scans all subscriptions if not provided)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -830,6 +845,9 @@ async def generate_iac(
     auto_import_existing: bool,
     import_strategy: str,
     auto_register_providers: bool,
+    scan_target: bool,
+    scan_target_tenant_id: Optional[str],
+    scan_target_subscription_id: Optional[str],
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -903,6 +921,9 @@ async def generate_iac(
         auto_import_existing=auto_import_existing,
         import_strategy=import_strategy,
         auto_register_providers=auto_register_providers,
+        scan_target=scan_target,
+        scan_target_tenant_id=scan_target_tenant_id,
+        scan_target_subscription_id=scan_target_subscription_id,
     )
 
 
@@ -1736,8 +1757,8 @@ def doctor() -> None:
     print("=" * 60)
 
     try:
-        import subprocess
         import os
+        import subprocess
 
         client_id = os.getenv("AZURE_CLIENT_ID")
         subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
@@ -1795,13 +1816,13 @@ def doctor() -> None:
             print("     Impact: Cannot scan role assignments (RBAC will not be replicated!)")
             print("")
             print("     FIX: Run this command to add Security Reader role:")
-            print(f"     az role assignment create \\")
+            print("     az role assignment create \\")
             print(f"       --assignee {client_id} \\")
-            print(f"       --role 'Security Reader' \\")
+            print("       --role 'Security Reader' \\")
             print(f"       --scope '/subscriptions/{subscription_id}'")
             print("")
             print("     OR use the automated script:")
-            print(f"     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>")
+            print("     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>")
 
         print("")
         if has_reader and has_security_reader:

@@ -1,9 +1,11 @@
 """Tests for Terraform import blocks generation (Issue #412)."""
 
 import pytest
+from unittest.mock import MagicMock
 
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph
+from src.iac.validators.resource_existence_validator import ResourceExistenceResult
 
 
 class TestImportBlocksGeneration:
@@ -49,6 +51,22 @@ class TestImportBlocksGeneration:
             target_subscription_id="sub1",
         )
 
+        # Mock the existence validator to return successful results
+        mock_validator = MagicMock()
+        mock_validator.batch_check_resources.return_value = {
+            "/subscriptions/sub1/resourceGroups/rg1": ResourceExistenceResult(
+                resource_id="/subscriptions/sub1/resourceGroups/rg1",
+                exists=True,
+                cached=False,
+            ),
+            "/subscriptions/sub1/resourceGroups/rg2": ResourceExistenceResult(
+                resource_id="/subscriptions/sub1/resourceGroups/rg2",
+                exists=True,
+                cached=False,
+            ),
+        }
+        emitter._existence_validator = mock_validator
+
         # Generate mock terraform config
         terraform_config = {
             "resource": {
@@ -86,6 +104,17 @@ class TestImportBlocksGeneration:
             import_strategy="resource_groups",
             target_subscription_id="test-sub",
         )
+
+        # Mock the existence validator to return successful results
+        mock_validator = MagicMock()
+        mock_validator.batch_check_resources.return_value = {
+            "/subscriptions/test-sub/resourceGroups/test-rg": ResourceExistenceResult(
+                resource_id="/subscriptions/test-sub/resourceGroups/test-rg",
+                exists=True,
+                cached=False,
+            ),
+        }
+        emitter._existence_validator = mock_validator
 
         import_blocks = emitter._generate_import_blocks(terraform_config, [])
 

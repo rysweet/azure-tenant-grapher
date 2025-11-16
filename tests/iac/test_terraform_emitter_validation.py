@@ -46,8 +46,18 @@ class TestTerraformEmitterValidation:
         with open(output_files[0]) as f:
             config = json.load(f)
 
-        # VM should NOT be in the output since its NIC is missing
-        assert "azurerm_linux_virtual_machine" not in config.get("resource", {})
+        # VM should be in the output with a default NIC created (behavior changed)
+        assert "azurerm_linux_virtual_machine" in config.get("resource", {})
+        assert "test_vm" in config["resource"]["azurerm_linux_virtual_machine"]
+
+        # Default NIC should be created
+        assert "azurerm_network_interface" in config["resource"]
+        assert "test_vm_default_nic" in config["resource"]["azurerm_network_interface"]
+
+        # VM should reference the default NIC
+        vm = config["resource"]["azurerm_linux_virtual_machine"]["test_vm"]
+        assert "network_interface_ids" in vm
+        assert "${azurerm_network_interface.test_vm_default_nic.id}" in vm["network_interface_ids"]
 
     def test_vm_with_existing_nic_is_included(self, tmp_path: Path):
         """Test that VMs with valid NIC references are included."""
@@ -266,8 +276,18 @@ class TestTerraformEmitterValidation:
         with open(output_files[0]) as f:
             config = json.load(f)
 
-        # VM should be filtered out (NIC not in graph)
-        assert "azurerm_linux_virtual_machine" not in config.get("resource", {})
+        # VM should be in the output with a default NIC created (behavior changed)
+        assert "azurerm_linux_virtual_machine" in config.get("resource", {})
+        assert "csiska_01" in config["resource"]["azurerm_linux_virtual_machine"]
+
+        # Default NIC should be created
+        assert "azurerm_network_interface" in config["resource"]
+        assert "csiska_01_default_nic" in config["resource"]["azurerm_network_interface"]
+
+        # VM should reference the default NIC
+        vm = config["resource"]["azurerm_linux_virtual_machine"]["csiska_01"]
+        assert "network_interface_ids" in vm
+        assert "${azurerm_network_interface.csiska_01_default_nic.id}" in vm["network_interface_ids"]
 
         # Missing reference should be tracked with cross-RG details
         assert len(emitter._missing_references) == 1

@@ -70,6 +70,10 @@ async def test_resource_group_regex_filter(monkeypatch: pytest.MonkeyPatch) -> N
     # Mock emitter
     mock_emitter = MagicMock()
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter.get_import_blocks_count.return_value = 0
+    mock_emitter.get_resource_count.return_value = 0
+    mock_emitter.get_files_created_count.return_value = 1
+    mock_emitter.get_translation_stats.return_value = {}
 
     monkeypatch.setattr(
         "src.iac.cli_handler.get_emitter", lambda fmt: lambda **kwargs: mock_emitter
@@ -162,6 +166,10 @@ async def test_resource_group_exact_match_filter(
     # Mock emitter
     mock_emitter = MagicMock()
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter.get_import_blocks_count.return_value = 0
+    mock_emitter.get_resource_count.return_value = 0
+    mock_emitter.get_files_created_count.return_value = 1
+    mock_emitter.get_translation_stats.return_value = {}
 
     monkeypatch.setattr(
         "src.iac.cli_handler.get_emitter", lambda fmt: lambda **kwargs: mock_emitter
@@ -254,6 +262,10 @@ async def test_mixed_type_and_resource_group_filters(
     # Mock emitter
     mock_emitter = MagicMock()
     mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter.get_import_blocks_count.return_value = 0
+    mock_emitter.get_resource_count.return_value = 0
+    mock_emitter.get_files_created_count.return_value = 1
+    mock_emitter.get_translation_stats.return_value = {}
 
     monkeypatch.setattr(
         "src.iac.cli_handler.get_emitter", lambda fmt: lambda **kwargs: mock_emitter

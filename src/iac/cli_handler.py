@@ -206,6 +206,10 @@ async def generate_iac_command_handler(
     import_strategy: str = "resource_groups",
     # Provider registration parameters
     auto_register_providers: bool = False,
+    # Smart import parameters (Phase 1F)
+    scan_target: bool = False,
+    scan_target_tenant_id: Optional[str] = None,
+    scan_target_subscription_id: Optional[str] = None,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -244,6 +248,9 @@ async def generate_iac_command_handler(
         auto_import_existing: Automatically import pre-existing Azure resources (Issue #412)
         import_strategy: Strategy for importing resources (resource_groups, all_resources, selective)
         auto_register_providers: Automatically register required Azure resource providers
+        scan_target: Enable smart import by scanning target tenant (Phase 1F)
+        scan_target_tenant_id: Target tenant ID to scan (required if scan_target is True)
+        scan_target_subscription_id: Optional target subscription ID to scan
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -407,6 +414,90 @@ async def generate_iac_command_handler(
                 examples=examples,
             )
 
+        # Smart import workflow (Phase 1F)
+        comparison_result = None
+        if scan_target:
+            # Validate required parameters
+            if not scan_target_tenant_id:
+                logger.error(
+                    "--scan-target-tenant-id required when --scan-target is enabled"
+                )
+                click.echo(
+                    "Error: --scan-target-tenant-id is required when using --scan-target",
+                    err=True,
+                )
+                return 1
+
+            try:
+                # 1. Scan target tenant
+                from ..services.azure_discovery_service import AzureDiscoveryService
+                from .resource_comparator import ResourceComparator
+                from .target_scanner import TargetScannerService
+
+                logger.info(f"Scanning target tenant: {scan_target_tenant_id}")
+                click.echo(
+                    f"Scanning target tenant for existing resources: {scan_target_tenant_id}"
+                )
+
+                # Create config for AzureDiscoveryService
+                discovery_config = create_neo4j_config_from_env()
+                discovery = AzureDiscoveryService(config=discovery_config)
+                scanner = TargetScannerService(discovery)
+
+                target_scan = await scanner.scan_target_tenant(
+                    scan_target_tenant_id,
+                    subscription_id=scan_target_subscription_id,
+                )
+
+                if target_scan.error:
+                    logger.warning(f"Target scan had errors: {target_scan.error}")
+                    logger.warning("Falling back to standard IaC generation")
+                    click.echo(
+                        f"Warning: Target scan encountered errors: {target_scan.error}",
+                        err=True,
+                    )
+                    click.echo("Continuing with standard IaC generation...", err=True)
+                else:
+                    # 2. Compare using ResourceComparator
+                    from ..services.neo4j_service import Neo4jService
+
+                    neo4j = Neo4jService()
+                    comparator = ResourceComparator(neo4j)
+
+                    logger.info("Comparing abstracted graph with target scan")
+                    click.echo("Analyzing differences between source and target...")
+
+                    comparison_result = await comparator.compare_resources(
+                        abstracted_resources=graph.resources,
+                        target_scan=target_scan,
+                    )
+
+                    # Log summary
+                    summary = comparison_result.summary
+                    logger.info(
+                        f"Comparison complete: "
+                        f"{summary.get('new', 0)} new, "
+                        f"{summary.get('exact_match', 0)} exact matches, "
+                        f"{summary.get('drifted', 0)} drifted, "
+                        f"{summary.get('orphaned', 0)} orphaned"
+                    )
+                    click.echo(
+                        f"Comparison results: {summary.get('new', 0)} new resources, "
+                        f"{summary.get('exact_match', 0)} exact matches, "
+                        f"{summary.get('drifted', 0)} with drift, "
+                        f"{summary.get('orphaned', 0)} orphaned in target"
+                    )
+
+            except Exception as e:
+                logger.error(f"Smart import failed: {e}", exc_info=True)
+                logger.warning("Falling back to standard IaC generation")
+                click.echo(
+                    f"Warning: Smart import failed: {e}. "
+                    f"Continuing with standard IaC generation...",
+                    err=True,
+                )
+                comparison_result = None
+
         # Determine target subscription ID
         # Priority: 1) Explicit --target-subscription parameter
         #           2) AZURE_SUBSCRIPTION_ID environment variable
@@ -559,10 +650,12 @@ async def generate_iac_command_handler(
         # Pre-deployment conflict detection (Issue #336)
         should_check_conflicts = check_conflicts and not skip_conflict_check
         if should_check_conflicts and subscription_id and not dry_run:
+            import os
+
+            from azure.identity import ClientSecretCredential
+
             from .cleanup_integration import invoke_cleanup_script, parse_cleanup_result
             from .conflict_detector import ConflictDetector
-            from azure.identity import ClientSecretCredential
-            import os
 
             logger.info("Running pre-deployment conflict detection...")
             click.echo("Checking for deployment conflicts...")
@@ -717,8 +810,9 @@ async def generate_iac_command_handler(
             # Pass cross-tenant translation parameters to emitter (only for Terraform)
             if format_type.lower() == "terraform":
                 # Create credential for TARGET tenant (not source)
-                from azure.identity import ClientSecretCredential
                 import os
+
+                from azure.identity import ClientSecretCredential
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
                 use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
@@ -837,8 +931,9 @@ async def generate_iac_command_handler(
         # Pass cross-tenant translation parameters to emitter (only for Terraform)
         if format_type.lower() == "terraform":
             # Create credential for TARGET tenant (not source)
-            from azure.identity import ClientSecretCredential
             import os
+
+            from azure.identity import ClientSecretCredential
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
             # Use target tenant credentials if different from source
             use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
@@ -885,6 +980,8 @@ async def generate_iac_command_handler(
             emit_kwargs["subscription_id"] = subscription_id
         if "neo4j_driver" in emit_signature.parameters:
             emit_kwargs["neo4j_driver"] = driver
+        if "comparison_result" in emit_signature.parameters:
+            emit_kwargs["comparison_result"] = comparison_result
 
         paths = emitter.emit(graph, out_dir, **emit_kwargs)
 
@@ -926,7 +1023,12 @@ async def generate_iac_command_handler(
         metrics.calculate_success_rate()
 
         # Validate and fix global name conflicts (GAP-014)
-        if format_type.lower() == "terraform" and not skip_name_validation:
+        # Skip validation when smart import is enabled (it handles conflicts)
+        if scan_target:
+            logger.info(
+                "Skipping name conflict validation (smart import mode enabled)"
+            )
+        elif format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
             logger.info("🔍 Checking for global resource name conflicts...")
@@ -1008,12 +1110,14 @@ async def generate_iac_command_handler(
             click.echo(f"  📄 {path}")
 
         # Check Azure resource provider registration (before validation/deployment)
-        if format_type.lower() == "terraform" and subscription_id and not dry_run:
+        # Use target_subscription if provided (cross-tenant), otherwise use source subscription
+        provider_check_subscription = target_subscription if target_subscription else subscription_id
+        if format_type.lower() == "terraform" and provider_check_subscription and not dry_run:
             from .provider_manager import ProviderManager
 
             try:
-                logger.info("Checking Azure resource provider registration...")
-                provider_manager = ProviderManager(subscription_id=subscription_id)
+                logger.info(f"Checking Azure resource provider registration in subscription {provider_check_subscription}...")
+                provider_manager = ProviderManager(subscription_id=provider_check_subscription)
                 provider_report = await provider_manager.validate_before_deploy(
                     terraform_path=out_dir,
                     auto_register=auto_register_providers,

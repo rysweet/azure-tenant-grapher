@@ -181,8 +181,11 @@ def test_vnet_link_is_detected(
 ) -> None:
     """Verify Virtual Network Links are identified as separate resources."""
     terraform_config = {"resource": {}}
-    # Need to add VNet to available resources for validation
-    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    # Need to add VNet and DNS Zone to available resources for validation
+    terraform_emitter._available_resources = {
+        "azurerm_virtual_network": {"test_vnet"},
+        "azurerm_private_dns_zone": {"privatelink_vaultcore_azure_net"}
+    }
     result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
     assert result is not None, "VNet Link should be detected and converted"
@@ -365,7 +368,10 @@ def test_vnet_link_name_extracted(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link name is extracted from zone/link format."""
-    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    terraform_emitter._available_resources = {
+        "azurerm_virtual_network": {"test_vnet"},
+        "azurerm_private_dns_zone": {"privatelink_vaultcore_azure_net"}
+    }
     terraform_config = {"resource": {}}
     result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
@@ -381,7 +387,10 @@ def test_vnet_link_dns_zone_reference(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link references DNS zone correctly."""
-    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    terraform_emitter._available_resources = {
+        "azurerm_virtual_network": {"test_vnet"},
+        "azurerm_private_dns_zone": {"privatelink_vaultcore_azure_net"}
+    }
     terraform_config = {"resource": {}}
     result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
@@ -398,7 +407,10 @@ def test_vnet_link_virtual_network_reference(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link references virtual network correctly."""
-    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    terraform_emitter._available_resources = {
+        "azurerm_virtual_network": {"test_vnet"},
+        "azurerm_private_dns_zone": {"privatelink_vaultcore_azure_net"}
+    }
     terraform_config = {"resource": {}}
     result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 
@@ -414,7 +426,10 @@ def test_vnet_link_registration_enabled_flag(
     terraform_emitter: TerraformEmitter, sample_vnet_link: Dict[str, Any]
 ) -> None:
     """Verify VNet Link registration_enabled flag is extracted."""
-    terraform_emitter._available_resources = {"azurerm_virtual_network": {"test_vnet"}}
+    terraform_emitter._available_resources = {
+        "azurerm_virtual_network": {"test_vnet"},
+        "azurerm_private_dns_zone": {"privatelink_vaultcore_azure_net"}
+    }
     terraform_config = {"resource": {}}
     result = terraform_emitter._convert_resource(sample_vnet_link, terraform_config)
 

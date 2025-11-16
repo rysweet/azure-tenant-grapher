@@ -91,16 +91,28 @@ def test_explicit_credentials_real(has_azure_credentials):
 
 def test_invalid_credentials_real():
     """Test that invalid credentials fail validation."""
+    from unittest.mock import patch
+    from azure.core.exceptions import ClientAuthenticationError
+
     config = CredentialConfig(
         client_id="invalid-client-id",
         client_secret="invalid-client-secret",
         tenant_id="invalid-tenant-id",
+        use_environment=False,  # Don't fall back to environment/default credentials
+        allow_interactive=False,  # Don't try interactive login
     )
     provider = CredentialProvider(config)
 
-    # Should raise ClientAuthenticationError
-    with pytest.raises(ClientAuthenticationError):
-        provider.get_credential()
+    # Mock DefaultAzureCredential to prevent it from succeeding with system credentials
+    with patch("src.iac.data_plane_plugins.credential_provider.DefaultAzureCredential") as mock_default:
+        # Make DefaultAzureCredential fail as well
+        mock_cred = mock_default.return_value
+        mock_cred.get_token.side_effect = ClientAuthenticationError("No credentials available")
+
+        # Should raise ValueError when all credential sources fail
+        # (explicit credentials are invalid, no other sources available)
+        with pytest.raises(ValueError):
+            provider.get_credential()
 
 
 def test_credential_caching_real(has_azure_credentials):
