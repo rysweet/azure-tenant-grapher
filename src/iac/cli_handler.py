@@ -494,9 +494,9 @@ async def generate_iac_command_handler(
                     click.echo("Continuing with standard IaC generation...", err=True)
                 else:
                     # 2. Compare using ResourceComparator
-                    from ..services.neo4j_service import Neo4jService
+                    from src.utils.session_manager import Neo4jSessionManager
 
-                    neo4j = Neo4jService()
+                    neo4j = Neo4jSessionManager()
                     comparator = ResourceComparator(neo4j)
 
                     logger.info("Comparing abstracted graph with target scan")
