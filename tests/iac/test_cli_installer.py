@@ -57,6 +57,8 @@ def test_install_tool_runs(monkeypatch, tool_name, installer, capsys):
         pytest.skip(f"{tool_name} does not support installer {installer}")
     # Patch detect_installer to return the desired installer
     monkeypatch.setattr(cli_installer, "detect_installer", lambda: installer)
+    # Patch _is_interactive_mode to return True (simulate interactive terminal)
+    monkeypatch.setattr(cli_installer, "_is_interactive_mode", lambda: True)
     # Patch input to simulate user confirmation
     monkeypatch.setattr("builtins.input", lambda _: "y")
     # Patch subprocess.run to check the command
@@ -79,6 +81,8 @@ def test_install_tool_runs(monkeypatch, tool_name, installer, capsys):
 
 def test_install_tool_cancel(monkeypatch, capsys):
     monkeypatch.setattr(cli_installer, "detect_installer", lambda: "brew")
+    # Patch _is_interactive_mode to return True (simulate interactive terminal)
+    monkeypatch.setattr(cli_installer, "_is_interactive_mode", lambda: True)
     monkeypatch.setattr("builtins.input", lambda _: "n")
     called = {}
     monkeypatch.setattr(
@@ -196,6 +200,8 @@ def test_bicep_install_command_selection(monkeypatch, installer, expected_cmd, c
     """Test that the correct Bicep install command is selected for each platform."""
     # Patch detect_installer to return the specific installer
     monkeypatch.setattr(cli_installer, "detect_installer", lambda: installer)
+    # Patch _is_interactive_mode to return True (simulate interactive terminal)
+    monkeypatch.setattr(cli_installer, "_is_interactive_mode", lambda: True)
     # Patch input to simulate user confirmation
     monkeypatch.setattr("builtins.input", lambda _: "y")
     # Patch subprocess.run to capture the command
