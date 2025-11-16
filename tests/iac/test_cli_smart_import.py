@@ -154,50 +154,58 @@ class TestCLISmartImportWorkflow:
                             )
                             mock_comparator_cls.return_value = mock_comparator
 
-                            # Mock Neo4jService module that doesn't exist (production code bug)
-                            import sys
-                            from types import ModuleType
+                            # Mock Neo4jSessionManager.connect() for Bug #5 fix
+                            with patch(
+                                "src.utils.session_manager.Neo4jSessionManager"
+                            ) as mock_neo4j_mgr_cls:
+                                mock_neo4j_mgr = Mock()
+                                mock_neo4j_mgr.connect = AsyncMock()
+                                mock_neo4j_mgr_cls.return_value = mock_neo4j_mgr
 
-                            fake_neo4j_service = ModuleType("src.services.neo4j_service")
-                            fake_neo4j_service.Neo4jService = Mock()  # type: ignore[attr-defined]
-                            sys.modules["src.services.neo4j_service"] = fake_neo4j_service
+                                # Mock Neo4jService module that doesn't exist (production code bug)
+                                import sys
+                                from types import ModuleType
 
-                            try:
-                                # Mock the rest of the pipeline to avoid complex dependencies
-                                with patch(
-                                    "src.iac.cli_handler.TransformationEngine"
-                                ):
+                                fake_neo4j_service = ModuleType("src.services.neo4j_service")
+                                fake_neo4j_service.Neo4jService = Mock()  # type: ignore[attr-defined]
+                                sys.modules["src.services.neo4j_service"] = fake_neo4j_service
+
+                                try:
+                                    # Mock the rest of the pipeline to avoid complex dependencies
                                     with patch(
-                                        "src.iac.cli_handler.get_emitter"
+                                        "src.iac.cli_handler.TransformationEngine"
                                     ):
-                                        # Just call with dry_run to avoid full generation
-                                        result = await generate_iac_command_handler(
-                                            tenant_id="test-tenant-id",
-                                            format_type="terraform",
-                                            output_path=str(Path("/tmp/test")),
-                                            dry_run=True,  # Dry run to avoid complex emit logic
-                                            skip_validation=True,
-                                            scan_target=True,
-                                            scan_target_tenant_id="target-tenant-id",
-                                            scan_target_subscription_id="target-sub-id",
-                                        )
+                                        with patch(
+                                            "src.iac.cli_handler.get_emitter"
+                                        ):
+                                            # Just call with dry_run to avoid full generation
+                                            result = await generate_iac_command_handler(
+                                                tenant_id="test-tenant-id",
+                                                format_type="terraform",
+                                                output_path=str(Path("/tmp/test")),
+                                                dry_run=True,  # Dry run to avoid complex emit logic
+                                                skip_validation=True,
+                                                scan_target=True,
+                                                scan_target_tenant_id="target-tenant-id",
+                                                scan_target_subscription_id="target-sub-id",
+                                            )
 
-                                        # Should succeed
-                                        assert result == 0
+                                            # Should succeed
+                                            assert result == 0
 
-                                        # Should call scanner with correct params
-                                        mock_scanner.scan_target_tenant.assert_called_once_with(
-                                            "target-tenant-id",
-                                            subscription_id="target-sub-id",
-                                        )
+                                            # Should call scanner with correct params
+                                            mock_scanner.scan_target_tenant.assert_called_once_with(
+                                                "target-tenant-id",
+                                                subscription_id="target-sub-id",
+                                            )
 
-                                        # Should call comparator
-                                        mock_comparator.compare_resources.assert_called_once()
+                                            # Should call comparator
+                                            mock_comparator.compare_resources.assert_called_once()
 
-                            finally:
-                                # Clean up the fake module
-                                if "src.services.neo4j_service" in sys.modules:
-                                    del sys.modules["src.services.neo4j_service"]
+                                finally:
+                                    # Clean up the fake module
+                                    if "src.services.neo4j_service" in sys.modules:
+                                        del sys.modules["src.services.neo4j_service"]
 
 
 class TestCLISmartImportFallback:
