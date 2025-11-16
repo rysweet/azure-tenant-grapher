@@ -1,0 +1,272 @@
+# PowerPoint Demo Scale-Up Template
+# ==================================
+# Generates ~38,000 synthetic nodes for visualization demos
+# Issue #427 - Scale Operations
+
+metadata:
+  name: "PowerPoint Demo Scale-Up"
+  description: "Large-scale synthetic data for visualization demos"
+  version: "1.0.0"
+  author: "atg-automation"
+
+# Resource generation configuration
+# Targeting ~38k nodes total
+resources:
+  # Virtual Machines - 8000 nodes
+  - type: "VirtualMachine"
+    count: 8000
+    name_prefix: "demo-vm"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      vm_size: "Standard_B2s"
+      os_type: "Linux"
+
+  # Virtual Networks - 500 nodes
+  - type: "VirtualNetwork"
+    count: 500
+    name_prefix: "demo-vnet"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      address_space: "10.0.0.0/16"
+
+  # Subnets - 2000 nodes
+  - type: "Subnet"
+    count: 2000
+    name_prefix: "demo-subnet"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      address_prefix: "10.0.1.0/24"
+
+  # Storage Accounts - 5000 nodes
+  - type: "StorageAccount"
+    count: 5000
+    name_prefix: "demostorage"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard_LRS"
+      kind: "StorageV2"
+
+  # Resource Groups - 1000 nodes
+  - type: "ResourceGroup"
+    count: 1000
+    name_prefix: "demo-rg"
+    labels:
+      - "Synthetic"
+      - "ResourceGroup"
+    properties:
+      location: "eastus"
+
+  # Network Security Groups - 3000 nodes
+  - type: "NetworkSecurityGroup"
+    count: 3000
+    name_prefix: "demo-nsg"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+
+  # Public IP Addresses - 4000 nodes
+  - type: "PublicIPAddress"
+    count: 4000
+    name_prefix: "demo-pip"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard"
+
+  # Load Balancers - 1000 nodes
+  - type: "LoadBalancer"
+    count: 1000
+    name_prefix: "demo-lb"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard"
+
+  # Application Gateways - 500 nodes
+  - type: "ApplicationGateway"
+    count: 500
+    name_prefix: "demo-agw"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard_v2"
+
+  # Key Vaults - 2000 nodes
+  - type: "KeyVault"
+    count: 2000
+    name_prefix: "demo-kv"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "standard"
+
+  # SQL Databases - 3000 nodes
+  - type: "SQLDatabase"
+    count: 3000
+    name_prefix: "demo-sqldb"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Standard"
+
+  # App Services - 2000 nodes
+  - type: "AppService"
+    count: 2000
+    name_prefix: "demo-app"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "B1"
+
+  # Cosmos DB Accounts - 1000 nodes
+  - type: "CosmosDBAccount"
+    count: 1000
+    name_prefix: "demo-cosmos"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      kind: "GlobalDocumentDB"
+
+  # Container Registries - 500 nodes
+  - type: "ContainerRegistry"
+    count: 500
+    name_prefix: "democr"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      sku: "Basic"
+
+  # AKS Clusters - 1000 nodes
+  - type: "AKSCluster"
+    count: 1000
+    name_prefix: "demo-aks"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+      kubernetes_version: "1.27"
+
+  # Managed Identities - 2000 nodes
+  - type: "ManagedIdentity"
+    count: 2000
+    name_prefix: "demo-mi"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+
+  # Network Interfaces - 1500 nodes
+  - type: "NetworkInterface"
+    count: 1500
+    name_prefix: "demo-nic"
+    labels:
+      - "Synthetic"
+      - "Resource"
+    properties:
+      location: "eastus"
+
+# Relationship generation rules
+relationships:
+  # VMs in Resource Groups
+  - source_type: "VirtualMachine"
+    target_type: "ResourceGroup"
+    relationship_type: "BELONGS_TO"
+    connection_ratio: 1.0
+
+  # VMs connected to VNets
+  - source_type: "VirtualMachine"
+    target_type: "VirtualNetwork"
+    relationship_type: "CONNECTED_TO"
+    connection_ratio: 0.8
+
+  # Subnets in VNets
+  - source_type: "Subnet"
+    target_type: "VirtualNetwork"
+    relationship_type: "CONTAINS"
+    connection_ratio: 1.0
+
+  # VMs use Subnets
+  - source_type: "VirtualMachine"
+    target_type: "Subnet"
+    relationship_type: "USES_SUBNET"
+    connection_ratio: 0.9
+
+  # VMs use NSGs
+  - source_type: "VirtualMachine"
+    target_type: "NetworkSecurityGroup"
+    relationship_type: "SECURED_BY"
+    connection_ratio: 0.7
+
+  # VMs use Public IPs
+  - source_type: "VirtualMachine"
+    target_type: "PublicIPAddress"
+    relationship_type: "HAS_PUBLIC_IP"
+    connection_ratio: 0.5
+
+  # Storage in Resource Groups
+  - source_type: "StorageAccount"
+    target_type: "ResourceGroup"
+    relationship_type: "BELONGS_TO"
+    connection_ratio: 1.0
+
+  # App Services use Storage
+  - source_type: "AppService"
+    target_type: "StorageAccount"
+    relationship_type: "USES_STORAGE"
+    connection_ratio: 0.6
+
+  # App Services use Key Vaults
+  - source_type: "AppService"
+    target_type: "KeyVault"
+    relationship_type: "ACCESSES"
+    connection_ratio: 0.5
+
+  # App Services use Managed Identities
+  - source_type: "AppService"
+    target_type: "ManagedIdentity"
+    relationship_type: "USES_IDENTITY"
+    connection_ratio: 0.8
+
+# Scaling configuration
+scaling:
+  strategy: "proportional"
+  maintain_relationships: true
+  batch_size: 500
+
+# Validation rules
+validation:
+  check_duplicates: true
+  check_relationships: true
+  check_labels: true
+  check_properties: true

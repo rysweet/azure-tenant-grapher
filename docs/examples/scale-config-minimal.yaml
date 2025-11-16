@@ -1,0 +1,12 @@
+# Minimal Scale Configuration Example
+# =====================================
+# This example shows the absolute minimum required configuration.
+# All other settings will use sensible defaults.
+
+# Most users can start with just these settings:
+
+scale_up:
+  default_scale_factor: 2.0
+
+scale_down:
+  default_target_size: 0.1

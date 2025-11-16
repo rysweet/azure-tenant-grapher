@@ -1,0 +1,36 @@
+{
+  "target": 40000,
+  "achieved": 41205,
+  "percentage": 103.01,
+  "status": "SUCCESS",
+  "total_nodes": 45994,
+  "synthetic_resources": 38439,
+  "total_relationships": 13256,
+  "operations_count": 6,
+  "operations": [
+    {
+      "id": "scale-20251111T202725-cf0e400c",
+      "resources": 18414
+    },
+    {
+      "id": "scale-20251111T204404-36948549",
+      "resources": 11064
+    },
+    {
+      "id": "scale-20251111T204039-07aa8e8a",
+      "resources": 2766
+    },
+    {
+      "id": "scale-20251111T204713-d5837132",
+      "resources": 2766
+    },
+    {
+      "id": "scale-20251111T191612-d2dcd199",
+      "resources": 2046
+    },
+    {
+      "id": "scale-20251111T204919-4fe5baff",
+      "resources": 1383
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+name: Integration Test Scale-Up
+description: Simple scale-up test for DefenderATEVET17 tenant with modest resource increase
+version: 1.0
+
+scale_factor: 1.5
+
+resource_patterns:
+  - type: Microsoft.Compute/virtualMachines
+    min_count: 1
+    max_count: 10
+    clone_relationships: true
+
+  - type: Microsoft.Network/virtualNetworks
+    min_count: 1
+    max_count: 5
+    clone_relationships: true
+
+  - type: Microsoft.Network/networkSecurityGroups
+    min_count: 1
+    max_count: 5
+    clone_relationships: true
+
+naming_strategy:
+  prefix: "synthetic"
+  suffix_pattern: "{original_name}-scale{index:03d}"
+  preserve_location: true
+
+relationship_handling:
+  clone_internal: true
+  clone_external: false
+  update_references: true
