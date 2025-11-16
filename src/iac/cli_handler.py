@@ -503,7 +503,7 @@ async def generate_iac_command_handler(
                     logger.info("Comparing abstracted graph with target scan")
                     click.echo("Analyzing differences between source and target...")
 
-                    comparison_result = await comparator.compare_resources(
+                    comparison_result = comparator.compare_resources(
                         abstracted_resources=graph.resources,
                         target_scan=target_scan,
                     )
