@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { TrendingUp as ScaleUpIcon, TrendingDown as ScaleDownIcon } from '@mui/icons-material';
 import { useScaleOperations, ScaleOperationsProvider } from '../../context/ScaleOperationsContext';
+import { useLayer } from '../../context/LayerContext';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import ScaleUpPanel from '../scale/ScaleUpPanel';
 import ScaleDownPanel from '../scale/ScaleDownPanel';
@@ -16,9 +17,11 @@ import ProgressMonitor from '../scale/ProgressMonitor';
 import ResultsPanel from '../scale/ResultsPanel';
 import QuickActionsBar from '../scale/QuickActionsBar';
 import ErrorBoundary from '../common/ErrorBoundary';
+import LayerSelector from '../layer/LayerSelector';
 
 const ScaleOperationsTabContent: React.FC = () => {
   const { state, dispatch } = useScaleOperations();
+  const { state: layerState } = useLayer();
   const { isConnected } = useWebSocket();
   const [operationType, setOperationType] = useState<'scale-up' | 'scale-down'>('scale-up');
 
@@ -54,6 +57,19 @@ const ScaleOperationsTabContent: React.FC = () => {
         <Alert severity="warning">
           Not connected to backend server. Real-time updates may not work properly.
         </Alert>
+      )}
+
+      {/* Layer Selector */}
+      {!isOperationRunning && !showResults && (
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Target Layer
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select which layer to work with. Scale operations will affect only the selected layer.
+          </Typography>
+          <LayerSelector compact={false} showCreateButton={true} showRefreshButton={true} />
+        </Paper>
       )}
 
       {/* Operation Mode Selector */}

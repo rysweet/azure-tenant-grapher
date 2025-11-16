@@ -1801,6 +1801,523 @@ app.get('/api/scale/stats/:tenantId', async (req, res) => {
 
 // ==================== End Scale Operations Routes ====================
 
+// ==================== Layer Management API Routes ====================
+
+/**
+ * List all layers
+ */
+app.get('/api/layers', async (req, res) => {
+  try {
+    const result = await neo4jService.query(
+      `MATCH (l:Layer)
+       RETURN l
+       ORDER BY l.created_at DESC`
+    );
+
+    const layers = result.records.map((record: any) => {
+      const node = record.get('l');
+      return {
+        layer_id: node.properties.layer_id,
+        name: node.properties.name,
+        description: node.properties.description,
+        created_at: node.properties.created_at,
+        updated_at: node.properties.updated_at,
+        created_by: node.properties.created_by,
+        parent_layer_id: node.properties.parent_layer_id,
+        is_active: node.properties.is_active || false,
+        is_baseline: node.properties.is_baseline || false,
+        is_locked: node.properties.is_locked || false,
+        tenant_id: node.properties.tenant_id,
+        subscription_ids: node.properties.subscription_ids || [],
+        node_count: node.properties.node_count || 0,
+        relationship_count: node.properties.relationship_count || 0,
+        layer_type: node.properties.layer_type || 'experimental',
+        metadata: JSON.parse(node.properties.metadata || '{}'),
+        tags: node.properties.tags || [],
+      };
+    });
+
+    res.json({ layers, total: layers.length });
+  } catch (error: any) {
+    logger.error('Failed to list layers', { error });
+    res.status(500).json({ error: error.message || 'Failed to list layers' });
+  }
+});
+
+/**
+ * Get active layer
+ */
+app.get('/api/layers/active', async (req, res) => {
+  try {
+    const { tenantId } = req.query;
+
+    let query = `MATCH (l:Layer) WHERE l.is_active = true`;
+    const params: any = {};
+
+    if (tenantId) {
+      query += ` AND l.tenant_id = $tenantId`;
+      params.tenantId = tenantId;
+    }
+
+    query += ` RETURN l LIMIT 1`;
+
+    const result = await neo4jService.query(query, params);
+
+    if (result.records.length === 0) {
+      return res.json({ layer: null });
+    }
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: node.properties.is_active || false,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: node.properties.node_count || 0,
+      relationship_count: node.properties.relationship_count || 0,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    res.json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to get active layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to get active layer' });
+  }
+});
+
+/**
+ * Get specific layer
+ */
+app.get('/api/layers/:layerId', async (req, res) => {
+  try {
+    const { layerId } = req.params;
+
+    const result = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId})
+       RETURN l`,
+      { layerId }
+    );
+
+    if (result.records.length === 0) {
+      return res.status(404).json({ error: 'Layer not found' });
+    }
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: node.properties.is_active || false,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: node.properties.node_count || 0,
+      relationship_count: node.properties.relationship_count || 0,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    res.json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to get layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to get layer' });
+  }
+});
+
+/**
+ * Create new layer
+ */
+app.post('/api/layers', async (req, res) => {
+  try {
+    const {
+      layer_id,
+      name,
+      description,
+      layer_type = 'experimental',
+      tenant_id = 'unknown',
+      created_by = 'ui',
+      parent_layer_id = null,
+      make_active = false,
+    } = req.body;
+
+    if (!layer_id || !name) {
+      return res.status(400).json({ error: 'layer_id and name are required' });
+    }
+
+    // Check if layer already exists
+    const existingResult = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId}) RETURN l`,
+      { layerId: layer_id }
+    );
+
+    if (existingResult.records.length > 0) {
+      return res.status(409).json({ error: 'Layer already exists' });
+    }
+
+    // Deactivate current active layer if make_active=true
+    if (make_active) {
+      await neo4jService.query(
+        `MATCH (l:Layer)
+         WHERE l.is_active = true
+         SET l.is_active = false, l.updated_at = datetime()`
+      );
+    }
+
+    // Create new layer
+    const createdAt = new Date().toISOString();
+    const result = await neo4jService.query(
+      `CREATE (l:Layer {
+         layer_id: $layer_id,
+         name: $name,
+         description: $description,
+         created_at: $created_at,
+         updated_at: null,
+         created_by: $created_by,
+         parent_layer_id: $parent_layer_id,
+         is_active: $is_active,
+         is_baseline: $is_baseline,
+         is_locked: false,
+         tenant_id: $tenant_id,
+         subscription_ids: [],
+         node_count: 0,
+         relationship_count: 0,
+         layer_type: $layer_type,
+         metadata: $metadata,
+         tags: []
+       })
+       RETURN l`,
+      {
+        layer_id,
+        name,
+        description: description || `Layer created at ${new Date().toLocaleString()}`,
+        created_at: createdAt,
+        created_by,
+        parent_layer_id,
+        is_active: make_active,
+        is_baseline: layer_type === 'baseline',
+        tenant_id,
+        layer_type,
+        metadata: JSON.stringify({}),
+      }
+    );
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: node.properties.is_active || false,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: node.properties.node_count || 0,
+      relationship_count: node.properties.relationship_count || 0,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    logger.info(`Created layer: ${layer_id}`);
+    res.status(201).json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to create layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to create layer' });
+  }
+});
+
+/**
+ * Activate a layer
+ */
+app.post('/api/layers/:layerId/activate', async (req, res) => {
+  try {
+    const { layerId } = req.params;
+
+    // Check if layer exists
+    const existingResult = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId}) RETURN l`,
+      { layerId }
+    );
+
+    if (existingResult.records.length === 0) {
+      return res.status(404).json({ error: 'Layer not found' });
+    }
+
+    // Deactivate all layers
+    await neo4jService.query(
+      `MATCH (l:Layer)
+       WHERE l.is_active = true
+       SET l.is_active = false, l.updated_at = datetime()`
+    );
+
+    // Activate target layer
+    const result = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId})
+       SET l.is_active = true, l.updated_at = datetime()
+       RETURN l`,
+      { layerId }
+    );
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: true,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: node.properties.node_count || 0,
+      relationship_count: node.properties.relationship_count || 0,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    logger.info(`Activated layer: ${layerId}`);
+    res.json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to activate layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to activate layer' });
+  }
+});
+
+/**
+ * Delete a layer
+ */
+app.delete('/api/layers/:layerId', async (req, res) => {
+  try {
+    const { layerId } = req.params;
+    const { force = false } = req.query;
+
+    // Check if layer exists
+    const existingResult = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId}) RETURN l`,
+      { layerId }
+    );
+
+    if (existingResult.records.length === 0) {
+      return res.status(404).json({ error: 'Layer not found' });
+    }
+
+    const node = existingResult.records[0].get('l');
+    const isActive = node.properties.is_active;
+    const isBaseline = node.properties.is_baseline;
+    const isLocked = node.properties.is_locked;
+
+    // Check protections
+    if (isLocked) {
+      return res.status(403).json({ error: 'Layer is locked and cannot be deleted' });
+    }
+
+    if ((isActive || isBaseline) && force !== 'true') {
+      return res.status(403).json({
+        error: 'Cannot delete active or baseline layer without force=true',
+        is_active: isActive,
+        is_baseline: isBaseline,
+      });
+    }
+
+    // Delete all Resource nodes in this layer
+    await neo4jService.query(
+      `MATCH (r:Resource)
+       WHERE NOT r:Original AND r.layer_id = $layerId
+       DETACH DELETE r`,
+      { layerId }
+    );
+
+    // Delete layer metadata node
+    await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId})
+       DETACH DELETE l`,
+      { layerId }
+    );
+
+    logger.info(`Deleted layer: ${layerId}`);
+    res.json({ success: true, message: `Layer ${layerId} deleted` });
+  } catch (error: any) {
+    logger.error('Failed to delete layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to delete layer' });
+  }
+});
+
+/**
+ * Update layer metadata
+ */
+app.patch('/api/layers/:layerId', async (req, res) => {
+  try {
+    const { layerId } = req.params;
+    const { name, description, tags, is_locked } = req.body;
+
+    // Check if layer exists
+    const existingResult = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId}) RETURN l`,
+      { layerId }
+    );
+
+    if (existingResult.records.length === 0) {
+      return res.status(404).json({ error: 'Layer not found' });
+    }
+
+    // Build SET clauses
+    const setClauses = ['l.updated_at = datetime()'];
+    const params: any = { layerId };
+
+    if (name !== undefined) {
+      setClauses.push('l.name = $name');
+      params.name = name;
+    }
+
+    if (description !== undefined) {
+      setClauses.push('l.description = $description');
+      params.description = description;
+    }
+
+    if (tags !== undefined) {
+      setClauses.push('l.tags = $tags');
+      params.tags = tags;
+    }
+
+    if (is_locked !== undefined) {
+      setClauses.push('l.is_locked = $is_locked');
+      params.is_locked = is_locked;
+    }
+
+    // Update layer
+    const result = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId})
+       SET ${setClauses.join(', ')}
+       RETURN l`,
+      params
+    );
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: node.properties.is_active || false,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: node.properties.node_count || 0,
+      relationship_count: node.properties.relationship_count || 0,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    logger.info(`Updated layer: ${layerId}`);
+    res.json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to update layer', { error });
+    res.status(500).json({ error: error.message || 'Failed to update layer' });
+  }
+});
+
+/**
+ * Refresh layer statistics
+ */
+app.post('/api/layers/:layerId/refresh-stats', async (req, res) => {
+  try {
+    const { layerId } = req.params;
+
+    // Count nodes
+    const nodeResult = await neo4jService.query(
+      `MATCH (r:Resource)
+       WHERE NOT r:Original AND r.layer_id = $layerId
+       RETURN count(r) as count`,
+      { layerId }
+    );
+    const nodeCount = nodeResult.records[0]?.get('count')?.toNumber() || 0;
+
+    // Count relationships
+    const relResult = await neo4jService.query(
+      `MATCH (r1:Resource)-[rel]->(r2:Resource)
+       WHERE NOT r1:Original AND NOT r2:Original
+         AND r1.layer_id = $layerId
+         AND r2.layer_id = $layerId
+         AND type(rel) <> 'SCAN_SOURCE_NODE'
+       RETURN count(rel) as count`,
+      { layerId }
+    );
+    const relCount = relResult.records[0]?.get('count')?.toNumber() || 0;
+
+    // Update layer metadata
+    const result = await neo4jService.query(
+      `MATCH (l:Layer {layer_id: $layerId})
+       SET l.node_count = $nodeCount,
+           l.relationship_count = $relCount,
+           l.updated_at = datetime()
+       RETURN l`,
+      { layerId, nodeCount, relCount }
+    );
+
+    if (result.records.length === 0) {
+      return res.status(404).json({ error: 'Layer not found' });
+    }
+
+    const node = result.records[0].get('l');
+    const layer = {
+      layer_id: node.properties.layer_id,
+      name: node.properties.name,
+      description: node.properties.description,
+      created_at: node.properties.created_at,
+      updated_at: node.properties.updated_at,
+      created_by: node.properties.created_by,
+      parent_layer_id: node.properties.parent_layer_id,
+      is_active: node.properties.is_active || false,
+      is_baseline: node.properties.is_baseline || false,
+      is_locked: node.properties.is_locked || false,
+      tenant_id: node.properties.tenant_id,
+      subscription_ids: node.properties.subscription_ids || [],
+      node_count: nodeCount,
+      relationship_count: relCount,
+      layer_type: node.properties.layer_type || 'experimental',
+      metadata: JSON.parse(node.properties.metadata || '{}'),
+      tags: node.properties.tags || [],
+    };
+
+    logger.info(`Refreshed stats for layer ${layerId}: ${nodeCount} nodes, ${relCount} relationships`);
+    res.json({ layer });
+  } catch (error: any) {
+    logger.error('Failed to refresh layer stats', { error });
+    res.status(500).json({ error: error.message || 'Failed to refresh layer stats' });
+  }
+});
+
+// ==================== End Layer Management Routes ====================
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Internal server error', { err });
