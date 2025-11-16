@@ -52,7 +52,30 @@ def test_generate_iac_default_mode(monkeypatch: pytest.MonkeyPatch) -> None:
         skip_validation: bool = False,
         skip_subnet_validation: bool = False,
         auto_fix_subnets: bool = False,
+        preserve_rg_structure: bool = False,
         domain_name: Optional[str] = None,
+        naming_suffix: Optional[str] = None,
+        skip_name_validation: bool = False,
+        skip_address_space_validation: bool = False,
+        auto_renumber_address_spaces: bool = False,
+        preserve_names: bool = False,
+        auto_purge_soft_deleted: bool = False,
+        check_conflicts: bool = True,
+        skip_conflict_check: bool = False,
+        auto_cleanup: bool = False,
+        fail_on_conflicts: bool = True,
+        resource_group_prefix: Optional[str] = None,
+        target_subscription: Optional[str] = None,
+        source_tenant_id: Optional[str] = None,
+        target_tenant_id: Optional[str] = None,
+        identity_mapping_file: Optional[str] = None,
+        strict_translation: bool = False,
+        auto_import_existing: bool = False,
+        import_strategy: str = "resource_groups",
+        auto_register_providers: bool = False,
+        scan_target: bool = False,
+        scan_target_tenant_id: Optional[str] = None,
+        scan_target_subscription_id: Optional[str] = None,
     ) -> int:
         called["tenant_id"] = tenant_id
         return 0
@@ -120,11 +143,19 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     # Mock emitter
-    mock_emitter = MagicMock()
-    mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter_instance = MagicMock()
+    mock_emitter_instance.emit.return_value = [Path("/tmp/test.tf")]
+
+    # Create a mock emitter class that accepts any parameters
+    class MockEmitterClass:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            return mock_emitter_instance.emit(*args, **kwargs)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
     )
 
     # Mock engine
@@ -208,11 +239,19 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     # Mock emitter
-    mock_emitter = MagicMock()
-    mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter_instance = MagicMock()
+    mock_emitter_instance.emit.return_value = [Path("/tmp/test.tf")]
+
+    # Create a mock emitter class that accepts any parameters
+    class MockEmitterClass:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            return mock_emitter_instance.emit(*args, **kwargs)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
     )
 
     # Mock engine
@@ -298,11 +337,19 @@ async def test_node_id_filter_with_relationships(
     )
 
     # Mock emitter
-    mock_emitter = MagicMock()
-    mock_emitter.emit.return_value = [Path("/tmp/test.tf")]
+    mock_emitter_instance = MagicMock()
+    mock_emitter_instance.emit.return_value = [Path("/tmp/test.tf")]
+
+    # Create a mock emitter class that accepts any parameters
+    class MockEmitterClass:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            return mock_emitter_instance.emit(*args, **kwargs)
 
     monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: lambda: mock_emitter
+        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
     )
 
     # Mock engine

@@ -11,9 +11,11 @@ class TestGenerateIacAutoDoctor:
     def test_ensure_tool_invoked_when_terraform_missing(self, monkeypatch):
         # Simulate terraform missing, ensure install_tool is called
         monkeypatch.setattr(cli_installer.shutil, "which", lambda name: None)
+        # Mock interactive mode so install_tool gets called
+        monkeypatch.setattr(cli_installer, "_is_interactive_mode", lambda: True)
         called = {}
 
-        def fake_install_tool(tool):
+        def fake_install_tool(tool, non_interactive=False):
             called["tool"] = tool
             return False  # Simulate user declines install
 

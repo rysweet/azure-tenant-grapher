@@ -120,6 +120,11 @@ class AppServicePlugin(DataPlanePlugin):
 
                 if app_settings and app_settings.properties:
                     for key, value in app_settings.properties.items():
+                        # Skip system-managed settings
+                        if self._is_system_setting(key):
+                            self.logger.debug(f"Skipping system setting: {key}")
+                            continue
+
                         items.append(
                             DataPlaneItem(
                                 name=key,
@@ -131,6 +136,7 @@ class AppServicePlugin(DataPlanePlugin):
                                 source_resource_id=resource["id"],
                                 metadata={
                                     "resource_type": "app_setting",
+                                    "sensitive": self._is_sensitive_key(key),
                                 },
                             )
                         )
@@ -165,6 +171,7 @@ class AppServicePlugin(DataPlanePlugin):
                                 metadata={
                                     "resource_type": "connection_string",
                                     "connection_type": conn_info.type,
+                                    "sensitive": True,
                                 },
                             )
                         )
@@ -176,6 +183,42 @@ class AppServicePlugin(DataPlanePlugin):
             except (AzureError, HttpResponseError) as e:
                 self.logger.warning(
                     f"Failed to discover connection strings for {app_name}: {e}"
+                )
+
+            # Discover site configuration
+            try:
+                site_config = web_client.web_apps.get_configuration(
+                    resource_group_name=resource_group, name=app_name
+                )
+
+                # Build config properties
+                config_props = {}
+                if hasattr(site_config, "always_on"):
+                    config_props["always_on"] = site_config.always_on
+                if hasattr(site_config, "http20_enabled"):
+                    config_props["http20_enabled"] = site_config.http20_enabled
+                if hasattr(site_config, "min_tls_version"):
+                    config_props["min_tls_version"] = site_config.min_tls_version
+                if hasattr(site_config, "ftps_state"):
+                    config_props["ftps_state"] = site_config.ftps_state
+
+                items.append(
+                    DataPlaneItem(
+                        name="site_config",
+                        item_type="configuration",
+                        properties=config_props,
+                        source_resource_id=resource["id"],
+                        metadata={
+                            "resource_type": "site_config",
+                        },
+                    )
+                )
+
+                self.logger.info("Discovered site configuration")
+
+            except (AzureError, HttpResponseError) as e:
+                self.logger.warning(
+                    f"Failed to discover site configuration for {app_name}: {e}"
                 )
 
             # Discover deployment slots
@@ -190,6 +233,13 @@ class AppServicePlugin(DataPlanePlugin):
                         -1
                     ]  # Extract slot name from full name
 
+                    # Skip production slot (it's the main app itself)
+                    if slot_name == app_name:
+                        self.logger.debug(
+                            f"Skipping production slot (same as app name): {slot_name}"
+                        )
+                        continue
+
                     items.append(
                         DataPlaneItem(
                             name=slot_name,
@@ -198,6 +248,7 @@ class AppServicePlugin(DataPlanePlugin):
                                 "state": slot.state,
                                 "enabled": slot.enabled,
                                 "default_host_name": slot.default_host_name,
+                                "location": slot.location,
                             },
                             source_resource_id=resource["id"],
                             metadata={
@@ -363,6 +414,7 @@ class AppServicePlugin(DataPlanePlugin):
         connection_strings = [
             item for item in items if item.item_type == "connection_string"
         ]
+        site_configs = [item for item in items if item.item_type == "configuration"]
         deployment_slots = [
             item for item in items if item.item_type == "deployment_slot"
         ]
@@ -375,7 +427,7 @@ class AppServicePlugin(DataPlanePlugin):
 
         # Generate app settings block
         if app_settings:
-            code_lines.append("# App Settings")
+            code_lines.append("# Application Settings")
             code_lines.append(
                 "# Add these to your azurerm_app_service or azurerm_linux_web_app resource:"
             )
@@ -383,13 +435,17 @@ class AppServicePlugin(DataPlanePlugin):
             code_lines.append("# app_settings = {")
 
             for item in app_settings:
-                is_sensitive = item.properties.get("is_sensitive", False)
+                # Check both properties and metadata for sensitive flag
+                is_sensitive = item.properties.get(
+                    "is_sensitive", False
+                ) or item.metadata.get("sensitive", False)
                 if is_sensitive:
                     var_name = self._sanitize_name(item.name)
                     code_lines.append(f"#   {item.name} = var.app_setting_{var_name}")
                 else:
                     value = item.properties.get("value", "")
-                    code_lines.append(f'#   {item.name} = "{value}"')
+                    escaped_value = self._escape_terraform_string(value)
+                    code_lines.append(f'#   {item.name} = "{escaped_value}"')
 
             code_lines.append("# }")
             code_lines.append("")
@@ -417,6 +473,33 @@ class AppServicePlugin(DataPlanePlugin):
                     ]
                 )
 
+        # Generate site configuration block
+        if site_configs:
+            code_lines.append("# Site Configuration")
+            code_lines.append(
+                "# Add these to your azurerm_app_service or azurerm_linux_web_app resource:"
+            )
+            code_lines.append("#")
+            code_lines.append("# site_config {")
+
+            for config in site_configs:
+                props = config.properties
+                if "always_on" in props:
+                    value = "true" if props["always_on"] else "false"
+                    code_lines.append(f"#   always_on = {value}")
+                if "http20_enabled" in props:
+                    value = "true" if props["http20_enabled"] else "false"
+                    code_lines.append(f"#   http2_enabled = {value}")
+                if "min_tls_version" in props:
+                    code_lines.append(
+                        f'#   minimum_tls_version = "{props["min_tls_version"]}"'
+                    )
+                if "ftps_state" in props:
+                    code_lines.append(f'#   ftps_state = "{props["ftps_state"]}"')
+
+            code_lines.append("# }")
+            code_lines.append("")
+
         # Generate deployment slot configurations
         if deployment_slots:
             code_lines.append("# Deployment Slots")
@@ -429,13 +512,10 @@ class AppServicePlugin(DataPlanePlugin):
 
                 code_lines.extend(
                     [
-                        f'resource "azurerm_app_service_slot" "{resource_name}" {{',
+                        f'resource "azurerm_linux_web_app_slot" "{resource_name}" {{',
                         f'  name                = "{slot_name}"',
                         "  # TODO: Reference your App Service resource here",
-                        "  app_service_name    = azurerm_app_service.REPLACE_ME.name",
-                        "  resource_group_name = azurerm_app_service.REPLACE_ME.resource_group_name",
-                        "  location            = azurerm_app_service.REPLACE_ME.location",
-                        "  app_service_plan_id = azurerm_app_service.REPLACE_ME.app_service_plan_id",
+                        "  app_service_id      = azurerm_linux_web_app.REPLACE_ME.id",
                         "",
                     ]
                 )
@@ -451,7 +531,9 @@ class AppServicePlugin(DataPlanePlugin):
                     code_lines.append("  app_settings = {")
                     for setting in slot_settings:
                         setting_name = setting.name.split("/")[-1]  # Remove slot prefix
-                        is_sensitive = setting.properties.get("is_sensitive", False)
+                        is_sensitive = setting.properties.get(
+                            "is_sensitive", False
+                        ) or setting.metadata.get("sensitive", False)
 
                         if is_sensitive:
                             var_name = self._sanitize_name(
@@ -462,7 +544,8 @@ class AppServicePlugin(DataPlanePlugin):
                             )
                         else:
                             value = setting.properties.get("value", "")
-                            code_lines.append(f'    {setting_name} = "{value}"')
+                            escaped_value = self._escape_terraform_string(value)
+                            code_lines.append(f'    {setting_name} = "{escaped_value}"')
 
                     code_lines.append("  }")
                     code_lines.append("")
@@ -493,12 +576,43 @@ class AppServicePlugin(DataPlanePlugin):
                 code_lines.append("}")
                 code_lines.append("")
 
+        # Add deployment guide
+        code_lines.extend(
+            [
+                "# Application Deployment Guide",
+                "#",
+                "# After deploying the infrastructure, you need to deploy your application code.",
+                "# Azure App Service supports multiple deployment methods:",
+                "#",
+                "# 1. ZIP deployment:",
+                "#    az webapp deployment source config-zip --resource-group <rg> --name <app-name> --src <zip-file>",
+                "#",
+                "# 2. Git deployment:",
+                "#    git remote add azure <deployment-url>",
+                "#    git push azure main",
+                "#",
+                "# 3. GitHub Actions:",
+                "#    Use the Azure/webapps-deploy action in your workflow",
+                "#",
+                "# 4. Container deployment:",
+                "#    Configure container registry and image in the app settings",
+                "#",
+                "# For more information:",
+                "# https://docs.microsoft.com/en-us/azure/app-service/deploy-zip",
+                "",
+            ]
+        )
+
         # Generate variable declarations for sensitive values
         code_lines.append("# Required variables for sensitive values")
 
         # Variables for app settings
         for item in app_settings:
-            if item.properties.get("is_sensitive", False):
+            # Check both properties and metadata for sensitive flag
+            is_sensitive = item.properties.get(
+                "is_sensitive", False
+            ) or item.metadata.get("sensitive", False)
+            if is_sensitive:
                 var_name = self._sanitize_name(item.name)
                 code_lines.extend(
                     [
@@ -527,7 +641,10 @@ class AppServicePlugin(DataPlanePlugin):
 
         # Variables for slot settings
         for item in slot_app_settings:
-            if item.properties.get("is_sensitive", False):
+            is_sensitive = item.properties.get(
+                "is_sensitive", False
+            ) or item.metadata.get("sensitive", False)
+            if is_sensitive:
                 slot_name = item.properties.get("slot_name", "")
                 setting_name = item.name.split("/")[-1]
                 var_name = self._sanitize_name(f"{slot_name}_{setting_name}")
@@ -627,6 +744,51 @@ class AppServicePlugin(DataPlanePlugin):
 
         key_lower = key.lower()
         return any(keyword in key_lower for keyword in sensitive_keywords)
+
+    def _is_system_setting(self, key: str) -> bool:
+        """
+        Determine if an app setting is a system-managed setting.
+
+        Args:
+            key: App setting key name
+
+        Returns:
+            True if key is a system-managed setting that should be skipped
+        """
+        system_prefixes = [
+            "WEBSITE_",
+            "APPSETTING_",
+            "AZUREAPPSERVICE_",
+            "DIAGNOSTICS_",
+            "FUNCTIONS_",
+            "SCM_",
+        ]
+
+        return any(key.upper().startswith(prefix) for prefix in system_prefixes)
+
+    def _escape_terraform_string(self, value: str) -> str:
+        """
+        Escape special characters in a string for Terraform.
+
+        Args:
+            value: String value to escape
+
+        Returns:
+            Escaped string safe for Terraform
+        """
+        if not value:
+            return value
+
+        # Escape backslashes first
+        escaped = value.replace("\\", "\\\\")
+        # Escape quotes
+        escaped = escaped.replace('"', '\\"')
+        # Escape newlines
+        escaped = escaped.replace("\n", "\\n")
+        # Escape tabs
+        escaped = escaped.replace("\t", "\\t")
+
+        return escaped
 
     # ============ MODE-AWARE METHODS ============
 
@@ -821,7 +983,7 @@ class AppServicePlugin(DataPlanePlugin):
                 items_discovered=len(items),
                 items_replicated=0,
                 items_skipped=len(items),
-                errors=[f"Invalid target resource ID: {target_id}"],
+                errors=[f"Invalid resource ID format: {target_id}"],
                 warnings=[],
             )
 
@@ -957,7 +1119,7 @@ class AppServicePlugin(DataPlanePlugin):
                 items_discovered=len(items),
                 items_replicated=0,
                 items_skipped=len(items),
-                errors=[f"Invalid target resource ID: {target_id}"],
+                errors=[f"Invalid resource ID format: {target_id}"],
                 warnings=[],
             )
 
@@ -1005,7 +1167,15 @@ class AppServicePlugin(DataPlanePlugin):
                         "app_settings", progress
                     )
 
-            except (AzureError, HttpResponseError) as e:
+            except HttpResponseError as e:
+                if hasattr(e, "status_code") and e.status_code == 403:
+                    errors.append(
+                        "Permission denied: Unable to update app settings on target resource"
+                    )
+                else:
+                    errors.append(f"Failed to replicate app settings: {e!s}")
+                skipped += len(app_settings)
+            except AzureError as e:
                 errors.append(f"Failed to replicate app settings: {e!s}")
                 skipped += len(app_settings)
 
