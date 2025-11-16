@@ -439,7 +439,9 @@ async def generate_iac_command_handler(
                     f"Scanning target tenant for existing resources: {scan_target_tenant_id}"
                 )
 
-                discovery = AzureDiscoveryService()
+                # Create config for AzureDiscoveryService
+                discovery_config = create_neo4j_config_from_env()
+                discovery = AzureDiscoveryService(config=discovery_config)
                 scanner = TargetScannerService(discovery)
 
                 target_scan = await scanner.scan_target_tenant(
@@ -1021,7 +1023,12 @@ async def generate_iac_command_handler(
         metrics.calculate_success_rate()
 
         # Validate and fix global name conflicts (GAP-014)
-        if format_type.lower() == "terraform" and not skip_name_validation:
+        # Skip validation when smart import is enabled (it handles conflicts)
+        if scan_target:
+            logger.info(
+                "Skipping name conflict validation (smart import mode enabled)"
+            )
+        elif format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
             logger.info("🔍 Checking for global resource name conflicts...")
