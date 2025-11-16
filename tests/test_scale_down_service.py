@@ -658,7 +658,7 @@ class TestSampleGraph:
         # Mock export
         scale_down_service.export_sample = AsyncMock()
 
-        node_ids, metrics = await scale_down_service.sample_graph(
+        node_ids, metrics, nodes_deleted = await scale_down_service.sample_graph(
             tenant_id="test-tenant",
             algorithm="mhrw",  # Using MHRW instead of forest_fire (upstream bug)
             target_size=0.2,  # 20% of nodes
@@ -717,7 +717,7 @@ class TestSampleGraph:
             return_value=(sample_graph, sample_node_properties)
         )
 
-        node_ids, metrics = await scale_down_service.sample_graph(
+        node_ids, metrics, nodes_deleted = await scale_down_service.sample_graph(
             tenant_id="test-tenant",
             algorithm="random_walk",  # Using random_walk instead of forest_fire (upstream bug)
             target_size=25,  # Absolute count
@@ -844,7 +844,7 @@ class TestEdgeCases:
             return_value=(single_node_graph, node_props)
         )
 
-        node_ids, metrics = await scale_down_service.sample_graph(
+        node_ids, metrics, nodes_deleted = await scale_down_service.sample_graph(
             tenant_id="test-tenant",
             algorithm="random_walk",  # Using random_walk instead of forest_fire (upstream bug)
             target_size=0.5,
@@ -877,7 +877,7 @@ class TestEdgeCases:
             return_value=(disconnected_graph, node_props)
         )
 
-        node_ids, metrics = await scale_down_service.sample_graph(
+        node_ids, metrics, nodes_deleted = await scale_down_service.sample_graph(
             tenant_id="test-tenant",
             algorithm="mhrw",  # Using MHRW instead of forest_fire (upstream bug)
             target_size=0.3,
