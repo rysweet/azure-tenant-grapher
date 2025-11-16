@@ -619,6 +619,8 @@ class ScaleDownService(BaseScaleService):
         output_mode: str,
         output_path: Optional[str] = None,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
+        target_layer_id: Optional[str] = None,
+        new_layer: Optional[str] = None,
     ) -> Tuple[Set[str], QualityMetrics, int]:
         """
         Sample a tenant graph using specified algorithm.
