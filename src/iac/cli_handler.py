@@ -430,6 +430,13 @@ async def generate_iac_command_handler(
 
             try:
                 # 1. Scan target tenant
+                import os
+
+                from azure.identity import (
+                    ClientSecretCredential,
+                    DefaultAzureCredential,
+                )
+
                 from ..services.azure_discovery_service import AzureDiscoveryService
                 from .resource_comparator import ResourceComparator
                 from .target_scanner import TargetScannerService
@@ -439,9 +446,37 @@ async def generate_iac_command_handler(
                     f"Scanning target tenant for existing resources: {scan_target_tenant_id}"
                 )
 
-                # Create config for AzureDiscoveryService
+                # Create credential scoped to TARGET tenant
+                target_credential = None
+
+                # Try to get tenant-specific credentials from environment
+                # Format: AZURE_TENANT_2_CLIENT_ID, AZURE_TENANT_2_CLIENT_SECRET
+                target_client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+
+                if target_client_id and target_client_secret:
+                    logger.info(f"Using tenant-specific credentials for target tenant {scan_target_tenant_id}")
+                    target_credential = ClientSecretCredential(
+                        tenant_id=scan_target_tenant_id,
+                        client_id=target_client_id,
+                        client_secret=target_client_secret,
+                    )
+                else:
+                    logger.warning(
+                        "No tenant-specific credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). "
+                        "Falling back to DefaultAzureCredential - this may fail if not authenticated to target tenant."
+                    )
+                    target_credential = DefaultAzureCredential()
+
+                # Create config for AzureDiscoveryService with target tenant ID
                 discovery_config = create_neo4j_config_from_env()
-                discovery = AzureDiscoveryService(config=discovery_config)
+                discovery_config.tenant_id = scan_target_tenant_id
+
+                # Create discovery service with target tenant credential
+                discovery = AzureDiscoveryService(
+                    config=discovery_config,
+                    credential=target_credential
+                )
                 scanner = TargetScannerService(discovery)
 
                 target_scan = await scanner.scan_target_tenant(
