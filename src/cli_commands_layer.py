@@ -33,6 +33,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from src.config_manager import create_neo4j_config_from_env
 from src.models.layer_metadata import LayerDiff, LayerMetadata, LayerType, LayerValidationReport
 from src.services.layer_management_service import (
     LayerAlreadyExistsError,
@@ -68,7 +69,9 @@ def format_number(num: int) -> str:
 
 def get_layer_service() -> LayerManagementService:
     """Create layer management service instance."""
-    session_manager = Neo4jSessionManager()
+    config = create_neo4j_config_from_env()
+    session_manager = Neo4jSessionManager(config.neo4j)
+    session_manager.connect()
     return LayerManagementService(session_manager)
 
 
