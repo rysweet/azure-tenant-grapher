@@ -497,7 +497,7 @@ async def generate_iac_command_handler(
                     from src.utils.session_manager import Neo4jSessionManager
 
                     neo4j = Neo4jSessionManager(config=discovery_config.neo4j)
-                    await neo4j.connect()
+                    neo4j.connect()
                     comparator = ResourceComparator(neo4j)
 
                     logger.info("Comparing abstracted graph with target scan")
