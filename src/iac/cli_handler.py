@@ -1174,7 +1174,29 @@ async def generate_iac_command_handler(
 
             try:
                 logger.info(f"Checking Azure resource provider registration in subscription {provider_check_subscription}...")
-                provider_manager = ProviderManager(subscription_id=provider_check_subscription)
+
+                # Bug #19 fix: Use target tenant credentials for cross-tenant provider registration
+                provider_credential = None
+                if target_tenant_id and provider_check_subscription == target_subscription:
+                    # Cross-tenant mode - use target tenant credentials
+                    target_client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                    target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+
+                    if target_client_id and target_client_secret:
+                        from azure.identity import ClientSecretCredential
+                        provider_credential = ClientSecretCredential(
+                            tenant_id=target_tenant_id,
+                            client_id=target_client_id,
+                            client_secret=target_client_secret,
+                        )
+                        logger.info(f"Using target tenant credentials for provider registration in {target_tenant_id}")
+                    else:
+                        logger.warning("No target tenant credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). Provider registration may fail.")
+
+                provider_manager = ProviderManager(
+                    subscription_id=provider_check_subscription,
+                    credential=provider_credential,
+                )
                 provider_report = await provider_manager.validate_before_deploy(
                     terraform_path=out_dir,
                     auto_register=auto_register_providers,
