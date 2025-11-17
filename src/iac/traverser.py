@@ -61,6 +61,12 @@ class GraphTraverser:
 
                 # Convert resource node to dict
                 resource_dict = dict(resource_node)
+
+                # Bug #15 fix: Add original_id from query result if available
+                # This enables smart import comparison without querying Neo4j for each resource
+                if "original_id" in record and record["original_id"]:
+                    resource_dict["original_id"] = record["original_id"]
+
                 resources.append(resource_dict)
 
                 # Process relationships
@@ -105,6 +111,8 @@ class GraphTraverser:
                 # Query ALL Resource nodes (both Original and Abstracted for IaC generation)
                 # Priority: Abstracted nodes are preferred when both exist
                 # This ensures we get all resources while using abstracted IDs when available
+                # Bug #15 fix: Include original_id from SCAN_SOURCE_NODE relationship
+                # for smart import comparison
                 query = """
                 MATCH (r:Resource)
                 WHERE NOT EXISTS {
@@ -113,6 +121,7 @@ class GraphTraverser:
                     AND abstracted.original_id = r.id
                     AND r:Original
                 }
+                OPTIONAL MATCH (r)-[:SCAN_SOURCE_NODE]->(orig:Resource:Original)
                 OPTIONAL MATCH (r)-[rel]->(t:Resource)
                 WHERE NOT EXISTS {
                     MATCH (t_abstracted:Resource)
@@ -120,11 +129,11 @@ class GraphTraverser:
                     AND t_abstracted.original_id = t.id
                     AND t:Original
                 }
-                RETURN r, collect({
+                RETURN r, orig.id AS original_id, collect({
                     type: type(rel),
                     target: t.id,
                     original_type: rel.original_type,
-                    narrative_context: rel.narrative_context
+                    narrative_context: rel.original_type
                 }) AS rels
                 """
 
