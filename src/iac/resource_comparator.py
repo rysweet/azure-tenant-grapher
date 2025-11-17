@@ -62,14 +62,23 @@ class ResourceComparator:
         "unique_identifier",
     }
 
-    def __init__(self, session_manager: Neo4jSessionManager):
+    def __init__(
+        self,
+        session_manager: Neo4jSessionManager,
+        source_subscription_id: Optional[str] = None,
+        target_subscription_id: Optional[str] = None,
+    ):
         """
         Initialize with Neo4j session manager for graph queries.
 
         Args:
             session_manager: Neo4jSessionManager instance for database operations
+            source_subscription_id: Source subscription ID for cross-tenant comparison
+            target_subscription_id: Target subscription ID for cross-tenant comparison
         """
         self.session_manager = session_manager
+        self.source_subscription_id = source_subscription_id
+        self.target_subscription_id = target_subscription_id
 
     def compare_resources(
         self,
@@ -194,8 +203,12 @@ class ResourceComparator:
                 classification=ResourceState.NEW,
             )
 
-        # Step 2: Find in target scan (case-insensitive)
-        target_resource = target_resource_map.get(original_id.lower())
+        # Step 2: Normalize ID for cross-tenant comparison (Bug #13 fix)
+        # In cross-tenant mode, replace source subscription with target subscription
+        normalized_id = self._normalize_resource_id_for_comparison(original_id)
+
+        # Step 3: Find in target scan (case-insensitive)
+        target_resource = target_resource_map.get(normalized_id.lower())
 
         if not target_resource:
             # Resource not found in target - it's NEW
@@ -298,6 +311,46 @@ class ResourceComparator:
                 exc_info=True,
             )
             return None
+
+    def _normalize_resource_id_for_comparison(
+        self, resource_id: str
+    ) -> str:
+        """
+        Normalize resource ID for cross-tenant comparison.
+
+        In cross-tenant mode, replaces source subscription ID with target subscription ID
+        so that resources can be matched even when deployed to different subscriptions.
+
+        Args:
+            resource_id: Original Azure resource ID (may contain source subscription)
+
+        Returns:
+            Normalized ID with target subscription (if cross-tenant) or original ID
+
+        Example:
+            Input:  /subscriptions/SOURCE_SUB/resourceGroups/test-rg/providers/...
+            Output: /subscriptions/TARGET_SUB/resourceGroups/test-rg/providers/...
+        """
+        # Only normalize if both source and target subscriptions are configured
+        if not self.source_subscription_id or not self.target_subscription_id:
+            return resource_id
+
+        # Only normalize if source subscription is in the ID
+        if f"/subscriptions/{self.source_subscription_id}/" not in resource_id:
+            return resource_id
+
+        # Replace source subscription with target subscription
+        normalized_id = resource_id.replace(
+            f"/subscriptions/{self.source_subscription_id}/",
+            f"/subscriptions/{self.target_subscription_id}/"
+        )
+
+        logger.debug(
+            f"Normalized resource ID for cross-tenant comparison: "
+            f"{resource_id[:80]}... -> {normalized_id[:80]}..."
+        )
+
+        return normalized_id
 
     def _compare_properties(
         self, abstracted_resource: Dict[str, Any], target_resource: TargetResource

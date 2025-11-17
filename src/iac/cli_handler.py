@@ -498,7 +498,13 @@ async def generate_iac_command_handler(
 
                     neo4j = Neo4jSessionManager(config=discovery_config.neo4j)
                     neo4j.connect()
-                    comparator = ResourceComparator(neo4j)
+
+                    # Bug #13 fix: Pass subscription IDs for cross-tenant ID normalization
+                    comparator = ResourceComparator(
+                        neo4j,
+                        source_subscription_id=source_subscription_id,
+                        target_subscription_id=scan_target_subscription_id,
+                    )
 
                     logger.info("Comparing abstracted graph with target scan")
                     click.echo("Analyzing differences between source and target...")
