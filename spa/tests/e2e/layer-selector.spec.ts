@@ -17,7 +17,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Layer Selector - UI Integration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:5173');
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(2000); // Give it time to fully render
   });
 
   test.describe('Header Integration (Compact Mode)', () => {
