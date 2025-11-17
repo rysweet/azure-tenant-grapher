@@ -1933,6 +1933,27 @@ class TerraformEmitter(IaCEmitter):
                 missing_references=missing_references,
                 translator=translator,
             )
+
+            # Bug #12 fix: Validate parent storage account exists in terraform_config
+            # Private endpoints reference storage accounts that may have been filtered
+            if resource_config and "private_service_connection" in resource_config:
+                for conn in resource_config["private_service_connection"]:
+                    target_id = conn.get("private_connection_resource_id", "")
+                    if "/storageAccounts/" in target_id:
+                        # Extract storage account name
+                        storage_name = self._extract_resource_name_from_id(target_id, "storageAccounts")
+                        storage_name_safe = self._sanitize_terraform_name(storage_name)
+
+                        # Check if storage account was emitted
+                        if (
+                            "azurerm_storage_account" not in terraform_config.get("resource", {})
+                            or storage_name_safe not in terraform_config["resource"].get("azurerm_storage_account", {})
+                        ):
+                            logger.warning(
+                                f"Private Endpoint '{resource_name}' references storage account '{storage_name}' "
+                                f"that doesn't exist or was filtered out. Skipping endpoint."
+                            )
+                            return None
         elif azure_type == "Microsoft.Network/privateDnsZones":
             # Private DNS Zone specific properties
             resource_config = emit_private_dns_zone(resource)
