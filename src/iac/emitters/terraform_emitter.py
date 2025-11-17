@@ -2593,12 +2593,25 @@ class TerraformEmitter(IaCEmitter):
                     flags=re.IGNORECASE
                 )
 
+            principal_id = properties.get("principalId", resource.get("principalId", ""))
+
+            # Bug #18 fix: Skip role assignments with untranslated principals in cross-tenant mode
+            # Without identity mapping, principal_ids from source tenant don't exist in target tenant
+            # Azure hangs indefinitely trying to create role assignments for non-existent principals
+            if self.target_tenant_id and not self.identity_mapping:
+                # Cross-tenant mode without identity mapping - skip ALL role assignments
+                logger.warning(
+                    f"Skipping role assignment '{resource_name}' in cross-tenant mode: "
+                    f"No identity mapping provided. Principal ID '{principal_id}' from source "
+                    f"tenant cannot be validated in target tenant. Use --identity-mapping-file "
+                    f"to translate principals across tenants."
+                )
+                return None
+
             resource_config = {
                 "scope": scope,
                 "role_definition_id": role_def_id,
-                "principal_id": properties.get(
-                    "principalId", resource.get("principalId", "")
-                ),
+                "principal_id": principal_id,
             }
 
             # Note: Role assignments don't have a location property (global/scoped)
