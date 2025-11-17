@@ -320,18 +320,20 @@ class KeyVaultTranslator(BaseTranslator):
                             f"Translated access policy object_id: {original_object_id} -> {target_object_id}"
                         )
                     else:
+                        # Bug #18-related: Skip policy with untranslated object_id to prevent deployment failures
                         warnings.append(
-                            f"Access policy {i}: No identity mapping found for object_id '{original_object_id}'. "
-                            f"This access policy will likely fail in the target tenant. "
-                            f"Please provide an identity mapping file or manually update this after deployment."
+                            f"Access policy {i}: SKIPPED - No identity mapping found for object_id '{original_object_id}'. "
+                            f"Use --identity-mapping-file to translate principals across tenants."
                         )
+                        continue  # Skip this policy
                 else:
-                    # No identity mapping available - this is expected in Phase 2
+                    # No identity mapping available - SKIP policy in cross-tenant mode
                     warnings.append(
-                        f"Access policy {i}: Identity mapping not available. "
-                        f"Object ID '{original_object_id}' cannot be translated. "
-                        f"This access policy will need manual update after deployment."
+                        f"Access policy {i}: SKIPPED - Identity mapping not available. "
+                        f"Object ID '{original_object_id}' cannot be translated to target tenant. "
+                        f"Use --identity-mapping-file to deploy Key Vault access policies cross-tenant."
                     )
+                    continue  # Skip this policy
 
             # CONDITIONALLY translate application_id
             if "application_id" in translated_policy:
@@ -349,29 +351,34 @@ class KeyVaultTranslator(BaseTranslator):
                             f"Translated access policy application_id: {original_app_id} -> {target_app_id}"
                         )
                     else:
+                        # Bug #18-related: Skip policy with untranslated application_id
                         warnings.append(
-                            f"Access policy {i}: No application mapping found for application_id '{original_app_id}'. "
-                            f"This access policy may fail if the application doesn't exist in target tenant."
+                            f"Access policy {i}: SKIPPED - No application mapping found for application_id '{original_app_id}'. "
+                            f"Use --identity-mapping-file to translate applications across tenants."
                         )
+                        continue  # Skip this policy
                 else:
+                    # Bug #18-related: Skip policy without identity mapping
                     warnings.append(
-                        f"Access policy {i}: Identity mapping not available. "
-                        f"Application ID '{original_app_id}' cannot be translated."
+                        f"Access policy {i}: SKIPPED - Identity mapping not available. "
+                        f"Application ID '{original_app_id}' cannot be translated to target tenant."
                     )
+                    continue  # Skip this policy
 
             # Permissions are preserved as-is (they're not tenant-specific)
             # Certificate/Key/Secret permissions arrays remain unchanged
 
             translated_policies.append(translated_policy)
 
-        # Summary warning if any object IDs couldn't be translated
-        untranslated_count = sum(
-            1 for w in warnings if "cannot be translated" in w.lower()
+        # Summary warning if any access policies were skipped due to untranslated identities
+        skipped_count = sum(
+            1 for w in warnings if "SKIPPED" in w
         )
-        if untranslated_count > 0:
+        if skipped_count > 0:
             warnings.append(
-                f"SECURITY WARNING: {untranslated_count} access policy object IDs could not be translated. "
-                f"These access policies will need manual configuration in the target tenant after deployment."
+                f"SECURITY WARNING: {skipped_count} access policies SKIPPED due to untranslated identities. "
+                f"Key Vaults will be deployed WITHOUT these access policies. "
+                f"Use --identity-mapping-file to include access policies in cross-tenant deployments."
             )
 
         return translated_policies, warnings
