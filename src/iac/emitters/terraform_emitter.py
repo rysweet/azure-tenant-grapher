@@ -1471,58 +1471,19 @@ class TerraformEmitter(IaCEmitter):
                             f"skipping {len(missing_nics)} missing NIC(s)"
                         )
                 else:
-                    # All NICs are missing - create with default NIC
+                    # All NICs are missing - skip this VM (Bug #10 fix)
                     logger.warning(
                         f"VM '{resource_name}' - all {len(nics)} NIC reference(s) are missing. "
-                        f"Creating VM with default network configuration."
+                        f"Skipping VM (cannot create without valid network configuration)."
                     )
-                    # Create default NIC for the VM
-                    default_nic_name = f"{safe_name}_default_nic"
-                    default_subnet_ref = "${azurerm_subnet.default_subnet.id}"
-
-                    # Add default NIC to config
-                    if "azurerm_network_interface" not in terraform_config["resource"]:
-                        terraform_config["resource"]["azurerm_network_interface"] = {}
-
-                    terraform_config["resource"]["azurerm_network_interface"][default_nic_name] = {
-                        "name": f"{resource_name}-default-nic",
-                        "location": resource.get("location") or resource.get("region", "eastus"),
-                        "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
-                        "ip_configuration": {
-                            "name": "internal",
-                            "subnet_id": default_subnet_ref,
-                            "private_ip_address_allocation": "Dynamic",
-                        },
-                    }
-
-                    nic_refs = [f"${{azurerm_network_interface.{default_nic_name}.id}}"]
-                    resource_config["network_interface_ids"] = nic_refs
+                    return None
             else:
-                # No network interfaces in properties - create with default NIC
-                logger.info(
-                    f"VM '{resource_name}' has no networkProfile. Creating with default network configuration."
+                # No network interfaces in properties - skip this VM (Bug #10 fix)
+                logger.warning(
+                    f"VM '{resource_name}' has no networkProfile. "
+                    f"Skipping VM (cannot create without valid network configuration)."
                 )
-                # Create default NIC for the VM
-                default_nic_name = f"{safe_name}_default_nic"
-                default_subnet_ref = "${azurerm_subnet.default_subnet.id}"
-
-                # Add default NIC to config
-                if "azurerm_network_interface" not in terraform_config["resource"]:
-                    terraform_config["resource"]["azurerm_network_interface"] = {}
-
-                terraform_config["resource"]["azurerm_network_interface"][default_nic_name] = {
-                    "name": f"{resource_name}-default-nic",
-                    "location": resource.get("location") or resource.get("region", "eastus"),
-                    "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
-                    "ip_configuration": {
-                        "name": "internal",
-                        "subnet_id": default_subnet_ref,
-                        "private_ip_address_allocation": "Dynamic",
-                    },
-                }
-
-                nic_refs = [f"${{azurerm_network_interface.{default_nic_name}.id}}"]
-                resource_config["network_interface_ids"] = nic_refs
+                return None
 
             # Generate SSH key pair for VM authentication using Terraform's tls_private_key resource
             ssh_key_resource_name = f"{safe_name}_ssh_key"
