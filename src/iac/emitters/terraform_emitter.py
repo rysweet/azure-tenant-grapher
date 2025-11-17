@@ -626,14 +626,25 @@ class TerraformEmitter(IaCEmitter):
 
             # Smart import filtering: Skip EXACT_MATCH resources (import-only)
             # resource_ids_to_emit is None when comparison_result was not provided (default)
+            # EXCEPTION: Always emit resource groups (foundational, synthetic resources)
             if resource_ids_to_emit is not None:
+                resource_type = resource.get("type")
                 resource_id = resource.get("id")
-                if resource_id and resource_id not in resource_ids_to_emit:
+
+                # Always emit resource groups - they're synthetic (extracted from other resources)
+                # and required for all other resources to reference
+                is_resource_group = resource_type == "Microsoft.Resources/resourceGroups"
+
+                if not is_resource_group and resource_id and resource_id not in resource_ids_to_emit:
                     # Resource is EXACT_MATCH - skip emission (only imported)
                     logger.debug(
                         f"Skipping emission for EXACT_MATCH resource: {resource_id}"
                     )
                     continue
+                elif is_resource_group:
+                    logger.debug(
+                        f"Always emitting resource group (foundational): {resource_id}"
+                    )
 
             terraform_resource = self._convert_resource(resource, terraform_config)
             if terraform_resource:
