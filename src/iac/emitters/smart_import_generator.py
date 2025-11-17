@@ -139,14 +139,36 @@ class SmartImportGenerator:
                 resources_needing_emission,
             )
 
+        # Bug #17 fix: Deduplicate import blocks by terraform_address
+        # Multiple classifications of the same resource can create duplicate import blocks
+        seen_addresses = set()
+        deduplicated_import_blocks = []
+        duplicates_removed = 0
+
+        for import_block in import_blocks:
+            if import_block.terraform_address not in seen_addresses:
+                seen_addresses.add(import_block.terraform_address)
+                deduplicated_import_blocks.append(import_block)
+            else:
+                duplicates_removed += 1
+                logger.debug(
+                    f"Removed duplicate import block for {import_block.terraform_address}"
+                )
+
+        if duplicates_removed > 0:
+            logger.info(
+                f"Removed {duplicates_removed} duplicate import blocks "
+                f"({len(import_blocks)} -> {len(deduplicated_import_blocks)})"
+            )
+
         # Log summary
         logger.info(
-            f"Generated {len(import_blocks)} import blocks and "
+            f"Generated {len(deduplicated_import_blocks)} import blocks and "
             f"{len(resources_needing_emission)} resources needing emission"
         )
 
         return ImportBlockSet(
-            import_blocks=import_blocks,
+            import_blocks=deduplicated_import_blocks,
             resources_needing_emission=resources_needing_emission,
         )
 
