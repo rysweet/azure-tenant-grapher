@@ -118,7 +118,36 @@ echo "✅ Security Reader role assigned"
 echo "⚠️  CRITICAL: Without Security Reader, role assignments cannot be scanned!"
 ```
 
-### Step 5: Verify Role Assignments
+### Step 5: Assign Owner Role (CRITICAL for IaC Deployment with Role Assignments)
+
+**IMPORTANT**: Deploying IaC templates that include `azurerm_role_assignment` resources requires Owner role (or User Access Administrator).
+
+```bash
+# Get Owner role definition
+OWNER_ROLE_ID=$(az role definition list --name "Owner" --query "[0].id" -o tsv)
+UUID_OWNER=$(uuidgen)
+
+# Get fresh token
+TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
+
+# Assign Owner role via REST API
+curl -X PUT \
+  "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleAssignments/${UUID_OWNER}?api-version=2022-04-01" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"properties\": {
+      \"roleDefinitionId\": \"${OWNER_ROLE_ID}\",
+      \"principalId\": \"${SP_OBJECT_ID}\",
+      \"principalType\": \"ServicePrincipal\"
+    }
+  }"
+
+echo "✅ Owner role assigned"
+echo "⚠️  CRITICAL: Without Owner, terraform apply will fail on role assignment resources!"
+```
+
+### Step 6: Verify Role Assignments
 
 ```bash
 az role assignment list --assignee $APP_ID --output table
@@ -126,10 +155,17 @@ az role assignment list --assignee $APP_ID --output table
 
 Expected output:
 ```
-Principal               Role         Scope
-----------------------  -----------  ---------------------------------------------
-<APP_ID>                Contributor  /subscriptions/<SUBSCRIPTION_ID>
+Principal               Role            Scope
+----------------------  --------------  ---------------------------------------------
+<APP_ID>                Contributor     /subscriptions/<SUBSCRIPTION_ID>
+<APP_ID>                Security Reader /subscriptions/<SUBSCRIPTION_ID>
+<APP_ID>                Owner           /subscriptions/<SUBSCRIPTION_ID>
 ```
+
+**Note**: All three roles are required:
+- **Contributor**: Manage Azure resources (VMs, networks, storage, etc.)
+- **Security Reader**: Scan role assignments during tenant discovery
+- **Owner**: Deploy resources with role assignments via Terraform
 
 ## Integration with Azure Tenant Grapher
 
@@ -247,9 +283,13 @@ echo "Test with: uv run atg scan --tenant-id $TENANT_ID --no-dashboard --resourc
 ### Security Considerations
 
 1. **Elevation is temporary**: Elevated access automatically expires and is session-specific
-2. **Least privilege**: Service principal gets only Contributor (not Owner) role
+2. **Owner role implications**: Service principal has Owner role to deploy role assignments. This is necessary for complete IaC deployments but should be:
+   - Limited to specific subscriptions (not root management group)
+   - Monitored via Azure Activity Log
+   - Rotated when no longer needed for deployments
 3. **Secret management**: Client secrets should be rotated annually and stored securely
 4. **Audit trail**: All operations are logged in Azure Activity Log
+5. **Least privilege alternatives**: If your IaC doesn't include role assignments, you can use Contributor + Security Reader without Owner
 
 ## Troubleshooting
 

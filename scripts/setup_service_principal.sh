@@ -7,6 +7,7 @@ set -euo pipefail
 # Creates SP with:
 # - Contributor (for resource management)
 # - Security Reader (for role assignment scanning)
+# - Owner (for deploying resources with role assignments)
 #
 # Usage:
 #   ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID> [SUBSCRIPTION_ID]
@@ -131,7 +132,29 @@ else
 fi
 echo ""
 
-# Step 5: Verify role assignments
+# Step 5: Assign Owner role (CRITICAL for IaC deployment with role assignments)
+log_info "Step 5: Assigning Owner role (for deploying resources with role assignments)..."
+OWNER_DEF_ID=$(az role definition list --name "Owner" --query "[0].id" -o tsv)
+UUID_OWNER=$(uuidgen)
+TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
+
+OWNER_RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+  "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/providers/Microsoft.Authorization/roleAssignments/${UUID_OWNER}?api-version=2022-04-01" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"properties\":{\"roleDefinitionId\":\"${OWNER_DEF_ID}\",\"principalId\":\"${SP_OBJECT_ID}\",\"principalType\":\"ServicePrincipal\"}}")
+
+HTTP_CODE=$(echo "$OWNER_RESPONSE" | tail -n 1)
+if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+    log_success "Owner role assigned"
+else
+    log_error "Failed to assign Owner role (HTTP $HTTP_CODE)"
+    echo "$OWNER_RESPONSE" | head -n -1
+    log_warning "Deployment may fail when creating role assignments without Owner role"
+fi
+echo ""
+
+# Step 6: Verify role assignments
 log_info "Step 5: Verifying role assignments..."
 sleep 10  # Allow Azure to propagate assignments
 
@@ -139,14 +162,15 @@ log_info "Role assignments for service principal:"
 az role assignment list --assignee "$APP_ID" --output table
 
 ROLE_COUNT=$(az role assignment list --assignee "$APP_ID" --query "length(@)" -o tsv)
-if [ "$ROLE_COUNT" -ge 2 ]; then
-    log_success "✅ Service principal has $ROLE_COUNT role(s) assigned"
+if [ "$ROLE_COUNT" -ge 3 ]; then
+    log_success "✅ Service principal has $ROLE_COUNT role(s) assigned (Contributor, Security Reader, Owner)"
 else
-    log_warning "⚠️  Expected 2+ roles, found $ROLE_COUNT"
+    log_warning "⚠️  Expected 3 roles (Contributor, Security Reader, Owner), found $ROLE_COUNT"
+    log_warning "⚠️  Deployment of role assignments may fail without Owner role"
 fi
 echo ""
 
-# Step 6: Output credentials
+# Step 7: Output credentials
 log_success "=========================================="
 log_success "SERVICE PRINCIPAL SETUP COMPLETE"
 log_success "=========================================="
@@ -165,6 +189,10 @@ echo "AZURE_TENANT_2_CLIENT_ID=$APP_ID"
 echo "AZURE_TENANT_2_CLIENT_SECRET=$CLIENT_SECRET"
 echo "AZURE_TENANT_2_NAME=$TENANT_NAME"
 echo ""
-log_info "Test with: uv run atg scan --tenant-id $TENANT_ID --no-dashboard --resource-limit 5"
+log_info "Test scan: uv run atg scan --tenant-id $TENANT_ID --no-dashboard --resource-limit 5"
+log_info "Test deployment: uv run atg generate-iac --tenant-id $TENANT_ID --output /tmp/test-iac"
 echo ""
-log_success "🎉 Service principal ready with FULL permissions for role assignment scanning!"
+log_success "🎉 Service principal ready with FULL permissions!"
+log_success "   ✅ Contributor - Resource management"
+log_success "   ✅ Security Reader - Role assignment scanning"
+log_success "   ✅ Owner - Deploy resources with role assignments"
