@@ -146,13 +146,14 @@ class SmartImportGenerator:
         duplicates_removed = 0
 
         for import_block in import_blocks:
-            if import_block.terraform_address not in seen_addresses:
-                seen_addresses.add(import_block.terraform_address)
+            # Bug #21 fix: ImportBlock.to (not .terraform_address) contains the terraform resource address
+            if import_block.to not in seen_addresses:
+                seen_addresses.add(import_block.to)
                 deduplicated_import_blocks.append(import_block)
             else:
                 duplicates_removed += 1
                 logger.debug(
-                    f"Removed duplicate import block for {import_block.terraform_address}"
+                    f"Removed duplicate import block for {import_block.to}"
                 )
 
         if duplicates_removed > 0:
