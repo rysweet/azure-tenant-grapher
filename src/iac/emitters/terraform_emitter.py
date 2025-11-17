@@ -2006,10 +2006,10 @@ class TerraformEmitter(IaCEmitter):
             if vm_name != "unknown":
                 vm_name_safe = self._sanitize_terraform_name(vm_name)
 
-                # Validate that the VM resource exists in the available resources index
-                # We use _available_resources (populated in first pass) instead of terraform_config
-                # because the parent VM might not have been added to terraform_config yet
-                # (resources are processed in dependency order during second pass)
+                # Validate that the VM resource was actually emitted to terraform_config
+                # (Bug #11 fix: Check actual emitted VMs, not just first-pass index)
+                # Extensions are processed after VMs in dependency order, so parent VM
+                # will already be in terraform_config if it wasn't filtered out
                 vm_exists = False
                 vm_terraform_type = None
                 for vm_type in [
@@ -2017,8 +2017,8 @@ class TerraformEmitter(IaCEmitter):
                     "azurerm_windows_virtual_machine",
                 ]:
                     if (
-                        vm_type in self._available_resources
-                        and vm_name_safe in self._available_resources[vm_type]
+                        vm_type in terraform_config.get("resource", {})
+                        and vm_name_safe in terraform_config["resource"][vm_type]
                     ):
                         vm_exists = True
                         # Use the actual VM type found
@@ -2028,7 +2028,7 @@ class TerraformEmitter(IaCEmitter):
                 if not vm_exists:
                     logger.warning(
                         f"VM Extension '{resource_name}' references VM '{vm_name}' "
-                        f"that doesn't exist in the resource index. Skipping extension."
+                        f"that doesn't exist or was filtered out. Skipping extension."
                     )
                     return None
 
