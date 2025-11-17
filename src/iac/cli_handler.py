@@ -429,6 +429,21 @@ async def generate_iac_command_handler(
                 return 1
 
             try:
+                # Bug #14 fix: Extract source_subscription_id BEFORE using it
+                # Extract from graph resources
+                source_subscription_id = None
+                if graph.resources:
+                    for resource in graph.resources:
+                        resource_id = resource.get("id", "")
+                        if "/subscriptions/" in resource_id:
+                            source_subscription_id = resource_id.split("/subscriptions/")[
+                                1
+                            ].split("/")[0]
+                            logger.debug(
+                                f"Extracted source subscription from resource ID: {source_subscription_id}"
+                            )
+                            break
+
                 # 1. Scan target tenant
                 import os
 
