@@ -1392,6 +1392,21 @@ class TerraformEmitter(IaCEmitter):
                             f"Tracked NSG association for inline subnet: {subnet_name} -> {nsg_name}"
                         )
 
+                # Bug #22 fix: Check if parent VNet was actually emitted to terraform_config
+                # If VNet is EXACT_MATCH (import-only), it won't be in terraform_config
+                vnet_exists = False
+                if "azurerm_virtual_network" in terraform_config.get("resource", {}):
+                    if vnet_safe_name in terraform_config["resource"]["azurerm_virtual_network"]:
+                        vnet_exists = True
+
+                if not vnet_exists:
+                    logger.warning(
+                        f"Subnet '{subnet_name}' references VNet '{resource_name}' "
+                        f"that doesn't exist or was filtered out (likely EXACT_MATCH for import). "
+                        f"Skipping subnet to avoid 'Reference to undeclared resource' error."
+                    )
+                    continue  # Skip this subnet
+
                 # Add to terraform config with scoped key
                 if "azurerm_subnet" not in terraform_config["resource"]:
                     terraform_config["resource"]["azurerm_subnet"] = {}
@@ -1741,6 +1756,23 @@ class TerraformEmitter(IaCEmitter):
                 resource_config["service_endpoints"] = [
                     ep["service"] for ep in service_endpoints if "service" in ep
                 ]
+
+            # Bug #22 fix (standalone subnets): Check if parent VNet was actually emitted
+            # If VNet is EXACT_MATCH (import-only), it won't be in terraform_config
+            if vnet_name != "unknown":
+                vnet_name_safe = self._sanitize_terraform_name(vnet_name)
+                vnet_exists = False
+                if "azurerm_virtual_network" in terraform_config.get("resource", {}):
+                    if vnet_name_safe in terraform_config["resource"]["azurerm_virtual_network"]:
+                        vnet_exists = True
+
+                if not vnet_exists:
+                    logger.warning(
+                        f"Standalone subnet '{resource_name}' references VNet '{vnet_name}' "
+                        f"that doesn't exist or was filtered out (likely EXACT_MATCH for import). "
+                        f"Skipping subnet to avoid 'Reference to undeclared resource' error."
+                    )
+                    return None  # Skip this subnet
         elif azure_type == "Microsoft.Web/sites":
             # Modern App Service resources require site_config block
             properties = self._parse_properties(resource)
