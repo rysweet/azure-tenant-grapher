@@ -1256,9 +1256,14 @@ class TerraformEmitter(IaCEmitter):
 
         # Build basic resource configuration
         # Ensure location is never null - default to eastus if missing
+        # Bug #20 fix: Reject 'global' location which is invalid for resource groups
         location = resource.get("location")
-        if not location or location.lower() == "none" or location.lower() == "null":
+        if not location or location.lower() in ["none", "null", "global"]:
             location = "eastus"
+            if resource.get("location", "").lower() == "global":
+                logger.warning(
+                    f"Resource '{resource_name}' has invalid location 'global', using 'eastus' fallback"
+                )
 
         # Resource groups don't have a resource_group_name field
         if azure_type == "Microsoft.Resources/resourceGroups":
