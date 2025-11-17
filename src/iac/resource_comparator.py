@@ -188,19 +188,27 @@ class ResourceComparator:
         """
         abstracted_id = abstracted_resource.get("id", "unknown")
 
-        # Step 1: Get original Azure ID via SCAN_SOURCE_NODE
+        # Step 1: Get original Azure ID via SCAN_SOURCE_NODE or fallback to abstracted ID
         original_id = self._get_original_azure_id(abstracted_resource)
 
+        # Bug #16 fix: If no original_id (SCAN_SOURCE_NODE missing), use abstracted ID
+        # In cross-tenant mode, we'll normalize it anyway
         if not original_id:
-            # No original ID found - classify as NEW (safe default)
+            original_id = abstracted_resource.get("id")
+            if not original_id:
+                # No ID at all - classify as NEW (safe default)
+                logger.debug(
+                    f"No ID found for abstracted resource {abstracted_id}, "
+                    "classifying as NEW"
+                )
+                return ResourceClassification(
+                    abstracted_resource=abstracted_resource,
+                    target_resource=None,
+                    classification=ResourceState.NEW,
+                )
             logger.debug(
-                f"No original Azure ID found for abstracted resource {abstracted_id}, "
-                "classifying as NEW"
-            )
-            return ResourceClassification(
-                abstracted_resource=abstracted_resource,
-                target_resource=None,
-                classification=ResourceState.NEW,
+                f"Using abstracted ID as fallback for {abstracted_id} "
+                "(SCAN_SOURCE_NODE not found)"
             )
 
         # Step 2: Normalize ID for cross-tenant comparison (Bug #13 fix)
