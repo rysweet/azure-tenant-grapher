@@ -3228,7 +3228,7 @@ class TerraformEmitter(IaCEmitter):
             name: Original resource name
 
         Returns:
-            Sanitized name safe for Terraform
+            Sanitized name safe for Terraform (max 80 chars for Azure NICs)
         """
         # Replace invalid characters with underscores
         import re
@@ -3238,6 +3238,14 @@ class TerraformEmitter(IaCEmitter):
         # Ensure it starts with a letter or underscore
         if sanitized and sanitized[0].isdigit():
             sanitized = f"resource_{sanitized}"
+
+        # Bug #27 fix: Truncate to 80 chars max (Azure NIC name limit)
+        # Keep first 75 chars + hash of full name for uniqueness
+        if len(sanitized) > 80:
+            import hashlib
+            name_hash = hashlib.md5(sanitized.encode()).hexdigest()[:5]
+            sanitized = sanitized[:74] + "_" + name_hash
+            logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
         return sanitized or "unnamed_resource"
 
