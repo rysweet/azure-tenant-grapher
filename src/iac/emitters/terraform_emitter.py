@@ -660,6 +660,29 @@ class TerraformEmitter(IaCEmitter):
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
 
+                # Bug #28: Detect and resolve name collisions by appending resource group
+                if resource_name in terraform_config["resource"][resource_type]:
+                    # Collision detected! Append resource group to make unique
+                    rg_name = resource.get("resource_group") or resource.get("resourceGroup", "default_rg")
+                    rg_safe = self._sanitize_terraform_name(rg_name)
+                    original_name = resource_name
+                    resource_name = f"{rg_safe}_{resource_name}"
+
+                    # Truncate if too long (Azure 80-char limit)
+                    if len(resource_name) > 80:
+                        import hashlib
+                        name_hash = hashlib.md5(resource_name.encode()).hexdigest()[:5]
+                        resource_name = resource_name[:74] + "_" + name_hash
+
+                    logger.warning(
+                        f"Resource name collision detected for {resource_type}.{original_name}! "
+                        f"Resolving by appending resource group: {resource_type}.{resource_name} "
+                        f"(resource_group: {rg_name})"
+                    )
+
+                    # Update config name reference (for depends_on, etc.)
+                    # Note: Resource config "name" field stays as original Azure name
+
                 terraform_config["resource"][resource_type][resource_name] = (
                     resource_config
                 )
