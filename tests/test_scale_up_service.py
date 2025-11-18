@@ -123,15 +123,15 @@ async def test_scale_up_template_success(
     scale_up_service, mock_session, mock_base_resources
 ):
     """Test successful template-based scale-up."""
-    # Mock tenant validation
+    # Mock tenant validation and component methods
     with patch.object(
-        scale_up_service, "validate_tenant_exists", return_value=True
+        scale_up_service.setup, "validate_tenant_exists", return_value=True
     ), patch.object(
-        scale_up_service, "_get_base_resources", return_value=mock_base_resources
+        scale_up_service.setup, "get_base_resources", return_value=mock_base_resources
     ), patch.object(
-        scale_up_service, "_replicate_resources", return_value=10
+        scale_up_service.projection, "replicate_resources", return_value=10
     ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=5
+        scale_up_service.projection, "clone_relationships", return_value=5
     ):
 
         result = await scale_up_service.scale_up_template(
@@ -149,7 +149,7 @@ async def test_scale_up_template_success(
 @pytest.mark.asyncio
 async def test_scale_up_template_tenant_not_found(scale_up_service):
     """Test template scale-up fails when tenant doesn't exist."""
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=False):
 
         result = await scale_up_service.scale_up_template(
             tenant_id="nonexistent", scale_factor=2.0
@@ -162,7 +162,7 @@ async def test_scale_up_template_tenant_not_found(scale_up_service):
 @pytest.mark.asyncio
 async def test_scale_up_template_invalid_scale_factor(scale_up_service):
     """Test template scale-up fails with invalid scale factor."""
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=True):
 
         # Test zero scale factor
         result = await scale_up_service.scale_up_template(
@@ -183,8 +183,8 @@ async def test_scale_up_template_invalid_scale_factor(scale_up_service):
 async def test_scale_up_template_no_base_resources(scale_up_service):
     """Test template scale-up fails when no base resources exist."""
     with patch.object(
-        scale_up_service, "validate_tenant_exists", return_value=True
-    ), patch.object(scale_up_service, "_get_base_resources", return_value=[]):
+        scale_up_service.setup, "validate_tenant_exists", return_value=True
+    ), patch.object(scale_up_service.setup, "get_base_resources", return_value=[]):
 
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
@@ -200,13 +200,13 @@ async def test_scale_up_template_with_resource_types(
 ):
     """Test template scale-up with specific resource types."""
     with patch.object(
-        scale_up_service, "validate_tenant_exists", return_value=True
+        scale_up_service.setup, "validate_tenant_exists", return_value=True
     ), patch.object(
-        scale_up_service, "_get_base_resources", return_value=mock_base_resources
+        scale_up_service.setup, "get_base_resources", return_value=mock_base_resources
     ), patch.object(
-        scale_up_service, "_replicate_resources", return_value=5
+        scale_up_service.projection, "replicate_resources", return_value=5
     ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=2
+        scale_up_service.projection, "clone_relationships", return_value=2
     ):
 
         result = await scale_up_service.scale_up_template(
@@ -232,13 +232,13 @@ async def test_scale_up_template_with_progress_callback(
         progress_calls.append((message, current, total))
 
     with patch.object(
-        scale_up_service, "validate_tenant_exists", return_value=True
+        scale_up_service.setup, "validate_tenant_exists", return_value=True
     ), patch.object(
-        scale_up_service, "_get_base_resources", return_value=mock_base_resources
+        scale_up_service.setup, "get_base_resources", return_value=mock_base_resources
     ), patch.object(
-        scale_up_service, "_replicate_resources", return_value=10
+        scale_up_service.projection, "replicate_resources", return_value=10
     ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=5
+        scale_up_service.projection, "clone_relationships", return_value=5
     ):
 
         result = await scale_up_service.scale_up_template(
@@ -342,7 +342,7 @@ async def test_scale_up_scenario_dev_test_prod(scale_up_service):
 @pytest.mark.asyncio
 async def test_scale_up_scenario_unknown_scenario(scale_up_service):
     """Test scenario scale-up fails with unknown scenario."""
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=True):
 
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123", scenario="unknown-scenario", params={}
@@ -355,7 +355,7 @@ async def test_scale_up_scenario_unknown_scenario(scale_up_service):
 @pytest.mark.asyncio
 async def test_scale_up_scenario_tenant_not_found(scale_up_service):
     """Test scenario scale-up fails when tenant doesn't exist."""
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=False):
 
         result = await scale_up_service.scale_up_scenario(
             tenant_id="nonexistent", scenario="hub-spoke", params={}
@@ -405,7 +405,7 @@ async def test_scale_up_random_invalid_target_count(scale_up_service):
     """Test random scale-up fails with invalid target count."""
     config = {"resource_type_distribution": {"Microsoft.Compute/virtualMachines": 1.0}}
 
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=True):
 
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=0, config=config
@@ -418,7 +418,7 @@ async def test_scale_up_random_invalid_target_count(scale_up_service):
 @pytest.mark.asyncio
 async def test_scale_up_random_missing_distribution(scale_up_service):
     """Test random scale-up fails without resource type distribution."""
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=True):
 
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=100, config={}
@@ -433,7 +433,7 @@ async def test_scale_up_random_tenant_not_found(scale_up_service):
     """Test random scale-up fails when tenant doesn't exist."""
     config = {"resource_type_distribution": {"Microsoft.Compute/virtualMachines": 1.0}}
 
-    with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
+    with patch.object(scale_up_service.setup, "validate_tenant_exists", return_value=False):
 
         result = await scale_up_service.scale_up_random(
             tenant_id="nonexistent", target_count=100, config=config
@@ -533,7 +533,7 @@ async def test_replicate_resources(
     scale_up_service, mock_session, mock_base_resources
 ):
     """Test resource replication."""
-    with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
+    with patch.object(scale_up_service.projection, "_insert_resource_batch", return_value=None):
         created_count = await scale_up_service._replicate_resources(
             tenant_id="tenant-123",
             operation_id="scale-123",
@@ -666,7 +666,7 @@ async def test_generate_hub_spoke(scale_up_service, mock_session):
 @pytest.mark.asyncio
 async def test_generate_multi_region(scale_up_service, mock_session):
     """Test multi-region topology generation."""
-    with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
+    with patch.object(scale_up_service.projection, "_insert_resource_batch", return_value=None):
 
         resources_created, relationships_created = (
             await scale_up_service._generate_multi_region(
@@ -684,7 +684,7 @@ async def test_generate_multi_region(scale_up_service, mock_session):
 @pytest.mark.asyncio
 async def test_generate_dev_test_prod(scale_up_service, mock_session):
     """Test dev/test/prod topology generation."""
-    with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
+    with patch.object(scale_up_service.projection, "_insert_resource_batch", return_value=None):
 
         resources_created, relationships_created = (
             await scale_up_service._generate_dev_test_prod(
@@ -707,7 +707,7 @@ async def test_generate_random_resources(scale_up_service, mock_session):
         "Microsoft.Network/virtualNetworks": 0.4,
     }
 
-    with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
+    with patch.object(scale_up_service.projection, "_insert_resource_batch", return_value=None):
 
         created_count = await scale_up_service._generate_random_resources(
             tenant_id="tenant-123",
