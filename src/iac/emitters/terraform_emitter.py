@@ -579,14 +579,13 @@ class TerraformEmitter(IaCEmitter):
                 generator = SmartImportGenerator()
                 import_block_set = generator.generate_import_blocks(comparison_result)
 
-                # Write import blocks to imports.tf (HCL format)
-                if import_block_set.import_blocks:
-                    self._write_import_blocks(
-                        import_block_set.import_blocks, out_dir
-                    )
-                    logger.info(
-                        f"Generated {len(import_block_set.import_blocks)} smart import blocks"
-                    )
+                # Bug #24 fix: Store import blocks, write them AFTER resource emission
+                # (so we can filter out import blocks for resources that weren't emitted)
+                smart_import_blocks = import_block_set.import_blocks if import_block_set.import_blocks else []
+                logger.info(
+                    f"Generated {len(smart_import_blocks)} smart import blocks "
+                    f"(will be filtered and written after resource emission)"
+                )
 
                 # Build set of resource IDs that need emission (NEW + DRIFTED only)
                 # EXACT_MATCH resources are skipped (only imported, not emitted)
@@ -713,6 +712,13 @@ class TerraformEmitter(IaCEmitter):
             json.dump(terraform_config, f, indent=2)
         # Track file creation for generation report (Issue #413)
         self._files_created += 1
+
+        # Bug #24 fix: Write smart import blocks AFTER resource emission completes
+        # This allows us to filter out import blocks for resources that weren't emitted
+        if comparison_result is not None and 'smart_import_blocks' in locals():
+            self._write_import_blocks_filtered(
+                smart_import_blocks, terraform_config, out_dir
+            )
 
         # Report summary of missing references
         if self._missing_references:
@@ -1130,17 +1136,18 @@ class TerraformEmitter(IaCEmitter):
         )
         return import_blocks
 
-    def _write_import_blocks(
-        self, import_blocks: List[Any], output_path: Path
+    def _write_import_blocks_filtered(
+        self, import_blocks: List[Any], terraform_config: Dict[str, Any], output_path: Path
     ) -> None:
-        """Write Terraform import blocks to imports.tf file in HCL format.
+        """Write Terraform import blocks to imports.tf file in HCL format (Bug #24 fix).
 
         This method writes import blocks in Terraform HCL format (not JSON) to a
-        separate imports.tf file. Import blocks instruct Terraform 1.5+ to import
-        existing resources into state without recreating them.
+        separate imports.tf file, filtering out import blocks for resources that
+        weren't emitted to terraform_config.
 
         Args:
             import_blocks: List of ImportBlock instances with 'to' and 'id' attributes
+            terraform_config: The terraform configuration dict with emitted resources
             output_path: Directory to write imports.tf
 
         Format:
@@ -1157,8 +1164,34 @@ class TerraformEmitter(IaCEmitter):
             return
 
         try:
+            # Bug #24 fix: Filter import blocks to only include resources that were actually emitted
+            # Collect all emitted resource addresses from terraform_config
+            emitted_addresses = set()
+            for resource_type, resources in terraform_config.get("resource", {}).items():
+                for resource_name in resources.keys():
+                    emitted_addresses.add(f"{resource_type}.{resource_name}")
+
+            # Filter import blocks to only those with emitted resources
+            filtered_import_blocks = []
+            skipped_count = 0
+            for block in import_blocks:
+                if block.to in emitted_addresses:
+                    filtered_import_blocks.append(block)
+                else:
+                    skipped_count += 1
+                    logger.debug(
+                        f"Skipping import block for {block.to} - resource not emitted "
+                        f"(likely filtered out during emission)"
+                    )
+
+            if skipped_count > 0:
+                logger.warning(
+                    f"Skipped {skipped_count} import blocks for resources that were filtered "
+                    f"out during emission ({len(filtered_import_blocks)} blocks will be written)"
+                )
+
             imports_file = output_path / "imports.tf"
-            logger.info(f"Writing {len(import_blocks)} import blocks to {imports_file}")
+            logger.info(f"Writing {len(filtered_import_blocks)} import blocks to {imports_file}")
 
             with open(imports_file, "w") as f:
                 # Write header comment
@@ -1170,7 +1203,7 @@ class TerraformEmitter(IaCEmitter):
                 )
 
                 # Write each import block
-                for block in import_blocks:
+                for block in filtered_import_blocks:
                     # ImportBlock dataclass has 'to' and 'id' attributes
                     to_address = block.to
                     azure_id = block.id
@@ -1182,7 +1215,7 @@ class TerraformEmitter(IaCEmitter):
 
             # Track file creation for generation report
             self._files_created += 1
-            logger.info(f"Successfully wrote {len(import_blocks)} import blocks")
+            logger.info(f"Successfully wrote {len(filtered_import_blocks)} import blocks (filtered from {len(import_blocks)})")
 
         except Exception as e:
             logger.error(
