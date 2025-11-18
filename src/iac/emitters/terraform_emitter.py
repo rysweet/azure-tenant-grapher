@@ -1694,6 +1694,14 @@ class TerraformEmitter(IaCEmitter):
                     subnet_id, resource_name
                 )
 
+                # Bug #29: Skip NIC if subnet doesn't exist in graph
+                if subnet_reference is None:
+                    logger.error(
+                        f"Skipping NIC '{resource_name}' - subnet missing from graph. "
+                        "NIC cannot be deployed without valid subnet reference."
+                    )
+                    return None
+
                 private_ip = ip_props.get("privateIPAddress", "")
                 allocation_method = ip_props.get("privateIPAllocationMethod", "Dynamic")
 
@@ -3392,14 +3400,16 @@ class TerraformEmitter(IaCEmitter):
         subnet_name_safe = self._sanitize_terraform_name(subnet_name)
         scoped_subnet_name = f"{vnet_name_safe}_{subnet_name_safe}"
 
-        # Validate subnet exists in the graph
+        # Bug #29: Validate subnet exists in the graph - return None if missing
+        # This will cause parent NIC to be skipped (return None from _convert_resource)
         if scoped_subnet_name not in self._available_subnets:
             logger.error(
                 f"Resource '{resource_name}' references subnet that doesn't exist in graph:\n"
                 f"  Subnet Terraform name: {scoped_subnet_name}\n"
                 f"  Subnet Azure name: {subnet_name}\n"
                 f"  VNet Azure name: {vnet_name}\n"
-                f"  Azure ID: {subnet_id}"
+                f"  Azure ID: {subnet_id}\n"
+                f"  SKIPPING this resource to prevent validation errors."
             )
             # Track missing subnet reference
             self._missing_references.append(
@@ -3412,6 +3422,8 @@ class TerraformEmitter(IaCEmitter):
                     "expected_terraform_name": scoped_subnet_name,
                 }
             )
+            # Bug #29: Return None to signal parent resource should be skipped
+            return None
 
         logger.debug(
             f"Resolved subnet reference for '{resource_name}': "
