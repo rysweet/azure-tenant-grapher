@@ -341,6 +341,9 @@ class TerraformEmitter(IaCEmitter):
         self._missing_references = []
         # Track available subnets separately (needs VNet-scoped names)
         self._available_subnets = set()
+        # Bug #31: Map VNet abstracted IDs to terraform names for standalone subnets
+        # Format: {abstracted_vnet_id: terraform_name}
+        self._vnet_id_to_terraform_name: Dict[str, str] = {}
 
         # First pass: Build index of available resources
         logger.info("Building resource index for reference validation")
