@@ -85,8 +85,8 @@ class SmartImportGenerator:
     This service implements the core logic for determining which resources
     need import blocks vs full resource emission based on their classification.
 
-    Classification Rules:
-        - EXACT_MATCH: Generate import block ONLY, no resource emission
+    Classification Rules (Bug #23 update):
+        - EXACT_MATCH: Generate import block AND emit resource (prevents reference errors)
         - DRIFTED: Generate import block AND include in resources_needing_emission
         - NEW: No import block, include in resources_needing_emission
         - ORPHANED: Log warning, no blocks generated
@@ -113,8 +113,8 @@ class SmartImportGenerator:
         Returns:
             ImportBlockSet with import blocks and resources needing emission
 
-        Logic:
-            - EXACT_MATCH: Generate import block ONLY, no resource emission
+        Logic (Bug #23 update):
+            - EXACT_MATCH: Generate import block AND emit resource (prevents cascading reference errors)
             - DRIFTED: Generate import block AND include in resources_needing_emission
             - NEW: No import block, include in resources_needing_emission
             - ORPHANED: Log warning, no blocks generated
@@ -192,11 +192,12 @@ class SmartImportGenerator:
         target_resource = classification.target_resource
 
         if state == ResourceState.EXACT_MATCH:
-            # Generate import block ONLY, no resource emission
+            # Bug #23 fix: Generate import block AND emit resource
             self._handle_exact_match(
                 abstracted_resource,
                 target_resource,
                 import_blocks,
+                resources_needing_emission,
             )
 
         elif state == ResourceState.DRIFTED:
@@ -224,23 +225,30 @@ class SmartImportGenerator:
         abstracted_resource: Dict[str, Any],
         target_resource: Any,
         import_blocks: List[ImportBlock],
+        resources_needing_emission: List[Dict[str, Any]],
     ) -> None:
         """
         Handle EXACT_MATCH classification.
 
-        Generates import block only, no resource emission needed.
+        Bug #23 fix: Changed to emit resources for EXACT_MATCH too (not just import blocks).
+        Terraform 1.5+ supports import blocks alongside resource definitions.
+        This prevents cascading "Reference to undeclared resource" errors when
+        child resources reference import-only parents.
 
         Args:
             abstracted_resource: Resource from abstracted graph
             target_resource: Resource from target scan
             import_blocks: List to append import block to
+            resources_needing_emission: List to append resource to
         """
         import_block = self._create_import_block(abstracted_resource, target_resource)
 
         if import_block:
             import_blocks.append(import_block)
+            # Bug #23 fix: Also emit resource definition for EXACT_MATCH
+            resources_needing_emission.append(abstracted_resource)
             logger.debug(
-                f"Generated import block for EXACT_MATCH resource: "
+                f"Generated import block AND resource emission for EXACT_MATCH resource: "
                 f"{abstracted_resource.get('id', 'unknown')}"
             )
 
