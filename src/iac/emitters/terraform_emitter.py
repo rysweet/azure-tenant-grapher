@@ -1487,9 +1487,9 @@ class TerraformEmitter(IaCEmitter):
                         if nic_name != "unknown":
                             nic_name_safe = self._sanitize_terraform_name(nic_name)
 
-                            # Validate that the NIC resource exists in the graph
+                            # Bug #30: Validate NIC was actually emitted (not just in graph)
                             if self._validate_resource_reference(
-                                "azurerm_network_interface", nic_name_safe
+                                "azurerm_network_interface", nic_name_safe, terraform_config
                             ):
                                 nic_refs.append(
                                     f"${{azurerm_network_interface.{nic_name_safe}.id}}"
@@ -3328,17 +3328,30 @@ class TerraformEmitter(IaCEmitter):
         return normalized
 
     def _validate_resource_reference(
-        self, terraform_type: str, resource_name: str
+        self, terraform_type: str, resource_name: str, terraform_config: Dict[str, Any] = None
     ) -> bool:
-        """Validate that a referenced resource exists in the graph.
+        """Validate that a referenced resource was actually emitted to terraform config.
+
+        Bug #30 fix: Check terraform_config (actually emitted) not just graph (available).
+        Resources may exist in graph but be skipped during emission (e.g., NICs with
+        missing subnets in Bug #29).
 
         Args:
             terraform_type: Terraform resource type (e.g., "azurerm_network_interface")
             resource_name: Sanitized Terraform resource name
+            terraform_config: Optional terraform config dict to check actual emission
 
         Returns:
-            True if resource exists, False otherwise
+            True if resource was emitted to config (if provided) or exists in graph
         """
+        # Bug #30: Prefer terraform_config (actually emitted) over graph (available)
+        if terraform_config:
+            return (
+                terraform_type in terraform_config.get("resource", {})
+                and resource_name in terraform_config["resource"][terraform_type]
+            )
+
+        # Fallback to graph check (backward compatibility)
         return (
             terraform_type in self._available_resources
             and resource_name in self._available_resources[terraform_type]
