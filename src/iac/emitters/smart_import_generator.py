@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Azure resource type to Terraform resource type mapping
 AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
+    "Microsoft.Network/subnets": "azurerm_subnet",  # Bug #23 fix: Add missing subnet mapping
     "Microsoft.Network/networkSecurityGroups": "azurerm_network_security_group",
     "Microsoft.Network/publicIPAddresses": "azurerm_public_ip",
     "Microsoft.Network/networkInterfaces": "azurerm_network_interface",
@@ -245,12 +246,25 @@ class SmartImportGenerator:
 
         if import_block:
             import_blocks.append(import_block)
-            # Bug #23 fix: Also emit resource definition for EXACT_MATCH
-            resources_needing_emission.append(abstracted_resource)
             logger.debug(
-                f"Generated import block AND resource emission for EXACT_MATCH resource: "
+                f"Generated import block for EXACT_MATCH resource: "
                 f"{abstracted_resource.get('id', 'unknown')}"
             )
+        else:
+            logger.warning(
+                f"Could not create import block for EXACT_MATCH resource "
+                f"{abstracted_resource.get('id', 'unknown')} "
+                f"(type {abstracted_resource.get('type')} not in type mapping), "
+                f"will emit resource only"
+            )
+
+        # Bug #23 fix: ALWAYS emit resource definition for EXACT_MATCH
+        # (moved outside if block - emit even if import block creation failed)
+        resources_needing_emission.append(abstracted_resource)
+        logger.debug(
+            f"Added EXACT_MATCH resource to emission list: "
+            f"{abstracted_resource.get('id', 'unknown')}"
+        )
 
     def _handle_drifted(
         self,
