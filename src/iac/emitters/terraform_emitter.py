@@ -167,7 +167,23 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
         "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
+        # Bug #36: Add support for additional resource types
+        "Microsoft.DocumentDB/databaseAccounts": "azurerm_cosmosdb_account",
+        "Microsoft.DocumentDb/databaseAccounts": "azurerm_cosmosdb_account",  # Lowercase variant
+        "Microsoft.Network/applicationGateways": "azurerm_application_gateway",
+        "Microsoft.Network/dnszones": "azurerm_dns_zone",
+        "Microsoft.Network/dnsZones": "azurerm_dns_zone",
+        "Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies": "azurerm_web_application_firewall_policy",
+        "Microsoft.Network/natGateways": "azurerm_nat_gateway",
+        "Microsoft.DBforPostgreSQL/flexibleServers": "azurerm_postgresql_flexible_server",
+        "Microsoft.Sql/servers/databases": "azurerm_mssql_database",
+        "Microsoft.ContainerInstance/containerGroups": "azurerm_container_group",
+        "Microsoft.DataFactory/factories": "azurerm_data_factory",
+        "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
+        "Microsoft.ServiceBus/namespaces": "azurerm_servicebus_namespace",
         # Microsoft.SecurityCopilot/capacities - No Terraform support yet, will be skipped
+        # Microsoft.App/managedEnvironments - Complex, requires additional work
+        # Microsoft.Compute/virtualMachines/runCommands - Child resources, complex handling needed
         "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
         # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
@@ -1319,11 +1335,23 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type.lower() == "managedidentity":
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
-        # Get Terraform resource type (with dynamic handling for App Services)
+        # Bug #36: Try case-insensitive lookup for Azure types
+        # Azure API returns inconsistent casing (Microsoft.Insights/components vs microsoft.insights/components)
         if azure_type == "Microsoft.Web/sites":
             terraform_type = self._get_app_service_terraform_type(resource)
         else:
+            # First try exact match
             terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
+
+            # Bug #36: If not found, try lowercase version for case-insensitive match
+            if not terraform_type:
+                terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
+                    azure_type.lower()
+                )
+                if terraform_type:
+                    logger.debug(
+                        f"Bug #36: Matched '{azure_type}' using lowercase lookup"
+                    )
 
         if not terraform_type:
             logger.warning(
