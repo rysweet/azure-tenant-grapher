@@ -1419,7 +1419,17 @@ class TerraformEmitter(IaCEmitter):
                     f"using fallback: {address_prefixes}"
                 )
 
-            resource_config["address_space"] = address_prefixes
+            # Bug #35: Normalize all VNet CIDRs
+            normalized_prefixes = []
+            for cidr in address_prefixes:
+                normalized = self._normalize_cidr_block(cidr, resource_name)
+                if normalized:
+                    normalized_prefixes.append(normalized)
+                else:
+                    # Keep original if normalization fails (better than skipping VNet)
+                    normalized_prefixes.append(cidr)
+
+            resource_config["address_space"] = normalized_prefixes
 
             # Bug #31 Step 2: Populate VNet ID -> Terraform name mapping for standalone subnets
             # Map both abstracted and original IDs to handle either format
@@ -1460,6 +1470,16 @@ class TerraformEmitter(IaCEmitter):
                 # Use first address prefix for subnet config
                 address_prefix = address_prefixes[0]
 
+                # Bug #35: Normalize subnet CIDR
+                normalized_subnet_cidr = self._normalize_cidr_block(
+                    address_prefix, f"{resource_name}/{subnet_name}"
+                )
+                if not normalized_subnet_cidr:
+                    logger.warning(
+                        f"Bug #35: Subnet '{subnet_name}' has invalid CIDR '{address_prefix}', skipping"
+                    )
+                    continue
+
                 # Build VNet-scoped subnet resource name
                 # Pattern: {vnet_name}_{subnet_name}
                 vnet_safe_name = safe_name  # Already computed: self._sanitize_terraform_name(resource_name)
@@ -1472,7 +1492,7 @@ class TerraformEmitter(IaCEmitter):
                     "resource_group_name": resource.get("resource_group")
                     or resource.get("resourceGroup", "default-rg"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_safe_name}.name}}",
-                    "address_prefixes": [address_prefix],
+                    "address_prefixes": [normalized_subnet_cidr],
                 }
 
                 # Check for NSG association (store for later emission as separate resource)
@@ -1851,7 +1871,20 @@ class TerraformEmitter(IaCEmitter):
             if not address_prefixes:
                 logger.warning(f"Subnet '{resource_name}' has no address prefixes")
                 address_prefixes = ["10.0.0.0/24"]
-            resource_config["address_prefixes"] = address_prefixes
+
+            # Bug #35: Normalize standalone subnet CIDRs
+            normalized_subnet_prefixes = []
+            for cidr in address_prefixes:
+                if cidr:  # Skip None/empty values
+                    normalized = self._normalize_cidr_block(cidr, resource_name)
+                    if normalized:
+                        normalized_subnet_prefixes.append(normalized)
+                    else:
+                        normalized_subnet_prefixes.append(cidr)  # Keep original if failed
+
+            resource_config["address_prefixes"] = (
+                normalized_subnet_prefixes if normalized_subnet_prefixes else address_prefixes
+            )
 
             # Check for NSG association (store for later emission as separate resource)
             nsg_info = properties.get("networkSecurityGroup", {})
@@ -3473,6 +3506,77 @@ class TerraformEmitter(IaCEmitter):
             return "B1"
 
         return sku_name
+
+    def _validate_subnet_cidr_containment(
+        self, subnet_cidr: str, vnet_cidrs: list, resource_name: str
+    ) -> bool:
+        """Validate that subnet CIDR is contained within VNet address space.
+
+        Bug #34 fix: Prevents NIC deployment errors from invalid subnet ranges.
+
+        Args:
+            subnet_cidr: Subnet CIDR (e.g., "10.0.1.0/24")
+            vnet_cidrs: List of VNet CIDRs (e.g., ["10.0.0.0/16"])
+            resource_name: Resource name for logging
+
+        Returns:
+            True if valid, False otherwise
+        """
+        import ipaddress
+
+        try:
+            subnet_network = ipaddress.ip_network(subnet_cidr, strict=False)
+
+            for vnet_cidr in vnet_cidrs:
+                try:
+                    vnet_network = ipaddress.ip_network(vnet_cidr, strict=False)
+                    if subnet_network.subnet_of(vnet_network):
+                        return True
+                except ValueError:
+                    # Invalid VNet CIDR, skip it
+                    continue
+
+            logger.warning(
+                f"Bug #34: NIC '{resource_name}' - Subnet CIDR '{subnet_cidr}' not contained "
+                f"within any VNet CIDR {vnet_cidrs}"
+            )
+            return False
+
+        except ValueError as e:
+            logger.error(f"Bug #34: NIC '{resource_name}' - Invalid CIDR format: {e}")
+            return False
+
+    def _normalize_cidr_block(self, cidr: str, resource_name: str) -> Optional[str]:
+        """Normalize CIDR block to ensure valid Azure format.
+
+        Bug #35 fix: Prevents VNet deployment errors from malformed CIDRs.
+
+        Args:
+            cidr: Raw CIDR string (may be malformed, e.g., "172.19.20/22")
+            resource_name: Resource name for logging
+
+        Returns:
+            Normalized CIDR (e.g., "172.19.0.0/22") or None if invalid
+        """
+        import ipaddress
+
+        try:
+            # Parse and normalize (strict=False allows "172.19.20/22" to be normalized)
+            network = ipaddress.ip_network(cidr, strict=False)
+            normalized = str(network)
+
+            if normalized != cidr:
+                logger.info(
+                    f"Bug #35: VNet/Subnet '{resource_name}' - Normalized CIDR '{cidr}' → '{normalized}'"
+                )
+
+            return normalized
+
+        except ValueError as e:
+            logger.error(
+                f"Bug #35: VNet/Subnet '{resource_name}' - Invalid CIDR '{cidr}': {e}"
+            )
+            return None
 
     def _normalize_azure_resource_id(self, resource_id: str) -> str:
         """Normalize Azure resource ID casing to match Terraform expectations.
