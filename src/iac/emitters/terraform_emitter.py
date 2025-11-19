@@ -2031,11 +2031,11 @@ class TerraformEmitter(IaCEmitter):
             )
         elif azure_type in ("Microsoft.AAD/User", "Microsoft.Graph/users"):
             # Azure AD User specific properties
+            # Bug #32 fix: Sanitize UPN to remove spaces
+            raw_upn = resource.get("userPrincipalName", f"{resource_name}@example.com")
             resource_config = {
                 "display_name": resource.get("displayName", resource_name),
-                "user_principal_name": resource.get(
-                    "userPrincipalName", f"{resource_name}@example.com"
-                ),
+                "user_principal_name": self._sanitize_user_principal_name(raw_upn),
                 "mail_nickname": resource.get("mailNickname", resource_name),
             }
             if "password" in resource:
@@ -2844,9 +2844,12 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
             # Entra ID User
             # Users from Neo4j may have different property names than ARM resources
-            user_principal_name = resource.get("userPrincipalName") or resource.get(
+            raw_upn = resource.get("userPrincipalName") or resource.get(
                 "name", "unknown"
             )
+            # Bug #32 fix: Sanitize UPN to remove spaces
+            user_principal_name = self._sanitize_user_principal_name(raw_upn)
+
             display_name = (
                 resource.get("displayName")
                 or resource.get("display_name")
@@ -3389,6 +3392,35 @@ class TerraformEmitter(IaCEmitter):
             logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
         return sanitized or "unnamed_resource"
+
+    def _sanitize_user_principal_name(self, upn: str) -> str:
+        """Sanitize user principal name to be a valid email address.
+
+        Azure AD requires UPNs to be valid email addresses without spaces.
+        Bug #32 fix: Remove spaces from UPNs to prevent validation errors.
+
+        Args:
+            upn: User principal name (email format)
+
+        Returns:
+            Sanitized UPN with spaces removed from local part
+        """
+        if not upn or "@" not in upn:
+            return upn
+
+        # Split into local part and domain
+        local_part, domain = upn.rsplit("@", 1)
+
+        # Remove spaces from local part
+        local_part = local_part.replace(" ", "")
+
+        # Reconstruct UPN
+        sanitized = f"{local_part}@{domain}"
+
+        if sanitized != upn:
+            logger.debug(f"Bug #32: Sanitized UPN '{upn}' -> '{sanitized}'")
+
+        return sanitized
 
     def _normalize_azure_resource_id(self, resource_id: str) -> str:
         """Normalize Azure resource ID casing to match Terraform expectations.
