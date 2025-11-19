@@ -584,7 +584,11 @@ class TerraformEmitter(IaCEmitter):
 
                 # Bug #24 fix: Store import blocks, write them AFTER resource emission
                 # (so we can filter out import blocks for resources that weren't emitted)
-                smart_import_blocks = import_block_set.import_blocks if import_block_set.import_blocks else []
+                smart_import_blocks = (
+                    import_block_set.import_blocks
+                    if import_block_set.import_blocks
+                    else []
+                )
                 logger.info(
                     f"Generated {len(smart_import_blocks)} smart import blocks "
                     f"(will be filtered and written after resource emission)"
@@ -635,9 +639,15 @@ class TerraformEmitter(IaCEmitter):
 
                 # Always emit resource groups - they're synthetic (extracted from other resources)
                 # and required for all other resources to reference
-                is_resource_group = resource_type == "Microsoft.Resources/resourceGroups"
+                is_resource_group = (
+                    resource_type == "Microsoft.Resources/resourceGroups"
+                )
 
-                if not is_resource_group and resource_id and resource_id not in resource_ids_to_emit:
+                if (
+                    not is_resource_group
+                    and resource_id
+                    and resource_id not in resource_ids_to_emit
+                ):
                     # Resource is EXACT_MATCH - skip emission (only imported)
                     logger.debug(
                         f"Skipping emission for EXACT_MATCH resource: {resource_id}"
@@ -666,7 +676,9 @@ class TerraformEmitter(IaCEmitter):
                 # Bug #28: Detect and resolve name collisions by appending resource group
                 if resource_name in terraform_config["resource"][resource_type]:
                     # Collision detected! Append resource group to make unique
-                    rg_name = resource.get("resource_group") or resource.get("resourceGroup", "default_rg")
+                    rg_name = resource.get("resource_group") or resource.get(
+                        "resourceGroup", "default_rg"
+                    )
                     rg_safe = self._sanitize_terraform_name(rg_name)
                     original_name = resource_name
                     resource_name = f"{rg_safe}_{resource_name}"
@@ -674,6 +686,7 @@ class TerraformEmitter(IaCEmitter):
                     # Truncate if too long (Azure 80-char limit)
                     if len(resource_name) > 80:
                         import hashlib
+
                         name_hash = hashlib.md5(resource_name.encode()).hexdigest()[:5]
                         resource_name = resource_name[:74] + "_" + name_hash
 
@@ -741,7 +754,7 @@ class TerraformEmitter(IaCEmitter):
 
         # Bug #24 fix: Write smart import blocks AFTER resource emission completes
         # This allows us to filter out import blocks for resources that weren't emitted
-        if comparison_result is not None and 'smart_import_blocks' in locals():
+        if comparison_result is not None and "smart_import_blocks" in locals():
             self._write_import_blocks_filtered(
                 smart_import_blocks, terraform_config, out_dir
             )
@@ -1163,7 +1176,10 @@ class TerraformEmitter(IaCEmitter):
         return import_blocks
 
     def _write_import_blocks_filtered(
-        self, import_blocks: List[Any], terraform_config: Dict[str, Any], output_path: Path
+        self,
+        import_blocks: List[Any],
+        terraform_config: Dict[str, Any],
+        output_path: Path,
     ) -> None:
         """Write Terraform import blocks to imports.tf file in HCL format (Bug #24 fix).
 
@@ -1193,7 +1209,9 @@ class TerraformEmitter(IaCEmitter):
             # Bug #24 fix: Filter import blocks to only include resources that were actually emitted
             # Collect all emitted resource addresses from terraform_config
             emitted_addresses = set()
-            for resource_type, resources in terraform_config.get("resource", {}).items():
+            for resource_type, resources in terraform_config.get(
+                "resource", {}
+            ).items():
                 for resource_name in resources.keys():
                     emitted_addresses.add(f"{resource_type}.{resource_name}")
 
@@ -1217,7 +1235,9 @@ class TerraformEmitter(IaCEmitter):
                 )
 
             imports_file = output_path / "imports.tf"
-            logger.info(f"Writing {len(filtered_import_blocks)} import blocks to {imports_file}")
+            logger.info(
+                f"Writing {len(filtered_import_blocks)} import blocks to {imports_file}"
+            )
 
             with open(imports_file, "w") as f:
                 # Write header comment
@@ -1241,7 +1261,9 @@ class TerraformEmitter(IaCEmitter):
 
             # Track file creation for generation report
             self._files_created += 1
-            logger.info(f"Successfully wrote {len(filtered_import_blocks)} import blocks (filtered from {len(import_blocks)})")
+            logger.info(
+                f"Successfully wrote {len(filtered_import_blocks)} import blocks (filtered from {len(import_blocks)})"
+            )
 
         except Exception as e:
             logger.error(
@@ -1334,13 +1356,15 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
             resource_config = {
                 "name": resource_name,
-                "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
+                "resource_group_name": resource.get("resource_group")
+                or resource.get("resourceGroup", "default-rg"),
             }
         else:
             resource_config = {
                 "name": resource_name,
                 "location": location,
-                "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
+                "resource_group_name": resource.get("resource_group")
+                or resource.get("resourceGroup", "default-rg"),
             }
 
         # Add tags if present
@@ -1397,6 +1421,21 @@ class TerraformEmitter(IaCEmitter):
 
             resource_config["address_space"] = address_prefixes
 
+            # Bug #31 Step 2: Populate VNet ID -> Terraform name mapping for standalone subnets
+            # Map both abstracted and original IDs to handle either format
+            vnet_id = resource.get("id", "")
+            vnet_original_id = resource.get("original_id", "")
+
+            if vnet_id and safe_name:
+                self._vnet_id_to_terraform_name[vnet_id] = safe_name
+                logger.debug(f"Bug #31: Mapped VNet ID {vnet_id} -> {safe_name}")
+
+            if vnet_original_id and vnet_original_id != vnet_id and safe_name:
+                self._vnet_id_to_terraform_name[vnet_original_id] = safe_name
+                logger.debug(
+                    f"Bug #31: Mapped VNet original_id {vnet_original_id} -> {safe_name}"
+                )
+
             # Extract and emit subnets from vnet properties
 
             subnets = properties.get("subnets", [])
@@ -1430,7 +1469,8 @@ class TerraformEmitter(IaCEmitter):
                 # Build subnet resource config (name field remains original Azure name)
                 subnet_config = {
                     "name": subnet_name,  # Azure resource name (unchanged)
-                    "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group")
+                    or resource.get("resourceGroup", "default-rg"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_safe_name}.name}}",
                     "address_prefixes": [address_prefix],
                 }
@@ -1492,7 +1532,9 @@ class TerraformEmitter(IaCEmitter):
 
                             # Bug #30: Validate NIC was actually emitted (not just in graph)
                             if self._validate_resource_reference(
-                                "azurerm_network_interface", nic_name_safe, terraform_config
+                                "azurerm_network_interface",
+                                nic_name_safe,
+                                terraform_config,
                             ):
                                 nic_refs.append(
                                     f"${{azurerm_network_interface.{nic_name_safe}.id}}"
@@ -1738,23 +1780,47 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.Network/subnets":
             properties = self._parse_properties(resource)
 
-            # Extract parent VNet name from subnet ID
-            # For abstracted nodes, use original_id which contains the full Azure resource path
+            # Bug #31 Step 3: Use VNet mapping to find terraform name
+            # Extract parent VNet ID from subnet ID path, then look up in mapping
             subnet_id = resource.get("original_id") or resource.get("id", "")
-            vnet_name = self._extract_resource_name_from_id(
-                subnet_id, "virtualNetworks"
-            )
+            vnet_name_safe = None
+            vnet_name = "unknown"
+
+            # Try to extract parent VNet ID and look up in mapping
+            if "/virtualNetworks/" in subnet_id and "/subnets/" in subnet_id:
+                # Extract VNet ID portion: everything up to /subnets/
+                vnet_id = subnet_id.split("/subnets/")[0]
+
+                # Look up in mapping (Bug #31 fix for abstracted IDs)
+                if vnet_id in self._vnet_id_to_terraform_name:
+                    vnet_name_safe = self._vnet_id_to_terraform_name[vnet_id]
+                    # Extract original VNet name for logging
+                    vnet_name = self._extract_resource_name_from_id(
+                        vnet_id, "virtualNetworks"
+                    )
+                    logger.debug(
+                        f"Bug #31: Found VNet terraform name via mapping: {vnet_id} -> {vnet_name_safe}"
+                    )
+
+            # Fallback: Extract VNet name directly from ID (original behavior)
+            if not vnet_name_safe:
+                vnet_name = self._extract_resource_name_from_id(
+                    subnet_id, "virtualNetworks"
+                )
+                if vnet_name != "unknown":
+                    vnet_name_safe = self._sanitize_terraform_name(vnet_name)
 
             # Build VNet-scoped resource name
-            if vnet_name != "unknown" and "/subnets/" in subnet_id:
-                vnet_name_safe = self._sanitize_terraform_name(vnet_name)
+            if vnet_name_safe and "/subnets/" in subnet_id:
+                # vnet_name_safe is already sanitized from mapping or extraction
                 subnet_name_safe = self._sanitize_terraform_name(resource_name)
                 # Override safe_name to use scoped naming
                 safe_name = f"{vnet_name_safe}_{subnet_name_safe}"
 
                 resource_config = {
                     "name": resource_name,  # Original Azure name
-                    "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group")
+                    or resource.get("resourceGroup", "default-rg"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_name_safe}.name}}",
                 }
 
@@ -1771,7 +1837,8 @@ class TerraformEmitter(IaCEmitter):
                 safe_name = self._sanitize_terraform_name(resource_name)
                 resource_config = {
                     "name": resource_name,
-                    "resource_group_name": resource.get("resource_group") or resource.get("resourceGroup", "default-rg"),
+                    "resource_group_name": resource.get("resource_group")
+                    or resource.get("resourceGroup", "default-rg"),
                     "virtual_network_name": "unknown_vnet",
                 }
 
@@ -1848,15 +1915,22 @@ class TerraformEmitter(IaCEmitter):
                     terraform_config["resource"]["azurerm_service_plan"] = {}
 
                 # Only create if not already exists
-                if plan_safe_name not in terraform_config["resource"]["azurerm_service_plan"]:
-                    terraform_config["resource"]["azurerm_service_plan"][plan_safe_name] = {
+                if (
+                    plan_safe_name
+                    not in terraform_config["resource"]["azurerm_service_plan"]
+                ):
+                    terraform_config["resource"]["azurerm_service_plan"][
+                        plan_safe_name
+                    ] = {
                         "name": plan_name,
                         "location": location,
                         "resource_group_name": resource_group,
                         "os_type": "Windows" if not is_linux else "Linux",
                         "sku_name": "B1",  # Basic tier
                     }
-                    logger.debug(f"Created default service plan '{plan_name}' for App Service '{resource_name}'")
+                    logger.debug(
+                        f"Created default service plan '{plan_name}' for App Service '{resource_name}'"
+                    )
 
                 # Reference the created plan
                 service_plan_id = f"${{azurerm_service_plan.{plan_safe_name}.id}}"
@@ -2013,13 +2087,16 @@ class TerraformEmitter(IaCEmitter):
                     target_id = conn.get("private_connection_resource_id", "")
                     if "/storageAccounts/" in target_id:
                         # Extract storage account name
-                        storage_name = self._extract_resource_name_from_id(target_id, "storageAccounts")
+                        storage_name = self._extract_resource_name_from_id(
+                            target_id, "storageAccounts"
+                        )
                         storage_name_safe = self._sanitize_terraform_name(storage_name)
 
                         # Check if storage account was emitted
-                        if (
-                            "azurerm_storage_account" not in terraform_config.get("resource", {})
-                            or storage_name_safe not in terraform_config["resource"].get("azurerm_storage_account", {})
+                        if "azurerm_storage_account" not in terraform_config.get(
+                            "resource", {}
+                        ) or storage_name_safe not in terraform_config["resource"].get(
+                            "azurerm_storage_account", {}
                         ):
                             logger.warning(
                                 f"Private Endpoint '{resource_name}' references storage account '{storage_name}' "
@@ -2277,9 +2354,7 @@ class TerraformEmitter(IaCEmitter):
             if not lab_virtual_network_id:
                 # Construct it from resource group and lab name
                 rg_name = resource.get("resource_group", "unknown-rg")
-                resource.get(
-                    "subscription_id", "00000000-0000-0000-0000-000000000000"
-                )
+                resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
                 lab_virtual_network_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.DevTestLab/labs/{lab_name}/virtualnetworks/{lab_name}Vnet"
 
             # Get gallery image reference from properties
@@ -2338,7 +2413,9 @@ class TerraformEmitter(IaCEmitter):
                     resource_name = parts[8] if len(parts) > 8 else ""
                     translated_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/{provider}/{resource_type}/{resource_name}"
                     translated_scope_ids.append(translated_id)
-                    logger.debug(f"Translated scope resource ID from {scope_id} to {translated_id}")
+                    logger.debug(
+                        f"Translated scope resource ID from {scope_id} to {translated_id}"
+                    )
                 else:
                     # Keep original if can't parse
                     logger.warning(
@@ -2398,9 +2475,7 @@ class TerraformEmitter(IaCEmitter):
 
             # Get required resource IDs from properties or construct placeholders
             rg_name = resource.get("resource_group", "unknown-rg")
-            resource.get(
-                "subscription_id", "00000000-0000-0000-0000-000000000000"
-            )
+            resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
 
             # Storage account ID (required)
             storage_account_id = properties.get("storageAccount")
@@ -2459,9 +2534,7 @@ class TerraformEmitter(IaCEmitter):
 
             # Get required properties
             rg_name = resource.get("resource_group", "unknown-rg")
-            resource.get(
-                "subscription_id", "00000000-0000-0000-0000-000000000000"
-            )
+            resource.get("subscription_id", "00000000-0000-0000-0000-000000000000")
 
             # Construct workspace ID
             machine_learning_workspace_id = f"/subscriptions/{self._get_effective_subscription_id(resource)}/resourceGroups/{rg_name}/providers/Microsoft.MachineLearningServices/workspaces/{workspace_name}"
@@ -2647,25 +2720,32 @@ class TerraformEmitter(IaCEmitter):
                 #   - /subscriptions/{sub-id}/resourceGroups/... (resource-level, with slash)
                 #   - /subscriptions/{sub-id} (subscription-level, no trailing slash)
                 import re
+
                 scope = re.sub(
-                    r'/subscriptions/[a-f0-9-]+(/|$)',
-                    f'/subscriptions/{self.target_subscription_id}\\1',
+                    r"/subscriptions/[a-f0-9-]+(/|$)",
+                    f"/subscriptions/{self.target_subscription_id}\\1",
                     scope,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
-                logger.debug("Translated role assignment scope for cross-tenant deployment")
+                logger.debug(
+                    "Translated role assignment scope for cross-tenant deployment"
+                )
 
             # Also translate role definition ID (contains subscription)
-            role_def_id = properties.get("roleDefinitionId", resource.get("roleDefinitionId", ""))
+            role_def_id = properties.get(
+                "roleDefinitionId", resource.get("roleDefinitionId", "")
+            )
             if self.target_subscription_id and role_def_id:
                 role_def_id = re.sub(
-                    r'/subscriptions/[a-f0-9-]+/',
-                    f'/subscriptions/{self.target_subscription_id}/',
+                    r"/subscriptions/[a-f0-9-]+/",
+                    f"/subscriptions/{self.target_subscription_id}/",
                     role_def_id,
-                    flags=re.IGNORECASE
+                    flags=re.IGNORECASE,
                 )
 
-            principal_id = properties.get("principalId", resource.get("principalId", ""))
+            principal_id = properties.get(
+                "principalId", resource.get("principalId", "")
+            )
 
             # Bug #18 fix: Skip role assignments with untranslated principals in cross-tenant mode
             # Without identity mapping, principal_ids from source tenant don't exist in target tenant
@@ -2867,13 +2947,17 @@ class TerraformEmitter(IaCEmitter):
             if not sku_name:
                 sku_name = resource.get("sku", "Basic")
 
-            resource_config.update({
-                "sku": sku_name if sku_name else "Basic",
-            })
+            resource_config.update(
+                {
+                    "sku": sku_name if sku_name else "Basic",
+                }
+            )
 
             # Add admin_enabled if present
             if "adminUserEnabled" in properties:
-                resource_config["admin_enabled"] = properties.get("adminUserEnabled", False)
+                resource_config["admin_enabled"] = properties.get(
+                    "adminUserEnabled", False
+                )
 
         elif azure_type == "Microsoft.App/containerApps":
             # Container Apps require environment, revision mode, and template
@@ -2935,10 +3019,14 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # create_option is required: "Copy" for snapshots
-            resource_config["create_option"] = properties.get("creationData", {}).get("createOption", "Copy")
+            resource_config["create_option"] = properties.get("creationData", {}).get(
+                "createOption", "Copy"
+            )
 
             # source_resource_id might be present
-            source_resource_id = properties.get("creationData", {}).get("sourceResourceId")
+            source_resource_id = properties.get("creationData", {}).get(
+                "sourceResourceId"
+            )
             if source_resource_id:
                 resource_config["source_resource_id"] = source_resource_id
 
@@ -2976,25 +3064,35 @@ class TerraformEmitter(IaCEmitter):
             os_disk = storage_profile.get("osDisk", {})
             resource_config["os_disk"] = {
                 "caching": os_disk.get("caching", "ReadWrite"),
-                "storage_account_type": os_disk.get("managedDisk", {}).get("storageAccountType", "Standard_LRS"),
+                "storage_account_type": os_disk.get("managedDisk", {}).get(
+                    "storageAccountType", "Standard_LRS"
+                ),
             }
 
             # Network interface (required block)
-            network_interfaces = network_profile.get("networkInterfaceConfigurations", [])
+            network_interfaces = network_profile.get(
+                "networkInterfaceConfigurations", []
+            )
             if network_interfaces:
                 first_nic = network_interfaces[0]
                 ip_configs = first_nic.get("ipConfigurations", [])
                 if ip_configs:
                     first_ip_config = ip_configs[0]
-                    resource_config["network_interface"] = [{
-                        "name": first_nic.get("name", "default"),
-                        "primary": first_nic.get("primary", True),
-                        "ip_configuration": [{
-                            "name": first_ip_config.get("name", "internal"),
-                            "primary": first_ip_config.get("primary", True),
-                            "subnet_id": first_ip_config.get("subnet", {}).get("id", ""),
-                        }]
-                    }]
+                    resource_config["network_interface"] = [
+                        {
+                            "name": first_nic.get("name", "default"),
+                            "primary": first_nic.get("primary", True),
+                            "ip_configuration": [
+                                {
+                                    "name": first_ip_config.get("name", "internal"),
+                                    "primary": first_ip_config.get("primary", True),
+                                    "subnet_id": first_ip_config.get("subnet", {}).get(
+                                        "id", ""
+                                    ),
+                                }
+                            ],
+                        }
+                    ]
                 else:
                     # No IP config - skip this VMSS
                     logger.warning(
@@ -3013,7 +3111,9 @@ class TerraformEmitter(IaCEmitter):
             if image_reference:
                 resource_config["source_image_reference"] = {
                     "publisher": image_reference.get("publisher", "Canonical"),
-                    "offer": image_reference.get("offer", "0001-com-ubuntu-server-jammy"),
+                    "offer": image_reference.get(
+                        "offer", "0001-com-ubuntu-server-jammy"
+                    ),
                     "sku": image_reference.get("sku", "22_04-lts"),
                     "version": image_reference.get("version", "latest"),
                 }
@@ -3041,11 +3141,13 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
-            resource_config.update({
-                "capacity": capacity,
-                "sku_name": sku_name,
-                "family": family,
-            })
+            resource_config.update(
+                {
+                    "capacity": capacity,
+                    "sku_name": sku_name,
+                    "family": family,
+                }
+            )
 
             # Note: enable_non_ssl_port and minimum_tls_version are not valid azurerm_redis_cache arguments
             # These are managed through redis_configuration block or other mechanisms
@@ -3065,13 +3167,15 @@ class TerraformEmitter(IaCEmitter):
             # Remove location from resource_config (metric alerts are global)
             resource_config.pop("location", None)
 
-            resource_config.update({
-                "scopes": scopes,
-                "severity": properties.get("severity", 3),
-                "enabled": properties.get("enabled", True),
-                "frequency": properties.get("evaluationFrequency", "PT1M"),
-                "window_size": properties.get("windowSize", "PT5M"),
-            })
+            resource_config.update(
+                {
+                    "scopes": scopes,
+                    "severity": properties.get("severity", 3),
+                    "enabled": properties.get("enabled", True),
+                    "frequency": properties.get("evaluationFrequency", "PT1M"),
+                    "window_size": properties.get("windowSize", "PT5M"),
+                }
+            )
 
             # Add criteria (simplified - use dynamic_criteria or criteria)
             criteria = properties.get("criteria", {})
@@ -3080,7 +3184,9 @@ class TerraformEmitter(IaCEmitter):
                 # Full implementation would parse allOf, anyOf, etc.
                 resource_config["criteria"] = [
                     {
-                        "metric_namespace": criteria.get("odata.type", "").replace("Microsoft.Azure.Monitor.", ""),
+                        "metric_namespace": criteria.get("odata.type", "").replace(
+                            "Microsoft.Azure.Monitor.", ""
+                        ),
                         "metric_name": "Percentage CPU",  # Default - should extract from criteria
                         "aggregation": "Average",
                         "operator": "GreaterThan",
@@ -3277,6 +3383,7 @@ class TerraformEmitter(IaCEmitter):
         # Keep first 75 chars + hash of full name for uniqueness
         if len(sanitized) > 80:
             import hashlib
+
             name_hash = hashlib.md5(sanitized.encode()).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
             logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
@@ -3331,7 +3438,10 @@ class TerraformEmitter(IaCEmitter):
         return normalized
 
     def _validate_resource_reference(
-        self, terraform_type: str, resource_name: str, terraform_config: Dict[str, Any] = None
+        self,
+        terraform_type: str,
+        resource_name: str,
+        terraform_config: Dict[str, Any] = None,
     ) -> bool:
         """Validate that a referenced resource was actually emitted to terraform config.
 
