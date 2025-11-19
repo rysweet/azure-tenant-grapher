@@ -2031,6 +2031,46 @@ class TerraformEmitter(IaCEmitter):
                     "administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
+        elif azure_type == "Microsoft.Sql/servers/databases":
+            # Bug #37: SQL Database (child resource) needs server_id, not location/rg
+            # Extract parent server name from database ID
+            db_id = resource.get("id", "") or resource.get("original_id", "")
+            server_name = self._extract_resource_name_from_id(db_id, "servers")
+
+            if server_name == "unknown":
+                logger.warning(
+                    f"Bug #37: SQL Database '{resource_name}' has no parent server in ID. Skipping."
+                )
+                return None
+
+            server_name_safe = self._sanitize_terraform_name(server_name)
+
+            # SQL Database config (no location or resource_group_name - these are on the server)
+            resource_config = {
+                "name": resource_name,
+                "server_id": f"${{azurerm_mssql_server.{server_name_safe}.id}}",
+            }
+
+            # Add optional properties if present
+            properties = self._parse_properties(resource)
+            if properties.get("maxSizeBytes"):
+                resource_config["max_size_gb"] = int(properties["maxSizeBytes"]) // (
+                    1024**3
+                )
+            if properties.get("collation"):
+                resource_config["collation"] = properties["collation"]
+
+            logger.debug(f"Bug #37: SQL Database '{resource_name}' linked to server '{server_name}'")
+
+        elif azure_type == "Microsoft.ServiceBus/namespaces":
+            # Bug #38: Service Bus Namespace requires SKU
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            sku_name = sku.get("name", "Standard") if sku else "Standard"
+
+            resource_config["sku"] = sku_name
+            logger.debug(f"Bug #38: Service Bus '{resource_name}' using SKU '{sku_name}'")
+
         elif azure_type == "Microsoft.EventHub/namespaces":
             # EventHub namespaces require sku argument
             properties = self._parse_properties(resource)
