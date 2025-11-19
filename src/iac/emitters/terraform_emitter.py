@@ -1335,6 +1335,11 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type.lower() == "managedidentity":
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
+        # Bug #39: Normalize azure_type to lowercase for consistent elif matching
+        # Store original for logging, use lowercase for comparisons
+        azure_type_original = azure_type
+        azure_type_lower = azure_type.lower()
+
         # Bug #36: Try case-insensitive lookup for Azure types
         # Azure API returns inconsistent casing (Microsoft.Insights/components vs microsoft.insights/components)
         if azure_type == "Microsoft.Web/sites":
@@ -2416,18 +2421,19 @@ class TerraformEmitter(IaCEmitter):
                     "product": product,
                 },
             }
-        elif azure_type == "microsoft.insights/components":
-            # Application Insights specific properties
+        elif azure_type_lower == "microsoft.insights/components":
+            # Bug #39: Application Insights (case-insensitive match)
             properties = self._parse_properties(resource)
 
             # Application Insights requires a workspace ID or uses legacy mode
-            application_type = properties.get("Application_Type", "web")
+            application_type = properties.get("Application_Type") or properties.get("application_type") or properties.get("applicationType") or "web"
 
             resource_config.update(
                 {
                     "application_type": application_type,
                 }
             )
+            logger.debug(f"Bug #39: App Insights '{resource_name}' using type '{application_type}'")
 
             # Try to link to Log Analytics workspace if available
             workspace_resource_id = properties.get("WorkspaceResourceId")
@@ -2665,21 +2671,81 @@ class TerraformEmitter(IaCEmitter):
             # Override name to just be the endpoint name
             resource_config["name"] = endpoint_name
 
-        elif azure_type in [
-            "microsoft.insights/actiongroups",
-            "Microsoft.Insights/actionGroups",
-        ]:
-            # Monitor Action Group specific properties
+        elif azure_type_lower == "microsoft.insights/actiongroups":
+            # Bug #40: Monitor Action Group (case-insensitive match)
             properties = self._parse_properties(resource)
 
             # short_name is required (max 12 characters)
-            short_name = properties.get("groupShortName", resource_name[:12])
+            short_name = properties.get("groupShortName") or properties.get("short_name") or resource_name[:12]
 
             resource_config.update(
                 {
                     "short_name": short_name,
                 }
             )
+            logger.debug(f"Bug #40: Action Group '{resource_name}' using short_name '{short_name}'")
+
+        elif azure_type_lower == "microsoft.documentdb/databaseaccounts":
+            # Bug #41: Cosmos DB account (case-insensitive match)
+            properties = self._parse_properties(resource)
+
+            # Required: offer_type
+            resource_config["offer_type"] = "Standard"
+
+            # Required: consistency_policy block
+            consistency = properties.get("consistencyPolicy", {})
+            resource_config["consistency_policy"] = {
+                "consistency_level": consistency.get("defaultConsistencyLevel", "Session"),
+                "max_interval_in_seconds": consistency.get("maxIntervalInSeconds", 5),
+                "max_staleness_prefix": consistency.get("maxStalenessPrefix", 100),
+            }
+
+            # Required: geo_location block
+            locations = properties.get("locations", [])
+            if locations:
+                resource_config["geo_location"] = [
+                    {
+                        "location": loc.get("locationName", location).lower(),
+                        "failover_priority": loc.get("failoverPriority", 0),
+                    }
+                    for loc in locations
+                ]
+            else:
+                # Default to resource location
+                resource_config["geo_location"] = [
+                    {"location": location, "failover_priority": 0}
+                ]
+
+            logger.debug(f"Bug #41: Cosmos DB '{resource_name}' with {len(resource_config.get('geo_location', []))} locations")
+
+        elif azure_type_lower == "microsoft.containerinstance/containergroups":
+            # Bug #42: Container Group (case-insensitive match)
+            properties = self._parse_properties(resource)
+
+            # Required: os_type
+            os_properties = properties.get("osType", "Linux")
+            resource_config["os_type"] = os_properties
+
+            # Required: container block (at least one)
+            containers = properties.get("containers", [])
+            if containers and len(containers) > 0:
+                container = containers[0]  # Use first container
+                resource_config["container"] = {
+                    "name": container.get("name", "container"),
+                    "image": container.get("image", "mcr.microsoft.com/azuredocs/aci-helloworld:latest"),
+                    "cpu": str(container.get("resources", {}).get("requests", {}).get("cpu", "0.5")),
+                    "memory": str(container.get("resources", {}).get("requests", {}).get("memoryInGB", "1.5")),
+                }
+            else:
+                # Default container if none specified
+                resource_config["container"] = {
+                    "name": "container",
+                    "image": "mcr.microsoft.com/azuredocs/aci-helloworld:latest",
+                    "cpu": "0.5",
+                    "memory": "1.5",
+                }
+
+            logger.debug(f"Bug #42: Container Group '{resource_name}' os_type='{os_properties}'")
 
         elif azure_type == "Microsoft.CognitiveServices/accounts":
             # Cognitive Services Account specific properties
