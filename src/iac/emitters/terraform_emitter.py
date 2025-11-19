@@ -2138,14 +2138,28 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
 
-            # Determine OS type from kind property
+            # Bug #33: Improved OS type detection with explicit fallback
             kind = properties.get("kind", "").lower()
-            os_type = "Linux" if "linux" in kind else "Windows"
+            if "linux" in kind:
+                os_type = "Linux"
+            elif "windows" in kind:
+                os_type = "Windows"
+            else:
+                # Check for other indicators (reserved=true means Linux)
+                os_type = "Linux" if properties.get("reserved") else "Windows"
+                logger.debug(
+                    f"Bug #33: App Service Plan '{resource_name}' has unclear OS type from kind='{kind}', "
+                    f"using os_type='{os_type}' based on 'reserved' property"
+                )
+
+            # Bug #33: Validate SKU before setting
+            raw_sku = sku.get("name", "B1")
+            validated_sku = self._validate_app_service_sku(raw_sku, location, os_type)
 
             resource_config.update(
                 {
                     "os_type": os_type,
-                    "sku_name": sku.get("name", "B1"),
+                    "sku_name": validated_sku,
                 }
             )
         elif azure_type == "Microsoft.Compute/disks":
@@ -3421,6 +3435,44 @@ class TerraformEmitter(IaCEmitter):
             logger.debug(f"Bug #32: Sanitized UPN '{upn}' -> '{sanitized}'")
 
         return sanitized
+
+    def _validate_app_service_sku(
+        self, sku_name: str, location: str, os_type: str
+    ) -> str:
+        """Validate App Service Plan SKU is compatible with region.
+
+        Bug #33 fix: Prevents deployment errors from incompatible SKU/region combinations.
+
+        Args:
+            sku_name: SKU name from resource (e.g., "B1", "P1v2")
+            location: Azure region (e.g., "eastus")
+            os_type: OS type ("Linux" or "Windows")
+
+        Returns:
+            Validated SKU or safe fallback "B1"
+        """
+        # Validate SKU format (B1, S1, P1v2, F1, Y1, etc.)
+        if not re.match(r"^[BSPFY]\d+v?\d*$", sku_name):
+            logger.warning(
+                f"Bug #33: Invalid SKU format '{sku_name}', using B1 fallback"
+            )
+            return "B1"
+
+        # Known incompatible combinations (research-based)
+        # v3 SKUs not available in all regions
+        incompatible_skus = {
+            "westeurope": ["P1v3", "P2v3", "P3v3"],
+            "northeurope": ["P1v3", "P2v3", "P3v3"],
+        }
+
+        region_incompatible = incompatible_skus.get(location.lower(), [])
+        if sku_name in region_incompatible:
+            logger.warning(
+                f"Bug #33: SKU '{sku_name}' not supported in '{location}', falling back to B1"
+            )
+            return "B1"
+
+        return sku_name
 
     def _normalize_azure_resource_id(self, resource_id: str) -> str:
         """Normalize Azure resource ID casing to match Terraform expectations.
