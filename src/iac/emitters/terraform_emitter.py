@@ -3065,8 +3065,8 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update(
                 {"destinations": destinations_config, "data_flow": data_flows_config}
             )
-        elif azure_type in ["User", "Microsoft.AAD/User", "Microsoft.Graph/users"]:
-            # Entra ID User
+        elif azure_type_lower in ["user", "microsoft.aad/user", "microsoft.graph/users"]:
+            # Entra ID User (case-insensitive)
             # Users from Neo4j may have different property names than ARM resources
             raw_upn = resource.get("userPrincipalName") or resource.get(
                 "name", "unknown"
@@ -3093,13 +3093,14 @@ class TerraformEmitter(IaCEmitter):
                 "password": f"var.azuread_user_password_{self._sanitize_terraform_name(user_principal_name)}",
                 "force_password_change": True,
             }
+            logger.debug(f"Entra ID User '{user_principal_name}' generated")
 
             # Optionally add other properties if present
             if resource.get("accountEnabled") is not None:
                 resource_config["account_enabled"] = resource.get("accountEnabled")
 
-        elif azure_type in ["Group", "Microsoft.AAD/Group", "Microsoft.Graph/groups"]:
-            # Entra ID Group
+        elif azure_type_lower in ["group", "microsoft.aad/group", "microsoft.graph/groups"]:
+            # Entra ID Group (case-insensitive)
             display_name = (
                 resource.get("displayName")
                 or resource.get("display_name")
@@ -3118,12 +3119,12 @@ class TerraformEmitter(IaCEmitter):
             if resource.get("description"):
                 resource_config["description"] = resource.get("description")
 
-        elif azure_type in [
-            "ServicePrincipal",
-            "Microsoft.AAD/ServicePrincipal",
-            "Microsoft.Graph/servicePrincipals",
+        elif azure_type_lower in [
+            "serviceprincipal",
+            "microsoft.aad/serviceprincipal",
+            "microsoft.graph/serviceprincipals",
         ]:
-            # Entra ID Service Principal
+            # Entra ID Service Principal (case-insensitive)
             app_id = (
                 resource.get("appId")
                 or resource.get("application_id")
