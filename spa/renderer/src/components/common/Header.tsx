@@ -5,6 +5,7 @@ import {
   Crop54 as MaximizeIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import LayerSelector from '../layer/LayerSelector';
 
 const Header: React.FC = () => {
   const handleMinimize = () => {
@@ -62,23 +63,33 @@ const Header: React.FC = () => {
         variant="h6"
         component="div"
         style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
           color: '#ffffff',
           fontSize: '1.25rem',
           fontWeight: 500,
+          marginRight: '24px',
         }}
       >
         Azure Tenant Grapher
       </Typography>
 
+      {/* Layer Selector - centered */}
+      <Box
+        style={{
+          ['WebkitAppRegion' as any]: 'no-drag',
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <LayerSelector compact showCreateButton={false} showRefreshButton={true} />
+      </Box>
+
+      {/* Window controls - right */}
       <Box
         style={{
           ['WebkitAppRegion' as any]: 'no-drag',
           display: 'flex',
           gap: '8px',
-          marginLeft: 'auto'
         }}
       >
         <IconButton size="small" onClick={handleMinimize} sx={{ color: '#ffffff' }}>

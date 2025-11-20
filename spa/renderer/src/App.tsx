@@ -8,6 +8,7 @@ import StatusBar from './components/common/StatusBar';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import TabErrorBoundary from './components/common/TabErrorBoundary';
 import { useApp } from './context/AppContext';
+import { LayerProvider } from './context/LayerContext';
 import { withErrorHandling, withNetworkErrorHandling } from './utils/errorUtils';
 import { errorService } from './services/errorService';
 
