@@ -3976,17 +3976,19 @@ class TerraformEmitter(IaCEmitter):
         )
 
         for resource in resources:
-            resource_id = resource.get("id", "")
+            # Bug #49: Use original_id (real Azure ID) instead of id (abstracted hash)
+            # In dual-graph: id="pe-a1b2c3d4" (hash), original_id="/subscriptions/.../..."
+            resource_id = resource.get("original_id") or resource.get("id", "")
             if resource_id:
                 match = resource_id_pattern.match(resource_id)
                 if match:
                     subscription_id = match.group(1)
                     logger.debug(
-                        f"Extracted source subscription ID from resource ID: {subscription_id}"
+                        f"Bug #49: Extracted source subscription ID from original_id: {subscription_id}"
                     )
                     return subscription_id
 
-        logger.debug("Could not extract source subscription ID from resources")
+        logger.debug("Bug #49: Could not extract source subscription ID from resources")
         return None
 
     def get_supported_resource_types(self) -> List[str]:
