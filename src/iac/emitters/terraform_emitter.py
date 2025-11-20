@@ -2036,7 +2036,7 @@ class TerraformEmitter(IaCEmitter):
                     "administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
-        elif azure_type == "Microsoft.Sql/servers/databases":
+        elif azure_type_lower == "microsoft.sql/servers/databases":
             # Bug #37: SQL Database (child resource) needs server_id, not location/rg
             # Extract parent server name from database ID
             db_id = resource.get("id", "") or resource.get("original_id", "")
@@ -2050,11 +2050,17 @@ class TerraformEmitter(IaCEmitter):
 
             server_name_safe = self._sanitize_terraform_name(server_name)
 
+            # Bug #43: Database names often include server prefix (server/database)
+            # Extract just the database name (after last slash)
+            db_name_only = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+
             # SQL Database config (no location or resource_group_name - these are on the server)
             resource_config = {
-                "name": resource_name,
+                "name": db_name_only,
                 "server_id": f"${{azurerm_mssql_server.{server_name_safe}.id}}",
             }
+
+            logger.debug(f"Bug #43: SQL Database '{resource_name}' → name '{db_name_only}'")
 
             # Add optional properties if present
             properties = self._parse_properties(resource)
@@ -2067,8 +2073,8 @@ class TerraformEmitter(IaCEmitter):
 
             logger.debug(f"Bug #37: SQL Database '{resource_name}' linked to server '{server_name}'")
 
-        elif azure_type == "Microsoft.ServiceBus/namespaces":
-            # Bug #38: Service Bus Namespace requires SKU
+        elif azure_type_lower == "microsoft.servicebus/namespaces":
+            # Bug #38: Service Bus Namespace requires SKU (case-insensitive)
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
             sku_name = sku.get("name", "Standard") if sku else "Standard"
@@ -2076,8 +2082,8 @@ class TerraformEmitter(IaCEmitter):
             resource_config["sku"] = sku_name
             logger.debug(f"Bug #38: Service Bus '{resource_name}' using SKU '{sku_name}'")
 
-        elif azure_type == "Microsoft.EventHub/namespaces":
-            # EventHub namespaces require sku argument
+        elif azure_type_lower == "microsoft.eventhub/namespaces":
+            # EventHub namespaces require sku argument (case-insensitive)
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
 
@@ -2090,8 +2096,8 @@ class TerraformEmitter(IaCEmitter):
             if sku and "capacity" in sku:
                 resource_config["capacity"] = sku["capacity"]
 
-        elif azure_type == "Microsoft.Kusto/clusters":
-            # Kusto clusters require sku block
+        elif azure_type_lower == "microsoft.kusto/clusters":
+            # Kusto clusters require sku block (case-insensitive)
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
 
@@ -2105,8 +2111,8 @@ class TerraformEmitter(IaCEmitter):
 
             resource_config["sku"] = {"name": sku_name, "capacity": sku_capacity}
 
-        elif azure_type == "Microsoft.KeyVault/vaults":
-            # Extract tenant_id from multiple sources with proper fallback
+        elif azure_type_lower == "microsoft.keyvault/vaults":
+            # Extract tenant_id from multiple sources with proper fallback (case-insensitive)
             # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
             properties = self._parse_properties(resource)
 
@@ -2351,7 +2357,7 @@ class TerraformEmitter(IaCEmitter):
                     f"VM Extension '{resource_name}' has no parent VM in ID: {extension_id}. Skipping."
                 )
                 return None
-        elif azure_type == "Microsoft.OperationalInsights/workspaces":
+        elif azure_type_lower == "microsoft.operationalinsights/workspaces":
             # Log Analytics Workspace specific properties
             properties = self._parse_properties(resource)
             sku = properties.get("sku", {})
