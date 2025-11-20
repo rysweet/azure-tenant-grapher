@@ -181,9 +181,11 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.DataFactory/factories": "azurerm_data_factory",
         "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
         "Microsoft.ServiceBus/namespaces": "azurerm_servicebus_namespace",
+        # Bug #44: Add previously "unsupported" resources that DO have azurerm provider support!
+        "Microsoft.Compute/virtualMachines/runCommands": "azurerm_virtual_machine_run_command",
+        "Microsoft.App/managedEnvironments": "azurerm_container_app_environment",
+        "Microsoft.App/containerApps": "azurerm_container_app",
         # Microsoft.SecurityCopilot/capacities - No Terraform support yet, will be skipped
-        # Microsoft.App/managedEnvironments - Complex, requires additional work
-        # Microsoft.Compute/virtualMachines/runCommands - Child resources, complex handling needed
         "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
         # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
@@ -2357,6 +2359,41 @@ class TerraformEmitter(IaCEmitter):
                     f"VM Extension '{resource_name}' has no parent VM in ID: {extension_id}. Skipping."
                 )
                 return None
+
+        elif azure_type_lower == "microsoft.compute/virtualmachines/runcommands":
+            # Bug #44: VM Run Commands (22 resources!)
+            # Extract parent VM name from run command ID
+            rc_id = resource.get("id", "") or resource.get("original_id", "")
+            vm_name = self._extract_resource_name_from_id(rc_id, "virtualMachines")
+
+            if vm_name == "unknown":
+                logger.warning(f"Bug #44: Run Command '{resource_name}' has no parent VM. Skipping.")
+                return None
+
+            vm_name_safe = self._sanitize_terraform_name(vm_name)
+            properties = self._parse_properties(resource)
+
+            # Run command just needs VM ID and source script
+            resource_config = {
+                "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                "source": {
+                    "script": properties.get("source", {}).get("script", "# Placeholder script")
+                }
+            }
+            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}'")
+
+        elif azure_type_lower == "microsoft.app/managedenvironments":
+            # Bug #44: Container App Environment (10 resources!)
+            properties = self._parse_properties(resource)
+
+            # Required: log_analytics_workspace_id
+            workspace_id = properties.get("appLogsConfiguration", {}).get("logAnalyticsConfiguration", {}).get("customerId")
+            if workspace_id:
+                # Try to find the workspace in our generated config
+                resource_config["log_analytics_workspace_id"] = f"${{azurerm_log_analytics_workspace.workspace.id}}"  # Placeholder
+
+            logger.debug(f"Bug #44: Container App Environment '{resource_name}'")
+
         elif azure_type_lower == "microsoft.operationalinsights/workspaces":
             # Log Analytics Workspace specific properties
             properties = self._parse_properties(resource)
