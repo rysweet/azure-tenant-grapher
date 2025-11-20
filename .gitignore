@@ -269,3 +269,4 @@ worktrees/
 **/tfplan*
 **/*.tfplan
 demos/simuland_iteration3/demos/
+.claude.backup.*/
