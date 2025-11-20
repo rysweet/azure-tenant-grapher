@@ -2373,8 +2373,13 @@ class TerraformEmitter(IaCEmitter):
             vm_name_safe = self._sanitize_terraform_name(vm_name)
             properties = self._parse_properties(resource)
 
-            # Run command just needs VM ID and source script
+            # Extract just command name (e.g., "vm/Get-AzureADToken" -> "Get-AzureADToken")
+            command_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+
+            # Run command requires name, location, VM ID and source script
             resource_config = {
+                "name": command_name,
+                "location": location,
                 "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
                 "source": {
                     "script": properties.get("source", {}).get("script", "# Placeholder script")
@@ -2386,11 +2391,14 @@ class TerraformEmitter(IaCEmitter):
             # Bug #44: Container App Environment (10 resources!)
             properties = self._parse_properties(resource)
 
-            # Required: log_analytics_workspace_id
+            # Optional: log_analytics_workspace_id
+            # Only include if we have a valid workspace_id from the properties
             workspace_id = properties.get("appLogsConfiguration", {}).get("logAnalyticsConfiguration", {}).get("customerId")
             if workspace_id:
-                # Try to find the workspace in our generated config
-                resource_config["log_analytics_workspace_id"] = f"${{azurerm_log_analytics_workspace.workspace.id}}"  # Placeholder
+                # Use the actual workspace ID (log analytics workspace resource ID format)
+                # This is a valid Azure resource ID, so we can use it directly
+                resource_config["log_analytics_workspace_id"] = workspace_id
+            # If workspace_id is not found, we skip it - it's optional per Terraform docs
 
             logger.debug(f"Bug #44: Container App Environment '{resource_name}'")
 
@@ -2789,6 +2797,30 @@ class TerraformEmitter(IaCEmitter):
                 }
 
             logger.debug(f"Bug #42: Container Group '{resource_name}' os_type='{os_properties}'")
+
+        elif azure_type_lower == "microsoft.network/applicationgatewaywebapplicationfirewallpolicies":
+            # WAF Policy (Web Application Firewall Policy)
+            properties = self._parse_properties(resource)
+
+            # Required: managed_rules block
+            resource_config["managed_rules"] = {
+                "managed_rule_set": [
+                    {
+                        "type": "OWASP",
+                        "version": "3.2"
+                    }
+                ]
+            }
+
+            # Optional: policy_settings
+            if properties.get("policySettings"):
+                settings = properties["policySettings"]
+                resource_config["policy_settings"] = {
+                    "enabled": settings.get("state", "Enabled") == "Enabled",
+                    "mode": settings.get("mode", "Detection")
+                }
+
+            logger.debug(f"WAF Policy '{resource_name}' configured with OWASP 3.2")
 
         elif azure_type == "Microsoft.CognitiveServices/accounts":
             # Cognitive Services Account specific properties
