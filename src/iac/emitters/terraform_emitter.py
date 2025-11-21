@@ -2188,7 +2188,7 @@ class TerraformEmitter(IaCEmitter):
         ):
             # Azure AD Service Principal specific properties
             resource_config = {
-                "application_id": resource.get("applicationId", ""),
+                "client_id": resource.get("applicationId", ""),
             }
             if "displayName" in resource:
                 resource_config["display_name"] = resource["displayName"]
@@ -3200,7 +3200,7 @@ class TerraformEmitter(IaCEmitter):
             )
 
             resource_config = {
-                "application_id": app_id,
+                "client_id": app_id,
                 # Note: In real scenario, this would reference an azuread_application resource
                 # For now, use the app_id directly
             }

@@ -173,3 +173,70 @@ class TestTerraformAzureADProvider:
             emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.AAD/ServicePrincipal"]
             == "azuread_service_principal"
         )
+
+    def test_service_principal_uses_client_id_field(self) -> None:
+        """Test that Azure AD service principals use 'client_id' not 'application_id' field.
+
+        This is a regression test for the bug where Service Principals were generated
+        with 'application_id' instead of 'client_id', causing Terraform validation errors.
+        The azuread_service_principal Terraform resource requires 'client_id', not 'application_id'.
+        """
+        emitter = TerraformEmitter()
+
+        # Create test graph with Service Principal
+        graph = TenantGraph()
+        graph.resources = [
+            {
+                "type": "Microsoft.AAD/ServicePrincipal",
+                "name": "test-app-sp",
+                "displayName": "Test Application Service Principal",
+                "applicationId": "12345678-1234-1234-1234-123456789012",
+                "accountEnabled": True,
+            },
+            {
+                "type": "Microsoft.Graph/servicePrincipals",
+                "name": "test-graph-sp",
+                "displayName": "Test Graph Service Principal",
+                "applicationId": "87654321-4321-4321-4321-210987654321",
+                "accountEnabled": False,
+            },
+        ]
+
+        # Generate templates
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir)
+            written_files = emitter.emit(graph, out_dir)
+
+            # Verify file was created
+            assert len(written_files) == 1
+
+            # Read and validate content
+            with open(written_files[0]) as f:
+                terraform_config = json.load(f)
+
+            # Get service principals from generated config
+            sp_resources = terraform_config.get("resource", {}).get(
+                "azuread_service_principal", {}
+            )
+            assert len(sp_resources) == 2, "Expected 2 service principal resources"
+
+            # Verify each service principal has 'client_id' and not 'application_id'
+            for sp_name, sp_config in sp_resources.items():
+                # Must have client_id field
+                assert "client_id" in sp_config, (
+                    f"Service principal '{sp_name}' missing 'client_id' field. "
+                    "This is required by the azuread_service_principal Terraform resource."
+                )
+
+                # Must NOT have application_id field (regression test)
+                assert "application_id" not in sp_config, (
+                    f"Service principal '{sp_name}' has 'application_id' field. "
+                    "This field is not recognized by azuread_service_principal resource. "
+                    "Use 'client_id' instead."
+                )
+
+                # Verify client_id has the correct value
+                if sp_name == "test_app_sp":
+                    assert sp_config["client_id"] == "12345678-1234-1234-1234-123456789012"
+                elif sp_name == "test_graph_sp":
+                    assert sp_config["client_id"] == "87654321-4321-4321-4321-210987654321"
