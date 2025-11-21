@@ -268,6 +268,35 @@ class IDAbstractionService:
         """
         return [self.abstract_resource_id(rid) for rid in resource_ids]
 
+    def abstract_principal_id(self, principal_id: str) -> str:
+        """
+        Abstract principal ID (GUID) to hash-based ID.
+
+        This method abstracts Entra ID principal GUIDs (user, service principal, or managed identity)
+        to privacy-preserving hash-based identifiers. This is critical for role assignments where
+        principal IDs from the source tenant must be abstracted for cross-tenant deployment.
+
+        Args:
+            principal_id: Principal ID (GUID)
+                Example: 12345678-1234-1234-1234-123456789012
+
+        Returns:
+            Abstracted principal ID with 'principal-' prefix
+                Example: principal-a1b2c3d4e5f6g7h8
+
+        Raises:
+            ValueError: If principal_id is empty or invalid
+
+        Examples:
+            >>> service = IDAbstractionService("seed")
+            >>> service.abstract_principal_id("12345678-1234-1234-1234-123456789012")
+            'principal-...'
+        """
+        if not principal_id:
+            raise ValueError("principal_id cannot be empty")
+
+        return f"principal-{self._hash(principal_id)}"
+
     def _extract_type_prefix(self, resource_type: str) -> str:
         """
         Extract short type prefix from Azure resource type.

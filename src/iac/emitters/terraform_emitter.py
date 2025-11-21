@@ -73,6 +73,8 @@ class TerraformEmitter(IaCEmitter):
         self._missing_references: List[Dict[str, str]] = []
         # Translator for cross-subscription resource IDs (initialized in emit())
         self._translator: Optional[PrivateEndpointTranslator] = None
+        # Track available resource group names (Issue: Skip VNets with missing RGs)
+        self._available_resource_groups: set = set()
 
         # Store translation parameters for later initialization
         self.target_subscription_id = target_subscription_id
@@ -362,6 +364,8 @@ class TerraformEmitter(IaCEmitter):
         # Bug #31: Map VNet abstracted IDs to terraform names for standalone subnets
         # Format: {abstracted_vnet_id: terraform_name}
         self._vnet_id_to_terraform_name: Dict[str, str] = {}
+        # Store graph for reference in _convert_resource (needed for DCR workspace validation)
+        self._graph = graph
 
         # First pass: Build index of available resources
         logger.info("Building resource index for reference validation")
@@ -1370,6 +1374,25 @@ class TerraformEmitter(IaCEmitter):
         # Sanitize resource name for Terraform
         safe_name = self._sanitize_terraform_name(resource_name)
 
+        # Define globally unique resource types that need unique suffixes
+        globally_unique_types = {
+            "Microsoft.KeyVault/vaults",
+            "Microsoft.Cache/Redis",
+            "Microsoft.Web/sites",
+            "Microsoft.ContainerRegistry/registries",
+            "Microsoft.DocumentDB/databaseAccounts",
+        }
+
+        # Apply unique suffix for globally unique resource types
+        resource_name_with_suffix = resource_name
+        if azure_type in globally_unique_types or azure_type.lower() in {t.lower() for t in globally_unique_types}:
+            resource_id = resource.get("id", "")
+            resource_name_with_suffix = self._add_unique_suffix(resource_name, resource_id)
+            safe_name = self._sanitize_terraform_name(resource_name_with_suffix)
+            logger.info(
+                f"Applied unique suffix to globally unique resource '{resource_name}' -> '{resource_name_with_suffix}' (type: {azure_type})"
+            )
+
         # Build basic resource configuration
         # Ensure location is never null - default to eastus if missing
         # Bug #20 fix: Reject 'global' location which is invalid for resource groups
@@ -1384,23 +1407,26 @@ class TerraformEmitter(IaCEmitter):
         # Resource groups don't have a resource_group_name field
         if azure_type == "Microsoft.Resources/resourceGroups":
             resource_config = {
-                "name": resource_name,
+                "name": resource_name_with_suffix,
                 "location": location,
             }
         # Smart Detector Alert Rules are global and don't have a location field
         elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
             resource_config = {
-                "name": resource_name,
+                "name": resource_name_with_suffix,
                 "resource_group_name": resource.get("resource_group")
-                or resource.get("resourceGroup", "default-rg"),
+                or resource.get("resourceGroup"),
             }
         else:
             resource_config = {
-                "name": resource_name,
+                "name": resource_name_with_suffix,
                 "location": location,
                 "resource_group_name": resource.get("resource_group")
-                or resource.get("resourceGroup", "default-rg"),
+                or resource.get("resourceGroup"),
             }
+
+        # Note: Resources without resource groups will get None, which Terraform will reject
+        # This is intentional - better to fail fast than deploy to wrong location
 
         # Add tags if present
         if "tags" in resource:
@@ -1525,7 +1551,7 @@ class TerraformEmitter(IaCEmitter):
                 subnet_config = {
                     "name": subnet_name,  # Azure resource name (unchanged)
                     "resource_group_name": resource.get("resource_group")
-                    or resource.get("resourceGroup", "default-rg"),
+                    or resource.get("resourceGroup"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_safe_name}.name}}",
                     "address_prefixes": [normalized_subnet_cidr],
                 }
@@ -1875,7 +1901,7 @@ class TerraformEmitter(IaCEmitter):
                 resource_config = {
                     "name": resource_name,  # Original Azure name
                     "resource_group_name": resource.get("resource_group")
-                    or resource.get("resourceGroup", "default-rg"),
+                    or resource.get("resourceGroup"),
                     "virtual_network_name": f"${{azurerm_virtual_network.{vnet_name_safe}.name}}",
                 }
 
@@ -1889,7 +1915,7 @@ class TerraformEmitter(IaCEmitter):
                     f"Skipping subnet as it cannot be deployed without a VNet."
                 )
                 # Skip this subnet entirely - cannot deploy without VNet
-                continue
+                return None
 
             # Handle address prefixes with fallback
             address_prefixes = (
@@ -1968,7 +1994,7 @@ class TerraformEmitter(IaCEmitter):
             service_plan_id = resource.get("app_service_plan_id")
             if not service_plan_id:
                 # If no service plan, create a default one for this App Service
-                resource_group = resource.get("resource_group", "default-rg")
+                resource_group = resource.get("resource_group")
                 plan_name = f"{resource_name}-plan"
                 plan_safe_name = self._sanitize_terraform_name(plan_name)
 
@@ -2171,7 +2197,7 @@ class TerraformEmitter(IaCEmitter):
             resource_config = {
                 "name": resource_name,
                 "location": location,
-                "resource_group_name": resource.get("resource_group", "default-rg"),
+                "resource_group_name": resource.get("resource_group"),
             }
         elif azure_type == "Microsoft.Network/privateEndpoints":
             # Private Endpoint specific properties
@@ -3041,6 +3067,17 @@ class TerraformEmitter(IaCEmitter):
                         workspace_resource_id = self._normalize_azure_resource_id(
                             workspace_resource_id
                         )
+
+                        # Check if the workspace exists in the graph
+                        if not self._workspace_exists_in_graph(workspace_resource_id):
+                            logger.warning(
+                                f"Data Collection Rule '{resource_name}' references non-existent "
+                                f"Log Analytics workspace: {workspace_resource_id}. "
+                                f"Skipping this DCR as the workspace is not in the graph."
+                            )
+                            # Skip this entire DCR by returning None early
+                            return None
+
                         log_analytics_list.append(
                             {
                                 "workspace_resource_id": workspace_resource_id,
@@ -3644,6 +3681,24 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
+    def _add_unique_suffix(self, name: str, resource_id: str) -> str:
+        """Add a unique suffix to globally unique resource names.
+
+        Args:
+            name: Original resource name
+            resource_id: Azure resource ID (for deterministic hash generation)
+
+        Returns:
+            Name with 6-character hash suffix appended
+        """
+        import hashlib
+
+        # Generate deterministic hash from resource ID
+        hash_suffix = hashlib.sha256(resource_id.encode()).hexdigest()[:6]
+
+        # Append suffix with hyphen
+        return f"{name}-{hash_suffix}"
+
     def _sanitize_user_principal_name(self, upn: str) -> str:
         """Sanitize user principal name to be a valid email address.
 
@@ -3781,6 +3836,40 @@ class TerraformEmitter(IaCEmitter):
                 f"Bug #35: VNet/Subnet '{resource_name}' - Invalid CIDR '{cidr}': {e}"
             )
             return None
+
+    def _workspace_exists_in_graph(self, workspace_resource_id: str) -> bool:
+        """Check if a Log Analytics workspace exists in the graph.
+
+        Args:
+            workspace_resource_id: Azure resource ID of the workspace
+
+        Returns:
+            True if workspace exists in graph, False otherwise
+        """
+        if not workspace_resource_id or not hasattr(self, "_graph"):
+            return False
+
+        # Normalize the workspace ID for comparison
+        normalized_workspace_id = self._normalize_azure_resource_id(
+            workspace_resource_id
+        ).lower()
+
+        # Check if workspace exists in graph resources
+        for resource in self._graph.resources:
+            resource_type = resource.get("type", "")
+            # Check for Log Analytics workspace types
+            if resource_type.lower() in [
+                "microsoft.operationalinsights/workspaces",
+                "microsoft.operationalinsights/workspace",
+            ]:
+                # Check both id and original_id (for abstracted nodes)
+                resource_id = (resource.get("id") or "").lower()
+                original_id = (resource.get("original_id") or "").lower()
+
+                if normalized_workspace_id in (resource_id, original_id):
+                    return True
+
+        return False
 
     def _normalize_azure_resource_id(self, resource_id: str) -> str:
         """Normalize Azure resource ID casing to match Terraform expectations.
