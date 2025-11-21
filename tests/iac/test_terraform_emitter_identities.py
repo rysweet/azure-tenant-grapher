@@ -351,3 +351,93 @@ class TestTerraformEmitterIdentities:
                 assert "azuread" not in provider_types, (
                     "azuread provider should not be included for managed identities only"
                 )
+
+    def test_azuread_user_with_parentheses_in_upn(self) -> None:
+        """Test that UPNs with parentheses are sanitized correctly.
+
+        Tests the fix for users with parentheses in their UPNs like:
+        - BrianHooper(DEX)@example.com -> BrianHooper-DEX@example.com
+        - MichaelHoward(REDTEAM)@example.com -> MichaelHoward-REDTEAM@example.com
+        """
+        emitter = TerraformEmitter()
+
+        # Create test graph with users having parentheses in UPN
+        graph = TenantGraph()
+        graph.resources = [
+            {
+                "id": "user-001",
+                "type": "Microsoft.Graph/users",
+                "name": "BrianHooper",
+                "displayName": "Brian Hooper",
+                "userPrincipalName": "BrianHooper(DEX)@example.com",
+                "location": "global",
+                "resourceGroup": "identity-resources",
+            },
+            {
+                "id": "user-002",
+                "type": "Microsoft.Graph/users",
+                "name": "CameronThomas",
+                "displayName": "Cameron Thomas",
+                "userPrincipalName": "CameronThomas(DEX)@example.com",
+                "location": "global",
+                "resourceGroup": "identity-resources",
+            },
+            {
+                "id": "user-003",
+                "type": "Microsoft.Graph/users",
+                "name": "MichaelHoward",
+                "displayName": "Michael Howard",
+                "userPrincipalName": "MichaelHoward(REDTEAM)@example.com",
+                "location": "global",
+                "resourceGroup": "identity-resources",
+            },
+        ]
+
+        # Create temporary output directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir)
+
+            # Generate templates
+            written_files = emitter.emit(graph, out_dir)
+
+            # Verify content structure
+            with open(written_files[0]) as f:
+                terraform_config = json.load(f)
+
+            # Check that azuread_user resources were created
+            assert "azuread_user" in terraform_config["resource"], (
+                "azuread_user resource was not generated"
+            )
+
+            user_resources = terraform_config["resource"]["azuread_user"]
+            assert len(user_resources) == 3, "Expected 3 users"
+
+            # Check that parentheses have been removed/replaced with hyphens
+            upn_values = []
+            for user_config in user_resources.values():
+                upn = user_config.get("user_principal_name")
+                if upn:
+                    upn_values.append(upn)
+
+            # Verify no UPNs contain parentheses
+            for upn in upn_values:
+                assert "(" not in upn, (
+                    f"UPN '{upn}' still contains opening parenthesis"
+                )
+                assert ")" not in upn, (
+                    f"UPN '{upn}' still contains closing parenthesis"
+                )
+
+            # Verify expected transformation (parentheses replaced with hyphens)
+            assert any(
+                "BrianHooper-DEX@example.com" in upn for upn in upn_values
+            ), "BrianHooper(DEX) should be sanitized to BrianHooper-DEX"
+
+            assert any(
+                "CameronThomas-DEX@example.com" in upn for upn in upn_values
+            ), "CameronThomas(DEX) should be sanitized to CameronThomas-DEX"
+
+            assert any(
+                "MichaelHoward-REDTEAM@example.com" in upn
+                for upn in upn_values
+            ), "MichaelHoward(REDTEAM) should be sanitized to MichaelHoward-REDTEAM"
