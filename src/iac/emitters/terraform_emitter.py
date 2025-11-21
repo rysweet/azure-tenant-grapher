@@ -1886,16 +1886,10 @@ class TerraformEmitter(IaCEmitter):
             else:
                 logger.warning(
                     f"Standalone subnet '{resource_name}' has no parent VNet in ID: {subnet_id}. "
-                    f"Using fallback naming (may cause collisions)."
+                    f"Skipping subnet as it cannot be deployed without a VNet."
                 )
-                # Fallback to old behavior
-                safe_name = self._sanitize_terraform_name(resource_name)
-                resource_config = {
-                    "name": resource_name,
-                    "resource_group_name": resource.get("resource_group")
-                    or resource.get("resourceGroup", "default-rg"),
-                    "virtual_network_name": "unknown_vnet",
-                }
+                # Skip this subnet entirely - cannot deploy without VNet
+                continue
 
             # Handle address prefixes with fallback
             address_prefixes = (
