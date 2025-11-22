@@ -1417,6 +1417,13 @@ class TerraformEmitter(IaCEmitter):
                 "resource_group_name": resource.get("resource_group")
                 or resource.get("resourceGroup"),
             }
+        # DNS Zones are global resources and don't have a location field
+        elif azure_type in ("Microsoft.Network/dnszones", "Microsoft.Network/dnsZones"):
+            resource_config = {
+                "name": resource_name_with_suffix,
+                "resource_group_name": resource.get("resource_group")
+                or resource.get("resourceGroup"),
+            }
         else:
             resource_config = {
                 "name": resource_name_with_suffix,
@@ -2187,8 +2194,23 @@ class TerraformEmitter(IaCEmitter):
             "Microsoft.Graph/servicePrincipals",
         ):
             # Azure AD Service Principal specific properties
+            # Bug #43: Try multiple field names for applicationId to find the client_id
+            app_id = (
+                resource.get("applicationId")
+                or resource.get("appId")
+                or resource.get("client_id")
+            )
+
+            # Skip Service Principal if no applicationId found (Bug #43)
+            if not app_id:
+                logger.warning(
+                    f"Skipping Service Principal '{resource_name}': No applicationId found. "
+                    f"Available keys: {list(resource.keys())}"
+                )
+                return None
+
             resource_config = {
-                "client_id": resource.get("applicationId", ""),
+                "client_id": app_id,
             }
             if "displayName" in resource:
                 resource_config["display_name"] = resource["displayName"]
@@ -3188,11 +3210,22 @@ class TerraformEmitter(IaCEmitter):
             "microsoft.graph/serviceprincipals",
         ]:
             # Entra ID Service Principal (case-insensitive)
+            # Bug #43: Try multiple field names for appId to find the client_id
             app_id = (
                 resource.get("appId")
                 or resource.get("application_id")
-                or "00000000-0000-0000-0000-000000000000"
+                or resource.get("applicationId")
+                or resource.get("client_id")
             )
+
+            # Skip Service Principal if no appId found (Bug #43)
+            if not app_id:
+                logger.warning(
+                    f"Skipping Service Principal '{resource_name}': No appId found. "
+                    f"Available keys: {list(resource.keys())}"
+                )
+                return None
+
             display_name = (
                 resource.get("displayName")
                 or resource.get("display_name")
@@ -3490,6 +3523,279 @@ class TerraformEmitter(IaCEmitter):
                     f"Skipping metric alert '{resource_name}' - no criteria found"
                 )
                 return None
+
+        elif azure_type == "Microsoft.Network/applicationGateways":
+            # Application Gateway requires complex nested configuration blocks
+            properties = self._parse_properties(resource)
+
+            # Required: sku block
+            sku = properties.get("sku", {})
+            sku_name = sku.get("name", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
+            sku_tier = sku.get("tier", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
+            sku_capacity = sku.get("capacity", 2) if isinstance(sku, dict) else 2
+
+            resource_config["sku"] = [{
+                "name": sku_name,
+                "tier": sku_tier,
+                "capacity": sku_capacity
+            }]
+
+            # Required: gateway_ip_configuration block
+            # Get gateway IP configurations from properties
+            gateway_ip_configs = properties.get("gatewayIPConfigurations", [])
+            if gateway_ip_configs:
+                gateway_ip_config = gateway_ip_configs[0] if isinstance(gateway_ip_configs, list) else {}
+                if isinstance(gateway_ip_config, dict):
+                    gateway_ip_name = gateway_ip_config.get("name", "gateway-ip-config")
+                    gateway_ip_props = gateway_ip_config.get("properties", {})
+                    subnet_id = gateway_ip_props.get("subnet", {}).get("id", "")
+                else:
+                    gateway_ip_name = "gateway-ip-config"
+                    subnet_id = ""
+            else:
+                gateway_ip_name = "gateway-ip-config"
+                subnet_id = ""
+
+            # Resolve subnet reference
+            subnet_reference = self._resolve_subnet_reference(subnet_id, resource_name)
+            if subnet_reference is None:
+                # Use placeholder for missing subnet
+                subnet_reference = "${azurerm_subnet.appgw_subnet.id}"
+                logger.warning(
+                    f"Application Gateway '{resource_name}' has invalid subnet reference. "
+                    f"Will use placeholder: {subnet_reference}"
+                )
+
+            resource_config["gateway_ip_configuration"] = [{
+                "name": gateway_ip_name,
+                "subnet_id": subnet_reference
+            }]
+
+            # Required: frontend_ip_configuration block
+            frontend_ip_configs = properties.get("frontendIPConfigurations", [])
+            if frontend_ip_configs:
+                frontend_ip_config = frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
+                if isinstance(frontend_ip_config, dict):
+                    frontend_ip_name = frontend_ip_config.get("name", "frontend-ip-config")
+                    frontend_ip_props = frontend_ip_config.get("properties", {})
+                    # Check for public IP
+                    public_ip_id = frontend_ip_props.get("publicIPAddress", {}).get("id", "")
+                    if public_ip_id:
+                        public_ip_name = self._extract_resource_name_from_id(public_ip_id, "publicIPAddresses")
+                        if public_ip_name != "unknown":
+                            public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
+                            if self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+                                frontend_ip_block = {
+                                    "name": frontend_ip_name,
+                                    "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                                }
+                            else:
+                                frontend_ip_block = {
+                                    "name": frontend_ip_name,
+                                    "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                                }
+                                logger.warning(
+                                    f"Application Gateway '{resource_name}' references public IP '{public_ip_name}' "
+                                    f"that may not exist. Will use placeholder reference."
+                                )
+                        else:
+                            frontend_ip_block = {
+                                "name": frontend_ip_name,
+                                "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
+                            }
+                    else:
+                        frontend_ip_block = {
+                            "name": frontend_ip_name,
+                            "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
+                        }
+                else:
+                    frontend_ip_block = {
+                        "name": "frontend-ip-config",
+                        "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
+                    }
+            else:
+                frontend_ip_block = {
+                    "name": "frontend-ip-config",
+                    "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
+                }
+
+            resource_config["frontend_ip_configuration"] = [frontend_ip_block]
+
+            # Required: frontend_port block
+            frontend_ports = properties.get("frontendPorts", [])
+            if frontend_ports:
+                frontend_port_blocks = []
+                for port_config in frontend_ports:
+                    if isinstance(port_config, dict):
+                        port_name = port_config.get("name", "frontend-port-80")
+                        port_props = port_config.get("properties", {})
+                        port_num = port_props.get("port", 80)
+                    else:
+                        port_name = "frontend-port-80"
+                        port_num = 80
+                    frontend_port_blocks.append({
+                        "name": port_name,
+                        "port": port_num
+                    })
+                resource_config["frontend_port"] = frontend_port_blocks
+            else:
+                resource_config["frontend_port"] = [{
+                    "name": "frontend-port-80",
+                    "port": 80
+                }]
+
+            # Required: backend_address_pool block
+            backend_pools = properties.get("backendAddressPools", [])
+            if backend_pools:
+                backend_pool_blocks = []
+                for pool_config in backend_pools:
+                    if isinstance(pool_config, dict):
+                        pool_name = pool_config.get("name", "backend-pool")
+                    else:
+                        pool_name = "backend-pool"
+                    backend_pool_blocks.append({
+                        "name": pool_name
+                    })
+                resource_config["backend_address_pool"] = backend_pool_blocks
+            else:
+                resource_config["backend_address_pool"] = [{
+                    "name": "backend-pool"
+                }]
+
+            # Required: backend_http_settings block
+            backend_http_settings = properties.get("backendHttpSettingsCollection", [])
+            if backend_http_settings:
+                backend_http_blocks = []
+                for http_settings in backend_http_settings:
+                    if isinstance(http_settings, dict):
+                        settings_name = http_settings.get("name", "backend-http-settings")
+                        settings_props = http_settings.get("properties", {})
+                        port = settings_props.get("port", 80)
+                        protocol = settings_props.get("protocol", "Http")
+                        cookie_affinity = settings_props.get("cookieBasedAffinity", "Disabled")
+                        request_timeout = settings_props.get("requestTimeout", 60)
+                    else:
+                        settings_name = "backend-http-settings"
+                        port = 80
+                        protocol = "Http"
+                        cookie_affinity = "Disabled"
+                        request_timeout = 60
+                    backend_http_blocks.append({
+                        "name": settings_name,
+                        "cookie_based_affinity": cookie_affinity,
+                        "port": port,
+                        "protocol": protocol,
+                        "request_timeout": request_timeout
+                    })
+                resource_config["backend_http_settings"] = backend_http_blocks
+            else:
+                resource_config["backend_http_settings"] = [{
+                    "name": "backend-http-settings",
+                    "cookie_based_affinity": "Disabled",
+                    "port": 80,
+                    "protocol": "Http",
+                    "request_timeout": 60
+                }]
+
+            # Required: http_listener block
+            http_listeners = properties.get("httpListeners", [])
+            if http_listeners:
+                http_listener_blocks = []
+                for listener in http_listeners:
+                    if isinstance(listener, dict):
+                        listener_name = listener.get("name", "http-listener")
+                        listener_props = listener.get("properties", {})
+                        frontend_ip_config_name = listener_props.get("frontendIPConfiguration", {}).get("id", "")
+                        if frontend_ip_config_name:
+                            frontend_ip_config_name = self._extract_resource_name_from_id(
+                                frontend_ip_config_name, "frontendIPConfigurations"
+                            )
+                        else:
+                            frontend_ip_config_name = "frontend-ip-config"
+                        frontend_port_name = listener_props.get("frontendPort", {}).get("id", "")
+                        if frontend_port_name:
+                            frontend_port_name = self._extract_resource_name_from_id(
+                                frontend_port_name, "frontendPorts"
+                            )
+                        else:
+                            frontend_port_name = "frontend-port-80"
+                        protocol = listener_props.get("protocol", "Http")
+                    else:
+                        listener_name = "http-listener"
+                        frontend_ip_config_name = "frontend-ip-config"
+                        frontend_port_name = "frontend-port-80"
+                        protocol = "Http"
+                    http_listener_blocks.append({
+                        "name": listener_name,
+                        "frontend_ip_configuration_name": frontend_ip_config_name,
+                        "frontend_port_name": frontend_port_name,
+                        "protocol": protocol
+                    })
+                resource_config["http_listener"] = http_listener_blocks
+            else:
+                resource_config["http_listener"] = [{
+                    "name": "http-listener",
+                    "frontend_ip_configuration_name": "frontend-ip-config",
+                    "frontend_port_name": "frontend-port-80",
+                    "protocol": "Http"
+                }]
+
+            # Required: request_routing_rule block
+            routing_rules = properties.get("requestRoutingRules", [])
+            if routing_rules:
+                routing_rule_blocks = []
+                priority = 100
+                for rule in routing_rules:
+                    if isinstance(rule, dict):
+                        rule_name = rule.get("name", "routing-rule")
+                        rule_props = rule.get("properties", {})
+                        rule_type = rule_props.get("ruleType", "Basic")
+                        http_listener_name = rule_props.get("httpListener", {}).get("id", "")
+                        if http_listener_name:
+                            http_listener_name = self._extract_resource_name_from_id(
+                                http_listener_name, "httpListeners"
+                            )
+                        else:
+                            http_listener_name = "http-listener"
+                        backend_pool_name = rule_props.get("backendAddressPool", {}).get("id", "")
+                        if backend_pool_name:
+                            backend_pool_name = self._extract_resource_name_from_id(
+                                backend_pool_name, "backendAddressPools"
+                            )
+                        else:
+                            backend_pool_name = "backend-pool"
+                        backend_http_settings_name = rule_props.get("backendHttpSettings", {}).get("id", "")
+                        if backend_http_settings_name:
+                            backend_http_settings_name = self._extract_resource_name_from_id(
+                                backend_http_settings_name, "backendHttpSettingsCollection"
+                            )
+                        else:
+                            backend_http_settings_name = "backend-http-settings"
+                    else:
+                        rule_name = "routing-rule"
+                        rule_type = "Basic"
+                        http_listener_name = "http-listener"
+                        backend_pool_name = "backend-pool"
+                        backend_http_settings_name = "backend-http-settings"
+                    routing_rule_blocks.append({
+                        "name": rule_name,
+                        "rule_type": rule_type,
+                        "http_listener_name": http_listener_name,
+                        "backend_address_pool_name": backend_pool_name,
+                        "backend_http_settings_name": backend_http_settings_name,
+                        "priority": priority
+                    })
+                    priority += 1
+                resource_config["request_routing_rule"] = routing_rule_blocks
+            else:
+                resource_config["request_routing_rule"] = [{
+                    "name": "routing-rule",
+                    "rule_type": "Basic",
+                    "http_listener_name": "http-listener",
+                    "backend_address_pool_name": "backend-pool",
+                    "backend_http_settings_name": "backend-http-settings",
+                    "priority": 100
+                }]
 
         return terraform_type, safe_name, resource_config
 
