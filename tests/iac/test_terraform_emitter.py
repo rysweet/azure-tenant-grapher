@@ -132,6 +132,79 @@ class TestTerraformEmitter:
         assert emitter._sanitize_terraform_name("") == "unnamed_resource"
         assert emitter._sanitize_terraform_name("valid_name") == "valid_name"
 
+    def test_add_unique_suffix_container_registry(self) -> None:
+        """Test that Container Registry names don't get dashes in suffix.
+
+        Bug fix: Container Registries require alphanumeric-only names (no dashes).
+        Previous behavior added "-XXXXXX" suffix, which is invalid.
+        """
+        emitter = TerraformEmitter()
+
+        # Container Registry resource type
+        resource_id = "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.ContainerRegistry/registries/myacr"
+
+        # Test Container Registry: should NOT have dash in suffix
+        acr_name = "myacr"
+        result = emitter._add_unique_suffix(
+            acr_name, resource_id, "Microsoft.ContainerRegistry/registries"
+        )
+
+        # Result should be "myacr" + 6-char hash with NO dash
+        assert len(result) == len(acr_name) + 6  # name + 6 char hash
+        assert result.startswith(acr_name)
+        assert "-" not in result  # No dash for Container Registry
+        # Verify it's all alphanumeric
+        assert result.isalnum()
+
+    def test_add_unique_suffix_keyvault(self) -> None:
+        """Test that Key Vault names still get dashes in suffix."""
+        emitter = TerraformEmitter()
+
+        resource_id = "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.KeyVault/vaults/myvault"
+
+        # Test Key Vault: should have dash in suffix
+        vault_name = "myvault"
+        result = emitter._add_unique_suffix(
+            vault_name, resource_id, "Microsoft.KeyVault/vaults"
+        )
+
+        # Result should be "myvault-XXXXXX"
+        assert len(result) == len(vault_name) + 7  # name + dash + 6 char hash
+        assert result.startswith(vault_name + "-")
+        assert "-" in result  # Dash is present for Key Vault
+
+    def test_add_unique_suffix_other_types(self) -> None:
+        """Test that other globally unique types get dashes in suffix."""
+        emitter = TerraformEmitter()
+
+        resource_id = "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Cache/Redis/myredis"
+
+        # Test Redis Cache: should have dash in suffix
+        cache_name = "myredis"
+        result = emitter._add_unique_suffix(
+            cache_name, resource_id, "Microsoft.Cache/Redis"
+        )
+
+        # Result should be "myredis-XXXXXX"
+        assert len(result) == len(cache_name) + 7  # name + dash + 6 char hash
+        assert result.startswith(cache_name + "-")
+        assert "-" in result  # Dash is present for other types
+
+    def test_add_unique_suffix_default_behavior(self) -> None:
+        """Test that default behavior (no resource_type) adds dash."""
+        emitter = TerraformEmitter()
+
+        resource_id = "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/mystorage"
+
+        # Test with no resource_type specified: should default to dash behavior
+        storage_name = "mystorage"
+        result = emitter._add_unique_suffix(storage_name, resource_id)
+
+        # Result should be "mystorage-XXXXXX"
+        assert len(result) == len(storage_name) + 7  # name + dash + 6 char hash
+        assert result.startswith(storage_name + "-")
+        assert "-" in result  # Dash is present by default
+
 
 class TestTerraformEmitterIntegration:
     """Integration tests for TerraformEmitter."""
@@ -159,3 +232,62 @@ class TestTerraformEmitterIntegration:
             assert "resource_count" in result
             assert result["resource_count"] == 1
             assert len(result["files_written"]) == 1
+
+    def test_container_registry_naming_integration(self) -> None:
+        """Integration test: Container Registry names should not have dashes.
+
+        Bug fix for ~30 errors: Container Registries require alphanumeric-only names.
+        This test ensures the Terraform emitter generates valid Container Registry names
+        without dashes in the unique suffix.
+        """
+        emitter = TerraformEmitter()
+
+        # Create a test graph with a Container Registry resource
+        graph = TenantGraph()
+        graph.resources = [
+            {
+                "type": "Microsoft.ContainerRegistry/registries",
+                "name": "noahtestacr",
+                "location": "East US",
+                "resourceGroup": "test-rg",
+                "id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.ContainerRegistry/registries/noahtestacr",
+                "properties": {
+                    "adminUserEnabled": True,
+                    "sku": {"name": "Basic"},
+                },
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir)
+            written_files = emitter.emit(graph, out_dir)
+
+            assert len(written_files) == 1
+            assert written_files[0].name == "main.tf.json"
+            assert written_files[0].exists()
+
+            # Verify the generated Terraform configuration
+            with open(written_files[0]) as f:
+                terraform_config = json.load(f)
+
+            # Check that the Container Registry resource was created
+            assert "azurerm_container_registry" in terraform_config["resource"]
+
+            # Get the generated resource name
+            acr_resources = terraform_config["resource"]["azurerm_container_registry"]
+            assert len(acr_resources) > 0
+
+            # Get the first (and should be only) Container Registry resource
+            acr_resource_name = list(acr_resources.keys())[0]
+            acr_config = acr_resources[acr_resource_name]
+
+            # Verify the name in the generated Terraform code
+            generated_name = acr_config["name"]
+
+            # Key assertion: the generated name should NOT contain dashes
+            # (except for the original name, but the suffix should be alphanumeric only)
+            # The name should be alphanumeric only
+            assert generated_name.replace("noahtestacr", "").replace("_", "").isalnum(), (
+                f"Container Registry name '{generated_name}' contains invalid characters "
+                f"(should be alphanumeric only). Container Registries do not allow dashes."
+            )

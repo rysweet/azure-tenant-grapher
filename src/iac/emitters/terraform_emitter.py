@@ -1385,12 +1385,34 @@ class TerraformEmitter(IaCEmitter):
 
         # Apply unique suffix for globally unique resource types
         resource_name_with_suffix = resource_name
-        if azure_type in globally_unique_types or azure_type.lower() in {t.lower() for t in globally_unique_types}:
+        if azure_type in globally_unique_types or azure_type.lower() in {
+            t.lower() for t in globally_unique_types
+        }:
             resource_id = resource.get("id", "")
-            resource_name_with_suffix = self._add_unique_suffix(resource_name, resource_id)
+
+            # Key Vaults have a 24-character name limit
+            # Suffix is 7 characters ("-XXXXXX"), so max base name is 17 chars
+            if azure_type == "Microsoft.KeyVault/vaults" and len(resource_name) > 17:
+                truncated_name = resource_name[:17]
+                resource_name_with_suffix = self._add_unique_suffix(
+                    truncated_name, resource_id, azure_type
+                )
+                logger.warning(
+                    f"Truncated Key Vault name '{resource_name}' "
+                    f"(length {len(resource_name)}) to '{truncated_name}' "
+                    f"(length {len(truncated_name)}) to accommodate unique suffix, "
+                    f"resulting in '{resource_name_with_suffix}' "
+                    f"(length {len(resource_name_with_suffix)})"
+                )
+            else:
+                resource_name_with_suffix = self._add_unique_suffix(
+                    resource_name, resource_id, azure_type
+                )
+
             safe_name = self._sanitize_terraform_name(resource_name_with_suffix)
             logger.info(
-                f"Applied unique suffix to globally unique resource '{resource_name}' -> '{resource_name_with_suffix}' (type: {azure_type})"
+                f"Applied unique suffix to globally unique resource "
+                f"'{resource_name}' -> '{resource_name_with_suffix}' (type: {azure_type})"
             )
 
         # Build basic resource configuration
@@ -3995,12 +4017,13 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
-    def _add_unique_suffix(self, name: str, resource_id: str) -> str:
+    def _add_unique_suffix(self, name: str, resource_id: str, resource_type: str = None) -> str:
         """Add a unique suffix to globally unique resource names.
 
         Args:
             name: Original resource name
             resource_id: Azure resource ID (for deterministic hash generation)
+            resource_type: Azure resource type (e.g., "Microsoft.ContainerRegistry/registries")
 
         Returns:
             Name with 6-character hash suffix appended
@@ -4010,8 +4033,12 @@ class TerraformEmitter(IaCEmitter):
         # Generate deterministic hash from resource ID
         hash_suffix = hashlib.sha256(resource_id.encode()).hexdigest()[:6]
 
-        # Append suffix with hyphen
-        return f"{name}-{hash_suffix}"
+        # Container Registries don't allow dashes in names (alphanumeric only)
+        if resource_type == "Microsoft.ContainerRegistry/registries":
+            return f"{name}{hash_suffix}"  # No dash for Container Registry
+        else:
+            # Append suffix with hyphen for other types
+            return f"{name}-{hash_suffix}"
 
     def _sanitize_user_principal_name(self, upn: str) -> str:
         """Sanitize user principal name to be a valid email address.
