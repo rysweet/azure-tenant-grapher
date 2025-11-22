@@ -1521,6 +1521,14 @@ class TerraformEmitter(IaCEmitter):
 
             resource_config["address_space"] = normalized_prefixes
 
+            # Skip VNets with missing resource group - these cannot be deployed
+            if not resource_config.get("resource_group_name"):
+                logger.warning(
+                    f"Skipping VNet '{resource_name}': No resource group found. "
+                    f"VNets require a valid resource group for deployment."
+                )
+                return None
+
             # Bug #31 Step 2: Populate VNet ID -> Terraform name mapping for standalone subnets
             # Map both abstracted and original IDs to handle either format
             vnet_id = resource.get("id", "")
@@ -4043,14 +4051,21 @@ class TerraformEmitter(IaCEmitter):
     def _sanitize_user_principal_name(self, upn: str) -> str:
         """Sanitize user principal name to be a valid email address.
 
-        Azure AD requires UPNs to be valid email addresses without spaces.
+        Azure AD requires UPNs to be valid email addresses without special characters.
         Bug #32 fix: Remove spaces from UPNs to prevent validation errors.
+        Additional fix: Replace parentheses with hyphens (e.g., User(DEX) -> User-DEX)
 
         Args:
             upn: User principal name (email format)
 
         Returns:
-            Sanitized UPN with spaces removed from local part
+            Sanitized UPN with spaces removed and parentheses replaced with hyphens
+
+        Example:
+            >>> emitter._sanitize_user_principal_name("BrianHooper(DEX)@example.com")
+            "BrianHooper-DEX@example.com"
+            >>> emitter._sanitize_user_principal_name("User With Spaces@example.com")
+            "UserWithSpaces@example.com"
         """
         if not upn or "@" not in upn:
             return upn
@@ -4060,6 +4075,9 @@ class TerraformEmitter(IaCEmitter):
 
         # Remove spaces from local part
         local_part = local_part.replace(" ", "")
+
+        # Replace parentheses with hyphens (Bug fix for UPNs like "User(DEX)")
+        local_part = local_part.replace("(", "-").replace(")", "")
 
         # Reconstruct UPN
         sanitized = f"{local_part}@{domain}"
