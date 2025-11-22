@@ -779,6 +779,19 @@ class TerraformEmitter(IaCEmitter):
                 nic_name,
                 nsg_name,
             ) in self._nic_nsg_associations:
+                # Validate NSG exists before creating association (Bug #58)
+                nsg_available = (
+                    "azurerm_network_security_group" in self._available_resources
+                    and nsg_tf_name in self._available_resources["azurerm_network_security_group"]
+                )
+
+                if not nsg_available:
+                    logger.warning(
+                        f"Skipping NIC NSG association for '{nic_name}' - "
+                        f"NSG '{nsg_name}' not emitted. Association cannot be created."
+                    )
+                    continue
+
                 # Association resource name: nic_name + "_nsg_association"
                 assoc_name = f"{nic_tf_name}_nsg_association"
                 terraform_config["resource"][
