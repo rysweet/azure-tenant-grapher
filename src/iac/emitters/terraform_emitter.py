@@ -1880,6 +1880,22 @@ class TerraformEmitter(IaCEmitter):
 
                 resource_config["ip_configuration"] = ip_config_block
 
+                # Add NSG if present (Azure NICs can have NSGs attached at the NIC level)
+                nsg_info = properties.get("networkSecurityGroup", {})
+                if nsg_info and "id" in nsg_info:
+                    nsg_id = nsg_info["id"]
+                    nsg_name = self._extract_resource_name_from_id(
+                        nsg_id, "networkSecurityGroups"
+                    )
+                    if nsg_name != "unknown":
+                        nsg_safe = self._sanitize_terraform_name(nsg_name)
+                        resource_config["network_security_group_id"] = (
+                            f"${{azurerm_network_security_group.{nsg_safe}.id}}"
+                        )
+                        logger.debug(
+                            f"NIC '{resource_name}' has NSG reference: {nsg_name}"
+                        )
+
                 # Validate reference (warn if placeholder)
                 if "unknown" in subnet_reference:
                     logger.warning(
@@ -2532,6 +2548,12 @@ class TerraformEmitter(IaCEmitter):
                     "retention_in_days": properties.get("retentionInDays", 30),
                 }
             )
+
+            # Add daily quota if present
+            if "workspaceCapping" in properties:
+                daily_quota_gb = properties["workspaceCapping"].get("dailyQuotaGb")
+                if daily_quota_gb:
+                    resource_config["daily_quota_gb"] = daily_quota_gb
         elif azure_type == "Microsoft.OperationsManagement/solutions":
             # Log Analytics Solution specific properties
             properties = self._parse_properties(resource)
