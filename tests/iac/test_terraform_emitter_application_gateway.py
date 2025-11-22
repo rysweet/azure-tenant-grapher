@@ -14,6 +14,41 @@ import json
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 
 
+def setup_appgw_dependencies(emitter):
+    """Set up minimal dependencies for AppGW to succeed.
+
+    After bug fix, AppGWs require valid subnet and public IP references.
+    """
+    emitter._available_subnets = {"test_vnet_appgw_subnet"}
+    emitter._available_resources = {"azurerm_public_ip": {"test_pip"}}
+
+
+def get_minimal_appgw_properties():
+    """Get minimal AppGW properties with valid subnet and public IP references."""
+    return {
+        "gatewayIPConfigurations": [
+            {
+                "name": "gateway-ip-config",
+                "properties": {
+                    "subnet": {
+                        "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                    }
+                }
+            }
+        ],
+        "frontendIPConfigurations": [
+            {
+                "name": "frontend-ip-config",
+                "properties": {
+                    "publicIPAddress": {
+                        "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                    }
+                }
+            }
+        ]
+    }
+
+
 class TestApplicationGatewayMapping:
     """Test Application Gateway resource type mapping."""
 
@@ -38,8 +73,11 @@ class TestApplicationGatewayConversion:
     def test_minimal_application_gateway(self):
         """Test converting Application Gateway with minimal properties.
 
-        Verifies that all 8 required blocks are generated with defaults
-        when Azure properties are missing or empty.
+        NOTE: After bug fix, AppGWs without valid subnet/public IP references
+        are now SKIPPED. This test now expects None result for minimal config.
+
+        To succeed, AppGW needs valid subnet and public IP references.
+        See TestApplicationGatewaySkippingBehavior.test_appgw_succeeds_with_valid_dependencies
         """
         emitter = TerraformEmitter()
         resource = {
@@ -49,6 +87,51 @@ class TestApplicationGatewayConversion:
             "location": "eastus",
             "resource_group": "test-rg",
             "properties": json.dumps({}),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # After bug fix: minimal AppGW is now skipped due to missing dependencies
+        assert result is None
+
+    def test_minimal_application_gateway_with_dependencies(self):
+        """Test converting Application Gateway with minimal properties but valid dependencies.
+
+        Verifies that all 8 required blocks are generated with defaults
+        when Azure properties are present but minimal.
+        """
+        emitter = TerraformEmitter()
+        # Set up valid dependencies
+        emitter._available_subnets = {"test_vnet_appgw_subnet"}
+        emitter._available_resources = {"azurerm_public_ip": {"test_pip"}}
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "frontend-ip-config",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                            }
+                        }
+                    }
+                ]
+            }),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -144,19 +227,22 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_custom_sku(self):
         """Test Application Gateway with custom SKU configuration."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["sku"] = {
+            "name": "WAF_v2",
+            "tier": "WAF_v2",
+            "capacity": 4
+        }
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "westus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "sku": {
-                    "name": "WAF_v2",
-                    "tier": "WAF_v2",
-                    "capacity": 4
-                }
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -171,24 +257,27 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_multiple_frontend_ports(self):
         """Test Application Gateway with multiple frontend ports."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["frontendPorts"] = [
+            {
+                "name": "port-80",
+                "properties": {"port": 80}
+            },
+            {
+                "name": "port-443",
+                "properties": {"port": 443}
+            }
+        ]
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "frontendPorts": [
-                    {
-                        "name": "port-80",
-                        "properties": {"port": 80}
-                    },
-                    {
-                        "name": "port-443",
-                        "properties": {"port": 443}
-                    }
-                ]
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -203,18 +292,21 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_multiple_backend_pools(self):
         """Test Application Gateway with multiple backend address pools."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["backendAddressPools"] = [
+            {"name": "backend-pool-1"},
+            {"name": "backend-pool-2"}
+        ]
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "backendAddressPools": [
-                    {"name": "backend-pool-1"},
-                    {"name": "backend-pool-2"}
-                ]
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -229,22 +321,25 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_https_listener(self):
         """Test Application Gateway with HTTPS listener configuration."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["httpListeners"] = [
+            {
+                "name": "https-listener",
+                "properties": {
+                    "protocol": "Https"
+                }
+            }
+        ]
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "httpListeners": [
-                    {
-                        "name": "https-listener",
-                        "properties": {
-                            "protocol": "Https"
-                        }
-                    }
-                ]
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -258,25 +353,28 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_custom_backend_http_settings(self):
         """Test Application Gateway with custom backend HTTP settings."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["backendHttpSettingsCollection"] = [
+            {
+                "name": "custom-settings",
+                "properties": {
+                    "port": 8080,
+                    "protocol": "Https",
+                    "cookieBasedAffinity": "Enabled",
+                    "requestTimeout": 120
+                }
+            }
+        ]
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "backendHttpSettingsCollection": [
-                    {
-                        "name": "custom-settings",
-                        "properties": {
-                            "port": 8080,
-                            "protocol": "Https",
-                            "cookieBasedAffinity": "Enabled",
-                            "requestTimeout": 120
-                        }
-                    }
-                ]
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -295,28 +393,31 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_with_request_routing_rules(self):
         """Test Application Gateway with multiple request routing rules."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
+        properties = get_minimal_appgw_properties()
+        properties["requestRoutingRules"] = [
+            {
+                "name": "rule-1",
+                "properties": {
+                    "ruleType": "Basic"
+                }
+            },
+            {
+                "name": "rule-2",
+                "properties": {
+                    "ruleType": "PathBasedRouting"
+                }
+            }
+        ]
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "requestRoutingRules": [
-                    {
-                        "name": "rule-1",
-                        "properties": {
-                            "ruleType": "Basic"
-                        }
-                    },
-                    {
-                        "name": "rule-2",
-                        "properties": {
-                            "ruleType": "PathBasedRouting"
-                        }
-                    }
-                ]
-            }),
+            "properties": json.dumps(properties),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -335,13 +436,15 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_sanitizes_name(self):
         """Test that Application Gateway name is properly sanitized."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw-123",
             "name": "test-appgw-123",
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({}),
+            "properties": json.dumps(get_minimal_appgw_properties()),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -354,13 +457,15 @@ class TestApplicationGatewayConversion:
     def test_application_gateway_includes_location(self):
         """Test that Application Gateway includes location in config."""
         emitter = TerraformEmitter()
+        setup_appgw_dependencies(emitter)
+
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
             "name": "test-appgw",
             "type": "Microsoft.Network/applicationGateways",
             "location": "westeurope",
             "resource_group": "test-rg",
-            "properties": json.dumps({}),
+            "properties": json.dumps(get_minimal_appgw_properties()),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -370,3 +475,197 @@ class TestApplicationGatewayConversion:
         # Verify location is included
         assert config.get("location") == "westeurope"
         assert config.get("resource_group_name") == "test-rg"
+
+
+class TestApplicationGatewaySkippingBehavior:
+    """Test Application Gateway skipping behavior when dependencies are missing.
+
+    Bug fix: Application Gateways should be skipped (return None) when:
+    1. Subnet reference cannot be resolved
+    2. Public IP reference cannot be resolved
+    3. Required configuration blocks are missing
+
+    This prevents generating invalid Terraform with placeholder references like:
+    - ${azurerm_subnet.unknown_subnet.id}
+    - ${azurerm_public_ip.appgw_pip.id}
+    """
+
+    def test_appgw_skipped_when_no_subnet_id(self):
+        """Test that AppGW is skipped when no subnet ID is found."""
+        emitter = TerraformEmitter()
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {}  # No subnet reference
+                    }
+                ]
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # Should be skipped due to missing subnet
+        assert result is None
+
+    def test_appgw_skipped_when_subnet_not_in_graph(self):
+        """Test that AppGW is skipped when subnet doesn't exist in graph."""
+        emitter = TerraformEmitter()
+        # Initialize available subnets (empty - no subnets exist)
+        emitter._available_subnets = set()
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                            }
+                        }
+                    }
+                ]
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # Should be skipped because subnet not in _available_subnets
+        assert result is None
+
+    def test_appgw_skipped_when_no_public_ip_id(self):
+        """Test that AppGW is skipped when no public IP ID is found."""
+        emitter = TerraformEmitter()
+        # Add subnet to available subnets so subnet check passes
+        emitter._available_subnets = {"test_vnet_appgw_subnet"}
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "frontend-ip-config",
+                        "properties": {}  # No public IP reference
+                    }
+                ]
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # Should be skipped due to missing public IP
+        assert result is None
+
+    def test_appgw_skipped_when_public_ip_not_in_graph(self):
+        """Test that AppGW is skipped when public IP doesn't exist in graph."""
+        emitter = TerraformEmitter()
+        # Add subnet to available subnets
+        emitter._available_subnets = {"test_vnet_appgw_subnet"}
+        # Initialize available resources (no public IPs)
+        emitter._available_resources = {}
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "frontend-ip-config",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                            }
+                        }
+                    }
+                ]
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # Should be skipped because public IP not in _available_resources
+        assert result is None
+
+    def test_appgw_succeeds_with_valid_dependencies(self):
+        """Test that AppGW is created when all dependencies exist in graph."""
+        emitter = TerraformEmitter()
+        # Add subnet to available subnets
+        emitter._available_subnets = {"test_vnet_appgw_subnet"}
+        # Add public IP to available resources
+        emitter._available_resources = {
+            "azurerm_public_ip": {"test_pip"}
+        }
+
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
+            "name": "test-appgw",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps({
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "gateway-ip-config",
+                        "properties": {
+                            "subnet": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "frontend-ip-config",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                            }
+                        }
+                    }
+                ]
+            }),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        # Should succeed with all dependencies present
+        assert result is not None
+        terraform_type, safe_name, config = result
+
+        # Verify proper references (not placeholders)
+        assert config["gateway_ip_configuration"][0]["subnet_id"] == "${azurerm_subnet.test_vnet_appgw_subnet.id}"
+        assert config["frontend_ip_configuration"][0]["public_ip_address_id"] == "${azurerm_public_ip.test_pip.id}"

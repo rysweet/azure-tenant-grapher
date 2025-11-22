@@ -2443,6 +2443,30 @@ class TerraformEmitter(IaCEmitter):
                 return None
 
             vm_name_safe = self._sanitize_terraform_name(vm_name)
+
+            # Validate that the parent VM was actually converted to Terraform config
+            # VM could have been skipped if it had missing NICs or other validation errors
+            vm_exists = False
+            vm_terraform_type = None
+            for vm_type in [
+                "azurerm_linux_virtual_machine",
+                "azurerm_windows_virtual_machine",
+            ]:
+                if (
+                    vm_type in terraform_config.get("resource", {})
+                    and vm_name_safe in terraform_config["resource"][vm_type]
+                ):
+                    vm_exists = True
+                    vm_terraform_type = vm_type
+                    break
+
+            if not vm_exists:
+                logger.warning(
+                    f"VM Run Command '{resource_name}' references parent VM '{vm_name}' "
+                    f"that doesn't exist or was filtered out during conversion. Skipping run command."
+                )
+                return None
+
             properties = self._parse_properties(resource)
 
             # Extract just command name (e.g., "vm/Get-AzureADToken" -> "Get-AzureADToken")
@@ -2452,12 +2476,12 @@ class TerraformEmitter(IaCEmitter):
             resource_config = {
                 "name": command_name,
                 "location": location,
-                "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                "virtual_machine_id": f"${{{vm_terraform_type}.{vm_name_safe}.id}}",
                 "source": {
                     "script": properties.get("source", {}).get("script", "# Placeholder script")
                 }
             }
-            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}'")
+            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}' (type: {vm_terraform_type})")
 
         elif azure_type_lower == "microsoft.app/managedenvironments":
             # Bug #44: Container App Environment (10 resources!)
@@ -3594,15 +3618,20 @@ class TerraformEmitter(IaCEmitter):
                 gateway_ip_name = "gateway-ip-config"
                 subnet_id = ""
 
-            # Resolve subnet reference
+            # Resolve subnet reference - SKIP AppGW if subnet not found
+            if not subnet_id:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No subnet ID found in gatewayIPConfigurations"
+                )
+                return None
+
             subnet_reference = self._resolve_subnet_reference(subnet_id, resource_name)
             if subnet_reference is None:
-                # Use placeholder for missing subnet
-                subnet_reference = "${azurerm_subnet.appgw_subnet.id}"
+                # _resolve_subnet_reference returns None when subnet doesn't exist in graph
                 logger.warning(
-                    f"Application Gateway '{resource_name}' has invalid subnet reference. "
-                    f"Will use placeholder: {subnet_reference}"
+                    f"Skipping Application Gateway '{resource_name}': Cannot resolve subnet reference '{subnet_id}'"
                 )
+                return None
 
             resource_config["gateway_ip_configuration"] = [{
                 "name": gateway_ip_name,
@@ -3611,51 +3640,48 @@ class TerraformEmitter(IaCEmitter):
 
             # Required: frontend_ip_configuration block
             frontend_ip_configs = properties.get("frontendIPConfigurations", [])
-            if frontend_ip_configs:
-                frontend_ip_config = frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
-                if isinstance(frontend_ip_config, dict):
-                    frontend_ip_name = frontend_ip_config.get("name", "frontend-ip-config")
-                    frontend_ip_props = frontend_ip_config.get("properties", {})
-                    # Check for public IP
-                    public_ip_id = frontend_ip_props.get("publicIPAddress", {}).get("id", "")
-                    if public_ip_id:
-                        public_ip_name = self._extract_resource_name_from_id(public_ip_id, "publicIPAddresses")
-                        if public_ip_name != "unknown":
-                            public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
-                            if self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
-                                frontend_ip_block = {
-                                    "name": frontend_ip_name,
-                                    "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
-                                }
-                            else:
-                                frontend_ip_block = {
-                                    "name": frontend_ip_name,
-                                    "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
-                                }
-                                logger.warning(
-                                    f"Application Gateway '{resource_name}' references public IP '{public_ip_name}' "
-                                    f"that may not exist. Will use placeholder reference."
-                                )
-                        else:
-                            frontend_ip_block = {
-                                "name": frontend_ip_name,
-                                "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
-                            }
-                    else:
-                        frontend_ip_block = {
-                            "name": frontend_ip_name,
-                            "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
-                        }
-                else:
-                    frontend_ip_block = {
-                        "name": "frontend-ip-config",
-                        "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
-                    }
-            else:
-                frontend_ip_block = {
-                    "name": "frontend-ip-config",
-                    "public_ip_address_id": "${azurerm_public_ip.appgw_pip.id}"
-                }
+            if not frontend_ip_configs:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No frontendIPConfigurations found"
+                )
+                return None
+
+            frontend_ip_config = frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
+            if not isinstance(frontend_ip_config, dict):
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Invalid frontendIPConfiguration format"
+                )
+                return None
+
+            frontend_ip_name = frontend_ip_config.get("name", "frontend-ip-config")
+            frontend_ip_props = frontend_ip_config.get("properties", {})
+
+            # Check for public IP - SKIP AppGW if not found or cannot be resolved
+            public_ip_id = frontend_ip_props.get("publicIPAddress", {}).get("id", "")
+            if not public_ip_id:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No public IP ID found in frontendIPConfiguration"
+                )
+                return None
+
+            public_ip_name = self._extract_resource_name_from_id(public_ip_id, "publicIPAddresses")
+            if public_ip_name == "unknown":
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Cannot extract public IP name from ID '{public_ip_id}'"
+                )
+                return None
+
+            public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
+            if not self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Public IP '{public_ip_name}' does not exist in graph"
+                )
+                return None
+
+            frontend_ip_block = {
+                "name": frontend_ip_name,
+                "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+            }
 
             resource_config["frontend_ip_configuration"] = [frontend_ip_block]
 
