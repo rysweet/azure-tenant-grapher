@@ -291,3 +291,111 @@ class TestTerraformEmitterIntegration:
                 f"Container Registry name '{generated_name}' contains invalid characters "
                 f"(should be alphanumeric only). Container Registries do not allow dashes."
             )
+
+    def test_vnet_with_null_resource_group_skipped(self) -> None:
+        """Test that VNets with null resource_group_name are skipped.
+
+        Bug fix: VNets like hub_vnet, spoke_1_vnet were getting
+        resource_group_name: null in Terraform config.
+        This test ensures VNets without a valid resource group are skipped entirely.
+        """
+        emitter = TerraformEmitter()
+
+        # Create a test graph with a VNet that has no resource group
+        graph = TenantGraph()
+        graph.resources = [
+            {
+                "type": "Microsoft.Network/virtualNetworks",
+                "name": "hub_vnet",
+                "location": "East US",
+                "resourceGroup": None,  # NULL RESOURCE GROUP - should be skipped
+                "resource_group": None,
+                "id": "/subscriptions/sub1/resourceGroups/unknown/providers/Microsoft.Network/virtualNetworks/hub_vnet",
+                "original_id": "/subscriptions/sub1/resourceGroups/unknown/providers/Microsoft.Network/virtualNetworks/hub_vnet",
+                "addressSpace": ["10.0.0.0/16"],
+                "properties": {
+                    "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+                    "subnets": []
+                }
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir)
+            written_files = emitter.emit(graph, out_dir)
+
+            assert len(written_files) == 1
+            assert written_files[0].name == "main.tf.json"
+            assert written_files[0].exists()
+
+            # Verify the generated Terraform configuration
+            with open(written_files[0]) as f:
+                terraform_config = json.load(f)
+
+            # Key assertion: VNets with null resource_group_name should NOT be created
+            # The resource section should either not have azurerm_virtual_network,
+            # or if it does, it should not contain the hub_vnet
+            if "azurerm_virtual_network" in terraform_config.get("resource", {}):
+                vnet_resources = terraform_config["resource"]["azurerm_virtual_network"]
+                # Check that no VNet has null resource_group_name
+                for vnet_name, vnet_config in vnet_resources.items():
+                    assert vnet_config.get("resource_group_name") is not None, (
+                        f"VNet '{vnet_name}' has null resource_group_name in Terraform config. "
+                        f"VNets without valid resource groups should be skipped."
+                    )
+
+    def test_vnet_with_valid_resource_group_included(self) -> None:
+        """Test that VNets with valid resource_group_name are included.
+
+        Ensures that the fix to skip null resource groups doesn't accidentally
+        filter out VNets with valid resource groups.
+        """
+        emitter = TerraformEmitter()
+
+        # Create a test graph with a VNet that has a valid resource group
+        graph = TenantGraph()
+        graph.resources = [
+            {
+                "type": "Microsoft.Network/virtualNetworks",
+                "name": "test_vnet",
+                "location": "East US",
+                "resourceGroup": "test-rg",
+                "resource_group": "test-rg",
+                "id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test_vnet",
+                "original_id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test_vnet",
+                "addressSpace": ["10.0.0.0/16"],
+                "properties": {
+                    "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+                    "subnets": []
+                }
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_dir = Path(temp_dir)
+            written_files = emitter.emit(graph, out_dir)
+
+            assert len(written_files) == 1
+            assert written_files[0].name == "main.tf.json"
+            assert written_files[0].exists()
+
+            # Verify the generated Terraform configuration
+            with open(written_files[0]) as f:
+                terraform_config = json.load(f)
+
+            # Key assertion: VNets with valid resource_group_name SHOULD be created
+            assert "azurerm_virtual_network" in terraform_config.get("resource", {}), (
+                "VNet with valid resource_group_name should be included in Terraform config"
+            )
+
+            vnet_resources = terraform_config["resource"]["azurerm_virtual_network"]
+            assert len(vnet_resources) > 0, "At least one VNet should be created"
+
+            # Check that the VNet has valid resource_group_name
+            for vnet_name, vnet_config in vnet_resources.items():
+                assert vnet_config.get("resource_group_name") == "test-rg", (
+                    f"VNet '{vnet_name}' should have resource_group_name='test-rg'"
+                )
+                assert vnet_config.get("address_space") == ["10.0.0.0/16"], (
+                    f"VNet '{vnet_name}' should have valid address space"
+                )
