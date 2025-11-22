@@ -2431,18 +2431,26 @@ class TerraformEmitter(IaCEmitter):
 
         elif azure_type_lower == "microsoft.app/managedenvironments":
             # Bug #44: Container App Environment (10 resources!)
+            # Bug #50: SKIP workspace_id entirely - field contains GUID (customerId), not full resource ID
             properties = self._parse_properties(resource)
 
-            # Optional: log_analytics_workspace_id
-            # Only include if we have a valid workspace_id from the properties
+            # DO NOT include log_analytics_workspace_id:
+            # The appLogsConfiguration.logAnalyticsConfiguration.customerId field contains only
+            # the workspace GUID, NOT the full Azure resource ID that Terraform requires.
+            # Expected format: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{name}
+            # Actual format in properties: {workspace-guid}
+            # Since we cannot construct the full resource ID from a GUID, we skip this field entirely.
+            # Note: workspace_id is optional per Terraform azurerm_container_app_environment docs
+
             workspace_id = properties.get("appLogsConfiguration", {}).get("logAnalyticsConfiguration", {}).get("customerId")
             if workspace_id:
-                # Use the actual workspace ID (log analytics workspace resource ID format)
-                # This is a valid Azure resource ID, so we can use it directly
-                resource_config["log_analytics_workspace_id"] = workspace_id
-            # If workspace_id is not found, we skip it - it's optional per Terraform docs
+                logger.warning(
+                    f"Bug #50: Skipping log_analytics_workspace_id for Container App Environment '{resource_name}' - "
+                    f"field contains GUID '{workspace_id}' instead of full resource ID. "
+                    f"Workspace linking is optional and will be configured separately if needed."
+                )
 
-            logger.debug(f"Bug #44: Container App Environment '{resource_name}'")
+            logger.debug(f"Bug #44/50: Container App Environment '{resource_name}' (workspace_id skipped)")
 
         elif azure_type_lower == "microsoft.operationalinsights/workspaces":
             # Log Analytics Workspace specific properties
