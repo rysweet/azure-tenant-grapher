@@ -805,6 +805,11 @@ def generate_spec(
     required=False,
     help="Target subscription ID to scan for smart import (optional, scans all subscriptions if not provided)",
 )
+@click.option(
+    "--split-by-community",
+    is_flag=True,
+    help="Split resources into separate Terraform files per community (connected component)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -848,6 +853,7 @@ async def generate_iac(
     scan_target: bool,
     scan_target_tenant_id: Optional[str],
     scan_target_subscription_id: Optional[str],
+    split_by_community: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -924,6 +930,7 @@ async def generate_iac(
         scan_target=scan_target,
         scan_target_tenant_id=scan_target_tenant_id,
         scan_target_subscription_id=scan_target_subscription_id,
+        split_by_community=split_by_community,
     )
 
 

@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
 
+from ..community_detector import CommunityDetector
 from ..dependency_analyzer import DependencyAnalyzer
 from ..translators import TranslationContext, TranslationCoordinator
 from ..translators.private_endpoint_translator import PrivateEndpointTranslator
@@ -67,6 +68,9 @@ class TerraformEmitter(IaCEmitter):
         # Track NSG associations to emit as separate resources
         # Format: [(subnet_tf_name, nsg_tf_name, subnet_name, nsg_name)]
         self._nsg_associations: List[tuple[str, str, str, str]] = []
+        # Track NIC NSG associations (similar to subnet NSG associations)
+        # Format: [(nic_tf_name, nsg_tf_name, nic_name, nsg_name)]
+        self._nic_nsg_associations: List[tuple[str, str, str, str]] = []
         # Track all resource names that will be emitted (for reference validation)
         self._available_resources: Dict[str, set] = {}
         # Track missing resource references for reporting
@@ -273,6 +277,7 @@ class TerraformEmitter(IaCEmitter):
         domain_name: Optional[str] = None,
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
+        split_by_community: bool = False,
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
@@ -283,6 +288,7 @@ class TerraformEmitter(IaCEmitter):
             subscription_id: Optional subscription ID for deployment
             comparison_result: Optional comparison with target tenant (NEW in Phase 1E)
                               If provided, enables smart import generation
+            split_by_community: If True, split resources into separate files per community
         """
         # If a domain name is specified, set it for all user account entities
         if domain_name:
@@ -757,6 +763,36 @@ class TerraformEmitter(IaCEmitter):
                     f"Generated NSG association: {assoc_name} (Subnet: {subnet_name}, NSG: {nsg_name})"
                 )
 
+        # Emit NIC NSG association resources (Bug #57: deprecated network_security_group_id field)
+        if self._nic_nsg_associations:
+            if (
+                "azurerm_network_interface_security_group_association"
+                not in terraform_config["resource"]
+            ):
+                terraform_config["resource"][
+                    "azurerm_network_interface_security_group_association"
+                ] = {}
+
+            for (
+                nic_tf_name,
+                nsg_tf_name,
+                nic_name,
+                nsg_name,
+            ) in self._nic_nsg_associations:
+                # Association resource name: nic_name + "_nsg_association"
+                assoc_name = f"{nic_tf_name}_nsg_association"
+                terraform_config["resource"][
+                    "azurerm_network_interface_security_group_association"
+                ][assoc_name] = {
+                    "network_interface_id": f"${{azurerm_network_interface.{nic_tf_name}.id}}",
+                    "network_security_group_id": f"${{azurerm_network_security_group.{nsg_tf_name}.id}}",
+                }
+                # Track NIC NSG association resource for generation report
+                self._resource_count += 1
+                logger.debug(
+                    f"Generated NIC NSG association: {assoc_name} (NIC: {nic_name}, NSG: {nsg_name})"
+                )
+
         # Generate import blocks if requested (Issue #412)
         if self.auto_import_existing:
             import_blocks = self._generate_import_blocks(
@@ -767,12 +803,90 @@ class TerraformEmitter(IaCEmitter):
                 self._import_blocks_generated = len(import_blocks)
                 logger.info(f"Generated {len(import_blocks)} import blocks")
 
-        # Write main.tf.json
-        output_file = out_dir / "main.tf.json"
-        with open(output_file, "w") as f:
-            json.dump(terraform_config, f, indent=2)
-        # Track file creation for generation report (Issue #413)
-        self._files_created += 1
+        # Determine if we should split by community
+        output_files = []
+        if split_by_community:
+            try:
+                # Need Neo4j driver to detect communities
+                # Get driver from session manager
+                from src.config_manager import create_neo4j_config_from_env
+                from src.utils.session_manager import create_session_manager
+
+                config = create_neo4j_config_from_env()
+                manager = create_session_manager(config.neo4j)
+                manager.connect()
+                # pyright: ignore[reportPrivateUsage]
+                if manager._driver is None:  # pyright: ignore[reportPrivateUsage]
+                    logger.warning("Cannot split by community: Neo4j driver not available. Writing single file.")
+                    split_by_community = False
+                else:
+                    driver = manager._driver  # pyright: ignore[reportPrivateUsage]
+                    detector = CommunityDetector(driver)
+                    communities = detector.detect_communities()
+
+                    logger.info(f"Detected {len(communities)} communities for splitting")
+                    logger.info(f"Community sizes: {[len(c) for c in communities]}")
+
+                    # Split resources by community
+                    for i, community_ids in enumerate(communities, start=1):
+                        # Filter resources for this community
+                        community_resources = {
+                            resource_type: {
+                                resource_name: resource_config
+                                for resource_name, resource_config in resources.items()
+                                if self._is_resource_in_community(resource_type, resource_name, community_ids, graph.resources)
+                            }
+                            for resource_type, resources in terraform_config.get("resource", {}).items()
+                        }
+
+                        # Remove empty resource types
+                        community_resources = {
+                            rt: res for rt, res in community_resources.items() if res
+                        }
+
+                        # Skip empty communities
+                        if not community_resources:
+                            logger.debug(f"Community {i} has no resources after filtering, skipping")
+                            continue
+
+                        # Create community-specific config
+                        community_config = {
+                            "terraform": terraform_config["terraform"],
+                            "provider": terraform_config["provider"],
+                            "variable": terraform_config["variable"],
+                            "resource": community_resources,
+                        }
+
+                        # Add import blocks for this community if present
+                        if "import" in terraform_config:
+                            community_imports = [
+                                imp for imp in terraform_config["import"]
+                                if self._is_import_in_community(imp, community_ids, graph.resources)
+                            ]
+                            if community_imports:
+                                community_config["import"] = community_imports
+
+                        # Write community file
+                        community_file = out_dir / f"community_{i}.tf.json"
+                        with open(community_file, "w") as f:
+                            json.dump(community_config, f, indent=2)
+                        output_files.append(community_file)
+                        self._files_created += 1
+                        logger.info(f"Generated {community_file.name} with {len(community_resources)} resource types")
+
+                    manager.disconnect()
+            except Exception as e:
+                logger.warning(f"Failed to split by community: {e}. Writing single file instead.")
+                split_by_community = False
+
+        if not split_by_community:
+            # Write single main.tf.json file
+            output_file = out_dir / "main.tf.json"
+            with open(output_file, "w") as f:
+                json.dump(terraform_config, f, indent=2)
+            output_files.append(output_file)
+            # Track file creation for generation report (Issue #413)
+            self._files_created += 1
 
         # Bug #24 fix: Write smart import blocks AFTER resource emission completes
         # This allows us to filter out import blocks for resources that weren't emitted
@@ -899,7 +1013,7 @@ class TerraformEmitter(IaCEmitter):
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"
         )
-        return [output_file]
+        return output_files
 
     async def emit_template(
         self, tenant_graph: TenantGraph, output_path: Optional[str] = None
@@ -1880,7 +1994,9 @@ class TerraformEmitter(IaCEmitter):
 
                 resource_config["ip_configuration"] = ip_config_block
 
-                # Add NSG if present (Azure NICs can have NSGs attached at the NIC level)
+                # Track NSG association if present (Azure NICs can have NSGs attached at the NIC level)
+                # NOTE: network_security_group_id field is deprecated in newer azurerm provider
+                # Must use azurerm_network_interface_security_group_association resource instead
                 nsg_info = properties.get("networkSecurityGroup", {})
                 if nsg_info and "id" in nsg_info:
                     nsg_id = nsg_info["id"]
@@ -1889,11 +2005,12 @@ class TerraformEmitter(IaCEmitter):
                     )
                     if nsg_name != "unknown":
                         nsg_safe = self._sanitize_terraform_name(nsg_name)
-                        resource_config["network_security_group_id"] = (
-                            f"${{azurerm_network_security_group.{nsg_safe}.id}}"
+                        # Collect association to emit as separate resource later
+                        self._nic_nsg_associations.append(
+                            (safe_name, nsg_safe, resource_name, nsg_name)
                         )
                         logger.debug(
-                            f"NIC '{resource_name}' has NSG reference: {nsg_name}"
+                            f"NIC '{resource_name}' will get NSG association: {nsg_name}"
                         )
 
                 # Validate reference (warn if placeholder)
@@ -4560,6 +4677,73 @@ class TerraformEmitter(IaCEmitter):
                 else {}
             ),
         }
+
+    def _is_resource_in_community(
+        self,
+        terraform_type: str,
+        terraform_name: str,
+        community_ids: set,
+        all_resources: List[Dict[str, Any]],
+    ) -> bool:
+        """Check if a terraform resource belongs to a community.
+
+        Args:
+            terraform_type: Terraform resource type (e.g., azurerm_virtual_network)
+            terraform_name: Terraform resource name (sanitized)
+            community_ids: Set of resource IDs in the community
+            all_resources: All resources from the graph
+
+        Returns:
+            True if the resource belongs to the community
+        """
+        # Find the corresponding graph resource by matching terraform name
+        for resource in all_resources:
+            resource_name = resource.get("name", "")
+            safe_name = self._sanitize_terraform_name(resource_name)
+
+            if safe_name == terraform_name:
+                # Check if this resource's ID is in the community
+                resource_id = resource.get("id", "")
+                if resource_id in community_ids:
+                    return True
+
+        return False
+
+    def _is_import_in_community(
+        self,
+        import_block: Dict[str, Any],
+        community_ids: set,
+        all_resources: List[Dict[str, Any]],
+    ) -> bool:
+        """Check if an import block belongs to a community.
+
+        Args:
+            import_block: Import block with 'to' and 'id' fields
+            community_ids: Set of resource IDs in the community
+            all_resources: All resources from the graph
+
+        Returns:
+            True if the import belongs to the community
+        """
+        # Extract terraform resource name from import block
+        # Format: "azurerm_resource_group.my_rg"
+        to_address = import_block.get("to", "")
+        if "." not in to_address:
+            return False
+
+        _, terraform_name = to_address.rsplit(".", 1)
+
+        # Find matching resource in graph
+        for resource in all_resources:
+            resource_name = resource.get("name", "")
+            safe_name = self._sanitize_terraform_name(resource_name)
+
+            if safe_name == terraform_name:
+                resource_id = resource.get("id", "")
+                if resource_id in community_ids:
+                    return True
+
+        return False
 
 
 # Auto-register this emitter

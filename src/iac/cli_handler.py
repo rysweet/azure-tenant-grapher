@@ -210,6 +210,8 @@ async def generate_iac_command_handler(
     scan_target: bool = False,
     scan_target_tenant_id: Optional[str] = None,
     scan_target_subscription_id: Optional[str] = None,
+    # Community splitting parameters
+    split_by_community: bool = False,
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -251,6 +253,7 @@ async def generate_iac_command_handler(
         scan_target: Enable smart import by scanning target tenant (Phase 1F)
         scan_target_tenant_id: Target tenant ID to scan (required if scan_target is True)
         scan_target_subscription_id: Optional target subscription ID to scan
+        split_by_community: Split resources into separate Terraform files per community
 
     Returns:
         Exit code (0 for success, non-zero for failure)
@@ -1039,6 +1042,8 @@ async def generate_iac_command_handler(
             emit_kwargs["neo4j_driver"] = driver
         if "comparison_result" in emit_signature.parameters:
             emit_kwargs["comparison_result"] = comparison_result
+        if "split_by_community" in emit_signature.parameters:
+            emit_kwargs["split_by_community"] = split_by_community
 
         paths = emitter.emit(graph, out_dir, **emit_kwargs)
 
