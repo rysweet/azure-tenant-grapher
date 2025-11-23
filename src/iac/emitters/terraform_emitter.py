@@ -215,9 +215,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
         "Microsoft.Authorization/roleDefinitions": "azurerm_role_definition",
         # Container and Kubernetes resources (azurerm v3.43.0+)
-        "Microsoft.App/containerApps": "azurerm_container_app",
         "Microsoft.ContainerService/managedClusters": "azurerm_kubernetes_cluster",
-        "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
         # Additional Compute resources
         "Microsoft.Compute/virtualMachineScaleSets": "azurerm_linux_virtual_machine_scale_set",
         "Microsoft.Compute/snapshots": "azurerm_snapshot",
@@ -1469,8 +1467,6 @@ class TerraformEmitter(IaCEmitter):
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
         # Bug #39: Normalize azure_type to lowercase for consistent elif matching
-        # Store original for logging, use lowercase for comparisons
-        azure_type_original = azure_type
         azure_type_lower = azure_type.lower()
 
         # Bug #36: Try case-insensitive lookup for Azure types
@@ -4205,7 +4201,7 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
-    def _add_unique_suffix(self, name: str, resource_id: str, resource_type: str = None) -> str:
+    def _add_unique_suffix(self, name: str, resource_id: str, resource_type: str | None = None) -> str:
         """Add a unique suffix to globally unique resource names.
 
         Args:
@@ -4461,7 +4457,7 @@ class TerraformEmitter(IaCEmitter):
         self,
         terraform_type: str,
         resource_name: str,
-        terraform_config: Dict[str, Any] = None,
+        terraform_config: Dict[str, Any] | None = None,
     ) -> bool:
         """Validate that a referenced resource was actually emitted to terraform config.
 
