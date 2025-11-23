@@ -297,3 +297,38 @@ When using the CLI dashboard (during `atg scan` operations):
 ## Project Memories
 
 - The CI takes almost 20 minutes to complete. Just run the script and wait for it.
+
+## Recent Bug Fixes (November 2025)
+
+### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
+**Status**: FIXED (commit faeb284)  
+**Impact**: Eliminates manual sed replacements for cross-tenant deployments
+
+**Problem**: Abstracted Resource nodes in Neo4j had source subscription IDs embedded in properties JSON (roleDefinitionId, scope fields), requiring manual replacement of 2,292 occurrences before deployment.
+
+**Root Cause**: `resource_processor.py:_create_abstracted_node()` abstracted principalId but not subscription IDs.
+
+**Solution**: 
+1. ResourceProcessor: Replace subscription IDs with `/subscriptions/ABSTRACT_SUBSCRIPTION` placeholder at scan time
+2. TerraformEmitter: Update regex to replace placeholder with target subscription at IaC generation time
+
+**Files Modified**:
+- `src/resource_processor.py:528-555`
+- `src/iac/emitters/terraform_emitter.py:3234,3248`
+
+**Documentation**: See `docs/BUG_59_DOCUMENTATION.md` for technical deep dive.
+
+### Bug #57: NIC NSG Deprecated Field
+**Status**: FIXED (commit 2011688)
+
+**Problem**: `network_security_group_id` field deprecated in azurerm provider.
+
+**Solution**: Use `azurerm_network_interface_security_group_association` resources instead.
+
+### Bug #58: Skip NIC NSG When NSG Not Emitted  
+**Status**: FIXED (commit 7651fde)
+
+**Problem**: NIC NSG associations created for NSGs that weren't emitted, causing undeclared resource errors.
+
+**Solution**: Validate NSG exists in `_available_resources` before creating association.
+
