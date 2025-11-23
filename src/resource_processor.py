@@ -525,6 +525,34 @@ class DatabaseOperations:
                                     f"Failed to abstract principalId for role assignment {abstracted_id}: {e}"
                                 )
 
+                    # Bug #59: Abstract subscription IDs in roleDefinitionId and scope
+                    # Role assignments contain subscription IDs in these fields that need abstraction
+                    # Use placeholder ABSTRACT_SUBSCRIPTION which IaC generation can replace with target subscription
+                    subscription_pattern = re.compile(
+                        r"/subscriptions/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+                        re.IGNORECASE,
+                    )
+
+                    # Abstract roleDefinitionId
+                    role_def_id = props_dict.get("roleDefinitionId")
+                    if role_def_id and isinstance(role_def_id, str):
+                        abstracted_role_def_id = subscription_pattern.sub(
+                            "/subscriptions/ABSTRACT_SUBSCRIPTION", role_def_id
+                        )
+                        if abstracted_role_def_id != role_def_id:
+                            props_dict["roleDefinitionId"] = abstracted_role_def_id
+                            logger.debug(f"Abstracted subscription in roleDefinitionId for {abstracted_id}")
+
+                    # Abstract scope
+                    scope = props_dict.get("scope")
+                    if scope and isinstance(scope, str):
+                        abstracted_scope = subscription_pattern.sub(
+                            "/subscriptions/ABSTRACT_SUBSCRIPTION", scope
+                        )
+                        if abstracted_scope != scope:
+                            props_dict["scope"] = abstracted_scope
+                            logger.debug(f"Abstracted subscription in scope for {abstracted_id}")
+
                     # Update the abstracted_props with the modified properties
                     if isinstance(props_field, str):
                         # Convert back to JSON string if it was originally a string

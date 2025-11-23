@@ -3231,11 +3231,12 @@ class TerraformEmitter(IaCEmitter):
                 # Scope formats:
                 #   - /subscriptions/{sub-id}/resourceGroups/... (resource-level, with slash)
                 #   - /subscriptions/{sub-id} (subscription-level, no trailing slash)
+                # Bug #59: Also replace ABSTRACT_SUBSCRIPTION placeholder from dual-graph abstraction
                 import re
 
                 scope = re.sub(
-                    r"/subscriptions/[a-f0-9-]+(/|$)",
-                    f"/subscriptions/{self.target_subscription_id}\\1",
+                    r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)(/|$)",
+                    f"/subscriptions/{self.target_subscription_id}\\2",
                     scope,
                     flags=re.IGNORECASE,
                 )
@@ -3244,12 +3245,13 @@ class TerraformEmitter(IaCEmitter):
                 )
 
             # Also translate role definition ID (contains subscription)
+            # Bug #59: Also replace ABSTRACT_SUBSCRIPTION placeholder from dual-graph abstraction
             role_def_id = properties.get(
                 "roleDefinitionId", resource.get("roleDefinitionId", "")
             )
             if self.target_subscription_id and role_def_id:
                 role_def_id = re.sub(
-                    r"/subscriptions/[a-f0-9-]+/",
+                    r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)/",
                     f"/subscriptions/{self.target_subscription_id}/",
                     role_def_id,
                     flags=re.IGNORECASE,
