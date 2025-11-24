@@ -67,9 +67,9 @@ class DependencyValidator:
     """
 
     # Pattern to extract resource references from error messages
-    # Example: "Reference to undeclared resource: azurerm_network_interface.missing_nic"
+    # Example: "A managed resource \"azurerm_network_interface\" \"missing_nic\" has not been declared"
     UNDECLARED_PATTERN = re.compile(
-        r"Reference to undeclared (?:resource|module|input variable|output value|local value):\s+((?:azurerm|azuread)_\w+\.\w+)"
+        r'A managed resource\s+"((?:azurerm|azuread)_\w+)"\s+"(\w+)"\s+has not been declared'
     )
 
     def __init__(self):
@@ -269,7 +269,10 @@ class DependencyValidator:
             match = self.UNDECLARED_PATTERN.search(full_message)
 
             if match:
-                missing_ref = match.group(1)  # e.g., "azurerm_network_interface.nic1"
+                # Extract type and name separately, then combine
+                resource_type_ref = match.group(1)  # e.g., "azurerm_network_interface"
+                resource_name_ref = match.group(2)  # e.g., "missing_nic"
+                missing_ref = f"{resource_type_ref}.{resource_name_ref}"  # e.g., "azurerm_network_interface.missing_nic"
 
                 # Try to extract the resource that has the error from address field
                 address = diag.get("address", "")

@@ -332,3 +332,69 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Solution**: Validate NSG exists in `_available_resources` before creating association.
 
+
+## Recent Code Improvements (November 2025)
+
+### Dependency Validation Enhancement
+**Commit**: feat: Add DependencyValidator and enhance TerraformEmitter
+
+**Purpose**: Prevent "undeclared resource" Terraform errors by validating references before emission
+
+**New Files**:
+- `src/iac/validators/dependency_validator.py` - Terraform validation integration
+  - Runs `terraform validate -json`
+  - Parses undeclared resource errors
+  - Returns structured dependency errors
+
+**Enhanced Files**:
+- `src/iac/emitters/terraform_emitter.py`
+  - `_validate_all_references_in_config()` - Recursively validates resource references
+  - NSG association validation - Checks both subnet and NSG exist before creating associations
+  - Skips resources with missing dependencies (prevents invalid IaC)
+
+**Benefits**:
+- Fixes Bug #58: NSG associations for non-existent NSGs
+- Prevents entire category of Terraform errors
+- Clear warning messages for debugging
+- Improves IaC generation quality
+
+**Usage**:
+```python
+from src.iac.validators import DependencyValidator
+
+validator = DependencyValidator()
+result = validator.validate(Path("/tmp/iac_output"))
+if not result.valid:
+    for error in result.errors:
+        print(f"{error.resource_type}.{error.resource_name}: {error.missing_reference}")
+```
+
+### Iteration 18 Findings
+**Date**: 2025-11-24
+**Status**: 🔴 BLOCKED on service principal authentication
+
+**Root Cause Confirmed**: The `--auto-import-existing` flag requires service principal credentials in target tenant
+- Service Principal ID: `c331f235-8306-4227-aef1-9d7e79d11c2b`
+- Error: "Application not found in directory 'DefenderATEVET'"
+- Impact: 0 import blocks generated → 244+ "already exists" errors
+
+**Pattern Confirmed**: 4 out of 5 iterations deployed exactly 81 resources
+- Only non-conflicting resources deploy (tls_private_key, random_password)
+- All infrastructure resources blocked by resource group conflicts
+
+**Solution Required**: Create service principal in target tenant
+```bash
+az ad sp create-for-rbac \
+  --name "AzureTenantGrapher-Target" \
+  --role "Reader" \
+  --scopes "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
+
+export AZURE_TENANT_2_CLIENT_ID="<app-id>"
+export AZURE_TENANT_2_CLIENT_SECRET="<password>"
+```
+
+**Documentation**:
+- See `/tmp/00_PROJECT_STATUS_INDEX.md` for complete status
+- See `/tmp/DEPLOYMENT_HISTORY_SUMMARY.md` for iteration history
+- See `/tmp/CODE_CHANGES_SUMMARY.md` for code change details
+
