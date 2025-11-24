@@ -688,6 +688,17 @@ class TerraformEmitter(IaCEmitter):
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
 
+                # Validate all references in resource config before adding
+                all_refs_valid, missing_refs = self._validate_all_references_in_config(
+                    resource_config, resource_name, terraform_config
+                )
+                if not all_refs_valid:
+                    logger.warning(
+                        f"Skipping resource {resource_type}.{resource_name} - "
+                        f"has {len(missing_refs)} undeclared reference(s): {', '.join(missing_refs)}"
+                    )
+                    continue
+
                 # Add depends_on if resource has dependencies
                 if resource_dep.depends_on:
                     resource_config["depends_on"] = sorted(resource_dep.depends_on)
@@ -747,6 +758,28 @@ class TerraformEmitter(IaCEmitter):
                 subnet_name,
                 nsg_name,
             ) in self._nsg_associations:
+                # Validate both subnet and NSG exist before creating association
+                subnet_exists = self._validate_resource_reference(
+                    "azurerm_subnet", subnet_tf_name, terraform_config
+                )
+                nsg_exists = self._validate_resource_reference(
+                    "azurerm_network_security_group", nsg_tf_name, terraform_config
+                )
+
+                if not subnet_exists:
+                    logger.warning(
+                        f"Skipping NSG association for subnet '{subnet_name}' - "
+                        f"subnet resource azurerm_subnet.{subnet_tf_name} not emitted"
+                    )
+                    continue
+
+                if not nsg_exists:
+                    logger.warning(
+                        f"Skipping NSG association for subnet '{subnet_name}' - "
+                        f"NSG resource azurerm_network_security_group.{nsg_tf_name} not emitted"
+                    )
+                    continue
+
                 # Association resource name: subnet_name + "_nsg_association"
                 assoc_name = f"{subnet_tf_name}_nsg_association"
                 terraform_config["resource"][
@@ -4485,6 +4518,59 @@ class TerraformEmitter(IaCEmitter):
             terraform_type in self._available_resources
             and resource_name in self._available_resources[terraform_type]
         )
+
+    def _validate_all_references_in_config(
+        self,
+        resource_config: Dict[str, Any],
+        resource_name: str,
+        terraform_config: Dict[str, Any],
+    ) -> tuple[bool, list[str]]:
+        """Validate all Terraform resource references in a resource configuration.
+
+        Recursively searches for ${azurerm_*.*} and ${azuread_*.*} references and
+        validates that each referenced resource exists in _available_resources.
+
+        Args:
+            resource_config: Resource configuration dictionary to validate
+            resource_name: Name of the resource being validated (for logging)
+            terraform_config: Full terraform config to check emitted resources
+
+        Returns:
+            Tuple of (all_valid: bool, missing_refs: list[str])
+            - all_valid: True if all references are valid
+            - missing_refs: List of missing reference strings
+        """
+        import re
+
+        missing_refs = []
+
+        def extract_references(obj: Any) -> None:
+            """Recursively extract Terraform references from config object."""
+            if isinstance(obj, str):
+                # Pattern: ${azurerm_type.name.field} or ${azuread_type.name.field}
+                pattern = r"\$\{(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
+                matches = re.findall(pattern, obj)
+                for terraform_type, ref_name in matches:
+                    # Validate reference exists
+                    if not self._validate_resource_reference(
+                        terraform_type, ref_name, terraform_config
+                    ):
+                        ref_str = f"{terraform_type}.{ref_name}"
+                        if ref_str not in missing_refs:
+                            missing_refs.append(ref_str)
+                            logger.warning(
+                                f"Resource '{resource_name}' references undeclared "
+                                f"resource: {ref_str}"
+                            )
+            elif isinstance(obj, dict):
+                for value in obj.values():
+                    extract_references(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    extract_references(item)
+
+        extract_references(resource_config)
+        return (len(missing_refs) == 0, missing_refs)
 
     def _resolve_subnet_reference(self, subnet_id: str, resource_name: str) -> str:
         """Resolve subnet reference to VNet-scoped Terraform resource name.
