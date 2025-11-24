@@ -13,7 +13,7 @@ All validations operate ONLY on the abstracted graph layer.
 import logging
 from typing import Any, Tuple
 
-from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+from neo4j.exceptions import Neo4jError
 
 logger = logging.getLogger(__name__)
 

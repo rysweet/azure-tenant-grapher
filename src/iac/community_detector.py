@@ -8,8 +8,8 @@ Detects connected components (communities) in the resource graph to enable:
 """
 
 import logging
-from typing import Any, Dict, List, Set
 from collections import defaultdict
+from typing import Any, Dict, List, Set
 
 logger = logging.getLogger(__name__)
 

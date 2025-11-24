@@ -15,7 +15,6 @@ Thread Safety: All methods are thread-safe via Neo4j transactions
 Error Handling: Raises specific LayerError subclasses
 """
 
-import asyncio
 import json
 import logging
 from datetime import datetime
@@ -1301,7 +1300,7 @@ class LayerManagementService:
             LayerMetadata of restored layer
         """
         # Load archive
-        with open(archive_path, "r") as f:
+        with open(archive_path) as f:
             archive_data = json.load(f)
 
         metadata_dict = archive_data["metadata"]

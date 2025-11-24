@@ -358,7 +358,7 @@ scale_down:
 
   # Metropolis-Hastings Random Walk Settings
   mhrw:
-    # Bias parameter (α=1 for unbiased walk)
+    # Bias parameter (alpha=1 for unbiased walk)
     alpha: 1.0
 
     # Random seed for reproducible sampling

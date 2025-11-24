@@ -115,7 +115,6 @@ class CosmosDBPlugin(DataPlanePlugin):
         try:
             # Import Azure Cosmos SDK
             from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.cosmos import CosmosClient
             from azure.identity import DefaultAzureCredential
 
             # Get endpoint from resource properties
@@ -484,7 +483,7 @@ class CosmosDBPlugin(DataPlanePlugin):
         try:
             # Import Azure Cosmos SDK
             from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.cosmos import CosmosClient, PartitionKey
+            from azure.cosmos import PartitionKey
             from azure.identity import DefaultAzureCredential
 
             # Get endpoints

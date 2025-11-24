@@ -64,7 +64,7 @@ class GraphTraverser:
 
                 # Bug #15 fix: Add original_id from query result if available
                 # This enables smart import comparison without querying Neo4j for each resource
-                if "original_id" in record and record["original_id"]:
+                if record.get("original_id"):
                     resource_dict["original_id"] = record["original_id"]
 
                 resources.append(resource_dict)
