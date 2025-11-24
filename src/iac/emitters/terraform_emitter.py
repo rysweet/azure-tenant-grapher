@@ -17,7 +17,7 @@ from ..dependency_analyzer import DependencyAnalyzer
 from ..translators import TranslationContext, TranslationCoordinator
 from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 from ..traverser import TenantGraph
-from ..validators import ResourceExistenceValidator
+from ..validators import DependencyValidator, ResourceExistenceValidator
 from . import register_emitter
 from .base import IaCEmitter
 from .private_endpoint_emitter import (
@@ -1053,6 +1053,30 @@ class TerraformEmitter(IaCEmitter):
                     f"Failed to generate translation report: {e}", exc_info=True
                 )
                 # Don't fail the entire generation if report generation fails
+
+        # Validate Terraform dependencies before returning
+        logger.info("=" * 70)
+        logger.info("Validating Terraform resource dependencies...")
+        logger.info("=" * 70)
+
+        dependency_validator = DependencyValidator()
+        validation_result = dependency_validator.validate(out_dir, skip_init=True)
+
+        if validation_result.terraform_available:
+            if validation_result.valid:
+                logger.info("✅ Dependency validation passed - all resource references are declared")
+            else:
+                logger.error(f"❌ Dependency validation failed - found {len(validation_result.errors)} undeclared resource reference(s)")
+                for error in validation_result.errors:
+                    logger.error(
+                        f"  • Resource {error.resource_type}.{error.resource_name} references missing {error.missing_reference}"
+                    )
+                logger.warning(
+                    "⚠️  The generated Terraform configuration has dependency errors. "
+                    "Terraform apply will fail unless these references are fixed."
+                )
+        else:
+            logger.warning("⚠️  Terraform CLI not found - skipping dependency validation")
 
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"
