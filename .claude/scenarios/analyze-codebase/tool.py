@@ -21,13 +21,7 @@ class CodebaseAnalyzer:
 
     def __init__(self):
         """Initialize analyzer."""
-        self.skip_patterns = [
-            ".git",
-            "__pycache__",
-            "node_modules",
-            ".venv",
-            ".pytest_cache",
-        ]
+        self.skip_patterns = [".git", "__pycache__", "node_modules", ".venv", ".pytest_cache"]
         self.max_file_size = 1024 * 1024  # 1MB
 
     def analyze(self, target_path: str, options: dict = None) -> Dict[str, Any]:
@@ -74,10 +68,7 @@ class CodebaseAnalyzer:
         # File structure analysis
         if total_files > 50:
             findings.append(
-                {
-                    "type": "structure",
-                    "message": f"Large codebase with {total_files} files",
-                }
+                {"type": "structure", "message": f"Large codebase with {total_files} files"}
             )
             recommendations.append("Consider organizing code into smaller modules")
 
@@ -121,13 +112,7 @@ class CodebaseAnalyzer:
 
     def _discover_content(self, target_path: Path) -> Dict[str, List[Path]]:
         """Discover and categorize analyzable content."""
-        content_map = {
-            "python": [],
-            "javascript": [],
-            "yaml": [],
-            "markdown": [],
-            "other": [],
-        }
+        content_map = {"python": [], "javascript": [], "yaml": [], "markdown": [], "other": []}
 
         ext_map = {
             ".py": "python",
