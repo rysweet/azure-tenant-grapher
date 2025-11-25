@@ -125,6 +125,46 @@ class TerraformEmitter(IaCEmitter):
         # Otherwise use the resource's subscription
         return resource.get("subscription_id", "")
 
+    def _normalize_azure_type(self, azure_type: str) -> str:
+        """Normalize Azure resource type casing to match mapping keys.
+
+        Azure API returns inconsistent casing (e.g., microsoft.insights vs Microsoft.Insights).
+        This method normalizes to the canonical casing used in AZURE_TO_TERRAFORM_MAPPING.
+
+        Args:
+            azure_type: Azure resource type string (e.g., "microsoft.insights/components")
+
+        Returns:
+            Normalized azure_type with correct casing
+        """
+        # Provider namespace casing corrections
+        provider_casing_map = {
+            "microsoft.keyvault": "Microsoft.KeyVault",
+            "Microsoft.Keyvault": "Microsoft.KeyVault",
+            "microsoft.insights": "Microsoft.Insights",
+            "Microsoft.insights": "Microsoft.Insights",
+            "microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.documentdb": "Microsoft.DocumentDB",
+            "Microsoft.documentdb": "Microsoft.DocumentDB",
+            "Microsoft.DocumentDb": "Microsoft.DocumentDB",
+            "microsoft.devtestlab": "Microsoft.DevTestLab",
+            "Microsoft.devtestlab": "Microsoft.DevTestLab",
+            "microsoft.alertsmanagement": "Microsoft.AlertsManagement",
+            "Microsoft.alertsmanagement": "Microsoft.AlertsManagement",
+            "microsoft.compute": "Microsoft.Compute",
+        }
+
+        normalized_type = azure_type
+        for incorrect, correct in provider_casing_map.items():
+            if normalized_type.startswith(incorrect + "/"):
+                normalized_type = correct + normalized_type[len(incorrect):]
+                break
+
+        return normalized_type
+
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
@@ -386,6 +426,9 @@ class TerraformEmitter(IaCEmitter):
                 azure_type = "Microsoft.Graph/servicePrincipals"
             elif azure_type.lower() == "managedidentity":
                 azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+
+            # Normalize casing before lookup (fixes case-sensitivity issues)
+            azure_type = self._normalize_azure_type(azure_type)
 
             # Get Terraform resource type (with dynamic handling for App Services)
             if azure_type == "Microsoft.Web/sites":
@@ -1527,22 +1570,14 @@ class TerraformEmitter(IaCEmitter):
         azure_type_lower = azure_type.lower()
 
         # Bug #36: Try case-insensitive lookup for Azure types
+        # Normalize casing before lookup (fixes case-sensitivity issues)
+        azure_type = self._normalize_azure_type(azure_type)
+
         # Azure API returns inconsistent casing (Microsoft.Insights/components vs microsoft.insights/components)
         if azure_type == "Microsoft.Web/sites":
             terraform_type = self._get_app_service_terraform_type(resource)
         else:
-            # First try exact match
             terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
-
-            # Bug #36: If not found, try lowercase version for case-insensitive match
-            if not terraform_type:
-                terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
-                    azure_type.lower()
-                )
-                if terraform_type:
-                    logger.debug(
-                        f"Bug #36: Matched '{azure_type}' using lowercase lookup"
-                    )
 
         if not terraform_type:
             logger.warning(
