@@ -1,6 +1,5 @@
 """Tests for graph sampling library imports and basic functionality."""
 
-import pytest
 
 
 def test_littleballoffur_import():

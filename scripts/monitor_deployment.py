@@ -9,9 +9,9 @@ import time
 from pathlib import Path
 
 IMESSAGE_TOOL = Path.home() / ".local/bin/imessR"
-LOG_FILE = Path(
-    "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/logs/iteration91_apply.log"
-)
+# Dynamically determine log file path from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
+LOG_FILE = REPO_ROOT / "logs/iteration91_apply.log"
 
 
 def send_message(msg: str):
@@ -20,7 +20,7 @@ def send_message(msg: str):
         if IMESSAGE_TOOL.exists():
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
             print(f"📱 {msg}")
-    except:
+    except Exception:
         pass
 
 
@@ -33,7 +33,7 @@ def get_progress():
         content = f.read()
 
     # Look for creation progress
-    creating = len(re.findall(r"Creating\.\.\.", content))
+    len(re.findall(r"Creating\.\.\.", content))
     created = len(re.findall(r"Creation complete after", content))
     errors = len(re.findall(r"Error:", content))
 

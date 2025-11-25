@@ -8,7 +8,7 @@
 
 set -e
 
-REPO_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT_PATH="$REPO_ROOT/scripts/autonomous_replication_orchestrator.py"
 STATUS_FILE="$REPO_ROOT/demos/orchestrator_status.json"
 LOG_FILE="$REPO_ROOT/logs/orchestrator_runner.log"

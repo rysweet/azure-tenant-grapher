@@ -288,6 +288,12 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     default=3,
     help="Maximum number of retries for failed resources (default: 3)",
 )
+@click.option(
+    "--max-concurrency",
+    type=int,
+    default=100,
+    help="Maximum concurrent resource processing workers (default: 100)",
+)
 @click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
 @click.option(
     "--generate-spec",
@@ -344,6 +350,7 @@ async def build(
     max_llm_threads: int,
     max_build_threads: int,
     max_retries: int,
+    max_concurrency: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -805,6 +812,11 @@ def generate_spec(
     required=False,
     help="Target subscription ID to scan for smart import (optional, scans all subscriptions if not provided)",
 )
+@click.option(
+    "--split-by-community",
+    is_flag=True,
+    help="Split resources into separate Terraform files per community (connected component)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -848,6 +860,7 @@ async def generate_iac(
     scan_target: bool,
     scan_target_tenant_id: Optional[str],
     scan_target_subscription_id: Optional[str],
+    split_by_community: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -924,6 +937,7 @@ async def generate_iac(
         scan_target=scan_target,
         scan_target_tenant_id=scan_target_tenant_id,
         scan_target_subscription_id=scan_target_subscription_id,
+        split_by_community=split_by_community,
     )
 
 
@@ -1776,10 +1790,19 @@ def doctor() -> None:
 
         # Check role assignments
         result = subprocess.run(
-            ["az", "role", "assignment", "list", "--assignee", client_id, "--output", "json"],
+            [
+                "az",
+                "role",
+                "assignment",
+                "list",
+                "--assignee",
+                client_id,
+                "--output",
+                "json",
+            ],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
         if result.returncode != 0:
@@ -1789,6 +1812,7 @@ def doctor() -> None:
             return
 
         import json
+
         roles = json.loads(result.stdout)
         role_names = [r.get("roleDefinitionName") for r in roles]
 
@@ -1797,8 +1821,16 @@ def doctor() -> None:
             print(f"  ✅ {role_name}")
 
         # Check for required roles
-        has_reader = "Reader" in role_names or "Contributor" in role_names or "Owner" in role_names
-        has_security_reader = "Security Reader" in role_names or "Owner" in role_names or "User Access Administrator" in role_names
+        has_reader = (
+            "Reader" in role_names
+            or "Contributor" in role_names
+            or "Owner" in role_names
+        )
+        has_security_reader = (
+            "Security Reader" in role_names
+            or "Owner" in role_names
+            or "User Access Administrator" in role_names
+        )
 
         print("")
         print("Permission Requirements for Full Functionality:")
@@ -1810,10 +1842,16 @@ def doctor() -> None:
             print("     Impact: Cannot scan Azure resources")
 
         if has_security_reader:
-            print("  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)")
+            print(
+                "  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)"
+            )
         else:
-            print("  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)")
-            print("     Impact: Cannot scan role assignments (RBAC will not be replicated!)")
+            print(
+                "  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)"
+            )
+            print(
+                "     Impact: Cannot scan role assignments (RBAC will not be replicated!)"
+            )
             print("")
             print("     FIX: Run this command to add Security Reader role:")
             print("     az role assignment create \\")
@@ -1826,7 +1864,9 @@ def doctor() -> None:
 
         print("")
         if has_reader and has_security_reader:
-            print("✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!")
+            print(
+                "✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!"
+            )
         else:
             print("⚠️  MISSING PERMISSIONS - Scanning will be limited!")
 
@@ -2614,7 +2654,9 @@ def layer() -> None:
 @click.option(
     "--type",
     "layer_type",
-    type=click.Choice(["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False),
+    type=click.Choice(
+        ["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False
+    ),
     help="Filter by layer type",
 )
 @click.option(
@@ -2769,7 +2811,9 @@ async def layer_active(
 @click.option(
     "--type",
     "layer_type",
-    type=click.Choice(["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False),
+    type=click.Choice(
+        ["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False
+    ),
     default="experimental",
     help="Layer type (default: experimental)",
 )
@@ -3133,7 +3177,9 @@ async def layer_archive(
 
 
 @layer.command(name="restore")
-@click.argument("archive_path", type=click.Path(exists=True, dir_okay=False, readable=True))
+@click.argument(
+    "archive_path", type=click.Path(exists=True, dir_okay=False, readable=True)
+)
 @click.option(
     "--layer-id",
     help="Override layer ID from archive",

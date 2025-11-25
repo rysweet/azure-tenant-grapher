@@ -19,7 +19,7 @@ Total: 25+ test cases
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock
 
 import networkx as nx
 import pytest

@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Configuration

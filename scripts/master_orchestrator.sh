@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMESS_TOOL="$HOME/.local/bin/imessR"
 STATE_DIR="$PROJECT_ROOT/.claude/runtime/orchestrator"
 ITERATION_DIR="$PROJECT_ROOT/demos"

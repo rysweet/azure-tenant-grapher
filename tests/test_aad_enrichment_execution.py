@@ -313,7 +313,7 @@ async def test_aad_enrichment_disabled(mock_config, caplog):
 
                 # Create grapher and run build_graph
                 grapher = AzureTenantGrapher(mock_config)
-                result = await grapher.build_graph()
+                await grapher.build_graph()
 
                 # Verify no service principals were added
                 sp_resources = [

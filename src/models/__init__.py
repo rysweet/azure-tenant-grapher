@@ -6,9 +6,9 @@ from .scale_operation import ScaleOperationMetadata
 
 __all__ = [
     "FilterConfig",
-    "ScaleOperationMetadata",
+    "LayerDiff",
     "LayerMetadata",
     "LayerType",
-    "LayerDiff",
     "LayerValidationReport",
+    "ScaleOperationMetadata",
 ]

@@ -197,10 +197,10 @@ class AADGraphService:
         for user_id in user_ids:
             try:
 
-                async def fetch_user():
+                async def fetch_user(uid=user_id):
                     if not self.client:
                         raise RuntimeError("Graph client not initialized")
-                    user = await self.client.users.by_user_id(user_id).get()
+                    user = await self.client.users.by_user_id(uid).get()
                     if user:
                         return {
                             "id": user.id,
@@ -320,10 +320,10 @@ class AADGraphService:
         for group_id in group_ids:
             try:
 
-                async def fetch_group():
+                async def fetch_group(gid=group_id):
                     if not self.client:
                         raise RuntimeError("Graph client not initialized")
-                    group = await self.client.groups.by_group_id(group_id).get()
+                    group = await self.client.groups.by_group_id(gid).get()
                     if group:
                         return {
                             "id": group.id,
@@ -447,11 +447,11 @@ class AADGraphService:
         for sp_id in principal_ids:
             try:
 
-                async def fetch_sp():
+                async def fetch_sp(spid=sp_id):
                     if not self.client:
                         raise RuntimeError("Graph client not initialized")
                     sp = await self.client.service_principals.by_service_principal_id(
-                        sp_id
+                        spid
                     ).get()
                     if sp:
                         return {

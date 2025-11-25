@@ -44,7 +44,7 @@ class TestStatusTab:
         await page.wait_for_selector("[data-testid='status-content']", state="visible")
 
         # Initial status should be displayed
-        status_element = page.locator("[data-testid='current-status']")
+        page.locator("[data-testid='current-status']")
         # await expect(status_element).to_be_visible()
 
         # Wait for WebSocket connection
@@ -88,7 +88,7 @@ class TestStatusTab:
         await page.click("[data-testid='tab-status']")
 
         # Check for activity log
-        activity_log = page.locator("[data-testid='activity-log']")
+        page.locator("[data-testid='activity-log']")
         # await expect(activity_log).to_be_visible()
 
         # Verify log entries are present
@@ -117,7 +117,7 @@ class TestStatusTab:
         await page.click("[data-testid='tab-status']")
 
         # Check for metrics display
-        metrics_container = page.locator("[data-testid='system-metrics']")
+        page.locator("[data-testid='system-metrics']")
         # await expect(metrics_container).to_be_visible()
 
         # Verify specific metrics
@@ -144,7 +144,7 @@ class TestStatusTab:
         await page.click("[data-testid='refresh-status']")
 
         # Check for error message
-        error_message = page.locator("[data-testid='status-error']")
+        page.locator("[data-testid='status-error']")
         # await expect(error_message).to_be_visible(timeout=5000)
 
         # Restore connection
@@ -193,7 +193,7 @@ class TestStatusTab:
         await page.click("[data-testid='tab-status']")
 
         # Check initial connection status
-        connection_indicator = page.locator("[data-testid='connection-indicator']")
+        page.locator("[data-testid='connection-indicator']")
         # await expect(connection_indicator).to_be_visible()
 
         # Should show connected

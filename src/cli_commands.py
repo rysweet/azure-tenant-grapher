@@ -1288,11 +1288,11 @@ def spa_start():
                 return
             except ProcessLookupError:
                 # Process not running, clean up stale PID file
-                click.echo(f"ℹ️  Cleaning up stale PID file (process {pid} not found)")
+                click.echo(f"INFO: Cleaning up stale PID file (process {pid} not found)")
                 os.remove(SPA_PIDFILE)
         except (OSError, ValueError) as e:
             # Invalid PID file, remove it
-            click.echo(f"ℹ️  Removing invalid PID file: {e}")
+            click.echo(f"INFO: Removing invalid PID file: {e}")
             os.remove(SPA_PIDFILE)
 
     # Check if npm is available
@@ -1369,12 +1369,12 @@ def spa_start():
                     except ProcessLookupError:
                         # Process not running, clean up stale PID file
                         click.echo(
-                            f"ℹ️  Cleaning up stale MCP PID file (process {mcp_pid} not found)"
+                            f"INFO: Cleaning up stale MCP PID file (process {mcp_pid} not found)"
                         )
                         os.remove(MCP_PIDFILE)
                 except (OSError, ValueError) as e:
                     # Invalid PID file, remove it
-                    click.echo(f"ℹ️  Removing invalid MCP PID file: {e}")
+                    click.echo(f"INFO: Removing invalid MCP PID file: {e}")
                     os.remove(MCP_PIDFILE)
 
             if mcp_needs_start:

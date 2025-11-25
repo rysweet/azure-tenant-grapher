@@ -15,7 +15,8 @@ from pathlib import Path
 from neo4j import GraphDatabase
 
 # Configuration
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = REPO_ROOT / "demos"
 STATUS_FILE = DEMOS_DIR / "continuous_engine_status.json"
 LOG_FILE = DEMOS_DIR / "continuous_engine.log"
@@ -68,7 +69,7 @@ class ContinuousEngine:
             try:
                 num = int(it.name.replace("iteration", ""))
                 nums.append(num)
-            except:
+            except ValueError:
                 pass
         return max(nums) if nums else 0
 
@@ -264,7 +265,7 @@ Work autonomously. When done, output "WORKSTREAM_COMPLETE: {workstream_id}" to s
                     self.log("  ✓ Validation PASSED")
                     self.consecutive_passes += 1
                     return True
-            except:
+            except json.JSONDecodeError:
                 pass
 
         self.log("  ✗ Validation FAILED")

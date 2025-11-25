@@ -12,11 +12,12 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
 
+from ..community_detector import CommunityDetector
 from ..dependency_analyzer import DependencyAnalyzer
 from ..translators import TranslationContext, TranslationCoordinator
 from ..translators.private_endpoint_translator import PrivateEndpointTranslator
 from ..traverser import TenantGraph
-from ..validators import ResourceExistenceValidator
+from ..validators import DependencyValidator, ResourceExistenceValidator
 from . import register_emitter
 from .base import IaCEmitter
 from .private_endpoint_emitter import (
@@ -67,6 +68,9 @@ class TerraformEmitter(IaCEmitter):
         # Track NSG associations to emit as separate resources
         # Format: [(subnet_tf_name, nsg_tf_name, subnet_name, nsg_name)]
         self._nsg_associations: List[tuple[str, str, str, str]] = []
+        # Track NIC NSG associations (similar to subnet NSG associations)
+        # Format: [(nic_tf_name, nsg_tf_name, nic_name, nsg_name)]
+        self._nic_nsg_associations: List[tuple[str, str, str, str]] = []
         # Track all resource names that will be emitted (for reference validation)
         self._available_resources: Dict[str, set] = {}
         # Track missing resource references for reporting
@@ -121,11 +125,52 @@ class TerraformEmitter(IaCEmitter):
         # Otherwise use the resource's subscription
         return resource.get("subscription_id", "")
 
+    def _normalize_azure_type(self, azure_type: str) -> str:
+        """Normalize Azure resource type casing to match mapping keys.
+
+        Azure API returns inconsistent casing (e.g., microsoft.insights vs Microsoft.Insights).
+        This method normalizes to the canonical casing used in AZURE_TO_TERRAFORM_MAPPING.
+
+        Args:
+            azure_type: Azure resource type string (e.g., "microsoft.insights/components")
+
+        Returns:
+            Normalized azure_type with correct casing
+        """
+        # Provider namespace casing corrections
+        provider_casing_map = {
+            "microsoft.keyvault": "Microsoft.KeyVault",
+            "Microsoft.Keyvault": "Microsoft.KeyVault",
+            "microsoft.insights": "Microsoft.Insights",
+            "Microsoft.insights": "Microsoft.Insights",
+            "microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalinsights": "Microsoft.OperationalInsights",
+            "Microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.operationalInsights": "Microsoft.OperationalInsights",
+            "microsoft.documentdb": "Microsoft.DocumentDB",
+            "Microsoft.documentdb": "Microsoft.DocumentDB",
+            "Microsoft.DocumentDb": "Microsoft.DocumentDB",
+            "microsoft.devtestlab": "Microsoft.DevTestLab",
+            "Microsoft.devtestlab": "Microsoft.DevTestLab",
+            "microsoft.alertsmanagement": "Microsoft.AlertsManagement",
+            "Microsoft.alertsmanagement": "Microsoft.AlertsManagement",
+            "microsoft.compute": "Microsoft.Compute",
+        }
+
+        normalized_type = azure_type
+        for incorrect, correct in provider_casing_map.items():
+            if normalized_type.startswith(incorrect + "/"):
+                normalized_type = correct + normalized_type[len(incorrect):]
+                break
+
+        return normalized_type
+
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
         "Microsoft.Compute/disks": "azurerm_managed_disk",
         "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
+        "microsoft.compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",  # Lowercase variant
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
         "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
         "Microsoft.Network/subnets": "azurerm_subnet",
@@ -141,7 +186,9 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
+        "microsoft.operationalinsights/workspaces": "azurerm_log_analytics_workspace",  # Lowercase variant
         "microsoft.insights/components": "azurerm_application_insights",
+        "Microsoft.Insights/components": "azurerm_application_insights",  # Proper-case variant
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # DevTestLab resources
@@ -159,11 +206,14 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
         "microsoft.insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",  # Lowercase variant
         "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
+        "microsoft.insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",  # Lowercase variant
+        "microsoft.insights/metricalerts": "azurerm_monitor_metric_alert",  # Lowercase variant
         "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Additional resource types found in full tenant scan
         "microsoft.insights/actiongroups": "azurerm_monitor_action_group",
         "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
+        "Microsoft.Insights/actiongroups": "azurerm_monitor_action_group",  # Proper-case variant (lowercase 'groups')
         "Microsoft.Search/searchServices": "azurerm_search_service",
         "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
@@ -189,9 +239,33 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.App/containerApps": "azurerm_container_app",
         # Microsoft.SecurityCopilot/capacities - No Terraform support yet, will be skipped
         "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
+        # Additional supported types discovered during tenant replication (Iteration 19+)
+        "Microsoft.Network/routeTables": "azurerm_route_table",
+        # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
+        "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # NOW HAS EMITTER (added SKU handler)
+        # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
+        # "Microsoft.Purview/accounts": "azurerm_purview_account",  # Missing: identity block (Iteration 26)
+        "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
+        "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
+        # "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # Missing: storage_data_lake_gen2_filesystem_id, sql_administrator_login (Iteration 23)
+        # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
+        # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
+        "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
+        # "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Missing: data_source_id, frequency, time_window, query, action, trigger (Iteration 26)
+        # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
+        "Microsoft.Compute/images": "azurerm_image",
+        "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
+        # "Microsoft.Compute/galleries/images": "azurerm_shared_image",  # Missing: gallery_name, os_type
+        # "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Missing: frequency, severity, scope_resource_ids, detector_type (31 instances!)
+        "Microsoft.Web/staticSites": "azurerm_static_web_app",
+        # "Microsoft.App/jobs": "azurerm_container_app_job",  # Missing: container_app_environment_id
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
         # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
         # Microsoft.MachineLearningServices/workspaces/serverlessEndpoints - No direct Terraform equivalent yet, will be skipped
+        # Microsoft.CognitiveServices/accounts/projects - Child resources, need parent account handling
+        # Microsoft.Communication/EmailServices/Domains - Child resources
+        # Microsoft.App/builders - Internal resource, may not need deployment
+        # Microsoft.SentinelPlatformServices/* - Sentinel-specific, may need special handling
         # Azure AD / Entra ID / Microsoft Graph resource mappings
         "Microsoft.AAD/User": "azuread_user",
         "Microsoft.AAD/Group": "azuread_group",
@@ -211,9 +285,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
         "Microsoft.Authorization/roleDefinitions": "azurerm_role_definition",
         # Container and Kubernetes resources (azurerm v3.43.0+)
-        "Microsoft.App/containerApps": "azurerm_container_app",
         "Microsoft.ContainerService/managedClusters": "azurerm_kubernetes_cluster",
-        "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
         # Additional Compute resources
         "Microsoft.Compute/virtualMachineScaleSets": "azurerm_linux_virtual_machine_scale_set",
         "Microsoft.Compute/snapshots": "azurerm_snapshot",
@@ -273,6 +345,7 @@ class TerraformEmitter(IaCEmitter):
         domain_name: Optional[str] = None,
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
+        split_by_community: bool = False,
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
@@ -283,6 +356,7 @@ class TerraformEmitter(IaCEmitter):
             subscription_id: Optional subscription ID for deployment
             comparison_result: Optional comparison with target tenant (NEW in Phase 1E)
                               If provided, enables smart import generation
+            split_by_community: If True, split resources into separate files per community
         """
         # If a domain name is specified, set it for all user account entities
         if domain_name:
@@ -382,6 +456,9 @@ class TerraformEmitter(IaCEmitter):
                 azure_type = "Microsoft.Graph/servicePrincipals"
             elif azure_type.lower() == "managedidentity":
                 azure_type = "Microsoft.ManagedIdentity/managedIdentities"
+
+            # Normalize casing before lookup (fixes case-sensitivity issues)
+            azure_type = self._normalize_azure_type(azure_type)
 
             # Get Terraform resource type (with dynamic handling for App Services)
             if azure_type == "Microsoft.Web/sites":
@@ -684,6 +761,17 @@ class TerraformEmitter(IaCEmitter):
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
 
+                # Validate all references in resource config before adding
+                all_refs_valid, missing_refs = self._validate_all_references_in_config(
+                    resource_config, resource_name, terraform_config
+                )
+                if not all_refs_valid:
+                    logger.warning(
+                        f"Skipping resource {resource_type}.{resource_name} - "
+                        f"has {len(missing_refs)} undeclared reference(s): {', '.join(missing_refs)}"
+                    )
+                    continue
+
                 # Add depends_on if resource has dependencies
                 if resource_dep.depends_on:
                     resource_config["depends_on"] = sorted(resource_dep.depends_on)
@@ -743,6 +831,28 @@ class TerraformEmitter(IaCEmitter):
                 subnet_name,
                 nsg_name,
             ) in self._nsg_associations:
+                # Validate both subnet and NSG exist before creating association
+                subnet_exists = self._validate_resource_reference(
+                    "azurerm_subnet", subnet_tf_name, terraform_config
+                )
+                nsg_exists = self._validate_resource_reference(
+                    "azurerm_network_security_group", nsg_tf_name, terraform_config
+                )
+
+                if not subnet_exists:
+                    logger.warning(
+                        f"Skipping NSG association for subnet '{subnet_name}' - "
+                        f"subnet resource azurerm_subnet.{subnet_tf_name} not emitted"
+                    )
+                    continue
+
+                if not nsg_exists:
+                    logger.warning(
+                        f"Skipping NSG association for subnet '{subnet_name}' - "
+                        f"NSG resource azurerm_network_security_group.{nsg_tf_name} not emitted"
+                    )
+                    continue
+
                 # Association resource name: subnet_name + "_nsg_association"
                 assoc_name = f"{subnet_tf_name}_nsg_association"
                 terraform_config["resource"][
@@ -757,6 +867,49 @@ class TerraformEmitter(IaCEmitter):
                     f"Generated NSG association: {assoc_name} (Subnet: {subnet_name}, NSG: {nsg_name})"
                 )
 
+        # Emit NIC NSG association resources (Bug #57: deprecated network_security_group_id field)
+        if self._nic_nsg_associations:
+            if (
+                "azurerm_network_interface_security_group_association"
+                not in terraform_config["resource"]
+            ):
+                terraform_config["resource"][
+                    "azurerm_network_interface_security_group_association"
+                ] = {}
+
+            for (
+                nic_tf_name,
+                nsg_tf_name,
+                nic_name,
+                nsg_name,
+            ) in self._nic_nsg_associations:
+                # Validate NSG exists before creating association (Bug #58)
+                nsg_available = (
+                    "azurerm_network_security_group" in self._available_resources
+                    and nsg_tf_name in self._available_resources["azurerm_network_security_group"]
+                )
+
+                if not nsg_available:
+                    logger.warning(
+                        f"Skipping NIC NSG association for '{nic_name}' - "
+                        f"NSG '{nsg_name}' not emitted. Association cannot be created."
+                    )
+                    continue
+
+                # Association resource name: nic_name + "_nsg_association"
+                assoc_name = f"{nic_tf_name}_nsg_association"
+                terraform_config["resource"][
+                    "azurerm_network_interface_security_group_association"
+                ][assoc_name] = {
+                    "network_interface_id": f"${{azurerm_network_interface.{nic_tf_name}.id}}",
+                    "network_security_group_id": f"${{azurerm_network_security_group.{nsg_tf_name}.id}}",
+                }
+                # Track NIC NSG association resource for generation report
+                self._resource_count += 1
+                logger.debug(
+                    f"Generated NIC NSG association: {assoc_name} (NIC: {nic_name}, NSG: {nsg_name})"
+                )
+
         # Generate import blocks if requested (Issue #412)
         if self.auto_import_existing:
             import_blocks = self._generate_import_blocks(
@@ -767,12 +920,90 @@ class TerraformEmitter(IaCEmitter):
                 self._import_blocks_generated = len(import_blocks)
                 logger.info(f"Generated {len(import_blocks)} import blocks")
 
-        # Write main.tf.json
-        output_file = out_dir / "main.tf.json"
-        with open(output_file, "w") as f:
-            json.dump(terraform_config, f, indent=2)
-        # Track file creation for generation report (Issue #413)
-        self._files_created += 1
+        # Determine if we should split by community
+        output_files = []
+        if split_by_community:
+            try:
+                # Need Neo4j driver to detect communities
+                # Get driver from session manager
+                from src.config_manager import create_neo4j_config_from_env
+                from src.utils.session_manager import create_session_manager
+
+                config = create_neo4j_config_from_env()
+                manager = create_session_manager(config.neo4j)
+                manager.connect()
+                # pyright: ignore[reportPrivateUsage]
+                if manager._driver is None:  # pyright: ignore[reportPrivateUsage]
+                    logger.warning("Cannot split by community: Neo4j driver not available. Writing single file.")
+                    split_by_community = False
+                else:
+                    driver = manager._driver  # pyright: ignore[reportPrivateUsage]
+                    detector = CommunityDetector(driver)
+                    communities = detector.detect_communities()
+
+                    logger.info(f"Detected {len(communities)} communities for splitting")
+                    logger.info(f"Community sizes: {[len(c) for c in communities]}")
+
+                    # Split resources by community
+                    for i, community_ids in enumerate(communities, start=1):
+                        # Filter resources for this community
+                        community_resources = {
+                            resource_type: {
+                                resource_name: resource_config
+                                for resource_name, resource_config in resources.items()
+                                if self._is_resource_in_community(resource_type, resource_name, community_ids, graph.resources)
+                            }
+                            for resource_type, resources in terraform_config.get("resource", {}).items()
+                        }
+
+                        # Remove empty resource types
+                        community_resources = {
+                            rt: res for rt, res in community_resources.items() if res
+                        }
+
+                        # Skip empty communities
+                        if not community_resources:
+                            logger.debug(f"Community {i} has no resources after filtering, skipping")
+                            continue
+
+                        # Create community-specific config
+                        community_config = {
+                            "terraform": terraform_config["terraform"],
+                            "provider": terraform_config["provider"],
+                            "variable": terraform_config["variable"],
+                            "resource": community_resources,
+                        }
+
+                        # Add import blocks for this community if present
+                        if "import" in terraform_config:
+                            community_imports = [
+                                imp for imp in terraform_config["import"]
+                                if self._is_import_in_community(imp, community_ids, graph.resources)
+                            ]
+                            if community_imports:
+                                community_config["import"] = community_imports
+
+                        # Write community file
+                        community_file = out_dir / f"community_{i}.tf.json"
+                        with open(community_file, "w") as f:
+                            json.dump(community_config, f, indent=2)
+                        output_files.append(community_file)
+                        self._files_created += 1
+                        logger.info(f"Generated {community_file.name} with {len(community_resources)} resource types")
+
+                    manager.disconnect()
+            except Exception as e:
+                logger.warning(f"Failed to split by community: {e}. Writing single file instead.")
+                split_by_community = False
+
+        if not split_by_community:
+            # Write single main.tf.json file
+            output_file = out_dir / "main.tf.json"
+            with open(output_file, "w") as f:
+                json.dump(terraform_config, f, indent=2)
+            output_files.append(output_file)
+            # Track file creation for generation report (Issue #413)
+            self._files_created += 1
 
         # Bug #24 fix: Write smart import blocks AFTER resource emission completes
         # This allows us to filter out import blocks for resources that weren't emitted
@@ -896,10 +1127,34 @@ class TerraformEmitter(IaCEmitter):
                 )
                 # Don't fail the entire generation if report generation fails
 
+        # Validate Terraform dependencies before returning
+        logger.info("=" * 70)
+        logger.info("Validating Terraform resource dependencies...")
+        logger.info("=" * 70)
+
+        dependency_validator = DependencyValidator()
+        validation_result = dependency_validator.validate(out_dir, skip_init=True)
+
+        if validation_result.terraform_available:
+            if validation_result.valid:
+                logger.info("✅ Dependency validation passed - all resource references are declared")
+            else:
+                logger.error(f"❌ Dependency validation failed - found {len(validation_result.errors)} undeclared resource reference(s)")
+                for error in validation_result.errors:
+                    logger.error(
+                        f"  • Resource {error.resource_type}.{error.resource_name} references missing {error.missing_reference}"
+                    )
+                logger.warning(
+                    "⚠️  The generated Terraform configuration has dependency errors. "
+                    "Terraform apply will fail unless these references are fixed."
+                )
+        else:
+            logger.warning("⚠️  Terraform CLI not found - skipping dependency validation")
+
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"
         )
-        return [output_file]
+        return output_files
 
     async def emit_template(
         self, tenant_graph: TenantGraph, output_path: Optional[str] = None
@@ -1342,27 +1597,17 @@ class TerraformEmitter(IaCEmitter):
             azure_type = "Microsoft.ManagedIdentity/managedIdentities"
 
         # Bug #39: Normalize azure_type to lowercase for consistent elif matching
-        # Store original for logging, use lowercase for comparisons
-        azure_type_original = azure_type
         azure_type_lower = azure_type.lower()
 
         # Bug #36: Try case-insensitive lookup for Azure types
+        # Normalize casing before lookup (fixes case-sensitivity issues)
+        azure_type = self._normalize_azure_type(azure_type)
+
         # Azure API returns inconsistent casing (Microsoft.Insights/components vs microsoft.insights/components)
         if azure_type == "Microsoft.Web/sites":
             terraform_type = self._get_app_service_terraform_type(resource)
         else:
-            # First try exact match
             terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(azure_type)
-
-            # Bug #36: If not found, try lowercase version for case-insensitive match
-            if not terraform_type:
-                terraform_type = self.AZURE_TO_TERRAFORM_MAPPING.get(
-                    azure_type.lower()
-                )
-                if terraform_type:
-                    logger.debug(
-                        f"Bug #36: Matched '{azure_type}' using lowercase lookup"
-                    )
 
         if not terraform_type:
             logger.warning(
@@ -1385,12 +1630,34 @@ class TerraformEmitter(IaCEmitter):
 
         # Apply unique suffix for globally unique resource types
         resource_name_with_suffix = resource_name
-        if azure_type in globally_unique_types or azure_type.lower() in {t.lower() for t in globally_unique_types}:
+        if azure_type in globally_unique_types or azure_type.lower() in {
+            t.lower() for t in globally_unique_types
+        }:
             resource_id = resource.get("id", "")
-            resource_name_with_suffix = self._add_unique_suffix(resource_name, resource_id)
+
+            # Key Vaults have a 24-character name limit
+            # Suffix is 7 characters ("-XXXXXX"), so max base name is 17 chars
+            if azure_type == "Microsoft.KeyVault/vaults" and len(resource_name) > 17:
+                truncated_name = resource_name[:17]
+                resource_name_with_suffix = self._add_unique_suffix(
+                    truncated_name, resource_id, azure_type
+                )
+                logger.warning(
+                    f"Truncated Key Vault name '{resource_name}' "
+                    f"(length {len(resource_name)}) to '{truncated_name}' "
+                    f"(length {len(truncated_name)}) to accommodate unique suffix, "
+                    f"resulting in '{resource_name_with_suffix}' "
+                    f"(length {len(resource_name_with_suffix)})"
+                )
+            else:
+                resource_name_with_suffix = self._add_unique_suffix(
+                    resource_name, resource_id, azure_type
+                )
+
             safe_name = self._sanitize_terraform_name(resource_name_with_suffix)
             logger.info(
-                f"Applied unique suffix to globally unique resource '{resource_name}' -> '{resource_name_with_suffix}' (type: {azure_type})"
+                f"Applied unique suffix to globally unique resource "
+                f"'{resource_name}' -> '{resource_name_with_suffix}' (type: {azure_type})"
             )
 
         # Build basic resource configuration
@@ -1412,6 +1679,13 @@ class TerraformEmitter(IaCEmitter):
             }
         # Smart Detector Alert Rules are global and don't have a location field
         elif azure_type == "microsoft.alertsmanagement/smartDetectorAlertRules":
+            resource_config = {
+                "name": resource_name_with_suffix,
+                "resource_group_name": resource.get("resource_group")
+                or resource.get("resourceGroup"),
+            }
+        # DNS Zones are global resources and don't have a location field
+        elif azure_type in ("Microsoft.Network/dnszones", "Microsoft.Network/dnsZones"):
             resource_config = {
                 "name": resource_name_with_suffix,
                 "resource_group_name": resource.get("resource_group")
@@ -1491,6 +1765,14 @@ class TerraformEmitter(IaCEmitter):
                     normalized_prefixes.append(cidr)
 
             resource_config["address_space"] = normalized_prefixes
+
+            # Skip VNets with missing resource group - these cannot be deployed
+            if not resource_config.get("resource_group_name"):
+                logger.warning(
+                    f"Skipping VNet '{resource_name}': No resource group found. "
+                    f"VNets require a valid resource group for deployment."
+                )
+                return None
 
             # Bug #31 Step 2: Populate VNet ID -> Terraform name mapping for standalone subnets
             # Map both abstracted and original IDs to handle either format
@@ -1843,6 +2125,25 @@ class TerraformEmitter(IaCEmitter):
 
                 resource_config["ip_configuration"] = ip_config_block
 
+                # Track NSG association if present (Azure NICs can have NSGs attached at the NIC level)
+                # NOTE: network_security_group_id field is deprecated in newer azurerm provider
+                # Must use azurerm_network_interface_security_group_association resource instead
+                nsg_info = properties.get("networkSecurityGroup", {})
+                if nsg_info and "id" in nsg_info:
+                    nsg_id = nsg_info["id"]
+                    nsg_name = self._extract_resource_name_from_id(
+                        nsg_id, "networkSecurityGroups"
+                    )
+                    if nsg_name != "unknown":
+                        nsg_safe = self._sanitize_terraform_name(nsg_name)
+                        # Collect association to emit as separate resource later
+                        self._nic_nsg_associations.append(
+                            (safe_name, nsg_safe, resource_name, nsg_name)
+                        )
+                        logger.debug(
+                            f"NIC '{resource_name}' will get NSG association: {nsg_name}"
+                        )
+
                 # Validate reference (warn if placeholder)
                 if "unknown" in subnet_reference:
                     logger.warning(
@@ -2135,15 +2436,25 @@ class TerraformEmitter(IaCEmitter):
 
         elif azure_type_lower == "microsoft.keyvault/vaults":
             # Extract tenant_id from multiple sources with proper fallback (case-insensitive)
-            # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
+            # Priority: target_tenant_id > resource.tenant_id > properties.tenantId > data.current.tenant_id
             properties = self._parse_properties(resource)
 
-            # Try to get tenant_id from resource data
-            tenant_id = (
-                resource.get("tenant_id")
-                or resource.get("tenantId")
-                or properties.get("tenantId")
-            )
+            # Bug #68 fix: In cross-tenant mode, ALWAYS use target_tenant_id
+            # Previously, source tenant_id was embedded in KeyVault configs,
+            # causing deployment failures in target tenant
+            if self.target_tenant_id:
+                # Cross-tenant mode - use target tenant ID
+                tenant_id = self.target_tenant_id
+                logger.debug(
+                    f"KeyVault '{resource_name}': Using target tenant ID for cross-tenant deployment"
+                )
+            else:
+                # Same-tenant mode - try to get tenant_id from resource data
+                tenant_id = (
+                    resource.get("tenant_id")
+                    or resource.get("tenantId")
+                    or properties.get("tenantId")
+                )
 
             # If still not found, use Terraform data source to get current tenant_id
             # This ensures we use the actual Azure tenant ID from the environment
@@ -2187,8 +2498,23 @@ class TerraformEmitter(IaCEmitter):
             "Microsoft.Graph/servicePrincipals",
         ):
             # Azure AD Service Principal specific properties
+            # Bug #43: Try multiple field names for applicationId to find the client_id
+            app_id = (
+                resource.get("applicationId")
+                or resource.get("appId")
+                or resource.get("client_id")
+            )
+
+            # Skip Service Principal if no applicationId found (Bug #43)
+            if not app_id:
+                logger.warning(
+                    f"Skipping Service Principal '{resource_name}': No applicationId found. "
+                    f"Available keys: {list(resource.keys())}"
+                )
+                return None
+
             resource_config = {
-                "client_id": resource.get("applicationId", ""),
+                "client_id": app_id,
             }
             if "displayName" in resource:
                 resource_config["display_name"] = resource["displayName"]
@@ -2391,6 +2717,30 @@ class TerraformEmitter(IaCEmitter):
                 return None
 
             vm_name_safe = self._sanitize_terraform_name(vm_name)
+
+            # Validate that the parent VM was actually converted to Terraform config
+            # VM could have been skipped if it had missing NICs or other validation errors
+            vm_exists = False
+            vm_terraform_type = None
+            for vm_type in [
+                "azurerm_linux_virtual_machine",
+                "azurerm_windows_virtual_machine",
+            ]:
+                if (
+                    vm_type in terraform_config.get("resource", {})
+                    and vm_name_safe in terraform_config["resource"][vm_type]
+                ):
+                    vm_exists = True
+                    vm_terraform_type = vm_type
+                    break
+
+            if not vm_exists:
+                logger.warning(
+                    f"VM Run Command '{resource_name}' references parent VM '{vm_name}' "
+                    f"that doesn't exist or was filtered out during conversion. Skipping run command."
+                )
+                return None
+
             properties = self._parse_properties(resource)
 
             # Extract just command name (e.g., "vm/Get-AzureADToken" -> "Get-AzureADToken")
@@ -2400,27 +2750,35 @@ class TerraformEmitter(IaCEmitter):
             resource_config = {
                 "name": command_name,
                 "location": location,
-                "virtual_machine_id": f"${{azurerm_linux_virtual_machine.{vm_name_safe}.id}}",
+                "virtual_machine_id": f"${{{vm_terraform_type}.{vm_name_safe}.id}}",
                 "source": {
                     "script": properties.get("source", {}).get("script", "# Placeholder script")
                 }
             }
-            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}'")
+            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}' (type: {vm_terraform_type})")
 
         elif azure_type_lower == "microsoft.app/managedenvironments":
             # Bug #44: Container App Environment (10 resources!)
+            # Bug #50: SKIP workspace_id entirely - field contains GUID (customerId), not full resource ID
             properties = self._parse_properties(resource)
 
-            # Optional: log_analytics_workspace_id
-            # Only include if we have a valid workspace_id from the properties
+            # DO NOT include log_analytics_workspace_id:
+            # The appLogsConfiguration.logAnalyticsConfiguration.customerId field contains only
+            # the workspace GUID, NOT the full Azure resource ID that Terraform requires.
+            # Expected format: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{name}
+            # Actual format in properties: {workspace-guid}
+            # Since we cannot construct the full resource ID from a GUID, we skip this field entirely.
+            # Note: workspace_id is optional per Terraform azurerm_container_app_environment docs
+
             workspace_id = properties.get("appLogsConfiguration", {}).get("logAnalyticsConfiguration", {}).get("customerId")
             if workspace_id:
-                # Use the actual workspace ID (log analytics workspace resource ID format)
-                # This is a valid Azure resource ID, so we can use it directly
-                resource_config["log_analytics_workspace_id"] = workspace_id
-            # If workspace_id is not found, we skip it - it's optional per Terraform docs
+                logger.warning(
+                    f"Bug #50: Skipping log_analytics_workspace_id for Container App Environment '{resource_name}' - "
+                    f"field contains GUID '{workspace_id}' instead of full resource ID. "
+                    f"Workspace linking is optional and will be configured separately if needed."
+                )
 
-            logger.debug(f"Bug #44: Container App Environment '{resource_name}'")
+            logger.debug(f"Bug #44/50: Container App Environment '{resource_name}' (workspace_id skipped)")
 
         elif azure_type_lower == "microsoft.operationalinsights/workspaces":
             # Log Analytics Workspace specific properties
@@ -2448,6 +2806,12 @@ class TerraformEmitter(IaCEmitter):
                     "retention_in_days": properties.get("retentionInDays", 30),
                 }
             )
+
+            # Add daily quota if present
+            if "workspaceCapping" in properties:
+                daily_quota_gb = properties["workspaceCapping"].get("dailyQuotaGb")
+                if daily_quota_gb:
+                    resource_config["daily_quota_gb"] = daily_quota_gb
         elif azure_type == "Microsoft.OperationsManagement/solutions":
             # Log Analytics Solution specific properties
             properties = self._parse_properties(resource)
@@ -2995,11 +3359,12 @@ class TerraformEmitter(IaCEmitter):
                 # Scope formats:
                 #   - /subscriptions/{sub-id}/resourceGroups/... (resource-level, with slash)
                 #   - /subscriptions/{sub-id} (subscription-level, no trailing slash)
+                # Bug #59: Also replace ABSTRACT_SUBSCRIPTION placeholder from dual-graph abstraction
                 import re
 
                 scope = re.sub(
-                    r"/subscriptions/[a-f0-9-]+(/|$)",
-                    f"/subscriptions/{self.target_subscription_id}\\1",
+                    r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)(/|$)",
+                    f"/subscriptions/{self.target_subscription_id}\\2",
                     scope,
                     flags=re.IGNORECASE,
                 )
@@ -3008,12 +3373,13 @@ class TerraformEmitter(IaCEmitter):
                 )
 
             # Also translate role definition ID (contains subscription)
+            # Bug #59: Also replace ABSTRACT_SUBSCRIPTION placeholder from dual-graph abstraction
             role_def_id = properties.get(
                 "roleDefinitionId", resource.get("roleDefinitionId", "")
             )
             if self.target_subscription_id and role_def_id:
                 role_def_id = re.sub(
-                    r"/subscriptions/[a-f0-9-]+/",
+                    r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)/",
                     f"/subscriptions/{self.target_subscription_id}/",
                     role_def_id,
                     flags=re.IGNORECASE,
@@ -3035,6 +3401,27 @@ class TerraformEmitter(IaCEmitter):
                     f"to translate principals across tenants."
                 )
                 return None
+
+            # Bug #67 fix: Translate principal_id using identity mapping when available
+            # Previously, even with identity_mapping provided, raw principal_id was used
+            # This caused deployment failures because source tenant principals don't exist in target
+            if self.identity_mapping and principal_id:
+                principal_type = properties.get("principalType", "Unknown")
+                translated_principal = self._translate_principal_id(
+                    principal_id, principal_type, resource_name
+                )
+                if translated_principal:
+                    logger.info(
+                        f"Translated role assignment principal_id: {principal_id} -> {translated_principal}"
+                    )
+                    principal_id = translated_principal
+                else:
+                    # Could not translate - skip this role assignment
+                    logger.warning(
+                        f"Skipping role assignment '{resource_name}': "
+                        f"Principal ID '{principal_id}' not found in identity mapping"
+                    )
+                    return None
 
             resource_config = {
                 "scope": scope,
@@ -3188,11 +3575,22 @@ class TerraformEmitter(IaCEmitter):
             "microsoft.graph/serviceprincipals",
         ]:
             # Entra ID Service Principal (case-insensitive)
+            # Bug #43: Try multiple field names for appId to find the client_id
             app_id = (
                 resource.get("appId")
                 or resource.get("application_id")
-                or "00000000-0000-0000-0000-000000000000"
+                or resource.get("applicationId")
+                or resource.get("client_id")
             )
+
+            # Skip Service Principal if no appId found (Bug #43)
+            if not app_id:
+                logger.warning(
+                    f"Skipping Service Principal '{resource_name}': No appId found. "
+                    f"Available keys: {list(resource.keys())}"
+                )
+                return None
+
             display_name = (
                 resource.get("displayName")
                 or resource.get("display_name")
@@ -3491,6 +3889,299 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
+        elif azure_type == "Microsoft.Network/applicationGateways":
+            # Application Gateway requires complex nested configuration blocks
+            properties = self._parse_properties(resource)
+
+            # Required: sku block
+            sku = properties.get("sku", {})
+            sku_name = sku.get("name", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
+            sku_tier = sku.get("tier", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
+            sku_capacity = sku.get("capacity", 2) if isinstance(sku, dict) else 2
+
+            resource_config["sku"] = [{
+                "name": sku_name,
+                "tier": sku_tier,
+                "capacity": sku_capacity
+            }]
+
+            # Required: gateway_ip_configuration block
+            # Get gateway IP configurations from properties
+            gateway_ip_configs = properties.get("gatewayIPConfigurations", [])
+            if gateway_ip_configs:
+                gateway_ip_config = gateway_ip_configs[0] if isinstance(gateway_ip_configs, list) else {}
+                if isinstance(gateway_ip_config, dict):
+                    gateway_ip_name = gateway_ip_config.get("name", "gateway-ip-config")
+                    gateway_ip_props = gateway_ip_config.get("properties", {})
+                    subnet_id = gateway_ip_props.get("subnet", {}).get("id", "")
+                else:
+                    gateway_ip_name = "gateway-ip-config"
+                    subnet_id = ""
+            else:
+                gateway_ip_name = "gateway-ip-config"
+                subnet_id = ""
+
+            # Resolve subnet reference - SKIP AppGW if subnet not found
+            if not subnet_id:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No subnet ID found in gatewayIPConfigurations"
+                )
+                return None
+
+            subnet_reference = self._resolve_subnet_reference(subnet_id, resource_name)
+            if subnet_reference is None:
+                # _resolve_subnet_reference returns None when subnet doesn't exist in graph
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Cannot resolve subnet reference '{subnet_id}'"
+                )
+                return None
+
+            resource_config["gateway_ip_configuration"] = [{
+                "name": gateway_ip_name,
+                "subnet_id": subnet_reference
+            }]
+
+            # Required: frontend_ip_configuration block
+            frontend_ip_configs = properties.get("frontendIPConfigurations", [])
+            if not frontend_ip_configs:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No frontendIPConfigurations found"
+                )
+                return None
+
+            frontend_ip_config = frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
+            if not isinstance(frontend_ip_config, dict):
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Invalid frontendIPConfiguration format"
+                )
+                return None
+
+            frontend_ip_name = frontend_ip_config.get("name", "frontend-ip-config")
+            frontend_ip_props = frontend_ip_config.get("properties", {})
+
+            # Check for public IP - SKIP AppGW if not found or cannot be resolved
+            public_ip_id = frontend_ip_props.get("publicIPAddress", {}).get("id", "")
+            if not public_ip_id:
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': No public IP ID found in frontendIPConfiguration"
+                )
+                return None
+
+            public_ip_name = self._extract_resource_name_from_id(public_ip_id, "publicIPAddresses")
+            if public_ip_name == "unknown":
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Cannot extract public IP name from ID '{public_ip_id}'"
+                )
+                return None
+
+            public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
+            if not self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+                logger.warning(
+                    f"Skipping Application Gateway '{resource_name}': Public IP '{public_ip_name}' does not exist in graph"
+                )
+                return None
+
+            frontend_ip_block = {
+                "name": frontend_ip_name,
+                "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+            }
+
+            resource_config["frontend_ip_configuration"] = [frontend_ip_block]
+
+            # Required: frontend_port block
+            frontend_ports = properties.get("frontendPorts", [])
+            if frontend_ports:
+                frontend_port_blocks = []
+                for port_config in frontend_ports:
+                    if isinstance(port_config, dict):
+                        port_name = port_config.get("name", "frontend-port-80")
+                        port_props = port_config.get("properties", {})
+                        port_num = port_props.get("port", 80)
+                    else:
+                        port_name = "frontend-port-80"
+                        port_num = 80
+                    frontend_port_blocks.append({
+                        "name": port_name,
+                        "port": port_num
+                    })
+                resource_config["frontend_port"] = frontend_port_blocks
+            else:
+                resource_config["frontend_port"] = [{
+                    "name": "frontend-port-80",
+                    "port": 80
+                }]
+
+            # Required: backend_address_pool block
+            backend_pools = properties.get("backendAddressPools", [])
+            if backend_pools:
+                backend_pool_blocks = []
+                for pool_config in backend_pools:
+                    if isinstance(pool_config, dict):
+                        pool_name = pool_config.get("name", "backend-pool")
+                    else:
+                        pool_name = "backend-pool"
+                    backend_pool_blocks.append({
+                        "name": pool_name
+                    })
+                resource_config["backend_address_pool"] = backend_pool_blocks
+            else:
+                resource_config["backend_address_pool"] = [{
+                    "name": "backend-pool"
+                }]
+
+            # Required: backend_http_settings block
+            backend_http_settings = properties.get("backendHttpSettingsCollection", [])
+            if backend_http_settings:
+                backend_http_blocks = []
+                for http_settings in backend_http_settings:
+                    if isinstance(http_settings, dict):
+                        settings_name = http_settings.get("name", "backend-http-settings")
+                        settings_props = http_settings.get("properties", {})
+                        port = settings_props.get("port", 80)
+                        protocol = settings_props.get("protocol", "Http")
+                        cookie_affinity = settings_props.get("cookieBasedAffinity", "Disabled")
+                        request_timeout = settings_props.get("requestTimeout", 60)
+                    else:
+                        settings_name = "backend-http-settings"
+                        port = 80
+                        protocol = "Http"
+                        cookie_affinity = "Disabled"
+                        request_timeout = 60
+                    backend_http_blocks.append({
+                        "name": settings_name,
+                        "cookie_based_affinity": cookie_affinity,
+                        "port": port,
+                        "protocol": protocol,
+                        "request_timeout": request_timeout
+                    })
+                resource_config["backend_http_settings"] = backend_http_blocks
+            else:
+                resource_config["backend_http_settings"] = [{
+                    "name": "backend-http-settings",
+                    "cookie_based_affinity": "Disabled",
+                    "port": 80,
+                    "protocol": "Http",
+                    "request_timeout": 60
+                }]
+
+            # Required: http_listener block
+            http_listeners = properties.get("httpListeners", [])
+            if http_listeners:
+                http_listener_blocks = []
+                for listener in http_listeners:
+                    if isinstance(listener, dict):
+                        listener_name = listener.get("name", "http-listener")
+                        listener_props = listener.get("properties", {})
+                        frontend_ip_config_name = listener_props.get("frontendIPConfiguration", {}).get("id", "")
+                        if frontend_ip_config_name:
+                            frontend_ip_config_name = self._extract_resource_name_from_id(
+                                frontend_ip_config_name, "frontendIPConfigurations"
+                            )
+                        else:
+                            frontend_ip_config_name = "frontend-ip-config"
+                        frontend_port_name = listener_props.get("frontendPort", {}).get("id", "")
+                        if frontend_port_name:
+                            frontend_port_name = self._extract_resource_name_from_id(
+                                frontend_port_name, "frontendPorts"
+                            )
+                        else:
+                            frontend_port_name = "frontend-port-80"
+                        protocol = listener_props.get("protocol", "Http")
+                    else:
+                        listener_name = "http-listener"
+                        frontend_ip_config_name = "frontend-ip-config"
+                        frontend_port_name = "frontend-port-80"
+                        protocol = "Http"
+                    http_listener_blocks.append({
+                        "name": listener_name,
+                        "frontend_ip_configuration_name": frontend_ip_config_name,
+                        "frontend_port_name": frontend_port_name,
+                        "protocol": protocol
+                    })
+                resource_config["http_listener"] = http_listener_blocks
+            else:
+                resource_config["http_listener"] = [{
+                    "name": "http-listener",
+                    "frontend_ip_configuration_name": "frontend-ip-config",
+                    "frontend_port_name": "frontend-port-80",
+                    "protocol": "Http"
+                }]
+
+            # Required: request_routing_rule block
+            routing_rules = properties.get("requestRoutingRules", [])
+            if routing_rules:
+                routing_rule_blocks = []
+                priority = 100
+                for rule in routing_rules:
+                    if isinstance(rule, dict):
+                        rule_name = rule.get("name", "routing-rule")
+                        rule_props = rule.get("properties", {})
+                        rule_type = rule_props.get("ruleType", "Basic")
+                        http_listener_name = rule_props.get("httpListener", {}).get("id", "")
+                        if http_listener_name:
+                            http_listener_name = self._extract_resource_name_from_id(
+                                http_listener_name, "httpListeners"
+                            )
+                        else:
+                            http_listener_name = "http-listener"
+                        backend_pool_name = rule_props.get("backendAddressPool", {}).get("id", "")
+                        if backend_pool_name:
+                            backend_pool_name = self._extract_resource_name_from_id(
+                                backend_pool_name, "backendAddressPools"
+                            )
+                        else:
+                            backend_pool_name = "backend-pool"
+                        backend_http_settings_name = rule_props.get("backendHttpSettings", {}).get("id", "")
+                        if backend_http_settings_name:
+                            backend_http_settings_name = self._extract_resource_name_from_id(
+                                backend_http_settings_name, "backendHttpSettingsCollection"
+                            )
+                        else:
+                            backend_http_settings_name = "backend-http-settings"
+                    else:
+                        rule_name = "routing-rule"
+                        rule_type = "Basic"
+                        http_listener_name = "http-listener"
+                        backend_pool_name = "backend-pool"
+                        backend_http_settings_name = "backend-http-settings"
+                    routing_rule_blocks.append({
+                        "name": rule_name,
+                        "rule_type": rule_type,
+                        "http_listener_name": http_listener_name,
+                        "backend_address_pool_name": backend_pool_name,
+                        "backend_http_settings_name": backend_http_settings_name,
+                        "priority": priority
+                    })
+                    priority += 1
+                resource_config["request_routing_rule"] = routing_rule_blocks
+            else:
+                resource_config["request_routing_rule"] = [{
+                    "name": "routing-rule",
+                    "rule_type": "Basic",
+                    "http_listener_name": "http-listener",
+                    "backend_address_pool_name": "backend-pool",
+                    "backend_http_settings_name": "backend-http-settings",
+                    "priority": 100
+                }]
+
+        elif azure_type == "Microsoft.RecoveryServices/vaults":
+            # Recovery Services Vault requires SKU
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            if sku and "name" in sku:
+                resource_config["sku"] = sku["name"]
+            else:
+                resource_config["sku"] = "Standard"  # Default
+
+        elif azure_type == "Microsoft.Databricks/workspaces":
+            # Databricks Workspace requires SKU
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            if sku and "name" in sku:
+                resource_config["sku"] = sku["name"]
+            else:
+                resource_config["sku"] = "standard"  # Default (lowercase for Databricks)
+
         return terraform_type, safe_name, resource_config
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
@@ -3652,6 +4343,77 @@ class TerraformEmitter(IaCEmitter):
 
         return None
 
+    def _translate_principal_id(
+        self, principal_id: str, principal_type: str, resource_name: str
+    ) -> Optional[str]:
+        """Translate a principal ID using the identity mapping.
+
+        Bug #67 fix: When identity_mapping is provided, translate source tenant
+        principal IDs to target tenant principal IDs for cross-tenant deployments.
+
+        Args:
+            principal_id: Source tenant principal ID (GUID)
+            principal_type: Type of principal (User, Group, ServicePrincipal, Unknown)
+            resource_name: Name of the resource (for logging)
+
+        Returns:
+            Translated principal ID, or None if translation failed
+        """
+        if not self.identity_mapping:
+            return None
+
+        # Try to find the principal ID in identity mapping
+        # The mapping format is:
+        # {
+        #   "identity_mappings": {
+        #     "users": { "source-id": { "target_object_id": "target-id" } },
+        #     "groups": { ... },
+        #     "service_principals": { ... }
+        #   }
+        # }
+        identity_mappings = self.identity_mapping.get("identity_mappings", {})
+
+        # Normalize principal_type to lowercase for matching
+        type_lower = principal_type.lower() if principal_type else "unknown"
+
+        # Map principal type to identity mapping key
+        type_mapping = {
+            "user": "users",
+            "group": "groups",
+            "serviceprincipal": "service_principals",
+            "unknown": None,  # Will try all types
+        }
+
+        mapping_key = type_mapping.get(type_lower)
+
+        # Try specific type first if known
+        if mapping_key and mapping_key in identity_mappings:
+            type_mappings = identity_mappings.get(mapping_key, {})
+            if principal_id in type_mappings:
+                mapping = type_mappings[principal_id]
+                target_id = mapping.get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        # If type unknown or not found, try all types
+        for id_type in ["users", "groups", "service_principals"]:
+            type_mappings = identity_mappings.get(id_type, {})
+            if principal_id in type_mappings:
+                mapping = type_mappings[principal_id]
+                target_id = mapping.get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    logger.debug(
+                        f"Found principal {principal_id} in {id_type} mapping -> {target_id}"
+                    )
+                    return target_id
+
+        # Not found in any mapping
+        logger.warning(
+            f"Principal ID '{principal_id}' not found in identity mapping for "
+            f"resource '{resource_name}' (type: {principal_type})"
+        )
+        return None
+
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
 
@@ -3681,12 +4443,13 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
-    def _add_unique_suffix(self, name: str, resource_id: str) -> str:
+    def _add_unique_suffix(self, name: str, resource_id: str, resource_type: str | None = None) -> str:
         """Add a unique suffix to globally unique resource names.
 
         Args:
             name: Original resource name
             resource_id: Azure resource ID (for deterministic hash generation)
+            resource_type: Azure resource type (e.g., "Microsoft.ContainerRegistry/registries")
 
         Returns:
             Name with 6-character hash suffix appended
@@ -3696,20 +4459,31 @@ class TerraformEmitter(IaCEmitter):
         # Generate deterministic hash from resource ID
         hash_suffix = hashlib.sha256(resource_id.encode()).hexdigest()[:6]
 
-        # Append suffix with hyphen
-        return f"{name}-{hash_suffix}"
+        # Container Registries don't allow dashes in names (alphanumeric only)
+        if resource_type == "Microsoft.ContainerRegistry/registries":
+            return f"{name}{hash_suffix}"  # No dash for Container Registry
+        else:
+            # Append suffix with hyphen for other types
+            return f"{name}-{hash_suffix}"
 
     def _sanitize_user_principal_name(self, upn: str) -> str:
         """Sanitize user principal name to be a valid email address.
 
-        Azure AD requires UPNs to be valid email addresses without spaces.
+        Azure AD requires UPNs to be valid email addresses without special characters.
         Bug #32 fix: Remove spaces from UPNs to prevent validation errors.
+        Additional fix: Replace parentheses with hyphens (e.g., User(DEX) -> User-DEX)
 
         Args:
             upn: User principal name (email format)
 
         Returns:
-            Sanitized UPN with spaces removed from local part
+            Sanitized UPN with spaces removed and parentheses replaced with hyphens
+
+        Example:
+            >>> emitter._sanitize_user_principal_name("BrianHooper(DEX)@example.com")
+            "BrianHooper-DEX@example.com"
+            >>> emitter._sanitize_user_principal_name("User With Spaces@example.com")
+            "UserWithSpaces@example.com"
         """
         if not upn or "@" not in upn:
             return upn
@@ -3719,6 +4493,9 @@ class TerraformEmitter(IaCEmitter):
 
         # Remove spaces from local part
         local_part = local_part.replace(" ", "")
+
+        # Replace parentheses with hyphens (Bug fix for UPNs like "User(DEX)")
+        local_part = local_part.replace("(", "-").replace(")", "")
 
         # Reconstruct UPN
         sanitized = f"{local_part}@{domain}"
@@ -3922,7 +4699,7 @@ class TerraformEmitter(IaCEmitter):
         self,
         terraform_type: str,
         resource_name: str,
-        terraform_config: Dict[str, Any] = None,
+        terraform_config: Dict[str, Any] | None = None,
     ) -> bool:
         """Validate that a referenced resource was actually emitted to terraform config.
 
@@ -3950,6 +4727,59 @@ class TerraformEmitter(IaCEmitter):
             terraform_type in self._available_resources
             and resource_name in self._available_resources[terraform_type]
         )
+
+    def _validate_all_references_in_config(
+        self,
+        resource_config: Dict[str, Any],
+        resource_name: str,
+        terraform_config: Dict[str, Any],
+    ) -> tuple[bool, list[str]]:
+        """Validate all Terraform resource references in a resource configuration.
+
+        Recursively searches for ${azurerm_*.*} and ${azuread_*.*} references and
+        validates that each referenced resource exists in _available_resources.
+
+        Args:
+            resource_config: Resource configuration dictionary to validate
+            resource_name: Name of the resource being validated (for logging)
+            terraform_config: Full terraform config to check emitted resources
+
+        Returns:
+            Tuple of (all_valid: bool, missing_refs: list[str])
+            - all_valid: True if all references are valid
+            - missing_refs: List of missing reference strings
+        """
+        import re
+
+        missing_refs = []
+
+        def extract_references(obj: Any) -> None:
+            """Recursively extract Terraform references from config object."""
+            if isinstance(obj, str):
+                # Pattern: ${azurerm_type.name.field} or ${azuread_type.name.field}
+                pattern = r"\$\{(azurerm_\w+|azuread_\w+)\.(\w+)\.[\w]+\}"
+                matches = re.findall(pattern, obj)
+                for terraform_type, ref_name in matches:
+                    # Validate reference exists
+                    if not self._validate_resource_reference(
+                        terraform_type, ref_name, terraform_config
+                    ):
+                        ref_str = f"{terraform_type}.{ref_name}"
+                        if ref_str not in missing_refs:
+                            missing_refs.append(ref_str)
+                            logger.warning(
+                                f"Resource '{resource_name}' references undeclared "
+                                f"resource: {ref_str}"
+                            )
+            elif isinstance(obj, dict):
+                for value in obj.values():
+                    extract_references(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    extract_references(item)
+
+        extract_references(resource_config)
+        return (len(missing_refs) == 0, missing_refs)
 
     def _resolve_subnet_reference(self, subnet_id: str, resource_name: str) -> str:
         """Resolve subnet reference to VNet-scoped Terraform resource name.
@@ -4153,6 +4983,73 @@ class TerraformEmitter(IaCEmitter):
                 else {}
             ),
         }
+
+    def _is_resource_in_community(
+        self,
+        terraform_type: str,
+        terraform_name: str,
+        community_ids: set,
+        all_resources: List[Dict[str, Any]],
+    ) -> bool:
+        """Check if a terraform resource belongs to a community.
+
+        Args:
+            terraform_type: Terraform resource type (e.g., azurerm_virtual_network)
+            terraform_name: Terraform resource name (sanitized)
+            community_ids: Set of resource IDs in the community
+            all_resources: All resources from the graph
+
+        Returns:
+            True if the resource belongs to the community
+        """
+        # Find the corresponding graph resource by matching terraform name
+        for resource in all_resources:
+            resource_name = resource.get("name", "")
+            safe_name = self._sanitize_terraform_name(resource_name)
+
+            if safe_name == terraform_name:
+                # Check if this resource's ID is in the community
+                resource_id = resource.get("id", "")
+                if resource_id in community_ids:
+                    return True
+
+        return False
+
+    def _is_import_in_community(
+        self,
+        import_block: Dict[str, Any],
+        community_ids: set,
+        all_resources: List[Dict[str, Any]],
+    ) -> bool:
+        """Check if an import block belongs to a community.
+
+        Args:
+            import_block: Import block with 'to' and 'id' fields
+            community_ids: Set of resource IDs in the community
+            all_resources: All resources from the graph
+
+        Returns:
+            True if the import belongs to the community
+        """
+        # Extract terraform resource name from import block
+        # Format: "azurerm_resource_group.my_rg"
+        to_address = import_block.get("to", "")
+        if "." not in to_address:
+            return False
+
+        _, terraform_name = to_address.rsplit(".", 1)
+
+        # Find matching resource in graph
+        for resource in all_resources:
+            resource_name = resource.get("name", "")
+            safe_name = self._sanitize_terraform_name(resource_name)
+
+            if safe_name == terraform_name:
+                resource_id = resource.get("id", "")
+                if resource_id in community_ids:
+                    return True
+
+        return False
 
 
 # Auto-register this emitter

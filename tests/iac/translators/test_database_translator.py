@@ -402,7 +402,7 @@ class TestDatabaseTranslatorConnectionStrings:
             "connection_string": "Server=tcp:missing-server.database.windows.net,1433;Database=db1;User ID=admin;Password=xxx;",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Get results
         results = translator.get_translation_results()
@@ -442,7 +442,7 @@ class TestDatabaseTranslatorConnectionStrings:
             "connection_string": "host=missing-pg.postgres.database.azure.com port=5432 dbname=db1 user=admin",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Should have warnings
         results = translator.get_translation_results()
@@ -479,7 +479,7 @@ class TestDatabaseTranslatorConnectionStrings:
             "connection_string": "Server=missing-mysql.mysql.database.azure.com;Database=db1;Uid=admin;",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Should have warnings
         results = translator.get_translation_results()
@@ -519,7 +519,7 @@ class TestDatabaseTranslatorConnectionStrings:
             "primary_key_connection_string": "AccountEndpoint=https://missing-cosmos.documents.azure.com:443/;AccountKey=xxx;",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Should have warnings
         results = translator.get_translation_results()
@@ -695,7 +695,7 @@ class TestDatabaseTranslatorEndpoints:
             "fqdn": "missing-server.database.windows.net",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Should have warnings
         results = translator.get_translation_results()

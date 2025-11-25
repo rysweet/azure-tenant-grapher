@@ -222,7 +222,7 @@ async def test_ingest_users_with_none_values():
     assert len(user_upserts) == 3
 
     # Verify None values were filtered out in properties
-    for label, key_value, props in user_upserts:
+    for _label, _key_value, props in user_upserts:
         # None values should not be present in the properties dict
         for prop_key, prop_value in props.items():
             assert prop_value is not None, (

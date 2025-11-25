@@ -4,9 +4,7 @@ Unit tests for configuration system.
 Tests configuration loading, validation, merging, and error handling.
 """
 
-import os
 from pathlib import Path
-from typing import Any
 
 import pytest
 import yaml
@@ -266,7 +264,7 @@ class TestConfigLoader:
         assert temp_config_file.exists()
 
         # Verify it's valid YAML
-        with open(temp_config_file, "r") as f:
+        with open(temp_config_file) as f:
             data = yaml.safe_load(f)
 
         assert isinstance(data, dict)

@@ -324,7 +324,7 @@ Test Tenant 3,test3.onmicrosoft.com,admin@test3.com,northeurope"""
         await page.click("[data-testid='tab-create-tenant']")
 
         password_input = page.locator("[data-testid='admin-password-input']")
-        strength_indicator = page.locator("[data-testid='password-strength']")
+        page.locator("[data-testid='password-strength']")
 
         # Test weak password
         await password_input.fill("weak")

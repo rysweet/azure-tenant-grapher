@@ -12,7 +12,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = PROJECT_ROOT / "demos"
 IMESS_TOOL = Path.home() / ".local/bin/imessR"
 
@@ -282,7 +283,7 @@ def main():
 
         # 2. Check active gap fixers
         completed_fixers = []
-        for i, (fixer, gap_type, details) in enumerate(active_gap_fixers):
+        for i, (fixer, gap_type, _details) in enumerate(active_gap_fixers):
             poll = fixer.poll()
             if poll is not None:
                 completed_fixers.append(i)
@@ -319,7 +320,7 @@ def main():
                 ]
 
                 try:
-                    result = subprocess.run(
+                    subprocess.run(
                         cmd,
                         check=True,
                         capture_output=True,

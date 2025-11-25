@@ -35,11 +35,6 @@ def test_filter_config_should_handle_graph_ids_gracefully():
     2. Converted to actual resource names before validation
     """
     # Graph ID formats that might be encountered
-    graph_ids = [
-        "4:5da3178c-575f-4e20-aa0b-6bd8e843b6d0:630",  # Neo4j internal ID
-        "n10",  # Simple node ID
-        "0:abc123:456",  # Another possible format
-    ]
 
     # The fix should allow FilterConfig to handle these gracefully
     # Either by:

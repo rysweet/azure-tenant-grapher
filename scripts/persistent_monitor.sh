@@ -4,7 +4,7 @@
 # This script monitors iterations and triggers actions but does NOT exit
 #
 
-REPO_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 IMESS_R="$HOME/.local/bin/imessR"

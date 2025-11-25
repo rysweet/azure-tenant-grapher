@@ -27,7 +27,8 @@ from pathlib import Path
 from typing import List, Tuple
 
 # Configuration
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = REPO_ROOT / "demos"
 LOGS_DIR = REPO_ROOT / "logs"
 STATUS_FILE = DEMOS_DIR / "continuous_replication_status.json"

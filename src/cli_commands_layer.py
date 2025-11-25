@@ -34,14 +34,14 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from src.config_manager import create_neo4j_config_from_env
-from src.models.layer_metadata import LayerDiff, LayerMetadata, LayerType, LayerValidationReport
+from src.models.layer_metadata import (
+    LayerType,
+)
 from src.services.layer_management_service import (
     LayerAlreadyExistsError,
-    LayerError,
     LayerLockedError,
     LayerManagementService,
     LayerNotFoundError,
-    LayerProtectedError,
 )
 from src.utils.neo4j_startup import ensure_neo4j_running
 from src.utils.session_manager import Neo4jSessionManager
@@ -251,7 +251,7 @@ async def layer_show_command_handler(
                 # Suggest similar layers
                 suggestions = suggest_similar_layers(layer_id, available)
                 if suggestions:
-                    console.print(f"\nDid you mean one of these?")
+                    console.print("\nDid you mean one of these?")
                     for suggestion in suggestions:
                         console.print(f"  - {suggestion}")
 
@@ -267,21 +267,25 @@ async def layer_show_command_handler(
             # Find child layers
             all_layers = await service.list_layers()
             child_layers = [
-                l for l in all_layers if l.parent_layer_id == layer_id
+                layer for layer in all_layers if layer.parent_layer_id == layer_id
             ]
 
         # Output in requested format
         if format_type == "json":
             output = layer.to_dict()
             if show_lineage:
-                output["parent_layer"] = parent_layer.to_dict() if parent_layer else None
+                output["parent_layer"] = (
+                    parent_layer.to_dict() if parent_layer else None
+                )
                 output["child_layers"] = [c.to_dict() for c in child_layers]
             print_json(output)
 
         elif format_type == "yaml":
             output = layer.to_dict()
             if show_lineage:
-                output["parent_layer"] = parent_layer.to_dict() if parent_layer else None
+                output["parent_layer"] = (
+                    parent_layer.to_dict() if parent_layer else None
+                )
                 output["child_layers"] = [c.to_dict() for c in child_layers]
             print_yaml(output)
 
@@ -307,7 +311,7 @@ async def layer_show_command_handler(
 [bold]Last updated:[/bold] {format_timestamp(layer.updated_at)}
 
 [bold]Tenant ID:[/bold] {layer.tenant_id}
-[bold]Subscriptions:[/bold] {', '.join(layer.subscription_ids) if layer.subscription_ids else 'None'}
+[bold]Subscriptions:[/bold] {", ".join(layer.subscription_ids) if layer.subscription_ids else "None"}
 
 [bold]Statistics:[/bold]
   Nodes:           {format_number(layer.node_count)} resources
@@ -320,12 +324,16 @@ async def layer_show_command_handler(
             if show_lineage:
                 content += "\n\n[bold]Lineage:[/bold]"
                 if parent_layer:
-                    content += f"\n  Parent:  {parent_layer.layer_id} ({parent_layer.name})"
+                    content += (
+                        f"\n  Parent:  {parent_layer.layer_id} ({parent_layer.name})"
+                    )
                 else:
                     content += "\n  Parent:  (none - baseline layer)"
 
                 if child_layers:
-                    content += f"\n  Children: {', '.join([c.layer_id for c in child_layers])}"
+                    content += (
+                        f"\n  Children: {', '.join([c.layer_id for c in child_layers])}"
+                    )
                 else:
                     content += "\n  Children: (none)"
 
@@ -376,9 +384,13 @@ async def layer_active_command_handler(
                     print_json(output)
                 else:
                     if old_active_id:
-                        console.print(f"[green]✓[/green] Active layer changed: {old_active_id} → {layer_id}")
+                        console.print(
+                            f"[green]✓[/green] Active layer changed: {old_active_id} → {layer_id}"
+                        )
                     else:
-                        console.print(f"[green]✓[/green] Active layer set to: {layer_id}")
+                        console.print(
+                            f"[green]✓[/green] Active layer set to: {layer_id}"
+                        )
                     console.print()
 
                     content = f"""[bold]Name:[/bold] {new_active.name}
@@ -387,7 +399,9 @@ async def layer_active_command_handler(
 
 Subsequent operations will use this layer."""
 
-                    panel = Panel(content, title=f"Active Layer: {layer_id}", border_style="green")
+                    panel = Panel(
+                        content, title=f"Active Layer: {layer_id}", border_style="green"
+                    )
                     console.print(panel)
 
             except LayerNotFoundError:
@@ -418,7 +432,11 @@ Subsequent operations will use this layer."""
 
 All operations will use this layer by default."""
 
-                panel = Panel(content, title=f"Active Layer: {active.layer_id}", border_style="green")
+                panel = Panel(
+                    content,
+                    title=f"Active Layer: {active.layer_id}",
+                    border_style="green",
+                )
                 console.print(panel)
 
     except Exception as e:
@@ -458,7 +476,9 @@ async def layer_create_command_handler(
     if not name:
         name = layer_id
     if not description:
-        description = f"Layer created at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+        description = (
+            f"Layer created at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
     if not tenant_id:
         tenant_id = os.environ.get("AZURE_TENANT_ID", "unknown")
 
@@ -500,12 +520,14 @@ async def layer_create_command_handler(
         if tags:
             await service.update_layer(layer_id, tags=tags)
 
-        console.print(f"[green]✓[/green] Layer created successfully")
+        console.print("[green]✓[/green] Layer created successfully")
         console.print()
         console.print(f"[bold]Layer ID:[/bold] {layer.layer_id}")
-        console.print(f"[bold]Node count:[/bold] 0 (empty layer)")
+        console.print("[bold]Node count:[/bold] 0 (empty layer)")
         console.print()
-        console.print("Use 'atg layer copy' to populate this layer, or run scale operations")
+        console.print(
+            "Use 'atg layer copy' to populate this layer, or run scale operations"
+        )
         console.print(f"with --target-layer {layer_id} to write directly to it.")
 
     except LayerAlreadyExistsError:
@@ -568,9 +590,13 @@ async def layer_copy_command_handler(
 
         # Confirm copy
         if not yes:
-            console.print(f"Copying layer: [cyan]{source}[/cyan] → [cyan]{target}[/cyan]")
+            console.print(
+                f"Copying layer: [cyan]{source}[/cyan] → [cyan]{target}[/cyan]"
+            )
             console.print()
-            console.print(f"  Source:  {source} ({format_number(source_layer.node_count)} nodes)")
+            console.print(
+                f"  Source:  {source} ({format_number(source_layer.node_count)} nodes)"
+            )
             console.print(f"  Target:  {target}")
             console.print()
 
@@ -607,11 +633,13 @@ async def layer_copy_command_handler(
             await service.set_active_layer(target)
 
         console.print()
-        console.print(f"[green]✓[/green] Layer copied successfully")
+        console.print("[green]✓[/green] Layer copied successfully")
         console.print()
         console.print(f"[bold]Layer:[/bold] {target}")
         console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
-        console.print(f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}")
+        console.print(
+            f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
+        )
         console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
 
     except Exception as e:
@@ -672,7 +700,9 @@ async def layer_delete_command_handler(
             console.print("  2. Delete with --force flag:")
             console.print(f"     atg layer delete {layer_id} --force")
             console.print()
-            console.print("[yellow]⚠️  Force deletion of baseline layer is not recommended.[/yellow]")
+            console.print(
+                "[yellow]⚠️  Force deletion of baseline layer is not recommended.[/yellow]"
+            )
             sys.exit(2)
 
         # Archive before deletion if requested
@@ -689,9 +719,13 @@ async def layer_delete_command_handler(
             console.print(f"  Name:         {layer.name}")
             console.print(f"  Nodes:        {format_number(layer.node_count)}")
             console.print(f"  Relationships: {format_number(layer.relationship_count)}")
-            console.print(f"  Status:       {'Active' if layer.is_active else 'Inactive'}")
+            console.print(
+                f"  Status:       {'Active' if layer.is_active else 'Inactive'}"
+            )
             console.print()
-            console.print("[yellow]⚠️  WARNING: This will permanently delete all nodes and relationships[/yellow]")
+            console.print(
+                "[yellow]⚠️  WARNING: This will permanently delete all nodes and relationships[/yellow]"
+            )
             console.print("           in this layer. Original nodes are preserved.")
             console.print()
 
@@ -715,7 +749,7 @@ async def layer_delete_command_handler(
             progress.update(task, completed=True)
 
         console.print()
-        console.print(f"[green]✓[/green] Layer deleted successfully")
+        console.print("[green]✓[/green] Layer deleted successfully")
         console.print()
         console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
 
@@ -808,7 +842,9 @@ async def layer_diff_command_handler(
             }
 
             if detailed:
-                output_data["added_node_ids"] = diff.added_node_ids[:100]  # Limit to 100
+                output_data["added_node_ids"] = diff.added_node_ids[
+                    :100
+                ]  # Limit to 100
                 output_data["removed_node_ids"] = diff.removed_node_ids[:100]
 
             if output:
@@ -831,10 +867,16 @@ async def layer_diff_command_handler(
             console.print(f"  Added:      {format_number(diff.nodes_added)} nodes")
 
             if diff.nodes_removed > 0:
-                reduction_pct = (diff.nodes_removed / max(layer_a_meta.node_count, 1)) * 100
-                console.print(f"  Removed:    {format_number(diff.nodes_removed)} nodes ({reduction_pct:.1f}% reduction)")
+                reduction_pct = (
+                    diff.nodes_removed / max(layer_a_meta.node_count, 1)
+                ) * 100
+                console.print(
+                    f"  Removed:    {format_number(diff.nodes_removed)} nodes ({reduction_pct:.1f}% reduction)"
+                )
             else:
-                console.print(f"  Removed:    {format_number(diff.nodes_removed)} nodes")
+                console.print(
+                    f"  Removed:    {format_number(diff.nodes_removed)} nodes"
+                )
 
             console.print(f"  Modified:   {format_number(diff.nodes_modified)} nodes")
             console.print(f"  Unchanged:  {format_number(diff.nodes_unchanged)} nodes")
@@ -842,10 +884,18 @@ async def layer_diff_command_handler(
 
             console.print("[bold]Relationship Differences[/bold]")
             console.print("─" * 60)
-            console.print(f"  Added:      {format_number(diff.relationships_added)} relationships")
-            console.print(f"  Removed:    {format_number(diff.relationships_removed)} relationships")
-            console.print(f"  Modified:   {format_number(diff.relationships_modified)} relationships")
-            console.print(f"  Unchanged:  {format_number(diff.relationships_unchanged)} relationships")
+            console.print(
+                f"  Added:      {format_number(diff.relationships_added)} relationships"
+            )
+            console.print(
+                f"  Removed:    {format_number(diff.relationships_removed)} relationships"
+            )
+            console.print(
+                f"  Modified:   {format_number(diff.relationships_modified)} relationships"
+            )
+            console.print(
+                f"  Unchanged:  {format_number(diff.relationships_unchanged)} relationships"
+            )
             console.print()
 
             console.print("[bold]Summary[/bold]")
@@ -878,14 +928,18 @@ async def layer_diff_command_handler(
                 console.print("─" * 60)
 
                 if diff.removed_node_ids:
-                    console.print(f"\n[bold]Removed Nodes ({len(diff.removed_node_ids)}):[/bold]")
+                    console.print(
+                        f"\n[bold]Removed Nodes ({len(diff.removed_node_ids)}):[/bold]"
+                    )
                     for node_id in diff.removed_node_ids[:10]:  # Show first 10
                         console.print(f"  - {node_id}")
                     if len(diff.removed_node_ids) > 10:
                         console.print(f"  ... ({len(diff.removed_node_ids) - 10} more)")
 
                 if diff.added_node_ids:
-                    console.print(f"\n[bold]Added Nodes ({len(diff.added_node_ids)}):[/bold]")
+                    console.print(
+                        f"\n[bold]Added Nodes ({len(diff.added_node_ids)}):[/bold]"
+                    )
                     for node_id in diff.added_node_ids[:10]:  # Show first 10
                         console.print(f"  + {node_id}")
                     if len(diff.added_node_ids) > 10:
@@ -894,11 +948,11 @@ async def layer_diff_command_handler(
             if output:
                 # Save text output to file
                 with open(output, "w") as f:
-                    f.write(f"Layer Comparison\n")
+                    f.write("Layer Comparison\n")
                     f.write(f"={'=' * 60}\n\n")
                     f.write(f"Baseline:    {layer_a} ({layer_a_meta.name})\n")
                     f.write(f"Comparison:  {layer_b} ({layer_b_meta.name})\n\n")
-                    f.write(f"Node Differences:\n")
+                    f.write("Node Differences:\n")
                     f.write(f"  Added:      {diff.nodes_added}\n")
                     f.write(f"  Removed:    {diff.nodes_removed}\n")
                     f.write(f"  Modified:   {diff.nodes_modified}\n")
@@ -988,14 +1042,20 @@ async def layer_validate_command_handler(
             total_checks = report.checks_passed + report.checks_failed
 
             if report.is_valid:
-                console.print(f"[green]✓[/green] All checks passed ({total_checks}/{total_checks})")
+                console.print(
+                    f"[green]✓[/green] All checks passed ({total_checks}/{total_checks})"
+                )
             else:
-                console.print(f"[red]✗[/red] Some checks failed ({report.checks_passed}/{total_checks})")
+                console.print(
+                    f"[red]✗[/red] Some checks failed ({report.checks_passed}/{total_checks})"
+                )
 
             console.print()
             console.print("[bold]Summary[/bold]")
             console.print("─" * 60)
-            console.print(f"Status:        {'[green]✓ Valid[/green]' if report.is_valid else '[red]✗ Invalid[/red]'}")
+            console.print(
+                f"Status:        {'[green]✓ Valid[/green]' if report.is_valid else '[red]✗ Invalid[/red]'}"
+            )
             console.print(f"Checks passed: {report.checks_passed} / {total_checks}")
             console.print(f"Checks failed: {report.checks_failed}")
             console.print(f"Warnings:      {report.checks_warned}")
@@ -1007,8 +1067,8 @@ async def layer_validate_command_handler(
                 console.print("─" * 60)
                 for issue in report.issues:
                     console.print(f"[red]ERROR:[/red] {issue['message']}")
-                    if issue.get('details'):
-                        for key, value in issue['details'].items():
+                    if issue.get("details"):
+                        for key, value in issue["details"].items():
                             console.print(f"  {key}: {value}")
 
             # Show warnings
@@ -1047,7 +1107,9 @@ async def layer_validate_command_handler(
                         for issue in report.issues:
                             f.write(f"  - {issue['message']}\n")
 
-                console.print(f"\n[green]✓[/green] Validation report saved to: {output}")
+                console.print(
+                    f"\n[green]✓[/green] Validation report saved to: {output}"
+                )
 
         # Exit with error code if validation failed
         sys.exit(0 if report.is_valid else 2)
@@ -1105,7 +1167,7 @@ async def layer_refresh_stats_command_handler(
             progress.update(task, completed=True)
 
         console.print()
-        console.print(f"[green]✓[/green] Statistics refreshed")
+        console.print("[green]✓[/green] Statistics refreshed")
         console.print()
 
         if format_type == "json":
@@ -1123,7 +1185,9 @@ async def layer_refresh_stats_command_handler(
                     "nodes": new_layer.node_count - old_node_count,
                     "relationships": new_layer.relationship_count - old_rel_count,
                 },
-                "updated_at": new_layer.updated_at.isoformat() if new_layer.updated_at else None,
+                "updated_at": new_layer.updated_at.isoformat()
+                if new_layer.updated_at
+                else None,
             }
             print_json(output)
         else:
@@ -1155,7 +1219,9 @@ async def layer_refresh_stats_command_handler(
 
             console.print(table)
             console.print()
-            console.print(f"[bold]Updated:[/bold] {format_timestamp(new_layer.updated_at)}")
+            console.print(
+                f"[bold]Updated:[/bold] {format_timestamp(new_layer.updated_at)}"
+            )
 
     except Exception as e:
         console.print(f"[red]Error refreshing stats: {e}[/red]")
@@ -1202,8 +1268,12 @@ async def layer_archive_command_handler(
             console.print()
             console.print(f"[bold]Layer:[/bold] {layer_id} ({layer.name})")
             console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
-            console.print(f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}")
-            console.print(f"[bold]Include Original:[/bold] {'Yes' if include_original else 'No'}")
+            console.print(
+                f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
+            )
+            console.print(
+                f"[bold]Include Original:[/bold] {'Yes' if include_original else 'No'}"
+            )
             console.print()
 
             if not click.confirm("Confirm archive?", default=True):
@@ -1236,7 +1306,7 @@ async def layer_archive_command_handler(
         size_mb = file_size / (1024 * 1024)
 
         console.print()
-        console.print(f"[green]✓[/green] Layer archived successfully")
+        console.print("[green]✓[/green] Layer archived successfully")
         console.print()
         console.print(f"[bold]Archive:[/bold] {archive_path}")
         console.print(f"[bold]Size:[/bold] {size_mb:.1f} MB")
@@ -1280,7 +1350,7 @@ async def layer_restore_command_handler(
             sys.exit(1)
 
         # Load archive to preview
-        with open(archive_path, "r") as f:
+        with open(archive_path) as f:
             archive_data = json.load(f)
 
         metadata = archive_data["metadata"]
@@ -1290,7 +1360,9 @@ async def layer_restore_command_handler(
         # Check if target layer already exists
         if await service.get_layer(target_layer_id):
             console.print(f"[red]Layer already exists: {target_layer_id}[/red]")
-            console.print("\nUse --layer-id to specify a different ID, or delete the existing layer first.")
+            console.print(
+                "\nUse --layer-id to specify a different ID, or delete the existing layer first."
+            )
             sys.exit(3)
 
         # Confirm restoration
@@ -1300,11 +1372,17 @@ async def layer_restore_command_handler(
             console.print()
             console.print(f"[bold]Archive:[/bold] {archive_path}")
             console.print(f"[bold]Layer:[/bold] {target_layer_id} ({metadata['name']})")
-            console.print(f"[bold]Nodes:[/bold] {format_number(metadata['node_count'])}")
-            console.print(f"[bold]Relationships:[/bold] {format_number(metadata['relationship_count'])}")
+            console.print(
+                f"[bold]Nodes:[/bold] {format_number(metadata['node_count'])}"
+            )
+            console.print(
+                f"[bold]Relationships:[/bold] {format_number(metadata['relationship_count'])}"
+            )
             console.print(f"[bold]Created:[/bold] {metadata['created_at']}")
             console.print()
-            console.print(f"[yellow]⚠️  This will create layer '{target_layer_id}' in the graph.[/yellow]")
+            console.print(
+                f"[yellow]⚠️  This will create layer '{target_layer_id}' in the graph.[/yellow]"
+            )
             console.print()
 
             if not click.confirm("Confirm restore?", default=True):
@@ -1336,16 +1414,20 @@ async def layer_restore_command_handler(
             await service.set_active_layer(layer.layer_id)
 
         console.print()
-        console.print(f"[green]✓[/green] Layer restored successfully")
+        console.print("[green]✓[/green] Layer restored successfully")
         console.print()
         console.print(f"[bold]Layer:[/bold] {layer.layer_id}")
         console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
-        console.print(f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}")
+        console.print(
+            f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
+        )
         console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
         console.print()
 
         if make_active:
-            console.print(f"Layer is now active. Use: atg generate-iac --layer {layer.layer_id}")
+            console.print(
+                f"Layer is now active. Use: atg generate-iac --layer {layer.layer_id}"
+            )
         else:
             console.print(f"To activate: atg layer active {layer.layer_id}")
 

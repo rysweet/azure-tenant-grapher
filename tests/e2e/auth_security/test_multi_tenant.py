@@ -8,7 +8,7 @@ and multi-tenant data segregation.
 import asyncio
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pytest
 from tests.e2e.auth_security.security_utils import (
@@ -43,7 +43,7 @@ class MultiTenantManager:
         self.tenant_data[tenant_id] = {}
         self.tenant_permissions[tenant_id] = {}
 
-    def add_user_to_tenant(self, tenant_id: str, user_id: str, roles: List[str] = None):
+    def add_user_to_tenant(self, tenant_id: str, user_id: str, roles: Optional[List[str]] = None):
         """Add user to a tenant with specified roles."""
         if tenant_id not in self.tenants:
             raise ValueError(f"Tenant {tenant_id} not found")
@@ -273,7 +273,7 @@ class TestMultiTenant:
     def test_cross_tenant_attack_prevention(self):
         """Test prevention of cross-tenant attacks."""
         manager = MultiTenantManager()
-        scanner = SecurityScanner()
+        SecurityScanner()
 
         # Setup tenants
         manager.register_tenant("victim_tenant", {"name": "Victim"})
@@ -435,7 +435,7 @@ class TestMultiTenant:
                 }
 
             def add_user_to_tenant(
-                self, tenant_id: str, user_id: str, roles: List[str] = None
+                self, tenant_id: str, user_id: str, roles: Optional[List[str]] = None
             ):
                 """Add user with quota check."""
                 if (

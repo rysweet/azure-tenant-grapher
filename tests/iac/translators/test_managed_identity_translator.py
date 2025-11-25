@@ -326,7 +326,7 @@ class TestManagedIdentityTranslator:
             },
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Get results
         results = translator.get_translation_results()
@@ -350,7 +350,7 @@ class TestManagedIdentityTranslator:
             },
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Get results
         results = translator.get_translation_results()

@@ -32,7 +32,7 @@ class TestCompleteTenantLifecycle:
         await page.click("[data-testid='start-scan']")
 
         # Monitor scan progress
-        progress_bar = await page.wait_for_selector("[data-testid='scan-progress']")
+        await page.wait_for_selector("[data-testid='scan-progress']")
 
         # Wait for scan completion
         await page.wait_for_selector("[data-testid='scan-complete']", timeout=30000)

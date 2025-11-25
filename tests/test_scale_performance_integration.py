@@ -5,7 +5,6 @@ These tests verify that performance optimizations are properly integrated
 and don't break existing functionality.
 """
 
-import pytest
 
 from src.services.scale_performance import (
     AdaptiveBatchSizer,

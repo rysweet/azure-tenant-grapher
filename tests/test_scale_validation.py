@@ -4,8 +4,9 @@ This test suite validates the scale operation validation utilities that
 ensure proper dual-graph architecture integrity.
 """
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from src.services.scale_validation import ScaleValidation
 

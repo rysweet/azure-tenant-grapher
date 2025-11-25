@@ -44,7 +44,7 @@ class TestDocsTab:
         ]
 
         for category in categories:
-            category_node = page.locator(f"[data-testid='doc-category-{category}']")
+            page.locator(f"[data-testid='doc-category-{category}']")
             # await expect(category_node).to_be_visible()
 
         # Expand a category
@@ -62,7 +62,7 @@ class TestDocsTab:
         await page.click("[data-testid='doc-item-installation']")
 
         # Content should be displayed
-        content_viewer = page.locator("[data-testid='docs-viewer']")
+        page.locator("[data-testid='docs-viewer']")
         # await expect(content_viewer).to_contain_text("Installation")
 
     @pytest.mark.asyncio
@@ -96,7 +96,7 @@ class TestDocsTab:
         await first_result.click()
 
         # Document should be displayed with search term highlighted
-        content_viewer = page.locator("[data-testid='docs-viewer']")
+        page.locator("[data-testid='docs-viewer']")
         # await expect(content_viewer).to_be_visible()
 
         # Check for highlighted search terms
@@ -130,7 +130,7 @@ class TestDocsTab:
         await page.wait_for_timeout(500)  # Wait for scroll animation
 
         # The section should be in view
-        section_heading = page.locator(f"h2:has-text('{section_title}')")
+        page.locator(f"h2:has-text('{section_title}')")
         # await expect(section_heading).to_be_in_viewport()
 
     @pytest.mark.asyncio
@@ -186,7 +186,7 @@ class TestDocsTab:
         # await expect(first_link).to_have_attribute("rel", /noopener/)
 
         # Check for external link icon
-        link_icon = first_link.locator("[data-testid='external-icon']")
+        first_link.locator("[data-testid='external-icon']")
         # await expect(link_icon).to_be_visible()
 
     @pytest.mark.asyncio
@@ -310,7 +310,7 @@ class TestDocsTab:
         await page.click("[data-testid='doc-item-installation']")
 
         # Feedback widget should be visible
-        feedback_widget = page.locator("[data-testid='feedback-widget']")
+        page.locator("[data-testid='feedback-widget']")
         # await expect(feedback_widget).to_be_visible()
 
         # Check for feedback options
@@ -388,7 +388,7 @@ class TestDocsTab:
         )
 
         # Search should be focused
-        search_input = page.locator("[data-testid='docs-search-input']")
+        page.locator("[data-testid='docs-search-input']")
         # await expect(search_input).to_be_focused()
 
         # Escape to close search

@@ -6,7 +6,7 @@ resource access control, and authorization vulnerabilities.
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pytest
 from tests.e2e.auth_security.security_utils import (
@@ -54,7 +54,7 @@ class MockAuthorizationService:
             permissions.update(self.roles.get(role, []))
         return list(permissions)
 
-    def check_permission(self, user_id: str, action: str, resource: str = None) -> bool:
+    def check_permission(self, user_id: str, action: str, resource: Optional[str] = None) -> bool:
         """Check if user has permission for action."""
         user_permissions = self.get_user_permissions(user_id)
         has_permission = action in user_permissions
@@ -265,8 +265,8 @@ class TestAuthorization:
 
     def test_authorization_bypass_attempts(self):
         """Test detection of authorization bypass attempts."""
-        auth_service = MockAuthorizationService()
-        scanner = SecurityScanner()
+        MockAuthorizationService()
+        SecurityScanner()
         audit_logger = AuditLogger()
 
         # Common authorization bypass patterns
@@ -474,7 +474,7 @@ class TestAuthorization:
                 self.cache[cache_key] = (result, time.time())
                 return result
 
-            def invalidate_cache(self, user_id: str = None):
+            def invalidate_cache(self, user_id: Optional[str] = None):
                 """Invalidate cache for user or all users."""
                 if user_id:
                     keys_to_remove = [
