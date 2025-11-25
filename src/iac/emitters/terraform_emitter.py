@@ -242,10 +242,10 @@ class TerraformEmitter(IaCEmitter):
         # Additional supported types discovered during tenant replication (Iteration 19+)
         "Microsoft.Network/routeTables": "azurerm_route_table",
         # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
-        # "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # Missing: sku
+        "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # NOW HAS EMITTER (added SKU handler)
         # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
         "Microsoft.Purview/accounts": "azurerm_purview_account",
-        # "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # Missing: sku (Iteration 23 validation)
+        "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         # "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # Missing: storage_data_lake_gen2_filesystem_id, sql_administrator_login (Iteration 23)
         # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
@@ -4132,6 +4132,24 @@ class TerraformEmitter(IaCEmitter):
                     "backend_http_settings_name": "backend-http-settings",
                     "priority": 100
                 }]
+
+        elif azure_type == "Microsoft.RecoveryServices/vaults":
+            # Recovery Services Vault requires SKU
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            if sku and "name" in sku:
+                resource_config["sku"] = sku["name"]
+            else:
+                resource_config["sku"] = "Standard"  # Default
+
+        elif azure_type == "Microsoft.Databricks/workspaces":
+            # Databricks Workspace requires SKU
+            properties = self._parse_properties(resource)
+            sku = properties.get("sku", {})
+            if sku and "name" in sku:
+                resource_config["sku"] = sku["name"]
+            else:
+                resource_config["sku"] = "standard"  # Default (lowercase for Databricks)
 
         return terraform_type, safe_name, resource_config
 
