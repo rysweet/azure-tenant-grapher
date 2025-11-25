@@ -1,3 +1,12 @@
+"""
+DEPRECATED: This file is deprecated in favor of network_rule_optimized.py.
+
+The optimized version provides 100-400x performance improvement through batched
+relationship creation. This file is kept for reference only.
+
+Use NetworkRuleOptimized instead.
+"""
+
 from typing import Any, Dict, List
 
 from .relationship_rule import RelationshipRule

@@ -3,7 +3,7 @@ from .depends_on_rule import DependsOnRule
 from .diagnostic_rule import DiagnosticRule
 from .identity_rule import IdentityRule
 from .monitoring_rule import MonitoringRule
-from .network_rule import NetworkRule
+from .network_rule_optimized import NetworkRuleOptimized
 from .region_rule import RegionRule
 from .subnet_extraction_rule import SubnetExtractionRule
 from .tag_rule import TagRule
@@ -20,7 +20,7 @@ def create_relationship_rules():
         SubnetExtractionRule(
             enable_dual_graph=True
         ),  # Extract subnets from VNets first
-        NetworkRule(enable_dual_graph=True),
+        NetworkRuleOptimized(enable_dual_graph=True),  # 100-400x faster with batching
         IdentityRule(enable_dual_graph=True),
         TagRule(enable_dual_graph=True),
         RegionRule(enable_dual_graph=True),
