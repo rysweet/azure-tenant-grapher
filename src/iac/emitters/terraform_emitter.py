@@ -245,10 +245,10 @@ class TerraformEmitter(IaCEmitter):
         # "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # Missing: sku
         # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
         "Microsoft.Purview/accounts": "azurerm_purview_account",
-        "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",
+        # "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # Missing: sku (Iteration 23 validation)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
-        "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",
-        "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
+        # "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # Missing: storage_data_lake_gen2_filesystem_id, sql_administrator_login (Iteration 23)
+        # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
         # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
         "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",
