@@ -6,6 +6,7 @@ tenant graph data, supporting resource group homing and module pattern.
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -13,18 +14,34 @@ from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
 
+logger = logging.getLogger(__name__)
+
 
 class BicepEmitter(IaCEmitter):
     """Emitter for generating Azure Bicep templates."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
-        """Initialize BicepEmitter with optional configuration.
+    def __init__(
+        self,
+        config: Optional[Dict[str, Any]] = None,
+        target_subscription_id: Optional[str] = None,
+        target_tenant_id: Optional[str] = None,
+        identity_mapping: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize BicepEmitter with optional cross-tenant translation.
+
+        Bug #70 fix: Add cross-tenant translation support for Bicep templates.
 
         Args:
             config: Optional emitter-specific configuration
+            target_subscription_id: Target subscription ID for cross-tenant translation
+            target_tenant_id: Target tenant ID for cross-tenant translation
+            identity_mapping: Identity mapping dictionary for Entra ID translation
         """
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
+        self.target_subscription_id = target_subscription_id
+        self.target_tenant_id = target_tenant_id
+        self.identity_mapping = identity_mapping
 
     def emit(
         self,
@@ -188,19 +205,112 @@ class BicepEmitter(IaCEmitter):
         ]
 
     def _emit_bicep_role_assignment(self, ra: dict[str, Any]) -> List[str]:
+        """Emit Bicep resource for role assignment with cross-tenant translation.
+
+        Bug #70 fix: Translate scope, roleDefinitionId, and principalId for
+        cross-tenant deployments. Returns empty list if translation fails.
+        """
         name = ra.get("name", ra.get("id", "roleAssignment"))
         props = ra.get("properties", ra)
+
+        # Get scope and translate subscription ID for cross-tenant deployments
+        scope = props.get("scope", "")
+        if self.target_subscription_id and scope:
+            scope = re.sub(
+                r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)(/|$)",
+                f"/subscriptions/{self.target_subscription_id}\\2",
+                scope,
+                flags=re.IGNORECASE,
+            )
+
+        # Translate roleDefinitionId subscription
+        role_def_id = props.get("roleDefinitionId", "")
+        if self.target_subscription_id and role_def_id:
+            role_def_id = re.sub(
+                r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)/",
+                f"/subscriptions/{self.target_subscription_id}/",
+                role_def_id,
+                flags=re.IGNORECASE,
+            )
+
+        # Translate principal_id using identity mapping
+        principal_id = props.get("principalId", "")
+        principal_type = props.get("principalType", "Unknown")
+
+        # Skip role assignments in cross-tenant mode without identity mapping
+        if self.target_tenant_id and not self.identity_mapping:
+            logger.warning(
+                f"Skipping Bicep role assignment '{name}' in cross-tenant mode: "
+                f"No identity mapping provided."
+            )
+            return []  # Return empty list to skip this role assignment
+
+        # Translate principalId if identity mapping provided
+        if self.identity_mapping and principal_id:
+            translated = self._translate_principal_id(principal_id, principal_type)
+            if translated:
+                logger.info(f"Bicep: Translated principal {principal_id} -> {translated}")
+                principal_id = translated
+            else:
+                logger.warning(
+                    f"Skipping Bicep role assignment '{name}': "
+                    f"Principal ID '{principal_id}' not found in identity mapping"
+                )
+                return []  # Return empty list to skip this role assignment
+
         return [
             f"resource {name}_ra 'Microsoft.Authorization/roleAssignments@2022-04-01' = {{",
             f"  name: '{name}'",
             "  properties: {",
-            f"    roleDefinitionId: '{props.get('roleDefinitionId', '')}',",
-            f"    principalId: '{props.get('principalId', '')}',",
-            f"    principalType: '{props.get('principalType', '')}',",
-            f"    scope: '{props.get('scope', '')}',",
+            f"    roleDefinitionId: '{role_def_id}',",
+            f"    principalId: '{principal_id}',",
+            f"    principalType: '{principal_type}',",
+            f"    scope: '{scope}',",
             "  }",
             "}\n",
         ]
+
+    def _translate_principal_id(
+        self, principal_id: str, principal_type: str
+    ) -> Optional[str]:
+        """Translate a principal ID using the identity mapping.
+
+        Args:
+            principal_id: Source tenant principal ID
+            principal_type: Type of principal (User, Group, ServicePrincipal)
+
+        Returns:
+            Translated principal ID or None if not found
+        """
+        if not self.identity_mapping:
+            return None
+
+        identity_mappings = self.identity_mapping.get("identity_mappings", {})
+        type_lower = principal_type.lower() if principal_type else "unknown"
+
+        type_mapping = {
+            "user": "users",
+            "group": "groups",
+            "serviceprincipal": "service_principals",
+        }
+
+        mapping_key = type_mapping.get(type_lower)
+        if mapping_key and mapping_key in identity_mappings:
+            type_mappings = identity_mappings.get(mapping_key, {})
+            if principal_id in type_mappings:
+                target_id = type_mappings[principal_id].get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        # Try all types as fallback
+        for id_type in ["users", "groups", "service_principals"]:
+            type_mappings = identity_mappings.get(id_type, {})
+            if principal_id in type_mappings:
+                target_id = type_mappings[principal_id].get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        return None
 
     def _emit_bicep_custom_role_definition(self, rd: dict[str, Any]) -> List[str]:
         name = rd.get("name", rd.get("id", "roleDefinition"))

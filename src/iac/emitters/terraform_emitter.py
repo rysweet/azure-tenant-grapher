@@ -2436,15 +2436,25 @@ class TerraformEmitter(IaCEmitter):
 
         elif azure_type_lower == "microsoft.keyvault/vaults":
             # Extract tenant_id from multiple sources with proper fallback (case-insensitive)
-            # Priority: resource.tenant_id > properties.tenantId > data.current.tenant_id
+            # Priority: target_tenant_id > resource.tenant_id > properties.tenantId > data.current.tenant_id
             properties = self._parse_properties(resource)
 
-            # Try to get tenant_id from resource data
-            tenant_id = (
-                resource.get("tenant_id")
-                or resource.get("tenantId")
-                or properties.get("tenantId")
-            )
+            # Bug #68 fix: In cross-tenant mode, ALWAYS use target_tenant_id
+            # Previously, source tenant_id was embedded in KeyVault configs,
+            # causing deployment failures in target tenant
+            if self.target_tenant_id:
+                # Cross-tenant mode - use target tenant ID
+                tenant_id = self.target_tenant_id
+                logger.debug(
+                    f"KeyVault '{resource_name}': Using target tenant ID for cross-tenant deployment"
+                )
+            else:
+                # Same-tenant mode - try to get tenant_id from resource data
+                tenant_id = (
+                    resource.get("tenant_id")
+                    or resource.get("tenantId")
+                    or properties.get("tenantId")
+                )
 
             # If still not found, use Terraform data source to get current tenant_id
             # This ensures we use the actual Azure tenant ID from the environment
@@ -3392,6 +3402,27 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
+            # Bug #67 fix: Translate principal_id using identity mapping when available
+            # Previously, even with identity_mapping provided, raw principal_id was used
+            # This caused deployment failures because source tenant principals don't exist in target
+            if self.identity_mapping and principal_id:
+                principal_type = properties.get("principalType", "Unknown")
+                translated_principal = self._translate_principal_id(
+                    principal_id, principal_type, resource_name
+                )
+                if translated_principal:
+                    logger.info(
+                        f"Translated role assignment principal_id: {principal_id} -> {translated_principal}"
+                    )
+                    principal_id = translated_principal
+                else:
+                    # Could not translate - skip this role assignment
+                    logger.warning(
+                        f"Skipping role assignment '{resource_name}': "
+                        f"Principal ID '{principal_id}' not found in identity mapping"
+                    )
+                    return None
+
             resource_config = {
                 "scope": scope,
                 "role_definition_id": role_def_id,
@@ -4310,6 +4341,77 @@ class TerraformEmitter(IaCEmitter):
         except (IndexError, AttributeError):
             pass
 
+        return None
+
+    def _translate_principal_id(
+        self, principal_id: str, principal_type: str, resource_name: str
+    ) -> Optional[str]:
+        """Translate a principal ID using the identity mapping.
+
+        Bug #67 fix: When identity_mapping is provided, translate source tenant
+        principal IDs to target tenant principal IDs for cross-tenant deployments.
+
+        Args:
+            principal_id: Source tenant principal ID (GUID)
+            principal_type: Type of principal (User, Group, ServicePrincipal, Unknown)
+            resource_name: Name of the resource (for logging)
+
+        Returns:
+            Translated principal ID, or None if translation failed
+        """
+        if not self.identity_mapping:
+            return None
+
+        # Try to find the principal ID in identity mapping
+        # The mapping format is:
+        # {
+        #   "identity_mappings": {
+        #     "users": { "source-id": { "target_object_id": "target-id" } },
+        #     "groups": { ... },
+        #     "service_principals": { ... }
+        #   }
+        # }
+        identity_mappings = self.identity_mapping.get("identity_mappings", {})
+
+        # Normalize principal_type to lowercase for matching
+        type_lower = principal_type.lower() if principal_type else "unknown"
+
+        # Map principal type to identity mapping key
+        type_mapping = {
+            "user": "users",
+            "group": "groups",
+            "serviceprincipal": "service_principals",
+            "unknown": None,  # Will try all types
+        }
+
+        mapping_key = type_mapping.get(type_lower)
+
+        # Try specific type first if known
+        if mapping_key and mapping_key in identity_mappings:
+            type_mappings = identity_mappings.get(mapping_key, {})
+            if principal_id in type_mappings:
+                mapping = type_mappings[principal_id]
+                target_id = mapping.get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        # If type unknown or not found, try all types
+        for id_type in ["users", "groups", "service_principals"]:
+            type_mappings = identity_mappings.get(id_type, {})
+            if principal_id in type_mappings:
+                mapping = type_mappings[principal_id]
+                target_id = mapping.get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    logger.debug(
+                        f"Found principal {principal_id} in {id_type} mapping -> {target_id}"
+                    )
+                    return target_id
+
+        # Not found in any mapping
+        logger.warning(
+            f"Principal ID '{principal_id}' not found in identity mapping for "
+            f"resource '{resource_name}' (type: {principal_type})"
+        )
         return None
 
     def _sanitize_terraform_name(self, name: str) -> str:

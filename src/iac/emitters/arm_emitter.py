@@ -10,6 +10,8 @@ This module provides Azure Resource Manager template generation from
 tenant graph data.
 """
 
+import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -17,9 +19,33 @@ from ..traverser import TenantGraph
 from . import register_emitter
 from .base import IaCEmitter
 
+logger = logging.getLogger(__name__)
+
 
 class ArmEmitter(IaCEmitter):
     """Emitter for generating Azure Resource Manager templates."""
+
+    def __init__(
+        self,
+        config: Optional[Dict[str, Any]] = None,
+        target_subscription_id: Optional[str] = None,
+        target_tenant_id: Optional[str] = None,
+        identity_mapping: Optional[Dict[str, Any]] = None,
+    ):
+        """Initialize ArmEmitter with optional cross-tenant translation.
+
+        Bug #69 fix: Add cross-tenant translation support for ARM templates.
+
+        Args:
+            config: Optional emitter-specific configuration
+            target_subscription_id: Target subscription ID for cross-tenant translation
+            target_tenant_id: Target tenant ID for cross-tenant translation
+            identity_mapping: Identity mapping dictionary for Entra ID translation
+        """
+        super().__init__(config)
+        self.target_subscription_id = target_subscription_id
+        self.target_tenant_id = target_tenant_id
+        self.identity_mapping = identity_mapping
 
     def emit(
         self, graph: TenantGraph, out_dir: Path, domain_name: Optional[str] = None
@@ -83,20 +109,113 @@ class ArmEmitter(IaCEmitter):
             "properties": {},
         }
 
-    def _emit_role_assignment(self, ra: dict[str, Any]) -> dict[str, Any]:
-        # ARM resource for role assignment
+    def _emit_role_assignment(self, ra: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Emit ARM resource for role assignment with cross-tenant translation.
+
+        Bug #69 fix: Translate scope, roleDefinitionId, and principalId for
+        cross-tenant deployments. Returns None if translation fails.
+        """
         props = ra.get("properties", ra)
+        resource_name = ra.get("name", ra.get("id", "roleAssignment"))
+
+        # Get scope and translate subscription ID for cross-tenant deployments
+        scope = props.get("scope", "")
+        if self.target_subscription_id and scope:
+            scope = re.sub(
+                r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)(/|$)",
+                f"/subscriptions/{self.target_subscription_id}\\2",
+                scope,
+                flags=re.IGNORECASE,
+            )
+
+        # Translate roleDefinitionId subscription
+        role_def_id = props.get("roleDefinitionId", "")
+        if self.target_subscription_id and role_def_id:
+            role_def_id = re.sub(
+                r"/subscriptions/([a-f0-9-]+|ABSTRACT_SUBSCRIPTION)/",
+                f"/subscriptions/{self.target_subscription_id}/",
+                role_def_id,
+                flags=re.IGNORECASE,
+            )
+
+        # Translate principal_id using identity mapping
+        principal_id = props.get("principalId", "")
+        principal_type = props.get("principalType", "Unknown")
+
+        # Skip role assignments in cross-tenant mode without identity mapping
+        if self.target_tenant_id and not self.identity_mapping:
+            logger.warning(
+                f"Skipping ARM role assignment '{resource_name}' in cross-tenant mode: "
+                f"No identity mapping provided."
+            )
+            return None
+
+        # Translate principalId if identity mapping provided
+        if self.identity_mapping and principal_id:
+            translated = self._translate_principal_id(principal_id, principal_type)
+            if translated:
+                logger.info(f"ARM: Translated principal {principal_id} -> {translated}")
+                principal_id = translated
+            else:
+                logger.warning(
+                    f"Skipping ARM role assignment '{resource_name}': "
+                    f"Principal ID '{principal_id}' not found in identity mapping"
+                )
+                return None
+
         return {
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
-            "name": ra.get("name", ra.get("id", "roleAssignment")),
+            "name": resource_name,
             "properties": {
-                "roleDefinitionId": props.get("roleDefinitionId"),
-                "principalId": props.get("principalId"),
-                "principalType": props.get("principalType"),
-                "scope": props.get("scope"),
+                "roleDefinitionId": role_def_id,
+                "principalId": principal_id,
+                "principalType": principal_type,
+                "scope": scope,
             },
         }
+
+    def _translate_principal_id(
+        self, principal_id: str, principal_type: str
+    ) -> Optional[str]:
+        """Translate a principal ID using the identity mapping.
+
+        Args:
+            principal_id: Source tenant principal ID
+            principal_type: Type of principal (User, Group, ServicePrincipal)
+
+        Returns:
+            Translated principal ID or None if not found
+        """
+        if not self.identity_mapping:
+            return None
+
+        identity_mappings = self.identity_mapping.get("identity_mappings", {})
+        type_lower = principal_type.lower() if principal_type else "unknown"
+
+        type_mapping = {
+            "user": "users",
+            "group": "groups",
+            "serviceprincipal": "service_principals",
+        }
+
+        mapping_key = type_mapping.get(type_lower)
+        if mapping_key and mapping_key in identity_mappings:
+            type_mappings = identity_mappings.get(mapping_key, {})
+            if principal_id in type_mappings:
+                target_id = type_mappings[principal_id].get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        # Try all types as fallback
+        for id_type in ["users", "groups", "service_principals"]:
+            type_mappings = identity_mappings.get(id_type, {})
+            if principal_id in type_mappings:
+                target_id = type_mappings[principal_id].get("target_object_id")
+                if target_id and target_id != "MANUAL_INPUT_REQUIRED":
+                    return target_id
+
+        return None
 
     def _emit_custom_role_definition(self, rd: dict[str, Any]) -> dict[str, Any]:
         # ARM resource for custom role definition
@@ -374,9 +493,11 @@ class ArmEmitter(IaCEmitter):
             if rd.get("properties", {}).get("roleType", "").lower() == "custom":
                 resources_list.append(self._emit_custom_role_definition(rd))
 
-        # Emit role assignments
+        # Emit role assignments (filter out None returns from failed translations)
         for ra in role_assignments:
-            resources_list.append(self._emit_role_assignment(ra))
+            arm_ra = self._emit_role_assignment(ra)
+            if arm_ra:  # Bug #69: Skip role assignments that failed translation
+                resources_list.append(arm_ra)
 
         # Emit regular resources with improved conversion logic
         for resource in regular_resources:
