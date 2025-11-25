@@ -32,6 +32,8 @@ async def scale_up_template_command_handler(
     output_format: str,
     debug: bool = False,
     no_container: bool = False,
+    target_layer: Optional[str] = None,
+    new_layer: Optional[str] = None,
 ) -> None:
     """
     Handle scale-up template command.
@@ -127,6 +129,8 @@ async def scale_up_template_command_handler(
                 scale_factor=scale_factor,
                 resource_types=None,  # Could be added as CLI option
                 progress_callback=None,  # Progress shown via rich Progress
+                target_layer_id=target_layer,
+                new_layer=new_layer,
             )
             progress.update(task, completed=100)
 
@@ -200,6 +204,8 @@ async def scale_up_scenario_command_handler(
     output_format: str,
     debug: bool = False,
     no_container: bool = False,
+    target_layer: Optional[str] = None,
+    new_layer: Optional[str] = None,
 ) -> None:
     """
     Handle scale-up scenario command.
@@ -289,6 +295,8 @@ async def scale_up_scenario_command_handler(
                 scenario=scenario,
                 params=params,
                 progress_callback=None,  # Progress shown via rich Progress
+                target_layer_id=target_layer,
+                new_layer=new_layer,
             )
             progress.update(task, completed=100)
 
@@ -342,6 +350,8 @@ async def scale_down_algorithm_command_handler(
     config_path: Optional[str],
     debug: bool = False,
     no_container: bool = False,
+    target_layer: Optional[str] = None,
+    new_layer: Optional[str] = None,
 ) -> None:
     """
     Handle scale-down algorithm command.
@@ -437,6 +447,8 @@ async def scale_down_algorithm_command_handler(
                 output_mode=output_mode,
                 output_path=output_file,
                 progress_callback=None,  # Progress shown via rich Progress
+                target_layer_id=target_layer,
+                new_layer=new_layer,
             )
             progress.update(task, completed=100)
 
@@ -490,6 +502,8 @@ async def scale_down_pattern_command_handler(
     config_path: Optional[str],
     debug: bool = False,
     no_container: bool = False,
+    target_layer: Optional[str] = None,
+    new_layer: Optional[str] = None,
 ) -> None:
     """
     Handle scale-down pattern command.

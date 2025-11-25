@@ -209,7 +209,7 @@ class TestFidelityCalculator:
             ]
             target_check = Mock(single=Mock(return_value={"count": 0}))
 
-            mock_session.run.side_effect = source_results + [target_check]
+            mock_session.run.side_effect = [*source_results, target_check]
 
             calculator = FidelityCalculator(
                 "bolt://localhost:7687", "neo4j", "password"

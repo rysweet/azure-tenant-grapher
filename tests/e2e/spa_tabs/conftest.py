@@ -186,7 +186,7 @@ def spa_server(spa_server_url: str) -> Generator[str, None, None]:
         if response.status_code == 200:
             yield spa_server_url
             return
-    except:
+    except (requests.RequestException, OSError):
         pass
 
     # Start the server if not running
@@ -205,7 +205,7 @@ def spa_server(spa_server_url: str) -> Generator[str, None, None]:
             response = requests.get(spa_server_url, timeout=2)
             if response.status_code == 200:
                 break
-        except:
+        except (requests.RequestException, OSError):
             time.sleep(1)
 
     yield spa_server_url

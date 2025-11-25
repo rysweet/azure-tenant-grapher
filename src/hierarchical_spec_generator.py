@@ -295,11 +295,11 @@ class HierarchicalSpecGenerator(TenantSpecificationGenerator):
         if self.infer_purpose:
             hierarchy["tenant"]["purpose"] = self._infer_tenant_purpose(hierarchy)
 
-            for sub_id, sub_data in hierarchy["tenant"]["subscriptions"].items():
+            for _sub_id, sub_data in hierarchy["tenant"]["subscriptions"].items():
                 sub_data["purpose"] = self._infer_subscription_purpose(sub_data)
 
-                for region_id, region_data in sub_data["regions"].items():
-                    for rg_id, rg_data in region_data["resource_groups"].items():
+                for _region_id, region_data in sub_data["regions"].items():
+                    for _rg_id, rg_data in region_data["resource_groups"].items():
                         rg_data["purpose"] = self._infer_resource_group_purpose(rg_data)
 
         # Anonymize the entire hierarchy

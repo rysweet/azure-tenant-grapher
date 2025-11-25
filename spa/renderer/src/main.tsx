@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AppProvider } from './context/AppContext';
+import { LayerProvider } from './context/LayerContext';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { theme } from './theme';
@@ -59,7 +60,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AppProvider>
-            <App />
+            <LayerProvider>
+              <App />
+            </LayerProvider>
           </AppProvider>
         </ThemeProvider>
       </BrowserRouter>

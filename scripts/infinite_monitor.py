@@ -12,9 +12,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 IMESSAGE_TOOL = Path.home() / ".local/bin/imessR"
-LOG_FILE = Path(
-    "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/logs/iteration91_apply.log"
-)
+# Dynamically determine log file path from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+LOG_FILE = PROJECT_ROOT / "logs/iteration91_apply.log"
 
 
 def send_message(msg: str):
@@ -22,7 +22,7 @@ def send_message(msg: str):
     try:
         if IMESSAGE_TOOL.exists():
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
-    except:
+    except Exception:
         pass
 
 

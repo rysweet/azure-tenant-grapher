@@ -342,6 +342,66 @@ class TestLogAnalyticsConversion:
         assert config["sku"] == "PerGB2018"  # Should be normalized to PascalCase
         assert config["retention_in_days"] == 90
 
+    def test_log_analytics_workspace_with_daily_quota(self):
+        """Test Log Analytics workspace with daily quota configured."""
+        emitter = TerraformEmitter()
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.OperationalInsights/workspaces/test-workspace",
+            "name": "test-workspace",
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "PerGB2018",
+                    },
+                    "retentionInDays": 90,
+                    "workspaceCapping": {
+                        "dailyQuotaGb": 5.0,
+                    },
+                }
+            ),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        assert result is not None
+        terraform_type, safe_name, config = result
+
+        assert terraform_type == "azurerm_log_analytics_workspace"
+        assert config["name"] == "test-workspace"
+        assert config["sku"] == "PerGB2018"
+        assert config["retention_in_days"] == 90
+        assert config["daily_quota_gb"] == 5.0
+
+    def test_log_analytics_workspace_without_daily_quota(self):
+        """Test Log Analytics workspace without daily quota (should not include field)."""
+        emitter = TerraformEmitter()
+        resource = {
+            "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.OperationalInsights/workspaces/test-workspace",
+            "name": "test-workspace",
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "location": "eastus",
+            "resource_group": "test-rg",
+            "properties": json.dumps(
+                {
+                    "sku": {
+                        "name": "PerGB2018",
+                    },
+                    "retentionInDays": 90,
+                    "workspaceCapping": {},  # Empty capping config
+                }
+            ),
+        }
+
+        result = emitter._convert_resource(resource, {"resource": {}})
+        assert result is not None
+        terraform_type, safe_name, config = result
+
+        assert terraform_type == "azurerm_log_analytics_workspace"
+        assert config["sku"] == "PerGB2018"
+        assert "daily_quota_gb" not in config  # Should not include empty daily quota
+
 
 class TestApplicationInsightsConversion:
     """Test Application Insights conversion."""

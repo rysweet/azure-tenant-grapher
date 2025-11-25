@@ -73,7 +73,7 @@ class TestAzureADAuthentication:
             )
 
             with pytest.raises(Exception) as exc_info:
-                service = AADGraphService(use_mock=False)
+                AADGraphService(use_mock=False)
 
             assert "Authentication failed" in str(exc_info.value)
 
@@ -86,7 +86,7 @@ class TestAzureADAuthentication:
         monkeypatch.delenv("AZURE_CLIENT_ID", raising=False)
 
         with pytest.raises(RuntimeError) as exc_info:
-            service = AADGraphService(use_mock=False)
+            AADGraphService(use_mock=False)
 
         assert "Missing one or more required Azure AD credentials" in str(
             exc_info.value
@@ -155,7 +155,7 @@ class TestAzureADAuthentication:
     async def test_brute_force_protection(self, azure_ad_config):
         """Test protection against brute force attacks."""
         client = MockAzureADClient(azure_ad_config)
-        audit_logger = AuditLogger()
+        AuditLogger()
 
         # Simulate brute force attack
         passwords = ["wrong1", "wrong2", "wrong3", "wrong4"]
@@ -178,7 +178,7 @@ class TestAzureADAuthentication:
         audit_logger = AuditLogger()
 
         # Successful authentication
-        result = client.authenticate("testuser", "valid_password")
+        client.authenticate("testuser", "valid_password")
         audit_logger.log_authentication(
             user_id="testuser",
             success=True,
@@ -310,7 +310,7 @@ class TestAzureADAuthentication:
     @pytest.mark.asyncio
     async def test_authentication_header_injection(self):
         """Test protection against header injection attacks."""
-        scanner = SecurityScanner()
+        SecurityScanner()
 
         # Test header injection patterns
         malicious_headers = [
@@ -366,7 +366,7 @@ class TestAzureADAuthentication:
         ]
 
         blocked_count = 0
-        for username, password in breached_credentials:
+        for username, _password in breached_credentials:
             try:
                 # These should fail or be detected
                 client.authenticate(username, "invalid")
@@ -396,7 +396,7 @@ class TestAzureADAuthentication:
             ("another_user", "wrong_password"),
         ]
 
-        for username, password in test_cases:
+        for username, _password in test_cases:
             start = time.perf_counter()
             try:
                 client.authenticate(username, "invalid")
@@ -443,7 +443,7 @@ class TestAzureADAuthentication:
             ("admin", "' OR '1'='1"),
         ]
 
-        for username, password in error_scenarios:
+        for username, _password in error_scenarios:
             try:
                 client.authenticate(username, "invalid")
             except Exception as e:

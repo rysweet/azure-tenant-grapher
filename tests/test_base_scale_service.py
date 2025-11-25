@@ -4,9 +4,9 @@ This test suite validates the base functionality for scale operations
 including tenant validation, resource counting, and session ID generation.
 """
 
-import pytest
-from datetime import datetime
 from unittest.mock import MagicMock, Mock
+
+import pytest
 
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager

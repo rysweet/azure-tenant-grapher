@@ -1,7 +1,8 @@
 """Tests for Terraform import blocks generation (Issue #412)."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph

@@ -146,7 +146,7 @@ class MHRWConfig(BaseModel):
 
     alpha: Annotated[float, Field(ge=0.0)] = Field(
         default=1.0,
-        description="Bias parameter (α=1 for unbiased walk)",
+        description="Bias parameter (alpha=1 for unbiased walk)",
     )
     seed: Optional[int] = Field(
         default=42,

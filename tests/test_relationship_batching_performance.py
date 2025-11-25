@@ -59,7 +59,7 @@ class TestRelationshipBatchingPerformance:
         query_latency_ms = 10.0  # Conservative estimate (actual: 50-200ms)
 
         # Create mock database with simulated latency
-        db_ops = MockDatabaseOperations(query_latency_ms=query_latency_ms)
+        MockDatabaseOperations(query_latency_ms=query_latency_ms)
 
         # Create relationship rule with dual-graph enabled
         rule = RelationshipRule.__new__(RelationshipRule)
@@ -145,7 +145,7 @@ class TestRelationshipBatchingPerformance:
 
         # Extrapolate to full scan
         print(f"\n{'=' * 80}")
-        print("EXTRAPOLATION TO FULL SCAN (2,891 resources × 3 rels = 8,673 rels)")
+        print("EXTRAPOLATION TO FULL SCAN (2,891 resources x 3 rels = 8,673 rels)")
         print(f"{'=' * 80}")
 
         total_relationships = 8673

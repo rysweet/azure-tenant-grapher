@@ -390,7 +390,7 @@ class ProviderManager:
 
         if not auto:
             click.echo(
-                f"\nThe following Azure resource providers need to be registered:"
+                "\nThe following Azure resource providers need to be registered:"
             )
             for provider in sorted(providers):
                 click.echo(f"  - {provider}")
@@ -504,7 +504,7 @@ class ProviderManager:
         """
         import click
 
-        click.echo(f"\n🔍 Checking Azure resource provider registration...")
+        click.echo("\n🔍 Checking Azure resource provider registration...")
 
         # Detect required providers from Terraform files
         required_providers = self.get_required_providers(terraform_path=terraform_path)

@@ -21,7 +21,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from neo4j.exceptions import Neo4jError, ClientError, DatabaseError
+from neo4j.exceptions import Neo4jError
 
 from src.services.base_scale_service import BaseScaleService
 from src.utils.session_manager import Neo4jSessionManager

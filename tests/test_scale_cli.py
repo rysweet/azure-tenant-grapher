@@ -5,7 +5,6 @@ Test suite for scale operations CLI commands (Issue #427).
 Tests all CLI commands for scale-up, scale-down, and utility operations.
 """
 
-import json
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -421,7 +420,7 @@ class TestScaleCommandHelpText:
         ]
 
         for cmd in commands_to_test:
-            result = runner.invoke(cli, cmd + ["--help"])
+            result = runner.invoke(cli, [*cmd, "--help"])
             assert result.exit_code == 0
             # Should have either "Example" or "Usage" in help text
             help_lower = result.output.lower()
@@ -477,7 +476,7 @@ class TestScaleCommandErrorHandling:
         ]
 
         for cmd in commands:
-            result = runner.invoke(cli, cmd + ["--help"])
+            result = runner.invoke(cli, [*cmd, "--help"])
             assert "--no-container" in result.output, f"Command {' '.join(cmd)} missing --no-container"
 
 

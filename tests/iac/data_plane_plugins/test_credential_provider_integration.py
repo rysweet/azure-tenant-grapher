@@ -92,7 +92,6 @@ def test_explicit_credentials_real(has_azure_credentials):
 def test_invalid_credentials_real():
     """Test that invalid credentials fail validation."""
     from unittest.mock import patch
-    from azure.core.exceptions import ClientAuthenticationError
 
     config = CredentialConfig(
         client_id="invalid-client-id",
@@ -142,7 +141,7 @@ def test_clear_cache_real(has_azure_credentials):
     provider = CredentialProvider(config)
 
     # Get credential
-    cred1 = provider.get_credential()
+    provider.get_credential()
     source1 = provider.get_credential_source()
     assert source1 == "environment"
 

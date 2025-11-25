@@ -288,6 +288,12 @@ def cli(ctx: click.Context, log_level: str, debug: bool) -> None:
     default=3,
     help="Maximum number of retries for failed resources (default: 3)",
 )
+@click.option(
+    "--max-concurrency",
+    type=int,
+    default=100,
+    help="Maximum concurrent resource processing workers (default: 100)",
+)
 @click.option("--no-container", is_flag=True, help="Do not auto-start Neo4j container")
 @click.option(
     "--generate-spec",
@@ -344,6 +350,7 @@ async def build(
     max_llm_threads: int,
     max_build_threads: int,
     max_retries: int,
+    max_concurrency: int,
     no_container: bool,
     generate_spec: bool,
     visualize: bool,
@@ -805,6 +812,11 @@ def generate_spec(
     required=False,
     help="Target subscription ID to scan for smart import (optional, scans all subscriptions if not provided)",
 )
+@click.option(
+    "--split-by-community",
+    is_flag=True,
+    help="Split resources into separate Terraform files per community (connected component)",
+)
 @click.pass_context
 @async_command
 @click.option(
@@ -848,6 +860,7 @@ async def generate_iac(
     scan_target: bool,
     scan_target_tenant_id: Optional[str],
     scan_target_subscription_id: Optional[str],
+    split_by_community: bool,
     domain_name: Optional[str] = None,
 ) -> None:
     """
@@ -924,6 +937,7 @@ async def generate_iac(
         scan_target=scan_target,
         scan_target_tenant_id=scan_target_tenant_id,
         scan_target_subscription_id=scan_target_subscription_id,
+        split_by_community=split_by_community,
     )
 
 
@@ -1776,10 +1790,19 @@ def doctor() -> None:
 
         # Check role assignments
         result = subprocess.run(
-            ["az", "role", "assignment", "list", "--assignee", client_id, "--output", "json"],
+            [
+                "az",
+                "role",
+                "assignment",
+                "list",
+                "--assignee",
+                client_id,
+                "--output",
+                "json",
+            ],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
         if result.returncode != 0:
@@ -1789,6 +1812,7 @@ def doctor() -> None:
             return
 
         import json
+
         roles = json.loads(result.stdout)
         role_names = [r.get("roleDefinitionName") for r in roles]
 
@@ -1797,8 +1821,16 @@ def doctor() -> None:
             print(f"  ✅ {role_name}")
 
         # Check for required roles
-        has_reader = "Reader" in role_names or "Contributor" in role_names or "Owner" in role_names
-        has_security_reader = "Security Reader" in role_names or "Owner" in role_names or "User Access Administrator" in role_names
+        has_reader = (
+            "Reader" in role_names
+            or "Contributor" in role_names
+            or "Owner" in role_names
+        )
+        has_security_reader = (
+            "Security Reader" in role_names
+            or "Owner" in role_names
+            or "User Access Administrator" in role_names
+        )
 
         print("")
         print("Permission Requirements for Full Functionality:")
@@ -1810,10 +1842,16 @@ def doctor() -> None:
             print("     Impact: Cannot scan Azure resources")
 
         if has_security_reader:
-            print("  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)")
+            print(
+                "  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)"
+            )
         else:
-            print("  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)")
-            print("     Impact: Cannot scan role assignments (RBAC will not be replicated!)")
+            print(
+                "  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)"
+            )
+            print(
+                "     Impact: Cannot scan role assignments (RBAC will not be replicated!)"
+            )
             print("")
             print("     FIX: Run this command to add Security Reader role:")
             print("     az role assignment create \\")
@@ -1826,7 +1864,9 @@ def doctor() -> None:
 
         print("")
         if has_reader and has_security_reader:
-            print("✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!")
+            print(
+                "✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!"
+            )
         else:
             print("⚠️  MISSING PERMISSIONS - Scanning will be limited!")
 
@@ -2587,6 +2627,599 @@ async def scale_stats(
         output_format=output_format,
         debug=debug,
         no_container=no_container,
+    )
+
+
+# ============================================================================
+# Layer Management Commands (Issue #424)
+# ============================================================================
+
+
+@cli.group(name="layer")
+def layer() -> None:
+    """Layer management commands for multi-layer graph projections."""
+    pass
+
+
+@layer.command(name="list")
+@click.option(
+    "--tenant-id",
+    help="Filter by tenant ID",
+)
+@click.option(
+    "--include-inactive/--active-only",
+    default=True,
+    help="Show inactive layers (default: true)",
+)
+@click.option(
+    "--type",
+    "layer_type",
+    type=click.Choice(
+        ["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False
+    ),
+    help="Filter by layer type",
+)
+@click.option(
+    "--sort-by",
+    type=click.Choice(["name", "created_at", "node_count"], case_sensitive=False),
+    default="created_at",
+    help="Sort field (default: created_at)",
+)
+@click.option(
+    "--ascending/--descending",
+    default=False,
+    help="Sort order (default: descending)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["table", "json", "yaml"], case_sensitive=False),
+    default="table",
+    help="Output format (default: table)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_list(
+    ctx: click.Context,
+    tenant_id: Optional[str],
+    include_inactive: bool,
+    layer_type: Optional[str],
+    sort_by: str,
+    ascending: bool,
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """List all layers with summary information."""
+    from src.cli_commands_layer import layer_list_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_list_command_handler(
+        tenant_id=tenant_id,
+        include_inactive=include_inactive,
+        layer_type=layer_type,
+        sort_by=sort_by,
+        ascending=ascending,
+        format_type=format_type,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="show")
+@click.argument("layer_id")
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["text", "json", "yaml"], case_sensitive=False),
+    default="text",
+    help="Output format (default: text)",
+)
+@click.option(
+    "--show-stats",
+    is_flag=True,
+    help="Include detailed statistics",
+)
+@click.option(
+    "--show-lineage",
+    is_flag=True,
+    help="Show parent/child layers",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_show(
+    ctx: click.Context,
+    layer_id: str,
+    format_type: str,
+    show_stats: bool,
+    show_lineage: bool,
+    no_container: bool,
+) -> None:
+    """Show detailed information about a specific layer."""
+    from src.cli_commands_layer import layer_show_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_show_command_handler(
+        layer_id=layer_id,
+        format_type=format_type,
+        show_stats=show_stats,
+        show_lineage=show_lineage,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="active")
+@click.argument("layer_id", required=False)
+@click.option(
+    "--tenant-id",
+    help="Tenant context (for multi-tenant)",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_active(
+    ctx: click.Context,
+    layer_id: Optional[str],
+    tenant_id: Optional[str],
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Show or set the active layer."""
+    from src.cli_commands_layer import layer_active_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_active_command_handler(
+        layer_id=layer_id,
+        tenant_id=tenant_id,
+        format_type=format_type,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="create")
+@click.argument("layer_id")
+@click.option(
+    "--name",
+    help="Human-readable name (default: layer_id)",
+)
+@click.option(
+    "--description",
+    help="Layer description",
+)
+@click.option(
+    "--type",
+    "layer_type",
+    type=click.Choice(
+        ["baseline", "scaled", "experimental", "snapshot"], case_sensitive=False
+    ),
+    default="experimental",
+    help="Layer type (default: experimental)",
+)
+@click.option(
+    "--parent-layer",
+    help="Parent layer for lineage",
+)
+@click.option(
+    "--tenant-id",
+    help="Tenant ID",
+)
+@click.option(
+    "--tag",
+    "tags",
+    multiple=True,
+    help="Add tag (multiple allowed)",
+)
+@click.option(
+    "--make-active",
+    is_flag=True,
+    help="Set as active layer",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_create(
+    ctx: click.Context,
+    layer_id: str,
+    name: Optional[str],
+    description: Optional[str],
+    layer_type: str,
+    parent_layer: Optional[str],
+    tenant_id: Optional[str],
+    tags: tuple,
+    make_active: bool,
+    yes: bool,
+    no_container: bool,
+) -> None:
+    """Create a new empty layer."""
+    from src.cli_commands_layer import layer_create_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_create_command_handler(
+        layer_id=layer_id,
+        name=name,
+        description=description,
+        layer_type=layer_type,
+        parent_layer=parent_layer,
+        tenant_id=tenant_id,
+        tags=list(tags),
+        make_active=make_active,
+        yes=yes,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="copy")
+@click.argument("source")
+@click.argument("target")
+@click.option(
+    "--name",
+    help="Name for new layer",
+)
+@click.option(
+    "--description",
+    help="Description for new layer",
+)
+@click.option(
+    "--copy-metadata/--no-copy-metadata",
+    default=True,
+    help="Copy metadata dict from source (default: true)",
+)
+@click.option(
+    "--make-active",
+    is_flag=True,
+    help="Set new layer as active",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_copy(
+    ctx: click.Context,
+    source: str,
+    target: str,
+    name: Optional[str],
+    description: Optional[str],
+    copy_metadata: bool,
+    make_active: bool,
+    yes: bool,
+    no_container: bool,
+) -> None:
+    """Copy an entire layer (nodes + relationships)."""
+    from src.cli_commands_layer import layer_copy_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_copy_command_handler(
+        source=source,
+        target=target,
+        name=name,
+        description=description,
+        copy_metadata=copy_metadata,
+        make_active=make_active,
+        yes=yes,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="delete")
+@click.argument("layer_id")
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Allow deletion of active/baseline layers",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation",
+)
+@click.option(
+    "--archive",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Archive layer before deletion",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_delete(
+    ctx: click.Context,
+    layer_id: str,
+    force: bool,
+    yes: bool,
+    archive: Optional[str],
+    no_container: bool,
+) -> None:
+    """Delete a layer and all its nodes/relationships."""
+    from src.cli_commands_layer import layer_delete_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_delete_command_handler(
+        layer_id=layer_id,
+        force=force,
+        yes=yes,
+        archive=archive,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="diff")
+@click.argument("layer_a")
+@click.argument("layer_b")
+@click.option(
+    "--detailed",
+    is_flag=True,
+    help="Include node IDs in output",
+)
+@click.option(
+    "--properties",
+    is_flag=True,
+    help="Compare property values",
+)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Save report to file",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format (default: text)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_diff(
+    ctx: click.Context,
+    layer_a: str,
+    layer_b: str,
+    detailed: bool,
+    properties: bool,
+    output: Optional[str],
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Compare two layers to find differences."""
+    from src.cli_commands_layer import layer_diff_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_diff_command_handler(
+        layer_a=layer_a,
+        layer_b=layer_b,
+        detailed=detailed,
+        properties=properties,
+        output=output,
+        format_type=format_type,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="validate")
+@click.argument("layer_id")
+@click.option(
+    "--fix",
+    is_flag=True,
+    help="Attempt automatic fixes",
+)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, writable=True),
+    help="Save report to file",
+)
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format (default: text)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_validate(
+    ctx: click.Context,
+    layer_id: str,
+    fix: bool,
+    output: Optional[str],
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Validate layer integrity and check for issues."""
+    from src.cli_commands_layer import layer_validate_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_validate_command_handler(
+        layer_id=layer_id,
+        fix=fix,
+        output=output,
+        format_type=format_type,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="refresh-stats")
+@click.argument("layer_id")
+@click.option(
+    "--format",
+    "format_type",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_refresh_stats(
+    ctx: click.Context,
+    layer_id: str,
+    format_type: str,
+    no_container: bool,
+) -> None:
+    """Refresh layer metadata statistics."""
+    from src.cli_commands_layer import layer_refresh_stats_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_refresh_stats_command_handler(
+        layer_id=layer_id,
+        format_type=format_type,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="archive")
+@click.argument("layer_id")
+@click.argument("output_path", type=click.Path(dir_okay=False, writable=True))
+@click.option(
+    "--include-original",
+    is_flag=True,
+    help="Include Original nodes in archive",
+)
+@click.option(
+    "--compress",
+    is_flag=True,
+    help="Compress archive with gzip",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_archive(
+    ctx: click.Context,
+    layer_id: str,
+    output_path: str,
+    include_original: bool,
+    compress: bool,
+    yes: bool,
+    no_container: bool,
+) -> None:
+    """Export layer to JSON archive file."""
+    from src.cli_commands_layer import layer_archive_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_archive_command_handler(
+        layer_id=layer_id,
+        output_path=output_path,
+        include_original=include_original,
+        compress=compress,
+        yes=yes,
+        no_container=no_container,
+        debug=debug,
+    )
+
+
+@layer.command(name="restore")
+@click.argument(
+    "archive_path", type=click.Path(exists=True, dir_okay=False, readable=True)
+)
+@click.option(
+    "--layer-id",
+    help="Override layer ID from archive",
+)
+@click.option(
+    "--make-active",
+    is_flag=True,
+    help="Set as active layer after restore",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def layer_restore(
+    ctx: click.Context,
+    archive_path: str,
+    layer_id: Optional[str],
+    make_active: bool,
+    yes: bool,
+    no_container: bool,
+) -> None:
+    """Restore layer from JSON archive."""
+    from src.cli_commands_layer import layer_restore_command_handler
+
+    debug = ctx.obj.get("debug", False)
+    await layer_restore_command_handler(
+        archive_path=archive_path,
+        layer_id=layer_id,
+        make_active=make_active,
+        yes=yes,
+        no_container=no_container,
+        debug=debug,
     )
 
 

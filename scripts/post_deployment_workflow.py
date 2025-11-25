@@ -18,7 +18,8 @@ import subprocess
 import time
 from pathlib import Path
 
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = REPO_ROOT / "demos"
 LOGS_DIR = REPO_ROOT / "logs"
 IMESSAGE_TOOL = Path.home() / ".local/bin/imessR"
@@ -29,7 +30,7 @@ def send_message(msg: str):
     try:
         if IMESSAGE_TOOL.exists():
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
-    except:
+    except Exception:
         pass
 
 
@@ -113,7 +114,7 @@ def analyze_deployment():
             print(f"Resource types: {len(type_counts)}")
 
             return resource_count, type_counts
-        except:
+        except (FileNotFoundError, json.JSONDecodeError):
             return 0, {}
 
     return 0, {}
@@ -181,7 +182,7 @@ def main():
         send_message("⚠️ Target scan failed, but deployment succeeded. Continuing...")
 
     # Step 4: Compare tenants
-    comparison = compare_tenants()
+    compare_tenants()
 
     # Step 5: Report results
     send_message(

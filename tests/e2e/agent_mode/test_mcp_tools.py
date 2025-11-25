@@ -18,10 +18,6 @@ class TestMCPTools:
     async def test_query_graph_tool(self, mock_neo4j_session):
         """Test the query_graph MCP tool."""
         # Mock tool invocation
-        tool_params = {
-            "query": "MATCH (vm:VirtualMachine) RETURN vm LIMIT 5",
-            "parameters": {},
-        }
 
         # Mock response
         mock_response = {
@@ -41,11 +37,6 @@ class TestMCPTools:
     async def test_discover_resources_tool(self, mock_azure_client):
         """Test the discover_resources MCP tool."""
         # Mock tool parameters
-        tool_params = {
-            "subscription_id": "test-sub-1",
-            "resource_types": ["VirtualMachine", "StorageAccount"],
-            "filters": {"tags": {"environment": "production"}},
-        }
 
         # Mock discovery results
         mock_results = {
@@ -62,10 +53,6 @@ class TestMCPTools:
     async def test_analyze_security_tool(self, mock_azure_client):
         """Test the analyze_security MCP tool."""
         # Mock security analysis parameters
-        tool_params = {
-            "resource_ids": ["vm-1", "vm-2", "storage-1"],
-            "check_types": ["network", "identity", "encryption"],
-        }
 
         # Mock analysis results
         mock_results = {
@@ -86,10 +73,6 @@ class TestMCPTools:
     async def test_check_compliance_tool(self):
         """Test the check_compliance MCP tool."""
         # Mock compliance check parameters
-        tool_params = {
-            "standards": ["CIS", "PCI-DSS"],
-            "resource_scope": "subscription",
-        }
 
         # Mock compliance results
         mock_results = {
@@ -111,9 +94,6 @@ class TestMCPTools:
     async def test_get_resource_details_tool(self, mock_azure_client):
         """Test the get_resource_details MCP tool."""
         # Mock tool parameters
-        tool_params = {
-            "resource_id": "/subscriptions/test-sub-1/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm"
-        }
 
         # Mock resource details
         mock_details = {
@@ -136,7 +116,6 @@ class TestMCPTools:
     async def test_analyze_costs_tool(self):
         """Test the analyze_costs MCP tool."""
         # Mock cost analysis parameters
-        tool_params = {"time_period": "last_30_days", "group_by": "resource_type"}
 
         # Mock cost analysis results
         mock_results = {
@@ -160,11 +139,6 @@ class TestMCPTools:
     async def test_find_relationships_tool(self, mock_neo4j_session):
         """Test the find_relationships MCP tool."""
         # Mock tool parameters
-        tool_params = {
-            "source_id": "vm-1",
-            "relationship_types": ["USES", "CONNECTS_TO", "DEPENDS_ON"],
-            "max_depth": 2,
-        }
 
         # Mock relationship results
         mock_results = {
@@ -187,11 +161,6 @@ class TestMCPTools:
     async def test_generate_report_tool(self):
         """Test the generate_report MCP tool."""
         # Mock report generation parameters
-        tool_params = {
-            "report_type": "security_assessment",
-            "format": "markdown",
-            "include_recommendations": True,
-        }
 
         # Mock report generation
         mock_report = {

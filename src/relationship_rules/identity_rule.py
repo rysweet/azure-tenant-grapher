@@ -125,14 +125,14 @@ class IdentityRule(RelationshipRule):
                     )
 
                 db_ops.upsert_generic(
-                    label,
+                    f"{label}:Resource",
                     "id",
                     principal_id,
                     identity_props,
                 )
                 # ASSIGNED_TO: RoleAssignment → Identity
                 # Note: RoleAssignment is not a Resource, so we use db_ops directly
-                db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, label, "id")
+                db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, f"{label}:Resource", "id")
                 # HAS_ROLE: Identity → RoleDefinition
                 if role_def_id:
                     db_ops.upsert_generic(
@@ -167,7 +167,7 @@ class IdentityRule(RelationshipRule):
                 if principal_id and rid:
                     # Upsert ManagedIdentity node (system-assigned) with IaC-standard properties
                     db_ops.upsert_generic(
-                        MANAGED_IDENTITY,
+                        f"{MANAGED_IDENTITY}:Resource",
                         "id",
                         principal_id,
                         {
@@ -203,7 +203,7 @@ class IdentityRule(RelationshipRule):
                 for uai_id in user_identities:
                     # Upsert ManagedIdentity node (user-assigned) with IaC-standard properties
                     db_ops.upsert_generic(
-                        MANAGED_IDENTITY,
+                        f"{MANAGED_IDENTITY}:Resource",
                         "id",
                         uai_id,
                         {
@@ -231,7 +231,7 @@ class IdentityRule(RelationshipRule):
             principal_id = identity.get("principalId")
             if principal_id and rid and identity.get("type") != "SystemAssigned":
                 db_ops.upsert_generic(
-                    MANAGED_IDENTITY,
+                    f"{MANAGED_IDENTITY}:Resource",
                     "id",
                     principal_id,
                     {

@@ -10,7 +10,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine project root from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 IMESS_TOOL = Path.home() / ".local/bin/imessR"
 
 
@@ -19,7 +20,7 @@ def send_imessage(msg: str):
         subprocess.run(
             [str(IMESS_TOOL), msg], timeout=10, check=False, capture_output=True
         )
-    except:
+    except Exception:
         pass
 
 

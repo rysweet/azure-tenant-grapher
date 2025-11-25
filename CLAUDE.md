@@ -297,3 +297,137 @@ When using the CLI dashboard (during `atg scan` operations):
 ## Project Memories
 
 - The CI takes almost 20 minutes to complete. Just run the script and wait for it.
+
+## Recent Bug Fixes (November 2025)
+
+### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
+**Status**: FIXED (commit faeb284)  
+**Impact**: Eliminates manual sed replacements for cross-tenant deployments
+
+**Problem**: Abstracted Resource nodes in Neo4j had source subscription IDs embedded in properties JSON (roleDefinitionId, scope fields), requiring manual replacement of 2,292 occurrences before deployment.
+
+**Root Cause**: `resource_processor.py:_create_abstracted_node()` abstracted principalId but not subscription IDs.
+
+**Solution**: 
+1. ResourceProcessor: Replace subscription IDs with `/subscriptions/ABSTRACT_SUBSCRIPTION` placeholder at scan time
+2. TerraformEmitter: Update regex to replace placeholder with target subscription at IaC generation time
+
+**Files Modified**:
+- `src/resource_processor.py:528-555`
+- `src/iac/emitters/terraform_emitter.py:3234,3248`
+
+**Documentation**: See `docs/BUG_59_DOCUMENTATION.md` for technical deep dive.
+
+### Bug #57: NIC NSG Deprecated Field
+**Status**: FIXED (commit 2011688)
+
+**Problem**: `network_security_group_id` field deprecated in azurerm provider.
+
+**Solution**: Use `azurerm_network_interface_security_group_association` resources instead.
+
+### Bug #58: Skip NIC NSG When NSG Not Emitted  
+**Status**: FIXED (commit 7651fde)
+
+**Problem**: NIC NSG associations created for NSGs that weren't emitted, causing undeclared resource errors.
+
+**Solution**: Validate NSG exists in `_available_resources` before creating association.
+
+
+## Recent Code Improvements (November 2025)
+
+### Dependency Validation Enhancement
+**Commit**: feat: Add DependencyValidator and enhance TerraformEmitter
+
+**Purpose**: Prevent "undeclared resource" Terraform errors by validating references before emission
+
+**New Files**:
+- `src/iac/validators/dependency_validator.py` - Terraform validation integration
+  - Runs `terraform validate -json`
+  - Parses undeclared resource errors
+  - Returns structured dependency errors
+
+**Enhanced Files**:
+- `src/iac/emitters/terraform_emitter.py`
+  - `_validate_all_references_in_config()` - Recursively validates resource references
+  - NSG association validation - Checks both subnet and NSG exist before creating associations
+  - Skips resources with missing dependencies (prevents invalid IaC)
+
+**Benefits**:
+- Fixes Bug #58: NSG associations for non-existent NSGs
+- Prevents entire category of Terraform errors
+- Clear warning messages for debugging
+- Improves IaC generation quality
+
+**Usage**:
+```python
+from src.iac.validators import DependencyValidator
+
+validator = DependencyValidator()
+result = validator.validate(Path("/tmp/iac_output"))
+if not result.valid:
+    for error in result.errors:
+        print(f"{error.resource_type}.{error.resource_name}: {error.missing_reference}")
+```
+
+### Iteration 19 Breakthrough (2025-11-25) ✅
+**Status**: 🟢 MAJOR SUCCESS - Replication loop now operational
+**Resources Deployed**: **902** (vs 81-resource ceiling)
+**Improvement**: **11.1x** increase
+
+**Bugs Fixed This Session**:
+
+1. **Bug #60: Service Principal Authentication** ✅ (Commits: .env update)
+   - Root cause: Wrong SP credentials in .env (source tenant SP doesn't exist in target)
+   - Fix: Updated .env with target tenant SP (30acd0d7-08b8-40d2-901d-17634bf19136)
+   - Impact: 228 import blocks generated (was 0), broke the "81-Resource Pattern"
+
+2. **Bug #61: Case-Insensitive Type Lookup** ✅ (Commit: 31d8132)
+   - Root cause: Azure API returns "microsoft.insights", mapping expects "Microsoft.Insights"
+   - Fix: Added `_normalize_azure_type()` helper in terraform_emitter.py:128-166
+   - Impact: Infrastructure for case-insensitive lookups
+
+3. **Bug #62: Missing Proper-Case Variants** ✅ (Commit: 53e675e)
+   - Fix: Added Microsoft.Insights/components and actiongroups proper-case mappings
+   - Impact: +36 resources unlocked
+
+4. **Bug #63: Missing Terraform-Supported Types** ✅ (Commit: 76e72a3)
+   - Fix: Added 17 Azure types (Databricks, Synapse, Purview, Communication, etc.)
+   - Impact: +48 resources, 55 types unlocked (117 → 62 unsupported)
+
+5. **Bug #64: Missing Lowercase Variants** ✅ (Commit: 56c22c1)
+   - Fix: Added operationalinsights, metricalerts, VM extensions lowercase mappings
+   - Impact: +22 resources (15 Log Analytics Workspaces!)
+
+6. **Bug #65: Complete Linting Cleanup** ✅ (Commit: 3cc5c5c)
+   - Fix: Resolved all 193 Ruff linting errors
+   - Impact: Clean codebase, production-ready
+
+**New Blockers Discovered**:
+
+1. 🔴 **Limited Import Strategy** (711 resources affected)
+   - Issue: `--import-strategy resource_groups` only imports RGs, not child resources
+   - Solution: Use `--import-strategy all_resources` for next iteration
+   - Expected: +711 import blocks → +711 resources
+
+2. 🔴 **Entra ID User Conflicts** (219 users affected)
+   - Issue: Same-tenant deployment tries to create existing users
+   - Solution: Skip azuread_user when source==target tenant
+   - Expected: +219 resources or graceful skip
+
+**Deployment Metrics**:
+- Import blocks: 228 (resource groups only)
+- Resources created: 615
+- Resources imported: 228
+- Total in state: 902
+- Deployment time: 4h 26min
+
+**Next Steps**:
+- Use `--import-strategy all_resources` to unlock 711 more imports
+- Add same-tenant user detection/skipping
+- Continue mapping expansion for remaining 62 unsupported types
+
+**Documentation**:
+- See `/tmp/COMPREHENSIVE_SESSION_SUMMARY.md` for complete session analysis
+- See `/tmp/ITERATION_19_FINAL_RESULTS.md` for detailed results and blockers
+- See `/tmp/00_PROJECT_STATUS_INDEX_UPDATED.md` for current status
+

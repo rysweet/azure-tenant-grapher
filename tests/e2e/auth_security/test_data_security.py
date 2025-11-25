@@ -10,7 +10,8 @@ import json
 import os
 import re
 import tempfile
-from typing import Any, Dict, List
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 import pytest
 from tests.e2e.auth_security.security_utils import (
@@ -24,7 +25,7 @@ from tests.e2e.auth_security.security_utils import (
 class DataSecurityService:
     """Mock service for testing data security features."""
 
-    def __init__(self, encryption_key: bytes = None):
+    def __init__(self, encryption_key: Optional[bytes] = None):
         self.encryption_key = encryption_key or EncryptionHelper.generate_key()
         self.audit_logger = AuditLogger()
         self.scanner = SecurityScanner()
@@ -306,7 +307,7 @@ class TestDataSecurity:
             def __init__(self):
                 self.queries = []
 
-            def execute_query(self, query: str, params: tuple = None):
+            def execute_query(self, query: str, params: Optional[tuple] = None):
                 """Execute parameterized query."""
                 # Check for SQL injection patterns in query
                 scanner = SecurityScanner()

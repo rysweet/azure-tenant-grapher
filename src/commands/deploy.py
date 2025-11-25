@@ -159,4 +159,4 @@ def deploy_command(
     except Exception as e:
         click.echo(f"Deployment failed: {e}", err=True)
         logger.exception("Deployment error")
-        raise SystemExit(1)
+        raise SystemExit(1) from e

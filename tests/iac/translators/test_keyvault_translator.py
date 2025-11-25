@@ -231,7 +231,7 @@ class TestKeyVaultTranslator:
             ],
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Get results
         results = translator.get_translation_results()
@@ -352,7 +352,7 @@ class TestKeyVaultTranslator:
             "vault_uri": "https://missing-kv.vault.azure.net/",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Should have warning about missing vault
         results = translator.get_translation_results()

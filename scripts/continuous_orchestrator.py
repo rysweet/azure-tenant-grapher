@@ -16,7 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = PROJECT_ROOT / "demos"
 IMESS_TOOL = Path.home() / ".local/bin/imessR"
 ORCHESTRATOR_STATE = PROJECT_ROOT / ".claude/runtime/orchestrator"

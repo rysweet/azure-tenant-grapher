@@ -11,7 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 IMESSAGE_TOOL = Path.home() / ".local" / "bin" / "imessR"
-ITERATION_DIR = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/demos")
+# Dynamically determine paths from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+ITERATION_DIR = PROJECT_ROOT / "demos"
 CURRENT_ITERATION = 97
 
 
@@ -46,7 +48,7 @@ def check_process_running(pid):
     try:
         result = subprocess.run(["ps", "-p", str(pid)], capture_output=True, timeout=5)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -69,7 +71,7 @@ def main():
                 ["pgrep", "-f", "terraform apply"], capture_output=True, timeout=5
             )
             terraform_running = result.returncode == 0
-        except:
+        except Exception:
             pass
 
         current_time = time.time()

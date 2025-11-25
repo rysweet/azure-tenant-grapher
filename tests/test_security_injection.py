@@ -11,10 +11,17 @@ Tests cover:
 4. YAML injection prevention
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
+from src.services.scale_down_service import (
+    ScaleDownService,
+    _escape_cypher_identifier,
+    _escape_cypher_string,
+    _is_safe_cypher_identifier,
+)
 from src.services.scale_up_service import ScaleUpService
-from src.services.scale_down_service import ScaleDownService, _escape_cypher_string, _escape_cypher_identifier, _is_safe_cypher_identifier
 from src.utils.session_manager import Neo4jSessionManager
 
 
@@ -115,7 +122,7 @@ class TestCypherInjectionPrevention:
         ]
 
         # Should not raise any exceptions
-        result = await service._get_base_resources(
+        await service._get_base_resources(
             tenant_id="00000000-0000-0000-0000-000000000000",
             resource_types=valid_types,
         )
@@ -131,7 +138,7 @@ class TestCypherInjectionPrevention:
         assert params["resource_types"] == valid_types
 
     @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
-    (self):
+    async def test_property_path_injection_blocked(self):
         """Test that property path injection is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
         service = ScaleDownService(session_manager)
@@ -149,7 +156,7 @@ class TestCypherInjectionPrevention:
                 )
 
     @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
-    (self):
+    async def test_unknown_function(self):
         """Test that nested query injection in pattern properties is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
         service = ScaleDownService(session_manager)
@@ -164,7 +171,7 @@ class TestCypherInjectionPrevention:
                 )
 
     @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
-    (self):
+    async def test_non_whitelisted_properties_rejected(self):
         """Test that non-whitelisted properties are rejected."""
         session_manager = Mock(spec=Neo4jSessionManager)
         service = ScaleDownService(session_manager)
@@ -179,7 +186,7 @@ class TestCypherInjectionPrevention:
                 )
 
     @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
-    (self):
+    async def test_command_injection_patterns_blocked(self):
         """Test that command injection attempts in properties are blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
         service = ScaleDownService(session_manager)
@@ -194,7 +201,7 @@ class TestCypherInjectionPrevention:
                 )
 
     @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
-    (self):
+    async def test_excessive_criteria_rejected(self):
         """Test that excessive criteria count is rejected."""
         session_manager = Mock(spec=Neo4jSessionManager)
         service = ScaleDownService(session_manager)
@@ -238,7 +245,7 @@ class TestCypherInjectionPrevention:
             }
 
             # Should not raise any exceptions
-            result = await service.sample_by_pattern(
+            await service.sample_by_pattern(
                 tenant_id="00000000-0000-0000-0000-000000000000",
                 criteria=valid_criteria,
             )
@@ -314,7 +321,7 @@ class TestYAMLInjectionPrevention:
     def test_yaml_safe_load_used(self):
         """Test that yaml.safe_load is used in engine.py."""
         # Read the engine.py file and verify safe_load is used
-        with open("/home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/src/iac/engine.py", "r") as f:
+        with open("/home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/src/iac/engine.py") as f:
             content = f.read()
 
         # Verify yaml.safe_load is used
@@ -351,7 +358,7 @@ class TestResourceTypeValidation:
         service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
 
         # Should not raise any exceptions
-        result = await service._get_base_resources(
+        await service._get_base_resources(
             tenant_id="00000000-0000-0000-0000-000000000000",
             resource_types=None,  # No filtering
         )
@@ -359,7 +366,7 @@ class TestResourceTypeValidation:
         # Verify query without type filter was used
         assert mock_session.run.called
         call_args = mock_session.run.call_args
-        query = call_args[0][0]
+        call_args[0][0]
         params = call_args[0][1]
 
         # Should not have resource_types parameter
@@ -387,7 +394,7 @@ class TestResourceTypeValidation:
         ]
 
         # Should not raise any exceptions
-        result = await service._get_base_resources(
+        await service._get_base_resources(
             tenant_id="00000000-0000-0000-0000-000000000000",
             resource_types=valid_types,
         )
@@ -424,7 +431,7 @@ class TestIntegrationSecurity:
         ]
 
         # Call the method
-        result = await service._get_relationship_patterns(base_resources)
+        await service._get_relationship_patterns(base_resources)
 
         # Verify parameterized query was used
         assert mock_session.run.called

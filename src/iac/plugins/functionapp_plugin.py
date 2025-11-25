@@ -677,11 +677,7 @@ class FunctionAppPlugin(DataPlanePlugin):
             from azure.core.exceptions import AzureError, HttpResponseError
             from azure.identity import DefaultAzureCredential
             from azure.mgmt.web import WebSiteManagementClient
-            from azure.mgmt.web.models import (
-                ConnectionStringDictionary,
-                NameValuePair,
-                StringDictionary,
-            )
+            from azure.mgmt.web.models import StringDictionary
         except ImportError as e:
             self.logger.error(f"Azure SDK not installed: {e}")
             return ReplicationResult(

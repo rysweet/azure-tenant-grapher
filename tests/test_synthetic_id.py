@@ -4,12 +4,11 @@ This test suite validates synthetic ID generation for scale operations,
 ensuring collision-free IDs with proper formatting and type prefixes.
 """
 
-import pytest
 from src.utils.synthetic_id import (
-    generate_synthetic_id,
-    is_synthetic_id,
     extract_type_from_synthetic_id,
+    generate_synthetic_id,
     get_resource_type_from_prefix,
+    is_synthetic_id,
 )
 
 
