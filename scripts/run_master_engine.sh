@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="/Users/ryan/src/msec/atg-0723/azure-tenant-grapher"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENGINE_SCRIPT="$REPO_ROOT/scripts/master_replication_engine.py"
 STATE_FILE="$REPO_ROOT/demos/engine_state.json"
 LOG_FILE="$REPO_ROOT/logs/engine_runner.log"

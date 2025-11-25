@@ -100,7 +100,6 @@ class TestThreatModelTab:
         assert await threat_cards.count() == 2
 
         # Check first threat details
-        first_threat = threat_cards.first
         # await expect(first_threat).to_contain_text("Spoofing")
         # await expect(first_threat).to_contain_text("High")
 

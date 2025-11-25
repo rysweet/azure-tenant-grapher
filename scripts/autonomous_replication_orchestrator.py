@@ -15,14 +15,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
+LOG_DIR = REPO_ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(
-            "/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/logs/autonomous_orchestrator.log"
-        ),
+        logging.FileHandler(LOG_DIR / "autonomous_orchestrator.log"),
         logging.StreamHandler(sys.stdout),
     ],
 )
@@ -33,7 +36,8 @@ class AutonmousReplicationOrchestrator:
     """Orchestrates continuous tenant replication until objective is achieved."""
 
     def __init__(self):
-        self.repo_root = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+        # Use the global REPO_ROOT defined at module level
+        self.repo_root = REPO_ROOT
         self.demos_dir = self.repo_root / "demos"
         self.objective_file = self.demos_dir / "OBJECTIVE.md"
         self.status_file = self.demos_dir / "orchestrator_status.json"
@@ -246,7 +250,7 @@ print(f"SOURCE_RESOURCES={{count}}")
                 result = json.loads(stdout) if stdout else {}
                 if "diagnostics" in result:
                     errors = result["diagnostics"]
-            except:
+            except json.JSONDecodeError:
                 errors = [{"detail": stderr}]
 
             logger.warning(f"Terraform validation found {len(errors)} errors")

@@ -1,9 +1,7 @@
 """Tests for community-based Terraform file splitting."""
 
 import json
-from pathlib import Path
-from typing import Any, Dict, List, Set
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -251,7 +249,7 @@ def test_community_files_are_self_contained(
 
             # Collect all resource names from this file
             resource_names = []
-            for resource_type, type_resources in resources.items():
+            for _resource_type, type_resources in resources.items():
                 resource_names.extend(type_resources.keys())
 
             # Each file should have resources (not empty)
@@ -306,7 +304,7 @@ def test_no_cross_community_references(
                 content = json.load(f)
 
             # Serialize to string to check for references
-            content_str = json.dumps(content)
+            json.dumps(content)
 
             # Each file should be self-contained
             # No references to resources from other communities

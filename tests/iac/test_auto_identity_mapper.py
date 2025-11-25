@@ -1125,6 +1125,7 @@ async def test_end_to_end_auto_mapping_workflow(
 async def test_invalid_tenant_id_raises_error() -> None:
     """Test that invalid tenant IDs raise appropriate errors."""
     from azure.core.exceptions import ClientAuthenticationError
+
     from src.iac.auto_identity_mapper import AutoIdentityMapper
 
     mapper = AutoIdentityMapper()

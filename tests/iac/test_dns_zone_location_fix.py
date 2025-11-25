@@ -9,8 +9,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph
 
@@ -136,12 +134,12 @@ class TestDNSZoneLocationFix:
 
             # Verify DNS zone has NO location
             dns_zone_config = terraform_config["resource"]["azurerm_dns_zone"]
-            for resource_name, resource_def in dns_zone_config.items():
+            for _resource_name, resource_def in dns_zone_config.items():
                 assert "location" not in resource_def
 
             # Verify Storage Account HAS location (normal resources should keep it)
             storage_config = terraform_config["resource"]["azurerm_storage_account"]
-            for resource_name, resource_def in storage_config.items():
+            for _resource_name, resource_def in storage_config.items():
                 assert (
                     "location" in resource_def
                 ), "Storage account should have location field"

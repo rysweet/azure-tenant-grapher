@@ -13,7 +13,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 os.chdir(REPO_ROOT)
 
 
@@ -68,7 +69,7 @@ driver.close()
         if result.returncode == 0:
             source, target = map(int, result.stdout.strip().split(","))
             return source, target
-    except:
+    except (subprocess.TimeoutExpired, ValueError):
         pass
     return 0, 0
 
@@ -124,7 +125,7 @@ def validate_iteration(iteration_num):
                     d.get("summary", "Unknown") for d in data.get("diagnostics", [])
                 ]
                 return False, errors
-        except:
+        except json.JSONDecodeError:
             return False, ["Failed to parse validation output"]
 
     return False, ["Validation failed with non-zero exit"]

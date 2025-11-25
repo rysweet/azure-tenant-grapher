@@ -347,7 +347,7 @@ class AuditLogger:
         success: bool,
         method: str,
         ip_address: str,
-        user_agent: str = None,
+        user_agent: Optional[str] = None,
     ):
         """Log authentication attempt."""
         event = {
@@ -368,7 +368,7 @@ class AuditLogger:
         resource: str,
         action: str,
         allowed: bool,
-        reason: str = None,
+        reason: Optional[str] = None,
     ):
         """Log authorization decision."""
         event = {
@@ -384,7 +384,7 @@ class AuditLogger:
         return event
 
     def log_security_violation(
-        self, violation_type: str, details: str, source_ip: str, user_id: str = None
+        self, violation_type: str, details: str, source_ip: str, user_id: Optional[str] = None
     ):
         """Log security violation."""
         event = {
@@ -400,10 +400,10 @@ class AuditLogger:
 
     def get_events(
         self,
-        event_type: str = None,
-        user_id: str = None,
-        start_time: datetime = None,
-        end_time: datetime = None,
+        event_type: Optional[str] = None,
+        user_id: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
         """Query audit events."""
         filtered = self.events
@@ -445,7 +445,7 @@ class MockAzureADClient:
         self.failed_attempts = {}
 
     def authenticate(
-        self, username: str, password: str, tenant_id: str = None
+        self, username: str, password: str, tenant_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Mock authentication flow."""
         tenant_id = tenant_id or self.config.get("tenant_id")
@@ -563,7 +563,7 @@ def simulate_brute_force_attack(
             if delay > 0:
                 time.sleep(delay)
 
-            result = client.authenticate(username, password)
+            client.authenticate(username, password)
             return True, password
         except Exception as e:
             if "locked" in str(e).lower():

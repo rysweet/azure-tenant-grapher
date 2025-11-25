@@ -169,7 +169,7 @@ class IdentityReferenceExtractor:
         # Check workflow parameters for managed identity connections
         parameters = properties.get("parameters", {})
         if isinstance(parameters, dict):
-            for param_name, param_value in parameters.items():
+            for _param_name, param_value in parameters.items():
                 if (
                     isinstance(param_value, dict)
                     and param_value.get("type") == "ManagedServiceIdentity"

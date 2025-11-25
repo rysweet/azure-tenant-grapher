@@ -61,7 +61,7 @@ class TestTerraformEmitterIdentities:
             assert len(user_resources) > 0, "No azuread_user resources found"
 
             # Check the first user resource
-            user_key = list(user_resources.keys())[0]
+            user_key = next(iter(user_resources.keys()))
             user_config = user_resources[user_key]
 
             # Verify required properties
@@ -122,7 +122,7 @@ class TestTerraformEmitterIdentities:
             assert len(group_resources) > 0, "No azuread_group resources found"
 
             # Check the first group resource
-            group_key = list(group_resources.keys())[0]
+            group_key = next(iter(group_resources.keys()))
             group_config = group_resources[group_key]
 
             # Verify required properties

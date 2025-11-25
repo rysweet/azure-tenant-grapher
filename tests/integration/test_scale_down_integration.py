@@ -29,7 +29,6 @@ import yaml
 from neo4j import GraphDatabase
 
 from src.services.scale_down_service import QualityMetrics, ScaleDownService
-from src.utils.session_manager import Neo4jSessionManager
 
 
 @pytest.fixture(scope="module")
@@ -269,7 +268,7 @@ class TestNeo4jToNetworkXIntegration:
             assert len(node_properties) == 50
 
             # Verify all nodes have required properties
-            for node_id, props in node_properties.items():
+            for _node_id, props in node_properties.items():
                 assert "id" in props
                 assert "type" in props
                 assert "tenant_id" in props

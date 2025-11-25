@@ -350,7 +350,7 @@ class TestManagedIdentityTranslation:
 
             # Verify identity reference uses Terraform reference (not resource ID)
             vm_resources = terraform_config["resource"]["azurerm_linux_virtual_machine"]
-            vm_resource = list(vm_resources.values())[0]
+            vm_resource = next(iter(vm_resources.values()))
 
             if "identity" in vm_resource:
                 identity_config = vm_resource["identity"]
@@ -423,7 +423,7 @@ class TestEntraIDTranslation:
             # Verify Key Vault was emitted
             assert "azurerm_key_vault" in terraform_config["resource"]
             kv_resources = terraform_config["resource"]["azurerm_key_vault"]
-            kv_resource = list(kv_resources.values())[0]
+            kv_resource = next(iter(kv_resources.values()))
 
             # Verify tenant_id is set
             assert "tenant_id" in kv_resource
@@ -503,7 +503,7 @@ class TestImportIntegration:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             out_dir = Path(temp_dir)
-            written_files = emitter.emit(
+            emitter.emit(
                 graph, out_dir, subscription_id=target_subscription_id
             )
 

@@ -29,7 +29,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 # Configuration
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = REPO_ROOT / "demos"
 STATUS_FILE = DEMOS_DIR / "autonomous_replication_status.json"
 IMESSAGE_TOOL = Path.home() / ".local/bin/imessR"
@@ -324,7 +325,7 @@ class WorkstreamOrchestrator:
                     if diag.get("severity") == "error":
                         errors.append(diag.get("summary", "Unknown error"))
                 return False, errors
-            except:
+            except json.JSONDecodeError:
                 return False, [stderr[:500]]
 
     def deploy_iteration(self, iteration_num: int) -> bool:

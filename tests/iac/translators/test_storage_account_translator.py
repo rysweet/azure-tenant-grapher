@@ -190,7 +190,7 @@ class TestStorageAccountTranslator:
             "primary_connection_string": "DefaultEndpointsProtocol=https;AccountName=missing_account;AccountKey=xxx",
         }
 
-        translated = translator.translate(resource)
+        translator.translate(resource)
 
         # Get results
         results = translator.get_translation_results()

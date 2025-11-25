@@ -19,7 +19,8 @@ SOURCE_SUB = "9b00bc5e-9abc-45de-9958-02a9d9277b16"
 TARGET_TENANT = "DefenderATEVET12"
 TARGET_SUB = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
 
-REPO_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
 DEMOS_DIR = REPO_ROOT / "demos"
 IMESS_R = Path.home() / ".local/bin/imessR"
 
@@ -137,7 +138,7 @@ driver.close()
                     try:
                         val_data = json.loads(val_result.stdout)
                         validation_passed = val_data.get("valid", False)
-                    except:
+                    except json.JSONDecodeError:
                         pass
 
             # Calculate fidelity
@@ -232,7 +233,7 @@ driver.close()
                             d.get("summary", "Unknown error")
                             for d in data.get("diagnostics", [])
                         ]
-                except:
+                except json.JSONDecodeError:
                     pass
             else:
                 errors = ["Validation failed with non-zero exit code"]

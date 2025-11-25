@@ -18,7 +18,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # Configure logging
-log_dir = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher/logs")
+# Dynamically determine repo root from script location
+REPO_ROOT = Path(__file__).parent.parent.resolve()
+log_dir = REPO_ROOT / "logs"
 log_dir.mkdir(exist_ok=True)
 
 logging.basicConfig(
@@ -36,7 +38,8 @@ class ContinuousReplicationEngine:
     """Master engine that orchestrates tenant replication continuously."""
 
     def __init__(self):
-        self.repo_root = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+        # Dynamically determine repo root from script location
+        self.repo_root = Path(__file__).parent.parent.resolve()
         self.demos_dir = self.repo_root / "demos"
         self.objective_file = self.demos_dir / "OBJECTIVE.md"
         self.state_file = self.demos_dir / "engine_state.json"
@@ -183,7 +186,7 @@ print(count)
                     self.state["phases"]["source_scanned"] = True
                     self._save_state()
                     return True
-            except:
+            except (ValueError, json.JSONDecodeError):
                 pass
 
         # Need to scan - switch to source tenant and scan
@@ -318,7 +321,7 @@ print(count)
                     result = json.loads(stdout)
                     if "diagnostics" in result:
                         errors = result["diagnostics"]
-            except:
+            except json.JSONDecodeError:
                 errors = [{"detail": stderr}]
 
             logger.warning(f"⚠️ Validation failed with {len(errors)} errors")
@@ -470,7 +473,7 @@ print(count)
                     self.state["phases"]["target_scanned"] = True
                     self._save_state()
                     return True
-                except:
+                except ValueError:
                     pass
 
         logger.warning("Target scan completed but couldn't get resource count")

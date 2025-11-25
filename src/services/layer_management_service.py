@@ -654,7 +654,7 @@ class LayerManagementService:
             raise LayerNotFoundError(layer_id)
 
         # Check if locked (unless we're unlocking it)
-        if layer.is_locked and is_locked != False:
+        if layer.is_locked and is_locked:
             raise LayerLockedError(layer_id)
 
         # Build SET clauses

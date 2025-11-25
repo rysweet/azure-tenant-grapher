@@ -278,7 +278,7 @@ class TestTerraformEmitterIntegration:
             assert len(acr_resources) > 0
 
             # Get the first (and should be only) Container Registry resource
-            acr_resource_name = list(acr_resources.keys())[0]
+            acr_resource_name = next(iter(acr_resources.keys()))
             acr_config = acr_resources[acr_resource_name]
 
             # Verify the name in the generated Terraform code

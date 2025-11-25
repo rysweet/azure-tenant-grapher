@@ -9,7 +9,7 @@ import base64
 import json
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import jwt
 import pytest
@@ -23,7 +23,7 @@ from tests.e2e.auth_security.security_utils import (
 class TokenManager:
     """Mock token manager for testing token lifecycle."""
 
-    def __init__(self, encryption_key: bytes = None):
+    def __init__(self, encryption_key: Optional[bytes] = None):
         self.tokens = {}
         self.refresh_tokens = {}
         self.revoked_tokens = set()
@@ -32,7 +32,7 @@ class TokenManager:
         self.audit_logger = AuditLogger()
 
     def generate_token(
-        self, user_id: str, scopes: list = None, expires_in: int = 3600
+        self, user_id: str, scopes: Optional[list] = None, expires_in: int = 3600
     ) -> Dict[str, Any]:
         """Generate new access and refresh tokens."""
         import secrets
@@ -247,7 +247,7 @@ class TestTokenManagement:
         refresh_token = initial_data["refresh_token"]
 
         # First refresh should succeed
-        new_data = manager.refresh_token(refresh_token)
+        manager.refresh_token(refresh_token)
 
         # Attempting to use the same refresh token again should fail
         with pytest.raises(ValueError) as exc_info:
@@ -499,11 +499,11 @@ class TestTokenManagement:
 
     def test_token_binding_to_client(self):
         """Test that tokens are bound to specific clients/devices."""
-        manager = TokenManager()
+        TokenManager()
 
         # Extend token data with client binding
         class ClientBoundTokenManager(TokenManager):
-            def generate_token(self, user_id: str, client_id: str = None, **kwargs):
+            def generate_token(self, user_id: str, client_id: Optional[str] = None, **kwargs):
                 token_data = super().generate_token(user_id, **kwargs)
                 token_data["client_id"] = client_id
                 token_data["client_fingerprint"] = self._generate_fingerprint(client_id)

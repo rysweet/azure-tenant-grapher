@@ -78,7 +78,6 @@ class TestUndeployTab:
         assert await resource_items.count() == 3
 
         # Check resource details
-        first_resource = resource_items.first
         # await expect(first_resource).to_contain_text("test-resource-group")
         # await expect(first_resource).to_contain_text("ResourceGroup")
 
@@ -285,7 +284,7 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n""",
         await page.click("[data-testid='confirm-delete-btn']")
 
         # Check progress bar
-        progress_bar = page.locator("[data-testid='progress-bar']")
+        page.locator("[data-testid='progress-bar']")
         # await expect(progress_bar).to_be_visible()
 
         # Verify progress updates
@@ -294,7 +293,7 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n""",
         # await expect(progress_bar).to_have_attribute("aria-valuenow", "100", timeout=5000)
 
         # Check status messages
-        status_message = page.locator("[data-testid='progress-message']")
+        page.locator("[data-testid='progress-message']")
         # await expect(status_message).to_contain_text("Complete")
 
     @pytest.mark.asyncio
@@ -380,7 +379,7 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n""",
         assert filtered_count < initial_count
 
         for i in range(filtered_count):
-            item = filtered_items.nth(i)
+            filtered_items.nth(i)
             # await expect(item).to_contain_text("VirtualMachine")
 
         # Clear filter
@@ -485,10 +484,10 @@ data: {"progress": 100, "message": "Complete", "success": true}\n\n""",
 
         # First item should be undoable
         first_item = history_items.first
-        undo_btn = first_item.locator("[data-testid='undo-operation-btn']")
+        first_item.locator("[data-testid='undo-operation-btn']")
         # await expect(undo_btn).to_be_visible()
 
         # Second item should not be undoable
         second_item = history_items.nth(1)
-        undo_btn_disabled = second_item.locator("[data-testid='undo-operation-btn']")
+        second_item.locator("[data-testid='undo-operation-btn']")
         # await expect(undo_btn_disabled).not_to_be_visible()

@@ -1,9 +1,11 @@
 """Test subscription ID abstraction in dual-graph role assignments (Bug #59)."""
 import json
+from unittest.mock import MagicMock, Mock
+
 import pytest
+
 from src.resource_processor import ResourceProcessor
 from src.services.id_abstraction_service import IDAbstractionService
-from unittest.mock import Mock, MagicMock
 
 
 class TestSubscriptionIDAbstraction:

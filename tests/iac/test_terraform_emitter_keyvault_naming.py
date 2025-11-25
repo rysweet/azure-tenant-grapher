@@ -40,7 +40,7 @@ class TestKeyVaultNaming:
         assert "azurerm_key_vault" in config["resource"], "azurerm_key_vault not found in config"
         vault_resources = config["resource"]["azurerm_key_vault"]
         # Get first vault (there should be at least one)
-        vault_name = list(vault_resources.values())[0]["name"] if vault_resources else None
+        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
         assert vault_name, "No key vault resource found"
 
         # Name should start with original name and have suffix
@@ -81,7 +81,7 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = list(vault_resources.values())[0]["name"] if vault_resources else None
+        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
@@ -119,7 +119,7 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = list(vault_resources.values())[0]["name"] if vault_resources else None
+        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
@@ -154,7 +154,7 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = list(vault_resources.values())[0]["name"] if vault_resources else None
+        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
@@ -193,7 +193,7 @@ class TestKeyVaultNaming:
         # Find the app service resource
         if "azurerm_linux_web_app" in config["resource"]:
             web_resources = config["resource"]["azurerm_linux_web_app"]
-            web_name = list(web_resources.values())[0]["name"] if web_resources else None
+            web_name = next(iter(web_resources.values()))["name"] if web_resources else None
             assert web_name, "No web app resource found"
             # Name should start with original long name (not truncated like Key Vault would)
             assert web_name.startswith(long_name)

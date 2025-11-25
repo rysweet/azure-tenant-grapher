@@ -18,13 +18,11 @@ Metrics Collected:
 - Batch processing efficiency
 """
 
-import asyncio
 import logging
 import os
 from typing import Dict, List
 
 import pytest
-from neo4j import GraphDatabase
 
 from src.services.scale_performance import (
     AdaptiveBatchSizer,
@@ -239,7 +237,7 @@ class TestScaleUpPerformance:
         tenant_id = "perf-test-small"
 
         # Create base resources
-        base_ids = await create_base_resources(session_manager, tenant_id, 100)
+        await create_base_resources(session_manager, tenant_id, 100)
 
         # Create service with performance monitoring
         service = ScaleUpService(
@@ -269,7 +267,7 @@ class TestScaleUpPerformance:
         tenant_id = "perf-test-medium"
 
         # Create base resources
-        base_ids = await create_base_resources(session_manager, tenant_id, 1000)
+        await create_base_resources(session_manager, tenant_id, 1000)
 
         service = ScaleUpService(
             session_manager,
@@ -297,7 +295,7 @@ class TestScaleUpPerformance:
         tenant_id = "perf-test-large"
 
         # Create base resources
-        base_ids = await create_base_resources(session_manager, tenant_id, 5000)
+        await create_base_resources(session_manager, tenant_id, 5000)
 
         service = ScaleUpService(
             session_manager,

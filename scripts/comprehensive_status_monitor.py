@@ -13,7 +13,8 @@ from datetime import datetime
 from pathlib import Path
 
 IMESSAGE_TOOL = Path.home() / ".local" / "bin" / "imessR"
-PROJECT_ROOT = Path("/Users/ryan/src/msec/atg-0723/azure-tenant-grapher")
+# Dynamically determine project root from script location
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 STATUS_FILE = PROJECT_ROOT / "demos" / "autonomous_loop_status.json"
 
 
@@ -34,7 +35,7 @@ def get_process_count(pattern):
             ["pgrep", "-f", pattern], capture_output=True, timeout=5
         )
         return len(result.stdout.decode().strip().split("\n")) if result.stdout else 0
-    except:
+    except Exception:
         return 0
 
 

@@ -5,16 +5,12 @@ Tests that the DependencyValidator is properly integrated into the
 IaC generation pipeline and correctly validates generated Terraform configurations.
 """
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
-
 from src.iac.emitters.terraform_emitter import TerraformEmitter
 from src.iac.traverser import TenantGraph
-from src.iac.validators.dependency_validator import DependencyValidator
 
 
 class TestDependencyValidatorIntegration:
@@ -51,7 +47,7 @@ class TestDependencyValidatorIntegration:
                 mock_validator_class.return_value = mock_validator
 
                 # Generate IaC
-                written_files = emitter.emit(graph, out_dir)
+                emitter.emit(graph, out_dir)
 
                 # Verify DependencyValidator was instantiated
                 mock_validator_class.assert_called_once()
@@ -104,7 +100,7 @@ class TestDependencyValidatorIntegration:
                 # Patch logger to capture error messages
                 with patch("src.iac.emitters.terraform_emitter.logger") as mock_logger:
                     # Generate IaC
-                    written_files = emitter.emit(graph, out_dir)
+                    emitter.emit(graph, out_dir)
 
                     # Verify error was logged
                     error_calls = [
@@ -152,7 +148,7 @@ class TestDependencyValidatorIntegration:
                 # Patch logger to capture warning messages
                 with patch("src.iac.emitters.terraform_emitter.logger") as mock_logger:
                     # Generate IaC
-                    written_files = emitter.emit(graph, out_dir)
+                    emitter.emit(graph, out_dir)
 
                     # Verify warning was logged
                     warning_calls = [
@@ -199,7 +195,7 @@ class TestDependencyValidatorIntegration:
                 # Patch logger to capture info messages
                 with patch("src.iac.emitters.terraform_emitter.logger") as mock_logger:
                     # Generate IaC
-                    written_files = emitter.emit(graph, out_dir)
+                    emitter.emit(graph, out_dir)
 
                     # Verify success message was logged
                     info_calls = [call for call in mock_logger.info.call_args_list if call]

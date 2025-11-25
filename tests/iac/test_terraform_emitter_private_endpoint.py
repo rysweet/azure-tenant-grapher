@@ -258,7 +258,7 @@ def test_private_endpoint_service_connection_extracted(
 
     connection = connections[0]
     assert connection["name"] == "KeyVaultConnection"
-    assert connection["is_manual_connection"] == False
+    assert not connection["is_manual_connection"]
     assert "private_connection_resource_id" in connection
     assert "test-kv" in connection["private_connection_resource_id"]
     assert "subresource_names" in connection
@@ -439,7 +439,7 @@ def test_vnet_link_registration_enabled_flag(
     # Should not have registration_enabled if false (default)
     # Only add if true
     if "registration_enabled" in resource_config:
-        assert resource_config["registration_enabled"] == True
+        assert resource_config["registration_enabled"]
 
 
 # ============================================================================
