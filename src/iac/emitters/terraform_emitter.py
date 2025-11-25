@@ -241,23 +241,24 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
         # Additional supported types discovered during tenant replication (Iteration 19+)
         "Microsoft.Network/routeTables": "azurerm_route_table",
-        "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",
-        "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",
+        # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
+        # "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # Missing: sku
+        # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
         "Microsoft.Purview/accounts": "azurerm_purview_account",
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",
         "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
-        "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",
+        # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
         "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",
-        "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",
+        # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
-        "Microsoft.Compute/galleries/images": "azurerm_shared_image",
-        "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
+        # "Microsoft.Compute/galleries/images": "azurerm_shared_image",  # Missing: gallery_name, os_type
+        # "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Missing: frequency, severity, scope_resource_ids, detector_type (31 instances!)
         "Microsoft.Web/staticSites": "azurerm_static_web_app",
-        "Microsoft.App/jobs": "azurerm_container_app_job",
+        # "Microsoft.App/jobs": "azurerm_container_app_job",  # Missing: container_app_environment_id
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
         # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
         # Microsoft.MachineLearningServices/workspaces/serverlessEndpoints - No direct Terraform equivalent yet, will be skipped
