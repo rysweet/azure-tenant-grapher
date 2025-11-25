@@ -186,6 +186,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
         "microsoft.insights/components": "azurerm_application_insights",
+        "Microsoft.Insights/components": "azurerm_application_insights",  # Proper-case variant
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # DevTestLab resources
@@ -208,6 +209,7 @@ class TerraformEmitter(IaCEmitter):
         # Additional resource types found in full tenant scan
         "microsoft.insights/actiongroups": "azurerm_monitor_action_group",
         "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
+        "Microsoft.Insights/actiongroups": "azurerm_monitor_action_group",  # Proper-case variant (lowercase 'groups')
         "Microsoft.Search/searchServices": "azurerm_search_service",
         "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
