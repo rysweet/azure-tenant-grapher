@@ -244,14 +244,14 @@ class TerraformEmitter(IaCEmitter):
         # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
         "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # NOW HAS EMITTER (added SKU handler)
         # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
-        "Microsoft.Purview/accounts": "azurerm_purview_account",
+        # "Microsoft.Purview/accounts": "azurerm_purview_account",  # Missing: identity block (Iteration 26)
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         # "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # Missing: storage_data_lake_gen2_filesystem_id, sql_administrator_login (Iteration 23)
         # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
         # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
-        "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",
+        # "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Missing: data_source_id, frequency, time_window, query, action, trigger (Iteration 26)
         # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",

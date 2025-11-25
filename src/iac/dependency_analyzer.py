@@ -204,17 +204,28 @@ class DependencyAnalyzer:
     def _sanitize_terraform_name(self, name: str) -> str:
         """Sanitize resource name for Terraform compatibility.
 
+        This MUST match terraform_emitter._sanitize_terraform_name() exactly
+        to ensure depends_on references match resource names (Bug #66 fix).
+
         Args:
             name: Original resource name
 
         Returns:
-            Sanitized name safe for Terraform
+            Sanitized name safe for Terraform (max 80 chars for Azure NICs)
         """
         import re
+        import hashlib
 
         sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
         if sanitized and sanitized[0].isdigit():
             sanitized = f"resource_{sanitized}"
+
+        # Bug #66 fix: Must truncate to 80 chars to match terraform_emitter.py
+        # Keep first 75 chars + hash of full name for uniqueness
+        if len(sanitized) > 80:
+            name_hash = hashlib.md5(sanitized.encode()).hexdigest()[:5]
+            sanitized = sanitized[:74] + "_" + name_hash
+            logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
         return sanitized or "unnamed_resource"
