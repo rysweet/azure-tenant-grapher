@@ -255,11 +255,13 @@ worktrees/
 .claude-trace/
 .claude/runtime/
 .claude/settings.json
-.claude/agents/
 .claude/commands/
 .claude/context/
 .claude/tools/
 .claude/workflow/
+# Allow checked-in agents (goal-seeking patterns)
+!.claude/agents/
+!.claude/agents/**
 
 # Terraform
 **/.terraform/*
