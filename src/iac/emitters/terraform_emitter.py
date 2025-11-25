@@ -170,6 +170,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
         "Microsoft.Compute/disks": "azurerm_managed_disk",
         "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
+        "microsoft.compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",  # Lowercase variant
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
         "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
         "Microsoft.Network/subnets": "azurerm_subnet",
@@ -185,6 +186,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
+        "microsoft.operationalinsights/workspaces": "azurerm_log_analytics_workspace",  # Lowercase variant
         "microsoft.insights/components": "azurerm_application_insights",
         "Microsoft.Insights/components": "azurerm_application_insights",  # Proper-case variant
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
@@ -204,6 +206,8 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
         "microsoft.insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",  # Lowercase variant
         "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
+        "microsoft.insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",  # Lowercase variant
+        "microsoft.insights/metricalerts": "azurerm_monitor_metric_alert",  # Lowercase variant
         "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Additional resource types found in full tenant scan
