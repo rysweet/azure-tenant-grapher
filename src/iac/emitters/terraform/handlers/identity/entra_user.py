@@ -41,6 +41,21 @@ class EntraUserHandler(ResourceHandler):
         """Convert Entra ID user to Terraform configuration."""
         resource_name = resource.get("name", "unknown")
 
+        # Skip users in same-tenant deployments (Issue #496 Problem #2)
+        # Users already exist in target tenant - cannot recreate them
+        is_same_tenant = (
+            context.source_tenant_id and
+            context.target_tenant_id and
+            context.source_tenant_id == context.target_tenant_id
+        )
+
+        if is_same_tenant:
+            logger.debug(
+                f"Skipping Entra ID user '{resource_name}' in same-tenant deployment: "
+                f"Users already exist in target tenant"
+            )
+            return None
+
         # Get UPN with sanitization
         raw_upn = resource.get("userPrincipalName") or resource.get("name", "unknown")
         upn = self._sanitize_upn(raw_upn)
