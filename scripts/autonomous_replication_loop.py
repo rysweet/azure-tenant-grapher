@@ -302,10 +302,16 @@ Do not stop until the gap is fixed.
         with open(ws_dir / "prompt.txt", "w") as f:
             f.write(prompt)
 
-        # Launch agent in background
+        # Launch agent in background (Popen is already async, no shell needed)
         log_file = ws_dir / "output.log"
-        cmd = f"copilot --allow-all-tools -p '{prompt}' > {log_file} 2>&1 &"
-        subprocess.Popen(cmd, shell=True, cwd=PROJECT_ROOT)
+        # Use list-based command to avoid shell injection (Issue #477)
+        with open(log_file, "w") as log_f:
+            subprocess.Popen(
+                ["copilot", "--allow-all-tools", "-p", prompt],
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+                cwd=PROJECT_ROOT,
+            )
 
         self.workstreams.append(
             {

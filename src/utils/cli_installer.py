@@ -1,4 +1,5 @@
 import platform
+import shlex
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -61,6 +62,30 @@ def _is_interactive_mode() -> bool:
         return False
 
 
+def _run_command_safely(cmd_string: str) -> None:
+    """Run a command string safely without shell=True.
+
+    Handles commands with && by splitting and running sequentially.
+    Uses shlex.split() to parse command arguments safely.
+
+    Args:
+        cmd_string: Command string from trusted registry (NOT user input)
+
+    Raises:
+        subprocess.CalledProcessError: If any command fails
+    """
+    # Split on && to handle chained commands (e.g., "apt update && apt install")
+    # This is safe because commands come from our trusted TOOL_REGISTRY
+    commands = [c.strip() for c in cmd_string.split("&&")]
+
+    for cmd in commands:
+        if not cmd:
+            continue
+        # Use shlex.split to properly parse the command into arguments
+        args = shlex.split(cmd)
+        subprocess.run(args, check=True)
+
+
 def install_tool(tool: str, non_interactive: bool = False) -> bool:
     """Prompt user to install the tool using the detected package manager.
     Returns True if install attempted, False if declined or not possible.
@@ -95,7 +120,8 @@ def install_tool(tool: str, non_interactive: bool = False) -> bool:
     if proceed == "y":
         print(cmd)
         try:
-            subprocess.run(cmd, shell=True, check=True)
+            # Use _run_command_safely to avoid shell=True (Issue #477)
+            _run_command_safely(cmd)
             print(f"Successfully installed {tool}.")
         except subprocess.CalledProcessError:
             print(f"Failed to install {tool}.")

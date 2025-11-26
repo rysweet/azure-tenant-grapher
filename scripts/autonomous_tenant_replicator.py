@@ -106,9 +106,10 @@ class AutonomousTenantReplicator:
     def send_imessage(self, message: str):
         """Send iMessage update"""
         try:
+            # Expand ~ to home directory for security (avoid shell=True)
+            imess_path = os.path.expanduser("~/.local/bin/imessR")
             subprocess.run(
-                ["~/.local/bin/imessR", message],
-                shell=True,
+                [imess_path, message],
                 capture_output=True,
                 timeout=5,
             )
