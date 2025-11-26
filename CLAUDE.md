@@ -364,6 +364,23 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Evidence**: StorageAccountTranslator processed all 91/91 successfully, but Terraform requires account_kind for deployment.
 
+### Bug #70: Missing smartDetectorAlertRules Emitter Support ⭐
+**Status**: FIXED (commit 46647e5)
+**Impact**: +31 resources unlocked (0.4% improvement)
+
+**Problem**: 31 Azure smartDetectorAlertRules were being skipped because type mapping was commented out in terraform_emitter.py.
+
+**Root Cause**: Missing field mappings for required Terraform fields (frequency, severity, scope_resource_ids, detector_type, action_group).
+
+**Solution**:
+1. Uncommented type mapping at line 262
+2. Added field mapping logic at lines 1725-1746
+
+**Files Modified**:
+- `src/iac/emitters/terraform_emitter.py:262,1725-1746`
+
+**Testing**: Quick win - ready for next IaC generation. GitHub Issue: #500
+
 
 ## Recent Code Improvements (November 2025)
 
