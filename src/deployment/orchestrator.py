@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional
 
+from src.timeout_config import Timeouts, log_timeout_event
+
 if TYPE_CHECKING:
     from src.deployment.deployment_dashboard import DeploymentDashboard
 
@@ -79,13 +81,27 @@ def deploy_terraform(
         dashboard.update_phase("init")
         dashboard.log_info("Initializing Terraform...")
 
-    result = subprocess.run(
-        ["terraform", "init"],
-        cwd=iac_dir,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            ["terraform", "init"],
+            cwd=iac_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=Timeouts.TERRAFORM_INIT,
+        )
+    except subprocess.TimeoutExpired as e:
+        log_timeout_event(
+            "terraform_init", Timeouts.TERRAFORM_INIT, ["terraform", "init"]
+        )
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(
+                f"Terraform init timed out after {Timeouts.TERRAFORM_INIT}s"
+            )
+        raise RuntimeError(
+            f"Terraform init timed out after {Timeouts.TERRAFORM_INIT} seconds"
+        ) from e
 
     if dashboard:
         for line in result.stdout.splitlines():
@@ -107,13 +123,27 @@ def deploy_terraform(
             dashboard.update_phase("plan")
             dashboard.log_info("Running terraform plan (dry-run)...")
 
-        result = subprocess.run(
-            ["terraform", "plan", "-input=false"],
-            cwd=iac_dir,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            result = subprocess.run(
+                ["terraform", "plan", "-input=false"],
+                cwd=iac_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=Timeouts.TERRAFORM_PLAN,
+            )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event(
+                "terraform_plan", Timeouts.TERRAFORM_PLAN, ["terraform", "plan"]
+            )
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(
+                    f"Terraform plan timed out after {Timeouts.TERRAFORM_PLAN}s"
+                )
+            raise RuntimeError(
+                f"Terraform plan timed out after {Timeouts.TERRAFORM_PLAN} seconds"
+            ) from e
 
         if dashboard:
             for line in result.stdout.splitlines():
@@ -150,13 +180,27 @@ def deploy_terraform(
         dashboard.update_phase("apply")
         dashboard.log_info("Applying Terraform changes...")
 
-    result = subprocess.run(
-        ["terraform", "apply", "-auto-approve", "-input=false"],
-        cwd=iac_dir,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            ["terraform", "apply", "-auto-approve", "-input=false"],
+            cwd=iac_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=Timeouts.TERRAFORM_APPLY,
+        )
+    except subprocess.TimeoutExpired as e:
+        log_timeout_event(
+            "terraform_apply", Timeouts.TERRAFORM_APPLY, ["terraform", "apply"]
+        )
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(
+                f"Terraform apply timed out after {Timeouts.TERRAFORM_APPLY}s"
+            )
+        raise RuntimeError(
+            f"Terraform apply timed out after {Timeouts.TERRAFORM_APPLY} seconds"
+        ) from e
 
     if dashboard:
         resources_applied = 0
@@ -257,7 +301,24 @@ def deploy_bicep(
         if subscription_id:
             cmd.extend(["--subscription", subscription_id])
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=Timeouts.BICEP_VALIDATE,
+            )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event("bicep_validate", Timeouts.BICEP_VALIDATE, cmd)
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(
+                    f"Bicep validation timed out after {Timeouts.BICEP_VALIDATE}s"
+                )
+            raise RuntimeError(
+                f"Bicep validation timed out after {Timeouts.BICEP_VALIDATE} seconds"
+            ) from e
 
         if dashboard:
             for line in result.stdout.splitlines():
@@ -301,7 +362,24 @@ def deploy_bicep(
     if subscription_id:
         cmd.extend(["--subscription", subscription_id])
 
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=Timeouts.BICEP_DEPLOY,
+        )
+    except subprocess.TimeoutExpired as e:
+        log_timeout_event("bicep_deploy", Timeouts.BICEP_DEPLOY, cmd)
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(
+                f"Bicep deployment timed out after {Timeouts.BICEP_DEPLOY}s"
+            )
+        raise RuntimeError(
+            f"Bicep deployment timed out after {Timeouts.BICEP_DEPLOY} seconds"
+        ) from e
 
     if dashboard:
         for line in result.stdout.splitlines():
@@ -399,7 +477,24 @@ def deploy_arm(
         if subscription_id:
             cmd.extend(["--subscription", subscription_id])
 
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=Timeouts.ARM_VALIDATE,
+            )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event("arm_validate", Timeouts.ARM_VALIDATE, cmd)
+            if dashboard:
+                dashboard.update_phase("failed")
+                dashboard.add_error(
+                    f"ARM validation timed out after {Timeouts.ARM_VALIDATE}s"
+                )
+            raise RuntimeError(
+                f"ARM validation timed out after {Timeouts.ARM_VALIDATE} seconds"
+            ) from e
 
         if dashboard:
             for line in result.stdout.splitlines():
@@ -443,7 +538,24 @@ def deploy_arm(
     if subscription_id:
         cmd.extend(["--subscription", subscription_id])
 
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=Timeouts.ARM_DEPLOY,
+        )
+    except subprocess.TimeoutExpired as e:
+        log_timeout_event("arm_deploy", Timeouts.ARM_DEPLOY, cmd)
+        if dashboard:
+            dashboard.update_phase("failed")
+            dashboard.add_error(
+                f"ARM deployment timed out after {Timeouts.ARM_DEPLOY}s"
+            )
+        raise RuntimeError(
+            f"ARM deployment timed out after {Timeouts.ARM_DEPLOY} seconds"
+        ) from e
 
     if dashboard:
         for line in result.stdout.splitlines():
@@ -511,12 +623,21 @@ def deploy_iac(
 
     # Smart tenant authentication handling
     # Check current authentication status
-    current_tenant_result = subprocess.run(
-        ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        current_tenant_result = subprocess.run(
+            ["az", "account", "show", "--query", "tenantId", "-o", "tsv"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=Timeouts.AZ_CLI_QUERY,
+        )
+    except subprocess.TimeoutExpired as e:
+        log_timeout_event(
+            "az_account_show", Timeouts.AZ_CLI_QUERY, ["az", "account", "show"]
+        )
+        raise RuntimeError(
+            f"Azure account check timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+        ) from e
 
     current_tenant = (
         current_tenant_result.stdout.strip()
@@ -531,32 +652,56 @@ def deploy_iac(
         logger.info(
             f"Switching to subscription {subscription_id} in tenant {target_tenant_id}..."
         )
-        switch_result = subprocess.run(
-            ["az", "account", "set", "--subscription", subscription_id],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if switch_result.returncode != 0:
-            logger.warning(f"Subscription switch failed: {switch_result.stderr}")
-            logger.info("Attempting interactive login...")
-            auth_result = subprocess.run(
-                ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+        try:
+            switch_result = subprocess.run(
+                ["az", "account", "set", "--subscription", subscription_id],
                 capture_output=True,
                 text=True,
                 check=False,
+                timeout=Timeouts.AZ_CLI_QUERY,
             )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event(
+                "az_account_set", Timeouts.AZ_CLI_QUERY, ["az", "account", "set"]
+            )
+            raise RuntimeError(
+                f"Azure subscription switch timed out after {Timeouts.AZ_CLI_QUERY} seconds"
+            ) from e
+
+        if switch_result.returncode != 0:
+            logger.warning(f"Subscription switch failed: {switch_result.stderr}")
+            logger.info("Attempting interactive login...")
+            try:
+                auth_result = subprocess.run(
+                    ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=Timeouts.STANDARD,
+                )
+            except subprocess.TimeoutExpired as e:
+                log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
+                raise RuntimeError(
+                    f"Azure login timed out after {Timeouts.STANDARD} seconds"
+                ) from e
             if auth_result.returncode != 0:
                 raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
     else:
         # No subscription ID provided, attempt login
         logger.info(f"Authenticating to tenant {target_tenant_id}...")
-        auth_result = subprocess.run(
-            ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            auth_result = subprocess.run(
+                ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=Timeouts.STANDARD,
+            )
+        except subprocess.TimeoutExpired as e:
+            log_timeout_event("az_login", Timeouts.STANDARD, ["az", "login"])
+            raise RuntimeError(
+                f"Azure login timed out after {Timeouts.STANDARD} seconds"
+            ) from e
         if auth_result.returncode != 0:
             logger.warning(f"Azure login may have failed: {auth_result.stderr}")
             # Don't raise - may already be authenticated
