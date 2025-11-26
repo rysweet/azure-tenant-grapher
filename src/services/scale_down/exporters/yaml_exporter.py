@@ -8,8 +8,10 @@ Includes nodes, relationships, and metadata.
 import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, Set
+
 import networkx as nx
 import yaml
+
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)
@@ -34,7 +36,7 @@ class YamlExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to YAML format.

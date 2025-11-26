@@ -165,9 +165,7 @@ class TestBaseScaleService:
         assert tenant_info["domain"] == "test.com"
 
     @pytest.mark.asyncio
-    async def test_get_tenant_info_not_found(
-        self, base_service, mock_session_manager
-    ):
+    async def test_get_tenant_info_not_found(self, base_service, mock_session_manager):
         """Test retrieving tenant info when tenant doesn't exist."""
         session = mock_session_manager.session.return_value.__enter__.return_value
         result_mock = MagicMock()

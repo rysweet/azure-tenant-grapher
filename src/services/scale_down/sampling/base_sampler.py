@@ -6,7 +6,8 @@ All samplers inherit from BaseSampler and implement the sample() method.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Set
+from typing import Callable, Optional, Set
+
 import networkx as nx
 
 
@@ -24,7 +25,7 @@ class BaseSampler(ABC):
         self,
         graph: nx.DiGraph,
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample nodes from the graph.

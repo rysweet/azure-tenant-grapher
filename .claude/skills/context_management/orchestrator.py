@@ -24,7 +24,9 @@ class ContextManagementOrchestrator:
         rehydrator: ContextRehydrator instance for context restoration
     """
 
-    def __init__(self, snapshot_dir: Optional[Path] = None, max_tokens: int = 1_000_000):
+    def __init__(
+        self, snapshot_dir: Optional[Path] = None, max_tokens: int = 1_000_000
+    ):
         """Initialize orchestrator with component bricks.
 
         Args:
@@ -92,7 +94,10 @@ class ContextManagementOrchestrator:
             Dict with snapshot creation results
         """
         if conversation_data is None:
-            return {"status": "error", "error": "conversation_data is required for snapshot action"}
+            return {
+                "status": "error",
+                "error": "conversation_data is required for snapshot action",
+            }
 
         # Extract context
         context = self.extractor.extract_from_conversation(conversation_data)
@@ -113,7 +118,13 @@ class ContextManagementOrchestrator:
                 "name": snapshot_data.get("name"),
                 "file_path": str(snapshot_path),
                 "token_count": snapshot_data.get("token_count", 0),
-                "components": ["requirements", "decisions", "state", "open_items", "tools_used"],
+                "components": [
+                    "requirements",
+                    "decisions",
+                    "state",
+                    "open_items",
+                    "tools_used",
+                ],
             },
             "recommendation": (
                 "Snapshot created successfully. You can now continue working and "
@@ -135,7 +146,10 @@ class ContextManagementOrchestrator:
             Dict with rehydrated context
         """
         if not snapshot_id:
-            return {"status": "error", "error": "snapshot_id is required for rehydrate action"}
+            return {
+                "status": "error",
+                "error": "snapshot_id is required for rehydrate action",
+            }
 
         # Get snapshot path
         snapshot_path = self.rehydrator.get_snapshot_path(snapshot_id)
@@ -174,7 +188,11 @@ class ContextManagementOrchestrator:
 
     def _parse_size(self, size_str: str) -> int:
         """Parse size string back to bytes."""
-        if size_str.endswith("B") and not size_str.endswith("KB") and not size_str.endswith("MB"):
+        if (
+            size_str.endswith("B")
+            and not size_str.endswith("KB")
+            and not size_str.endswith("MB")
+        ):
             return int(size_str[:-1])
         if size_str.endswith("KB"):
             return int(float(size_str[:-2]) * 1024)

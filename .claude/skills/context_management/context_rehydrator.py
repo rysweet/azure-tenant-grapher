@@ -102,7 +102,9 @@ class ContextRehydrator:
             "",
             "## Current State",
             "",
-            snapshot.implementation_state if snapshot.implementation_state else "No state recorded",
+            snapshot.implementation_state
+            if snapshot.implementation_state
+            else "No state recorded",
             "",
         ]
         return "\n".join(lines)
@@ -120,7 +122,9 @@ class ContextRehydrator:
             "",
             "## Current State",
             "",
-            snapshot.implementation_state if snapshot.implementation_state else "No state recorded",
+            snapshot.implementation_state
+            if snapshot.implementation_state
+            else "No state recorded",
             "",
         ]
 
@@ -156,7 +160,9 @@ class ContextRehydrator:
             "",
             "## Current State",
             "",
-            snapshot.implementation_state if snapshot.implementation_state else "No state recorded",
+            snapshot.implementation_state
+            if snapshot.implementation_state
+            else "No state recorded",
             "",
         ]
 

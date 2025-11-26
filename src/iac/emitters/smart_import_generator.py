@@ -153,9 +153,7 @@ class SmartImportGenerator:
                 deduplicated_import_blocks.append(import_block)
             else:
                 duplicates_removed += 1
-                logger.debug(
-                    f"Removed duplicate import block for {import_block.to}"
-                )
+                logger.debug(f"Removed duplicate import block for {import_block.to}")
 
         if duplicates_removed > 0:
             logger.info(

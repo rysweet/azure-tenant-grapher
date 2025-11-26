@@ -384,7 +384,11 @@ class AuditLogger:
         return event
 
     def log_security_violation(
-        self, violation_type: str, details: str, source_ip: str, user_id: Optional[str] = None
+        self,
+        violation_type: str,
+        details: str,
+        source_ip: str,
+        user_id: Optional[str] = None,
     ):
         """Log security violation."""
         event = {

@@ -9,7 +9,9 @@ import json
 import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, Set
+
 import networkx as nx
+
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)
@@ -34,7 +36,7 @@ class JsonExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to JSON format.

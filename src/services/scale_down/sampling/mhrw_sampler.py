@@ -11,8 +11,10 @@ Gjoka, M., Kurant, M., Butts, C. T., & Markopoulou, A. (2010).
 
 import logging
 from typing import Callable, Optional, Set
+
 import littleballoffur as lbof
 import networkx as nx
+
 from src.services.scale_down.sampling.base_sampler import BaseSampler
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ class MHRWSampler(BaseSampler):
         self,
         graph: nx.DiGraph,
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using Metropolis-Hastings Random Walk.
@@ -91,7 +93,9 @@ class MHRWSampler(BaseSampler):
             sampled_graph = sampler.sample(G_int)
 
             # Convert integer IDs back to original string IDs
-            sampled_node_ids = {int_to_node[node_id] for node_id in sampled_graph.nodes()}
+            sampled_node_ids = {
+                int_to_node[node_id] for node_id in sampled_graph.nodes()
+            }
 
             self.logger.info(f"MHRW sampling completed: {len(sampled_node_ids)} nodes")
 

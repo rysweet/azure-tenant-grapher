@@ -541,7 +541,9 @@ class DatabaseOperations:
                         )
                         if abstracted_role_def_id != role_def_id:
                             props_dict["roleDefinitionId"] = abstracted_role_def_id
-                            logger.debug(f"Abstracted subscription in roleDefinitionId for {abstracted_id}")
+                            logger.debug(
+                                f"Abstracted subscription in roleDefinitionId for {abstracted_id}"
+                            )
 
                     # Abstract scope
                     scope = props_dict.get("scope")
@@ -551,7 +553,9 @@ class DatabaseOperations:
                         )
                         if abstracted_scope != scope:
                             props_dict["scope"] = abstracted_scope
-                            logger.debug(f"Abstracted subscription in scope for {abstracted_id}")
+                            logger.debug(
+                                f"Abstracted subscription in scope for {abstracted_id}"
+                            )
 
                     # Update the abstracted_props with the modified properties
                     if isinstance(props_field, str):
@@ -1047,8 +1051,7 @@ class ResourceProcessor:
         progress_callback: Optional[Any] = None,
         progress_every: int = 50,
     ) -> ProcessingStats:
-        logger.info("[DEBUG][RP] Entered ResourceProcessor.process_resources")
-        print("[DEBUG][RP] Entered ResourceProcessor.process_resources", flush=True)
+        logger.info("Entered ResourceProcessor.process_resources")
         """
         Process all resources with retry queue, poison list, and exponential back-off.
         """
@@ -1065,7 +1068,6 @@ class ResourceProcessor:
         self.stats.total_resources = len(resources)
         if not resources:
             logger.info("INFO: No resources to process")
-            print("[DEBUG][RP] No resources to process", flush=True)
             return self.stats
 
         retry_queue = deque()
@@ -1084,44 +1086,27 @@ class ResourceProcessor:
             resource: dict[str, Any], resource_index: int, attempt: int
         ) -> bool:
             logger.info(
-                f"[DEBUG][RP] Worker started for resource {resource.get('id')} (index {resource_index}, attempt {attempt})"
-            )
-            print(
-                f"[DEBUG][RP] Worker started for resource {resource.get('id')} (index {resource_index}, attempt {attempt})",
-                flush=True,
+                "Worker started for resource {resource.get('id')} (index {resource_index}, attempt {attempt})"
             )
             try:
-                print(
-                    f"[DEBUG][RP] Awaiting process_single_resource for {resource.get('id')}",
-                    flush=True,
-                )
                 logger.info(
-                    f"[DEBUG][RP] About to await process_single_resource for {resource.get('id')}"
+                    "About to await process_single_resource for {resource.get('id')}"
                 )
                 result = await self.process_single_resource(resource, resource_index)
-                print(
-                    f"[DEBUG][RP] Returned from process_single_resource for {resource.get('id')} result={result}",
-                    flush=True,
+                logger.info(
+                    "Returned from process_single_resource for {resource.get('id')} result={result}"
                 )
                 logger.info(
-                    f"[DEBUG][RP] Returned from process_single_resource for {resource.get('id')} result={result}"
-                )
-                logger.info(
-                    f"[DEBUG][RP] Worker finished for resource {resource.get('id')} (index {resource_index}, attempt {attempt}) result={result}"
+                    "Worker finished for resource {resource.get('id')} (index {resource_index}, attempt {attempt}) result={result}"
                 )
                 return result
             except Exception as e:
                 logger.exception(
                     f"Exception in worker for resource {resource.get('id', 'Unknown')}: {e}"
                 )
-                print(
-                    f"[DEBUG][RP] Exception in worker for resource {resource.get('id', 'Unknown')}: {e}",
-                    flush=True,
-                )
                 return False
 
-        logger.info("[DEBUG][RP] Entering main processing loop")
-        print("[DEBUG][RP] Entering main processing loop", flush=True)
+        logger.info("Entering main processing loop")
         loop_counter = 0
         # --- Explicit mapping ensures robust loop tracking and deterministic cleanup ---
         # Each asyncio.Task[Any] is mapped to its associated Azure resource ID,
@@ -1132,8 +1117,7 @@ class ResourceProcessor:
         # This approach avoids introspection and enables robust, deterministic resource tracking.
 
         while main_queue or retry_queue or in_progress:
-            logger.info(f"[DEBUG][RP] Top of main loop iteration {loop_counter}")
-            print(f"[DEBUG][RP] Top of main loop iteration {loop_counter}", flush=True)
+            logger.info("Top of main loop iteration {loop_counter}")
             tasks = []
             now = time.time()
             # Fill from main queue
@@ -1144,13 +1128,7 @@ class ResourceProcessor:
                 resource_attempts[rid] = attempt
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
-                print(
-                    f"[DEBUG][RP] Scheduling worker for resource {rid} (attempt {attempt})",
-                    flush=True,
-                )
-                logger.info(
-                    f"[DEBUG][RP] Scheduling worker for resource {rid} (attempt {attempt})"
-                )
+                logger.info("Scheduling worker for resource {rid} (attempt {attempt})")
                 task = asyncio.create_task(
                     worker(resource, resource_index_counter, attempt)
                 )
@@ -1168,12 +1146,8 @@ class ResourceProcessor:
                     resource_attempts[rid] = attempt
                     resource["__attempt"] = attempt
                     resource["__id"] = rid
-                    print(
-                        f"[DEBUG][RP] Scheduling retry worker for resource {rid} (attempt {attempt})",
-                        flush=True,
-                    )
                     logger.info(
-                        f"[DEBUG][RP] Scheduling retry worker for resource {rid} (attempt {attempt})"
+                        "Scheduling retry worker for resource {rid} (attempt {attempt})"
                     )
                     task = asyncio.create_task(
                         worker(resource, resource_index_counter, attempt)
@@ -1190,44 +1164,30 @@ class ResourceProcessor:
                 if retry_queue:
                     soonest = min(next_time for _, _, next_time in retry_queue)
                     sleep_time = max(0.0, soonest - time.time())
-                    print(
-                        f"[DEBUG][RP] No tasks, sleeping for {sleep_time}s for next retry",
-                        flush=True,
-                    )
-                    logger.info(
-                        f"[DEBUG][RP] No tasks, sleeping for {sleep_time}s for next retry"
-                    )
+                    logger.info("No tasks, sleeping for {sleep_time}s for next retry")
                     await asyncio.sleep(sleep_time)
                 else:
-                    print("[DEBUG][RP] No tasks, sleeping for 0.1s", flush=True)
-                    logger.info("[DEBUG][RP] No tasks, sleeping for 0.1s")
+                    pass
+                    logger.info("No tasks, sleeping for 0.1s")
                     await asyncio.sleep(0.1)
                 loop_counter += 1
                 continue
 
             # Wait for any task to complete
-            print(f"[DEBUG][RP] Awaiting {len(tasks)} tasks", flush=True)
-            logger.info(f"[DEBUG][RP] Awaiting {len(tasks)} tasks")
+            logger.info("Awaiting {len(tasks)} tasks")
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            print(f"[DEBUG][RP] {len(done)} tasks completed", flush=True)
-            logger.info(f"[DEBUG][RP] {len(done)} tasks completed")
+            logger.info("{len(done)} tasks completed")
             for t in done:
                 # Deterministic cleanup: use explicit mapping, legacy inspection fully purged
                 rid = task_to_rid.pop(t, None)
                 # Deterministic explicit mapping—legacy task frame/coroutine inspection fully removed.
                 if rid is None:
-                    logger.warning("[DEBUG][RP] Completed task missing rid mapping")
+                    logger.warning("Completed task missing rid mapping")
                 else:
                     in_progress.discard(rid)
 
                 result = t.result()
-                print(
-                    f"[DEBUG][RP] Task for resource {rid} completed with result={result}",
-                    flush=True,
-                )
-                logger.info(
-                    f"[DEBUG][RP] Task for resource {rid} completed with result={result}"
-                )
+                logger.info("Task for resource {rid} completed with result={result}")
                 if result:
                     pass
                 else:
@@ -1244,17 +1204,13 @@ class ResourceProcessor:
                             break
                     if resource is None:
                         logger.warning(
-                            f"[DEBUG][RP] Could not reconstruct original resource object for rid={rid}; skipping retry/poison handling"
+                            "Could not reconstruct original resource object for rid={rid}; skipping retry/poison handling"
                         )
                         continue
                     if attempt < self.max_retries:
                         delay = base_delay * (2 ** (attempt - 1))
-                        print(
-                            f"[DEBUG][RP] Scheduling retry for resource {rid} in {delay}s (attempt {attempt + 1})",
-                            flush=True,
-                        )
                         logger.info(
-                            f"[DEBUG][RP] Scheduling retry for resource {rid} in {delay}s (attempt {attempt + 1})"
+                            "Scheduling retry for resource {rid} in {delay}s (attempt {attempt + 1})"
                         )
                         retry_queue.append((resource, attempt + 1, time.time() + delay))
                         resource_attempts[rid] = attempt + 1
@@ -1264,16 +1220,10 @@ class ResourceProcessor:
                     else:
                         poison_list.append(resource)
                         logger.error(f"☠️  Poisoned after {attempt} attempts: {rid}")
-                        print(
-                            f"[DEBUG][RP] Poisoned resource {rid} after {attempt} attempts",
-                            flush=True,
-                        )
-                        logger.info(
-                            f"[DEBUG][RP] Poisoned resource {rid} after {attempt} attempts"
-                        )
+                        logger.info("Poisoned resource {rid} after {attempt} attempts")
                         self.stats.failed += 1  # Only increment failed for poison
             if progress_callback:
-                logger.info("[DEBUG][RP] Calling progress_callback")
+                logger.info("Calling progress_callback")
                 progress_callback(
                     processed=self.stats.processed,
                     total=self.stats.total_resources,
@@ -1289,17 +1239,12 @@ class ResourceProcessor:
                     f"({self.stats.progress_percentage:.1f}%) - "
                     f"✅ {self.stats.successful} | ❌ {self.stats.failed} | ⏭️ {self.stats.skipped}"
                 )
-            logger.info(f"[DEBUG][RP] End of main loop iteration {loop_counter}")
-            print(f"[DEBUG][RP] End of main loop iteration {loop_counter}", flush=True)
+            logger.info("End of main loop iteration {loop_counter}")
             loop_counter += 1
-        logger.info("[DEBUG][RP] Exited main processing loop")
-        print("[DEBUG][RP] Exited main processing loop", flush=True)
+        logger.info("Exited main processing loop")
 
         # Flush any remaining buffered relationships
         logger.info("🔄 Flushing buffered relationships from all rules...")
-        print(
-            "[DEBUG][RP] Flushing buffered relationships from all rules...", flush=True
-        )
         try:
             from src.relationship_rules import ALL_RELATIONSHIP_RULES
 
@@ -1309,19 +1254,11 @@ class ResourceProcessor:
                     flushed = rule.flush_relationship_buffer(self.db_ops)
                     total_flushed += flushed
             logger.info(f"✅ Flushed {total_flushed} buffered relationships")
-            print(
-                f"[DEBUG][RP] Flushed {total_flushed} buffered relationships",
-                flush=True,
-            )
         except Exception as e:
             logger.exception(f"Error flushing relationship buffers: {e}")
-            print(f"[DEBUG][RP] Error flushing relationship buffers: {e}", flush=True)
 
         # Verify dual-graph relationship duplication
         logger.info("🔍 Verifying dual-graph relationship duplication...")
-        print(
-            "[DEBUG][RP] Verifying dual-graph relationship duplication...", flush=True
-        )
         try:
             # Query to count relationships in both Original and Abstracted graphs
             verification_query = """
@@ -1346,9 +1283,6 @@ class ResourceProcessor:
 
                 if records:
                     logger.info("📊 Dual-Graph Relationship Verification:")
-                    print(
-                        "[DEBUG][RP] Dual-Graph Relationship Verification:", flush=True
-                    )
 
                     all_matched = True
                     for record in records:
@@ -1365,66 +1299,34 @@ class ResourceProcessor:
                             logger.warning(log_msg)
                             all_matched = False
 
-                        print(f"[DEBUG][RP] {log_msg}", flush=True)
-
                     if all_matched:
                         logger.info(
                             "✅ All relationship types matched between Original and Abstracted graphs"
-                        )
-                        print(
-                            "[DEBUG][RP] ✅ All relationship types matched", flush=True
                         )
                     else:
                         logger.warning(
                             "⚠️ Some relationship types have mismatches - this may indicate missing nodes during relationship creation"
                         )
-                        print(
-                            "[DEBUG][RP] ⚠️ Some relationship types have mismatches",
-                            flush=True,
-                        )
                 else:
                     logger.info(
                         "No Resource-to-Resource relationships found in either graph"
                     )
-                    print(
-                        "[DEBUG][RP] No Resource-to-Resource relationships found",
-                        flush=True,
-                    )
 
         except Exception as e:
             logger.exception(f"Error verifying dual-graph relationships: {e}")
-            print(
-                f"[DEBUG][RP] Error verifying dual-graph relationships: {e}", flush=True
-            )
 
         if self.llm_generator:
             logger.info("🤖 Generating LLM summaries for ResourceGroups and Tags...")
-            print(
-                "[DEBUG][RP] Generating LLM summaries for ResourceGroups and Tags...",
-                flush=True,
-            )
             try:
-                print(
-                    "[DEBUG][RP] Awaiting generate_resource_group_summaries", flush=True
-                )
-                logger.info("[DEBUG][RP] Awaiting generate_resource_group_summaries")
+                logger.info("Awaiting generate_resource_group_summaries")
                 await self.generate_resource_group_summaries()
-                print("[DEBUG][RP] Awaiting generate_tag_summaries", flush=True)
-                logger.info("[DEBUG][RP] Awaiting generate_tag_summaries")
+                logger.info("Awaiting generate_tag_summaries")
                 await self.generate_tag_summaries()
                 logger.info(
                     "✅ Completed LLM summary generation for ResourceGroups and Tags"
                 )
-                print(
-                    "[DEBUG][RP] Completed LLM summary generation for ResourceGroups and Tags",
-                    flush=True,
-                )
             except Exception as e:
                 logger.exception(f"Failed to generate ResourceGroup/Tag summaries: {e}")
-                print(
-                    f"[DEBUG][RP] Exception during LLM summary generation: {e}",
-                    flush=True,
-                )
 
         if poison_list:
             logger.warning(
@@ -1432,16 +1334,9 @@ class ResourceProcessor:
             )
             for r in poison_list:
                 logger.warning(f"  - {r.get('id', 'Unknown')}")
-                print(
-                    f"[DEBUG][RP] Poison list resource: {r.get('id', 'Unknown')}",
-                    flush=True,
-                )
 
         self._log_final_summary()
-        logger.info("[DEBUG][RP] Returning from ResourceProcessor.process_resources")
-        print(
-            "[DEBUG][RP] Returning from ResourceProcessor.process_resources", flush=True
-        )
+        logger.info("Returning from ResourceProcessor.process_resources")
         return self.stats
 
     def _create_relationship(self, src_id: str, rel_type: str, tgt_id: str) -> None:

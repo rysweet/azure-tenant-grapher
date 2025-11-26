@@ -85,14 +85,14 @@ async def build_command_handler(
 ) -> str | None:
     """Handle the build command logic."""
     if debug:
-        print("[DEBUG][CLI] Entered build_command_handler", flush=True)
+        pass
     ensure_neo4j_running(debug)
     if debug:
-        print("[DEBUG][CLI] ensure_neo4j_running() complete", flush=True)
+        pass
 
     try:
         if debug:
-            print("[DEBUG][CLI] Preparing config", flush=True)
+            pass
         effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
         if not effective_tenant_id:
             click.echo(
@@ -102,7 +102,12 @@ async def build_command_handler(
             sys.exit(1)
 
         config = create_config_from_env(
-            effective_tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
+            effective_tenant_id,
+            resource_limit,
+            max_retries,
+            max_build_threads,
+            max_concurrency,
+            debug,
         )
         # max_concurrency already set by create_config_from_env, don't override
         config.processing.auto_start_container = not no_container
@@ -110,15 +115,12 @@ async def build_command_handler(
         config.logging.level = ctx.obj["log_level"]
 
         setup_logging(config.logging)
-        print("[DEBUG][CLI] Logging configured", flush=True)
 
         config.validate_all()
-        print("[DEBUG][CLI] Config validated", flush=True)
 
         logger = structlog.get_logger(__name__)
 
         grapher = AzureTenantGrapher(config)
-        print("[DEBUG][CLI] AzureTenantGrapher instantiated", flush=True)
 
         # Create FilterConfig from CLI parameters
         filter_config = None
@@ -178,44 +180,11 @@ async def build_command_handler(
                 filter_config = FilterConfig()
 
         if no_dashboard:
-            print("[DEBUG][CLI] Entering _run_no_dashboard_mode", flush=True)
             await _run_no_dashboard_mode(
                 ctx, grapher, logger, rebuild_edges, filter_config
             )
-            print("[DEBUG][CLI] Returned from _run_no_dashboard_mode", flush=True)
-            import asyncio
-            import threading
-
-            print(
-                "[DEBUG] Active threads at build_command_handler return:",
-                threading.enumerate(),
-                flush=True,
-            )
-            try:
-                loop = asyncio.get_running_loop()
-                print(
-                    "[DEBUG] asyncio loop at build_command_handler return:",
-                    loop,
-                    flush=True,
-                )
-                print(
-                    "[DEBUG] asyncio tasks at build_command_handler return:",
-                    asyncio.all_tasks(loop),
-                    flush=True,
-                )
-            except Exception as e:
-                print(
-                    "[DEBUG] Could not get asyncio loop or tasks at build_command_handler return:",
-                    e,
-                    flush=True,
-                )
-            print("[DEBUG][CLI] Returning __NO_DASHBOARD_BUILD_COMPLETE__", flush=True)
-            structlog.get_logger(__name__).info(
-                "[DEBUG][CLI] build_command_handler returning __NO_DASHBOARD_BUILD_COMPLETE__"
-            )
             return "__NO_DASHBOARD_BUILD_COMPLETE__"
         else:
-            print("[DEBUG][CLI] Entering _run_dashboard_mode", flush=True)
             result = await _run_dashboard_mode(
                 ctx,
                 grapher,
@@ -229,15 +198,9 @@ async def build_command_handler(
                 rebuild_edges,
                 filter_config,
             )
-            print("[DEBUG][CLI] Returned from _run_dashboard_mode", flush=True)
-            structlog.get_logger(__name__).info(
-                "[DEBUG][CLI] build_command_handler returning from dashboard mode",
-                result=result,
-            )
             return result
 
     except Exception as e:
-        print(f"[DEBUG][CLI] Exception in build_command_handler: {e}", flush=True)
         click.echo(
             f"❌ Unexpected error: {e}\n"
             "If this is a Neo4j error, ensure Neo4j is running and credentials are correct.\n"
@@ -259,7 +222,6 @@ async def _run_no_dashboard_mode(
     filter_config: Optional[FilterConfig] = None,
 ) -> None:
     """Run build in no-dashboard mode with line-by-line logging."""
-    print("[DEBUG][CLI] Entered _run_no_dashboard_mode", flush=True)
     import tempfile
     from datetime import datetime
 
@@ -336,10 +298,9 @@ async def _run_no_dashboard_mode(
         log_level=cli_log_level,
     )
     try:
-        print("[DEBUG][CLI] Connecting to Neo4j...", flush=True)
+        pass
         grapher.connect_to_neo4j()
         logger.info("🚀 Starting Azure Tenant Graph building...")
-        print("[DEBUG][CLI] About to await grapher.build_graph()", flush=True)
         if hasattr(grapher, "build_graph"):
             if rebuild_edges:
                 click.echo(
@@ -348,20 +309,13 @@ async def _run_no_dashboard_mode(
                 result = await grapher.build_graph(
                     force_rebuild_edges=True, filter_config=filter_config
                 )
-                print(
-                    "[DEBUG][CLI] Awaited grapher.build_graph(force_rebuild_edges=True)",
-                    flush=True,
-                )
             else:
                 result = await grapher.build_graph(filter_config=filter_config)
-                print("[DEBUG][CLI] Awaited grapher.build_graph()", flush=True)
         else:
             result = None
         click.echo("🎉 Graph building completed.")
         click.echo(f"Result: {result}")
-        print("[DEBUG][CLI] Exiting try block in _run_no_dashboard_mode", flush=True)
     except Exception as e:
-        print(f"[DEBUG][CLI] Exception in _run_no_dashboard_mode: {e}", flush=True)
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
@@ -371,34 +325,6 @@ async def _run_no_dashboard_mode(
         )
         sys.exit(1)
     finally:
-        print(
-            "[DEBUG] Reached end of _run_no_dashboard_mode, about to call sys.exit(0)",
-            flush=True,
-        )
-        import asyncio
-        import threading
-
-        print(
-            "[DEBUG] Active threads at end of _run_no_dashboard_mode:",
-            threading.enumerate(),
-            flush=True,
-        )
-        try:
-            loop = asyncio.get_running_loop()
-            print(
-                "[DEBUG] asyncio loop at end of _run_no_dashboard_mode:",
-                loop,
-                flush=True,
-            )
-            print(
-                "[DEBUG] asyncio tasks at end of _run_no_dashboard_mode:",
-                asyncio.all_tasks(loop),
-                flush=True,
-            )
-        except Exception as e:
-            print("[DEBUG] Could not get asyncio loop or tasks:", e, flush=True)
-
-        print("[DEBUG] Actually calling sys.exit(0) now", flush=True)
         sys.exit(0)
 
 
@@ -416,9 +342,8 @@ async def _run_dashboard_mode(
     filter_config: Optional[FilterConfig] = None,
 ) -> str | None:
     """Run build in dashboard mode with Rich UI."""
-    print("[DEBUG][CLI] Entered _run_dashboard_mode", flush=True)
 
-    logger.info("[DEBUG] Entered _run_dashboard_mode")
+    logger.info("Entered _run_dashboard_mode")
     # Setup RichDashboard with both thread parameters and filter config
     dashboard = RichDashboard(
         config=config.to_dict(),
@@ -547,84 +472,42 @@ async def _run_dashboard_mode(
     dashboard.set_processing(True)
     dashboard.log_info("Starting build...")
 
-    # Removed debug print
     try:
-        print("[DEBUG][CLI] Entering dashboard build task execution", flush=True)
         if test_keypress_file:
             with dashboard.live():
                 dashboard.log_info("Press 'x' to exit the dashboard")
-                logger.info("[DEBUG] Entering poll_build_task (file keypress)")
+                logger.info("Entering poll_build_task (file keypress)")
                 try:
-                    print(
-                        "[DEBUG][CLI] Awaiting dashboard_manager.poll_build_task",
-                        flush=True,
-                    )
                     await dashboard_manager.poll_build_task(build_task)
-                    print(
-                        "[DEBUG][CLI] Returned from dashboard_manager.poll_build_task",
-                        flush=True,
-                    )
                 except DashboardExitException:
-                    print(
-                        "[DEBUG][CLI] DashboardExitException in poll_build_task",
-                        flush=True,
-                    )
                     return "__DASHBOARD_EXIT__"
         elif test_keypress_queue:
-            print(
-                "[DEBUG][CLI] Awaiting dashboard_manager.run_with_queue_keypress",
-                flush=True,
-            )
             result = await dashboard_manager.run_with_queue_keypress(build_task)
-            print(
-                "[DEBUG][CLI] Returned from dashboard_manager.run_with_queue_keypress",
-                flush=True,
-            )
             if result == "__DASHBOARD_EXIT__":
-                print(
-                    "[DEBUG][CLI] DashboardExitException in run_with_queue_keypress",
-                    flush=True,
-                )
                 return "__DASHBOARD_EXIT__"
         else:
-            print("[DEBUG][CLI] Awaiting dashboard_manager.run_normal", flush=True)
             result = await dashboard_manager.run_normal(build_task)
-            print("[DEBUG][CLI] Returned from dashboard_manager.run_normal", flush=True)
             if result == "__DASHBOARD_EXIT__":
-                print("[DEBUG][CLI] DashboardExitException in run_normal", flush=True)
                 return "__DASHBOARD_EXIT__"
     except DashboardExitException:
-        print(
-            "[DEBUG][CLI] DashboardExitException caught in _run_dashboard_mode",
-            flush=True,
-        )
         return "__DASHBOARD_EXIT__"
     finally:
         if test_keypress_file and exit_checker_task and not exit_checker_task.done():
             exit_checker_task.cancel()
 
-    # Removed debug print
-
-    # Minimal, direct exit logic: after dashboard context, check exit flag and exit if needed
+    # Check exit condition after dashboard context
     if dashboard_manager.check_exit_condition() or dashboard.should_exit:
-        logger.info("[DEBUG] Dashboard manager exit condition triggered (post-context)")
+        logger.info("Dashboard manager exit condition triggered (post-context)")
         try:
-            logger.info("[DEBUG] Closing Neo4j connection before exit")
-            # Just skip the cleanup for now to avoid attribute errors
+            logger.info("Closing Neo4j connection before exit")
             pass
         except Exception as e:
-            logger.error(f"[DEBUG] Error during cleanup: {e}")
-        # Removed debug print
+            logger.error(f"Error during cleanup: {e}")
         return "__DASHBOARD_EXIT__"
 
     # Handle build completion and post-processing
-    print("[DEBUG][CLI] Awaiting dashboard_manager.handle_build_completion", flush=True)
     await dashboard_manager.handle_build_completion(
         build_task, grapher, config, generate_spec, visualize
-    )
-    print(
-        "[DEBUG][CLI] Returned from dashboard_manager.handle_build_completion",
-        flush=True,
     )
     return None
 
@@ -1214,7 +1097,6 @@ def create_tenant_command(markdown_file: str):
         ensure_neo4j_running()
         with open(markdown_file, encoding="utf-8") as f:
             text = f.read()
-        print("DEBUG: Raw markdown file contents:\n", text)
 
         # Get creation statistics
         stats = create_tenant_from_markdown(text)
@@ -1288,7 +1170,9 @@ def spa_start():
                 return
             except ProcessLookupError:
                 # Process not running, clean up stale PID file
-                click.echo(f"INFO: Cleaning up stale PID file (process {pid} not found)")
+                click.echo(
+                    f"INFO: Cleaning up stale PID file (process {pid} not found)"
+                )
                 os.remove(SPA_PIDFILE)
         except (OSError, ValueError) as e:
             # Invalid PID file, remove it

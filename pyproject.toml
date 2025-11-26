@@ -163,6 +163,7 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
     "RUF", # ruff-specific rules
+    "T20", # flake8-print - prevent debug print statements (Issue #481)
 ]
 ignore = [
     "E501",  # line too long, handled by black
@@ -177,6 +178,14 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 "tests/**/*" = ["B018", "B017", "B015"]  # Allow assert statements in tests
+# Allow legitimate user-facing print statements in specific modules
+"src/terraform_destroyer.py" = ["T20"]  # CLI user prompts
+"src/agent_mode.py" = ["T20"]  # Interactive agent output
+"src/utils/cli_installer.py" = ["T20"]  # CLI installation prompts
+"src/threat_modeling_agent/**/*" = ["T20"]  # Threat modeling output
+"src/migration_runner.py" = ["T20"]  # Migration status output
+"src/services/layer_aware_query_service.py" = ["T20"]  # Stats output
+"src/iac/emitters/terraform_emitter.py" = ["T20"]  # Translation report output
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

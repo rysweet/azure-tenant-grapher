@@ -503,7 +503,9 @@ class TestTokenManagement:
 
         # Extend token data with client binding
         class ClientBoundTokenManager(TokenManager):
-            def generate_token(self, user_id: str, client_id: Optional[str] = None, **kwargs):
+            def generate_token(
+                self, user_id: str, client_id: Optional[str] = None, **kwargs
+            ):
                 token_data = super().generate_token(user_id, **kwargs)
                 token_data["client_id"] = client_id
                 token_data["client_fingerprint"] = self._generate_fingerprint(client_id)

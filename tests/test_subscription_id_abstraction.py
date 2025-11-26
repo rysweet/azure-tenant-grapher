@@ -1,4 +1,5 @@
 """Test subscription ID abstraction in dual-graph role assignments (Bug #59)."""
+
 import json
 from unittest.mock import MagicMock, Mock
 
@@ -56,11 +57,13 @@ class TestSubscriptionIDAbstraction:
             "id": f"/subscriptions/{source_subscription_id}/resourceGroups/test-rg/providers/Microsoft.Authorization/roleAssignments/test-role",
             "type": "Microsoft.Authorization/roleAssignments",
             "name": "test-role",
-            "properties": json.dumps({
-                "scope": f"/subscriptions/{source_subscription_id}/resourceGroups/test-rg",
-                "roleDefinitionId": f"/subscriptions/{source_subscription_id}/providers/Microsoft.Authorization/roleDefinitions/test-role-def",
-                "principalId": "12345678-1234-1234-1234-123456789012"
-            })
+            "properties": json.dumps(
+                {
+                    "scope": f"/subscriptions/{source_subscription_id}/resourceGroups/test-rg",
+                    "roleDefinitionId": f"/subscriptions/{source_subscription_id}/providers/Microsoft.Authorization/roleDefinitions/test-role-def",
+                    "principalId": "12345678-1234-1234-1234-123456789012",
+                }
+            ),
         }
 
         # Process the resource (this creates both Original and Abstracted nodes)
@@ -79,7 +82,9 @@ class TestSubscriptionIDAbstraction:
                 abstracted_node_call = call
                 break
 
-        assert abstracted_node_call is not None, "Abstracted node creation query not found"
+        assert abstracted_node_call is not None, (
+            "Abstracted node creation query not found"
+        )
 
         # Get the props parameter passed to the query
         props = abstracted_node_call[1]["props"]  # Keyword argument
@@ -99,15 +104,19 @@ class TestSubscriptionIDAbstraction:
         assert "roleDefinitionId" in props_dict, "roleDefinitionId field missing"
 
         # Check that source subscription ID is replaced with ABSTRACT_SUBSCRIPTION
-        assert "ABSTRACT_SUBSCRIPTION" in props_dict["scope"], \
+        assert "ABSTRACT_SUBSCRIPTION" in props_dict["scope"], (
             f"scope should contain ABSTRACT_SUBSCRIPTION, got: {props_dict['scope']}"
-        assert source_subscription_id not in props_dict["scope"], \
+        )
+        assert source_subscription_id not in props_dict["scope"], (
             f"scope should not contain source subscription ID {source_subscription_id}"
+        )
 
-        assert "ABSTRACT_SUBSCRIPTION" in props_dict["roleDefinitionId"], \
+        assert "ABSTRACT_SUBSCRIPTION" in props_dict["roleDefinitionId"], (
             f"roleDefinitionId should contain ABSTRACT_SUBSCRIPTION, got: {props_dict['roleDefinitionId']}"
-        assert source_subscription_id not in props_dict["roleDefinitionId"], \
+        )
+        assert source_subscription_id not in props_dict["roleDefinitionId"], (
             f"roleDefinitionId should not contain source subscription ID {source_subscription_id}"
+        )
 
     def test_role_assignment_principalId_also_abstracted(
         self, resource_processor, mock_session_manager
@@ -118,11 +127,13 @@ class TestSubscriptionIDAbstraction:
             "id": "/subscriptions/test-sub/providers/Microsoft.Authorization/roleAssignments/test-role",
             "type": "Microsoft.Authorization/roleAssignments",
             "name": "test-role",
-            "properties": json.dumps({
-                "scope": "/subscriptions/test-sub",
-                "roleDefinitionId": "/subscriptions/test-sub/providers/Microsoft.Authorization/roleDefinitions/role",
-                "principalId": source_principal_id
-            })
+            "properties": json.dumps(
+                {
+                    "scope": "/subscriptions/test-sub",
+                    "roleDefinitionId": "/subscriptions/test-sub/providers/Microsoft.Authorization/roleDefinitions/role",
+                    "principalId": source_principal_id,
+                }
+            ),
         }
 
         resource_processor.create_or_update_resource(role_assignment, "completed")
@@ -147,5 +158,6 @@ class TestSubscriptionIDAbstraction:
 
         # Verify principalId is abstracted (should NOT be the source ID)
         assert "principalId" in props_dict
-        assert props_dict["principalId"] != source_principal_id, \
+        assert props_dict["principalId"] != source_principal_id, (
             "principalId should be abstracted, not source principal ID"
+        )

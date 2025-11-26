@@ -154,9 +154,7 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     # Mock engine
     mock_engine = MagicMock()
@@ -250,9 +248,7 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     # Mock engine
     mock_engine = MagicMock()
@@ -348,9 +344,7 @@ async def test_node_id_filter_with_relationships(
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     # Mock engine
     mock_engine = MagicMock()

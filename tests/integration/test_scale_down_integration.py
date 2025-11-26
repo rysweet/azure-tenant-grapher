@@ -51,6 +51,7 @@ def neo4j_test_driver():
 @pytest.fixture
 def session_manager(neo4j_test_driver):
     """Create session manager for tests."""
+
     class TestSessionManager:
         def __init__(self, driver):
             self._driver = driver
@@ -71,6 +72,7 @@ def scale_down_service(session_manager):
 def test_tenant_id():
     """Unique tenant ID for test isolation."""
     import uuid
+
     return f"test-tenant-{uuid.uuid4()}"
 
 
@@ -94,11 +96,10 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
     # Clear any existing test data
     session.run(
         "MATCH (r:Resource) WHERE r.tenant_id = $tenant_id DETACH DELETE r",
-        tenant_id=tenant_id
+        tenant_id=tenant_id,
     )
     session.run(
-        "MATCH (t:Tenant {id: $tenant_id}) DETACH DELETE t",
-        tenant_id=tenant_id
+        "MATCH (t:Tenant {id: $tenant_id}) DETACH DELETE t", tenant_id=tenant_id
     )
 
     # Create Tenant node
@@ -110,7 +111,7 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
         })
         """,
         tenant_id=tenant_id,
-        name=f"Test Tenant {tenant_id[:8]}"
+        name=f"Test Tenant {tenant_id[:8]}",
     )
 
     # Create VNets (10 VNets)
@@ -132,14 +133,17 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             name=f"vnet-{i}",
             tenant_id=tenant_id,
             location="eastus" if i % 2 == 0 else "westus",
-            rg=f"rg-{i % 5}"
+            rg=f"rg-{i % 5}",
         )
 
     # Create NSGs (20 NSGs)
     num_nsgs = max(20, num_nodes // 5)
     for i in range(num_nsgs):
         import json
-        tags_json = json.dumps({"environment": "production" if i % 2 == 0 else "development"})
+
+        tags_json = json.dumps(
+            {"environment": "production" if i % 2 == 0 else "development"}
+        )
         session.run(
             """
             CREATE (r:Resource {
@@ -158,14 +162,17 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             tenant_id=tenant_id,
             location="eastus" if i % 2 == 0 else "westus",
             rg=f"rg-{i % 5}",
-            tags_json=tags_json
+            tags_json=tags_json,
         )
 
     # Create VMs (remaining nodes)
     num_vms = num_nodes - num_vnets - num_nsgs
     for i in range(num_vms):
         import json
-        tags_json = json.dumps({"environment": "production" if i % 2 == 0 else "development"})
+
+        tags_json = json.dumps(
+            {"environment": "production" if i % 2 == 0 else "development"}
+        )
         session.run(
             """
             CREATE (r:Resource {
@@ -184,7 +191,7 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             tenant_id=tenant_id,
             location="eastus" if i % 3 == 0 else "westus",
             rg=f"rg-{i % 5}",
-            tags_json=tags_json
+            tags_json=tags_json,
         )
 
     # Create relationships: VMs -> VNets (USES_SUBNET)
@@ -198,7 +205,7 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             """,
             vm_id=f"{tenant_id}-vm-{i}",
             vnet_id=f"{tenant_id}-vnet-{vnet_idx}",
-            tenant_id=tenant_id
+            tenant_id=tenant_id,
         )
 
     # Create relationships: VMs -> NSGs (SECURED_BY)
@@ -212,7 +219,7 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             """,
             vm_id=f"{tenant_id}-vm-{i}",
             nsg_id=f"{tenant_id}-nsg-{nsg_idx}",
-            tenant_id=tenant_id
+            tenant_id=tenant_id,
         )
 
     # Create some cross-connections between VNets (CONNECTED_TO)
@@ -225,7 +232,7 @@ def create_test_graph(session, tenant_id: str, num_nodes: int = 100):
             """,
             vnet1_id=f"{tenant_id}-vnet-{i}",
             vnet2_id=f"{tenant_id}-vnet-{i + 1}",
-            tenant_id=tenant_id
+            tenant_id=tenant_id,
         )
 
 
@@ -233,11 +240,10 @@ def cleanup_test_graph(session, tenant_id: str):
     """Clean up test graph after test."""
     session.run(
         "MATCH (r:Resource) WHERE r.tenant_id = $tenant_id DETACH DELETE r",
-        tenant_id=tenant_id
+        tenant_id=tenant_id,
     )
     session.run(
-        "MATCH (t:Tenant {id: $tenant_id}) DETACH DELETE t",
-        tenant_id=tenant_id
+        "MATCH (t:Tenant {id: $tenant_id}) DETACH DELETE t", tenant_id=tenant_id
     )
 
 
@@ -339,7 +345,10 @@ class TestForestFireSamplingIntegration:
 
             # Verify average degree is reasonable
             if sampled_graph.number_of_nodes() > 0:
-                avg_degree = sum(dict(sampled_graph.degree()).values()) / sampled_graph.number_of_nodes()
+                avg_degree = (
+                    sum(dict(sampled_graph.degree()).values())
+                    / sampled_graph.number_of_nodes()
+                )
                 assert avg_degree > 0  # Should have connections
 
         finally:
@@ -476,7 +485,7 @@ class TestPatternSamplingIntegration:
                     RETURN count(r) as count
                     """,
                     tenant_id=test_tenant_id,
-                    type="Microsoft.Compute/virtualMachines"
+                    type="Microsoft.Compute/virtualMachines",
                 )
                 expected_count = result.single()["count"]
                 assert len(matching_ids) == expected_count
@@ -521,7 +530,7 @@ class TestPatternSamplingIntegration:
             # Sample VMs in eastus
             criteria = {
                 "type": "Microsoft.Compute/virtualMachines",
-                "location": "eastus"
+                "location": "eastus",
             }
             matching_ids = await scale_down_service.sample_by_pattern(
                 test_tenant_id, criteria
@@ -557,7 +566,7 @@ class TestSampleGraphEndToEndIntegration:
                     algorithm="forest_fire",
                     target_size=0.2,  # 20%
                     output_mode="yaml",
-                    output_path=str(output_path)
+                    output_path=str(output_path),
                 )
 
                 # Verify results
@@ -704,7 +713,7 @@ class TestExportFormatsIntegration:
                     algorithm="forest_fire",
                     target_size=0.5,
                     output_mode="yaml",
-                    output_path=str(output_path)
+                    output_path=str(output_path),
                 )
 
                 # Verify YAML file
@@ -740,7 +749,7 @@ class TestExportFormatsIntegration:
                     algorithm="mhrw",
                     target_size=0.5,
                     output_mode="json",
-                    output_path=str(output_path)
+                    output_path=str(output_path),
                 )
 
                 # Verify JSON file
@@ -773,7 +782,7 @@ class TestExportFormatsIntegration:
                     algorithm="forest_fire",
                     target_size=0.5,
                     output_mode="neo4j",
-                    output_path=str(output_path)
+                    output_path=str(output_path),
                 )
 
                 # Verify Cypher file
@@ -808,7 +817,7 @@ class TestEdgeCasesIntegration:
                 })
                 """,
                 tenant_id=test_tenant_id,
-                name=f"Test Tenant {test_tenant_id[:8]}"
+                name=f"Test Tenant {test_tenant_id[:8]}",
             )
             session.run(
                 """
@@ -820,7 +829,7 @@ class TestEdgeCasesIntegration:
                 """,
                 id=f"{test_tenant_id}-single-node",
                 type="Microsoft.Compute/virtualMachines",
-                tenant_id=test_tenant_id
+                tenant_id=test_tenant_id,
             )
 
         try:
@@ -856,7 +865,7 @@ class TestEdgeCasesIntegration:
                 })
                 """,
                 tenant_id=test_tenant_id,
-                name=f"Test Tenant {test_tenant_id[:8]}"
+                name=f"Test Tenant {test_tenant_id[:8]}",
             )
 
             # Component 1: 10 nodes
@@ -871,7 +880,7 @@ class TestEdgeCasesIntegration:
                     """,
                     id=f"{test_tenant_id}-comp1-{i}",
                     type="Microsoft.Compute/virtualMachines",
-                    tenant_id=test_tenant_id
+                    tenant_id=test_tenant_id,
                 )
 
             # Component 2: 10 nodes
@@ -886,7 +895,7 @@ class TestEdgeCasesIntegration:
                     """,
                     id=f"{test_tenant_id}-comp2-{i}",
                     type="Microsoft.Network/virtualNetworks",
-                    tenant_id=test_tenant_id
+                    tenant_id=test_tenant_id,
                 )
 
             # Add edges within components
@@ -899,7 +908,7 @@ class TestEdgeCasesIntegration:
                     """,
                     id1=f"{test_tenant_id}-comp1-{i}",
                     id2=f"{test_tenant_id}-comp1-{i + 1}",
-                    tenant_id=test_tenant_id
+                    tenant_id=test_tenant_id,
                 )
                 session.run(
                     """
@@ -909,7 +918,7 @@ class TestEdgeCasesIntegration:
                     """,
                     id1=f"{test_tenant_id}-comp2-{i}",
                     id2=f"{test_tenant_id}-comp2-{i + 1}",
-                    tenant_id=test_tenant_id
+                    tenant_id=test_tenant_id,
                 )
 
         try:
@@ -984,18 +993,16 @@ class TestProgressCallbackIntegration:
             progress_calls = []
 
             def progress_callback(phase: str, current: int, total: int):
-                progress_calls.append({
-                    "phase": phase,
-                    "current": current,
-                    "total": total
-                })
+                progress_calls.append(
+                    {"phase": phase, "current": current, "total": total}
+                )
 
             node_ids, _ = await scale_down_service.sample_graph(
                 tenant_id=test_tenant_id,
                 algorithm="forest_fire",
                 target_size=0.2,
                 output_mode="yaml",
-                progress_callback=progress_callback
+                progress_callback=progress_callback,
             )
 
             # Verify callback was invoked

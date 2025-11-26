@@ -421,23 +421,18 @@ class TestTerraformEmitterIdentities:
 
             # Verify no UPNs contain parentheses
             for upn in upn_values:
-                assert "(" not in upn, (
-                    f"UPN '{upn}' still contains opening parenthesis"
-                )
-                assert ")" not in upn, (
-                    f"UPN '{upn}' still contains closing parenthesis"
-                )
+                assert "(" not in upn, f"UPN '{upn}' still contains opening parenthesis"
+                assert ")" not in upn, f"UPN '{upn}' still contains closing parenthesis"
 
             # Verify expected transformation (parentheses replaced with hyphens)
-            assert any(
-                "BrianHooper-DEX@example.com" in upn for upn in upn_values
-            ), "BrianHooper(DEX) should be sanitized to BrianHooper-DEX"
+            assert any("BrianHooper-DEX@example.com" in upn for upn in upn_values), (
+                "BrianHooper(DEX) should be sanitized to BrianHooper-DEX"
+            )
+
+            assert any("CameronThomas-DEX@example.com" in upn for upn in upn_values), (
+                "CameronThomas(DEX) should be sanitized to CameronThomas-DEX"
+            )
 
             assert any(
-                "CameronThomas-DEX@example.com" in upn for upn in upn_values
-            ), "CameronThomas(DEX) should be sanitized to CameronThomas-DEX"
-
-            assert any(
-                "MichaelHoward-REDTEAM@example.com" in upn
-                for upn in upn_values
+                "MichaelHoward-REDTEAM@example.com" in upn for upn in upn_values
             ), "MichaelHoward(REDTEAM) should be sanitized to MichaelHoward-REDTEAM"

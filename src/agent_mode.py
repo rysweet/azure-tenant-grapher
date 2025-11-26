@@ -211,9 +211,6 @@ async def _interactive_chat_loop(assistant: any):
 
                         # Debug: Print all message details
                         message_type = type(message).__name__
-                        print(
-                            f"DEBUG: Received {message_type}: {getattr(message, 'content', None)}"
-                        )
                         all_messages.append(
                             (message_type, getattr(message, "content", None))
                         )
@@ -265,14 +262,8 @@ async def _interactive_chat_loop(assistant: any):
                             ]
                             if tool_outputs:
                                 current_task = f"{user_input}\n\nHere is the tool output you requested: {tool_outputs[-1]}\nPlease use this to answer the question in plain language."
-                                print(
-                                    f"DEBUG: Re-prompting agent with tool output as context (round {rounds})"
-                                )
                                 break
                             else:
-                                print(
-                                    "DEBUG: Conversation completed with no final answer."
-                                )
                                 break
 
                     else:

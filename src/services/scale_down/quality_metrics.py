@@ -13,6 +13,7 @@ import logging
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, Set
+
 import networkx as nx
 
 logger = logging.getLogger(__name__)
@@ -261,7 +262,9 @@ class QualityMetricsCalculator:
             self.logger.warning(f"Failed to calculate clustering coefficient: {e}")
             clustering_diff = 0.0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating clustering coefficient: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating clustering coefficient: {e}"
+            )
             raise
 
         # Connected components
@@ -274,7 +277,9 @@ class QualityMetricsCalculator:
             components_original = 0
             components_sampled = 0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating connected components: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating connected components: {e}"
+            )
             raise
 
         # Resource type preservation
@@ -299,7 +304,9 @@ class QualityMetricsCalculator:
             self.logger.warning(f"Failed to calculate type preservation: {e}")
             type_preservation = 0.0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating type preservation: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating type preservation: {e}"
+            )
             raise
 
         metrics = QualityMetrics(

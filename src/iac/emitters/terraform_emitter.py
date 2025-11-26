@@ -160,7 +160,7 @@ class TerraformEmitter(IaCEmitter):
         normalized_type = azure_type
         for incorrect, correct in provider_casing_map.items():
             if normalized_type.startswith(incorrect + "/"):
-                normalized_type = correct + normalized_type[len(incorrect):]
+                normalized_type = correct + normalized_type[len(incorrect) :]
                 break
 
         return normalized_type
@@ -886,7 +886,8 @@ class TerraformEmitter(IaCEmitter):
                 # Validate NSG exists before creating association (Bug #58)
                 nsg_available = (
                     "azurerm_network_security_group" in self._available_resources
-                    and nsg_tf_name in self._available_resources["azurerm_network_security_group"]
+                    and nsg_tf_name
+                    in self._available_resources["azurerm_network_security_group"]
                 )
 
                 if not nsg_available:
@@ -934,14 +935,18 @@ class TerraformEmitter(IaCEmitter):
                 manager.connect()
                 # pyright: ignore[reportPrivateUsage]
                 if manager._driver is None:  # pyright: ignore[reportPrivateUsage]
-                    logger.warning("Cannot split by community: Neo4j driver not available. Writing single file.")
+                    logger.warning(
+                        "Cannot split by community: Neo4j driver not available. Writing single file."
+                    )
                     split_by_community = False
                 else:
                     driver = manager._driver  # pyright: ignore[reportPrivateUsage]
                     detector = CommunityDetector(driver)
                     communities = detector.detect_communities()
 
-                    logger.info(f"Detected {len(communities)} communities for splitting")
+                    logger.info(
+                        f"Detected {len(communities)} communities for splitting"
+                    )
                     logger.info(f"Community sizes: {[len(c) for c in communities]}")
 
                     # Split resources by community
@@ -951,9 +956,16 @@ class TerraformEmitter(IaCEmitter):
                             resource_type: {
                                 resource_name: resource_config
                                 for resource_name, resource_config in resources.items()
-                                if self._is_resource_in_community(resource_type, resource_name, community_ids, graph.resources)
+                                if self._is_resource_in_community(
+                                    resource_type,
+                                    resource_name,
+                                    community_ids,
+                                    graph.resources,
+                                )
                             }
-                            for resource_type, resources in terraform_config.get("resource", {}).items()
+                            for resource_type, resources in terraform_config.get(
+                                "resource", {}
+                            ).items()
                         }
 
                         # Remove empty resource types
@@ -963,7 +975,9 @@ class TerraformEmitter(IaCEmitter):
 
                         # Skip empty communities
                         if not community_resources:
-                            logger.debug(f"Community {i} has no resources after filtering, skipping")
+                            logger.debug(
+                                f"Community {i} has no resources after filtering, skipping"
+                            )
                             continue
 
                         # Create community-specific config
@@ -977,8 +991,11 @@ class TerraformEmitter(IaCEmitter):
                         # Add import blocks for this community if present
                         if "import" in terraform_config:
                             community_imports = [
-                                imp for imp in terraform_config["import"]
-                                if self._is_import_in_community(imp, community_ids, graph.resources)
+                                imp
+                                for imp in terraform_config["import"]
+                                if self._is_import_in_community(
+                                    imp, community_ids, graph.resources
+                                )
                             ]
                             if community_imports:
                                 community_config["import"] = community_imports
@@ -989,11 +1006,15 @@ class TerraformEmitter(IaCEmitter):
                             json.dump(community_config, f, indent=2)
                         output_files.append(community_file)
                         self._files_created += 1
-                        logger.info(f"Generated {community_file.name} with {len(community_resources)} resource types")
+                        logger.info(
+                            f"Generated {community_file.name} with {len(community_resources)} resource types"
+                        )
 
                     manager.disconnect()
             except Exception as e:
-                logger.warning(f"Failed to split by community: {e}. Writing single file instead.")
+                logger.warning(
+                    f"Failed to split by community: {e}. Writing single file instead."
+                )
                 split_by_community = False
 
         if not split_by_community:
@@ -1137,9 +1158,13 @@ class TerraformEmitter(IaCEmitter):
 
         if validation_result.terraform_available:
             if validation_result.valid:
-                logger.info("✅ Dependency validation passed - all resource references are declared")
+                logger.info(
+                    "✅ Dependency validation passed - all resource references are declared"
+                )
             else:
-                logger.error(f"❌ Dependency validation failed - found {len(validation_result.errors)} undeclared resource reference(s)")
+                logger.error(
+                    f"❌ Dependency validation failed - found {len(validation_result.errors)} undeclared resource reference(s)"
+                )
                 for error in validation_result.errors:
                     logger.error(
                         f"  • Resource {error.resource_type}.{error.resource_name} references missing {error.missing_reference}"
@@ -1149,7 +1174,9 @@ class TerraformEmitter(IaCEmitter):
                     "Terraform apply will fail unless these references are fixed."
                 )
         else:
-            logger.warning("⚠️  Terraform CLI not found - skipping dependency validation")
+            logger.warning(
+                "⚠️  Terraform CLI not found - skipping dependency validation"
+            )
 
         logger.info(
             f"Generated Terraform template with {len(graph.resources)} resources"
@@ -2236,10 +2263,14 @@ class TerraformEmitter(IaCEmitter):
                     if normalized:
                         normalized_subnet_prefixes.append(normalized)
                     else:
-                        normalized_subnet_prefixes.append(cidr)  # Keep original if failed
+                        normalized_subnet_prefixes.append(
+                            cidr
+                        )  # Keep original if failed
 
             resource_config["address_prefixes"] = (
-                normalized_subnet_prefixes if normalized_subnet_prefixes else address_prefixes
+                normalized_subnet_prefixes
+                if normalized_subnet_prefixes
+                else address_prefixes
             )
 
             # Check for NSG association (store for later emission as separate resource)
@@ -2375,7 +2406,9 @@ class TerraformEmitter(IaCEmitter):
 
             # Bug #43: Database names often include server prefix (server/database)
             # Extract just the database name (after last slash)
-            db_name_only = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+            db_name_only = (
+                resource_name.split("/")[-1] if "/" in resource_name else resource_name
+            )
 
             # SQL Database config (no location or resource_group_name - these are on the server)
             resource_config = {
@@ -2383,7 +2416,9 @@ class TerraformEmitter(IaCEmitter):
                 "server_id": f"${{azurerm_mssql_server.{server_name_safe}.id}}",
             }
 
-            logger.debug(f"Bug #43: SQL Database '{resource_name}' → name '{db_name_only}'")
+            logger.debug(
+                f"Bug #43: SQL Database '{resource_name}' → name '{db_name_only}'"
+            )
 
             # Add optional properties if present
             properties = self._parse_properties(resource)
@@ -2394,7 +2429,9 @@ class TerraformEmitter(IaCEmitter):
             if properties.get("collation"):
                 resource_config["collation"] = properties["collation"]
 
-            logger.debug(f"Bug #37: SQL Database '{resource_name}' linked to server '{server_name}'")
+            logger.debug(
+                f"Bug #37: SQL Database '{resource_name}' linked to server '{server_name}'"
+            )
 
         elif azure_type_lower == "microsoft.servicebus/namespaces":
             # Bug #38: Service Bus Namespace requires SKU (case-insensitive)
@@ -2403,7 +2440,9 @@ class TerraformEmitter(IaCEmitter):
             sku_name = sku.get("name", "Standard") if sku else "Standard"
 
             resource_config["sku"] = sku_name
-            logger.debug(f"Bug #38: Service Bus '{resource_name}' using SKU '{sku_name}'")
+            logger.debug(
+                f"Bug #38: Service Bus '{resource_name}' using SKU '{sku_name}'"
+            )
 
         elif azure_type_lower == "microsoft.eventhub/namespaces":
             # EventHub namespaces require sku argument (case-insensitive)
@@ -2713,7 +2752,9 @@ class TerraformEmitter(IaCEmitter):
             vm_name = self._extract_resource_name_from_id(rc_id, "virtualMachines")
 
             if vm_name == "unknown":
-                logger.warning(f"Bug #44: Run Command '{resource_name}' has no parent VM. Skipping.")
+                logger.warning(
+                    f"Bug #44: Run Command '{resource_name}' has no parent VM. Skipping."
+                )
                 return None
 
             vm_name_safe = self._sanitize_terraform_name(vm_name)
@@ -2744,7 +2785,9 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # Extract just command name (e.g., "vm/Get-AzureADToken" -> "Get-AzureADToken")
-            command_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+            command_name = (
+                resource_name.split("/")[-1] if "/" in resource_name else resource_name
+            )
 
             # Run command requires name, location, VM ID and source script
             resource_config = {
@@ -2752,10 +2795,14 @@ class TerraformEmitter(IaCEmitter):
                 "location": location,
                 "virtual_machine_id": f"${{{vm_terraform_type}.{vm_name_safe}.id}}",
                 "source": {
-                    "script": properties.get("source", {}).get("script", "# Placeholder script")
-                }
+                    "script": properties.get("source", {}).get(
+                        "script", "# Placeholder script"
+                    )
+                },
             }
-            logger.debug(f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}' (type: {vm_terraform_type})")
+            logger.debug(
+                f"Bug #44: Run Command '{resource_name}' linked to VM '{vm_name}' (type: {vm_terraform_type})"
+            )
 
         elif azure_type_lower == "microsoft.app/managedenvironments":
             # Bug #44: Container App Environment (10 resources!)
@@ -2770,7 +2817,11 @@ class TerraformEmitter(IaCEmitter):
             # Since we cannot construct the full resource ID from a GUID, we skip this field entirely.
             # Note: workspace_id is optional per Terraform azurerm_container_app_environment docs
 
-            workspace_id = properties.get("appLogsConfiguration", {}).get("logAnalyticsConfiguration", {}).get("customerId")
+            workspace_id = (
+                properties.get("appLogsConfiguration", {})
+                .get("logAnalyticsConfiguration", {})
+                .get("customerId")
+            )
             if workspace_id:
                 logger.warning(
                     f"Bug #50: Skipping log_analytics_workspace_id for Container App Environment '{resource_name}' - "
@@ -2778,7 +2829,9 @@ class TerraformEmitter(IaCEmitter):
                     f"Workspace linking is optional and will be configured separately if needed."
                 )
 
-            logger.debug(f"Bug #44/50: Container App Environment '{resource_name}' (workspace_id skipped)")
+            logger.debug(
+                f"Bug #44/50: Container App Environment '{resource_name}' (workspace_id skipped)"
+            )
 
         elif azure_type_lower == "microsoft.operationalinsights/workspaces":
             # Log Analytics Workspace specific properties
@@ -2861,14 +2914,21 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # Application Insights requires a workspace ID or uses legacy mode
-            application_type = properties.get("Application_Type") or properties.get("application_type") or properties.get("applicationType") or "web"
+            application_type = (
+                properties.get("Application_Type")
+                or properties.get("application_type")
+                or properties.get("applicationType")
+                or "web"
+            )
 
             resource_config.update(
                 {
                     "application_type": application_type,
                 }
             )
-            logger.debug(f"Bug #39: App Insights '{resource_name}' using type '{application_type}'")
+            logger.debug(
+                f"Bug #39: App Insights '{resource_name}' using type '{application_type}'"
+            )
 
             # Try to link to Log Analytics workspace if available
             workspace_resource_id = properties.get("WorkspaceResourceId")
@@ -3111,14 +3171,20 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # short_name is required (max 12 characters)
-            short_name = properties.get("groupShortName") or properties.get("short_name") or resource_name[:12]
+            short_name = (
+                properties.get("groupShortName")
+                or properties.get("short_name")
+                or resource_name[:12]
+            )
 
             resource_config.update(
                 {
                     "short_name": short_name,
                 }
             )
-            logger.debug(f"Bug #40: Action Group '{resource_name}' using short_name '{short_name}'")
+            logger.debug(
+                f"Bug #40: Action Group '{resource_name}' using short_name '{short_name}'"
+            )
 
         elif azure_type_lower == "microsoft.documentdb/databaseaccounts":
             # Bug #41: Cosmos DB account (case-insensitive match)
@@ -3130,7 +3196,9 @@ class TerraformEmitter(IaCEmitter):
             # Required: consistency_policy block
             consistency = properties.get("consistencyPolicy", {})
             resource_config["consistency_policy"] = {
-                "consistency_level": consistency.get("defaultConsistencyLevel", "Session"),
+                "consistency_level": consistency.get(
+                    "defaultConsistencyLevel", "Session"
+                ),
                 "max_interval_in_seconds": consistency.get("maxIntervalInSeconds", 5),
                 "max_staleness_prefix": consistency.get("maxStalenessPrefix", 100),
             }
@@ -3151,7 +3219,9 @@ class TerraformEmitter(IaCEmitter):
                     {"location": location, "failover_priority": 0}
                 ]
 
-            logger.debug(f"Bug #41: Cosmos DB '{resource_name}' with {len(resource_config.get('geo_location', []))} locations")
+            logger.debug(
+                f"Bug #41: Cosmos DB '{resource_name}' with {len(resource_config.get('geo_location', []))} locations"
+            )
 
         elif azure_type_lower == "microsoft.containerinstance/containergroups":
             # Bug #42: Container Group (case-insensitive match)
@@ -3167,9 +3237,19 @@ class TerraformEmitter(IaCEmitter):
                 container = containers[0]  # Use first container
                 resource_config["container"] = {
                     "name": container.get("name", "container"),
-                    "image": container.get("image", "mcr.microsoft.com/azuredocs/aci-helloworld:latest"),
-                    "cpu": str(container.get("resources", {}).get("requests", {}).get("cpu", "0.5")),
-                    "memory": str(container.get("resources", {}).get("requests", {}).get("memoryInGB", "1.5")),
+                    "image": container.get(
+                        "image", "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+                    ),
+                    "cpu": str(
+                        container.get("resources", {})
+                        .get("requests", {})
+                        .get("cpu", "0.5")
+                    ),
+                    "memory": str(
+                        container.get("resources", {})
+                        .get("requests", {})
+                        .get("memoryInGB", "1.5")
+                    ),
                 }
             else:
                 # Default container if none specified
@@ -3180,20 +3260,20 @@ class TerraformEmitter(IaCEmitter):
                     "memory": "1.5",
                 }
 
-            logger.debug(f"Bug #42: Container Group '{resource_name}' os_type='{os_properties}'")
+            logger.debug(
+                f"Bug #42: Container Group '{resource_name}' os_type='{os_properties}'"
+            )
 
-        elif azure_type_lower == "microsoft.network/applicationgatewaywebapplicationfirewallpolicies":
+        elif (
+            azure_type_lower
+            == "microsoft.network/applicationgatewaywebapplicationfirewallpolicies"
+        ):
             # WAF Policy (Web Application Firewall Policy)
             properties = self._parse_properties(resource)
 
             # Required: managed_rules block
             resource_config["managed_rules"] = {
-                "managed_rule_set": [
-                    {
-                        "type": "OWASP",
-                        "version": "3.2"
-                    }
-                ]
+                "managed_rule_set": [{"type": "OWASP", "version": "3.2"}]
             }
 
             # Optional: policy_settings
@@ -3201,7 +3281,7 @@ class TerraformEmitter(IaCEmitter):
                 settings = properties["policySettings"]
                 resource_config["policy_settings"] = {
                     "enabled": settings.get("state", "Enabled") == "Enabled",
-                    "mode": settings.get("mode", "Detection")
+                    "mode": settings.get("mode", "Detection"),
                 }
 
             logger.debug(f"WAF Policy '{resource_name}' configured with OWASP 3.2")
@@ -3515,7 +3595,11 @@ class TerraformEmitter(IaCEmitter):
             resource_config.update(
                 {"destinations": destinations_config, "data_flow": data_flows_config}
             )
-        elif azure_type_lower in ["user", "microsoft.aad/user", "microsoft.graph/users"]:
+        elif azure_type_lower in [
+            "user",
+            "microsoft.aad/user",
+            "microsoft.graph/users",
+        ]:
             # Entra ID User (case-insensitive)
             # Users from Neo4j may have different property names than ARM resources
             raw_upn = resource.get("userPrincipalName") or resource.get(
@@ -3549,7 +3633,11 @@ class TerraformEmitter(IaCEmitter):
             if resource.get("accountEnabled") is not None:
                 resource_config["account_enabled"] = resource.get("accountEnabled")
 
-        elif azure_type_lower in ["group", "microsoft.aad/group", "microsoft.graph/groups"]:
+        elif azure_type_lower in [
+            "group",
+            "microsoft.aad/group",
+            "microsoft.graph/groups",
+        ]:
             # Entra ID Group (case-insensitive)
             display_name = (
                 resource.get("displayName")
@@ -3895,21 +3983,31 @@ class TerraformEmitter(IaCEmitter):
 
             # Required: sku block
             sku = properties.get("sku", {})
-            sku_name = sku.get("name", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
-            sku_tier = sku.get("tier", "Standard_v2") if isinstance(sku, dict) else "Standard_v2"
+            sku_name = (
+                sku.get("name", "Standard_v2")
+                if isinstance(sku, dict)
+                else "Standard_v2"
+            )
+            sku_tier = (
+                sku.get("tier", "Standard_v2")
+                if isinstance(sku, dict)
+                else "Standard_v2"
+            )
             sku_capacity = sku.get("capacity", 2) if isinstance(sku, dict) else 2
 
-            resource_config["sku"] = [{
-                "name": sku_name,
-                "tier": sku_tier,
-                "capacity": sku_capacity
-            }]
+            resource_config["sku"] = [
+                {"name": sku_name, "tier": sku_tier, "capacity": sku_capacity}
+            ]
 
             # Required: gateway_ip_configuration block
             # Get gateway IP configurations from properties
             gateway_ip_configs = properties.get("gatewayIPConfigurations", [])
             if gateway_ip_configs:
-                gateway_ip_config = gateway_ip_configs[0] if isinstance(gateway_ip_configs, list) else {}
+                gateway_ip_config = (
+                    gateway_ip_configs[0]
+                    if isinstance(gateway_ip_configs, list)
+                    else {}
+                )
                 if isinstance(gateway_ip_config, dict):
                     gateway_ip_name = gateway_ip_config.get("name", "gateway-ip-config")
                     gateway_ip_props = gateway_ip_config.get("properties", {})
@@ -3936,10 +4034,9 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
-            resource_config["gateway_ip_configuration"] = [{
-                "name": gateway_ip_name,
-                "subnet_id": subnet_reference
-            }]
+            resource_config["gateway_ip_configuration"] = [
+                {"name": gateway_ip_name, "subnet_id": subnet_reference}
+            ]
 
             # Required: frontend_ip_configuration block
             frontend_ip_configs = properties.get("frontendIPConfigurations", [])
@@ -3949,7 +4046,9 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
-            frontend_ip_config = frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
+            frontend_ip_config = (
+                frontend_ip_configs[0] if isinstance(frontend_ip_configs, list) else {}
+            )
             if not isinstance(frontend_ip_config, dict):
                 logger.warning(
                     f"Skipping Application Gateway '{resource_name}': Invalid frontendIPConfiguration format"
@@ -3967,7 +4066,9 @@ class TerraformEmitter(IaCEmitter):
                 )
                 return None
 
-            public_ip_name = self._extract_resource_name_from_id(public_ip_id, "publicIPAddresses")
+            public_ip_name = self._extract_resource_name_from_id(
+                public_ip_id, "publicIPAddresses"
+            )
             if public_ip_name == "unknown":
                 logger.warning(
                     f"Skipping Application Gateway '{resource_name}': Cannot extract public IP name from ID '{public_ip_id}'"
@@ -3975,7 +4076,9 @@ class TerraformEmitter(IaCEmitter):
                 return None
 
             public_ip_name_safe = self._sanitize_terraform_name(public_ip_name)
-            if not self._validate_resource_reference("azurerm_public_ip", public_ip_name_safe):
+            if not self._validate_resource_reference(
+                "azurerm_public_ip", public_ip_name_safe
+            ):
                 logger.warning(
                     f"Skipping Application Gateway '{resource_name}': Public IP '{public_ip_name}' does not exist in graph"
                 )
@@ -3983,7 +4086,7 @@ class TerraformEmitter(IaCEmitter):
 
             frontend_ip_block = {
                 "name": frontend_ip_name,
-                "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}"
+                "public_ip_address_id": f"${{azurerm_public_ip.{public_ip_name_safe}.id}}",
             }
 
             resource_config["frontend_ip_configuration"] = [frontend_ip_block]
@@ -4000,16 +4103,12 @@ class TerraformEmitter(IaCEmitter):
                     else:
                         port_name = "frontend-port-80"
                         port_num = 80
-                    frontend_port_blocks.append({
-                        "name": port_name,
-                        "port": port_num
-                    })
+                    frontend_port_blocks.append({"name": port_name, "port": port_num})
                 resource_config["frontend_port"] = frontend_port_blocks
             else:
-                resource_config["frontend_port"] = [{
-                    "name": "frontend-port-80",
-                    "port": 80
-                }]
+                resource_config["frontend_port"] = [
+                    {"name": "frontend-port-80", "port": 80}
+                ]
 
             # Required: backend_address_pool block
             backend_pools = properties.get("backendAddressPools", [])
@@ -4020,14 +4119,10 @@ class TerraformEmitter(IaCEmitter):
                         pool_name = pool_config.get("name", "backend-pool")
                     else:
                         pool_name = "backend-pool"
-                    backend_pool_blocks.append({
-                        "name": pool_name
-                    })
+                    backend_pool_blocks.append({"name": pool_name})
                 resource_config["backend_address_pool"] = backend_pool_blocks
             else:
-                resource_config["backend_address_pool"] = [{
-                    "name": "backend-pool"
-                }]
+                resource_config["backend_address_pool"] = [{"name": "backend-pool"}]
 
             # Required: backend_http_settings block
             backend_http_settings = properties.get("backendHttpSettingsCollection", [])
@@ -4035,11 +4130,15 @@ class TerraformEmitter(IaCEmitter):
                 backend_http_blocks = []
                 for http_settings in backend_http_settings:
                     if isinstance(http_settings, dict):
-                        settings_name = http_settings.get("name", "backend-http-settings")
+                        settings_name = http_settings.get(
+                            "name", "backend-http-settings"
+                        )
                         settings_props = http_settings.get("properties", {})
                         port = settings_props.get("port", 80)
                         protocol = settings_props.get("protocol", "Http")
-                        cookie_affinity = settings_props.get("cookieBasedAffinity", "Disabled")
+                        cookie_affinity = settings_props.get(
+                            "cookieBasedAffinity", "Disabled"
+                        )
                         request_timeout = settings_props.get("requestTimeout", 60)
                     else:
                         settings_name = "backend-http-settings"
@@ -4047,22 +4146,26 @@ class TerraformEmitter(IaCEmitter):
                         protocol = "Http"
                         cookie_affinity = "Disabled"
                         request_timeout = 60
-                    backend_http_blocks.append({
-                        "name": settings_name,
-                        "cookie_based_affinity": cookie_affinity,
-                        "port": port,
-                        "protocol": protocol,
-                        "request_timeout": request_timeout
-                    })
+                    backend_http_blocks.append(
+                        {
+                            "name": settings_name,
+                            "cookie_based_affinity": cookie_affinity,
+                            "port": port,
+                            "protocol": protocol,
+                            "request_timeout": request_timeout,
+                        }
+                    )
                 resource_config["backend_http_settings"] = backend_http_blocks
             else:
-                resource_config["backend_http_settings"] = [{
-                    "name": "backend-http-settings",
-                    "cookie_based_affinity": "Disabled",
-                    "port": 80,
-                    "protocol": "Http",
-                    "request_timeout": 60
-                }]
+                resource_config["backend_http_settings"] = [
+                    {
+                        "name": "backend-http-settings",
+                        "cookie_based_affinity": "Disabled",
+                        "port": 80,
+                        "protocol": "Http",
+                        "request_timeout": 60,
+                    }
+                ]
 
             # Required: http_listener block
             http_listeners = properties.get("httpListeners", [])
@@ -4072,14 +4175,20 @@ class TerraformEmitter(IaCEmitter):
                     if isinstance(listener, dict):
                         listener_name = listener.get("name", "http-listener")
                         listener_props = listener.get("properties", {})
-                        frontend_ip_config_name = listener_props.get("frontendIPConfiguration", {}).get("id", "")
+                        frontend_ip_config_name = listener_props.get(
+                            "frontendIPConfiguration", {}
+                        ).get("id", "")
                         if frontend_ip_config_name:
-                            frontend_ip_config_name = self._extract_resource_name_from_id(
-                                frontend_ip_config_name, "frontendIPConfigurations"
+                            frontend_ip_config_name = (
+                                self._extract_resource_name_from_id(
+                                    frontend_ip_config_name, "frontendIPConfigurations"
+                                )
                             )
                         else:
                             frontend_ip_config_name = "frontend-ip-config"
-                        frontend_port_name = listener_props.get("frontendPort", {}).get("id", "")
+                        frontend_port_name = listener_props.get("frontendPort", {}).get(
+                            "id", ""
+                        )
                         if frontend_port_name:
                             frontend_port_name = self._extract_resource_name_from_id(
                                 frontend_port_name, "frontendPorts"
@@ -4092,20 +4201,24 @@ class TerraformEmitter(IaCEmitter):
                         frontend_ip_config_name = "frontend-ip-config"
                         frontend_port_name = "frontend-port-80"
                         protocol = "Http"
-                    http_listener_blocks.append({
-                        "name": listener_name,
-                        "frontend_ip_configuration_name": frontend_ip_config_name,
-                        "frontend_port_name": frontend_port_name,
-                        "protocol": protocol
-                    })
+                    http_listener_blocks.append(
+                        {
+                            "name": listener_name,
+                            "frontend_ip_configuration_name": frontend_ip_config_name,
+                            "frontend_port_name": frontend_port_name,
+                            "protocol": protocol,
+                        }
+                    )
                 resource_config["http_listener"] = http_listener_blocks
             else:
-                resource_config["http_listener"] = [{
-                    "name": "http-listener",
-                    "frontend_ip_configuration_name": "frontend-ip-config",
-                    "frontend_port_name": "frontend-port-80",
-                    "protocol": "Http"
-                }]
+                resource_config["http_listener"] = [
+                    {
+                        "name": "http-listener",
+                        "frontend_ip_configuration_name": "frontend-ip-config",
+                        "frontend_port_name": "frontend-port-80",
+                        "protocol": "Http",
+                    }
+                ]
 
             # Required: request_routing_rule block
             routing_rules = properties.get("requestRoutingRules", [])
@@ -4117,24 +4230,33 @@ class TerraformEmitter(IaCEmitter):
                         rule_name = rule.get("name", "routing-rule")
                         rule_props = rule.get("properties", {})
                         rule_type = rule_props.get("ruleType", "Basic")
-                        http_listener_name = rule_props.get("httpListener", {}).get("id", "")
+                        http_listener_name = rule_props.get("httpListener", {}).get(
+                            "id", ""
+                        )
                         if http_listener_name:
                             http_listener_name = self._extract_resource_name_from_id(
                                 http_listener_name, "httpListeners"
                             )
                         else:
                             http_listener_name = "http-listener"
-                        backend_pool_name = rule_props.get("backendAddressPool", {}).get("id", "")
+                        backend_pool_name = rule_props.get(
+                            "backendAddressPool", {}
+                        ).get("id", "")
                         if backend_pool_name:
                             backend_pool_name = self._extract_resource_name_from_id(
                                 backend_pool_name, "backendAddressPools"
                             )
                         else:
                             backend_pool_name = "backend-pool"
-                        backend_http_settings_name = rule_props.get("backendHttpSettings", {}).get("id", "")
+                        backend_http_settings_name = rule_props.get(
+                            "backendHttpSettings", {}
+                        ).get("id", "")
                         if backend_http_settings_name:
-                            backend_http_settings_name = self._extract_resource_name_from_id(
-                                backend_http_settings_name, "backendHttpSettingsCollection"
+                            backend_http_settings_name = (
+                                self._extract_resource_name_from_id(
+                                    backend_http_settings_name,
+                                    "backendHttpSettingsCollection",
+                                )
                             )
                         else:
                             backend_http_settings_name = "backend-http-settings"
@@ -4144,25 +4266,29 @@ class TerraformEmitter(IaCEmitter):
                         http_listener_name = "http-listener"
                         backend_pool_name = "backend-pool"
                         backend_http_settings_name = "backend-http-settings"
-                    routing_rule_blocks.append({
-                        "name": rule_name,
-                        "rule_type": rule_type,
-                        "http_listener_name": http_listener_name,
-                        "backend_address_pool_name": backend_pool_name,
-                        "backend_http_settings_name": backend_http_settings_name,
-                        "priority": priority
-                    })
+                    routing_rule_blocks.append(
+                        {
+                            "name": rule_name,
+                            "rule_type": rule_type,
+                            "http_listener_name": http_listener_name,
+                            "backend_address_pool_name": backend_pool_name,
+                            "backend_http_settings_name": backend_http_settings_name,
+                            "priority": priority,
+                        }
+                    )
                     priority += 1
                 resource_config["request_routing_rule"] = routing_rule_blocks
             else:
-                resource_config["request_routing_rule"] = [{
-                    "name": "routing-rule",
-                    "rule_type": "Basic",
-                    "http_listener_name": "http-listener",
-                    "backend_address_pool_name": "backend-pool",
-                    "backend_http_settings_name": "backend-http-settings",
-                    "priority": 100
-                }]
+                resource_config["request_routing_rule"] = [
+                    {
+                        "name": "routing-rule",
+                        "rule_type": "Basic",
+                        "http_listener_name": "http-listener",
+                        "backend_address_pool_name": "backend-pool",
+                        "backend_http_settings_name": "backend-http-settings",
+                        "priority": 100,
+                    }
+                ]
 
         elif azure_type == "Microsoft.RecoveryServices/vaults":
             # Recovery Services Vault requires SKU
@@ -4180,7 +4306,9 @@ class TerraformEmitter(IaCEmitter):
             if sku and "name" in sku:
                 resource_config["sku"] = sku["name"]
             else:
-                resource_config["sku"] = "standard"  # Default (lowercase for Databricks)
+                resource_config["sku"] = (
+                    "standard"  # Default (lowercase for Databricks)
+                )
 
         return terraform_type, safe_name, resource_config
 
@@ -4443,7 +4571,9 @@ class TerraformEmitter(IaCEmitter):
 
         return sanitized or "unnamed_resource"
 
-    def _add_unique_suffix(self, name: str, resource_id: str, resource_type: str | None = None) -> str:
+    def _add_unique_suffix(
+        self, name: str, resource_id: str, resource_type: str | None = None
+    ) -> str:
         """Add a unique suffix to globally unique resource names.
 
         Args:

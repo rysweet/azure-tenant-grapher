@@ -7,7 +7,7 @@ This PR implements scale-up and scale-down operations for Azure Tenant Grapher (
 ## What's Delivered (25 Commits)
 
 - 7 Python services for scale operations
-- 7 CLI commands 
+- 7 CLI commands
 - 12 UI React components
 - 534 tests across multiple frameworks
 - PowerPoint presentation (20 slides)

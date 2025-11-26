@@ -7,6 +7,7 @@ All exporters inherit from BaseExporter and implement the export() method.
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Set
+
 import networkx as nx
 
 
@@ -25,7 +26,7 @@ class BaseExporter(ABC):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sampled graph to specified format.

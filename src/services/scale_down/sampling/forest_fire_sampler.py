@@ -12,7 +12,9 @@ Leskovec, J., & Faloutsos, C. (2006). "Sampling from large graphs."
 import logging
 import random
 from typing import Callable, Optional, Set
+
 import networkx as nx
+
 from src.services.scale_down.sampling.base_sampler import BaseSampler
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,7 @@ class ForestFireSampler(BaseSampler):
         self,
         graph: nx.DiGraph,
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using Forest Fire algorithm.
@@ -109,7 +111,7 @@ class ForestFireSampler(BaseSampler):
                     num_to_burn = min(
                         len(unvisited_neighbors),
                         max(1, int(len(unvisited_neighbors) * p)),
-                        target_count - len(sampled_nodes)
+                        target_count - len(sampled_nodes),
                     )
                     burned = random.sample(unvisited_neighbors, num_to_burn)
                     for node in burned:
@@ -117,7 +119,9 @@ class ForestFireSampler(BaseSampler):
                         queue.append(node)
 
                 if progress_callback and len(sampled_nodes) % 100 == 0:
-                    progress_callback("Forest Fire sampling", len(sampled_nodes), target_count)
+                    progress_callback(
+                        "Forest Fire sampling", len(sampled_nodes), target_count
+                    )
 
             # If we didn't reach target (disconnected graph), add random nodes
             if len(sampled_nodes) < target_count:

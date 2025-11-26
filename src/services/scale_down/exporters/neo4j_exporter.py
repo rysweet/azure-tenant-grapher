@@ -16,7 +16,9 @@ import logging
 import re
 from datetime import UTC, datetime
 from typing import Any, Dict, Set
+
 import networkx as nx
+
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)
@@ -87,7 +89,7 @@ class Neo4jExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to Neo4j Cypher statements.
@@ -186,7 +188,9 @@ class Neo4jExporter(BaseExporter):
             safe_label = _escape_cypher_identifier(label_name)
 
             # Generate CREATE statement
-            cypher_statements.append(f"CREATE (:{safe_label}:Resource {{{props_str}}});")
+            cypher_statements.append(
+                f"CREATE (:{safe_label}:Resource {{{props_str}}});"
+            )
 
         cypher_statements.append("")
 
@@ -201,7 +205,9 @@ class Neo4jExporter(BaseExporter):
             # Get and validate relationship type
             rel_type = data.get("relationship_type", "RELATED_TO")
             if not _is_safe_cypher_identifier(rel_type):
-                self.logger.warning(f"Skipping relationship with unsafe type: {rel_type}")
+                self.logger.warning(
+                    f"Skipping relationship with unsafe type: {rel_type}"
+                )
                 continue
 
             safe_rel_type = _escape_cypher_identifier(rel_type)

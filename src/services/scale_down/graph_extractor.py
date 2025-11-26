@@ -14,9 +14,11 @@ Key Features:
 
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
+
 import networkx as nx
-from src.utils.session_manager import Neo4jSessionManager
+
 from src.services.base_scale_service import BaseScaleService
+from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ class GraphExtractor(BaseScaleService):
         self,
         tenant_id: str,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
-        batch_size: int = 5000
+        batch_size: int = 5000,
     ) -> Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
         """
         Convert Neo4j graph to NetworkX directed graph.

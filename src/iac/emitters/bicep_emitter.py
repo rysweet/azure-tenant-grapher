@@ -249,7 +249,9 @@ class BicepEmitter(IaCEmitter):
         if self.identity_mapping and principal_id:
             translated = self._translate_principal_id(principal_id, principal_type)
             if translated:
-                logger.info(f"Bicep: Translated principal {principal_id} -> {translated}")
+                logger.info(
+                    f"Bicep: Translated principal {principal_id} -> {translated}"
+                )
                 principal_id = translated
             else:
                 logger.warning(

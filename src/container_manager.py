@@ -78,24 +78,6 @@ class Neo4jContainerManager:
             debug: Enable debug output
         """
         self.debug = debug
-        # Only show debug env output if debug is enabled
-        if self.debug:
-            # Redact sensitive environment variables
-            def should_redact(key: str) -> bool:
-                """Check if environment variable should be redacted."""
-                sensitive_patterns = {
-                    'PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'AUTH'
-                }
-                return any(pattern in key.upper() for pattern in sensitive_patterns)
-
-            safe_env = {
-                k: '***REDACTED***' if should_redact(k) else v
-                for k, v in os.environ.items()
-            }
-            print(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}")
-            print(
-                f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
-            )
         self.compose_file = compose_file
         self.docker_client = None
 
@@ -145,9 +127,7 @@ class Neo4jContainerManager:
                 )
             self.neo4j_uri = f"bolt://localhost:{port}"
         if self.debug:
-            print(
-                f"[DEBUG][Neo4jConfig] uri={self.neo4j_uri}, NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={uri_env}"
-            )
+            pass  # Debug prints removed
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = (
             os.getenv("NEO4J_PASSWORD") or self.generate_random_password()
@@ -336,17 +316,15 @@ class Neo4jContainerManager:
 
             # Start the container
             if self.debug:
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH=***REDACTED***"
+                logger.debug("Container Manager compose env: NEO4J_AUTH=***REDACTED***")
+                logger.debug(
+                    "Container Manager compose env: NEO4J_PASSWORD=***REDACTED***"
                 )
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD=***REDACTED***"
+                logger.debug(
+                    f"Container Manager compose env: NEO4J_CONTAINER_NAME={self.container_name}"
                 )
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
-                )
-                print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_DATA_VOLUME={self.volume_name}"
+                logger.debug(
+                    f"Container Manager compose env: NEO4J_DATA_VOLUME={self.volume_name}"
                 )
             # Compose service name is always "neo4j", but container name is unique
             result = subprocess.run(  # nosec B603
@@ -386,9 +364,7 @@ class Neo4jContainerManager:
         while time.time() - start_time < timeout:
             try:
                 if self.debug:
-                    print(
-                        f"[DEBUG][Neo4jConnection] Connecting to {self.neo4j_uri} as {self.neo4j_user}"
-                    )
+                    pass  # Debug prints removed
                 driver = GraphDatabase.driver(
                     self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
                 )
@@ -766,8 +742,8 @@ class Neo4jContainerManager:
             for c in containers:
                 try:
                     if self.debug:
-                        print(
-                            f"[CONTAINER MANAGER CLEANUP] Removing container: {c.name} (status: {c.status})"
+                        logger.debug(
+                            f"Container Manager cleanup: Removing container: {c.name} (status: {c.status})"
                         )
                     c.remove(force=True)
                     logger.info(event=f"Removed container {c.name}")
@@ -784,7 +760,9 @@ class Neo4jContainerManager:
             for v in volumes:
                 try:
                     if self.debug:
-                        print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
+                        logger.debug(
+                            f"Container Manager cleanup: Removing volume: {v.name}"
+                        )
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:

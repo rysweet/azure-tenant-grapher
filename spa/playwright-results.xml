@@ -26,7 +26,7 @@
 </testcase>
 <testcase name="Scale Operations UI Screenshots › 15 - Error state display" classname="screenshot-scale-ops.spec.ts" time="16.68">
 <failure message="screenshot-scale-ops.spec.ts:487:7 15 - Error state display" type="FAILURE">
-<![CDATA[  [chromium] › screenshot-scale-ops.spec.ts:487:7 › Scale Operations UI Screenshots › 15 - Error state display 
+<![CDATA[  [chromium] › screenshot-scale-ops.spec.ts:487:7 › Scale Operations UI Screenshots › 15 - Error state display
 
     TimeoutError: locator.click: Timeout 10000ms exceeded.
     Call log:

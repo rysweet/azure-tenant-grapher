@@ -357,9 +357,7 @@ class AzureTenantGrapherConfig:
 
         # Debug output after Neo4j config is initialized
         if debug:
-            print(
-                f"[DEBUG][Neo4jConfig] uri={config.neo4j.uri}, NEO4J_PORT={os.getenv('NEO4J_PORT')}, NEO4J_URI={os.getenv('NEO4J_URI')}"
-            )
+            pass  # Debug prints removed
 
         return config
 
@@ -569,7 +567,12 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
+        tenant_id,
+        resource_limit,
+        max_retries,
+        max_build_threads,
+        max_concurrency,
+        debug,
     )
     config.validate_all()
     return config

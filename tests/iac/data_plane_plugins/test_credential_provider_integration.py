@@ -103,10 +103,14 @@ def test_invalid_credentials_real():
     provider = CredentialProvider(config)
 
     # Mock DefaultAzureCredential to prevent it from succeeding with system credentials
-    with patch("src.iac.data_plane_plugins.credential_provider.DefaultAzureCredential") as mock_default:
+    with patch(
+        "src.iac.data_plane_plugins.credential_provider.DefaultAzureCredential"
+    ) as mock_default:
         # Make DefaultAzureCredential fail as well
         mock_cred = mock_default.return_value
-        mock_cred.get_token.side_effect = ClientAuthenticationError("No credentials available")
+        mock_cred.get_token.side_effect = ClientAuthenticationError(
+            "No credentials available"
+        )
 
         # Should raise ValueError when all credential sources fail
         # (explicit credentials are invalid, no other sources available)

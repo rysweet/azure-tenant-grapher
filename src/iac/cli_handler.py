@@ -439,9 +439,9 @@ async def generate_iac_command_handler(
                     for resource in graph.resources:
                         resource_id = resource.get("id", "")
                         if "/subscriptions/" in resource_id:
-                            source_subscription_id = resource_id.split("/subscriptions/")[
-                                1
-                            ].split("/")[0]
+                            source_subscription_id = resource_id.split(
+                                "/subscriptions/"
+                            )[1].split("/")[0]
                             logger.debug(
                                 f"Extracted source subscription from resource ID: {source_subscription_id}"
                             )
@@ -473,7 +473,9 @@ async def generate_iac_command_handler(
                 target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
 
                 if target_client_id and target_client_secret:
-                    logger.info(f"Using tenant-specific credentials for target tenant {scan_target_tenant_id}")
+                    logger.info(
+                        f"Using tenant-specific credentials for target tenant {scan_target_tenant_id}"
+                    )
                     target_credential = ClientSecretCredential(
                         tenant_id=scan_target_tenant_id,
                         client_id=target_client_id,
@@ -492,8 +494,7 @@ async def generate_iac_command_handler(
 
                 # Create discovery service with target tenant credential
                 discovery = AzureDiscoveryService(
-                    config=discovery_config,
-                    credential=target_credential
+                    config=discovery_config, credential=target_credential
                 )
                 scanner = TargetScannerService(discovery)
 
@@ -724,15 +725,24 @@ async def generate_iac_command_handler(
                 # Create credential for TARGET tenant (not source) for conflict detection
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
-                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+                use_target_creds = (
+                    resolved_target_tenant_id
+                    and resolved_target_tenant_id != resolved_source_tenant_id
+                )
                 conflict_detector_credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 # Initialize detector with proper credential
-                detector = ConflictDetector(subscription_id, credential=conflict_detector_credential)
+                detector = ConflictDetector(
+                    subscription_id, credential=conflict_detector_credential
+                )
 
                 # Detect conflicts
                 conflict_report = await detector.detect_conflicts(graph.resources)
@@ -873,13 +883,21 @@ async def generate_iac_command_handler(
                 import os
 
                 from azure.identity import ClientSecretCredential
+
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
-                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+                use_target_creds = (
+                    resolved_target_tenant_id
+                    and resolved_target_tenant_id != resolved_source_tenant_id
+                )
                 credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -994,13 +1012,21 @@ async def generate_iac_command_handler(
             import os
 
             from azure.identity import ClientSecretCredential
+
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
             # Use target tenant credentials if different from source
-            use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+            use_target_creds = (
+                resolved_target_tenant_id
+                and resolved_target_tenant_id != resolved_source_tenant_id
+            )
             credential = ClientSecretCredential(
                 tenant_id=target_tenant,
-                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                if use_target_creds
+                else os.getenv("AZURE_CLIENT_ID"),
+                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                if use_target_creds
+                else os.getenv("AZURE_CLIENT_SECRET"),
             )
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -1087,9 +1113,7 @@ async def generate_iac_command_handler(
         # Validate and fix global name conflicts (GAP-014)
         # Skip validation when smart import is enabled (it handles conflicts)
         if scan_target:
-            logger.info(
-                "Skipping name conflict validation (smart import mode enabled)"
-            )
+            logger.info("Skipping name conflict validation (smart import mode enabled)")
         elif format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
@@ -1173,30 +1197,46 @@ async def generate_iac_command_handler(
 
         # Check Azure resource provider registration (before validation/deployment)
         # Use target_subscription if provided (cross-tenant), otherwise use source subscription
-        provider_check_subscription = target_subscription if target_subscription else subscription_id
-        if format_type.lower() == "terraform" and provider_check_subscription and not dry_run:
+        provider_check_subscription = (
+            target_subscription if target_subscription else subscription_id
+        )
+        if (
+            format_type.lower() == "terraform"
+            and provider_check_subscription
+            and not dry_run
+        ):
             from .provider_manager import ProviderManager
 
             try:
-                logger.info(f"Checking Azure resource provider registration in subscription {provider_check_subscription}...")
+                logger.info(
+                    f"Checking Azure resource provider registration in subscription {provider_check_subscription}..."
+                )
 
                 # Bug #19 fix: Use target tenant credentials for cross-tenant provider registration
                 provider_credential = None
-                if target_tenant_id and provider_check_subscription == target_subscription:
+                if (
+                    target_tenant_id
+                    and provider_check_subscription == target_subscription
+                ):
                     # Cross-tenant mode - use target tenant credentials
                     target_client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID")
                     target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
 
                     if target_client_id and target_client_secret:
                         from azure.identity import ClientSecretCredential
+
                         provider_credential = ClientSecretCredential(
                             tenant_id=target_tenant_id,
                             client_id=target_client_id,
                             client_secret=target_client_secret,
                         )
-                        logger.info(f"Using target tenant credentials for provider registration in {target_tenant_id}")
+                        logger.info(
+                            f"Using target tenant credentials for provider registration in {target_tenant_id}"
+                        )
                     else:
-                        logger.warning("No target tenant credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). Provider registration may fail.")
+                        logger.warning(
+                            "No target tenant credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). Provider registration may fail."
+                        )
 
                 provider_manager = ProviderManager(
                     subscription_id=provider_check_subscription,

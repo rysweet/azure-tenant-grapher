@@ -157,7 +157,9 @@ def get_open_prs_and_issues(project_root: Path) -> str:
         return "\n## Open PRs and Issues\n\nUnable to retrieve (gh CLI not available)\n"
 
 
-async def generate_status_report(project_root: Path, state: Optional[Dict] = None) -> Optional[str]:
+async def generate_status_report(
+    project_root: Path, state: Optional[Dict] = None
+) -> Optional[str]:
     """Generate daily status report using Claude Agent SDK.
 
     Args:

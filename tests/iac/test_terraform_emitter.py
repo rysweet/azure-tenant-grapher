@@ -287,7 +287,9 @@ class TestTerraformEmitterIntegration:
             # Key assertion: the generated name should NOT contain dashes
             # (except for the original name, but the suffix should be alphanumeric only)
             # The name should be alphanumeric only
-            assert generated_name.replace("noahtestacr", "").replace("_", "").isalnum(), (
+            assert (
+                generated_name.replace("noahtestacr", "").replace("_", "").isalnum()
+            ), (
                 f"Container Registry name '{generated_name}' contains invalid characters "
                 f"(should be alphanumeric only). Container Registries do not allow dashes."
             )
@@ -315,8 +317,8 @@ class TestTerraformEmitterIntegration:
                 "addressSpace": ["10.0.0.0/16"],
                 "properties": {
                     "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
-                    "subnets": []
-                }
+                    "subnets": [],
+                },
             }
         ]
 
@@ -366,8 +368,8 @@ class TestTerraformEmitterIntegration:
                 "addressSpace": ["10.0.0.0/16"],
                 "properties": {
                     "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
-                    "subnets": []
-                }
+                    "subnets": [],
+                },
             }
         ]
 

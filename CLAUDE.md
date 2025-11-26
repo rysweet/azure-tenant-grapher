@@ -301,14 +301,14 @@ When using the CLI dashboard (during `atg scan` operations):
 ## Recent Bug Fixes (November 2025)
 
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
-**Status**: FIXED (commit faeb284)  
+**Status**: FIXED (commit faeb284)
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
 
 **Problem**: Abstracted Resource nodes in Neo4j had source subscription IDs embedded in properties JSON (roleDefinitionId, scope fields), requiring manual replacement of 2,292 occurrences before deployment.
 
 **Root Cause**: `resource_processor.py:_create_abstracted_node()` abstracted principalId but not subscription IDs.
 
-**Solution**: 
+**Solution**:
 1. ResourceProcessor: Replace subscription IDs with `/subscriptions/ABSTRACT_SUBSCRIPTION` placeholder at scan time
 2. TerraformEmitter: Update regex to replace placeholder with target subscription at IaC generation time
 
@@ -325,7 +325,7 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Solution**: Use `azurerm_network_interface_security_group_association` resources instead.
 
-### Bug #58: Skip NIC NSG When NSG Not Emitted  
+### Bug #58: Skip NIC NSG When NSG Not Emitted
 **Status**: FIXED (commit 7651fde)
 
 **Problem**: NIC NSG associations created for NSGs that weren't emitted, causing undeclared resource errors.
@@ -430,4 +430,3 @@ if not result.valid:
 - See `/tmp/COMPREHENSIVE_SESSION_SUMMARY.md` for complete session analysis
 - See `/tmp/ITERATION_19_FINAL_RESULTS.md` for detailed results and blockers
 - See `/tmp/00_PROJECT_STATUS_INDEX_UPDATED.md` for current status
-

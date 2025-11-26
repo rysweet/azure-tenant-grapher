@@ -371,9 +371,7 @@ class KeyVaultTranslator(BaseTranslator):
             translated_policies.append(translated_policy)
 
         # Summary warning if any access policies were skipped due to untranslated identities
-        skipped_count = sum(
-            1 for w in warnings if "SKIPPED" in w
-        )
+        skipped_count = sum(1 for w in warnings if "SKIPPED" in w)
         if skipped_count > 0:
             warnings.append(
                 f"SECURITY WARNING: {skipped_count} access policies SKIPPED due to untranslated identities. "

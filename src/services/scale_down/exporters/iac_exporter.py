@@ -7,7 +7,9 @@ This module exports sampled graphs to Infrastructure-as-Code formats
 
 import logging
 from typing import Any, Dict, Set
+
 import networkx as nx
+
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.emitters.bicep_emitter import BicepEmitter
 from src.iac.emitters.terraform_emitter import TerraformEmitter
@@ -58,7 +60,7 @@ class IaCExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to IaC format (Terraform, ARM, or Bicep).
@@ -84,9 +86,7 @@ class IaCExporter(BaseExporter):
             ...     "/tmp/iac_output"
             ... )
         """
-        self.logger.info(
-            f"Exporting sample to {self.iac_format} IaC at {output_path}"
-        )
+        self.logger.info(f"Exporting sample to {self.iac_format} IaC at {output_path}")
 
         # Build TenantGraph from sampled data
         resources = []

@@ -320,9 +320,7 @@ class ResourceComparator:
             )
             return None
 
-    def _normalize_resource_id_for_comparison(
-        self, resource_id: str
-    ) -> str:
+    def _normalize_resource_id_for_comparison(self, resource_id: str) -> str:
         """
         Normalize resource ID for cross-tenant comparison.
 
@@ -350,7 +348,7 @@ class ResourceComparator:
         # Replace source subscription with target subscription
         normalized_id = resource_id.replace(
             f"/subscriptions/{self.source_subscription_id}/",
-            f"/subscriptions/{self.target_subscription_id}/"
+            f"/subscriptions/{self.target_subscription_id}/",
         )
 
         logger.debug(

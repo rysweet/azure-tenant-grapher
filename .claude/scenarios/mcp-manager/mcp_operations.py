@@ -7,7 +7,6 @@ the input.
 
 import copy
 import json
-import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -56,15 +55,14 @@ class MCPServer:
             errors.append("All args must be strings")
 
         # Name constraints
-        if self.name and (' ' in self.name or self.name != self.name.lower()):
+        if self.name and (" " in self.name or self.name != self.name.lower()):
             errors.append("Server name must be lowercase with no spaces")
 
         # Environment variables validation
         if not isinstance(self.env, dict):
             errors.append("Environment variables must be a dictionary")
         elif self.env and not all(
-            isinstance(k, str) and isinstance(v, str)
-            for k, v in self.env.items()
+            isinstance(k, str) and isinstance(v, str) for k, v in self.env.items()
         ):
             errors.append("Environment variable keys and values must be strings")
 
@@ -293,10 +291,7 @@ def remove_server(config: dict[str, Any], name: str) -> dict[str, Any]:
     """
     # Check if server exists
     servers = config.get("enabledMcpjsonServers", [])
-    found = any(
-        isinstance(s, dict) and s.get("name") == name
-        for s in servers
-    )
+    found = any(isinstance(s, dict) and s.get("name") == name for s in servers)
 
     if not found:
         raise ValueError(f"Server not found: {name}")
@@ -306,7 +301,8 @@ def remove_server(config: dict[str, Any], name: str) -> dict[str, Any]:
 
     # Filter out the server
     new_config["enabledMcpjsonServers"] = [
-        s for s in new_config.get("enabledMcpjsonServers", [])
+        s
+        for s in new_config.get("enabledMcpjsonServers", [])
         if not (isinstance(s, dict) and s.get("name") == name)
     ]
 
@@ -330,10 +326,7 @@ def get_server(config: dict[str, Any], name: str) -> MCPServer | None:
     return None
 
 
-def export_servers(
-    servers: list[MCPServer],
-    format: str = "json"
-) -> str:
+def export_servers(servers: list[MCPServer], format: str = "json") -> str:
     """Export servers to string format.
 
     Args:
@@ -362,10 +355,7 @@ def export_servers(
     return json.dumps(export_data, indent=2, ensure_ascii=False)
 
 
-def import_servers(
-    data: str,
-    format: str = "json"
-) -> list[MCPServer]:
+def import_servers(data: str, format: str = "json") -> list[MCPServer]:
     """Parse import data into server list.
 
     Args:
@@ -412,11 +402,8 @@ def import_servers(
         # Validate the server
         errors = server.validate()
         if errors:
-            raise ValueError(
-                f"Server '{name}' validation failed: {', '.join(errors)}"
-            )
+            raise ValueError(f"Server '{name}' validation failed: {', '.join(errors)}")
 
         servers.append(server)
 
     return servers
-

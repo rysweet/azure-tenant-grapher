@@ -30,14 +30,14 @@ warning: The `tool.uv.dev-dependencies` field (used in `pyproject.toml`) is depr
 <string>:35: SyntaxWarning: invalid escape sequence '\!'
 <string>:36: SyntaxWarning: invalid escape sequence '\!'
 ======================================================================
-                   FINAL EXTREME SCALE ACHIEVEMENT                    
+                   FINAL EXTREME SCALE ACHIEVEMENT
 ======================================================================
 
 Target:                    40,000 abstracted resources
 Achieved:                  39,822 abstracted resources
 Percentage:                99.6%
 
-                        Short by 178 resources                        
+                        Short by 178 resources
 
 ----------------------------------------------------------------------
 Full Statistics:

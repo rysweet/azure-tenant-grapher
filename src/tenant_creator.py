@@ -1,11 +1,15 @@
 import re
 from typing import Any, Optional
 
+import structlog
+
 from src.config_manager import ProcessingConfig, create_neo4j_config_from_env
 from src.llm_descriptions import AzureLLMDescriptionGenerator
 from src.services.resource_processing_service import ResourceProcessingService
 from src.tenant_spec_models import TenantSpec
 from src.utils.session_manager import Neo4jSessionManager
+
+logger = structlog.get_logger(__name__)
 
 
 def get_default_session_manager() -> Neo4jSessionManager:
@@ -186,18 +190,16 @@ Instructions:
         Extracts a JSON fenced code block from markdown and parses it as TenantSpec.
         If no JSON block is found, uses LLM to generate the spec from the narrative.
         """
-        print("DEBUG: Markdown received by create_from_markdown:\n", markdown)
         match = re.search(
             r"```json\s*([\s\S]+?)\s*```", markdown, re.IGNORECASE | re.MULTILINE
         )
         if not match:
-            print("DEBUG: No JSON block found with standard regex, trying fallback.")
+            pass
             match = re.search(
                 r"```json\s*([\s\S]+)", markdown, re.IGNORECASE | re.MULTILINE
             )
         if match:
             json_text = match.group(1)
-            print("DEBUG: Extracted JSON block:\n", json_text)
             import json as _json
 
             # Always normalize the JSON before parsing
@@ -210,17 +212,12 @@ Instructions:
             # Note: TenantSpec doesn't have _is_llm_generated attribute
             return spec
         # No JSON block: extract narrative and use LLM
-        print(
-            "DEBUG: No JSON block found in markdown (even with fallback). Using LLM for narrative-to-spec."
-        )
         narrative = self._extract_narrative(markdown)
         # Prepare the prompt for error context
         prompt = self.LLM_PROMPT_TEMPLATE.format(
             narrative=narrative, schema=self._tenant_spec_schema_example()
         )
         json_text = await self._llm_generate_tenant_spec(narrative)
-        print("DEBUG: LLM-generated JSON spec:\n", json_text)
-        print("DEBUG: Type of json_text:", type(json_text))
         # Normalize LLM field names using centralized schema-driven mapping
         import json as _json
 
@@ -229,7 +226,6 @@ Instructions:
 
         try:
             data = _json.loads(json_text)
-            print("DEBUG: LLM JSON loaded as dict:", data)
 
             # Normalize all field names throughout the data structure
             if "tenant" in data:
@@ -313,7 +309,6 @@ Instructions:
                                             rel["targetId"] = "unknown-target"
                     data["tenant"]["relationships"] = relationships
 
-            print("DEBUG: Post-processed LLM JSON dict:", data)
             json_text = _json.dumps(data)
         except Exception as e:
             # Log prompt and raw response for debugging
@@ -376,24 +371,10 @@ Instructions:
         # (no longer need asyncio)
 
         tenant = spec.tenant
-        print(f"DEBUG: spec.tenant has these attributes: {dir(tenant)}")
-        print(f"DEBUG: tenant.users exists: {hasattr(tenant, 'users')}")
-        print(f"DEBUG: tenant.groups exists: {hasattr(tenant, 'groups')}")
-        print(
-            f"DEBUG: tenant.service_principals exists: {hasattr(tenant, 'service_principals')}"
-        )
-        print(
-            f"DEBUG: tenant.subscriptions length: {len(tenant.subscriptions) if tenant.subscriptions else 0}"
-        )
         if tenant.subscriptions and len(tenant.subscriptions) > 0:
             first_sub = tenant.subscriptions[0]
-            print(
-                f"DEBUG: first subscription has resource_groups: {hasattr(first_sub, 'resource_groups')}"
-            )
             if hasattr(first_sub, "resource_groups") and first_sub.resource_groups:
-                print(
-                    f"DEBUG: first subscription resource_groups length: {len(first_sub.resource_groups)}"
-                )
+                pass  # Debug prints removed
 
         session_manager = get_default_session_manager()
         session_manager.connect()
@@ -436,16 +417,12 @@ Instructions:
 
         # 3. Create ResourceGroup nodes and flatten resources for processing
         resources = []
-        print("DEBUG: Starting resource group and resource processing...")
         if tenant.subscriptions:
             for sub in tenant.subscriptions:
-                print(f"DEBUG: Processing subscription {sub.id}")
+                pass
                 if sub.resource_groups:
-                    print(
-                        f"DEBUG: Found {len(sub.resource_groups)} resource groups in subscription {sub.id}"
-                    )
                     for rg in sub.resource_groups:
-                        print(f"DEBUG: Creating ResourceGroup node: {rg.name}")
+                        pass
                         # Create ResourceGroup node
                         with session_manager.session() as session:
                             session.run(
@@ -468,9 +445,6 @@ Instructions:
                             stats["resource_groups"] += 1
 
                         if rg.resources:
-                            print(
-                                f"DEBUG: Found {len(rg.resources)} resources in resource group {rg.name}"
-                            )
                             for res in rg.resources:
                                 # Attach resource_group and subscription_id for context
                                 res_dict = (
@@ -482,13 +456,10 @@ Instructions:
                                 res_dict["subscription_id"] = sub.id
                                 resources.append(res_dict)
                         else:
-                            print(
-                                f"DEBUG: No resources found in resource group {rg.name}"
-                            )
+                            pass  # Debug prints removed
                 else:
-                    print(f"DEBUG: No resource groups found in subscription {sub.id}")
+                    pass  # Debug prints removed
 
-        print(f"DEBUG: Total resources to process: {len(resources)}")
         stats["resources"] = len(resources)
 
         # 4. Process resources using ResourceProcessingService
@@ -502,19 +473,17 @@ Instructions:
             await rps.process_resources(
                 resources, progress_callback=None, max_workers=2
             )
-            print("DEBUG: Resource processing completed successfully")
-        except Exception as e:
-            print(f"DEBUG: Error during resource processing: {e}")
+        except Exception:
+            pass
             import traceback
 
             traceback.print_exc()
 
         # 5. Ingest identities
-        print("DEBUG: Starting identity processing...")
         # If aad_graph_service is available, use it; otherwise, create minimal nodes
         aad_graph_service = getattr(self, "aad_graph_service", None)
         if aad_graph_service:
-            print("DEBUG: Using AAD graph service for identity processing")
+            pass
             # Use the db_ops from ResourceProcessor for upserts
             from src.resource_processor import ResourceProcessor
 
@@ -523,14 +492,14 @@ Instructions:
             )
             aad_graph_service.ingest_into_graph(processor.db_ops)
         else:
-            print("DEBUG: Processing identities from tenant spec...")
+            pass
             # Look for identities directly under tenant, not under spec.identities
             try:
                 # Users
                 if hasattr(tenant, "users") and tenant.users:
-                    print(f"DEBUG: Found {len(tenant.users)} users to process")
+                    pass
                     for user in tenant.users:
-                        print(f"DEBUG: Creating user: {user.display_name}")
+                        pass
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -558,13 +527,13 @@ Instructions:
                             )
                         stats["users"] += 1
                 else:
-                    print("DEBUG: No users found in tenant spec")
+                    pass
 
                 # Groups
                 if hasattr(tenant, "groups") and tenant.groups:
-                    print(f"DEBUG: Found {len(tenant.groups)} groups to process")
+                    pass
                     for group in tenant.groups:
-                        print(f"DEBUG: Creating group: {group.display_name}")
+                        pass
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -582,15 +551,12 @@ Instructions:
                             )
                         stats["groups"] += 1
                 else:
-                    print("DEBUG: No groups found in tenant spec")
+                    pass
 
                 # Service Principals
                 if hasattr(tenant, "service_principals") and tenant.service_principals:
-                    print(
-                        f"DEBUG: Found {len(tenant.service_principals)} service principals to process"
-                    )
                     for sp in tenant.service_principals:
-                        print(f"DEBUG: Creating service principal: {sp.display_name}")
+                        pass
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -608,15 +574,12 @@ Instructions:
                             )
                         stats["service_principals"] += 1
                 else:
-                    print("DEBUG: No service principals found in tenant spec")
+                    pass
 
                 # Managed Identities
                 if hasattr(tenant, "managed_identities") and tenant.managed_identities:
-                    print(
-                        f"DEBUG: Found {len(tenant.managed_identities)} managed identities to process"
-                    )
                     for mi in tenant.managed_identities:
-                        print(f"DEBUG: Creating managed identity: {mi.display_name}")
+                        pass
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -634,15 +597,12 @@ Instructions:
                             )
                         stats["managed_identities"] += 1
                 else:
-                    print("DEBUG: No managed identities found in tenant spec")
+                    pass
 
                 # Admin Units
                 if hasattr(tenant, "admin_units") and tenant.admin_units:
-                    print(
-                        f"DEBUG: Found {len(tenant.admin_units)} admin units to process"
-                    )
                     for au in tenant.admin_units:
-                        print(f"DEBUG: Creating admin unit: {au.display_name}")
+                        pass
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -657,32 +617,25 @@ Instructions:
                             )
                         stats["admin_units"] += 1
                 else:
-                    print("DEBUG: No admin units found in tenant spec")
+                    pass
 
-            except Exception as e:
-                print(f"DEBUG: Error during identity processing: {e}")
+            except Exception:
+                pass
                 import traceback
 
                 traceback.print_exc()
 
         # 6. RBAC assignments
-        print("DEBUG: Starting RBAC assignments processing...")
         try:
             rbac_assignments = None
             # Look for RBAC assignments directly under tenant
             if hasattr(tenant, "rbac_assignments") and tenant.rbac_assignments:
                 rbac_assignments = tenant.rbac_assignments
-                print(
-                    f"DEBUG: Found {len(rbac_assignments)} RBAC assignments to process"
-                )
             else:
-                print("DEBUG: No RBAC assignments found in tenant spec")
+                pass
 
             if rbac_assignments:
                 for rbac in rbac_assignments:
-                    print(
-                        f"DEBUG: Creating RBAC assignment: {rbac.principal_id} -> {getattr(rbac, 'role_definition_name', getattr(rbac, 'role', 'Unknown Role'))}"
-                    )
                     with session_manager.session() as session:
                         session.run(
                             """
@@ -701,22 +654,20 @@ Instructions:
                             },
                         )
                     stats["rbac_assignments"] += 1
-        except Exception as e:
-            print(f"DEBUG: Error during RBAC assignment processing: {e}")
+        except Exception:
+            pass
             import traceback
 
             traceback.print_exc()
 
         # 7. Relationships
-        print("DEBUG: Starting relationships processing...")
         try:
             relationships = None
             # Look for relationships directly under tenant
             if hasattr(tenant, "relationships") and tenant.relationships:
                 relationships = tenant.relationships
-                print(f"DEBUG: Found {len(relationships)} relationships to process")
             else:
-                print("DEBUG: No relationships found in tenant spec")
+                pass
 
             if relationships:
                 for rel in relationships:
@@ -731,9 +682,6 @@ Instructions:
                         rel, "relationshipType", getattr(rel, "type", None)
                     )
 
-                    print(
-                        f"DEBUG: Processing relationship: {source_id} -> {target_id} ({rel_type})"
-                    )
                     with session_manager.session() as session:
                         # Core canonical relationship types that downstream systems understand
                         canonical_types = {
@@ -796,9 +744,6 @@ Instructions:
                             if rel_type in relationship_mappings:
                                 # Map to canonical type
                                 canonical_rel_type = relationship_mappings[rel_type]
-                                print(
-                                    f"DEBUG: Mapping LLM relationship '{rel_type}' -> '{canonical_rel_type}'"
-                                )
                                 rel_type = canonical_rel_type
                             else:
                                 # Block dangerous patterns
@@ -819,9 +764,6 @@ Instructions:
                                         f"Relationship type '{rel_type}' contains dangerous patterns and is not allowed"
                                     )
                                 # Use GENERIC_RELATIONSHIP to preserve unknown types
-                                print(
-                                    f"DEBUG: Using GENERIC_RELATIONSHIP for unknown type '{rel_type}'"
-                                )
                                 original_rel_type = rel_type
                                 rel_type = "GENERIC_RELATIONSHIP"
 
@@ -876,15 +818,14 @@ Instructions:
 
                         session.run(cypher, params)  # type: ignore
                         stats["relationships"] += 1
-        except Exception as e:
-            print(f"DEBUG: Error during relationships processing: {e}")
-            import traceback
-
-            traceback.print_exc()
+        except Exception:
+            logger.exception("Error creating tenant graph relationships")
 
         # Calculate total entities created
         stats["total"] = sum(stats.values())
 
-        print(f"✅ Tenant graph created: {getattr(tenant, 'display_name', tenant.id)}")
+        logger.info(
+            f"Tenant graph created: {getattr(tenant, 'display_name', tenant.id)}"
+        )
         session_manager.disconnect()
         return stats
