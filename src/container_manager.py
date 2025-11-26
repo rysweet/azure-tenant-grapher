@@ -17,6 +17,7 @@ from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable
 
 from src.logging_config import configure_logging
+from src.timeout_config import Timeouts
 
 configure_logging()
 logger = structlog.get_logger(__name__)
@@ -83,13 +84,11 @@ class Neo4jContainerManager:
             # Redact sensitive environment variables
             def should_redact(key: str) -> bool:
                 """Check if environment variable should be redacted."""
-                sensitive_patterns = {
-                    'PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'AUTH'
-                }
+                sensitive_patterns = {"PASSWORD", "SECRET", "KEY", "TOKEN", "AUTH"}
                 return any(pattern in key.upper() for pattern in sensitive_patterns)
 
             safe_env = {
-                k: '***REDACTED***' if should_redact(k) else v
+                k: "***REDACTED***" if should_redact(k) else v
                 for k, v in os.environ.items()
             }
             print(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}")
@@ -205,10 +204,15 @@ class Neo4jContainerManager:
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=Timeouts.VERSION_CHECK,
             )
             logger.info(event=f"Docker Compose available: {result.stdout.strip()}")
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
             try:
                 # Try docker compose (newer syntax)
                 result = subprocess.run(  # nosec B603
@@ -216,10 +220,15 @@ class Neo4jContainerManager:
                     capture_output=True,
                     text=True,
                     check=True,
+                    timeout=Timeouts.VERSION_CHECK,
                 )
                 logger.info(event=f"Docker Compose available: {result.stdout.strip()}")
                 return True
-            except (subprocess.CalledProcessError, FileNotFoundError):
+            except (
+                subprocess.CalledProcessError,
+                FileNotFoundError,
+                subprocess.TimeoutExpired,
+            ):
                 logger.exception(event="Docker Compose is not available")
                 return False
 
@@ -227,10 +236,17 @@ class Neo4jContainerManager:
         """Get the appropriate docker compose command."""
         try:
             subprocess.run(  # nosec B603
-                ["docker-compose", "--version"], capture_output=True, check=True
+                ["docker-compose", "--version"],
+                capture_output=True,
+                check=True,
+                timeout=Timeouts.VERSION_CHECK,
             )
             return ["docker-compose"]
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
             return ["docker", "compose"]
 
     def is_neo4j_container_running(self) -> bool:
@@ -337,10 +353,10 @@ class Neo4jContainerManager:
             # Start the container
             if self.debug:
                 print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH=***REDACTED***"
+                    "[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH=***REDACTED***"
                 )
                 print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD=***REDACTED***"
+                    "[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD=***REDACTED***"
                 )
                 print(
                     f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
@@ -355,6 +371,7 @@ class Neo4jContainerManager:
                 text=True,
                 check=True,
                 env=env,
+                timeout=Timeouts.DOCKER_COMMAND,
             )
 
             logger.info(event="Neo4j container started successfully")
@@ -362,6 +379,11 @@ class Neo4jContainerManager:
 
             return True
 
+        except subprocess.TimeoutExpired:
+            logger.exception(
+                event=f"Docker compose up timed out after {Timeouts.DOCKER_COMMAND} seconds"
+            )
+            return False
         except subprocess.CalledProcessError as e:
             logger.exception(event=f"Failed to start Neo4j container: {e}")
             logger.exception(event=f"Error output: {e.stderr}")
@@ -444,11 +466,17 @@ class Neo4jContainerManager:
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=Timeouts.DOCKER_COMMAND,
             )
 
             logger.info(event="Neo4j container stopped successfully")
             return True
 
+        except subprocess.TimeoutExpired:
+            logger.exception(
+                event=f"Docker compose stop timed out after {Timeouts.DOCKER_COMMAND} seconds"
+            )
+            return False
         except subprocess.CalledProcessError as e:
             logger.exception(f"Failed to stop Neo4j container: {e}")
             return False
@@ -473,8 +501,14 @@ class Neo4jContainerManager:
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=Timeouts.DOCKER_COMMAND,
             )
             return result.stdout
+        except subprocess.TimeoutExpired:
+            logger.exception(
+                event=f"Docker compose logs timed out after {Timeouts.DOCKER_COMMAND} seconds"
+            )
+            return None
         except subprocess.CalledProcessError as e:
             logger.exception(event=f"Failed to get container logs: {e}")
             return None

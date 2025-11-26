@@ -16,6 +16,7 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
 
 from ..config_manager import Neo4jConfig
 from ..exceptions import Neo4jConnectionError, wrap_neo4j_exception
+from ..timeout_config import Timeouts
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +122,7 @@ class Neo4jSessionManager:
             self._driver = GraphDatabase.driver(
                 self.config.uri,
                 auth=(self.config.user, self.config.password),
+                connection_timeout=Timeouts.NEO4J_CONNECTION,
             )
 
             # Test the connection
