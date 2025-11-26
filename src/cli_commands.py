@@ -2,6 +2,30 @@
 CLI Command Handlers
 
 Contains the implementation of various CLI commands to keep the main CLI file focused.
+
+DEPRECATION NOTICE (Issue #482):
+Many commands in this file have been moved to modular command modules in src/commands/.
+Imports from this file are deprecated and will be removed in a future version.
+Please import from the appropriate src/commands/* module instead:
+
+- DashboardLogHandler -> src.commands.base.DashboardLogHandler
+- create_tenant_command -> src.commands.tenant.create_tenant
+- spa_start -> src.commands.spa.spa_start
+- spa_stop -> src.commands.spa.spa_stop
+- app_registration_command -> src.commands.auth.app_registration
+- visualize_command_handler -> src.commands.visualize.visualize_command_handler
+- spec_command_handler -> src.commands.spec.spec_command_handler
+- generate_spec_command_handler -> src.commands.spec.generate_spec_command_handler
+- monitor_command_handler -> src.commands.monitor.monitor_command_handler
+- fidelity_command_handler -> src.commands.fidelity.fidelity_command_handler
+- cost_analysis_command_handler -> src.commands.cost.cost_analysis_command_handler
+- cost_forecast_command_handler -> src.commands.cost.cost_forecast_command_handler
+- cost_report_command_handler -> src.commands.cost.cost_report_command_handler
+- generate_sim_doc_command_handler -> src.commands.simulation.generate_sim_doc_command_handler
+- generate_threat_model_command_handler -> src.commands.threat_model.generate_threat_model_command_handler
+- mcp_query_command -> src.commands.mcp.mcp_query_command_handler
+
+build_command_handler remains in this file as the core scan logic for backward compatibility.
 """
 
 import asyncio
@@ -102,7 +126,12 @@ async def build_command_handler(
             sys.exit(1)
 
         config = create_config_from_env(
-            effective_tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
+            effective_tenant_id,
+            resource_limit,
+            max_retries,
+            max_build_threads,
+            max_concurrency,
+            debug,
         )
         # max_concurrency already set by create_config_from_env, don't override
         config.processing.auto_start_container = not no_container
@@ -1288,7 +1317,9 @@ def spa_start():
                 return
             except ProcessLookupError:
                 # Process not running, clean up stale PID file
-                click.echo(f"INFO: Cleaning up stale PID file (process {pid} not found)")
+                click.echo(
+                    f"INFO: Cleaning up stale PID file (process {pid} not found)"
+                )
                 os.remove(SPA_PIDFILE)
         except (OSError, ValueError) as e:
             # Invalid PID file, remove it
