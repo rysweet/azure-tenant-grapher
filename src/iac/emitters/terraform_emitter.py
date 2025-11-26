@@ -259,7 +259,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
         # "Microsoft.Compute/galleries/images": "azurerm_shared_image",  # Missing: gallery_name, os_type
-        # "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Missing: frequency, severity, scope_resource_ids, detector_type (31 instances!)
+        "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #70: Uncommented, field mappings added below
         "Microsoft.Web/staticSites": "azurerm_static_web_app",
         # "Microsoft.App/jobs": "azurerm_container_app_job",  # Missing: container_app_environment_id
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
@@ -1722,6 +1722,28 @@ class TerraformEmitter(IaCEmitter):
                     "account_kind": resource.get("account_kind", "StorageV2"),
                 }
             )
+        elif azure_type == "Microsoft.AlertsManagement/smartDetectorAlertRules":
+            # Bug #70: Smart Detector Alert Rules field mappings
+            properties = self._parse_properties(resource)
+            resource_config.update({
+                "detector_type": properties.get("detectorType", "FailureAnomaliesDetector"),
+                "frequency": properties.get("frequency", "PT1M"),
+                "severity": properties.get("severity", "Sev3"),
+                "scope_resource_ids": properties.get("scopes", []),
+            })
+
+            # Action group configuration (required)
+            action_groups = properties.get("actionGroups", {})
+            group_ids = action_groups.get("groupIds", [])
+            if group_ids:
+                resource_config["action_group"] = {
+                    "ids": group_ids
+                }
+            else:
+                # Default empty action group if none specified
+                resource_config["action_group"] = {
+                    "ids": []
+                }
         elif azure_type == "Microsoft.Network/virtualNetworks":
             # Parse properties first to extract address space
             properties = self._parse_properties(resource)
