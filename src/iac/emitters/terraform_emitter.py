@@ -94,7 +94,7 @@ class TerraformEmitter(IaCEmitter):
 
         # Import configuration (Issue #412, #422)
         self.auto_import_existing = auto_import_existing
-        self.import_strategy = import_strategy or "resource_groups"
+        self.import_strategy = import_strategy or "all_resources"  # Changed default from resource_groups
         self.credential = credential
 
         # Resource existence validator (Issue #422)
@@ -3395,7 +3395,15 @@ class TerraformEmitter(IaCEmitter):
             # Bug #18 fix: Skip role assignments with untranslated principals in cross-tenant mode
             # Without identity mapping, principal_ids from source tenant don't exist in target tenant
             # Azure hangs indefinitely trying to create role assignments for non-existent principals
-            if self.target_tenant_id and not self.identity_mapping:
+
+            # Detect same-tenant deployment (source and target are the same tenant)
+            is_same_tenant = (
+                self.source_tenant_id and
+                self.target_tenant_id and
+                self.source_tenant_id == self.target_tenant_id
+            )
+
+            if self.target_tenant_id and not self.identity_mapping and not is_same_tenant:
                 # Cross-tenant mode without identity mapping - skip ALL role assignments
                 logger.warning(
                     f"Skipping role assignment '{resource_name}' in cross-tenant mode: "
@@ -3404,6 +3412,12 @@ class TerraformEmitter(IaCEmitter):
                     f"to translate principals across tenants."
                 )
                 return None
+
+            # Same-tenant mode: Use original principal IDs (no translation needed)
+            if is_same_tenant:
+                logger.debug(
+                    f"Same-tenant mode detected: Using original principal ID for role assignment '{resource_name}'"
+                )
 
             # Bug #67 fix: Translate principal_id using identity mapping when available
             # Previously, even with identity_mapping provided, raw principal_id was used

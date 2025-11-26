@@ -2,7 +2,7 @@
 
 ## Summary
 
-**Status**: FIXED (commit pending)
+**Status**: FIXED (commit 67c93d5)
 **Impact**: 10 Azure Web Apps (Microsoft.Web/sites) are skipped during IaC generation
 **Root Cause**: Missing `microsoft.web` -> `Microsoft.Web` mapping in `_normalize_azure_type()`
 
@@ -87,8 +87,21 @@ provider_casing_map = {
 - `src/iac/emitters/terraform_emitter.py:2267-2309` - Web App config generation
 - `src/iac/emitters/terraform_emitter.py:4187-4204` - `_get_app_service_terraform_type()`
 
+## Deployment Verification
+
+**Verified Working**: 2025-11-25
+
+Terraform deployment confirmed Web Apps being created:
+- `azurerm_service_plan.simuland_plan` - Creating
+- `azurerm_service_plan.csharp_rest_service_5236_plan` - Creating
+- `azurerm_windows_web_app.simuland_fdef9e` - Planned
+- `azurerm_windows_web_app.csfdr01gbhg6tmxzhwoi_c8ac26` - Planned
+
+State shows 21 Web Apps and 13 Service Plans successfully deployed.
+
 ## Version History
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2025-11-25 | 1.1 | Deployment verification confirmed - Web Apps creating |
 | 2025-11-26 | 1.0 | Bug identified and documented |

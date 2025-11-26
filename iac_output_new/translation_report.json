@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "total_translators": 6,
+    "total_translations": 0,
+    "total_warnings": 0,
+    "total_missing_targets": 0,
+    "total_errors": 0
+  },
+  "translators": [
+    {
+      "translator": "AppServiceTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "DatabaseTranslator",
+      "total_resources_processed": 30,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "EntraIdTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "KeyVaultTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "ManagedIdentityTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "StorageAccountTranslator",
+      "total_resources_processed": 91,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    }
+  ]
+}

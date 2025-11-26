@@ -1,0 +1,227 @@
+{
+  "summary": {
+    "total_translators": 6,
+    "total_translations": 121,
+    "total_warnings": 26,
+    "total_missing_targets": 26,
+    "total_errors": 0
+  },
+  "translators": [
+    {
+      "translator": "AppServiceTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "DatabaseTranslator",
+      "total_resources_processed": 30,
+      "translations_performed": 30,
+      "warnings": 23,
+      "missing_targets": 23,
+      "results": [
+        {
+          "property": "id",
+          "resource_type": "Microsoft.DBforPostgreSQL/flexibleServers",
+          "resource_name": "ballista-scenario-3",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ballista-scenario-3/providers/Mic",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/ballista-scenario-3/providers/Mic",
+          "warnings": [
+            "id: Target resource 'ballista-scenario-3' of type 'Microsoft.DBforPostgreSQL/flexibleServers' not found in generated IaC."
+          ]
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.DocumentDB/databaseAccounts",
+          "resource_name": "ai-soc-abhiram4-db",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ai-soc-abhiram4-rg/providers/Micr",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/ai-soc-abhiram4-rg/providers/Micr",
+          "warnings": [
+            "id: Target resource 'ai-soc-abhiram4-db' of type 'Microsoft.DocumentDB/databaseAccounts' not found in generated IaC."
+          ]
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers",
+          "resource_name": "jempurviewsynapse1",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/synapseworkspace-managedrg-aa5b3c",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/synapseworkspace-managedrg-aa5b3c",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers/databases",
+          "resource_name": "jempurviewsynapse1/master",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/synapseworkspace-managedrg-aa5b3c",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/synapseworkspace-managedrg-aa5b3c",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers",
+          "resource_name": "purviewmetabasedemosqldb",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/purview_metabase_demo/providers/M",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/purview_metabase_demo/providers/M",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers/databases",
+          "resource_name": "purviewmetabasedemosqldb/master",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/purview_metabase_demo/providers/M",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/purview_metabase_demo/providers/M",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers",
+          "resource_name": "purviewmetabasedemo2",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/purview_metabase_demo/providers/M",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/purview_metabase_demo/providers/M",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers/databases",
+          "resource_name": "purviewmetabasedemo2/purview_demo_tenant",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/purview_metabase_demo/providers/M",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/purview_metabase_demo/providers/M",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.Sql/servers/databases",
+          "resource_name": "purviewmetabasedemo2/master",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/purview_metabase_demo/providers/M",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/purview_metabase_demo/providers/M",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "Microsoft.DocumentDB/databaseAccounts",
+          "resource_name": "ai-soc-analyst-cosmos",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ai-soc-analyst-prod-rg/providers/",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/ai-soc-analyst-prod-rg/providers/",
+          "warnings": [
+            "id: Target resource 'ai-soc-analyst-cosmos' of type 'Microsoft.DocumentDB/databaseAccounts' not found in generated IaC."
+          ]
+        }
+      ]
+    },
+    {
+      "translator": "EntraIdTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "KeyVaultTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "ManagedIdentityTranslator",
+      "total_resources_processed": 0,
+      "translations_performed": 0,
+      "warnings": 0,
+      "missing_targets": 0,
+      "results": []
+    },
+    {
+      "translator": "StorageAccountTranslator",
+      "total_resources_processed": 91,
+      "translations_performed": 91,
+      "warnings": 3,
+      "missing_targets": 3,
+      "results": [
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/ARTBAS-160224hpcp4rein6/providers",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-TmpUpload-160224v7qxvc2ghd",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/ARTBAS-TmpUpload-160224v7qxvc2ghd",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/simuland-api/providers/Microsoft.",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/simuland-api/providers/Microsoft.",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/rg-adapt-ai/providers/Microsoft.S",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/rg-adapt-ai/providers/Microsoft.S",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/SecureCore-RG/providers/Microsoft",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/MultiRegion-RG/providers/Microsof",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/MultiRegion-RG/providers/Microsof",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/S003/providers/Microsoft.Storage/",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/S003/providers/Microsoft.Storage/",
+          "warnings": []
+        },
+        {
+          "property": "id",
+          "resource_type": "",
+          "resource_name": "",
+          "original": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/s003rgtest/providers/Microsoft.St",
+          "translated": "/subscriptions/c190c55a-9ab2-4b1e-92c4-cc8b1a032285/resourceGroups/s003rgtest/providers/Microsoft.St",
+          "warnings": []
+        }
+      ]
+    }
+  ]
+}
