@@ -790,17 +790,17 @@ def generate_spec(
     help="Prefix to add to all resource group names (e.g., 'ITERATION15_') for non-destructive iterations",
 )
 @click.option(
-    "--auto-import-existing",
-    is_flag=True,
-    help="Automatically import pre-existing Azure resources into Terraform state (Issue #412)",
+    "--auto-import-existing/--no-auto-import-existing",
+    default=True,
+    help="Automatically import pre-existing Azure resources into Terraform state (default: enabled, Issue #412)",
 )
 @click.option(
     "--import-strategy",
     type=click.Choice(
         ["resource_groups", "all_resources", "selective"], case_sensitive=False
     ),
-    default="resource_groups",
-    help="Strategy for importing existing resources: resource_groups (default), all_resources, or selective (Issue #412)",
+    default="all_resources",
+    help="Strategy for importing existing resources: all_resources (default), resource_groups, or selective (Issue #412)",
 )
 @click.option(
     "--auto-register-providers",
