@@ -325,12 +325,28 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Solution**: Use `azurerm_network_interface_security_group_association` resources instead.
 
-### Bug #58: Skip NIC NSG When NSG Not Emitted  
+### Bug #58: Skip NIC NSG When NSG Not Emitted
 **Status**: FIXED (commit 7651fde)
 
 **Problem**: NIC NSG associations created for NSGs that weren't emitted, causing undeclared resource errors.
 
 **Solution**: Validate NSG exists in `_available_resources` before creating association.
+
+### Bug #68: Provider Name Case Sensitivity in Resource IDs
+**Status**: FIXED (commit d8ef246)
+
+**Problem**: Terraform plan failed with 85 validation errors. Neo4j stored lowercase provider names (`microsoft.operationalinsights`) but Terraform requires proper case (`Microsoft.OperationalInsights`).
+
+**Root Cause**: Cross-tenant resource ID translation preserved original casing from Neo4j without normalization.
+
+**Solution**: Added `_normalize_provider_casing()` method to BaseTranslator that normalizes 9 common Microsoft providers. Called automatically in `_translate_resource_id()` so all translators inherit the fix.
+
+**Impact**: Unlocked 85 resources (68 OperationalInsights, 15 Insights, 2 KeyVault). Enabled clean terraform plan for 3,682 resources (50.6% success rate).
+
+**Files Modified**:
+- `src/iac/translators/base_translator.py:321-352, 380-381, 389-390`
+
+**Documentation**: See `docs/BUG_68_DOCUMENTATION.md` for technical deep dive.
 
 
 ## Recent Code Improvements (November 2025)
