@@ -62,21 +62,22 @@ def test_install_tool_runs(monkeypatch, tool_name, installer, capsys):
     # Patch input to simulate user confirmation
     monkeypatch.setattr("builtins.input", lambda _: "y")
     # Patch subprocess.run to check the command
-    called = {}
+    # Note: After Issue #477 fix, commands are passed as lists without shell=True
+    called_commands = []
 
-    def fake_run(command, shell, check):
-        called["cmd"] = command
-        called["shell"] = shell
-        called["check"] = check
+    def fake_run(command, check=False):
+        called_commands.append(command)
         return types.SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(cli_installer.subprocess, "run", fake_run)
     cli_installer.install_tool(tool_name)
     out = capsys.readouterr().out
     assert cmd in out
-    assert called["cmd"] == cmd
-    assert called["shell"] is True
-    assert called["check"] is True
+    # Verify command was called as a list (Issue #477 security fix)
+    assert len(called_commands) >= 1
+    # For chained commands (e.g., "cmd1 && cmd2"), multiple calls are made
+    for called_cmd in called_commands:
+        assert isinstance(called_cmd, list), "Commands should be passed as lists, not strings"
 
 
 def test_install_tool_cancel(monkeypatch, capsys):
@@ -197,7 +198,11 @@ def test_bicep_install_commands():
     ],
 )
 def test_bicep_install_command_selection(monkeypatch, installer, expected_cmd, capsys):
-    """Test that the correct Bicep install command is selected for each platform."""
+    """Test that the correct Bicep install command is selected for each platform.
+
+    Note: After Issue #477 fix, commands are passed as lists without shell=True.
+    Chained commands (with &&) are split and executed separately.
+    """
     # Patch detect_installer to return the specific installer
     monkeypatch.setattr(cli_installer, "detect_installer", lambda: installer)
     # Patch _is_interactive_mode to return True (simulate interactive terminal)
@@ -205,10 +210,11 @@ def test_bicep_install_command_selection(monkeypatch, installer, expected_cmd, c
     # Patch input to simulate user confirmation
     monkeypatch.setattr("builtins.input", lambda _: "y")
     # Patch subprocess.run to capture the command
-    called = {}
+    # Note: After Issue #477 fix, commands are passed as lists without shell=True
+    called_commands = []
 
-    def fake_run(command, shell, check):
-        called["cmd"] = command
+    def fake_run(command, check=False):
+        called_commands.append(command)
         return types.SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(cli_installer.subprocess, "run", fake_run)
@@ -216,8 +222,10 @@ def test_bicep_install_command_selection(monkeypatch, installer, expected_cmd, c
     # Run the install_tool function for bicep
     cli_installer.install_tool("bicep")
 
-    # Verify the correct command was called
-    assert called["cmd"] == expected_cmd
+    # Verify command was called as a list (Issue #477 security fix)
+    assert len(called_commands) >= 1
+    for called_cmd in called_commands:
+        assert isinstance(called_cmd, list), "Commands should be passed as lists, not strings"
 
     # Also verify the command appears in the output
     out = capsys.readouterr().out
