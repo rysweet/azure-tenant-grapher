@@ -2504,9 +2504,9 @@ class TerraformEmitter(IaCEmitter):
             # Skip users in same-tenant deployments (Issue #496 Problem #2)
             # Users already exist in target tenant - cannot recreate them
             is_same_tenant = (
-                self._source_tenant_id and
-                self._target_tenant_id and
-                self._source_tenant_id == self._target_tenant_id
+                self.source_tenant_id and
+                self.target_tenant_id and
+                self.source_tenant_id == self.target_tenant_id
             )
 
             if is_same_tenant:
