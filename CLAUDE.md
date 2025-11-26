@@ -381,6 +381,24 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Testing**: Quick win - ready for next IaC generation. GitHub Issue: #500
 
+### Bug #72: Skip Entra ID Users in Same-Tenant Deployments (Issue #496 Problem #2) ⭐
+**Status**: FIXED (commit abc0770)
+**Impact**: +219 users (prevents duplicate creation failures)
+
+**Problem**: 219 Entra ID users fail in same-tenant deployments because they already exist (source tenant == target tenant).
+
+**Root Cause**: EntraUserHandler blindly creates all users without checking if deployment is same-tenant.
+
+**Solution**: Added same-tenant detection in EntraUserHandler.emit():
+- Detect when source_tenant_id == target_tenant_id
+- Skip user emission with debug message
+- Returns None to prevent duplicate user creation
+
+**Files Modified**:
+- `src/iac/emitters/terraform/handlers/identity/entra_user.py:44-57`
+
+**Testing**: Same pattern used successfully in RoleAssignmentHandler. Tests: 47/48 PASSED. GitHub Issue: #501
+
 
 ## Recent Code Improvements (November 2025)
 
