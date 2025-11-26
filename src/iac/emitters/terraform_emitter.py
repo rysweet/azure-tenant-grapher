@@ -155,6 +155,9 @@ class TerraformEmitter(IaCEmitter):
             "microsoft.alertsmanagement": "Microsoft.AlertsManagement",
             "Microsoft.alertsmanagement": "Microsoft.AlertsManagement",
             "microsoft.compute": "Microsoft.Compute",
+            # Bug #66: Microsoft.Web support
+            "microsoft.web": "Microsoft.Web",
+            "Microsoft.web": "Microsoft.Web",
         }
 
         normalized_type = azure_type
