@@ -126,8 +126,6 @@ class Neo4jContainerManager:
                     "NEO4J_PORT environment variable is required when NEO4J_URI is not set"
                 )
             self.neo4j_uri = f"bolt://localhost:{port}"
-        if self.debug:
-            pass  # Debug prints removed
         self.neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         self.neo4j_password = (
             os.getenv("NEO4J_PASSWORD") or self.generate_random_password()
@@ -363,8 +361,6 @@ class Neo4jContainerManager:
 
         while time.time() - start_time < timeout:
             try:
-                if self.debug:
-                    pass  # Debug prints removed
                 driver = GraphDatabase.driver(
                     self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
                 )

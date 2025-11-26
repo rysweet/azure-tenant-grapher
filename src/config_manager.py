@@ -355,10 +355,6 @@ class AzureTenantGrapherConfig:
         if max_concurrency is not None:
             config.processing.max_concurrency = max_concurrency
 
-        # Debug output after Neo4j config is initialized
-        if debug:
-            pass  # Debug prints removed
-
         return config
 
     def validate_all(self) -> None:

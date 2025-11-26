@@ -2005,10 +2005,6 @@ async def mcp_query_command(
     from src.services.mcp_integration import MCPIntegrationService
     from src.utils.mcp_startup import ensure_mcp_running_async
 
-    # Set up logging
-    if debug:
-        pass  # Debug logging configured elsewhere
-
     # Get tenant ID
     effective_tenant_id = tenant_id or os.environ.get("AZURE_TENANT_ID")
     if not effective_tenant_id:

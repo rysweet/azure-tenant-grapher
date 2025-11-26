@@ -194,7 +194,6 @@ Instructions:
             r"```json\s*([\s\S]+?)\s*```", markdown, re.IGNORECASE | re.MULTILINE
         )
         if not match:
-            pass
             match = re.search(
                 r"```json\s*([\s\S]+)", markdown, re.IGNORECASE | re.MULTILINE
             )
@@ -371,11 +370,6 @@ Instructions:
         # (no longer need asyncio)
 
         tenant = spec.tenant
-        if tenant.subscriptions and len(tenant.subscriptions) > 0:
-            first_sub = tenant.subscriptions[0]
-            if hasattr(first_sub, "resource_groups") and first_sub.resource_groups:
-                pass  # Debug prints removed
-
         session_manager = get_default_session_manager()
         session_manager.connect()
 
@@ -455,10 +449,6 @@ Instructions:
                                 res_dict["resource_group"] = rg.name
                                 res_dict["subscription_id"] = sub.id
                                 resources.append(res_dict)
-                        else:
-                            pass  # Debug prints removed
-                else:
-                    pass  # Debug prints removed
 
         stats["resources"] = len(resources)
 
