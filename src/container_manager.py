@@ -80,7 +80,19 @@ class Neo4jContainerManager:
         self.debug = debug
         # Only show debug env output if debug is enabled
         if self.debug:
-            print(f"[DEBUG][Neo4jEnv] os.environ at init: {dict(os.environ)}")
+            # Redact sensitive environment variables
+            def should_redact(key: str) -> bool:
+                """Check if environment variable should be redacted."""
+                sensitive_patterns = {
+                    'PASSWORD', 'SECRET', 'KEY', 'TOKEN', 'AUTH'
+                }
+                return any(pattern in key.upper() for pattern in sensitive_patterns)
+
+            safe_env = {
+                k: '***REDACTED***' if should_redact(k) else v
+                for k, v in os.environ.items()
+            }
+            print(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}")
             print(
                 f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
             )
@@ -325,10 +337,10 @@ class Neo4jContainerManager:
             # Start the container
             if self.debug:
                 print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH={env['NEO4J_AUTH']}"
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_AUTH=***REDACTED***"
                 )
                 print(
-                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD={env['NEO4J_PASSWORD']}"
+                    f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_PASSWORD=***REDACTED***"
                 )
                 print(
                     f"[CONTAINER MANAGER DEBUG][compose env] NEO4J_CONTAINER_NAME={self.container_name}"
