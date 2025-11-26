@@ -1719,6 +1719,7 @@ class TerraformEmitter(IaCEmitter):
                     "account_replication_type": resource.get(
                         "account_replication_type", "LRS"
                     ),
+                    "account_kind": resource.get("account_kind", "StorageV2"),
                 }
             )
         elif azure_type == "Microsoft.Network/virtualNetworks":
