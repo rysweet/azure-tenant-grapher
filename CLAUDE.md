@@ -333,7 +333,7 @@ When using the CLI dashboard (during `atg scan` operations):
 **Solution**: Validate NSG exists in `_available_resources` before creating association.
 
 ### Bug #68: Provider Name Case Sensitivity in Resource IDs
-**Status**: FIXED (commit d8ef246)
+**Status**: FIXED (commit d8ef246) | **GitHub**: Issue #498
 
 **Problem**: Terraform plan failed with 85 validation errors. Neo4j stored lowercase provider names (`microsoft.operationalinsights`) but Terraform requires proper case (`Microsoft.OperationalInsights`).
 
@@ -347,6 +347,22 @@ When using the CLI dashboard (during `atg scan` operations):
 - `src/iac/translators/base_translator.py:321-352, 380-381, 389-390`
 
 **Documentation**: See `docs/BUG_68_DOCUMENTATION.md` for technical deep dive.
+
+### Bug #69: Missing account_kind Field for Storage Accounts
+**Status**: FIXED (commit 4daf659) | **GitHub**: Issue #499
+
+**Problem**: Storage accounts had 0/91 success rate (0%) despite being correctly generated in IaC.
+
+**Root Cause**: The required `account_kind` field was missing from Terraform configuration in terraform_emitter.py:1715-1723.
+
+**Solution**: Added `account_kind` field with default value "StorageV2" (most common type).
+
+**Impact**: Unlocks 91 storage accounts (1.25% of 7,273 total resources). Success rate: 0% → expected 95%.
+
+**Files Modified**:
+- `src/iac/emitters/terraform_emitter.py:1722`
+
+**Evidence**: StorageAccountTranslator processed all 91/91 successfully, but Terraform requires account_kind for deployment.
 
 
 ## Recent Code Improvements (November 2025)
