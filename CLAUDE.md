@@ -382,22 +382,33 @@ When using the CLI dashboard (during `atg scan` operations):
 **Testing**: Quick win - ready for next IaC generation. GitHub Issue: #500
 
 ### Bug #72: Skip Entra ID Users in Same-Tenant Deployments (Issue #496 Problem #2) ⭐
-**Status**: FIXED (commit abc0770)
-**Impact**: +219 users (prevents duplicate creation failures)
+**Status**: FIXED & VERIFIED WORKING (commits abc0770, 9101bef, 5acbbdf, bf57224)
+**Impact**: Eliminates 219 user conflicts in same-tenant deployments
 
 **Problem**: 219 Entra ID users fail in same-tenant deployments because they already exist (source tenant == target tenant).
 
-**Root Cause**: EntraUserHandler blindly creates all users without checking if deployment is same-tenant.
+**Root Cause (Primary)**: EntraUserHandler blindly creates all users without checking if deployment is same-tenant.
+**Root Cause (Secondary - CRITICAL)**: Attribute name mismatch caused fix to not work initially
+- Code checked: `self._source_tenant_id` (with underscore)
+- Actual attribute: `self.source_tenant_id` (without underscore)
 
-**Solution**: Added same-tenant detection in EntraUserHandler.emit():
+**Solution**:
+1. Added same-tenant detection logic (commits abc0770, 5acbbdf)
+2. Fixed attribute names (commit bf57224) - removed underscore prefixes
 - Detect when source_tenant_id == target_tenant_id
 - Skip user emission with debug message
 - Returns None to prevent duplicate user creation
 
 **Files Modified**:
-- `src/iac/emitters/terraform/handlers/identity/entra_user.py:44-57`
+- `src/iac/emitters/terraform/handlers/identity/entra_user.py:44-57` (handler version)
+- `src/iac/emitters/terraform_emitter.py:2503-2528` (production version)
+- `src/iac/emitters/terraform_emitter.py:2507-2509` (attribute name fix)
 
-**Testing**: Same pattern used successfully in RoleAssignmentHandler. Tests: 47/48 PASSED. GitHub Issue: #501
+**Verification** (2025-11-26): ✅ PASSED
+- Before fix: 219 users generated in same-tenant mode
+- After bf57224: 0 users generated
+- Tests: 47/48 PASSED
+- GitHub Issue: #501
 
 
 ## Recent Code Improvements (November 2025)
