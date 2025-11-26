@@ -5,6 +5,7 @@ from .identity_rule import IdentityRule
 from .monitoring_rule import MonitoringRule
 from .network_rule_optimized import NetworkRuleOptimized
 from .region_rule import RegionRule
+from .secret_rule import SecretRule
 from .subnet_extraction_rule import SubnetExtractionRule
 from .tag_rule import TagRule
 
@@ -28,6 +29,7 @@ def create_relationship_rules():
         MonitoringRule(enable_dual_graph=True),
         DiagnosticRule(enable_dual_graph=True),
         DependsOnRule(enable_dual_graph=True),
+        SecretRule(enable_dual_graph=True),  # KeyVault secrets (Issue #478)
     ]
 
 
