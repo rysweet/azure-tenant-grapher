@@ -18,11 +18,19 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.style import Style
 
-from src.cli_commands import DashboardExitException
+from src.cli_dashboard_manager import DashboardExitException
+from src.commands.auth import app_registration as app_registration_cmd
+
+# Import modular commands for CLI registration (Issue #482)
 from src.commands.deploy import deploy_command
 from src.commands.list_deployments import list_deployments
+from src.commands.spa import spa_start as spa_start_command
+from src.commands.spa import spa_stop as spa_stop_command
+from src.commands.spec import generate_spec_command_handler, spec_command_handler
+from src.commands.tenant import create_tenant as create_tenant_cmd
 from src.commands.undeploy import undeploy
 from src.commands.validate_deployment import validate_deployment_command
+from src.commands.visualize import visualize_command_handler
 from src.utils.neo4j_startup import ensure_neo4j_running
 
 # Initialize console for rich output
@@ -106,21 +114,12 @@ load_dotenv()
 try:
     import click
 
-    # (Removed: from src.cli_commands import create_tenant_command)
-    from src.cli_commands import (
-        app_registration_command,
-        build_command_handler,
-        create_tenant_command,
-        generate_spec_command_handler,
-        spa_start,
-        spa_stop,
-        spec_command_handler,
-        visualize_command_handler,
-    )
+    # Keep handler imports for backward compatibility (deprecated, use modular commands)
+    from src.cli_commands import build_command_handler
     from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
-    print(f"❌ Import error: {e}")
+    print(f"Import error: {e}")
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
@@ -1067,12 +1066,22 @@ async def generate_sim_doc(
 # Alias: gensimdoc
 cli.add_command(generate_sim_doc, "gensimdoc")
 
-# Register create-tenant command
-cli.add_command(create_tenant_command, "create-tenant")
-cli.add_command(spa_start, "start")
-cli.add_command(spa_stop, "stop")
-cli.add_command(app_registration_command, "app-registration")
+# ==============================================================================
+# Register modular commands (Issue #482: CLI Modularization)
+# These commands are now defined in src/commands/ modules for maintainability
+# ==============================================================================
 
+# Register create-tenant command (from src.commands.tenant)
+cli.add_command(create_tenant_cmd, "create-tenant")
+
+# Register SPA commands (from src.commands.spa)
+cli.add_command(spa_start_command, "start")
+cli.add_command(spa_stop_command, "stop")
+
+# Register auth command (from src.commands.auth)
+cli.add_command(app_registration_cmd, "app-registration")
+
+# Register deployment commands (existing)
 cli.add_command(deploy_command, "deploy")
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")

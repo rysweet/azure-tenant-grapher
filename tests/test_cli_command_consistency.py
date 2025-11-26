@@ -9,6 +9,7 @@ with identical parameters, help text, and behavior.
 import sys
 from pathlib import Path
 
+import click
 import click.testing
 import pytest
 
@@ -104,13 +105,22 @@ class TestCommandConsistency:
         # Both should call build_command_handler
         from scripts.cli import build, scan
 
-        # Check that both commands exist
+        # Check that both commands exist as Click Command objects
         assert build is not None
         assert scan is not None
 
-        # Both should be async commands
-        assert hasattr(build, "__wrapped__")
-        assert hasattr(scan, "__wrapped__")
+        # Both should be Click Command objects
+        assert isinstance(build, click.core.Command)
+        assert isinstance(scan, click.core.Command)
+
+        # Both should have the same parameter names (excluding help)
+        build_params = {p.name for p in build.params if p.name != "help"}
+        scan_params = {p.name for p in scan.params if p.name != "help"}
+        assert build_params == scan_params, (
+            f"Commands have different parameters.\n"
+            f"Build only: {build_params - scan_params}\n"
+            f"Scan only: {scan_params - build_params}"
+        )
 
 
 if __name__ == "__main__":
