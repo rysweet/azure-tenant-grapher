@@ -3,16 +3,18 @@ from src.relationship_rules import (
     DependsOnRule,
     IdentityRule,
     MonitoringRule,
-    NetworkRule,
     RegionRule,
     TagRule,
 )
+from src.relationship_rules.network_rule_optimized import NetworkRuleOptimized
 from src.relationship_rules.diagnostic_rule import DiagnosticRule
 
 
 class DummyDbOps:
     def __init__(self):
         self.calls = []
+        # Mock session manager for batching support
+        self.session_manager = None
 
     def create_generic_rel(self, src, rel, tgt, tgt_label, tgt_key):
         self.calls.append(("rel", src, rel, tgt, tgt_label, tgt_key))
@@ -20,9 +22,20 @@ class DummyDbOps:
     def upsert_generic(self, label, key, value, props):
         self.calls.append(("upsert", label, key, value, props))
 
+    def create_dual_graph_relationships_batch(
+        self, relationships_by_type, dual_graph_enabled=True
+    ):
+        """Mock batch relationship creation for testing."""
+        # For testing, just call create_generic_rel for each relationship
+        for rel_type, relationships in relationships_by_type.items():
+            for rel in relationships:
+                self.create_generic_rel(
+                    rel["src_id"], rel_type, rel["tgt_id"], "Resource", "id"
+                )
+
 
 def test_network_rule_vm():
-    rule = NetworkRule()
+    rule = NetworkRuleOptimized(enable_dual_graph=True)
     db = DummyDbOps()
     resource = {
         "id": "vm1",
@@ -35,6 +48,8 @@ def test_network_rule_vm():
     }
     assert rule.applies(resource)
     rule.emit(resource, db)
+    # Flush buffered relationships
+    rule.flush_relationship_buffer(db)
     assert ("rel", "vm1", "USES_SUBNET", "subnet1", "Resource", "id") in db.calls
 
 
