@@ -2501,6 +2501,21 @@ class TerraformEmitter(IaCEmitter):
                 }
             )
         elif azure_type in ("Microsoft.AAD/User", "Microsoft.Graph/users"):
+            # Skip users in same-tenant deployments (Issue #496 Problem #2)
+            # Users already exist in target tenant - cannot recreate them
+            is_same_tenant = (
+                self._source_tenant_id and
+                self._target_tenant_id and
+                self._source_tenant_id == self._target_tenant_id
+            )
+
+            if is_same_tenant:
+                logger.debug(
+                    f"Skipping Entra ID user '{resource_name}' in same-tenant deployment: "
+                    f"Users already exist in target tenant"
+                )
+                return None
+
             # Azure AD User specific properties
             # Bug #32 fix: Sanitize UPN to remove spaces
             raw_upn = resource.get("userPrincipalName", f"{resource_name}@example.com")
