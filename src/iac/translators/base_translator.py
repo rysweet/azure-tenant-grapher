@@ -318,6 +318,39 @@ class BaseTranslator(ABC):
 
         return parsed["subscription_id"] != self.context.target_subscription_id
 
+    def _normalize_provider_casing(self, resource_id: str) -> str:
+        """
+        Normalize provider names in resource IDs to proper case.
+
+        Terraform requires proper case (Microsoft.OperationalInsights) but Neo4j/Azure
+        may return lowercase (microsoft.operationalinsights). This normalizes common providers.
+
+        Args:
+            resource_id: Resource ID potentially with lowercase providers
+
+        Returns:
+            Resource ID with normalized provider casing
+        """
+        # Mapping of lowercase -> proper case for common providers
+        # Only normalize the /providers/ segment, not the entire string
+        normalizations = {
+            '/providers/microsoft.operationalinsights/': '/providers/Microsoft.OperationalInsights/',
+            '/providers/microsoft.insights/': '/providers/Microsoft.Insights/',
+            '/providers/microsoft.keyvault/': '/providers/Microsoft.KeyVault/',
+            '/providers/microsoft.storage/': '/providers/Microsoft.Storage/',
+            '/providers/microsoft.compute/': '/providers/Microsoft.Compute/',
+            '/providers/microsoft.network/': '/providers/Microsoft.Network/',
+            '/providers/microsoft.sql/': '/providers/Microsoft.Sql/',
+            '/providers/microsoft.web/': '/providers/Microsoft.Web/',
+            '/providers/microsoft.authorization/': '/providers/Microsoft.Authorization/',
+        }
+
+        normalized = resource_id
+        for lowercase, proper_case in normalizations.items():
+            normalized = normalized.replace(lowercase, proper_case)
+
+        return normalized
+
     def _translate_resource_id(
         self, resource_id: str, context_name: str = ""
     ) -> tuple[str, List[str]]:
@@ -344,13 +377,17 @@ class BaseTranslator(ABC):
 
         # Check if translation is needed
         if not self._is_cross_subscription_reference(resource_id):
-            return resource_id, warnings
+            # Even for same-subscription, normalize provider casing
+            return self._normalize_provider_casing(resource_id), warnings
 
         # Perform translation
         translated_id = resource_id.replace(
             f"/subscriptions/{parsed['subscription_id']}/",
             f"/subscriptions/{self.context.target_subscription_id}/",
         )
+
+        # Normalize provider casing (Bug #68: Terraform requires proper case)
+        translated_id = self._normalize_provider_casing(translated_id)
 
         # Check if target exists
         target_exists = self._check_target_exists(
