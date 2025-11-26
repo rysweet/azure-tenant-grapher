@@ -34,6 +34,11 @@ class RelationshipRule(ABC):
         "TAGGED_WITH",
         "LOCATED_IN",
         "CREATED_BY",
+        "SENDS_DIAG_TO",
+        "ASSIGNED_TO",
+        "HAS_ROLE",
+        "INHERITS_TAG",
+        "STORES_SECRET",
     }
 
     def __init__(self, enable_dual_graph: bool = False):
