@@ -36,6 +36,7 @@ class TestTerraformAzureADProvider:
                 "type": "Microsoft.AAD/ServicePrincipal",
                 "name": "testsp",
                 "displayName": "Test Service Principal",
+                "applicationId": "11111111-1111-1111-1111-111111111111",
             },
             {
                 "type": "Microsoft.Storage/storageAccounts",
