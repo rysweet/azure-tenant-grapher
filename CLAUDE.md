@@ -509,3 +509,66 @@ if not result.valid:
 - See `/tmp/ITERATION_19_FINAL_RESULTS.md` for detailed results and blockers
 - See `/tmp/00_PROJECT_STATUS_INDEX_UPDATED.md` for current status
 
+
+### Bug #73: Import Block Generation for Child Resources (Issue #502) ⭐
+**Status**: FIXED (PR #503, commit 8158080)
+**Impact**: +1,369 import blocks (+600% increase)
+
+**Problem**: Import blocks only generated for 228/3,621 resources (6%), causing 2,600+ "already exists" errors during same-tenant deployments.
+
+**Root Cause**: `_build_azure_resource_id()` in terraform_emitter.py assumed ALL Azure resources follow single Resource Group ID pattern. But Azure uses 4+ different patterns!
+
+**Solution**: Created `resource_id_builder.py` with strategy pattern for multi-pattern ID construction:
+- Resource Group Level: Standard Azure resources
+- Child Resources: Subnets with parent VNet reference
+- Subscription Level: Role assignments with scope handling
+- Association Resources: Compound IDs for NSG associations
+
+**Impact**: Import blocks 228 → 1,597
+- Unlocked 266 subnets
+- Unlocked 1,017 role assignments
+- Unlocked 86 NSG associations
+
+**Files Modified**:
+- NEW: `src/iac/resource_id_builder.py` (403 lines)
+- NEW: `tests/iac/test_resource_id_builder.py` (29 tests, 88% coverage)
+- MODIFIED: `src/iac/emitters/terraform_emitter.py`
+
+**Testing**: 29 unit tests, 100% pass rate, CI passed
+
+---
+
+### Emitter Coverage Expansion (Fixes #74-82): 9 Resource Types Added
+
+**Status**: ALL COMMITTED to main (commits 36d25eb - 18ae0a8)
+**Impact**: +9 supported resource types (55 → 64)
+
+All previously excluded resource types now have full emitter support:
+
+1. **Microsoft.Synapse/workspaces** (36d25eb)
+2. **Microsoft.Purview/accounts** (db69bcb)
+3. **Microsoft.Portal/dashboards** (199b622)
+4. **Microsoft.Communication/CommunicationServices** (93c0f8c)
+5. **Microsoft.App/jobs** (594d114)
+6. **Microsoft.Communication/EmailServices** (594d114)
+7. **Microsoft.Insights/workbooks** (12c39b6)
+8. **Microsoft.Compute/galleries/images** (a107bb0)
+9. **Microsoft.Insights/scheduledqueryrules** (18ae0a8)
+
+---
+
+### Bug #83: NodeManager Missing upsert_generic Methods
+**Status**: FIXED (commit 63f06a9)
+**Impact**: Eliminated 1,938 relationship creation errors during scan
+
+**Problem**: RegionRule and TagRule relationship rules failing with AttributeError during scan.
+
+**Root Cause**: ResourceProcessor refactoring (commit 5c10d20) didn't migrate `upsert_generic()` and `create_generic_rel()` methods to NodeManager.
+
+**Solution**: Added both missing methods to NodeManager class.
+
+**Impact**: Unblocks all relationship creation (Region, Tag, Identity, Network, Diagnostic rules)
+
+**Files Modified**:
+- `src/services/resource_processing/node_manager.py` (+86 lines)
+
