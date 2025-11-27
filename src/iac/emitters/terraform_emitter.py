@@ -756,6 +756,16 @@ class TerraformEmitter(IaCEmitter):
             if terraform_resource:
                 resource_type, resource_name, resource_config = terraform_resource
 
+                # Bug #66: Defensive check - if resource_config is None, skip this resource
+                # This can happen if a handler returns (type, name, None) instead of returning None
+                if resource_config is None:
+                    logger.error(
+                        f"BUG: _convert_resource returned None config for {resource_type}.{resource_name}. "
+                        f"This is a bug in the emitter - should return None for entire tuple, not (type, name, None). "
+                        f"Skipping resource."
+                    )
+                    continue
+
                 # Validate all references in resource config before adding
                 all_refs_valid, missing_refs = self._validate_all_references_in_config(
                     resource_config, resource_name, terraform_config
@@ -1339,6 +1349,14 @@ class TerraformEmitter(IaCEmitter):
                     continue
 
                 for tf_name, resource_config in resources_of_type.items():
+                    # Bug #66: Skip if resource_config is None (defensive check)
+                    if resource_config is None:
+                        logger.error(
+                            f"BUG: Null resource_config found for {tf_resource_type}.{tf_name} in terraform_config. "
+                            f"This indicates a bug in resource generation. Skipping import for this resource."
+                        )
+                        continue
+
                     # Build Azure resource ID based on resource type
                     azure_id = self._build_azure_resource_id(
                         tf_resource_type, resource_config, subscription_id
@@ -2835,11 +2853,10 @@ class TerraformEmitter(IaCEmitter):
             # Since we cannot construct the full resource ID from a GUID, we skip this field entirely.
             # Note: workspace_id is optional per Terraform azurerm_container_app_environment docs
 
-            workspace_id = (
-                properties.get("appLogsConfiguration", {})
-                .get("logAnalyticsConfiguration", {})
-                .get("customerId")
-            )
+            # Bug #66: Defensive chaining - if any intermediate value is None, use {} to avoid AttributeError
+            app_logs_config = properties.get("appLogsConfiguration") or {}
+            log_analytics_config = app_logs_config.get("logAnalyticsConfiguration") or {}
+            workspace_id = log_analytics_config.get("customerId")
             if workspace_id:
                 logger.warning(
                     f"Bug #50: Skipping log_analytics_workspace_id for Container App Environment '{resource_name}' - "
