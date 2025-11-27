@@ -1303,6 +1303,6 @@ async def generate_iac_command_handler(
         return 0
 
     except Exception as e:
-        logger.error(f"❌ IaC generation failed: {e}")
+        logger.error(f"❌ IaC generation failed: {e}", exc_info=True)
         click.echo(f"❌ Error: {e}", err=True)
         return 1

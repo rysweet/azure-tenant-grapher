@@ -1766,6 +1766,9 @@ class TerraformEmitter(IaCEmitter):
             else:
                 # Default empty action group if none specified
                 resource_config["action_group"] = {"ids": []}
+
+            # Bug #87: Smart Detector Alert Rules don't support location field
+            resource_config.pop("location", None)
         elif azure_type == "Microsoft.Network/virtualNetworks":
             # Parse properties first to extract address space
             properties = self._parse_properties(resource)
