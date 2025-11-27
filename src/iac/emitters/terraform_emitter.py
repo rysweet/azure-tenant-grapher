@@ -201,6 +201,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
         "Microsoft.Insights/components": "azurerm_application_insights",
+        "microsoft.insights/components": "azurerm_application_insights",  # Bug #91: Lowercase variant
         "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #91: Lowercase variant
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
