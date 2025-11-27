@@ -423,6 +423,38 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Solution**: Validate NSG exists in `_available_resources` before creating association.
 
+### Bug #67: Role Assignment Principal ID Not Translated in Cross-Tenant Mode ⭐
+**Status**: FIXED (commit 30082dc) | **GitHub**: Related to Issue #475, #502
+**Impact**: Enables cross-tenant role assignment deployment with identity mapping
+
+**Problem**: Principal IDs in role assignments were using RAW source tenant GUIDs even when `identity_mapping` was provided, causing cross-tenant deployment failures.
+
+**Root Cause**: Role assignment handler wasn't calling translation logic for principal IDs. The code path existed but wasn't being used.
+
+**Solution**:
+1. Added `_translate_principal_id()` method to role assignment handler
+2. Calls identity mapping lookup for users, groups, service principals, managed identities
+3. Translates source principal ID → target principal ID
+4. Skips role assignment if principal not found in mapping (prevents deployment hang)
+5. Logs all translations for debugging
+
+**Behavior**:
+- **With identity_mapping**: Translates principal IDs using provided mapping file
+- **Without identity_mapping (cross-tenant)**: Skips role assignments with warning
+- **Same-tenant**: No translation needed (Bug #93 handles generation)
+
+**Files Modified**:
+- `src/iac/emitters/terraform/handlers/identity/role_assignment.py:92-159`
+- `src/iac/emitters/arm_emitter.py` (added translation support)
+- `src/iac/emitters/bicep_emitter.py` (added translation support)
+
+**Related Fixes**:
+- Bug #93: Fixed same-tenant role assignment generation
+- Bug #67: Fixed cross-tenant principal ID translation (this bug)
+- Together: Enables role assignments in BOTH same-tenant AND cross-tenant scenarios
+
+**Testing**: Requires identity_mapping.json file with source→target principal ID mappings. See docs/cross-tenant/IDENTITY_MAPPING.md for format.
+
 ### Bug #68: Provider Name Case Sensitivity in Resource IDs
 **Status**: FIXED (commit d8ef246) | **GitHub**: Issue #498
 
