@@ -256,7 +256,7 @@ class TerraformEmitter(IaCEmitter):
         # "Microsoft.Purview/accounts": "azurerm_purview_account",  # Missing: identity block (Iteration 26)
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
-        # "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # Missing: storage_data_lake_gen2_filesystem_id, sql_administrator_login (Iteration 23)
+        "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # NOW HAS EMITTER (Iteration 27)
         # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
         # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
@@ -4359,6 +4359,34 @@ class TerraformEmitter(IaCEmitter):
                 resource_config["sku"] = (
                     "standard"  # Default (lowercase for Databricks)
                 )
+
+        elif azure_type == "Microsoft.Synapse/workspaces":
+            # Synapse Workspace requires storage filesystem ID and SQL admin credentials
+            properties = self._parse_properties(resource)
+
+            # Extract storage filesystem ID from properties
+            storage_filesystem_id = properties.get("storageDataLakeGen2FilesystemId")
+
+            # If no direct storage, try to construct from default data lake storage
+            if not storage_filesystem_id:
+                default_storage = properties.get("defaultDataLakeStorage", {})
+                if isinstance(default_storage, dict):
+                    storage_filesystem_id = default_storage.get("filesystem")
+
+            # If still missing, use placeholder
+            if not storage_filesystem_id:
+                rg_name = resource.get("resource_group", "unknown-rg")
+                sub_id = self._get_effective_subscription_id(resource)
+                storage_filesystem_id = f"/subscriptions/{sub_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/synapsestorage/fileSystems/synapsedata"
+                logger.warning(f"Synapse workspace '{resource_name}' missing storage filesystem ID, using placeholder")
+
+            sql_admin_login = properties.get("sqlAdministratorLogin", "sqladminuser")
+
+            resource_config.update({
+                "storage_data_lake_gen2_filesystem_id": storage_filesystem_id,
+                "sql_administrator_login": sql_admin_login,
+                "sql_administrator_login_password": "PlaceholderPassword123!",  # FIXME: Use vault or generate
+            })
 
         return terraform_type, safe_name, resource_config
 
