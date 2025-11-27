@@ -1753,6 +1753,14 @@ class TerraformEmitter(IaCEmitter):
         elif azure_type == "Microsoft.AlertsManagement/smartDetectorAlertRules":
             # Bug #70: Smart Detector Alert Rules field mappings
             properties = self._parse_properties(resource)
+
+            # Bug #90: Map state to enabled field
+            state = properties.get("state", "Enabled")
+            enabled = state == "Enabled"
+
+            # Bug #90: Handle both "scope" (singular) and "scopes" (plural)
+            scope_ids = properties.get("scope") or properties.get("scopes", [])
+
             resource_config.update(
                 {
                     "detector_type": properties.get(
@@ -1760,7 +1768,8 @@ class TerraformEmitter(IaCEmitter):
                     ),
                     "frequency": properties.get("frequency", "PT1M"),
                     "severity": properties.get("severity", "Sev3"),
-                    "scope_resource_ids": properties.get("scopes", []),
+                    "scope_resource_ids": scope_ids,
+                    "enabled": enabled,
                 }
             )
 
