@@ -348,6 +348,39 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Documentation**: See `docs/BUG_68_DOCUMENTATION.md` for technical deep dive.
 
+### Bug #87: Smart Detector Alert Rules Invalid Location Field ⭐
+**Status**: FIXED (commit f43a32d) | **Issue**: #502
+
+**Problem**: All 72 `azurerm_monitor_smart_detector_alert_rule` resources failed terraform plan validation with "Extraneous JSON object property 'location'" errors. The Smart Detector resource type does not support a location argument.
+
+**Root Cause**: The emitter was including location from `build_base_config()` which adds location by default for most resources, but Smart Detector Alert Rules don't accept this field.
+
+**Solution**: Added `resource_config.pop("location", None)` after Smart Detector configuration to remove the invalid field.
+
+**Impact**: Fixed terraform validation for all 72 Smart Detector Alert Rules. Part of eliminating all terraform plan errors for Issue #502.
+
+**Files Modified**:
+- `src/iac/emitters/terraform_emitter.py:1771`
+
+### Bug #88: Action Group Resource ID Case Sensitivity ⭐
+**Status**: FIXED (commit 1d63c66) | **Issue**: #502
+
+**Problem**: All 72 Smart Detector Alert Rules failed terraform plan with "ID was missing the `actionGroups` element" errors. Action group resource IDs had incorrect casing: `/subscriptions/{}/resourcegroups/{}/providers/microsoft.insights/actiongroups/{}`.
+
+**Root Cause**: Azure API returns action group IDs with lowercase "resourcegroups" and "actiongroups", but Terraform requires proper camelCase: "resourceGroups" and "actionGroups".
+
+**Solution**:
+1. Enhanced `_normalize_azure_resource_id()` to fix "resourcegroups" → "resourceGroups" and "actiongroups" → "actionGroups" casing
+2. Applied normalization to action group IDs in Smart Detector emitter using list comprehension
+
+**Impact**: Fixed all remaining 72 terraform validation errors. **After Bug #87 & #88 fixes: terraform plan validates with 0 configuration errors!** Enables deployment-ready IaC for Issue #502.
+
+**Files Modified**:
+- `src/iac/emitters/terraform_emitter.py:1766` (normalize action group IDs)
+- `src/iac/emitters/terraform_emitter.py:5105-5106` (enhanced normalization function)
+
+**Documentation**: See `/tmp/BUG_88_ACTION_GROUP_ID_FORMAT.md` for technical details.
+
 ### Bug #69: Missing account_kind Field for Storage Accounts
 **Status**: FIXED (commit 4daf659) | **GitHub**: Issue #499
 
