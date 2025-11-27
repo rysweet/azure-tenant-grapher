@@ -10,8 +10,10 @@ Uses property whitelist and parameterized queries to prevent Cypher injection.
 
 import logging
 from typing import Any, Callable, Dict, Optional, Set
+
 import networkx as nx
 from neo4j.exceptions import Neo4jError
+
 from src.services.scale_down.sampling.base_sampler import BaseSampler
 from src.utils.session_manager import Neo4jSessionManager
 

@@ -7,7 +7,9 @@ This module exports sampled graphs to Infrastructure-as-Code formats
 
 import logging
 from typing import Any, Dict, Set
+
 import networkx as nx
+
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.emitters.bicep_emitter import BicepEmitter
 from src.iac.emitters.terraform_emitter import TerraformEmitter

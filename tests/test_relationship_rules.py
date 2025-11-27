@@ -6,8 +6,8 @@ from src.relationship_rules import (
     RegionRule,
     TagRule,
 )
-from src.relationship_rules.network_rule_optimized import NetworkRuleOptimized
 from src.relationship_rules.diagnostic_rule import DiagnosticRule
+from src.relationship_rules.network_rule_optimized import NetworkRuleOptimized
 
 
 class DummyDbOps:

@@ -11,8 +11,10 @@ Gjoka, M., Kurant, M., Butts, C. T., & Markopoulou, A. (2010).
 
 import logging
 from typing import Callable, Optional, Set
+
 import littleballoffur as lbof
 import networkx as nx
+
 from src.services.scale_down.sampling.base_sampler import BaseSampler
 
 logger = logging.getLogger(__name__)

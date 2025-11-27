@@ -8,8 +8,10 @@ Includes nodes, relationships, and metadata.
 import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, Set
+
 import networkx as nx
 import yaml
+
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)

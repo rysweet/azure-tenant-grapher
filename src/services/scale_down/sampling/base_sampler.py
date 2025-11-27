@@ -6,7 +6,8 @@ All samplers inherit from BaseSampler and implement the sample() method.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Set
+from typing import Callable, Optional, Set
+
 import networkx as nx
 
 

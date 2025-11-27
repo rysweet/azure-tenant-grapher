@@ -13,10 +13,12 @@ Key Features:
 import logging
 import random
 from typing import Callable, List, Optional, Set
+
 import networkx as nx
 from neo4j.exceptions import Neo4jError
-from src.utils.session_manager import Neo4jSessionManager
+
 from src.services.base_scale_service import BaseScaleService
+from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,9 @@ import logging
 import re
 from datetime import UTC, datetime
 from typing import Any, Dict, Set
+
 import networkx as nx
+
 from src.services.scale_down.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)

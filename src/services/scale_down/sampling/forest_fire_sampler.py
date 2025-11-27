@@ -12,7 +12,9 @@ Leskovec, J., & Faloutsos, C. (2006). "Sampling from large graphs."
 import logging
 import random
 from typing import Callable, Optional, Set
+
 import networkx as nx
+
 from src.services.scale_down.sampling.base_sampler import BaseSampler
 
 logger = logging.getLogger(__name__)
