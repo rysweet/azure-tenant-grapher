@@ -330,30 +330,53 @@ class AzureResourceIdBuilder:
             Azure role assignment resource ID or None if cannot be constructed
         """
         name = resource_config.get("name")
-        scope = resource_config.get("scope", "")
+        scope = resource_config.get("scope", "").strip()  # Trim whitespace
 
         if not name:
             logger.warning("Role assignment missing 'name' field")
             return None
 
-        # If scope provided, use it
-        if scope and scope.startswith("/"):
-            return f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+        # Check if explicit scope is provided and valid
+        if scope:
+            # Validate scope is a proper Azure resource ID format
+            if not scope.startswith("/"):
+                logger.warning(
+                    f"Role assignment has invalid scope format (must start with '/'): {scope}"
+                )
+                return None
 
-        # Try resource group scope
-        resource_group = resource_config.get("resource_group_name")
+            # Scope is valid - use it
+            role_assignment_id = f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+            logger.debug(
+                f"Role assignment scope source: explicit scope "
+                f"(scope={scope[:50]}...)"  # Log first 50 chars to avoid huge logs
+            )
+            return role_assignment_id
+
+        # Try resource group scope (no explicit scope provided)
+        resource_group = resource_config.get("resource_group_name", "").strip()
         if resource_group:
-            return (
+            role_assignment_id = (
                 f"/subscriptions/{subscription_id}/"
                 f"resourceGroups/{resource_group}/"
                 f"providers/Microsoft.Authorization/roleAssignments/{name}"
             )
+            logger.debug(
+                f"Role assignment scope source: resource group "
+                f"(rg={resource_group}, sub={subscription_id[:8]}...)"
+            )
+            return role_assignment_id
 
-        # Default to subscription scope
-        return (
+        # Default to subscription scope (no scope, no resource group)
+        role_assignment_id = (
             f"/subscriptions/{subscription_id}/"
             f"providers/Microsoft.Authorization/roleAssignments/{name}"
         )
+        logger.debug(
+            f"Role assignment scope source: subscription scope "
+            f"(sub={subscription_id[:8]}...)"
+        )
+        return role_assignment_id
 
     def _build_association_id(
         self,

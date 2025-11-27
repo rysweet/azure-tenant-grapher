@@ -311,6 +311,64 @@ class TestSubscriptionLevelPattern:
         )
         assert resource_id == expected
 
+    def test_whitespace_only_scope_defaults_to_subscription(self, builder):
+        """Test that whitespace-only scope string defaults to subscription scope."""
+        resource_config = {
+            "name": "11111111-1111-1111-1111-111111111111",
+            "scope": "   ",  # Whitespace only - should be trimmed to empty
+            "role_definition_name": "Contributor",
+        }
+        subscription_id = "ffff-0000-1111-2222"
+
+        resource_id = builder.build(
+            "azurerm_role_assignment", resource_config, subscription_id
+        )
+
+        # Should default to subscription scope after trimming whitespace
+        expected = (
+            "/subscriptions/ffff-0000-1111-2222/"
+            "providers/Microsoft.Authorization/roleAssignments/"
+            "11111111-1111-1111-1111-111111111111"
+        )
+        assert resource_id == expected
+
+    def test_invalid_scope_format_returns_none(self, builder):
+        """Test that scope without leading slash is rejected."""
+        resource_config = {
+            "name": "22222222-2222-2222-2222-222222222222",
+            "scope": "subscriptions/invalid/format",  # Missing leading /
+            "role_definition_name": "Owner",
+        }
+        subscription_id = "0000-1111-2222-3333"
+
+        resource_id = builder.build(
+            "azurerm_role_assignment", resource_config, subscription_id
+        )
+
+        # Should return None due to invalid scope format
+        assert resource_id is None
+
+    def test_scope_with_leading_slash_is_valid(self, builder):
+        """Test that scope with proper leading slash is accepted."""
+        resource_config = {
+            "name": "33333333-3333-3333-3333-333333333333",
+            "scope": "/subscriptions/aaaa-bbbb-cccc-dddd/providers/Microsoft.Authorization/roleDefinitions/custom",
+            "role_definition_name": "CustomRole",
+        }
+        subscription_id = "eeee-ffff-0000-1111"
+
+        resource_id = builder.build(
+            "azurerm_role_assignment", resource_config, subscription_id
+        )
+
+        # Should use the explicit scope
+        expected = (
+            "/subscriptions/aaaa-bbbb-cccc-dddd/providers/Microsoft.Authorization/roleDefinitions/custom/"
+            "providers/Microsoft.Authorization/roleAssignments/"
+            "33333333-3333-3333-3333-333333333333"
+        )
+        assert resource_id == expected
+
 
 class TestAssociationPattern:
     """Tests for ASSOCIATION pattern (NSG associations).
