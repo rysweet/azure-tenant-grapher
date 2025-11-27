@@ -258,7 +258,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # NOW HAS EMITTER (Iteration 27)
         "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
-        # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
+        "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # NOW HAS EMITTER (data_location handler)
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
         # "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Missing: data_source_id, frequency, time_window, query, action, trigger (Iteration 26)
         # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
@@ -267,7 +267,7 @@ class TerraformEmitter(IaCEmitter):
         # "Microsoft.Compute/galleries/images": "azurerm_shared_image",  # Missing: gallery_name, os_type
         "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #70: Uncommented, field mappings added below
         "Microsoft.Web/staticSites": "azurerm_static_web_app",
-        # "Microsoft.App/jobs": "azurerm_container_app_job",  # Missing: container_app_environment_id
+        "Microsoft.App/jobs": "azurerm_container_app_job",  # NOW HAS EMITTER (container_app_environment_id handler)
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
         # Microsoft.Resources/templateSpecs/versions - Child resources - will be skipped
         # Microsoft.MachineLearningServices/workspaces/serverlessEndpoints - No direct Terraform equivalent yet, will be skipped
@@ -4434,6 +4434,48 @@ class TerraformEmitter(IaCEmitter):
                 identity_ids = identity_props.get("userAssignedIdentities", {}).keys()
                 if identity_ids:
                     resource_config["identity"]["identity_ids"] = list(identity_ids)
+
+        elif azure_type == "Microsoft.App/jobs":
+            # Container App Job requires container_app_environment_id and container block
+            properties = self._parse_properties(resource)
+
+            # Get container app environment ID from properties
+            env_id = properties.get("environmentId") or properties.get("managedEnvironmentId")
+
+            if not env_id:
+                # Construct placeholder using resource group and effective subscription
+                rg_name = resource.get("resource_group", "unknown-rg")
+                effective_sub = self._get_effective_subscription_id(resource)
+                env_id = f"/subscriptions/{effective_sub}/resourceGroups/{rg_name}/providers/Microsoft.App/managedEnvironments/default-environment"
+                logger.warning(
+                    f"App job '{resource_name}' missing environment ID, using placeholder"
+                )
+
+            resource_config["container_app_environment_id"] = env_id
+
+            # Required: At least one container block
+            containers = properties.get("template", {}).get("containers", [])
+            if containers:
+                resource_config["container"] = [
+                    {
+                        "name": c.get("name", "container"),
+                        "image": c.get("image", "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"),
+                        "cpu": c.get("resources", {}).get("cpu", "0.25"),
+                        "memory": c.get("resources", {}).get("memory", "0.5Gi"),
+                    }
+                    for c in containers[:1]
+                ]  # Take first container
+
+        elif azure_type == "Microsoft.Communication/EmailServices":
+            # Email Services use data_location instead of location
+            properties = self._parse_properties(resource)
+
+            # Email services use data_location instead of location
+            data_location = properties.get("dataLocation", "UnitedStates")
+            resource_config["data_location"] = data_location
+
+            # Remove the default location field
+            resource_config.pop("location", None)
 
         return terraform_type, safe_name, resource_config
 
