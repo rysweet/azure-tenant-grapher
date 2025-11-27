@@ -4404,11 +4404,26 @@ class TerraformEmitter(IaCEmitter):
 
             sql_admin_login = properties.get("sqlAdministratorLogin", "sqladminuser")
 
+            # Generate a unique password for each Synapse workspace using Terraform's random_password resource
+            password_resource_name = f"{safe_name}_sql_password"
+
+            # Add the random_password resource to terraform config
+            if "resource" not in terraform_config:
+                terraform_config["resource"] = {}
+            if "random_password" not in terraform_config["resource"]:
+                terraform_config["resource"]["random_password"] = {}
+
+            terraform_config["resource"]["random_password"][password_resource_name] = {
+                "length": 16,
+                "special": True,
+                "override_special": "!#$%&*()-_=+[]{}<>:?",
+            }
+
             resource_config.update(
                 {
                     "storage_data_lake_gen2_filesystem_id": storage_filesystem_id,
                     "sql_administrator_login": sql_admin_login,
-                    "sql_administrator_login_password": "PlaceholderPassword123!",  # FIXME: Use vault or generate
+                    "sql_administrator_login_password": f"${{random_password.{password_resource_name}.result}}",
                 }
             )
 
