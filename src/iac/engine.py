@@ -67,7 +67,10 @@ class TransformationEngine:
                 return rules
 
             with open(rules_path) as f:
-                rules_data = yaml.safe_load(f)  # Security: Use safe_load to prevent arbitrary code execution
+                # Bug #92: Use ruamel.yaml correctly (create instance, then load)
+                yaml_loader = YAML()
+                yaml_loader.preserve_quotes = True
+                rules_data = yaml_loader.load(f)
 
             if not rules_data or "rules" not in rules_data:
                 logger.warning(f"No rules found in file: {rules_file}")
