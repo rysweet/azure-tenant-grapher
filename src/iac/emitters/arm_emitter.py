@@ -142,8 +142,15 @@ class ArmEmitter(IaCEmitter):
         principal_id = props.get("principalId", "")
         principal_type = props.get("principalType", "Unknown")
 
-        # Skip role assignments in cross-tenant mode without identity mapping
-        if self.target_tenant_id and not self.identity_mapping:
+        # Bug #93: Skip role assignments in cross-tenant mode ONLY (not same-tenant)
+        # Detect same-tenant deployment (source and target are the same tenant)
+        is_same_tenant = (
+            self.source_tenant_id
+            and self.target_tenant_id
+            and self.source_tenant_id == self.target_tenant_id
+        )
+
+        if self.target_tenant_id and not self.identity_mapping and not is_same_tenant:
             logger.warning(
                 f"Skipping ARM role assignment '{resource_name}' in cross-tenant mode: "
                 f"No identity mapping provided."

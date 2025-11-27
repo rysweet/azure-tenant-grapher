@@ -69,8 +69,19 @@ class RoleAssignmentHandler(ResourceHandler):
 
         principal_id = properties.get("principalId", resource.get("principalId", ""))
 
-        # Bug #18: Skip role assignments without identity mapping in cross-tenant mode
-        if context.target_tenant_id and not context.identity_mapping:
+        # Bug #18/#93: Skip role assignments without identity mapping in cross-tenant mode ONLY
+        # Detect same-tenant deployment (source and target are the same tenant)
+        is_same_tenant = (
+            context.source_tenant_id
+            and context.target_tenant_id
+            and context.source_tenant_id == context.target_tenant_id
+        )
+
+        if (
+            context.target_tenant_id
+            and not context.identity_mapping
+            and not is_same_tenant
+        ):
             logger.warning(
                 f"Skipping role assignment '{resource_name}' in cross-tenant mode: "
                 f"No identity mapping provided. Principal ID '{principal_id}' from source "
