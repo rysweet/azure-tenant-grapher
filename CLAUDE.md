@@ -582,6 +582,43 @@ if resource_type == "Microsoft.Authorization/roleAssignments":
 
 **Testing**: Quick win - ready for next IaC generation. GitHub Issue: #500
 
+### Bug #43: SQL Database Names with Forward Slashes ⭐
+**Status**: FIXED (commit 0cafe21) | **GitHub**: Issue #469
+**Impact**: Fixes Terraform validation errors for child resources with parent/child naming
+
+**Problem**: Terraform validation fails for SQL databases with forward slashes in names. Azure uses parent/child format (`server_name/database_name`) but Terraform `name` property cannot contain `/`.
+
+**Example Error**:
+```
+Error: a valid name can't contain '/'
+  with resource.azurerm_mssql_database.purviewmetabasedemo2_purview_demo_tenant
+  "name": "purviewmetabasedemo2/purview_demo_tenant"
+```
+
+**Root Cause**: SQL Database handler used full Azure resource name (with parent prefix) in Terraform config. The Terraform resource identifier was sanitized (`server_database`), but the `name` property still contained the slash.
+
+**Solution**: Extract child resource name from parent/child format:
+```python
+# Bug #43: Strip parent prefix from child resource names
+database_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+config = {
+    "name": database_name,  # Use child name only
+    "server_id": f"${{azurerm_mssql_server.{server_safe}.id}}",
+}
+```
+
+**Why This Works**:
+- Azure format: `purviewmetabasedemo2/purview_demo_tenant`
+- Extracted child: `purview_demo_tenant`
+- Parent reference maintained via `server_id`
+
+**Files Modified**:
+- `src/iac/emitters/terraform/handlers/database/sql_database.py:57-64`
+
+**Note**: VM extensions and VM run commands already handle this correctly (use child name only). Bug only affected SQL databases.
+
+**Testing**: Generate IaC with SQL databases containing `/`, run `terraform validate`
+
 ### Bug #72: Skip Entra ID Users in Same-Tenant Deployments (Issue #496 Problem #2) ⭐
 **Status**: FIXED & VERIFIED WORKING (commits abc0770, 9101bef, 5acbbdf, bf57224)
 **Impact**: Eliminates 219 user conflicts in same-tenant deployments
