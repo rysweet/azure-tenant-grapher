@@ -2,8 +2,15 @@
 
 ## Issue #502: Tenant Replication Improvements
 
+### Deployment Status
+- **[ISSUE_502_DEPLOYMENT_READY.md](ISSUE_502_DEPLOYMENT_READY.md)** ⭐ - **DEPLOYMENT READY**: Terraform validation complete (0 errors), 1,268 import blocks verified, 99.3% resource support achieved. Awaiting Azure credential refresh.
+
 ### Deployment Guide
 - **[TENANT_REPLICATION_DEPLOYMENT_GUIDE.md](TENANT_REPLICATION_DEPLOYMENT_GUIDE.md)** - Complete deployment guide for Issue #502 and 16 bug fixes. Covers overview, step-by-step deployment, expected results, troubleshooting, and rollback procedures.
+
+### Bug Documentation (Terraform Validation - November 27, 2025)
+- **[BUG_87_DOCUMENTATION.md](BUG_87_DOCUMENTATION.md)** ⭐ - Smart Detector Alert Rules location field fix. Impact: Fixed 72 terraform validation errors. Result: Part of achieving 0 configuration errors.
+- **[BUG_88_DOCUMENTATION.md](BUG_88_DOCUMENTATION.md)** ⭐ - Action group resource ID case sensitivity fix. Impact: Fixed ALL remaining 72 terraform errors. Result: 0 total configuration errors!
 
 ### Technical Documentation
 - **[BUG_59_DOCUMENTATION.md](BUG_59_DOCUMENTATION.md)** - Deep dive: Subscription ID abstraction in properties
