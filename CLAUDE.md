@@ -320,6 +320,26 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Files Modified**: `src/iac/emitters/terraform_emitter.py:1757-1772`
 
+### Bug #91: Lowercase Azure Type Variants Missing
+**Status**: FIXED (commit b5057d2)
+**Impact**: Tests can now use lowercase Azure type names (+4 tests)
+
+**Problem**: Mapping missing lowercase variants for Smart Detector and DNS zones, causing "unsupported type" errors.
+
+**Solution**: Added lowercase variants to AZURE_TO_TERRAFORM_MAPPING.
+
+**Files Modified**: `src/iac/emitters/terraform_emitter.py:205,232`
+
+### Bug #92: TransformationEngine YAML Loading Error
+**Status**: FIXED (commit b065e55)
+**Impact**: TransformationEngine can now load rules files (+1 test)
+
+**Problem**: Engine failed to load rules files with error "'YAML' object has no attribute 'safe_load'". Code imported `YAML` class from ruamel.yaml but tried to use it like standard library `yaml.safe_load()`.
+
+**Solution**: Create YAML instance and use its load() method instead of calling nonexistent class method.
+
+**Files Modified**: `src/iac/engine.py:70-73`
+
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
 **Status**: FIXED (commit faeb284)  
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
