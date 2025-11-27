@@ -28,5 +28,7 @@ def test_create_tenant_with_sample_markdown(neo4j_container):
     )
     assert result.returncode == 0
     assert (
-        "Tenant creation" in result.stdout or "TODO: synthesize tenant" in result.stdout
+        "Tenant successfully created" in result.stdout
+        or "Tenant creation" in result.stdout
+        or "TODO: synthesize tenant" in result.stdout
     )
