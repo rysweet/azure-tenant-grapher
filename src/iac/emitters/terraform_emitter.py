@@ -264,7 +264,7 @@ class TerraformEmitter(IaCEmitter):
         # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
-        # "Microsoft.Compute/galleries/images": "azurerm_shared_image",  # Missing: gallery_name, os_type
+        "Microsoft.Compute/galleries/images": "azurerm_shared_image",
         "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #70: Uncommented, field mappings added below
         "Microsoft.Web/staticSites": "azurerm_static_web_app",
         "Microsoft.App/jobs": "azurerm_container_app_job",  # NOW HAS EMITTER (container_app_environment_id handler)
@@ -3944,6 +3944,38 @@ class TerraformEmitter(IaCEmitter):
                     "sku": image_reference.get("sku", "22_04-lts"),
                     "version": image_reference.get("version", "latest"),
                 }
+
+        elif azure_type == "Microsoft.Compute/galleries/images":
+            # Shared Image Gallery Images (child resource)
+            # Name format is "galleryName/imageName"
+            properties = self._parse_properties(resource)
+
+            # Parse gallery name from resource name (format: "galleryName/imageName")
+            full_name = resource.get("name", "")
+            if "/" in full_name:
+                gallery_name, image_name = full_name.split("/", 1)
+            else:
+                gallery_name = "unknown-gallery"
+                image_name = full_name
+
+            resource_config["gallery_name"] = gallery_name
+            resource_config["name"] = image_name  # Override with just image name
+
+            # os_type is required (Windows or Linux)
+            os_type = properties.get("osType") or properties.get("hyperVGeneration", "Linux")
+            resource_config["os_type"] = (
+                os_type if os_type in ["Windows", "Linux"] else "Linux"
+            )
+
+            # Required: identifier block (publisher, offer, sku)
+            identifier = properties.get("identifier", {})
+            resource_config["identifier"] = [
+                {
+                    "publisher": identifier.get("publisher", "Default"),
+                    "offer": identifier.get("offer", "DefaultOffer"),
+                    "sku": identifier.get("sku", "DefaultSku"),
+                }
+            ]
 
         elif azure_type == "Microsoft.Cache/Redis":
             # Redis Cache requires SKU configuration
