@@ -179,7 +179,6 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
         "Microsoft.Compute/disks": "azurerm_managed_disk",
         "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
-        "microsoft.compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",  # Lowercase variant
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
         "Microsoft.Network/virtualNetworks": "azurerm_virtual_network",
         "Microsoft.Network/subnets": "azurerm_subnet",
@@ -195,13 +194,10 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Sql/servers": "azurerm_mssql_server",
         "Microsoft.KeyVault/vaults": "azurerm_key_vault",
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
-        "microsoft.operationalinsights/workspaces": "azurerm_log_analytics_workspace",  # Lowercase variant
-        "microsoft.insights/components": "azurerm_application_insights",
-        "Microsoft.Insights/components": "azurerm_application_insights",  # Proper-case variant
-        "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
+        "Microsoft.Insights/components": "azurerm_application_insights",
+        "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # DevTestLab resources
-        "microsoft.devtestlab/labs": "azurerm_dev_test_lab",
         "Microsoft.DevTestLab/labs": "azurerm_dev_test_lab",
         "Microsoft.DevTestLab/labs/virtualMachines": "azurerm_dev_test_linux_virtual_machine",
         # Machine Learning and AI resources
@@ -213,26 +209,18 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/networkWatchers": "azurerm_network_watcher",
         "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
         "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
-        "microsoft.insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",  # Lowercase variant
         "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
-        "microsoft.insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",  # Lowercase variant
-        "microsoft.insights/metricalerts": "azurerm_monitor_metric_alert",  # Lowercase variant
         "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Additional resource types found in full tenant scan
-        "microsoft.insights/actiongroups": "azurerm_monitor_action_group",
         "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
-        "Microsoft.Insights/actiongroups": "azurerm_monitor_action_group",  # Proper-case variant (lowercase 'groups')
         "Microsoft.Search/searchServices": "azurerm_search_service",
-        "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
         "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
         # Bug #36: Add support for additional resource types
         "Microsoft.DocumentDB/databaseAccounts": "azurerm_cosmosdb_account",
-        "Microsoft.DocumentDb/databaseAccounts": "azurerm_cosmosdb_account",  # Lowercase variant
         "Microsoft.Network/applicationGateways": "azurerm_application_gateway",
-        "Microsoft.Network/dnszones": "azurerm_dns_zone",
         "Microsoft.Network/dnsZones": "azurerm_dns_zone",
         "Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies": "azurerm_web_application_firewall_policy",
         "Microsoft.Network/natGateways": "azurerm_nat_gateway",
@@ -261,12 +249,10 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # NOW HAS EMITTER (data_location handler)
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
         "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # NOW HAS EMITTER (data_source_id, frequency, time_window, query, action, trigger)
-        "microsoft.insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Lowercase variant
         # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
         "Microsoft.Compute/galleries/images": "azurerm_shared_image",
-        "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #70: Uncommented, field mappings added below
         "Microsoft.Web/staticSites": "azurerm_static_web_app",
         "Microsoft.App/jobs": "azurerm_container_app_job",  # NOW HAS EMITTER (container_app_environment_id handler)
         # Microsoft.Resources/templateSpecs - These are template metadata, not deployments - will be skipped
@@ -303,7 +289,6 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/loadBalancers": "azurerm_lb",
         # Additional Monitoring resources
         "Microsoft.Insights/metricAlerts": "azurerm_monitor_metric_alert",
-        "Microsoft.Insights/metricalerts": "azurerm_monitor_metric_alert",  # Case variant
         # Cache resources
         "Microsoft.Cache/Redis": "azurerm_redis_cache",
     }

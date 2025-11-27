@@ -63,11 +63,19 @@ class TestNewResourceTypeMappings:
         )
 
     def test_application_insights_mapping(self):
-        """Test microsoft.insights/components mapping."""
+        """Test Microsoft.Insights/components mapping with case normalization."""
         emitter = TerraformEmitter()
-        assert "microsoft.insights/components" in emitter.AZURE_TO_TERRAFORM_MAPPING
+        # Test proper-case variant is in mapping
+        assert "Microsoft.Insights/components" in emitter.AZURE_TO_TERRAFORM_MAPPING
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING["microsoft.insights/components"]
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Insights/components"]
+            == "azurerm_application_insights"
+        )
+        # Test that lowercase variant is normalized to proper-case via _normalize_azure_type
+        normalized = emitter._normalize_azure_type("microsoft.insights/components")
+        assert normalized == "Microsoft.Insights/components"
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING.get(normalized)
             == "azurerm_application_insights"
         )
 
