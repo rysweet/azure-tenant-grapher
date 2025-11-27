@@ -1762,7 +1762,9 @@ class TerraformEmitter(IaCEmitter):
             action_groups = properties.get("actionGroups", {})
             group_ids = action_groups.get("groupIds", [])
             if group_ids:
-                resource_config["action_group"] = {"ids": group_ids}
+                # Bug #88: Normalize action group resource IDs to correct casing
+                normalized_ids = [self._normalize_azure_resource_id(gid) for gid in group_ids]
+                resource_config["action_group"] = {"ids": normalized_ids}
             else:
                 # Default empty action group if none specified
                 resource_config["action_group"] = {"ids": []}
@@ -5100,6 +5102,10 @@ class TerraformEmitter(IaCEmitter):
         normalized = resource_id
         for pattern, replacement in provider_normalizations:
             normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
+
+        # Bug #88: Fix lowercase resourceGroups and actionGroups in resource IDs
+        normalized = re.sub(r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE)
 
         return normalized
 
