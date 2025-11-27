@@ -9,6 +9,7 @@ from .log_analytics import (
     LogAnalyticsWorkspaceHandler,
 )
 from .metric_alert import MetricAlertHandler
+from .workbook import WorkbooksHandler
 
 __all__ = [
     "ActionGroupHandler",
@@ -18,4 +19,5 @@ __all__ = [
     "LogAnalyticsSolutionHandler",
     "LogAnalyticsWorkspaceHandler",
     "MetricAlertHandler",
+    "WorkbooksHandler",
 ]
