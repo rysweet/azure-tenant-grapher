@@ -626,6 +626,20 @@ async def generate_iac_command_handler(
                     )
                     break
 
+        # Bug #93: Fallback for source tenant ID when Azure CLI not available
+        # If target tenant is specified but source tenant is unknown, and there are no
+        # explicit cross-tenant indicators (identity mapping file), assume same-tenant deployment
+        if (
+            not resolved_source_tenant_id
+            and resolved_target_tenant_id
+            and not identity_mapping_file
+        ):
+            resolved_source_tenant_id = resolved_target_tenant_id
+            logger.info(
+                f"No source tenant specified and Azure CLI unavailable. "
+                f"Defaulting to same-tenant deployment (source = target = {resolved_target_tenant_id})"
+            )
+
         # Log cross-tenant translation status
         if resolved_target_tenant_id and resolved_source_tenant_id:
             if resolved_target_tenant_id != resolved_source_tenant_id:
