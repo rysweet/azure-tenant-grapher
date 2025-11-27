@@ -315,15 +315,16 @@ class TestSubscriptionLevelPattern:
 class TestAssociationPattern:
     """Tests for ASSOCIATION pattern (NSG associations).
 
-    Association resources link two other resources together.
-    Impact: 86 associations in production.
+    Association resources are synthetic Terraform constructs that cannot be imported.
+    They contain Terraform interpolations, not Azure resource IDs.
+    Impact: 86 associations in production - all return None (no import blocks).
     """
 
-    def test_subnet_nsg_association_compound_id(self, builder):
-        """Test subnet-NSG association compound ID."""
+    def test_subnet_nsg_association_returns_none(self, builder):
+        """Test subnet-NSG association returns None (not importable)."""
         resource_config = {
-            "subnet_id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1",
-            "network_security_group_id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg1",
+            "subnet_id": "${azurerm_subnet.subnet_1.id}",
+            "network_security_group_id": "${azurerm_network_security_group.nsg_1.id}",
         }
         subscription_id = "sub1"
 
@@ -333,18 +334,14 @@ class TestAssociationPattern:
             subscription_id,
         )
 
-        expected = (
-            "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"
-            "|"
-            "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Network/networkSecurityGroups/nsg1"
-        )
-        assert resource_id == expected
+        # Association resources cannot be imported - they're Terraform constructs
+        assert resource_id is None
 
-    def test_nic_nsg_association_compound_id(self, builder):
-        """Test NIC-NSG association compound ID."""
+    def test_nic_nsg_association_returns_none(self, builder):
+        """Test NIC-NSG association returns None (not importable)."""
         resource_config = {
-            "network_interface_id": "/subscriptions/sub2/resourceGroups/rg2/providers/Microsoft.Network/networkInterfaces/nic1",
-            "network_security_group_id": "/subscriptions/sub2/resourceGroups/rg2/providers/Microsoft.Network/networkSecurityGroups/nsg2",
+            "network_interface_id": "${azurerm_network_interface.nic_1.id}",
+            "network_security_group_id": "${azurerm_network_security_group.nsg_2.id}",
         }
         subscription_id = "sub2"
 
@@ -354,12 +351,8 @@ class TestAssociationPattern:
             subscription_id,
         )
 
-        expected = (
-            "/subscriptions/sub2/resourceGroups/rg2/providers/Microsoft.Network/networkInterfaces/nic1"
-            "|"
-            "/subscriptions/sub2/resourceGroups/rg2/providers/Microsoft.Network/networkSecurityGroups/nsg2"
-        )
-        assert resource_id == expected
+        # Association resources cannot be imported - they're Terraform constructs
+        assert resource_id is None
 
     def test_missing_subnet_id_returns_none(self, builder):
         """Test that missing subnet_id returns None."""

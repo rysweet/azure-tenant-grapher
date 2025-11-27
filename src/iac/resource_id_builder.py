@@ -12,9 +12,10 @@ Phase 1 & 2 Implementation: Minimum viable fix for critical resources (4 pattern
 - Resource Group Level: Standard Azure resources (existing logic)
 - Child Resources: Subnets (266 resources)
 - Subscription Level: Role assignments (1,017 resources)
-- Association Resources: NSG associations (86 resources)
+- Association Resources: NSG associations (86 resources - NOT importable, skipped)
 
-Expected Impact: +1,369 import blocks (from 228 → 1,597)
+Expected Impact: +1,283 import blocks (from 228 → 1,511)
+Note: Association resources excluded - they're synthetic Terraform constructs, not Azure resources
 
 Note: Additional patterns (Tenant-level, Custom) will be added in Phase 3 if needed.
 """
@@ -362,47 +363,40 @@ class AzureResourceIdBuilder:
     ) -> Optional[str]:
         """Build resource ID for association resources.
 
-        Association resources link two other resources together.
-        They use compound IDs with pipe separator: {resource1_id}|{resource2_id}
+        IMPORTANT: Association resources are synthetic Terraform constructs that link
+        two existing resources together. They are NOT standalone Azure resources and
+        therefore CANNOT be imported.
 
-        Impact: 86 resources (subnet-NSG + NIC-NSG associations)
+        The resource_config contains Terraform interpolations (e.g.,
+        "${azurerm_subnet.subnet_1.id}"), not Azure resource IDs. These interpolations
+        are only resolved at Terraform apply time.
+
+        Impact: 86 association resources (subnet-NSG + NIC-NSG)
+        Decision: Return None to skip import blocks for all association types
 
         Args:
             tf_resource_type: Terraform resource type
-            resource_config: Resource configuration dict
-            subscription_id: Azure subscription ID (unused for associations)
+            resource_config: Resource configuration dict (contains Terraform interpolations)
+            subscription_id: Azure subscription ID (unused)
 
         Returns:
-            Azure association resource ID or None if cannot be constructed
+            None (associations cannot be imported, they must be created)
         """
-        if tf_resource_type == "azurerm_subnet_network_security_group_association":
-            subnet_id = resource_config.get("subnet_id", "")
-            nsg_id = resource_config.get("network_security_group_id", "")
+        # Association resources are relationships, not importable resources
+        # The config contains Terraform interpolations like "${azurerm_subnet.name.id}"
+        # which cannot be used to construct Azure import IDs
 
-            if not subnet_id or not nsg_id:
-                logger.warning(
-                    f"Subnet NSG association missing IDs: "
-                    f"subnet_id={bool(subnet_id)}, nsg_id={bool(nsg_id)}"
-                )
-                return None
-
-            # These should already be full Azure resource IDs
-            return f"{subnet_id}|{nsg_id}"
-
-        elif tf_resource_type == "azurerm_network_interface_security_group_association":
-            nic_id = resource_config.get("network_interface_id", "")
-            nsg_id = resource_config.get("network_security_group_id", "")
-
-            if not nic_id or not nsg_id:
-                logger.warning(
-                    f"NIC NSG association missing IDs: "
-                    f"nic_id={bool(nic_id)}, nsg_id={bool(nsg_id)}"
-                )
-                return None
-
-            return f"{nic_id}|{nsg_id}"
+        if tf_resource_type in [
+            "azurerm_subnet_network_security_group_association",
+            "azurerm_network_interface_security_group_association",
+        ]:
+            logger.debug(
+                f"Skipping import block for association resource type: {tf_resource_type} "
+                f"(associations are synthetic Terraform constructs, not importable Azure resources)"
+            )
+            return None
 
         logger.warning(
-            f"Association resource type not yet implemented: {tf_resource_type}"
+            f"Unknown association resource type: {tf_resource_type}"
         )
         return None
