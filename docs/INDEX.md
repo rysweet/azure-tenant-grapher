@@ -1,5 +1,14 @@
 # Azure Tenant Grapher - Documentation Index
 
+## Issue #502: Tenant Replication Improvements
+
+### Deployment Guide
+- **[TENANT_REPLICATION_DEPLOYMENT_GUIDE.md](TENANT_REPLICATION_DEPLOYMENT_GUIDE.md)** - Complete deployment guide for Issue #502 and 16 bug fixes. Covers overview, step-by-step deployment, expected results, troubleshooting, and rollback procedures.
+
+### Technical Documentation
+- **[BUG_59_DOCUMENTATION.md](BUG_59_DOCUMENTATION.md)** - Deep dive: Subscription ID abstraction in properties
+- **[BUG_68_DOCUMENTATION.md](BUG_68_DOCUMENTATION.md)** - Deep dive: Provider name case sensitivity fix
+
 ## Iteration 8 Session (November 23, 2025)
 
 ### Session Reports
