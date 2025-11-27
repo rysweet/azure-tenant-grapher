@@ -392,8 +392,9 @@ When using the CLI dashboard (during `atg scan` operations):
 **Documentation**: `/tmp/BUG_94_FINAL_ROOT_CAUSE.md`, `/tmp/BUG_94_CORRECTED_UNDERSTANDING.md`
 
 ### Bug #95: Phase 2 Uses Wrong API for Role Assignments ⭐
-**Status**: FIXED (2025-11-27) | **GitHub**: Blocks Issue #502
+**Status**: FIXED & VERIFIED (2025-11-27) | **GitHub**: Blocks Issue #502
 **Impact**: 100% role assignment loss (0/684 saved) - discovered during Bug #94 verification
+**Verification**: ✅ COMPLETE SUCCESS - 930+ role assignments saved (136% of expected!)
 
 **Problem**: Role assignments discovered in Phase 1.5 were not saved to Neo4j database. Phase 2 property fetching attempted to use `ResourceManagementClient.resources.get_by_id()` for role assignments, but this API only supports ARM resources, not Authorization resources.
 
