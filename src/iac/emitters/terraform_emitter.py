@@ -260,7 +260,8 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
         "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # NOW HAS EMITTER (data_location handler)
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
-        # "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Missing: data_source_id, frequency, time_window, query, action, trigger (Iteration 26)
+        "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # NOW HAS EMITTER (data_source_id, frequency, time_window, query, action, trigger)
+        "microsoft.insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Lowercase variant
         # "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",  # Missing: display_name, data_json
         "Microsoft.Compute/images": "azurerm_image",
         "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
@@ -3962,7 +3963,9 @@ class TerraformEmitter(IaCEmitter):
             resource_config["name"] = image_name  # Override with just image name
 
             # os_type is required (Windows or Linux)
-            os_type = properties.get("osType") or properties.get("hyperVGeneration", "Linux")
+            os_type = properties.get("osType") or properties.get(
+                "hyperVGeneration", "Linux"
+            )
             resource_config["os_type"] = (
                 os_type if os_type in ["Windows", "Linux"] else "Linux"
             )
@@ -4472,7 +4475,9 @@ class TerraformEmitter(IaCEmitter):
             properties = self._parse_properties(resource)
 
             # Get container app environment ID from properties
-            env_id = properties.get("environmentId") or properties.get("managedEnvironmentId")
+            env_id = properties.get("environmentId") or properties.get(
+                "managedEnvironmentId"
+            )
 
             if not env_id:
                 # Construct placeholder using resource group and effective subscription
@@ -4491,7 +4496,10 @@ class TerraformEmitter(IaCEmitter):
                 resource_config["container"] = [
                     {
                         "name": c.get("name", "container"),
-                        "image": c.get("image", "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"),
+                        "image": c.get(
+                            "image",
+                            "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+                        ),
                         "cpu": c.get("resources", {}).get("cpu", "0.25"),
                         "memory": c.get("resources", {}).get("memory", "0.5Gi"),
                     }
@@ -4508,6 +4516,57 @@ class TerraformEmitter(IaCEmitter):
 
             # Remove the default location field
             resource_config.pop("location", None)
+
+        elif (
+            azure_type_lower == "microsoft.insights/scheduledqueryrules"
+            or azure_type == "Microsoft.Insights/scheduledqueryrules"
+        ):
+            # Scheduled Query Rules (Log Analytics alert rules)
+            properties = self._parse_properties(resource)
+
+            # data_source_id - try to get from properties or construct
+            data_source_id = properties.get("source", {}).get("dataSourceId") or (
+                properties.get("scopes", [None])[0]
+                if properties.get("scopes")
+                else None
+            )
+            if not data_source_id:
+                rg_name = resource.get("resource_group", "unknown-rg")
+                effective_sub = self._get_effective_subscription_id(resource)
+                data_source_id = f"/subscriptions/{effective_sub}/resourceGroups/{rg_name}/providers/Microsoft.OperationalInsights/workspaces/default-workspace"
+                logger.warning(
+                    f"Scheduled query rule '{resource_name}' missing data_source_id, using placeholder"
+                )
+
+            resource_config.update(
+                {
+                    "data_source_id": data_source_id,
+                    "query": properties.get(
+                        "query",
+                        "Heartbeat | summarize AggregatedValue = count() by Computer",
+                    ),
+                    "frequency": properties.get("frequency", 5),
+                    "time_window": properties.get("timeWindow", 5),
+                    "trigger": {
+                        "operator": (
+                            properties.get("trigger", {}).get(
+                                "thresholdOperator", "GreaterThan"
+                            )
+                        ),
+                        "threshold": properties.get("trigger", {}).get("threshold", 0),
+                    },
+                    "action": {
+                        "action_group": (
+                            properties.get("action", {}).get("actionGroups", [])
+                        )
+                    },
+                }
+            )
+
+            logger.debug(
+                f"Scheduled Query Rule '{resource_name}' configured with frequency={resource_config['frequency']} min, "
+                f"time_window={resource_config['time_window']} min"
+            )
 
         return terraform_type, safe_name, resource_config
 
