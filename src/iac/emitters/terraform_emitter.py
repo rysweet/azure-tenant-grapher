@@ -113,6 +113,12 @@ class TerraformEmitter(IaCEmitter):
         # Resource ID builder (Issue #502)
         self._resource_id_builder = AzureResourceIdBuilder(self)
 
+        # Initialize attributes that tests expect to exist (Issue #296 - Standalone subnets)
+        # These are also re-initialized in emit() but need to exist for direct _convert_resource() calls
+        self._available_subnets: set = set()
+        self._vnet_id_to_terraform_name: Dict[str, str] = {}
+        self._graph: Optional[Any] = None
+
     def _get_effective_subscription_id(self, resource: Dict[str, Any]) -> str:
         """Get the subscription ID to use for resource construction.
 

@@ -90,14 +90,21 @@ class TestGraphTraverserWithMockData:
         mock_record = MagicMock()
         mock_resource_node = {
             "id": "fallback-1",
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-1",
             "name": "fallback-vm",
             "type": "FallbackType",
         }
         mock_record.__getitem__.side_effect = lambda key: {
             "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-1",
             "rels": [{"type": "CONNECTED_TO", "target": "other-1"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.get = lambda key, default=None: {
+            "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-1",
+            "rels": [{"type": "CONNECTED_TO", "target": "other-1"}],
+        }.get(key, default)
 
         # First result: empty, Second result: contains mock_record
         mock_result_empty = MagicMock()
@@ -137,14 +144,21 @@ class TestGraphTraverserWithMockData:
         mock_record = MagicMock()
         mock_resource_node = {
             "id": "fallback-2",
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-2",
             "name": "fallback-vm2",
             "type": "FallbackType2",
         }
         mock_record.__getitem__.side_effect = lambda key: {
             "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-2",
             "rels": [{"type": "CONNECTED_TO", "target": "other-2"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.get = lambda key, default=None: {
+            "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-2",
+            "rels": [{"type": "CONNECTED_TO", "target": "other-2"}],
+        }.get(key, default)
 
         mock_result_empty = MagicMock()
         mock_result_empty.__iter__.return_value = iter([])
@@ -182,14 +196,21 @@ class TestGraphTraverserWithMockData:
         mock_record = MagicMock()
         mock_resource_node = {
             "id": "vm-1",
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm",
             "name": "test-vm",
             "type": "Microsoft.Compute/virtualMachines",
         }
         mock_record.__getitem__.side_effect = lambda key: {
             "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm",
             "rels": [{"type": "DEPENDS_ON", "target": "storage-1"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.get = lambda key, default=None: {
+            "r": mock_resource_node,
+            "original_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm",
+            "rels": [{"type": "DEPENDS_ON", "target": "storage-1"}],
+        }.get(key, default)
 
         # Mock result to return our mock record
         mock_result = MagicMock()

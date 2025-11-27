@@ -320,20 +320,22 @@ class KeyVaultTranslator(BaseTranslator):
                             f"Translated access policy object_id: {original_object_id} -> {target_object_id}"
                         )
                     else:
-                        # Bug #18-related: Skip policy with untranslated object_id to prevent deployment failures
+                        # Bug #89: Keep policy with warning instead of skipping
+                        # tenant_id is translated, object_id remains unchanged
                         warnings.append(
-                            f"Access policy {i}: SKIPPED - No identity mapping found for object_id '{original_object_id}'. "
-                            f"Use --identity-mapping-file to translate principals across tenants."
+                            f"Access policy {i}: WARNING - No identity mapping found for object_id '{original_object_id}'. "
+                            f"Object ID will be preserved from source tenant. Use --identity-mapping-file to translate principals across tenants."
                         )
-                        continue  # Skip this policy
+                        # DO NOT skip - keep policy with source object_id
                 else:
-                    # No identity mapping available - SKIP policy in cross-tenant mode
+                    # No identity mapping available - keep policy with warning
+                    # tenant_id is translated, object_id remains unchanged
                     warnings.append(
-                        f"Access policy {i}: SKIPPED - Identity mapping not available. "
-                        f"Object ID '{original_object_id}' cannot be translated to target tenant. "
+                        f"Access policy {i}: WARNING - Identity mapping not available. "
+                        f"Object ID '{original_object_id}' will be preserved from source tenant. "
                         f"Use --identity-mapping-file to deploy Key Vault access policies cross-tenant."
                     )
-                    continue  # Skip this policy
+                    # DO NOT skip - keep policy with source object_id
 
             # CONDITIONALLY translate application_id
             if "application_id" in translated_policy:
@@ -351,19 +353,21 @@ class KeyVaultTranslator(BaseTranslator):
                             f"Translated access policy application_id: {original_app_id} -> {target_app_id}"
                         )
                     else:
-                        # Bug #18-related: Skip policy with untranslated application_id
+                        # Bug #89: Keep policy with warning instead of skipping
+                        # tenant_id is translated, application_id remains unchanged
                         warnings.append(
-                            f"Access policy {i}: SKIPPED - No application mapping found for application_id '{original_app_id}'. "
-                            f"Use --identity-mapping-file to translate applications across tenants."
+                            f"Access policy {i}: WARNING - No application mapping found for application_id '{original_app_id}'. "
+                            f"Application ID will be preserved from source tenant. Use --identity-mapping-file to translate applications across tenants."
                         )
-                        continue  # Skip this policy
+                        # DO NOT skip - keep policy with source application_id
                 else:
-                    # Bug #18-related: Skip policy without identity mapping
+                    # Bug #89: Keep policy with warning instead of skipping
+                    # tenant_id is translated, application_id remains unchanged
                     warnings.append(
-                        f"Access policy {i}: SKIPPED - Identity mapping not available. "
-                        f"Application ID '{original_app_id}' cannot be translated to target tenant."
+                        f"Access policy {i}: WARNING - Identity mapping not available. "
+                        f"Application ID '{original_app_id}' will be preserved from source tenant."
                     )
-                    continue  # Skip this policy
+                    # DO NOT skip - keep policy with source application_id
 
             # Permissions are preserved as-is (they're not tenant-specific)
             # Certificate/Key/Secret permissions arrays remain unchanged
