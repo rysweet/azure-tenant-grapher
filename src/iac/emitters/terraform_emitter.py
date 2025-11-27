@@ -202,6 +202,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
         "Microsoft.Insights/components": "azurerm_application_insights",
         "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
+        "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",  # Bug #91: Lowercase variant
         "Microsoft.Resources/resourceGroups": "azurerm_resource_group",
         # DevTestLab resources
         "Microsoft.DevTestLab/labs": "azurerm_dev_test_lab",
@@ -228,6 +229,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.DocumentDB/databaseAccounts": "azurerm_cosmosdb_account",
         "Microsoft.Network/applicationGateways": "azurerm_application_gateway",
         "Microsoft.Network/dnsZones": "azurerm_dns_zone",
+        "Microsoft.Network/dnszones": "azurerm_dns_zone",  # Bug #91: Lowercase variant
         "Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies": "azurerm_web_application_firewall_policy",
         "Microsoft.Network/natGateways": "azurerm_nat_gateway",
         "Microsoft.DBforPostgreSQL/flexibleServers": "azurerm_postgresql_flexible_server",
