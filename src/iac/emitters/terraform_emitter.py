@@ -257,7 +257,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # NOW HAS EMITTER (Iteration 27)
-        # "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",  # Extraneous location property (Iteration 23)
+        "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
         # "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",  # Missing: data_location
         "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
         # "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",  # Missing: data_source_id, frequency, time_window, query, action, trigger (Iteration 26)
@@ -4406,6 +4406,18 @@ class TerraformEmitter(IaCEmitter):
             # Convert to JSON string for Terraform (required format)
             dashboard_json = json.dumps(dashboard_props) if dashboard_props else "{}"
             resource_config["dashboard_properties"] = dashboard_json
+
+        elif azure_type == "Microsoft.Communication/CommunicationServices":
+            # Communication Services use data_location instead of location
+            properties = self._parse_properties(resource)
+
+            # Communication services have data_location instead of location
+            data_location = properties.get("dataLocation", "UnitedStates")
+            resource_config["data_location"] = data_location
+
+            # IMPORTANT: Remove the location field that was added by default
+            # Communication services use data_location, not location
+            resource_config.pop("location", None)
 
         elif azure_type == "Microsoft.Purview/accounts":
             # Purview Account requires identity block
