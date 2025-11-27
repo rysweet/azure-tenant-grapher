@@ -724,6 +724,16 @@ class AzureDiscoveryService:
         if not resource_id:
             return resource
 
+        # Bug #95: Skip Phase 2 for role assignments - they already have full properties from Phase 1.5
+        # Role assignments use AuthorizationManagementClient, not ResourceManagementClient
+        resource_type = resource.get("type", "")
+        if resource_type == "Microsoft.Authorization/roleAssignments":
+            logger.debug(
+                f"Skipping Phase 2 property fetch for role assignment {resource_id} "
+                "(already has full properties from Phase 1.5)"
+            )
+            return resource
+
         async with semaphore:
             try:
                 # Get appropriate API version

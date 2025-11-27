@@ -391,6 +391,51 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Documentation**: `/tmp/BUG_94_FINAL_ROOT_CAUSE.md`, `/tmp/BUG_94_CORRECTED_UNDERSTANDING.md`
 
+### Bug #95: Phase 2 Uses Wrong API for Role Assignments ⭐
+**Status**: FIXED (2025-11-27) | **GitHub**: Blocks Issue #502
+**Impact**: 100% role assignment loss (0/684 saved) - discovered during Bug #94 verification
+
+**Problem**: Role assignments discovered in Phase 1.5 were not saved to Neo4j database. Phase 2 property fetching attempted to use `ResourceManagementClient.resources.get_by_id()` for role assignments, but this API only supports ARM resources, not Authorization resources.
+
+**Root Cause**: Phase 2 assumes all resources can be fetched via `ResourceManagementClient`, but role assignments require `AuthorizationManagementClient`. Role assignments already have full properties from Phase 1.5, making Phase 2 fetching redundant and error-prone.
+
+**Discovery Timeline**:
+1. Bug #94 verification scan completed with 0 role assignments in database
+2. Found 18 AuthorizationFailed errors in scan log
+3. Traced to Phase 2 trying to fetch role assignments with wrong API client
+4. Phase 1.5 already provides complete role assignment properties
+
+**Solution** (5-line fix):
+```python
+# In azure_discovery_service.py:_fetch_single_resource_with_properties
+resource_type = resource.get("type", "")
+if resource_type == "Microsoft.Authorization/roleAssignments":
+    logger.debug("Skipping Phase 2 for role assignment (already has full properties)")
+    return resource  # Skip Phase 2 fetching
+```
+
+**Why This Works**:
+- Phase 1.5 uses `AuthorizationManagementClient.role_assignments.list_for_subscription()`
+- Already extracts all properties (principalId, roleDefinitionId, scope, etc.)
+- No need for Phase 2 to re-fetch with different API
+- Eliminates 403 AuthorizationFailed errors
+
+**Files Modified**:
+- `src/services/azure_discovery_service.py:727-735` (add skip logic)
+
+**Verification**:
+1. Clear database: `MATCH (n) DETACH DELETE n;`
+2. Re-run scan with fix
+3. Expected: 684 role assignments saved ✅
+
+**Related**:
+- Bug #93: Same-tenant role assignment generation (needs data to verify)
+- Bug #94: Database corruption (was false alarm - Bug #95 was real cause)
+- Bug #67: Cross-tenant principal ID translation (needs data to verify)
+- Issue #502: 1,017 role assignment gap (blocked by Bug #95)
+
+**Documentation**: `/tmp/BUG_95_ROOT_CAUSE_FINAL.md`, `/tmp/BUG_95_PERMISSIONS_ISSUE.md`
+
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
 **Status**: FIXED (commit faeb284)  
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
