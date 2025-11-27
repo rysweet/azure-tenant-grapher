@@ -811,7 +811,7 @@ class TerraformEmitter(IaCEmitter):
                     if len(resource_name) > 80:
                         import hashlib
 
-                        name_hash = hashlib.md5(resource_name.encode()).hexdigest()[:5]
+                        name_hash = hashlib.md5(resource_name.encode(), usedforsecurity=False).hexdigest()[:5]
                         resource_name = resource_name[:74] + "_" + name_hash
 
                     logger.warning(
@@ -4863,7 +4863,7 @@ class TerraformEmitter(IaCEmitter):
         if len(sanitized) > 80:
             import hashlib
 
-            name_hash = hashlib.md5(sanitized.encode()).hexdigest()[:5]
+            name_hash = hashlib.md5(sanitized.encode(), usedforsecurity=False).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
             logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
