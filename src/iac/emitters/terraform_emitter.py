@@ -253,7 +253,7 @@ class TerraformEmitter(IaCEmitter):
         # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
         "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # NOW HAS EMITTER (added SKU handler)
         # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
-        # "Microsoft.Purview/accounts": "azurerm_purview_account",  # Missing: identity block (Iteration 26)
+        "Microsoft.Purview/accounts": "azurerm_purview_account",
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
         "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",  # NOW HAS EMITTER (Iteration 27)
@@ -4387,6 +4387,24 @@ class TerraformEmitter(IaCEmitter):
                 "sql_administrator_login": sql_admin_login,
                 "sql_administrator_login_password": "PlaceholderPassword123!",  # FIXME: Use vault or generate
             })
+
+        elif azure_type == "Microsoft.Purview/accounts":
+            # Purview Account requires identity block
+            properties = self._parse_properties(resource)
+
+            # Get identity type from properties
+            identity_props = properties.get("identity", {})
+            identity_type = identity_props.get("type", "SystemAssigned")
+
+            resource_config["identity"] = {
+                "type": identity_type
+            }
+
+            # Add identity_ids if UserAssigned
+            if identity_type == "UserAssigned":
+                identity_ids = identity_props.get("userAssignedIdentities", {}).keys()
+                if identity_ids:
+                    resource_config["identity"]["identity_ids"] = list(identity_ids)
 
         return terraform_type, safe_name, resource_config
 
