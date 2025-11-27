@@ -340,6 +340,56 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Files Modified**: `src/iac/engine.py:70-73`
 
+### Bug #93: Same-Tenant Detection Failure When Azure CLI Unavailable ⭐
+**Status**: FIXED (commits 9d6e915, 23051c8)
+**Impact**: Prevents loss of 1,017 role assignments in Issue #502 same-tenant deployments
+
+**Problem**: When running `generate-iac --target-tenant-id X` without `--source-tenant-id` and Azure CLI not logged in:
+- Code tries to get source tenant from `az account show` (cli_handler.py:601-614)
+- Azure CLI unavailable → source tenant defaults to None
+- Comparison: `None != X` → falsely detected as "cross-tenant mode"
+- Cross-tenant mode without identity mapping → SKIPS ALL ROLE ASSIGNMENTS
+
+**Root Cause**: No fallback for source tenant when Azure CLI unavailable (subscription had fallback, tenant didn't).
+
+**Solution**:
+1. **cli_handler.py:629-641**: Added intelligent fallback - if target specified but source unknown AND no identity mapping file, assume same-tenant (source = target)
+2. **ARM emitter (arm_emitter.py:145-158)**: Added is_same_tenant detection before skip
+3. **Bicep emitter (bicep_emitter.py:240-253)**: Added is_same_tenant detection
+4. **Modular Terraform (terraform/handlers/identity/role_assignment.py:72-90)**: Added is_same_tenant detection
+
+**Files Modified**: 4 files, 45 lines changed
+
+**Verification**: Log evidence shows fix working - same-tenant mode correctly detected
+
+### Bug #94: Role Assignments Not Scanned Into Neo4j ⭐⭐
+**Status**: DISCOVERED (not yet fixed - requires investigation)
+**Impact**: BLOCKS all role assignment deployment (1,017 resources affected in Issue #502)
+
+**Problem**: 0 role assignments in Neo4j graph, preventing any IaC generation regardless of Bug #93 fix.
+
+**Evidence**: No Authorization resources found in database despite discovery code existing
+
+**Analysis**: Role assignment discovery code EXISTS (azure_discovery_service.py:450, line 290) but Phase 1.5 never executes. No "Phase 1.5: Discovering role assignments" log messages during scans.
+
+**Execution Path Traced**:
+```
+atg scan → build_command_handler → grapher.build_graph() (azure_tenant_grapher.py:192) →
+FOR EACH subscription:
+  discover_resources_in_subscription() → Phase 1.5 (lines 276-319) → discover_role_assignments_in_subscription()
+```
+
+**Investigation Needed**:
+1. Check why Phase 1.5 code doesn't execute (no log messages)
+2. Verify Authorization Management Client permissions
+3. Check if exceptions silently caught (lines 315-319)
+4. Add debug logging to confirm execution
+5. Live scan debugging required
+
+**Related**: Two-layer bug structure - Bug #94 must be fixed BEFORE Bug #93 benefits realized.
+
+**Documentation**: `/tmp/BUG_94_DISCOVERY.md`
+
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
 **Status**: FIXED (commit faeb284)  
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
