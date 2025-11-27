@@ -59,7 +59,6 @@ class TransformationEngine:
         """
         rules = []
         try:
-            yaml = YAML(typ="safe")
             rules_path = Path(rules_file)
 
             if not rules_path.exists():

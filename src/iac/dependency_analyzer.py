@@ -213,8 +213,8 @@ class DependencyAnalyzer:
         Returns:
             Sanitized name safe for Terraform (max 80 chars for Azure NICs)
         """
-        import re
         import hashlib
+        import re
 
         sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
