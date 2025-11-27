@@ -362,33 +362,34 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Verification**: Log evidence shows fix working - same-tenant mode correctly detected
 
-### Bug #94: Role Assignments Not Scanned Into Neo4j ⭐⭐
-**Status**: DISCOVERED (not yet fixed - requires investigation)
-**Impact**: BLOCKS all role assignment deployment (1,017 resources affected in Issue #502)
+### Bug #94: Database Corruption from Missing `upsert_generic` Method ⭐⭐
+**Status**: ALREADY FIXED (commit 63f06a9 - just requires fresh scan)
+**Impact**: 0 role assignments in old database (1,017 resources affected in Issue #502)
 
-**Problem**: 0 role assignments in Neo4j graph, preventing any IaC generation regardless of Bug #93 fix.
+**Root Cause**: Database created with code BEFORE commit 63f06a9 which lacked `upsert_generic` method, causing 1,496 AttributeErrors and loss of 1,214 resources (44% data loss) including ALL role assignments.
 
-**Evidence**: No Authorization resources found in database despite discovery code existing
+**What Actually Happened**:
+1. Phase 1.5 DID execute successfully (discovered 676 role assignments)
+2. ResourceProcessor called relationship rules (TagRule, RegionRule)
+3. Rules called non-existent `db_ops.upsert_generic()` method
+4. 1,496 AttributeErrors occurred (silent failures in relationship creation)
+5. Resources processed but relationships failed → 1,214 resources lost
 
-**Analysis**: Role assignment discovery code EXISTS (azure_discovery_service.py:450, line 290) but Phase 1.5 never executes. No "Phase 1.5: Discovering role assignments" log messages during scans.
+**Previous Understanding (WRONG)**:
+- ❌ "Phase 1.5 never executes" - FALSE (it executed perfectly)
+- ❌ "Discovery problem" - FALSE (discovery worked, processing failed)
+- ❌ "Needs investigation" - FALSE (already fixed by commit 63f06a9)
 
-**Execution Path Traced**:
-```
-atg scan → build_command_handler → grapher.build_graph() (azure_tenant_grapher.py:192) →
-FOR EACH subscription:
-  discover_resources_in_subscription() → Phase 1.5 (lines 276-319) → discover_role_assignments_in_subscription()
-```
+**The Fix** (commit 63f06a9 - Nov 26):
+- Added missing `upsert_generic()` method to NodeManager (+86 lines)
+- File: `src/services/resource_processing/node_manager.py:499-586`
+- Fixed relationship rule failures
 
-**Investigation Needed**:
-1. Check why Phase 1.5 code doesn't execute (no log messages)
-2. Verify Authorization Management Client permissions
-3. Check if exceptions silently caught (lines 315-319)
-4. Add debug logging to confirm execution
-5. Live scan debugging required
+**Verification**: Fresh scan with current code shows 0 `upsert_generic` errors (fix working)
 
-**Related**: Two-layer bug structure - Bug #94 must be fixed BEFORE Bug #93 benefits realized.
+**Solution**: Re-scan with current main branch code (commit 63f06a9 or later)
 
-**Documentation**: `/tmp/BUG_94_DISCOVERY.md`
+**Documentation**: `/tmp/BUG_94_FINAL_ROOT_CAUSE.md`, `/tmp/BUG_94_CORRECTED_UNDERSTANDING.md`
 
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
 **Status**: FIXED (commit faeb284)  
