@@ -300,6 +300,26 @@ When using the CLI dashboard (during `atg scan` operations):
 
 ## Recent Bug Fixes (November 2025)
 
+### Bug #89: KeyVault Translator Over-Aggressive Policy Skipping
+**Status**: FIXED (commit cf92e38)
+**Impact**: Enables KeyVault cross-tenant deployment without full identity mapping (+7 tests)
+
+**Problem**: KeyVault access policies were being SKIPPED entirely when identity mapping unavailable, preventing cross-tenant KeyVault deployment.
+
+**Solution**: Changed from "skip policy" to "keep policy with warning". ALWAYS translate tenant_id, keep object_id/application_id unchanged when no mapping available.
+
+**Files Modified**: `src/iac/translators/keyvault_translator.py:323-370`
+
+### Bug #90: Smart Detector Missing enabled and scope Fields
+**Status**: FIXED (commit 69966d9)
+**Impact**: Smart Detector Alert Rules properly convert enabled state and scope (+3 tests)
+
+**Problem**: Missing `enabled` field and empty `scope_resource_ids` (Azure uses both "scope" and "scopes").
+
+**Solution**: Map `state` property to `enabled` boolean, handle both "scope" (singular) and "scopes" (plural) field variants.
+
+**Files Modified**: `src/iac/emitters/terraform_emitter.py:1757-1772`
+
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
 **Status**: FIXED (commit faeb284)  
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
