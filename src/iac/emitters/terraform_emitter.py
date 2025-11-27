@@ -252,7 +252,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Network/routeTables": "azurerm_route_table",
         # TEMPORARILY COMMENTED - Need emitter implementation (Iteration 22 validation found missing required fields)
         "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",  # NOW HAS EMITTER (added SKU handler)
-        # "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",  # Missing: dashboard_properties
+        "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",
         "Microsoft.Purview/accounts": "azurerm_purview_account",
         "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",  # NOW HAS EMITTER (added SKU handler)
         "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
@@ -4378,15 +4378,34 @@ class TerraformEmitter(IaCEmitter):
                 rg_name = resource.get("resource_group", "unknown-rg")
                 sub_id = self._get_effective_subscription_id(resource)
                 storage_filesystem_id = f"/subscriptions/{sub_id}/resourceGroups/{rg_name}/providers/Microsoft.Storage/storageAccounts/synapsestorage/fileSystems/synapsedata"
-                logger.warning(f"Synapse workspace '{resource_name}' missing storage filesystem ID, using placeholder")
+                logger.warning(
+                    f"Synapse workspace '{resource_name}' missing storage filesystem ID, using placeholder"
+                )
 
             sql_admin_login = properties.get("sqlAdministratorLogin", "sqladminuser")
 
-            resource_config.update({
-                "storage_data_lake_gen2_filesystem_id": storage_filesystem_id,
-                "sql_administrator_login": sql_admin_login,
-                "sql_administrator_login_password": "PlaceholderPassword123!",  # FIXME: Use vault or generate
-            })
+            resource_config.update(
+                {
+                    "storage_data_lake_gen2_filesystem_id": storage_filesystem_id,
+                    "sql_administrator_login": sql_admin_login,
+                    "sql_administrator_login_password": "PlaceholderPassword123!",  # FIXME: Use vault or generate
+                }
+            )
+
+        elif azure_type == "Microsoft.Portal/dashboards":
+            # Portal Dashboards require dashboard_properties (JSON string)
+            properties = self._parse_properties(resource)
+
+            # Extract dashboard definition from properties
+            # Azure stores the dashboard definition in the properties field
+            # Terraform requires this as a JSON string in dashboard_properties
+            dashboard_props = (
+                properties.get("lenses") or properties.get("metadata") or {}
+            )
+
+            # Convert to JSON string for Terraform (required format)
+            dashboard_json = json.dumps(dashboard_props) if dashboard_props else "{}"
+            resource_config["dashboard_properties"] = dashboard_json
 
         elif azure_type == "Microsoft.Purview/accounts":
             # Purview Account requires identity block
@@ -4396,9 +4415,7 @@ class TerraformEmitter(IaCEmitter):
             identity_props = properties.get("identity", {})
             identity_type = identity_props.get("type", "SystemAssigned")
 
-            resource_config["identity"] = {
-                "type": identity_type
-            }
+            resource_config["identity"] = {"type": identity_type}
 
             # Add identity_ids if UserAssigned
             if identity_type == "UserAssigned":
