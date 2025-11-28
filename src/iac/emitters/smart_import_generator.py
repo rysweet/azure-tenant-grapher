@@ -395,17 +395,42 @@ class SmartImportGenerator:
         # Build Terraform resource address
         terraform_address = f"{terraform_type}.{terraform_name}"
 
+        # Normalize casing in import ID (fix lowercase provider names from Azure)
+        normalized_import_id = self._normalize_import_id_casing(target_resource_id)
+
         # Create import block
         import_block = ImportBlock(
             to=terraform_address,
-            id=target_resource_id,
+            id=normalized_import_id,
         )
 
         logger.debug(
-            f"Created import block: to={terraform_address}, id={target_resource_id}"
+            f"Created import block: to={terraform_address}, id={normalized_import_id}"
         )
 
         return import_block
+
+    def _normalize_import_id_casing(self, resource_id: str) -> str:
+        """
+        Normalize provider casing in Azure resource IDs for Terraform import blocks.
+
+        Azure sometimes returns lowercase provider names (microsoft.insights)
+        but Terraform requires proper casing (Microsoft.Insights).
+
+        Args:
+            resource_id: Azure resource ID (may have lowercase providers)
+
+        Returns:
+            Resource ID with normalized provider casing
+        """
+        # Common provider casing fixes
+        normalized = resource_id
+        normalized = re.sub(r'/microsoft\.insights/', '/Microsoft.Insights/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r'/microsoft\.alertsmanagement/', '/Microsoft.AlertsManagement/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r'/microsoft\.network/dnszones/', '/Microsoft.Network/dnsZones/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r'/microsoft\.operationalinsights/', '/Microsoft.OperationalInsights/', normalized, flags=re.IGNORECASE)
+
+        return normalized
 
     def _map_azure_to_terraform_type(self, azure_type: str) -> Optional[str]:
         """
