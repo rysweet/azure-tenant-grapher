@@ -222,7 +222,9 @@ class ResourceExistenceValidator:
                         "userAssignedIdentities": "2023-01-31",
                         "publicIPAddresses": "2023-05-01",
                         "networkSecurityGroups": "2023-05-01",
-                        "workspaces": "2024-05-01",  # Databricks - updated from 2022-10-01
+                        # Note: "workspaces" is ambiguous - used by both Databricks and OperationalInsights
+                        # This default is for OperationalInsights (most common)
+                        "workspaces": "2023-09-01",  # OperationalInsights workspaces
                         "networkWatchers": "2023-05-01",
                         "accounts": "2023-05-01",
                         "loadBalancers": "2023-05-01",
