@@ -101,7 +101,27 @@ class VirtualMachineHandler(ResourceHandler):
 
         logger.debug(f"VM '{resource_name}' emitted with {len(nic_refs)} NIC(s)")
 
-        return "azurerm_linux_virtual_machine", safe_name, config
+        # Detect Windows vs Linux OS
+        os_profile = properties.get("osProfile", {})
+        has_windows_config = "windowsConfiguration" in os_profile
+        has_linux_config = "linuxConfiguration" in os_profile
+
+        # Check osType in storage profile as fallback
+        storage_profile = properties.get("storageProfile", {})
+        os_disk = storage_profile.get("osDisk", {})
+        os_type = os_disk.get("osType", "").lower()
+
+        # Determine VM type
+        if has_windows_config or os_type == "windows":
+            vm_type = "azurerm_windows_virtual_machine"
+        elif has_linux_config or os_type == "linux":
+            vm_type = "azurerm_linux_virtual_machine"
+        else:
+            # Default to Linux if unknown
+            vm_type = "azurerm_linux_virtual_machine"
+            logger.warning(f"VM '{resource_name}' has unclear OS type, defaulting to Linux")
+
+        return vm_type, safe_name, config
 
     def _validate_and_get_nics(
         self,
