@@ -210,6 +210,7 @@ class ResourceExistenceValidator:
                     resource_type = parts[provider_idx + 2]
 
                     # Use known API versions for common types
+                    # Updated 2025-11-28: Added missing resource types to fix validation errors
                     api_versions = {
                         "resourceGroups": "2021-04-01",
                         "storageAccounts": "2023-01-01",
@@ -221,7 +222,7 @@ class ResourceExistenceValidator:
                         "userAssignedIdentities": "2023-01-31",
                         "publicIPAddresses": "2023-05-01",
                         "networkSecurityGroups": "2023-05-01",
-                        "workspaces": "2022-10-01",
+                        "workspaces": "2024-05-01",  # Databricks - updated from 2022-10-01
                         "networkWatchers": "2023-05-01",
                         "accounts": "2023-05-01",
                         "loadBalancers": "2023-05-01",
@@ -229,6 +230,17 @@ class ResourceExistenceValidator:
                         "managedClusters": "2023-10-01",  # AKS
                         "privateDnsZones": "2020-06-01",
                         "privateEndpoints": "2023-05-01",
+                        # NEW: Added to fix validation errors
+                        "serverFarms": "2024-04-01",  # App Service Plans
+                        "namespaces": "2024-01-01",  # Service Bus
+                        "managedEnvironments": "2024-03-01",  # Container Apps
+                        "dnszones": "2018-05-01",  # DNS Zones
+                        "flexibleServers": "2024-08-01",  # PostgreSQL Flexible Servers
+                        "accessConnectors": "2024-05-01",  # Databricks Access Connectors
+                        "components": "2020-02-02",  # Application Insights
+                        "staticSites": "2023-01-01",  # Static Web Apps
+                        "labs": "2018-09-15",  # DevTest Labs
+                        "galleries": "2023-07-03",  # Compute Galleries
                     }
 
                     if resource_type in api_versions:
