@@ -47,6 +47,16 @@ class StorageAccountHandler(ResourceHandler):
         resource_name = resource.get("name", "unknown")
         safe_name = self.sanitize_name(resource_name)
 
+        # Skip Databricks-managed storage accounts (have deny assignments)
+        resource_id = resource.get("id", "")
+        resource_group = resource.get("resource_group", "")
+        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group.lower():
+            logger.info(
+                f"Skipping Databricks-managed storage account '{resource_name}' "
+                "(has Azure deny assignments)"
+            )
+            return None
+
         # Build base configuration
         config = self.build_base_config(resource)
 
