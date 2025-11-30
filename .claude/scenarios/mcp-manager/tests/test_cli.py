@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+
 from cli import (
     cmd_add,
     cmd_disable,

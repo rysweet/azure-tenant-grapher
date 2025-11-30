@@ -69,6 +69,14 @@ class RoleAssignmentHandler(ResourceHandler):
 
         principal_id = properties.get("principalId", resource.get("principalId", ""))
 
+        # Bug #18/#93: Skip role assignments without identity mapping in cross-tenant mode ONLY
+        # Detect same-tenant deployment (source and target are the same tenant)
+        is_same_tenant = (
+            context.source_tenant_id
+            and context.target_tenant_id
+            and context.source_tenant_id == context.target_tenant_id
+        )
+
         # Bug #NEW: For same-tenant deployment, use original principal ID (not abstracted)
         if is_same_tenant and resource.get("original_properties"):
             import json
@@ -80,14 +88,6 @@ class RoleAssignmentHandler(ResourceHandler):
                     principal_id = original_principal_id
             except Exception as e:
                 logger.warning(f"Could not parse original_properties: {e}")
-
-        # Bug #18/#93: Skip role assignments without identity mapping in cross-tenant mode ONLY
-        # Detect same-tenant deployment (source and target are the same tenant)
-        is_same_tenant = (
-            context.source_tenant_id
-            and context.target_tenant_id
-            and context.source_tenant_id == context.target_tenant_id
-        )
 
         if (
             context.target_tenant_id

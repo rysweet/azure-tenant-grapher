@@ -7,6 +7,7 @@ the input.
 
 import copy
 import json
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
