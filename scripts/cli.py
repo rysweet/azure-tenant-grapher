@@ -19,6 +19,7 @@ from rich.logging import RichHandler
 from rich.style import Style
 
 from src.cli_dashboard_manager import DashboardExitException
+from src.commands.abstract_graph import abstract_graph
 from src.commands.auth import app_registration as app_registration_cmd
 
 # Import modular commands for CLI registration (Issue #482)
@@ -1073,6 +1074,9 @@ cli.add_command(generate_sim_doc, "gensimdoc")
 
 # Register create-tenant command (from src.commands.tenant)
 cli.add_command(create_tenant_cmd, "create-tenant")
+
+# Register graph abstraction command (from src.commands.abstract_graph)
+cli.add_command(abstract_graph)
 
 # Register SPA commands (from src.commands.spa)
 cli.add_command(spa_start_command, "start")

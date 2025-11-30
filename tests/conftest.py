@@ -8,6 +8,27 @@ import pytest
 
 
 # ============================================================================
+# Pytest Configuration for Graph Abstraction Tests (Issue #504)
+# ============================================================================
+
+
+def pytest_addoption(parser):
+    """Add custom pytest options for graph abstraction tests."""
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests with testcontainers (requires Docker)",
+    )
+    parser.addoption(
+        "--run-performance",
+        action="store_true",
+        default=False,
+        help="Run performance benchmarking tests",
+    )
+
+
+# ============================================================================
 # Resource Processor Test Fixtures
 # ============================================================================
 
@@ -68,7 +89,9 @@ def sample_resources(sample_resource: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Provide a list of sample resources for testing."""
     resource1 = sample_resource.copy()
     resource2 = sample_resource.copy()
-    resource2["id"] = "/subscriptions/test-sub-123/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm-2"
+    resource2["id"] = (
+        "/subscriptions/test-sub-123/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm-2"
+    )
     resource2["name"] = "test-vm-2"
     return [resource1, resource2]
 
@@ -83,7 +106,7 @@ def neo4j_container():
     """Provides mock Neo4j connection details for testing."""
     uri = "bolt://localhost:7687"
     user = "neo4j"
-    password = "test_password"
+    password = "test_password"  # pragma: allowlist secret
 
     os.environ["NEO4J_URI"] = uri
     os.environ["NEO4J_USER"] = user
@@ -97,7 +120,7 @@ def shared_neo4j_container():
     """Provides mock Neo4j connection details for testing."""
     uri = "bolt://localhost:7687"
     user = "neo4j"
-    password = "test_password"
+    password = "test_password"  # pragma: allowlist secret
 
     os.environ["NEO4J_URI"] = uri
     os.environ["NEO4J_USER"] = user
