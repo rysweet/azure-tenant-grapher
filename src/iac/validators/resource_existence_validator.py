@@ -245,8 +245,10 @@ class ResourceExistenceValidator:
                         "registries": "2022-12-01",  # Bug #100: Container Registry (was using fallback 2021-04-01)
                         "databaseAccounts": "2024-08-15",  # Bug #102: CosmosDB (was using fallback 2021-04-01)
                         "managedEnvironments": "2024-03-01",  # Container Apps
-                        "dnszones": "2018-05-01",  # DNS Zones
+                        "dnszones": "2018-05-01",  # DNS Zones (lowercase)
+                        "dnsZones": "2018-05-01",  # Bug #103: DNS Zones (camelCase variant)
                         "flexibleServers": "2024-08-01",  # PostgreSQL Flexible Servers
+                        "Redis": "2024-03-01",  # Bug #104: Redis Cache
                         "accessConnectors": "2024-05-01",  # Databricks Access Connectors
                         "components": "2020-02-02",  # Application Insights
                         "staticSites": "2023-01-01",  # Static Web Apps
