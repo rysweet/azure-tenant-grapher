@@ -26,22 +26,26 @@ class BicepEmitter(IaCEmitter):
         target_subscription_id: Optional[str] = None,
         target_tenant_id: Optional[str] = None,
         identity_mapping: Optional[Dict[str, Any]] = None,
+        source_tenant_id: Optional[str] = None,
     ) -> None:
         """Initialize BicepEmitter with optional cross-tenant translation.
 
         Bug #70 fix: Add cross-tenant translation support for Bicep templates.
+        Bug #107 fix: Add source_tenant_id parameter for same-tenant detection.
 
         Args:
             config: Optional emitter-specific configuration
             target_subscription_id: Target subscription ID for cross-tenant translation
             target_tenant_id: Target tenant ID for cross-tenant translation
             identity_mapping: Identity mapping dictionary for Entra ID translation
+            source_tenant_id: Source tenant ID for same-tenant detection (Bug #107)
         """
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
         self.target_subscription_id = target_subscription_id
         self.target_tenant_id = target_tenant_id
         self.identity_mapping = identity_mapping
+        self.source_tenant_id = source_tenant_id  # Bug #107 fix
 
     def emit(
         self,
