@@ -535,6 +535,26 @@ Got:      /providers/Microsoft.Cache/Redis/redisName
 
 ---
 
+### Bug #109: QueryPack Resource ID Casing Normalization
+**Status**: FIXED (commit feddac9)
+**Impact**: Fixes query pack import errors (similar to Bug #108)
+
+**Problem**: Terraform plan fails for query packs with parsing error similar to Redis casing issue.
+
+**Root Cause**: Azure uses 'QueryPacks' or 'queryPacks' in resource IDs but Terraform expects lowercase 'querypacks'.
+
+**Solution**: Added QueryPack normalization to _normalize_azure_resource_id():
+```python
+(
+    r"/Microsoft\.OperationalInsights/[Qq]ueryPacks/",
+    "/Microsoft.OperationalInsights/querypacks/",
+),
+```
+
+**Files Modified**: src/iac/emitters/terraform_emitter.py:5126-5130
+
+---
+
 ### Bug #92: TransformationEngine YAML Loading Error
 **Status**: FIXED (commit b065e55)
 **Impact**: TransformationEngine can now load rules files (+1 test)
