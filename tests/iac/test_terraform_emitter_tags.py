@@ -286,11 +286,17 @@ class TestTerraformTagsParsing:
                 "tags": {"env": "dev"},  # Dict
             },
             {
+                "id": "/subscriptions/sub-123/resourceGroups/test-rg/providers/Microsoft.KeyVault/vaults/kv1",
                 "type": "Microsoft.KeyVault/vaults",
                 "name": "kv1",
                 "location": "eastus2",
                 "resourceGroup": "test-rg",
+                "subscription_id": "sub-123",
                 "tags": "",  # Empty string
+                "properties": json.dumps({
+                    "tenantId": "tenant-123",
+                    "sku": {"family": "A", "name": "standard"},
+                }),
             },
         ]
 
