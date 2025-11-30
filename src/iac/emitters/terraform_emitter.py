@@ -1372,11 +1372,13 @@ class TerraformEmitter(IaCEmitter):
                     )
 
                     if azure_id:
+                        # Bug #NEW: Normalize provider casing in import IDs (fix lowercase providers)
+                        normalized_azure_id = self._normalize_azure_resource_id(azure_id)
                         resource_name = resource_config.get("name", tf_name)
                         candidate_imports.append(
                             {
                                 "to": f"{tf_resource_type}.{tf_name}",
-                                "id": azure_id,
+                                "id": normalized_azure_id,
                                 "name": resource_name,
                                 "type": tf_resource_type,
                             }
@@ -5107,6 +5109,7 @@ class TerraformEmitter(IaCEmitter):
                 "/Microsoft.OperationalInsights/workspaces/",
             ),
             (r"/microsoft\.insights/", "/Microsoft.Insights/"),
+            (r"/microsoft\.alertsmanagement/", "/Microsoft.AlertsManagement/"),
             (r"/microsoft\.compute/", "/Microsoft.Compute/"),
             (r"/microsoft\.network/", "/Microsoft.Network/"),
             (r"/microsoft\.storage/", "/Microsoft.Storage/"),
@@ -5124,6 +5127,8 @@ class TerraformEmitter(IaCEmitter):
         # Bug #88: Fix lowercase resourceGroups and actionGroups in resource IDs
         normalized = re.sub(r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE)
         normalized = re.sub(r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE)
+        # Bug #NEW3: Fix lowercase dnszones
+        normalized = re.sub(r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE)
 
         return normalized
 
