@@ -182,7 +182,8 @@ class TerraformEmitter(IaCEmitter):
 
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
-        "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",
+        # Bug #NEW4: VMs removed - handler detects Windows vs Linux, import blocks can't
+        # "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",  # REMOVED - let handler decide
         "Microsoft.Compute/disks": "azurerm_managed_disk",
         "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
