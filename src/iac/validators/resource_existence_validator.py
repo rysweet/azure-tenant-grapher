@@ -251,6 +251,8 @@ class ResourceExistenceValidator:
                         "Redis": "2024-03-01",  # Bug #104: Redis Cache
                         "actiongroups": "2023-01-01",  # Bug #105: Action Groups (lowercase variant)
                         "actionGroups": "2023-01-01",  # Bug #105: Action Groups (camelCase variant)
+                        "querypacks": "2023-09-01",  # Bug #106: Query Packs (lowercase variant)
+                        "queryPacks": "2023-09-01",  # Bug #106: Query Packs (camelCase variant)
                         "accessConnectors": "2024-05-01",  # Databricks Access Connectors
                         "components": "2020-02-02",  # Application Insights
                         "staticSites": "2023-01-01",  # Static Web Apps
