@@ -3,7 +3,10 @@
 This package provides emitter implementations for various Infrastructure-as-Code
 formats (Terraform, ARM templates, Bicep).
 
-TODO: Implement complete emitter registry and format-specific implementations.
+Complete emitter registry implemented with format-specific implementations:
+- TerraformEmitter (production-ready, 49 resource types)
+- ArmEmitter (cross-tenant support, Bug #107 fix)
+- BicepEmitter (cross-tenant support, Bug #107 fix)
 """
 
 from typing import Dict, Type

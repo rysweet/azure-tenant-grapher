@@ -3,7 +3,10 @@
 This package provides scaffolding for converting Neo4j graph data into
 Infrastructure-as-Code templates (Terraform, ARM, Bicep).
 
-TODO: Implement complete IaC generation pipeline.
+Complete IaC generation pipeline implemented with support for:
+- Terraform (production-ready)
+- ARM templates (cross-tenant support)
+- Bicep (cross-tenant support)
 """
 
 from .cli_handler import generate_iac_command_handler
