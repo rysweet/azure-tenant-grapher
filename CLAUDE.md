@@ -507,6 +507,34 @@ def __init__(
 
 ---
 
+### Bug #108: Redis Resource ID Casing Normalization
+**Status**: FIXED (commit 5b362c8)
+**Impact**: Fixes 15 Redis cache import errors in deployment
+**Verification**: ✅ Iteration 14 uses lowercase 'redis'
+
+**Problem**: Terraform plan failed for Redis caches with error:
+```
+parsing segment "staticRedis": the segment at position 6 didn't match
+Expected: /providers/Microsoft.Cache/redis/redisName
+Got:      /providers/Microsoft.Cache/Redis/redisName
+```
+
+**Root Cause**: Azure uses "Microsoft.Cache/Redis" (capital R) in resource IDs, but Terraform's azurerm provider expects "Microsoft.Cache/redis" (lowercase r).
+
+**Solution**: Added Redis casing normalization to _normalize_azure_resource_id():
+```python
+(
+    r"/Microsoft\.Cache/Redis/",
+    "/Microsoft.Cache/redis/",
+),
+```
+
+**Files Modified**: src/iac/emitters/terraform_emitter.py:5121-5125
+
+**Context**: Discovered during iteration 13 deployment attempt. Plan showed 26 errors, 15 were Redis casing issues. This fix eliminates all Redis import errors.
+
+---
+
 ### Bug #92: TransformationEngine YAML Loading Error
 **Status**: FIXED (commit b065e55)
 **Impact**: TransformationEngine can now load rules files (+1 test)
