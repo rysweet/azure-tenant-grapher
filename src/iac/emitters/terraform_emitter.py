@@ -223,6 +223,7 @@ class TerraformEmitter(IaCEmitter):
         "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
         # Additional resource types found in full tenant scan
         "Microsoft.Insights/actionGroups": "azurerm_monitor_action_group",
+        "microsoft.insights/actiongroups": "azurerm_monitor_action_group",  # Bug #98: Lowercase variant
         "Microsoft.Search/searchServices": "azurerm_search_service",
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
