@@ -226,6 +226,7 @@ class TerraformEmitter(IaCEmitter):
         "microsoft.insights/actiongroups": "azurerm_monitor_action_group",  # Bug #98: Lowercase variant
         "Microsoft.Search/searchServices": "azurerm_search_service",
         "Microsoft.OperationalInsights/queryPacks": "azurerm_log_analytics_query_pack",
+        "microsoft.operationalinsights/querypacks": "azurerm_log_analytics_query_pack",  # Bug #99: Lowercase variant
         "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
         "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
         # Bug #36: Add support for additional resource types
