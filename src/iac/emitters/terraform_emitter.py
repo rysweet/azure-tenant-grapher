@@ -5123,6 +5123,11 @@ class TerraformEmitter(IaCEmitter):
                 r"/Microsoft\.Cache/Redis/",
                 "/Microsoft.Cache/redis/",
             ),
+            # Bug #109: QueryPacks must be lowercase 'querypacks' not 'QueryPacks' or 'queryPacks'
+            (
+                r"/Microsoft\.OperationalInsights/[Qq]ueryPacks/",
+                "/Microsoft.OperationalInsights/querypacks/",
+            ),
             (r"/microsoft\.insights/", "/Microsoft.Insights/"),
             (r"/microsoft\.alertsmanagement/", "/Microsoft.AlertsManagement/"),
             (r"/microsoft\.compute/", "/Microsoft.Compute/"),
