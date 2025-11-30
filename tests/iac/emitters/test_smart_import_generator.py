@@ -574,18 +574,20 @@ class TestMixedClassifications:
         # Should have 2 import blocks (EXACT_MATCH + DRIFTED)
         assert len(result.import_blocks) == 2
 
-        # Should have 2 resources needing emission (DRIFTED + NEW)
-        assert len(result.resources_needing_emission) == 2
+        # Bug #23: Should have 3 resources needing emission (EXACT_MATCH + DRIFTED + NEW)
+        # EXACT_MATCH now emits to prevent cascading reference errors
+        assert len(result.resources_needing_emission) == 3
 
         # Verify import blocks
         import_addresses = [block.to for block in result.import_blocks]
         assert "azurerm_virtual_network.vnet_a1b2c3d4" in import_addresses
         assert "azurerm_storage_account.storage_x9y8z7w6" in import_addresses
 
-        # Verify emission list
+        # Verify emission list (Bug #23: includes EXACT_MATCH now)
         emission_ids = [res["id"] for res in result.resources_needing_emission]
-        assert "storage-x9y8z7w6" in emission_ids
-        assert "rg-new123" in emission_ids
+        assert "vnet-a1b2c3d4" in emission_ids  # EXACT_MATCH (Bug #23)
+        assert "storage-x9y8z7w6" in emission_ids  # DRIFTED
+        assert "rg-new123" in emission_ids  # NEW
 
 
 class TestAzureToTerraformTypeMapping:
