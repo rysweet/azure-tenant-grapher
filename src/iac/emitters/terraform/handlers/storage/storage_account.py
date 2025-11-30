@@ -49,11 +49,19 @@ class StorageAccountHandler(ResourceHandler):
 
         # Skip Databricks-managed storage accounts (have deny assignments)
         resource_id = resource.get("id", "")
-        resource_group = resource.get("resource_group", "")
-        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group.lower():
+        resource_group_name = resource.get("resource_group_name", "")
+        # Check both ID and resource_group_name field
+        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group_name.lower():
             logger.info(
-                f"Skipping Databricks-managed storage account '{resource_name}' "
+                f"Skipping Databricks-managed storage account '{resource_name}' in RG '{resource_group_name}' "
                 "(has Azure deny assignments)"
+            )
+            return None
+
+        # Also skip by name pattern (dbstorage* are Databricks-managed)
+        if resource_name.startswith("dbstorage"):
+            logger.info(
+                f"Skipping Databricks storage account by name pattern: '{resource_name}'"
             )
             return None
 
