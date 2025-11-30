@@ -3543,7 +3543,6 @@ class TerraformEmitter(IaCEmitter):
 
             # Bug #96: For same-tenant deployment, use original principal ID (not abstracted)
             if is_same_tenant and resource.get("original_properties"):
-                import json
                 try:
                     original_props = json.loads(resource.get("original_properties", "{}"))
                     original_principal_id = original_props.get("principalId")
