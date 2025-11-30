@@ -477,6 +477,36 @@ if resource_type == "workspaces" and provider == "Microsoft.Databricks":
 
 **Key Learning**: Many resource types need BOTH type mapping (emitter) AND API version (validator) to work!
 
+---
+
+### Bug #107: ARM/Bicep Emitter Missing source_tenant_id Parameter
+**Status**: FIXED (commit ad76370)
+**Impact**: Fixes AttributeError in ARM and Bicep emitters
+**Verification**: ✅ ARM/Bicep emitter tests now passing (4/5 each)
+
+**Problem**: ARM and Bicep emitters crashed with AttributeError when attempting same-tenant detection:
+- Line 148 (ARM): `self.source_tenant_id` accessed but never defined
+- Line 243 (Bicep): `self.source_tenant_id` accessed but never defined
+
+**Root Cause**: Code tries to detect same-tenant deployment by comparing source and target tenant IDs, but __init__ never accepted or set source_tenant_id parameter.
+
+**Solution**: Added source_tenant_id parameter to both emitters:
+```python
+def __init__(
+    self,
+    ...
+    source_tenant_id: Optional[str] = None,  # Bug #107 fix
+):
+    ...
+    self.source_tenant_id = source_tenant_id  # Bug #107 fix
+```
+
+**Files Modified**:
+- src/iac/emitters/arm_emitter.py:34,46,52
+- src/iac/emitters/bicep_emitter.py:29,39,45
+
+---
+
 ### Bug #92: TransformationEngine YAML Loading Error
 **Status**: FIXED (commit b065e55)
 **Impact**: TransformationEngine can now load rules files (+1 test)
