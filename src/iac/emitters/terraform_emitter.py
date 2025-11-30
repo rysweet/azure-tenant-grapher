@@ -5118,6 +5118,11 @@ class TerraformEmitter(IaCEmitter):
                 r"/microsoft\.operationalinsights/workspaces/",
                 "/Microsoft.OperationalInsights/workspaces/",
             ),
+            # Bug #108: Redis must be lowercase 'redis' not 'Redis'
+            (
+                r"/Microsoft\.Cache/Redis/",
+                "/Microsoft.Cache/redis/",
+            ),
             (r"/microsoft\.insights/", "/Microsoft.Insights/"),
             (r"/microsoft\.alertsmanagement/", "/Microsoft.AlertsManagement/"),
             (r"/microsoft\.compute/", "/Microsoft.Compute/"),
