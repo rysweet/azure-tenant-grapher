@@ -129,7 +129,7 @@ class GraphTraverser:
                     AND t_abstracted.original_id = t.id
                     AND t:Original
                 }
-                RETURN r, orig.id AS original_id, collect({
+                RETURN r, orig.id AS original_id, orig.properties AS original_properties, collect({
                     type: type(rel),
                     target: t.id,
                     original_type: rel.original_type,
