@@ -249,6 +249,8 @@ class ResourceExistenceValidator:
                         "dnsZones": "2018-05-01",  # Bug #103: DNS Zones (camelCase variant)
                         "flexibleServers": "2024-08-01",  # PostgreSQL Flexible Servers
                         "Redis": "2024-03-01",  # Bug #104: Redis Cache
+                        "actiongroups": "2023-01-01",  # Bug #105: Action Groups (lowercase variant)
+                        "actionGroups": "2023-01-01",  # Bug #105: Action Groups (camelCase variant)
                         "accessConnectors": "2024-05-01",  # Databricks Access Connectors
                         "components": "2020-02-02",  # Application Insights
                         "staticSites": "2023-01-01",  # Static Web Apps
