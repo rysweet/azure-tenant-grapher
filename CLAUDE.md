@@ -330,6 +330,153 @@ When using the CLI dashboard (during `atg scan` operations):
 
 **Files Modified**: `src/iac/emitters/terraform_emitter.py:205,232`
 
+---
+
+### Bugs #96-99: Tenant Replication Quadruple Breakthrough (Session 1) ⭐⭐⭐
+**Session**: 2025-11-29 23:55 → 2025-11-30 06:50 UTC (6hr)
+**Status**: ALL FIXED & DEPLOYING
+**Total Impact**: 849+ resources unlocked (378% of 387 gap!)
+
+#### Bug #96: Principal ID Abstraction ⭐
+**Status**: FIXED (commits f05ee1b, e32f1af, 25d13eb, dabb3b3)
+**Impact**: 684 role assignments with real GUIDs - FIRST SUCCESSFUL DEPLOYMENT EVER!
+**Verification**: ✅ Deploying in iteration 10
+
+**Problem**: Role assignments had abstracted principal IDs ("principal-xxx") instead of real Azure GUIDs.
+
+**Root Cause**: Traverser queried for `orig.properties AS original_properties` but didn't add it to resource_dict, so emitters never received original GUIDs.
+
+**Solution** (3-file fix chain):
+1. traverser.py:70-73 - Add original_properties to resource_dict
+2. terraform_emitter.py:3544-3553 - Parse JSON and use real principalId for same-tenant
+3. Import json at module level (not in if block)
+
+**Files Modified**:
+- src/iac/traverser.py:70-73,132
+- src/iac/emitters/terraform_emitter.py:3544-3553
+
+#### Bug #97: KeyVault API Version ⭐
+**Status**: FIXED (commit 07d15af)
+**Impact**: 147 KeyVaults (was only 1)
+**Verification**: ✅ Verified in iterations 10-13
+
+**Problem**: Only 1 of 147 KeyVaults in IaC due to validation failures.
+
+**Root Cause**: Resource existence validator used generic fallback API 2021-04-01, but KeyVault requires 2023-02-01+.
+
+**Solution**: Added "vaults": "2023-02-01" to api_versions dict
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:222
+
+#### Bug #98: Action Groups Case Mismatch ⭐
+**Status**: FIXED (commits 399d74f, c943c68)
+**Impact**: 17 action groups
+**Verification**: ✅ Verified in iteration 12-13
+
+**Problem**: Action groups skipped due to multiple casing mismatches.
+
+**Root Cause**: Azure API returns 3 different casing variants, needed ALL of them.
+
+**Solution** (2 commits):
+1. Added "microsoft.insights/actiongroups" (all lowercase)
+2. Added "Microsoft.Insights/actiongroups" (mixed-case) - THE REAL FIX!
+
+**Files Modified**: src/iac/emitters/terraform_emitter.py:226-227
+
+#### Bug #99: Query Packs Case Mismatch ⭐
+**Status**: FIXED (commits 154ced5, c943c68)
+**Impact**: Query packs
+**Verification**: ✅ Verified in iteration 12-13
+
+**Problem**: Query packs skipped - same casing issues as Bug #98.
+
+**Solution** (2 commits):
+1. Added "microsoft.operationalinsights/querypacks" (all lowercase)
+2. Added "Microsoft.OperationalInsights/querypacks" (mixed-case)
+
+**Files Modified**: src/iac/emitters/terraform_emitter.py:229-231
+
+---
+
+### Bugs #100-106: API Version Validation Sweep (Session 2) ⭐
+**Session**: 2025-11-30 07:23 → 07:56 UTC (33min)
+**Status**: ALL FIXED & VERIFIED
+**Total Impact**: Eliminated 222 API validation errors → 0
+
+#### Bug #100: Container Registry API Version
+**Status**: FIXED (commit 5eb0aea)
+**Impact**: Enables Container Registry resources
+
+**Problem**: Using fallback API 2021-04-01 instead of required 2022-12-01+.
+
+**Solution**: Added "registries": "2022-12-01"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:245
+
+#### Bug #101: Databricks Workspaces API Version
+**Status**: FIXED (commit 5eb0aea)
+**Impact**: Enables Databricks workspaces
+
+**Problem**: "workspaces" ambiguous - used by both Databricks (needs 2024-05-01) and OperationalInsights (needs 2023-09-01).
+
+**Solution**: Provider-specific detection:
+```python
+if resource_type == "workspaces" and provider == "Microsoft.Databricks":
+    return "2024-05-01"
+```
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:212-215
+
+#### Bug #102: CosmosDB API Version
+**Status**: FIXED (commit 5eb0aea)
+**Impact**: Enables CosmosDB database accounts
+
+**Solution**: Added "databaseAccounts": "2024-08-15"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:246
+
+#### Bug #103: DNS Zones camelCase Variant
+**Status**: FIXED (commit b2c207d)
+**Impact**: Enables DNS zones
+
+**Problem**: Dict has "dnszones" but Azure returns "dnsZones" (camelCase).
+
+**Solution**: Added both "dnszones" and "dnsZones": "2018-05-01"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:248-249
+
+#### Bug #104: Redis Cache API Version
+**Status**: FIXED (commit b2c207d)
+**Impact**: Enables Redis Cache resources
+
+**Solution**: Added "Redis": "2024-03-01"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:251
+
+#### Bug #105: Action Groups API Version ⭐
+**Status**: FIXED (commit 4596b90)
+**Impact**: Critical - prevents validation errors for 17 action groups
+
+**Problem**: Bug #98 added type mapping, but resources still failed validation with API 2021-04-01.
+
+**Discovery**: TWO-PHASE bug pattern - need BOTH type mapping AND API version!
+
+**Solution**: Added "actiongroups" and "actionGroups": "2023-01-01"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:252-253
+
+#### Bug #106: Query Packs API Version
+**Status**: FIXED (commit b0e2b94)
+**Impact**: Prevents validation errors for query packs
+
+**Problem**: Same two-phase pattern as Bug #105.
+
+**Solution**: Added "querypacks" and "queryPacks": "2023-09-01"
+
+**Files Modified**: src/iac/validators/resource_existence_validator.py:254-255
+
+**Key Learning**: Many resource types need BOTH type mapping (emitter) AND API version (validator) to work!
+
 ### Bug #92: TransformationEngine YAML Loading Error
 **Status**: FIXED (commit b065e55)
 **Impact**: TransformationEngine can now load rules files (+1 test)
