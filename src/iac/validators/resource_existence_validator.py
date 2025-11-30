@@ -211,6 +211,7 @@ class ResourceExistenceValidator:
 
                     # Use known API versions for common types
                     # Updated 2025-11-28: Added missing resource types to fix validation errors
+                    # Bug #97: Added KeyVault API version to fix validation failures
                     api_versions = {
                         "resourceGroups": "2021-04-01",
                         "storageAccounts": "2023-01-01",
@@ -218,6 +219,7 @@ class ResourceExistenceValidator:
                         "virtualNetworks": "2023-05-01",
                         "subnets": "2023-05-01",
                         "networkInterfaces": "2023-05-01",
+                        "vaults": "2023-02-01",  # KeyVault - Bug #97 fix
                         "disks": "2023-04-02",
                         "userAssignedIdentities": "2023-01-31",
                         "publicIPAddresses": "2023-05-01",
