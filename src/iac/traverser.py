@@ -67,6 +67,11 @@ class GraphTraverser:
                 if record.get("original_id"):
                     resource_dict["original_id"] = record["original_id"]
 
+                # Bug #96 fix: Add original_properties from query result if available
+                # This enables using original principal IDs for same-tenant role assignments
+                if record.get("original_properties"):
+                    resource_dict["original_properties"] = record["original_properties"]
+
                 resources.append(resource_dict)
 
                 # Process relationships
