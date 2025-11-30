@@ -83,7 +83,7 @@ class TestExactMatchClassification:
     def test_exact_match_generates_import_only(
         self, generator, sample_abstracted_vnet, sample_target_vnet
     ):
-        """EXACT_MATCH should generate import block but not emit resource."""
+        """EXACT_MATCH should generate import block AND emit resource (Bug #23 fix)."""
         classification = ResourceClassification(
             abstracted_resource=sample_abstracted_vnet,
             target_resource=sample_target_vnet,
@@ -110,8 +110,8 @@ class TestExactMatchClassification:
             == "/subscriptions/sub-123/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/my-vnet"
         )
 
-        # Should NOT be in emission list
-        assert len(result.resources_needing_emission) == 0
+        # Bug #23: Should ALSO be in emission list to prevent cascading reference errors
+        assert len(result.resources_needing_emission) == 1
 
     def test_exact_match_with_hyphenated_name(self, generator, sample_target_vnet):
         """EXACT_MATCH with hyphenated name should sanitize to underscores."""
@@ -323,7 +323,7 @@ class TestUnknownResourceTypes:
     """Tests for unknown Azure resource types."""
 
     def test_unknown_type_skips_import(self, generator, sample_target_vnet):
-        """Unknown Azure type should skip import block but emit resource."""
+        """Unknown Azure type should skip import block but emit resource (Bug #23)."""
         abstracted_resource = {
             "id": "unknown-resource-123",
             "name": "unknown-resource-123",
@@ -345,11 +345,11 @@ class TestUnknownResourceTypes:
 
         result = generator.generate_import_blocks(comparison_result)
 
-        # Should NOT have import block
+        # Should NOT have import block (unknown type has no Terraform mapping)
         assert len(result.import_blocks) == 0
 
-        # Should NOT be in emission list (EXACT_MATCH without import)
-        assert len(result.resources_needing_emission) == 0
+        # Bug #23: Should STILL be in emission list to prevent cascading reference errors
+        assert len(result.resources_needing_emission) == 1
 
     def test_unknown_type_logs_warning(self, generator, sample_target_vnet, caplog):
         """Unknown Azure type should log warning."""
