@@ -113,7 +113,8 @@ class TestTerraformEmitter:
         assert isinstance(supported_types, list)
         assert len(supported_types) > 0
         assert "Microsoft.Storage/storageAccounts" in supported_types
-        assert "Microsoft.Compute/virtualMachines" in supported_types
+        # Bug #NEW4: VMs commented out - no longer in supported types
+        assert "Microsoft.Compute/virtualMachines" not in supported_types
 
     def test_validate_template_basic(self) -> None:
         """Test basic template validation."""

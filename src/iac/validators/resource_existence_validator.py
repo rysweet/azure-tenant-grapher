@@ -206,11 +206,17 @@ class ResourceExistenceValidator:
             if "providers" in parts:
                 provider_idx = parts.index("providers")
                 if provider_idx + 2 < len(parts):
-                    # provider = parts[provider_idx + 1]
+                    provider = parts[provider_idx + 1]
                     resource_type = parts[provider_idx + 2]
+
+                    # Bug #101: Handle provider-specific API versions for ambiguous types
+                    # Databricks workspaces need 2024-05-01, OperationalInsights need 2023-09-01
+                    if resource_type == "workspaces" and provider == "Microsoft.Databricks":
+                        return "2024-05-01"
 
                     # Use known API versions for common types
                     # Updated 2025-11-28: Added missing resource types to fix validation errors
+                    # Bug #97: Added KeyVault API version to fix validation failures
                     api_versions = {
                         "resourceGroups": "2021-04-01",
                         "storageAccounts": "2023-01-01",
@@ -218,6 +224,7 @@ class ResourceExistenceValidator:
                         "virtualNetworks": "2023-05-01",
                         "subnets": "2023-05-01",
                         "networkInterfaces": "2023-05-01",
+                        "vaults": "2023-02-01",  # KeyVault - Bug #97 fix
                         "disks": "2023-04-02",
                         "userAssignedIdentities": "2023-01-31",
                         "publicIPAddresses": "2023-05-01",
@@ -235,9 +242,17 @@ class ResourceExistenceValidator:
                         # NEW: Added to fix validation errors
                         "serverFarms": "2024-04-01",  # App Service Plans
                         "namespaces": "2024-01-01",  # Service Bus
+                        "registries": "2022-12-01",  # Bug #100: Container Registry (was using fallback 2021-04-01)
+                        "databaseAccounts": "2024-08-15",  # Bug #102: CosmosDB (was using fallback 2021-04-01)
                         "managedEnvironments": "2024-03-01",  # Container Apps
-                        "dnszones": "2018-05-01",  # DNS Zones
+                        "dnszones": "2018-05-01",  # DNS Zones (lowercase)
+                        "dnsZones": "2018-05-01",  # Bug #103: DNS Zones (camelCase variant)
                         "flexibleServers": "2024-08-01",  # PostgreSQL Flexible Servers
+                        "Redis": "2024-03-01",  # Bug #104: Redis Cache
+                        "actiongroups": "2023-01-01",  # Bug #105: Action Groups (lowercase variant)
+                        "actionGroups": "2023-01-01",  # Bug #105: Action Groups (camelCase variant)
+                        "querypacks": "2023-09-01",  # Bug #106: Query Packs (lowercase variant)
+                        "queryPacks": "2023-09-01",  # Bug #106: Query Packs (camelCase variant)
                         "accessConnectors": "2024-05-01",  # Databricks Access Connectors
                         "components": "2020-02-02",  # Application Insights
                         "staticSites": "2023-01-01",  # Static Web Apps
