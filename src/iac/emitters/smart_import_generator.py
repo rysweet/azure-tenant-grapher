@@ -95,11 +95,7 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
     "Microsoft.Compute/galleries/images": "azurerm_shared_image",
     "Microsoft.Compute/images": "azurerm_image",
-    # Lowercase variants (Azure returns both casings)
-    "microsoft.alertsmanagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
-    "microsoft.insights/components": "azurerm_application_insights",
-    "microsoft.operationalInsights/querypacks": "azurerm_log_analytics_query_pack",
-    # Additional missing types
+    # Additional missing types (case-insensitive lookup handles variants)
     "Microsoft.Network/routeTables": "azurerm_route_table",
     "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": "azurerm_machine_learning_inference_cluster",
     "Microsoft.CognitiveServices/accounts/projects": "azurerm_cognitive_deployment",
@@ -112,8 +108,6 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.Migrate/moveCollections": "azurerm_resource_mover_move_collection",
     "Microsoft.App/jobs": "azurerm_container_app_job",
     "Microsoft.Resources/templateSpecs/versions": "azurerm_resource_deployment_script_azure_cli",
-    # Case variant
-    "microsoft.compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
     # Final remaining types (edge cases)
     "Microsoft.App/builders": "azurerm_container_app_environment",
     "Microsoft.Graph/tenants": "azuread_tenant",
@@ -513,7 +507,20 @@ class SmartImportGenerator:
         Returns:
             Terraform resource type (e.g., azurerm_virtual_network), or None if unknown
         """
+        # Try exact match first (fast path)
         terraform_type = AZURE_TO_TERRAFORM_TYPE.get(azure_type)
+
+        # Bug #113 fix: If no exact match, try case-insensitive lookup
+        # Azure returns both Microsoft.Insights and microsoft.insights
+        if not terraform_type:
+            for mapped_azure_type, mapped_terraform_type in AZURE_TO_TERRAFORM_TYPE.items():
+                if mapped_azure_type.lower() == azure_type.lower():
+                    terraform_type = mapped_terraform_type
+                    logger.debug(
+                        f"Matched Azure type '{azure_type}' via case-insensitive lookup "
+                        f"to mapping '{mapped_azure_type}'"
+                    )
+                    break
 
         if not terraform_type:
             logger.debug(
