@@ -29,6 +29,12 @@ console = Console()
     help="Target number of nodes in abstraction",
 )
 @click.option(
+    "--method",
+    type=click.Choice(["stratified", "embedding"], case_sensitive=False),
+    default="stratified",
+    help="Sampling method: stratified (uniform) or embedding (importance-weighted)",
+)
+@click.option(
     "--seed", type=int, default=None, help="Random seed for reproducible sampling"
 )
 @click.option(
@@ -38,7 +44,7 @@ console = Console()
     help="Clear existing :SAMPLE_OF relationships first",
 )
 def abstract_graph(
-    tenant_id: str, sample_size: int, seed: int | None, clear: bool
+    tenant_id: str, sample_size: int, method: str, seed: int | None, clear: bool
 ) -> None:
     """Create abstracted subset of Azure tenant graph.
 
@@ -48,12 +54,17 @@ def abstract_graph(
 
     Example:
         atg abstract-graph --tenant-id abc-123 --sample-size 100 --clear
+        atg abstract-graph --tenant-id abc-123 --sample-size 100 --method embedding
 
     The command:
-    1. Samples nodes using stratified sampling by resource type
+    1. Samples nodes using stratified or embedding-based sampling
     2. Preserves resource type distribution (±15%)
     3. Creates :SAMPLE_OF relationships linking samples to originals
     4. Displays statistics about the abstraction
+
+    Sampling Methods:
+    - stratified: Uniform sampling within each resource type (fast, 70%+ hub preservation)
+    - embedding: Importance-weighted sampling using node2vec (slower, 70%+ hub preservation, better bridge preservation)
 
     \b
     Requirements:
@@ -62,14 +73,14 @@ def abstract_graph(
     - Minimum 10 resources required in source graph
     """
     try:
-        asyncio.run(_abstract_graph_async(tenant_id, sample_size, seed, clear))
+        asyncio.run(_abstract_graph_async(tenant_id, sample_size, method, seed, clear))
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
         raise click.Abort() from e
 
 
 async def _abstract_graph_async(
-    tenant_id: str, sample_size: int, seed: int | None, clear: bool
+    tenant_id: str, sample_size: int, method: str, seed: int | None, clear: bool
 ) -> None:
     """Async implementation of abstract-graph command."""
     # Ensure Neo4j is running
@@ -78,6 +89,7 @@ async def _abstract_graph_async(
 
     console.print(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}")
     console.print(f"[bold]Target sample size:[/bold] {sample_size}")
+    console.print(f"[bold]Sampling method:[/bold] {method}")
 
     # Get Neo4j configuration from environment
     neo4j_uri = os.environ.get("NEO4J_URI")
@@ -92,7 +104,7 @@ async def _abstract_graph_async(
 
     try:
         # Create service and perform abstraction
-        service = GraphAbstractionService(driver)
+        service = GraphAbstractionService(driver, method=method)
 
         result = await service.abstract_tenant_graph(
             tenant_id=tenant_id,

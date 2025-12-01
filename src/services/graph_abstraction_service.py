@@ -12,6 +12,7 @@ from typing import Any, Dict
 from neo4j import Driver
 
 from src.services.graph_abstraction_sampler import StratifiedSampler
+from src.services.graph_embedding_sampler import EmbeddingSampler
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +22,23 @@ class GraphAbstractionService:
 
     Creates smaller, representative subsets of Azure tenant graphs while
     preserving resource type distribution and creating linkage relationships.
+    Supports both uniform stratified sampling and embedding-based importance sampling.
     """
 
-    def __init__(self, driver: Driver):
+    def __init__(self, driver: Driver, method: str = "stratified"):
         """Initialize service with Neo4j driver.
 
         Args:
             driver: Neo4j database driver
+            method: Sampling method - "stratified" (uniform) or "embedding" (importance-weighted)
         """
         self.driver = driver
-        self.sampler = StratifiedSampler(driver)
+        self.method = method
+
+        if method == "embedding":
+            self.sampler = EmbeddingSampler(driver)
+        else:
+            self.sampler = StratifiedSampler(driver)
 
     async def abstract_tenant_graph(
         self,
