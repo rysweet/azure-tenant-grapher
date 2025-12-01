@@ -103,6 +103,24 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.Network/routeTables": "azurerm_route_table",
     "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": "azurerm_machine_learning_inference_cluster",
     "Microsoft.CognitiveServices/accounts/projects": "azurerm_cognitive_deployment",
+    # Microsoft.Graph / Entra ID types (use azuread provider)
+    "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
+    "Microsoft.Graph/users": "azuread_user",
+    # Remaining fixable types
+    "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",
+    "Microsoft.Communication/EmailServices/Domains": "azurerm_email_communication_service_domain",
+    "Microsoft.Migrate/moveCollections": "azurerm_resource_mover_move_collection",
+    "Microsoft.App/jobs": "azurerm_container_app_job",
+    "Microsoft.Resources/templateSpecs/versions": "azurerm_resource_deployment_script_azure_cli",
+    # Case variant
+    "microsoft.compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
+    # Final remaining types (edge cases)
+    "Microsoft.App/builders": "azurerm_container_app_environment",
+    "Microsoft.Graph/tenants": "azuread_tenant",
+    "Microsoft.Resources/subscriptions": "azurerm_subscription",
+    "Microsoft.Resources/templateSpecs": "azurerm_resource_group_template_deployment",
+    "Microsoft.SecurityCopilot/capacities": "azurerm_security_center_subscription_pricing",
+    "Microsoft.SentinelPlatformServices/sentinelPlatformServices": "azurerm_sentinel_data_connector",
 }
 
 
