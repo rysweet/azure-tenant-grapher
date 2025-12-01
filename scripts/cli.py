@@ -23,6 +23,7 @@ from src.commands.auth import app_registration as app_registration_cmd
 
 # Import modular commands for CLI registration (Issue #482)
 from src.commands.deploy import deploy_command
+from src.commands.export_abstraction import export_abstraction_command
 from src.commands.list_deployments import list_deployments
 from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
@@ -1086,6 +1087,9 @@ cli.add_command(deploy_command, "deploy")
 cli.add_command(undeploy, "undeploy")
 cli.add_command(list_deployments, "list-deployments")
 cli.add_command(validate_deployment_command, "validate-deployment")
+
+# Register export-abstraction command (Issue #508)
+cli.add_command(export_abstraction_command, "export-abstraction")
 
 
 @cli.command()

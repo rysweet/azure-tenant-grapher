@@ -4,10 +4,11 @@ Professional screenshot annotation script for Scale Operations UI Tutorial.
 Creates annotated versions of screenshots with arrows, boxes, and labels.
 """
 
-from PIL import Image, ImageDraw, ImageFont
 import os
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple
+
+from PIL import Image, ImageDraw, ImageFont
 
 
 class AnnotationStyle:

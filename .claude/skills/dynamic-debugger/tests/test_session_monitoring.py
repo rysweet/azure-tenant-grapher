@@ -5,26 +5,23 @@ Testing pyramid distribution:
 - Tests focus on resource monitoring with/without psutil, limit checking, and JSON output
 """
 
-import sys
 import json
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock, Mock
+import sys
 from datetime import datetime, timedelta
 from io import StringIO
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 # Import with error handling for syntax issues in the original script
 try:
-    from monitor_session import (
-        get_process_info,
-        monitor_session,
-        HAS_PSUTIL
-    )
     # Import limits safely
     import monitor_session as ms
+    from monitor_session import HAS_PSUTIL, get_process_info, monitor_session
     MAX_MEMORY_MB = getattr(ms, 'MAX_MEMORY_MB', 4096)
     SESSION_TIMEOUT_MIN = getattr(ms, 'SESSION_TIMEOUT_MIN', 30)
 except SyntaxError:

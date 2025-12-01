@@ -7,11 +7,11 @@ Public API:
 """
 
 import json
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
-import sys
+from typing import Any, Dict, Optional
 
 # Public API
 __all__ = ['get_process_info', 'monitor_session']
