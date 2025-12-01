@@ -5,20 +5,16 @@ Testing pyramid distribution:
 - Tests focus on template loading, variable substitution, and validation
 """
 
-import sys
 import json
-import pytest
+import sys
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+
+import pytest
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from generate_dap_config import (
-    generate_config,
-    validate_config
-)
-
+from generate_dap_config import generate_config, validate_config
 
 # ============================================================================
 # TEMPLATE LOADING TESTS (6 tests)

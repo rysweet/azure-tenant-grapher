@@ -18,4 +18,4 @@ from src.services.scale_down.quality_metrics import QualityMetrics
 # Backward compatibility alias
 ScaleDownService = ScaleDownOrchestrator
 
-__all__ = ["ScaleDownService", "QualityMetrics", "ScaleDownOrchestrator"]
+__all__ = ["QualityMetrics", "ScaleDownOrchestrator", "ScaleDownService"]

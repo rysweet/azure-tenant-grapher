@@ -5,19 +5,18 @@ Testing pyramid distribution:
 - Tests focus on multi-component workflows and error recovery
 """
 
-import sys
 import json
-import pytest
 import subprocess
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from detect_language import detect_language, get_debugger_for_language
 from generate_dap_config import generate_config, validate_config
-
 
 # ============================================================================
 # FULL WORKFLOW TESTS (4 tests)
@@ -191,7 +190,6 @@ class TestErrorRecovery:
         # Check if process exists (should not)
         try:
             import os
-            import signal
             os.kill(pid, 0)
             process_exists = True
         except OSError:

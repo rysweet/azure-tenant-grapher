@@ -60,6 +60,8 @@ dependencies = [
     # Pydantic for configuration validation
     "pydantic>=2.0",
     "python-pptx>=1.0.2",
+    # Graph visualization export (Issue #508)
+    "pydot>=3.0.0",
 ]
 
 
