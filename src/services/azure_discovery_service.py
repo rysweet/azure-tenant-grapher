@@ -735,6 +735,51 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to create automation client: {e}")
 
+        # Discover DNS zone virtual network links (21 errors)
+        dns_zones = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Network/privateDnsZones"
+        ]
+        if dns_zones:
+            logger.info(f"🔍 Discovering virtual network links for {len(dns_zones)} DNS zones...")
+            try:
+                network_client = NetworkManagementClient(self.credential, subscription_id)
+
+                for dns_zone in dns_zones:
+                    try:
+                        rg = dns_zone.get("resource_group")
+                        zone_name = dns_zone.get("name")
+
+                        if not rg or not zone_name:
+                            continue
+
+                        # Fetch virtual network links for this DNS zone
+                        links_pager = network_client.virtual_network_links.list(rg, zone_name)
+
+                        for link in links_pager:
+                            link_dict = {
+                                "id": getattr(link, "id", None),
+                                "name": getattr(link, "name", None),
+                                "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                                "location": dns_zone.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(link_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch DNS links for {zone_name}: {e}")
+
+                link_count = len(
+                    [r for r in child_resources if "virtualNetworkLinks" in r["type"]]
+                )
+                logger.info(f"✅ Found {link_count} DNS zone links")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover DNS zone links: {e}")
+
         logger.info(
             f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
         )
