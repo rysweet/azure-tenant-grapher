@@ -54,7 +54,9 @@ class MockAuthorizationService:
             permissions.update(self.roles.get(role, []))
         return list(permissions)
 
-    def check_permission(self, user_id: str, action: str, resource: Optional[str] = None) -> bool:
+    def check_permission(
+        self, user_id: str, action: str, resource: Optional[str] = None
+    ) -> bool:
         """Check if user has permission for action."""
         user_permissions = self.get_user_permissions(user_id)
         has_permission = action in user_permissions

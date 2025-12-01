@@ -99,7 +99,11 @@ class TestGraphTraverserWithMockData:
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-1",
             "rels": [{"type": "CONNECTED_TO", "target": "other-1"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in [
+            "r",
+            "original_id",
+            "rels",
+        ]
         mock_record.get = lambda key, default=None: {
             "r": mock_resource_node,
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-1",
@@ -153,7 +157,11 @@ class TestGraphTraverserWithMockData:
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-2",
             "rels": [{"type": "CONNECTED_TO", "target": "other-2"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in [
+            "r",
+            "original_id",
+            "rels",
+        ]
         mock_record.get = lambda key, default=None: {
             "r": mock_resource_node,
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Test/fallback-2",
@@ -205,7 +213,11 @@ class TestGraphTraverserWithMockData:
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm",
             "rels": [{"type": "DEPENDS_ON", "target": "storage-1"}],
         }[key]
-        mock_record.__contains__.side_effect = lambda key: key in ["r", "original_id", "rels"]
+        mock_record.__contains__.side_effect = lambda key: key in [
+            "r",
+            "original_id",
+            "rels",
+        ]
         mock_record.get = lambda key, default=None: {
             "r": mock_resource_node,
             "original_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm",

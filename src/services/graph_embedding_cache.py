@@ -135,9 +135,7 @@ class GraphEmbeddingCache:
                 metadata=np.array(metadata, dtype=object),
             )
 
-            logger.info(
-                f"Cached {len(embeddings)} embeddings for tenant {tenant_id}"
-            )
+            logger.info(f"Cached {len(embeddings)} embeddings for tenant {tenant_id}")
 
         except Exception as e:
             logger.error(f"Failed to cache embeddings for {tenant_id}: {e}")

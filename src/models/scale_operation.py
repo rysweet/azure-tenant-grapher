@@ -196,9 +196,7 @@ class ScaleOperationMetadata:
         self.error_message = error_message
         self.completed_at = datetime.now(UTC)
 
-    def update_progress(
-        self, nodes_affected: int, relationships_affected: int
-    ) -> None:
+    def update_progress(self, nodes_affected: int, relationships_affected: int) -> None:
         """
         Update operation progress counters.
 
@@ -217,7 +215,9 @@ class ScaleOperationMetadata:
         self.nodes_affected = nodes_affected
         self.relationships_affected = relationships_affected
 
-    def add_validation_result(self, check_name: str, passed: bool, message: str) -> None:
+    def add_validation_result(
+        self, check_name: str, passed: bool, message: str
+    ) -> None:
         """
         Add a validation result to the operation metadata.
 

@@ -119,7 +119,9 @@ class VirtualMachineHandler(ResourceHandler):
         else:
             # Default to Linux if unknown
             vm_type = "azurerm_linux_virtual_machine"
-            logger.warning(f"VM '{resource_name}' has unclear OS type, defaulting to Linux")
+            logger.warning(
+                f"VM '{resource_name}' has unclear OS type, defaulting to Linux"
+            )
 
         return vm_type, safe_name, config
 

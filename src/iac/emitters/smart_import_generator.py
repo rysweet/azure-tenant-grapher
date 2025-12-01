@@ -153,9 +153,7 @@ class SmartImportGenerator:
                 deduplicated_import_blocks.append(import_block)
             else:
                 duplicates_removed += 1
-                logger.debug(
-                    f"Removed duplicate import block for {import_block.to}"
-                )
+                logger.debug(f"Removed duplicate import block for {import_block.to}")
 
         if duplicates_removed > 0:
             logger.info(
@@ -425,10 +423,30 @@ class SmartImportGenerator:
         """
         # Common provider casing fixes
         normalized = resource_id
-        normalized = re.sub(r'/microsoft\.insights/', '/Microsoft.Insights/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.alertsmanagement/', '/Microsoft.AlertsManagement/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.network/dnszones/', '/Microsoft.Network/dnsZones/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.operationalinsights/', '/Microsoft.OperationalInsights/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/microsoft\.insights/",
+            "/Microsoft.Insights/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.alertsmanagement/",
+            "/Microsoft.AlertsManagement/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.network/dnszones/",
+            "/Microsoft.Network/dnsZones/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.operationalinsights/",
+            "/Microsoft.OperationalInsights/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
 
         return normalized
 

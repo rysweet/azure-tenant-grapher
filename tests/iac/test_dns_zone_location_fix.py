@@ -53,9 +53,9 @@ class TestDNSZoneLocationFix:
             # Verify location field is NOT present
             assert len(dns_zone_config) > 0, "DNS zone resource should be present"
             for resource_name, resource_def in dns_zone_config.items():
-                assert (
-                    "location" not in resource_def
-                ), f"DNS zone '{resource_name}' should NOT have location field, but got: {resource_def}"
+                assert "location" not in resource_def, (
+                    f"DNS zone '{resource_name}' should NOT have location field, but got: {resource_def}"
+                )
                 # Verify required fields ARE present
                 assert "name" in resource_def
                 assert "resource_group_name" in resource_def
@@ -92,9 +92,9 @@ class TestDNSZoneLocationFix:
 
             # Verify location field is NOT present
             for resource_name, resource_def in dns_zone_config.items():
-                assert (
-                    "location" not in resource_def
-                ), f"DNS zone '{resource_name}' should NOT have location field"
+                assert "location" not in resource_def, (
+                    f"DNS zone '{resource_name}' should NOT have location field"
+                )
 
     def test_dns_zone_with_other_resources(self) -> None:
         """Test that DNS zone location fix works alongside other resources."""
@@ -140,9 +140,9 @@ class TestDNSZoneLocationFix:
             # Verify Storage Account HAS location (normal resources should keep it)
             storage_config = terraform_config["resource"]["azurerm_storage_account"]
             for _resource_name, resource_def in storage_config.items():
-                assert (
-                    "location" in resource_def
-                ), "Storage account should have location field"
+                assert "location" in resource_def, (
+                    "Storage account should have location field"
+                )
 
 
 def test_terraform_validation_dns_zone() -> None:

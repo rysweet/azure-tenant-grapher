@@ -144,6 +144,7 @@ def example_safe_modification():
         except Exception as e:
             # Rollback on any error
             from mcp_manager import restore_config
+
             restore_config(backup_path, config_path)
             print(f"✗ Error occurred, rolled back to backup: {e}")
 
@@ -168,4 +169,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

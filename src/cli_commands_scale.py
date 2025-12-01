@@ -90,7 +90,9 @@ async def scale_up_template_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         # Connect to Neo4j
@@ -174,9 +176,7 @@ async def scale_up_template_command_handler(
             table.add_row("Template", template_file)
             table.add_row("Scale Factor", f"{scale_factor}x")
             table.add_row("Resources Created", str(result.resources_created))
-            table.add_row(
-                "Relationships Created", str(result.relationships_created)
-            )
+            table.add_row("Relationships Created", str(result.relationships_created))
             console.print("\n")
             console.print(table)
 
@@ -255,7 +255,9 @@ async def scale_up_scenario_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         # Connect to Neo4j
@@ -311,9 +313,7 @@ async def scale_up_scenario_command_handler(
             table.add_row("Operation", f"Scenario-based ({scenario})")
             table.add_row("Scale Factor", f"{scale_factor}x")
             table.add_row("Resources Created", str(result.resources_created))
-            table.add_row(
-                "Relationships Created", str(result.relationships_created)
-            )
+            table.add_row("Relationships Created", str(result.relationships_created))
             console.print("\n")
             console.print(table)
 
@@ -414,7 +414,9 @@ async def scale_down_algorithm_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         # Connect to Neo4j
@@ -550,7 +552,9 @@ async def scale_down_pattern_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         config = create_neo4j_config_from_env()
@@ -577,11 +581,17 @@ async def scale_down_pattern_command_handler(
             # Note: sample_by_pattern expects exact property matches, not patterns
             # For broader filtering, use multiple calls or enhance service layer
             if pattern == "security":
-                criteria["type"] = "Microsoft.KeyVault/vaults"  # Most common security resource
+                criteria["type"] = (
+                    "Microsoft.KeyVault/vaults"  # Most common security resource
+                )
             elif pattern == "network":
-                criteria["type"] = "Microsoft.Network/virtualNetworks"  # Core network resource
+                criteria["type"] = (
+                    "Microsoft.Network/virtualNetworks"  # Core network resource
+                )
             elif pattern == "compute":
-                criteria["type"] = "Microsoft.Compute/virtualMachines"  # Most common compute
+                criteria["type"] = (
+                    "Microsoft.Compute/virtualMachines"  # Most common compute
+                )
             elif pattern == "storage":
                 criteria["type"] = "Microsoft.Storage/storageAccounts"  # Core storage
             elif pattern == "production":
@@ -596,7 +606,9 @@ async def scale_down_pattern_command_handler(
             else:
                 # No pattern matched - error out
                 console.print("[red]❌ Invalid pattern or missing resource types[/red]")
-                raise ValueError(f"Pattern '{pattern}' requires additional configuration")
+                raise ValueError(
+                    f"Pattern '{pattern}' requires additional configuration"
+                )
 
             # Call sample_by_pattern with correct signature
             sampled_node_ids = await service.sample_by_pattern(
@@ -665,7 +677,9 @@ async def scale_clean_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         config = create_neo4j_config_from_env()
@@ -676,7 +690,9 @@ async def scale_clean_command_handler(
 
         # Count synthetic nodes
         with session_manager.get_session() as session:
-            result = session.run("MATCH (n) WHERE n.synthetic = true RETURN count(n) as count")
+            result = session.run(
+                "MATCH (n) WHERE n.synthetic = true RETURN count(n) as count"
+            )
             synthetic_count = result.single()["count"]
 
         if synthetic_count == 0:
@@ -760,7 +776,9 @@ async def scale_validate_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         config = create_neo4j_config_from_env()
@@ -857,7 +875,9 @@ async def scale_stats_command_handler(
             console.print(
                 "[red]❌ Neo4j connection required but --no-container was specified[/red]"
             )
-            console.print("[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]")
+            console.print(
+                "[yellow]💡 Remove --no-container flag to auto-start Neo4j[/yellow]"
+            )
             sys.exit(1)
 
         config = create_neo4j_config_from_env()
@@ -879,7 +899,9 @@ async def scale_stats_command_handler(
             stats["total_relationships"] = result.single()["count"]
 
             # Synthetic nodes
-            result = session.run("MATCH (n) WHERE n.synthetic = true RETURN count(n) as count")
+            result = session.run(
+                "MATCH (n) WHERE n.synthetic = true RETURN count(n) as count"
+            )
             stats["synthetic_nodes"] = result.single()["count"]
 
             # Original nodes

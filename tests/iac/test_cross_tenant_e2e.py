@@ -503,9 +503,7 @@ class TestImportIntegration:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             out_dir = Path(temp_dir)
-            emitter.emit(
-                graph, out_dir, subscription_id=target_subscription_id
-            )
+            emitter.emit(graph, out_dir, subscription_id=target_subscription_id)
 
             # Now test import command generation
             importer = TerraformImporter(

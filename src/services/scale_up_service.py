@@ -277,7 +277,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -416,7 +418,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -577,7 +581,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -646,7 +652,9 @@ class ScaleUpService(BaseScaleService):
             self.logger.exception(f"Rollback failed for operation {operation_id}: {e}")
             raise
         except Exception as e:
-            self.logger.exception(f"Unexpected error during rollback for operation {operation_id}: {e}")
+            self.logger.exception(
+                f"Unexpected error during rollback for operation {operation_id}: {e}"
+            )
             raise
 
     # =========================================================================
@@ -702,7 +710,7 @@ class ScaleUpService(BaseScaleService):
             # Whitelist validation: Azure resource types have specific format
             # Format: Provider.Service/resourceType (e.g., Microsoft.Compute/virtualMachines)
             for rt in resource_types:
-                if not re.match(r'^[A-Za-z0-9]+\.[A-Za-z0-9]+/[A-Za-z0-9]+$', rt):
+                if not re.match(r"^[A-Za-z0-9]+\.[A-Za-z0-9]+/[A-Za-z0-9]+$", rt):
                     raise ValueError(f"Invalid resource type format: {rt}")
                 if len(rt) > 200:  # Reasonable max length
                     raise ValueError(f"Resource type too long: {rt}")
@@ -1006,7 +1014,9 @@ class ScaleUpService(BaseScaleService):
             )
 
             if progress_callback:
-                progress_callback("Analyzing relationship patterns...", progress_start, 100)
+                progress_callback(
+                    "Analyzing relationship patterns...", progress_start, 100
+                )
 
             # Get relationship patterns from base resources
             patterns = await self._get_relationship_patterns(base_resources)
@@ -1075,8 +1085,14 @@ class ScaleUpService(BaseScaleService):
 
             # For large operations, use parallel batch inserts
             if estimated_relationships > 10000 and len(batches) > 10:
-                relationships_created = await self._insert_relationship_batches_parallel(
-                    batches, progress_callback, progress_start, progress_end, monitor
+                relationships_created = (
+                    await self._insert_relationship_batches_parallel(
+                        batches,
+                        progress_callback,
+                        progress_start,
+                        progress_end,
+                        monitor,
+                    )
                 )
             else:
                 # Standard sequential processing

@@ -26,6 +26,7 @@ from src.commands.auth import app_registration as app_registration_cmd
 from src.commands.deploy import deploy_command
 from src.commands.export_abstraction import export_abstraction_command
 from src.commands.list_deployments import list_deployments
+from src.commands.sentinel import setup_sentinel_command
 from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
 from src.commands.spec import generate_spec_command_handler, spec_command_handler
@@ -1094,6 +1095,9 @@ cli.add_command(validate_deployment_command, "validate-deployment")
 
 # Register export-abstraction command (Issue #508)
 cli.add_command(export_abstraction_command, "export-abstraction")
+
+# Register sentinel command (Issue #518)
+cli.add_command(setup_sentinel_command, "setup-sentinel")
 
 
 @cli.command()

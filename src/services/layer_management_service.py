@@ -218,7 +218,12 @@ class LayerValidationReport:
     ):
         """Add validation error."""
         self.issues.append(
-            {"level": "error", "code": code, "message": message, "details": details or {}}
+            {
+                "level": "error",
+                "code": code,
+                "message": message,
+                "details": details or {},
+            }
         )
         self.checks_failed += 1
         self.is_valid = False
@@ -228,7 +233,12 @@ class LayerValidationReport:
     ):
         """Add validation warning."""
         self.warnings.append(
-            {"level": "warning", "code": code, "message": message, "details": details or {}}
+            {
+                "level": "warning",
+                "code": code,
+                "message": message,
+                "details": details or {},
+            }
         )
         self.checks_warned += 1
 
@@ -299,9 +309,7 @@ class CrossLayerRelationshipError(LayerError):
     """Attempted to create relationship across layers."""
 
     def __init__(self, source_layer: str, target_layer: str):
-        super().__init__(
-            f"Cross-layer relationship: {source_layer} -> {target_layer}"
-        )
+        super().__init__(f"Cross-layer relationship: {source_layer} -> {target_layer}")
         self.source_layer = source_layer
         self.target_layer = target_layer
 
@@ -685,7 +693,7 @@ class LayerManagementService:
 
         query = f"""
         MATCH (l:Layer {{layer_id: $layer_id}})
-        SET {', '.join(set_clauses)}
+        SET {", ".join(set_clauses)}
         RETURN l
         """
 
@@ -1083,7 +1091,11 @@ class LayerManagementService:
                     l.relationship_count = $rel_count,
                     l.updated_at = datetime()
                 """,
-                {"layer_id": layer_id, "node_count": node_count, "rel_count": rel_count},
+                {
+                    "layer_id": layer_id,
+                    "node_count": node_count,
+                    "rel_count": rel_count,
+                },
             )
 
         self.logger.info(
@@ -1362,7 +1374,9 @@ class LayerManagementService:
         # Refresh stats
         await self.refresh_layer_stats(layer_metadata.layer_id)
 
-        self.logger.info(f"Restored layer {layer_metadata.layer_id} from {archive_path}")
+        self.logger.info(
+            f"Restored layer {layer_metadata.layer_id} from {archive_path}"
+        )
 
         return await self.get_layer(layer_metadata.layer_id)
 

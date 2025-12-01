@@ -664,14 +664,14 @@ if resource_type == "Microsoft.Authorization/roleAssignments":
 **Documentation**: `/tmp/BUG_95_ROOT_CAUSE_FINAL.md`, `/tmp/BUG_95_PERMISSIONS_ISSUE.md`
 
 ### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
-**Status**: FIXED (commit faeb284)  
+**Status**: FIXED (commit faeb284)
 **Impact**: Eliminates manual sed replacements for cross-tenant deployments
 
 **Problem**: Abstracted Resource nodes in Neo4j had source subscription IDs embedded in properties JSON (roleDefinitionId, scope fields), requiring manual replacement of 2,292 occurrences before deployment.
 
 **Root Cause**: `resource_processor.py:_create_abstracted_node()` abstracted principalId but not subscription IDs.
 
-**Solution**: 
+**Solution**:
 1. ResourceProcessor: Replace subscription IDs with `/subscriptions/ABSTRACT_SUBSCRIPTION` placeholder at scan time
 2. TerraformEmitter: Update regex to replace placeholder with target subscription at IaC generation time
 
@@ -1036,4 +1036,3 @@ All previously excluded resource types now have full emitter support:
 
 **Files Modified**:
 - `src/services/resource_processing/node_manager.py` (+86 lines)
-

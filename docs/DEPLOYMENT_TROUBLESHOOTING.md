@@ -33,7 +33,7 @@ az login --service-principal -u <APP_ID> -p <PASSWORD> --tenant <TENANT_ID>
 
 **Expected Behavior**: This is NORMAL for cross-tenant deployment without identity mapping.
 
-**Impact**: 
+**Impact**:
 - ✅ Infrastructure resources (RGs, VNets, Storage, VMs) deploy successfully
 - ❌ Role assignments fail (need identity mapping)
 
@@ -45,7 +45,7 @@ az login --service-principal -u <APP_ID> -p <PASSWORD> --tenant <TENANT_ID>
 
 **Cause (Before Bug #59 Fix)**: Subscription IDs in properties weren't abstracted
 
-**Solution**: 
+**Solution**:
 - Bug #59 now fixed in main branch
 - Future scans will have subscription IDs properly abstracted
 - For old data: Re-scan tenant to get properly abstracted data
@@ -86,4 +86,3 @@ terraform apply -auto-approve
 - Use service principal (no expiration)
 - Deploy in smaller batches
 - Implement automatic token refresh (future work)
-

@@ -769,15 +769,19 @@ def test_synthetic_node_visualization():
 
             # Check for synthetic indicator in display name (JSON encoded or raw)
             # The emoji might be JSON-encoded as \ud83d\udd36 or displayed as 🔶
-            assert ("🔶 SYNTHETIC: SyntheticVM" in html or
-                    "\\ud83d\\udd36 SYNTHETIC: SyntheticVM" in html or
-                    "SYNTHETIC: SyntheticVM" in html)
+            assert (
+                "🔶 SYNTHETIC: SyntheticVM" in html
+                or "\\ud83d\\udd36 SYNTHETIC: SyntheticVM" in html
+                or "SYNTHETIC: SyntheticVM" in html
+            )
 
             # Check for synthetic filter UI (emoji might be JSON-encoded)
             assert "syntheticFilter" in html
-            assert ("🔶 Synthetic Nodes" in html or
-                    "\\ud83d\\udd36 Synthetic Nodes" in html or
-                    "Synthetic Nodes" in html)
+            assert (
+                "🔶 Synthetic Nodes" in html
+                or "\\ud83d\\udd36 Synthetic Nodes" in html
+                or "Synthetic Nodes" in html
+            )
 
             # Check for synthetic node special rendering (with 'S' label)
             assert "node.synthetic" in html

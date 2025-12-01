@@ -30,10 +30,9 @@ def sample_graph_with_communities():
         "type": "Microsoft.Network/virtualNetworks",
         "location": "eastus",
         "resource_group": "rg-community1",
-        "properties": json.dumps({
-            "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
-            "subnets": []
-        })
+        "properties": json.dumps(
+            {"addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}, "subnets": []}
+        ),
     }
 
     vm1 = {
@@ -42,9 +41,7 @@ def sample_graph_with_communities():
         "type": "Microsoft.Compute/virtualMachines",
         "location": "eastus",
         "resource_group": "rg-community1",
-        "properties": json.dumps({
-            "hardwareProfile": {"vmSize": "Standard_B2s"}
-        })
+        "properties": json.dumps({"hardwareProfile": {"vmSize": "Standard_B2s"}}),
     }
 
     # Community 2: Storage + KeyVault
@@ -54,9 +51,7 @@ def sample_graph_with_communities():
         "type": "Microsoft.Storage/storageAccounts",
         "location": "westus",
         "resource_group": "rg-community2",
-        "properties": json.dumps({
-            "sku": {"name": "Standard_LRS"}
-        })
+        "properties": json.dumps({"sku": {"name": "Standard_LRS"}}),
     }
 
     keyvault2 = {
@@ -65,9 +60,7 @@ def sample_graph_with_communities():
         "type": "Microsoft.KeyVault/vaults",
         "location": "westus",
         "resource_group": "rg-community2",
-        "properties": json.dumps({
-            "tenantId": "test-tenant-id"
-        })
+        "properties": json.dumps({"tenantId": "test-tenant-id"}),
     }
 
     # Community 3: Standalone resource
@@ -77,9 +70,7 @@ def sample_graph_with_communities():
         "type": "Microsoft.Network/networkSecurityGroups",
         "location": "centralus",
         "resource_group": "rg-community3",
-        "properties": json.dumps({
-            "securityRules": []
-        })
+        "properties": json.dumps({"securityRules": []}),
     }
 
     resources = [vnet1, vm1, storage2, keyvault2, nsg3]
@@ -135,9 +126,7 @@ def test_terraform_emitter_split_by_community_disabled(
     emitter = TerraformEmitter()
 
     output_files = emitter.emit(
-        sample_graph_with_communities,
-        tmp_path,
-        split_by_community=False
+        sample_graph_with_communities, tmp_path, split_by_community=False
     )
 
     # Should generate single main.tf.json
@@ -154,14 +143,14 @@ def test_terraform_emitter_split_by_community_disabled(
     assert "resource" in content
 
 
-@patch('src.config_manager.create_neo4j_config_from_env')
-@patch('src.utils.session_manager.create_session_manager')
+@patch("src.config_manager.create_neo4j_config_from_env")
+@patch("src.utils.session_manager.create_session_manager")
 def test_terraform_emitter_split_by_community_enabled(
     mock_create_session_manager,
     mock_create_config,
     sample_graph_with_communities,
     mock_neo4j_driver,
-    tmp_path
+    tmp_path,
 ):
     """Test that emitter generates multiple files when split_by_community=True."""
     # Mock session manager to return our driver
@@ -172,18 +161,18 @@ def test_terraform_emitter_split_by_community_enabled(
     # Mock CommunityDetector.detect_communities
     # Return 3 communities matching our sample graph
     communities = [
-        {"vnet-hash1", "vm-hash1"},           # Community 1
-        {"storage-hash2", "kv-hash2"},        # Community 2
-        {"nsg-hash3"},                        # Community 3
+        {"vnet-hash1", "vm-hash1"},  # Community 1
+        {"storage-hash2", "kv-hash2"},  # Community 2
+        {"nsg-hash3"},  # Community 3
     ]
 
-    with patch.object(CommunityDetector, 'detect_communities', return_value=communities):
+    with patch.object(
+        CommunityDetector, "detect_communities", return_value=communities
+    ):
         emitter = TerraformEmitter()
 
         output_files = emitter.emit(
-            sample_graph_with_communities,
-            tmp_path,
-            split_by_community=True
+            sample_graph_with_communities, tmp_path, split_by_community=True
         )
 
         # Should generate 3 community files
@@ -209,14 +198,14 @@ def test_terraform_emitter_split_by_community_enabled(
             assert "resource" in content
 
 
-@patch('src.config_manager.create_neo4j_config_from_env')
-@patch('src.utils.session_manager.create_session_manager')
+@patch("src.config_manager.create_neo4j_config_from_env")
+@patch("src.utils.session_manager.create_session_manager")
 def test_community_files_are_self_contained(
     mock_create_session_manager,
     mock_create_config,
     sample_graph_with_communities,
     mock_neo4j_driver,
-    tmp_path
+    tmp_path,
 ):
     """Test that each community file contains only resources from that community."""
     # Mock session manager
@@ -226,18 +215,18 @@ def test_community_files_are_self_contained(
 
     # Define communities
     communities = [
-        {"vnet-hash1", "vm-hash1"},           # Community 1: VNet + VM
-        {"storage-hash2", "kv-hash2"},        # Community 2: Storage + KeyVault
-        {"nsg-hash3"},                        # Community 3: NSG
+        {"vnet-hash1", "vm-hash1"},  # Community 1: VNet + VM
+        {"storage-hash2", "kv-hash2"},  # Community 2: Storage + KeyVault
+        {"nsg-hash3"},  # Community 3: NSG
     ]
 
-    with patch.object(CommunityDetector, 'detect_communities', return_value=communities):
+    with patch.object(
+        CommunityDetector, "detect_communities", return_value=communities
+    ):
         emitter = TerraformEmitter()
 
         output_files = emitter.emit(
-            sample_graph_with_communities,
-            tmp_path,
-            split_by_community=True
+            sample_graph_with_communities, tmp_path, split_by_community=True
         )
 
         # Load and check each community file
@@ -258,23 +247,34 @@ def test_community_files_are_self_contained(
             # Verify resources match expected community
             if i == 0:  # Community 1
                 # Should contain vnet and vm
-                assert any("vnet" in name.lower() or "community1" in name.lower() for name in resource_names)
+                assert any(
+                    "vnet" in name.lower() or "community1" in name.lower()
+                    for name in resource_names
+                )
             elif i == 1:  # Community 2
                 # Should contain storage or keyvault
-                assert any("storage" in name.lower() or "kv" in name.lower() or "community2" in name.lower() for name in resource_names)
+                assert any(
+                    "storage" in name.lower()
+                    or "kv" in name.lower()
+                    or "community2" in name.lower()
+                    for name in resource_names
+                )
             elif i == 2:  # Community 3
                 # Should contain nsg
-                assert any("nsg" in name.lower() or "community3" in name.lower() for name in resource_names)
+                assert any(
+                    "nsg" in name.lower() or "community3" in name.lower()
+                    for name in resource_names
+                )
 
 
-@patch('src.config_manager.create_neo4j_config_from_env')
-@patch('src.utils.session_manager.create_session_manager')
+@patch("src.config_manager.create_neo4j_config_from_env")
+@patch("src.utils.session_manager.create_session_manager")
 def test_no_cross_community_references(
     mock_create_session_manager,
     mock_create_config,
     sample_graph_with_communities,
     mock_neo4j_driver,
-    tmp_path
+    tmp_path,
 ):
     """Test that community files don't contain cross-community resource references."""
     # Mock session manager
@@ -289,13 +289,13 @@ def test_no_cross_community_references(
         {"nsg-hash3"},
     ]
 
-    with patch.object(CommunityDetector, 'detect_communities', return_value=communities):
+    with patch.object(
+        CommunityDetector, "detect_communities", return_value=communities
+    ):
         emitter = TerraformEmitter()
 
         output_files = emitter.emit(
-            sample_graph_with_communities,
-            tmp_path,
-            split_by_community=True
+            sample_graph_with_communities, tmp_path, split_by_community=True
         )
 
         # Check each file for cross-references
@@ -312,14 +312,14 @@ def test_no_cross_community_references(
             assert "resource" in content
 
 
-@patch('src.config_manager.create_neo4j_config_from_env')
-@patch('src.utils.session_manager.create_session_manager')
+@patch("src.config_manager.create_neo4j_config_from_env")
+@patch("src.utils.session_manager.create_session_manager")
 def test_split_by_community_with_import_blocks(
     mock_create_session_manager,
     mock_create_config,
     sample_graph_with_communities,
     mock_neo4j_driver,
-    tmp_path
+    tmp_path,
 ):
     """Test that import blocks are correctly distributed across community files."""
     # Mock session manager
@@ -334,13 +334,13 @@ def test_split_by_community_with_import_blocks(
         {"nsg-hash3"},
     ]
 
-    with patch.object(CommunityDetector, 'detect_communities', return_value=communities):
+    with patch.object(
+        CommunityDetector, "detect_communities", return_value=communities
+    ):
         emitter = TerraformEmitter(auto_import_existing=True)
 
         output_files = emitter.emit(
-            sample_graph_with_communities,
-            tmp_path,
-            split_by_community=True
+            sample_graph_with_communities, tmp_path, split_by_community=True
         )
 
         # If import blocks are generated, they should be split across communities
@@ -350,7 +350,7 @@ def test_split_by_community_with_import_blocks(
 
 def test_fallback_to_single_file_on_error(sample_graph_with_communities, tmp_path):
     """Test that emitter falls back to single file if community detection fails."""
-    with patch('src.config_manager.create_neo4j_config_from_env') as mock_config:
+    with patch("src.config_manager.create_neo4j_config_from_env") as mock_config:
         # Mock config to raise an error
         mock_config.side_effect = Exception("Config error")
 
@@ -358,9 +358,7 @@ def test_fallback_to_single_file_on_error(sample_graph_with_communities, tmp_pat
 
         # Should fall back to single file generation
         output_files = emitter.emit(
-            sample_graph_with_communities,
-            tmp_path,
-            split_by_community=True
+            sample_graph_with_communities, tmp_path, split_by_community=True
         )
 
         # Should generate single file as fallback
@@ -378,7 +376,7 @@ def test_empty_graph_with_split_by_community(tmp_path):
     output_files = emitter.emit(
         empty_graph,
         tmp_path,
-        split_by_community=False  # Use False to avoid Neo4j driver requirement
+        split_by_community=False,  # Use False to avoid Neo4j driver requirement
     )
 
     # Should still generate a file (even if empty)

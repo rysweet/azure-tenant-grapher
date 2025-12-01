@@ -107,28 +107,30 @@ class TestAdaptiveBatchSizing:
     def test_small_graph_batch_size(self):
         """Test batch size calculation for small graphs (<1k)."""
         batch_size = AdaptiveBatchSizer.calculate_batch_size(500, "write")
-        assert 100 <= batch_size <= 500, f"Batch size {batch_size} out of expected range"
+        assert 100 <= batch_size <= 500, (
+            f"Batch size {batch_size} out of expected range"
+        )
 
     def test_medium_graph_batch_size(self):
         """Test batch size calculation for medium graphs (1k-10k)."""
         batch_size = AdaptiveBatchSizer.calculate_batch_size(5000, "write")
-        assert (
-            250 <= batch_size <= 1000
-        ), f"Batch size {batch_size} out of expected range"
+        assert 250 <= batch_size <= 1000, (
+            f"Batch size {batch_size} out of expected range"
+        )
 
     def test_large_graph_batch_size(self):
         """Test batch size calculation for large graphs (10k-100k)."""
         batch_size = AdaptiveBatchSizer.calculate_batch_size(50000, "write")
-        assert (
-            500 <= batch_size <= 5000
-        ), f"Batch size {batch_size} out of expected range"
+        assert 500 <= batch_size <= 5000, (
+            f"Batch size {batch_size} out of expected range"
+        )
 
     def test_very_large_graph_batch_size(self):
         """Test batch size calculation for very large graphs (>100k)."""
         batch_size = AdaptiveBatchSizer.calculate_batch_size(150000, "write")
-        assert (
-            2500 <= batch_size <= 10000
-        ), f"Batch size {batch_size} out of expected range"
+        assert 2500 <= batch_size <= 10000, (
+            f"Batch size {batch_size} out of expected range"
+        )
 
     def test_read_vs_write_batch_size(self):
         """Test that read operations use larger batches than write."""
@@ -248,7 +250,8 @@ class TestScaleUpPerformance:
 
         # Measure scale-up performance
         result = await service.scale_up_template(
-            tenant_id=tenant_id, scale_factor=10.0  # 100 -> 1000 resources
+            tenant_id=tenant_id,
+            scale_factor=10.0,  # 100 -> 1000 resources
         )
 
         # Assertions
@@ -276,7 +279,8 @@ class TestScaleUpPerformance:
         )
 
         result = await service.scale_up_template(
-            tenant_id=tenant_id, scale_factor=5.0  # 1k -> 5k resources
+            tenant_id=tenant_id,
+            scale_factor=5.0,  # 1k -> 5k resources
         )
 
         assert result.success
@@ -304,7 +308,8 @@ class TestScaleUpPerformance:
         )
 
         result = await service.scale_up_template(
-            tenant_id=tenant_id, scale_factor=8.0  # 5k -> 40k resources
+            tenant_id=tenant_id,
+            scale_factor=8.0,  # 5k -> 40k resources
         )
 
         assert result.success
@@ -313,7 +318,9 @@ class TestScaleUpPerformance:
 
         # Performance target: 40k resources in <5 minutes
         throughput = result.resources_created / result.duration_seconds
-        assert throughput >= 100, f"Throughput {throughput:.1f} below target of 100 resources/s"
+        assert throughput >= 100, (
+            f"Throughput {throughput:.1f} below target of 100 resources/s"
+        )
 
         logger.info(
             f"Large graph benchmark (40k target): {result.resources_created} resources "
