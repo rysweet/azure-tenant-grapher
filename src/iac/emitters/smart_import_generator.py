@@ -102,6 +102,10 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     # Microsoft.Graph / Entra ID types (use azuread provider)
     "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
     "Microsoft.Graph/users": "azuread_user",
+    # Missing types found by auto-detector
+    "Microsoft.Insights/components": "azurerm_application_insights",
+    "Microsoft.OperationalInsights/querypacks": "azurerm_log_analytics_query_pack",
+    "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
     # Remaining fixable types
     "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",
     "Microsoft.Communication/EmailServices/Domains": "azurerm_email_communication_service_domain",
