@@ -60,6 +60,8 @@ dependencies = [
     # Pydantic for configuration validation
     "pydantic>=2.0",
     "python-pptx>=1.0.2",
+    # Graph visualization export (Issue #508)
+    "pydot>=3.0.0",
 ]
 
 
@@ -115,6 +117,7 @@ markers = [
     "azure: marks tests that require Azure credentials",
     "timeout(n): set a timeout for a test",
     "dual_graph: marks tests as part of dual graph architecture feature (Issue #420)",
+    "performance: marks tests for performance benchmarking (Issue #504)",
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

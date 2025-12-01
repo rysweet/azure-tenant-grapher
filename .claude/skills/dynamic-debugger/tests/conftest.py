@@ -7,10 +7,9 @@ Following testing pyramid:
 """
 
 import json
-import pytest
-import tempfile
 from pathlib import Path
-from typing import Dict, Any
+
+import pytest
 
 
 @pytest.fixture
