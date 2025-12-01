@@ -51,6 +51,74 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.Cache/Redis": "azurerm_redis_cache",
     "Microsoft.DocumentDB/databaseAccounts": "azurerm_cosmosdb_account",
     "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
+    "Microsoft.ManagedIdentity/userAssignedIdentities": "azurerm_user_assigned_identity",
+    "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
+    "Microsoft.Insights/dataCollectionRules": "azurerm_monitor_data_collection_rule",
+    "Microsoft.App/containerApps": "azurerm_container_app",
+    "Microsoft.ContainerService/managedClusters": "azurerm_kubernetes_cluster",
+    "Microsoft.OperationalInsights/workspaces": "azurerm_log_analytics_workspace",
+    "Microsoft.Compute/virtualMachines/runCommands": "azurerm_virtual_machine_run_command",
+    "Microsoft.EventHub/namespaces": "azurerm_eventhub_namespace",
+    "Microsoft.App/managedEnvironments": "azurerm_container_app_environment",
+    "Microsoft.Compute/snapshots": "azurerm_snapshot",
+    "Microsoft.Compute/sshPublicKeys": "azurerm_ssh_public_key",
+    "Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies": "azurerm_web_application_firewall_policy",
+    "Microsoft.Network/dnszones": "azurerm_dns_zone",
+    "Microsoft.Network/natGateways": "azurerm_nat_gateway",
+    "Microsoft.Network/networkWatchers": "azurerm_network_watcher",
+    "Microsoft.Automation/automationAccounts": "azurerm_automation_account",
+    "Microsoft.Automation/automationAccounts/runbooks": "azurerm_automation_runbook",
+    "Microsoft.CognitiveServices/accounts": "azurerm_cognitive_account",
+    "Microsoft.Databricks/workspaces": "azurerm_databricks_workspace",
+    "Microsoft.DataFactory/factories": "azurerm_data_factory",
+    "Microsoft.DBforPostgreSQL/flexibleServers": "azurerm_postgresql_flexible_server",
+    "Microsoft.ContainerInstance/containerGroups": "azurerm_container_group",
+    "Microsoft.Insights/dataCollectionEndpoints": "azurerm_monitor_data_collection_endpoint",
+    "Microsoft.OperationsManagement/solutions": "azurerm_log_analytics_solution",
+    "Microsoft.Kusto/clusters": "azurerm_kusto_cluster",
+    "Microsoft.MachineLearningServices/workspaces": "azurerm_machine_learning_workspace",
+    "Microsoft.RecoveryServices/vaults": "azurerm_recovery_services_vault",
+    "Microsoft.Search/searchServices": "azurerm_search_service",
+    "Microsoft.ServiceBus/namespaces": "azurerm_servicebus_namespace",
+    "Microsoft.Synapse/workspaces": "azurerm_synapse_workspace",
+    "Microsoft.Insights/actiongroups": "azurerm_monitor_action_group",
+    "Microsoft.Insights/metricalerts": "azurerm_monitor_metric_alert",
+    "Microsoft.Insights/scheduledqueryrules": "azurerm_monitor_scheduled_query_rules_alert",
+    "Microsoft.Insights/workbooks": "azurerm_application_insights_workbook",
+    "Microsoft.DevTestLab/schedules": "azurerm_dev_test_schedule",
+    "Microsoft.Portal/dashboards": "azurerm_portal_dashboard",
+    "Microsoft.Purview/accounts": "azurerm_purview_account",
+    "Microsoft.Web/staticSites": "azurerm_static_web_app",
+    "Microsoft.AppConfiguration/configurationStores": "azurerm_app_configuration",
+    "Microsoft.Communication/CommunicationServices": "azurerm_communication_service",
+    "Microsoft.Databricks/accessConnectors": "azurerm_databricks_access_connector",
+    "Microsoft.Compute/galleries": "azurerm_shared_image_gallery",
+    "Microsoft.Compute/galleries/images": "azurerm_shared_image",
+    "Microsoft.Compute/images": "azurerm_image",
+    # Additional missing types (case-insensitive lookup handles variants)
+    "Microsoft.Network/routeTables": "azurerm_route_table",
+    "Microsoft.MachineLearningServices/workspaces/serverlessEndpoints": "azurerm_machine_learning_inference_cluster",
+    "Microsoft.CognitiveServices/accounts/projects": "azurerm_cognitive_deployment",
+    # Microsoft.Graph / Entra ID types (use azuread provider)
+    "Microsoft.Graph/servicePrincipals": "azuread_service_principal",
+    "Microsoft.Graph/users": "azuread_user",
+    # Missing types found by auto-detector
+    "Microsoft.Insights/components": "azurerm_application_insights",
+    "Microsoft.OperationalInsights/querypacks": "azurerm_log_analytics_query_pack",
+    "Microsoft.AlertsManagement/smartDetectorAlertRules": "azurerm_monitor_smart_detector_alert_rule",
+    # Remaining fixable types
+    "Microsoft.Communication/EmailServices": "azurerm_email_communication_service",
+    "Microsoft.Communication/EmailServices/Domains": "azurerm_email_communication_service_domain",
+    "Microsoft.Migrate/moveCollections": "azurerm_resource_mover_move_collection",
+    "Microsoft.App/jobs": "azurerm_container_app_job",
+    "Microsoft.Resources/templateSpecs/versions": "azurerm_resource_deployment_script_azure_cli",
+    # Final remaining types (edge cases)
+    "Microsoft.App/builders": "azurerm_container_app_environment",
+    "Microsoft.Graph/tenants": "azuread_tenant",
+    "Microsoft.Resources/subscriptions": "azurerm_subscription",
+    "Microsoft.Resources/templateSpecs": "azurerm_resource_group_template_deployment",
+    "Microsoft.SecurityCopilot/capacities": "azurerm_security_center_subscription_pricing",
+    "Microsoft.SentinelPlatformServices/sentinelPlatformServices": "azurerm_sentinel_data_connector",
 }
 
 
@@ -443,7 +511,20 @@ class SmartImportGenerator:
         Returns:
             Terraform resource type (e.g., azurerm_virtual_network), or None if unknown
         """
+        # Try exact match first (fast path)
         terraform_type = AZURE_TO_TERRAFORM_TYPE.get(azure_type)
+
+        # Bug #113 fix: If no exact match, try case-insensitive lookup
+        # Azure returns both Microsoft.Insights and microsoft.insights
+        if not terraform_type:
+            for mapped_azure_type, mapped_terraform_type in AZURE_TO_TERRAFORM_TYPE.items():
+                if mapped_azure_type.lower() == azure_type.lower():
+                    terraform_type = mapped_terraform_type
+                    logger.debug(
+                        f"Matched Azure type '{azure_type}' via case-insensitive lookup "
+                        f"to mapping '{mapped_azure_type}'"
+                    )
+                    break
 
         if not terraform_type:
             logger.debug(
