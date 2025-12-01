@@ -50,6 +50,7 @@ AZURE_TO_TERRAFORM_TYPE: Dict[str, str] = {
     "Microsoft.ContainerRegistry/registries": "azurerm_container_registry",
     "Microsoft.Cache/Redis": "azurerm_redis_cache",
     "Microsoft.DocumentDB/databaseAccounts": "azurerm_cosmosdb_account",
+    "Microsoft.Authorization/roleAssignments": "azurerm_role_assignment",
 }
 
 
