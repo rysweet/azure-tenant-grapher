@@ -1,1039 +1,904 @@
+<!-- amplihack-version: 0.9.0 -->
+
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with your codebase. It
+configures the amplihack agentic coding framework - a development tool that uses
+specialized AI agents to accelerate software development through intelligent
+automation and collaborative problem-solving.
 
-## Project Overview
+## Important Files to Import
 
-Azure Tenant Grapher is a security-focused tool that builds a Neo4j graph database representation of Azure tenant resources and their relationships. It generates Infrastructure-as-Code (IaC) in multiple formats (Terraform, ARM, Bicep) and provides threat modeling capabilities.
+When starting a session, import these files for context:
 
-### Dual-Graph Architecture
+[@.claude/context/PHILOSOPHY.md](.claude/context/PHILOSOPHY.md)
+[@.claude/context/PROJECT.md](.claude/context/PROJECT.md)
+[@.claude/context/PATTERNS.md](.claude/context/PATTERNS.md)
+[@.claude/context/TRUST.md](.claude/context/TRUST.md)
+[@.claude/context/USER_PREFERENCES.md](.claude/context/USER_PREFERENCES.md)
+[@.claude/context/USER_REQUIREMENT_PRIORITY.md](.claude/context/USER_REQUIREMENT_PRIORITY.md)
 
-The system uses a **dual-graph architecture** where every Azure resource is stored as two nodes:
-- **Original nodes** (`:Resource:Original`): Real Azure IDs from the source tenant
-- **Abstracted nodes** (`:Resource`): Translated IDs suitable for cross-tenant deployment
-- Linked by `SCAN_SOURCE_NODE` relationships
+## MANDATORY: Workflow Selection (ALWAYS FIRST)
 
-This architecture enables:
-- Cross-tenant deployments with safe ID abstraction
-- Query flexibility (original topology OR deployment view)
-- Simplified IaC generation (no runtime translation needed)
-- Graph-based validation of abstractions
+**CRITICAL**: You MUST classify every user request into one of three workflows
+BEFORE taking action. No exceptions.
 
-**Key Services:**
-- `IDAbstractionService`: Deterministic hash-based ID abstraction (e.g., `vm-a1b2c3d4`)
-- `TenantSeedManager`: Per-tenant cryptographic seeds for reproducible abstraction
+### Quick Classification (3 seconds max)
 
-## Development Commands
+| Task Type         | Workflow               | When to Use                                            |
+| ----------------- | ---------------------- | ------------------------------------------------------ |
+| **Q&A**           | Q&A_WORKFLOW           | Simple questions, single-turn answers, no code changes |
+| **Investigation** | INVESTIGATION_WORKFLOW | Understanding code, exploring systems, research        |
+| **Development**   | DEFAULT_WORKFLOW       | Code changes, features, bugs, refactoring              |
 
-### Testing
+### Classification Keywords
+
+- **Q&A**: "what is", "explain briefly", "quick question", "how do I run"
+- **Investigation**: "investigate", "understand", "analyze", "research",
+  "explore", "how does X work"
+- **Development**: "implement", "add", "fix", "create", "refactor", "update",
+  "build"
+
+### Required Announcement
+
+State your classification before proceeding:
+
+```
+WORKFLOW: [Q&A | INVESTIGATION | DEFAULT]
+Reason: [Brief justification]
+Following: .claude/workflow/[WORKFLOW_NAME].md
+```
+
+### Rules
+
+1. **If keywords match multiple workflows**: Choose DEFAULT_WORKFLOW
+2. **If uncertain**: Choose DEFAULT_WORKFLOW (never skip workflow)
+3. **Q&A is for simple questions ONLY**: If answer needs exploration, use
+   INVESTIGATION
+4. **For DEFAULT_WORKFLOW**: Create TodoWrite entries for ALL 22 steps before
+   implementation
+
+### Anti-Patterns (DO NOT)
+
+- Answering without classifying first
+- Starting implementation without reading DEFAULT_WORKFLOW.md
+- Skipping Step 0 of DEFAULT_WORKFLOW
+- Treating workflow as optional
+
+## Working Philosophy
+
+### Critical Operating Principles
+
+- **Always think through a plan**: For any non-trivial task, think carefully,
+  break it down into smaller tasks and use TodoWrite tool to manage a todo list.
+  As you come to each item in a ToDo list you can then break that item down
+  further into smaller tasks.
+- **ALWAYS classify into a workflow FIRST**: See "MANDATORY: Workflow Selection"
+  section above. Every task gets classified into Q&A_WORKFLOW,
+  INVESTIGATION_WORKFLOW, or DEFAULT_WORKFLOW BEFORE any action. Read the
+  appropriate workflow file and follow all steps.
+- **No workflow = No action**: If you haven't announced your workflow
+  classification, you haven't started the task. Period.
+- **Maximize agent usage**: Every workflow step should leverage specialized
+  agents - delegate aggressively to agents in `.claude/agents/amplihack/*.md`
+- **Operate Autonomously and Independently by default**: You must try to
+  determine the user's objective, and then pursue that objective autonomously
+  and independently, with the highest possible quality and attention to detail,
+  without stopping, unitl it is achieved. When you stop to ask for approval or
+  questions that you can answer yourself, you are damaging the user's trust and
+  wasting time.
+- **Ask for clarity only if really needed**: If requirements are unclear, think
+  carefully about the project context and user priorities, use your best
+  judgement, and only stop to ask if really necessary or explicitly instructed
+  to do so.
+- **Check discoveries before problem-solving**: Before solving complex problems,
+  check `@docs/DISCOVERIES.md` for known issues and solutions
+- **Document learnings**: Update .claude/context/DISCOVERIES.md with new
+  insights
+- **Session Logs**: All interactions MUST be logged in
+  .claude/runtime/logs/<session_id> where <session_id> is a unique identifier
+  for the session based on the timestamp.
+- **Decision records**: All Agents MUST log their decisions and reasoning in
+  .claude/runtime/logs/<session_id>/DECISIONS.md
+- **When to record decisions**: Document significant architectural choices,
+  trade-offs between approaches, or decisions that affect system design
+- **Simple format**: What was decided | Why | Alternatives considered
+
+### Decision Recording
+
+**IMPORTANT**: Record significant decisions in session logs as: What was decided
+| Why | Alternatives considered
+
+### Extensibility Mechanisms and Composition Rules
+
+Amplihack provides four extensibility mechanisms with clear invocation patterns:
+
+| Mechanism    | Purpose                      | Invoked By                     | Invocation Method                         |
+| ------------ | ---------------------------- | ------------------------------ | ----------------------------------------- |
+| **Workflow** | Multi-step process blueprint | Commands, Skills, Agents       | `Read` workflow file, follow steps        |
+| **Command**  | User-explicit entry point    | User, Commands, Skills, Agents | User types `/cmd` OR `SlashCommand` tool  |
+| **Skill**    | Auto-discovered capability   | Claude auto-discovers          | Context triggers OR explicit `Skill` tool |
+| **Subagent** | Specialized delegation       | Commands, Skills, Agents       | `Task` tool with `subagent_type`          |
+
+**Key Invocation Patterns:**
+
+- **SlashCommand Tool**: Custom commands in `.claude/commands/` CAN be invoked
+  programmatically by commands, skills, and agents. Only built-in commands
+  (`/help`, `/clear`) cannot be invoked programmatically.
+
+  ```python
+  SlashCommand(command="/amplihack:analyze Analyze architecture")
+  ```
+
+- **Skill Tool**: Invoke skills explicitly when auto-discovery isn't sufficient
+
+  ```python
+  Skill(skill="mermaid-diagram-generator")
+  ```
+
+- **Task Tool**: Invoke subagents for specialized perspectives
+
+  ```python
+  Task(subagent_type="architect", prompt="Design system...")
+  ```
+
+- **Workflow Reference**: Commands/skills/agents read workflow files to follow
+  process
+  ```python
+  Read(file_path=".claude/workflow/DEFAULT_WORKFLOW.md")
+  ```
+
+**Composition Examples:**
+
+- Workflow classification: Reading `DEFAULT_WORKFLOW.md` based on task type
+- Command invoking command: `/improve` can invoke `/amplihack:reflect`
+- Skill invoking agent: `test-gap-analyzer` invokes `tester` agent
+- Agent invoking skill: `architect` can invoke `mermaid-diagram-generator`
+
+See `.claude/context/FRONTMATTER_STANDARDS.md` for complete invocation metadata
+in frontmatter.
+
+### CRITICAL: User Requirement Priority
+
+**MANDATORY BEHAVIOR**: All agents must follow the priority hierarchy:
+
+1. **EXPLICIT USER REQUIREMENTS** (HIGHEST PRIORITY - NEVER OVERRIDE)
+2. **IMPLICIT USER PREFERENCES**
+3. **PROJECT PHILOSOPHY**
+4. **DEFAULT BEHAVIORS** (LOWEST PRIORITY)
+
+**When user says "ALL files", "include everything", or provides specific
+requirements in quotes, these CANNOT be optimized away by simplification
+agents.**
+
+See
+[`@.claude/context/USER_REQUIREMENT_PRIORITY.md`](.claude/context/USER_REQUIREMENT_PRIORITY.md)
+for complete guidelines.
+
+### Agent Delegation Strategy
+
+**GOLDEN RULE**: You are an orchestrator, not an implementer. This means:
+
+1. **Follow the workflow first** - Let DEFAULT_WORKFLOW.md determine the order
+2. **Delegate within each step** - Use specialized agents to execute the work
+3. **Coordinate, don't implement** - Your role is orchestration, not direct
+   execution
+
+ALWAYS delegate to specialized agents when possible. **DEFAULT TO PARALLEL
+EXECUTION** by passing multiple tasks to the Task tool in a single call unless
+dependencies require sequential order.
+
+#### When to Use Agents (ALWAYS IF POSSIBLE)
+
+**Immediate Delegation Triggers:**
+
+- **System Design**: Use `architect.md` for specifications and problem
+  decomposition
+- **Implementation**: Use `builder.md` for code generation from specs
+- **Code Review**: Use `reviewer.md` for philosophy compliance checks
+- **Testing**: Use `tester.md` for test generation and validation
+- **API Design**: Use `api-designer.md` for contract definitions
+- **Performance**: Use `optimizer.md` for bottleneck analysis
+- **Security**: Use `security.md` for vulnerability assessment
+- **Database**: Use `database.md` for schema and query optimization
+- **Integration**: Use `integration.md` for external service connections
+- **Cleanup**: Use `cleanup.md` for code simplification
+- **Pattern Recognition**: Use `patterns.md` to identify reusable solutions
+- **Analysis**: Use `analyzer.md` for deep code understanding
+- **Ambiguity**: Use `ambiguity.md` when requirements are unclear
+- **Fix Workflows**: Use `fix-agent.md` for rapid resolution of common error
+  patterns (imports, CI, tests, config, quality, logic)
+
+#### Architect Variants
+
+**Multiple specialized architects** exist for different tasks (see agent
+frontmatter descriptions for when to use each):
+
+- `architect` (core) - General design, problem decomposition, module specs
+- `amplifier-cli-architect` - CLI applications, hybrid code/AI systems
+- `philosophy-guardian` - Philosophy compliance reviews, simplicity validation
+- `visualization-architect` - Architecture diagrams, visual documentation
+
+### Development Workflow Agents
+
+**Two-Stage Diagnostic Workflow:**
+
+#### Stage 1: Pre-Commit Issues (Before Push)
+
+- **Pre-Commit Workflow**: Use `pre-commit-diagnostic.md` when pre-commit hooks
+  fail locally. Handles formatting, linting, type checking, and ensures code is
+  committable BEFORE pushing.
+- **Trigger**: "Pre-commit failed", "Can't commit", "Hooks failing"
+
+#### Stage 2: CI Issues (After Push)
+
+- **CI Workflow**: Use `ci-diagnostic-workflow.md` after pushing when CI checks
+  fail. Monitors CI status, diagnoses failures, fixes issues, and iterates until
+  PR is mergeable (but never auto-merges).
+- **Trigger**: "CI failing", "Fix CI", "Make PR mergeable"
+
+#### Stage 3: General Fix Workflow (Optimized for Common Patterns)
+
+- **Fix Workflow**: Use `fix-agent.md` for rapid resolution of the most common
+  fix patterns identified in usage analysis. Provides QUICK (template-based),
+  DIAGNOSTIC (root cause), and COMPREHENSIVE (full workflow) modes.
+- **Trigger**: "Fix this", "Something's broken", "Error in", specific error
+  patterns
+- **Command**: `/fix [pattern] [scope]` for intelligent fix dispatch
+
+```
+Example - Pre-commit failure:
+"My pre-commit hooks are failing"
+→ Use pre-commit-diagnostic agent
+→ Automatically fixes all issues
+→ Ready to commit
+
+Example - CI failure after push:
+"CI is failing on my PR"
+→ Use ci-diagnostic-workflow agent
+→ Iterates until PR is mergeable
+→ Never auto-merges without permission
+
+Example - General fix request:
+"This import error is blocking me"
+→ Use /fix import or fix-agent
+→ Auto-detects and applies import-fix-template
+→ Resolves dependency and path issues quickly
+
+Example - Complex issue:
+"Tests are failing and I'm not sure why"
+→ Use /fix test diagnostic
+→ fix-agent uses DIAGNOSTIC mode
+→ Systematic debugging and root cause analysis
+```
+
+#### Creating Custom Agents
+
+For repeated specialized tasks:
+
+1. Identify pattern after 2-3 similar requests
+2. Create agent in `.claude/agents/amplihack/specialized/`
+3. Define clear role and boundaries
+4. Add to delegation triggers above
+
+Remember: Your value is in orchestration and coordination, not in doing
+everything yourself.
+
+When faced with a new novel task, it is also OK to create a new specialized
+agent to handle that task as an experiment. Use agents to manage context for
+granularity of tasks (eg when going off to do something specific where context
+from the whole conversation is not necessary, such as managing a git worktree or
+cleaning some data).
+
+### Microsoft Amplifier Parallel Execution Engine
+
+**PARALLEL BY DEFAULT**: Always execute operations in parallel unless
+dependencies require sequential order.
+
+### Comprehensive Parallel Detection Framework
+
+#### RULE 1: File Operations
+
+Batch all file operations in single tool call when multiple files are involved.
+
+#### RULE 2: Multi-Perspective Analysis
+
+Deploy relevant agents in parallel when multiple viewpoints are needed.
+
+#### RULE 3: Independent Components
+
+Analyze separate modules or systems in parallel.
+
+#### RULE 4: Information Gathering
+
+Parallel information collection when multiple data sources are needed.
+
+#### RULE 5: Development Lifecycle Tasks
+
+Execute parallel operations for testing, building, and validation phases.
+
+#### RULE 6: Cross-Cutting Concerns
+
+Apply security, performance, and quality analysis in parallel.
+
+### Microsoft Amplifier Execution Templates
+
+#### Template 1: Comprehensive Feature Development
+
+```
+[architect, security, database, api-designer, tester] for new feature
+```
+
+#### Template 2: Multi-Dimensional Code Analysis
+
+```
+[analyzer, security, optimizer, patterns, reviewer] for comprehensive review
+```
+
+#### Template 3: Comprehensive Problem Diagnosis
+
+```
+[analyzer, environment, patterns, logs] for issue investigation
+```
+
+#### Template 4: System Preparation and Validation
+
+```
+[environment, validator, tester, ci-checker] for deployment readiness
+```
+
+#### Template 5: Research and Discovery
+
+```
+[analyzer, patterns, explorer, documenter] for knowledge gathering
+```
+
+### Advanced Execution Patterns
+
+**Parallel (Default)**
+
+```
+[analyzer(comp1), analyzer(comp2), analyzer(comp3)]
+```
+
+**Sequential (Exception - Hard Dependencies Only)**
+
+```
+architect → builder → reviewer
+```
+
+### Microsoft Amplifier Coordination Protocols
+
+**Agent Guidelines:**
+
+- Context sharing: Each agent receives full task context
+- Output integration: Orchestrator synthesizes parallel results
+- Progress tracking: TodoWrite manages parallel task completion
+
+**PARALLEL-READY Agents**: `analyzer`, `security`, `optimizer`, `patterns`,
+`reviewer`, `architect`, `api-designer`, `database`, `tester`, `integration`,
+`cleanup`, `ambiguity`
+
+**SEQUENTIAL-REQUIRED Agents**: `architect` → `builder` → `reviewer`,
+`pre-commit-diagnostic`, `ci-diagnostic-workflow`
+
+### Systematic Decision Framework
+
+#### When to Use Parallel Execution
+
+- Independent analysis tasks
+- Multiple perspectives on same target
+- Separate components
+- Batch operations
+
+#### When to Use Sequential Execution
+
+- Hard dependencies (A output → B input)
+- State mutations
+- User-specified order
+
+#### Decision Matrix
+
+| Scenario           | Use Parallel | Use Sequential |
+| ------------------ | ------------ | -------------- |
+| File analysis      | ✓            |                |
+| Multi-agent review | ✓            |                |
+| Dependencies exist |              | ✓              |
+
+### Anti-Patterns and Common Mistakes
+
+#### Anti-Pattern 1: Unnecessary Sequencing
+
+Avoid sequential execution when tasks are independent.
+
+#### Anti-Pattern 2: False Dependencies
+
+Don't create artificial sequential dependencies.
+
+#### Anti-Pattern 3: Over-Sequencing Complex Tasks
+
+Break complex tasks into parallel components when possible.
+
+### Template Responses for Common Scenarios
+
+#### Scenario 1: New Feature Request
+
+Deploy parallel feature development template with architect, security, database,
+api-designer, and tester.
+
+#### Scenario 2: Bug Investigation
+
+Use parallel diagnostic template with analyzer, environment, patterns, and logs.
+
+#### Scenario 3: Code Review Request
+
+Apply multi-dimensional analysis with analyzer, security, optimizer, patterns,
+and reviewer.
+
+#### Scenario 4: System Analysis
+
+Execute comprehensive system review with all relevant agents in parallel.
+
+### Performance Optimization Guidelines
+
+#### Parallel Execution Optimization
+
+- Minimize agent overlap
+- Optimize context sharing
+- Track execution metrics
+
+#### Monitoring and Metrics
+
+- Monitor parallel execution performance
+- Track agent coordination efficiency
+- Measure time savings vs sequential
+
+## Development Principles
+
+### Ruthless Simplicity
+
+- Start with the simplest solution that works
+- Add complexity only when justified
+- Question every abstraction
+
+### Modular Design (Bricks & Studs)
+
+- **Brick** = Self-contained module with ONE responsibility
+- **Stud** = Public contract others connect to
+- **Regeneratable** = Can be rebuilt from specification
+
+### Zero-BS Implementation
+
+- No stubs or placeholders - no fake implementations or unimplemented functions
+- No dead code - remove unused code
+- Every function must work or not exist
+
+## Project Structure
+
+```
+.claude/
+├── context/          # Philosophy, patterns, project info
+├── agents/           # Specialized AI agents
+├── commands/         # Slash commands (/analyze, /improve, /fix)
+├── scenarios/        # Production-ready user-facing tools
+│   ├── README.md     # Scenarios pattern documentation
+│   ├── tool-name/    # Each tool gets its own directory
+│   │   ├── README.md                 # Tool overview and usage
+│   │   ├── HOW_TO_CREATE_YOUR_OWN.md # Template for similar tools
+│   │   ├── tool.py                   # Main implementation
+│   │   ├── tests/                    # Tool-specific tests
+│   │   └── examples/                 # Usage examples
+│   └── templates/    # Shared templates and utilities
+├── ai_working/       # Experimental tools under development
+├── tools/            # Hooks and utilities
+├── workflow/         # Default workflow definition
+│   └── DEFAULT_WORKFLOW.md  # Customizable multi-step workflow
+└── runtime/          # Logs, metrics, analysis
+
+Specs/               # Module specifications
+Makefile             # Easy access to scenario tools
+```
+
+## Key Commands
+
+### /analyze <path>
+
+Comprehensive code review for philosophy compliance
+
+### /improve [target]
+
+Self-improvement and learning capture
+
+### /fix [pattern] [scope]
+
+Intelligent fix workflow optimization for common error patterns. Key features:
+
+- **Auto-detection**: Automatically identifies fix pattern from error context
+- **Template-based**: Uses pre-built templates for 80% of common fixes
+- **Mode selection**: QUICK (< 5 min), DIAGNOSTIC (root cause), COMPREHENSIVE
+  (full workflow)
+- **Integration**: Seamlessly works with workflows and existing agents
+
+**Usage Examples:**
+
 ```bash
-# Run all tests with artifacts
-./scripts/run_tests_with_artifacts.sh
-
-# Run specific test
-uv run pytest tests/test_specific.py -v
-
-# Run tests with coverage
-uv run pytest --cov=src --cov-report=term-missing
+/fix                    # Auto-detect pattern and scope
+/fix import             # Target import/dependency issues
+/fix ci                 # Focus on CI/CD problems
+/fix test diagnostic    # Deep analysis of test failures
+/fix logic comprehensive # Full workflow for complex logic issues
 ```
 
-### Linting and Type Checking
+**Common Patterns:** import (15%), ci (20%), test (18%), config (12%), quality
+(25%), logic (10%)
+
+**For command selection guidance**, see
+`docs/commands/COMMAND_SELECTION_GUIDE.md` (user reference for choosing slash
+commands).
+
+### Fault Tolerance Patterns
+
+Three workflow-based patterns for critical operations that require consensus,
+multiple perspectives, or graceful degradation:
+
+#### /amplihack:n-version <task>
+
+N-version programming for critical implementations. Generates N independent
+solutions and selects the best through comparison.
+
+- **Use for**: Security code, core algorithms, mission-critical features
+- **Cost**: 3-4x execution time
+- **Benefit**: 30-65% error reduction
+- **Workflow**: `.claude/workflow/N_VERSION_WORKFLOW.md`
+
 ```bash
-# Run Ruff linter
-uv run ruff check src scripts tests
-
-# Run Ruff formatter
-uv run ruff format src scripts tests
-
-# Run Pyright type checker
-uv run pyright
-
-# Run Bandit security linter
-uv run bandit -r src scripts
+/amplihack:n-version "Implement JWT token validation"
 ```
 
-### Pre-commit Hooks
+#### /amplihack:debate <question>
+
+Multi-agent debate for complex decisions. Structured debate with multiple
+perspectives (security, performance, simplicity) converges on best decision.
+
+- **Use for**: Architectural trade-offs, algorithm selection, design decisions
+- **Cost**: 2-3x execution time
+- **Benefit**: 40-70% better decision quality
+- **Workflow**: `.claude/workflow/DEBATE_WORKFLOW.md`
+
 ```bash
-# Install pre-commit hooks
-uv run pre-commit install
-
-# Run pre-commit on all files
-uv run pre-commit run --all-files
+/amplihack:debate "Should we use PostgreSQL or Redis for this feature?"
 ```
 
-### Running the CLI
+#### /amplihack:cascade <task>
+
+Fallback cascade for resilient operations. Graceful degradation: optimal →
+pragmatic → minimal ensures reliable completion.
+
+- **Use for**: External APIs, code generation, data retrieval with fallbacks
+- **Cost**: 1.1-2x (only on failures)
+- **Benefit**: 95%+ reliability vs 70-80% single approach
+- **Workflow**: `.claude/workflow/CASCADE_WORKFLOW.md`
+
 ```bash
-# Main CLI commands (all aliases work: azure-tenant-grapher, azure-graph, atg)
-uv run atg scan --tenant-id <TENANT_ID>
-uv run atg generate-spec
-uv run atg generate-iac --tenant-id <TENANT_ID> --format terraform
-uv run atg create-tenant --spec path/to/spec.md
-uv run atg visualize
-uv run atg agent-mode
-uv run atg threat-model
-uv run atg doctor  # Check and install CLI dependencies
-
-# IaC generation with subnet validation (Issue #333)
-uv run atg generate-iac --tenant-id <TENANT_ID>  # Validates subnets by default
-uv run atg generate-iac --tenant-id <TENANT_ID> --auto-fix-subnets  # Auto-fix invalid subnets
-uv run atg generate-iac --tenant-id <TENANT_ID> --skip-subnet-validation  # Skip validation (not recommended)
-
-# Cross-tenant IaC generation (Issue #406)
-uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID>  # Cross-tenant deployment
-uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --target-subscription <TARGET_SUB_ID>  # With target subscription
-uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --identity-mapping-file identity_mappings.json  # With Entra ID translation
-
-# Terraform import blocks (Issue #412) - FULLY IMPLEMENTED
-uv run atg generate-iac --auto-import-existing --import-strategy resource_groups  # Generates Terraform 1.5+ import blocks
-uv run atg generate-iac --target-tenant-id <TARGET_TENANT_ID> --auto-import-existing --import-strategy resource_groups  # Cross-tenant with imports
-
-# Azure provider registration - FULLY IMPLEMENTED
-uv run atg generate-iac --auto-register-providers  # Automatically register required Azure providers without prompting
-# By default (without --auto-register-providers), atg will detect required providers and prompt user to register them
-
-# SPA/GUI commands
-uv run atg start    # Launch Electron GUI (desktop mode)
-uv run atg stop     # Stop GUI application
-
-# Web App Mode (NEW)
-cd spa && npm run start:web       # Run as web server (accessible from other machines)
-cd spa && npm run start:web:dev   # Run web server in dev mode with hot reload
+/amplihack:cascade "Generate API documentation from codebase"
 ```
 
-## Architecture Overview
+**Integration with Workflows:** These patterns can be combined with
+DEFAULT_WORKFLOW by customizing the workflow file to include consensus or
+fallback stages at specific steps.
 
-### Core Components
+### Document-Driven Development (DDD)
 
-1. **Azure Discovery Service** (`src/services/azure_discovery_service.py`):
-   - Discovers Azure resources using Azure SDK
-   - Handles pagination and rate limiting
-   - Supports resource limits for testing
+**Systematic methodology for large features where documentation comes first and
+acts as the specification.**
 
-2. **Resource Processing Service** (`src/services/resource_processing_service.py`):
-   - Processes discovered resources
-   - Creates Neo4j nodes and relationships
-   - Applies relationship rules
+**Core Principle**: Documentation IS the specification. Code must match what
+documentation describes exactly.
 
-3. **Relationship Rules** (`src/relationship_rules/`):
-   - Modular rules for creating graph relationships
-   - Each rule handles specific relationship types (network, identity, monitoring, etc.)
-   - Plugin-based architecture for extensibility
+**When to Use DDD:**
 
-4. **Neo4j Container Management** (`src/container_manager.py`):
-   - Manages Neo4j Docker container lifecycle
-   - Handles database backups
-   - Ensures Neo4j is running before operations
+- New features requiring multiple files (10+ files)
+- System redesigns or major refactoring
+- API changes affecting documentation
+- High-stakes user-facing features
+- Complex integrations requiring clear contracts
 
-5. **IaC Generation** (`src/iac/`):
-   - Traverses Neo4j graph to generate IaC
-   - Supports multiple output formats via emitters
-   - Handles resource dependencies and ordering
-   - Validates subnet address space containment (Issue #333)
-   - Cross-tenant resource translation (Issue #406)
+**Commands:**
 
-6. **Cross-Tenant Translation**: See `@docs/cross-tenant/FEATURES.md` for details
-
-7. **IaC Validators** (`src/iac/validators/`):
-   - **SubnetValidator**: Validates subnets are within VNet address space
-   - **TerraformValidator**: Validates Terraform templates
-   - Supports auto-fix for common subnet misconfigurations
-
-### Key Design Patterns
-
-- **Async/Await**: Core services use asyncio for concurrent API calls
-- **Dashboard Integration**: Rich TUI dashboard for progress tracking during long operations
-- **MCP Server**: Model Context Protocol server for AI agent integration
-- **Migration System**: Database schema versioning and migrations in `migrations/`
-- **Electron SPA**: Desktop GUI application with React frontend and Express backend
-
-### Neo4j Graph Schema
-
-For complete schema documentation, see [docs/NEO4J_SCHEMA_REFERENCE.md](docs/NEO4J_SCHEMA_REFERENCE.md).
-
-**Node Types:**
-- **Resource nodes** (dual-graph architecture):
-  - `:Resource` - Abstracted nodes with translated IDs (default for queries)
-  - `:Resource:Original` - Original nodes with real Azure IDs
-  - Linked by `(abstracted)-[:SCAN_SOURCE_NODE]->(original)`
-- **Other nodes**: Subscription, Tenant, ResourceGroup, User, ServicePrincipal, etc.
-
-**Relationships:**
-- Resource relationships duplicated in both graphs: CONTAINS, USES_IDENTITY, CONNECTED_TO, DEPENDS_ON, USES_SUBNET, SECURED_BY
-- Shared relationships to non-Resource nodes: TAGGED_WITH, LOCATED_IN, CREATED_BY
-- **Indexes**: On both abstracted and original resource IDs for fast lookups
-- **Constraints**: Unique constraints on both node types
-- **Schema Assembly**: Dynamic schema built through rule-based relationship emission
-
-### Testing Strategy
-
-- **Unit Tests**: Mock Azure SDK responses
-- **Integration Tests**: Use testcontainers for Neo4j
-- **E2E Tests**: Full workflow testing with real containers
-- **Coverage Target**: 40% minimum (per pyproject.toml)
-
-### SPA/GUI Architecture
-
-The SPA can run in two modes:
-
-#### Desktop Mode (Electron)
-The Electron-based desktop GUI provides a full-featured interface for all CLI functionality:
-
-**Key Directories:**
-- `spa/main/`: Electron main process (app lifecycle, IPC, subprocess management)
-- `spa/renderer/`: React frontend (UI components, context providers, hooks)
-- `spa/backend/`: Express server (API layer)
-- `spa/tests/`: Comprehensive test suites (unit, integration, e2e)
-
-**Core Features:**
-- **Tabbed Interface**: Scan, Generate Spec, Generate IaC, Create Tenant, Visualize, Agent Mode, Threat Model, Config
-- **Real-time Communication**: WebSocket for live logs and progress updates
-- **Process Management**: Spawns and manages CLI subprocesses
-- **Cross-Platform**: Windows, macOS, and Linux support
-
-#### Web App Mode (NEW)
-Run the SPA as a standalone web application accessible from other machines:
-
-**Key Files:**
-- `spa/backend/src/web-server.ts`: Web server entry point
-- `spa/config/web-server.config.js`: Configuration file
-- `spa/docs/WEB_APP_MODE.md`: Complete setup guide
-
-**Features:**
-- Network-accessible from any browser
-- SSH tunneling support (Azure Bastion)
-- Configurable CORS for remote access
-- Same functionality as desktop mode
-- Lower resource footprint
-
-**Quick Start:**
 ```bash
-cd spa
-npm run build:web
-npm run start:web
-# Access at http://localhost:3000
+/amplihack:ddd:0-help          # Get help and understand DDD
+/amplihack:ddd:prime           # Prime context with DDD overview
+/amplihack:ddd:1-plan          # Phase 0: Planning & Alignment
+/amplihack:ddd:2-docs          # Phase 1: Documentation Retcon
+                               # Phase 2: Approval Gate (manual review)
+/amplihack:ddd:3-code-plan     # Phase 3: Implementation Planning
+/amplihack:ddd:4-code          # Phase 4: Code Implementation
+/amplihack:ddd:5-finish        # Phase 5: Testing & Phase 6: Cleanup
+/amplihack:ddd:status          # Check current phase and progress
 ```
 
-**Configuration:**
+**Benefits:**
+
+- **Prevents context poisoning** - Single source of truth eliminates conflicting
+  docs
+- **Reviewable design** - Catch design flaws before expensive implementation
+- **No drift** - Docs and code never diverge (docs come first by design)
+- **AI-optimized** - Clear specifications prevent wrong decisions
+- **Philosophy-aligned** - Natural fit with ruthless simplicity and modular
+  design
+
+**Documentation**: See `docs/document_driven_development/` for complete guides,
+core concepts, and reference materials.
+
+### Investigation Workflow
+
+Deep knowledge excavation for understanding existing codebases, systems, and
+architectures.
+
+**When to Use:**
+
+- Analyzing codebase structure or system architecture
+- Understanding how components integrate
+- Diagnosing complex bugs with historical context
+- Researching implementation patterns
+- Exploring feature designs before modifications
+
+**What It Does:**
+
+Systematic 6-stage investigation workflow that preserves findings in persistent
+documentation:
+
+- Clarifies investigation scope and objectives
+- Discovers and maps code structure
+- Deep dives with knowledge-archaeologist agent
+- Verifies understanding with practical examples
+- Synthesizes findings into clear reports
+- Optionally generates permanent documentation
+
+**Key Feature - Auto-Documentation:**
+
+After investigations, the agent offers to create persistent docs in
+`.claude/docs/` (ARCHITECTURE*\* or INVESTIGATION*\*) so knowledge persists
+across sessions instead of being lost in chat history.
+
+**Details:**
+
+- **Complete Workflow**: `.claude/workflow/INVESTIGATION_WORKFLOW.md`
+- **Agent Implementation**:
+  `.claude/agents/amplihack/specialized/knowledge-archaeologist.md`
+- **Templates**:
+  `.claude/templates/{investigation,architecture}-doc-template.md`
+- **Storage**: `.claude/docs/` (all generated documentation)
+
+## Claude Code Skills
+
+Amplihack includes **12 production-ready Claude Code Skills** that extend
+capabilities across coding, creative work, and knowledge management.
+
+### What Are Skills?
+
+Skills are modular, reusable capabilities that Claude loads on-demand. Each
+skill is:
+
+- **Token Efficient**: Loads only when needed
+- **Self-Contained**: Independent, testable modules
+- **Philosophy Aligned**: Follows ruthless simplicity and brick design
+- **Production Ready**: Complete with documentation and examples
+
+## Scenario Tools
+
+Amplihack includes production-ready scenario tools that follow the **Progressive
+Maturity Model**:
+
+**Note**: When users request "a tool", they typically mean an executable program
+(scenarios/), not a Claude Code skill (skills/). Build the tool first;
+optionally add a skill that calls it.
+
+### Using Scenario Tools
+
+All scenario tools are accessible via Makefile commands:
+
 ```bash
-export WEB_SERVER_PORT=3000
-export WEB_SERVER_HOST=0.0.0.0  # Listen on all interfaces
-export ENABLE_CORS=true
-export ALLOWED_ORIGINS="*"  # Or specific origins
+# List all available scenario tools
+make list-scenarios
+
+# Get help for the scenarios system
+make scenarios-help
+
+# Run a specific tool
+make analyze-codebase TARGET=./src
+make analyze-codebase TARGET=./src OPTIONS='--format json --depth deep'
 ```
 
-For detailed setup including Azure Bastion connection, see [Web App Mode Guide](spa/docs/WEB_APP_MODE.md) and [Azure Bastion Connection Guide](docs/AZURE_BASTION_CONNECTION_GUIDE.md).
+### Available Scenario Tools
 
-## Common Development Tasks
+- **analyze-codebase**: Comprehensive codebase analysis for insights and
+  recommendations
+- See `make list-scenarios` for the complete current list
 
-### Adding a New Relationship Rule
-1. Create new file in `src/relationship_rules/`
-2. Inherit from `RelationshipRule` base class
-3. Implement `create_relationships()` method
-4. Register in `__init__.py`
+### Creating New Scenario Tools
 
-### Adding a New CLI Command
-1. Add command handler in `src/cli_commands.py`
-2. Register command in `scripts/cli.py`
-3. Add tests in `tests/test_cli_*.py`
+1. **Start Experimental**: Create in `.claude/ai_working/tool-name/`
+2. **Develop and Test**: Build minimal viable version with real usage
+3. **Graduate to Production**: Move to `.claude/scenarios/` when criteria met
 
-### Modifying IaC Generation
-1. Update traverser logic in `src/iac/traverser.py`
-2. Modify emitter in `src/iac/emitters/`
-3. Test with `--dry-run` flag first
+See `.claude/scenarios/README.md` for detailed guidance and templates.
 
-### Working with the SPA/GUI
-1. **Start Development Environment**:
-   ```bash
-   cd spa && npm run dev
-   ```
-2. **Add New UI Components**: Place in `spa/renderer/src/components/`
-3. **Add New Tabs**: Create in `spa/renderer/src/components/tabs/`
-4. **Test Changes**:
-   ```bash
-   cd spa && npm test
-   npm run test:e2e
-   ```
-5. **Build for Production**:
-   ```bash
-   cd spa && npm run build && npm run package
-   ```
+### Graduation Criteria
 
-## Environment Configuration
+Tools move from experimental to production when they achieve:
 
-Required environment variables (see .env.example):
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `NEO4J_PASSWORD` (required)
-- `NEO4J_PORT` (required, configures the Neo4j port)
-- `NEO4J_URI` (optional, defaults to bolt://localhost:${NEO4J_PORT})
-- `OPENAI_API_KEY` (for LLM descriptions)
+- Proven value (2-3 successful uses)
+- Complete documentation
+- Comprehensive test coverage
+- Makefile integration
+- Stability (no breaking changes for 1+ week)
 
-Optional debugging command-line flag:
-- `--debug` (enables verbose debug output including environment variables)
+## Available Tools
 
-## CI/CD Pipeline
+### Claude-Trace Integration
 
-GitHub Actions workflow (`ci.yml`):
-1. Sets up Neo4j service container
-2. Installs dependencies with uv
-3. Runs database migrations
-4. Executes test suite with artifacts
-5. Uploads test results
+Enable debugging and monitoring with claude-trace:
 
-Check CI status: `./scripts/check_ci_status.sh`
+```bash
+# Enable claude-trace mode
+export AMPLIHACK_USE_TRACE=1
 
-### Helpful Scripts
+# Run normally - will use claude-trace if available
+amplihack
 
-- **CI Status Check**: Use the script `@scripts/check_ci_status.sh` to efficiently check CI status
+# Disable (default)
+unset AMPLIHACK_USE_TRACE
+```
 
-## CLI Dashboard Shortcuts
+The framework automatically:
 
-When using the CLI dashboard (during `atg scan` operations):
-- **Press 'x'** to exit the dashboard
-- **Press 'g'** to launch the GUI (SPA) - provides quick access to the desktop interface
-- **Press 'i', 'd', 'w'** to change log levels (INFO, DEBUG, WARNING)
+- Detects when claude-trace should be used
+- Attempts to install claude-trace via npm if needed
+- Falls back to regular claude if unavailable
 
-## Project Memories
+### GitHub Issue Creation
 
-- The CI takes almost 20 minutes to complete. Just run the script and wait for it.
+Create GitHub issues programmatically:
 
-## Recent Bug Fixes (November 2025)
-
-### Bug #89: KeyVault Translator Over-Aggressive Policy Skipping
-**Status**: FIXED (commit cf92e38)
-**Impact**: Enables KeyVault cross-tenant deployment without full identity mapping (+7 tests)
-
-**Problem**: KeyVault access policies were being SKIPPED entirely when identity mapping unavailable, preventing cross-tenant KeyVault deployment.
-
-**Solution**: Changed from "skip policy" to "keep policy with warning". ALWAYS translate tenant_id, keep object_id/application_id unchanged when no mapping available.
-
-**Files Modified**: `src/iac/translators/keyvault_translator.py:323-370`
-
-### Bug #90: Smart Detector Missing enabled and scope Fields
-**Status**: FIXED (commit 69966d9)
-**Impact**: Smart Detector Alert Rules properly convert enabled state and scope (+3 tests)
-
-**Problem**: Missing `enabled` field and empty `scope_resource_ids` (Azure uses both "scope" and "scopes").
-
-**Solution**: Map `state` property to `enabled` boolean, handle both "scope" (singular) and "scopes" (plural) field variants.
-
-**Files Modified**: `src/iac/emitters/terraform_emitter.py:1757-1772`
-
-### Bug #91: Lowercase Azure Type Variants Missing
-**Status**: FIXED (commit b5057d2)
-**Impact**: Tests can now use lowercase Azure type names (+4 tests)
-
-**Problem**: Mapping missing lowercase variants for Smart Detector and DNS zones, causing "unsupported type" errors.
-
-**Solution**: Added lowercase variants to AZURE_TO_TERRAFORM_MAPPING.
-
-**Files Modified**: `src/iac/emitters/terraform_emitter.py:205,232`
-
----
-
-### Bugs #96-99: Tenant Replication Quadruple Breakthrough (Session 1) ⭐⭐⭐
-**Session**: 2025-11-29 23:55 → 2025-11-30 06:50 UTC (6hr)
-**Status**: ALL FIXED & DEPLOYING
-**Total Impact**: 849+ resources unlocked (378% of 387 gap!)
-
-#### Bug #96: Principal ID Abstraction ⭐
-**Status**: FIXED (commits f05ee1b, e32f1af, 25d13eb, dabb3b3)
-**Impact**: 684 role assignments with real GUIDs - FIRST SUCCESSFUL DEPLOYMENT EVER!
-**Verification**: ✅ Deploying in iteration 10
-
-**Problem**: Role assignments had abstracted principal IDs ("principal-xxx") instead of real Azure GUIDs.
-
-**Root Cause**: Traverser queried for `orig.properties AS original_properties` but didn't add it to resource_dict, so emitters never received original GUIDs.
-
-**Solution** (3-file fix chain):
-1. traverser.py:70-73 - Add original_properties to resource_dict
-2. terraform_emitter.py:3544-3553 - Parse JSON and use real principalId for same-tenant
-3. Import json at module level (not in if block)
-
-**Files Modified**:
-- src/iac/traverser.py:70-73,132
-- src/iac/emitters/terraform_emitter.py:3544-3553
-
-#### Bug #97: KeyVault API Version ⭐
-**Status**: FIXED (commit 07d15af)
-**Impact**: 147 KeyVaults (was only 1)
-**Verification**: ✅ Verified in iterations 10-13
-
-**Problem**: Only 1 of 147 KeyVaults in IaC due to validation failures.
-
-**Root Cause**: Resource existence validator used generic fallback API 2021-04-01, but KeyVault requires 2023-02-01+.
-
-**Solution**: Added "vaults": "2023-02-01" to api_versions dict
-
-**Files Modified**: src/iac/validators/resource_existence_validator.py:222
-
-#### Bug #98: Action Groups Case Mismatch ⭐
-**Status**: FIXED (commits 399d74f, c943c68)
-**Impact**: 17 action groups
-**Verification**: ✅ Verified in iteration 12-13
-
-**Problem**: Action groups skipped due to multiple casing mismatches.
-
-**Root Cause**: Azure API returns 3 different casing variants, needed ALL of them.
-
-**Solution** (2 commits):
-1. Added "microsoft.insights/actiongroups" (all lowercase)
-2. Added "Microsoft.Insights/actiongroups" (mixed-case) - THE REAL FIX!
-
-**Files Modified**: src/iac/emitters/terraform_emitter.py:226-227
-
-#### Bug #99: Query Packs Case Mismatch ⭐
-**Status**: FIXED (commits 154ced5, c943c68)
-**Impact**: Query packs
-**Verification**: ✅ Verified in iteration 12-13
-
-**Problem**: Query packs skipped - same casing issues as Bug #98.
-
-**Solution** (2 commits):
-1. Added "microsoft.operationalinsights/querypacks" (all lowercase)
-2. Added "Microsoft.OperationalInsights/querypacks" (mixed-case)
-
-**Files Modified**: src/iac/emitters/terraform_emitter.py:229-231
-
----
-
-### Bugs #100-106: API Version Validation Sweep (Session 2) ⭐
-**Session**: 2025-11-30 07:23 → 07:56 UTC (33min)
-**Status**: ALL FIXED & VERIFIED
-**Total Impact**: Eliminated 222 API validation errors → 0
-
-#### Bug #100: Container Registry API Version
-**Status**: FIXED (commit 5eb0aea)
-**Impact**: Enables Container Registry resources
-
-**Problem**: Using fallback API 2021-04-01 instead of required 2022-12-01+.
-
-**Solution**: Added "registries": "2022-12-01"
-
-**Files Modified**: src/iac/validators/resource_existence_validator.py:245
-
-#### Bug #101: Databricks Workspaces API Version
-**Status**: FIXED (commit 5eb0aea)
-**Impact**: Enables Databricks workspaces
-
-**Problem**: "workspaces" ambiguous - used by both Databricks (needs 2024-05-01) and OperationalInsights (needs 2023-09-01).
-
-**Solution**: Provider-specific detection:
 ```python
-if resource_type == "workspaces" and provider == "Microsoft.Databricks":
-    return "2024-05-01"
+from .claude.tools.github_issue import create_issue
+result = create_issue(title="Bug report", body="Details here")
 ```
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:212-215
+### CI Status Checker
 
-#### Bug #102: CosmosDB API Version
-**Status**: FIXED (commit 5eb0aea)
-**Impact**: Enables CosmosDB database accounts
+Check GitHub Actions CI status:
 
-**Solution**: Added "databaseAccounts": "2024-08-15"
+```python
+from .claude.tools.ci_status import check_ci_status
+status = check_ci_status()  # Check current branch
+status = check_ci_status(ref="123")  # Check PR #123
+```
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:246
+## Testing & Validation
 
-#### Bug #103: DNS Zones camelCase Variant
-**Status**: FIXED (commit b2c207d)
-**Impact**: Enables DNS zones
+After code changes:
 
-**Problem**: Dict has "dnszones" but Azure returns "dnsZones" (camelCase).
+1. Run tests if available
+2. Check philosophy compliance
+3. Verify module boundaries
+4. Update .claude/context/DISCOVERIES.md with learnings
 
-**Solution**: Added both "dnszones" and "dnsZones": "2018-05-01"
+## Self-Improvement
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:248-249
+The system should continuously improve:
 
-#### Bug #104: Redis Cache API Version
-**Status**: FIXED (commit b2c207d)
-**Impact**: Enables Redis Cache resources
+- Track patterns in `.claude/context/PATTERNS.md`
+- Document discoveries in `.claude/context/DISCOVERIES.md`
+- Update agent definitions as needed
+- Create new agents for repeated tasks
 
-**Solution**: Added "Redis": "2024-03-01"
+## Success Metrics
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:251
+We measure success by:
 
-#### Bug #105: Action Groups API Version ⭐
-**Status**: FIXED (commit 4596b90)
-**Impact**: Critical - prevents validation errors for 17 action groups
+- Code simplicity and clarity
+- Module independence
+- Agent effectiveness
+- Knowledge capture rate
+- Development velocity
 
-**Problem**: Bug #98 added type mapping, but resources still failed validation with API 2021-04-01.
+## User Preferences
 
-**Discovery**: TWO-PHASE bug pattern - need BOTH type mapping AND API version!
+### MANDATORY Preference Enforcement
 
-**Solution**: Added "actiongroups" and "actionGroups": "2023-01-01"
+User preferences in `.claude/context/USER_PREFERENCES.md` are MANDATORY and MUST
+be strictly followed by all agents and Claude Code operations. These are NOT
+advisory suggestions - they are REQUIRED behaviors that CANNOT be optimized away
+or ignored.
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:252-253
+**Priority Hierarchy (Highest to Lowest):**
 
-#### Bug #106: Query Packs API Version
-**Status**: FIXED (commit b0e2b94)
-**Impact**: Prevents validation errors for query packs
+1. **EXPLICIT USER REQUIREMENTS** (HIGHEST PRIORITY - NEVER OVERRIDE)
+   - Direct user instructions in quotes ("do X")
+   - Explicit requirements like "ALL files" or "include everything"
+   - These take precedence over all other guidance
 
-**Problem**: Same two-phase pattern as Bug #105.
+2. **USER_PREFERENCES.md** (MANDATORY - MUST FOLLOW)
+   - Communication style (formal, casual, technical, or custom like pirate)
+   - Verbosity level (concise, balanced, detailed)
+   - Collaboration style (independent, interactive, guided)
+   - Update frequency (minimal, regular, frequent)
+   - Priority type (features, bugs, performance, security)
+   - Preferred languages, coding standards, workflow preferences
+   - Learned patterns from user feedback
 
-**Solution**: Added "querypacks" and "queryPacks": "2023-09-01"
+3. **PROJECT PHILOSOPHY** (Strong guidance)
+   - PHILOSOPHY.md principles
+   - PATTERNS.md approaches
+   - TRUST.md guidelines
 
-**Files Modified**: src/iac/validators/resource_existence_validator.py:254-255
+4. **DEFAULT BEHAVIORS** (LOWEST PRIORITY - Override when needed)
+   - Standard Claude Code behavior
+   - Default communication patterns
 
-**Key Learning**: Many resource types need BOTH type mapping (emitter) AND API version (validator) to work!
+### User Preference Application
+
+**Ruthlessly Simple Approach:**
+
+1. **Session Start**: USER_PREFERENCES.md is automatically imported at session
+   start with MANDATORY enforcement
+2. **Every Response**: Check and apply preferences BEFORE responding
+3. **Agent Invocation**: Pass preference context to all agents
+4. **No Complex Systems**: No hooks, validators, or injection frameworks - just
+   direct application
+
+**Example Usage:**
+
+```
+User Preference: communication_style = "pirate"
+
+Every response must use pirate language:
+- "Arr matey, I'll be implementin' that feature fer ye!"
+- "Shiver me timbers, found a bug in the code!"
+- "Ahoy! The tests be passin' now!"
+```
+
+**What We DON'T Do:**
+
+- Ignore preferences because "it seems unnecessary"
+- Override preferences for "simplification"
+- Treat preferences as optional suggestions
+- Add complex preference injection frameworks
+
+**Enforcement Mechanism:**
+
+- Command `/amplihack:customize` manages preferences via simple Read/Edit/Write
+  operations
+- No bash scripts or complex automation
+- Claude Code directly reads and applies preferences
+- Changes persist across sessions
+
+### Managing Preferences
+
+Use `/amplihack:customize` to manage preferences:
+
+```bash
+/amplihack:customize set verbosity concise
+/amplihack:customize set communication_style pirate
+/amplihack:customize show
+/amplihack:customize reset verbosity
+/amplihack:customize learn "Always include unit tests with new functions"
+```
+
+This command uses Claude Code's native Read, Edit, and Write tools to modify
+`.claude/context/USER_PREFERENCES.md` directly - no bash scripts, no complex
+automation, just simple file operations.
 
 ---
 
-### Bug #107: ARM/Bicep Emitter Missing source_tenant_id Parameter
-**Status**: FIXED (commit ad76370)
-**Impact**: Fixes AttributeError in ARM and Bicep emitters
-**Verification**: ✅ ARM/Bicep emitter tests now passing (4/5 each)
+Remember: You are the orchestrator working with specialized agents. Delegate
+liberally, execute in parallel, and continuously learn.
 
-**Problem**: ARM and Bicep emitters crashed with AttributeError when attempting same-tenant detection:
-- Line 148 (ARM): `self.source_tenant_id` accessed but never defined
-- Line 243 (Bicep): `self.source_tenant_id` accessed but never defined
+# tool vs skill
 
-**Root Cause**: Code tries to detect same-tenant deployment by comparing source and target tenant IDs, but __init__ never accepted or set source_tenant_id parameter.
+**PREFERRED PATTERN:** When user says "create a tool" → Build BOTH:
 
-**Solution**: Added source_tenant_id parameter to both emitters:
-```python
-def __init__(
-    self,
-    ...
-    source_tenant_id: Optional[str] = None,  # Bug #107 fix
-):
-    ...
-    self.source_tenant_id = source_tenant_id  # Bug #107 fix
-```
-
-**Files Modified**:
-- src/iac/emitters/arm_emitter.py:34,46,52
-- src/iac/emitters/bicep_emitter.py:29,39,45
-
----
-
-### Bug #108: Redis Resource ID Casing Normalization
-**Status**: FIXED (commit 5b362c8)
-**Impact**: Fixes 15 Redis cache import errors in deployment
-**Verification**: ✅ Iteration 14 uses lowercase 'redis'
-
-**Problem**: Terraform plan failed for Redis caches with error:
-```
-parsing segment "staticRedis": the segment at position 6 didn't match
-Expected: /providers/Microsoft.Cache/redis/redisName
-Got:      /providers/Microsoft.Cache/Redis/redisName
-```
-
-**Root Cause**: Azure uses "Microsoft.Cache/Redis" (capital R) in resource IDs, but Terraform's azurerm provider expects "Microsoft.Cache/redis" (lowercase r).
-
-**Solution**: Added Redis casing normalization to _normalize_azure_resource_id():
-```python
-(
-    r"/Microsoft\.Cache/Redis/",
-    "/Microsoft.Cache/redis/",
-),
-```
-
-**Files Modified**: src/iac/emitters/terraform_emitter.py:5121-5125
-
-**Context**: Discovered during iteration 13 deployment attempt. Plan showed 26 errors, 15 were Redis casing issues. This fix eliminates all Redis import errors.
-
----
-
-### Bug #109: QueryPack Resource ID Casing Normalization
-**Status**: FIXED (commit feddac9)
-**Impact**: Fixes query pack import errors (similar to Bug #108)
-
-**Problem**: Terraform plan fails for query packs with parsing error similar to Redis casing issue.
-
-**Root Cause**: Azure uses 'QueryPacks' or 'queryPacks' in resource IDs but Terraform expects lowercase 'querypacks'.
-
-**Solution**: Added QueryPack normalization to _normalize_azure_resource_id():
-```python
-(
-    r"/Microsoft\.OperationalInsights/[Qq]ueryPacks/",
-    "/Microsoft.OperationalInsights/querypacks/",
-),
-```
-
-**Files Modified**: src/iac/emitters/terraform_emitter.py:5126-5130
-
----
-
-### Bug #92: TransformationEngine YAML Loading Error
-**Status**: FIXED (commit b065e55)
-**Impact**: TransformationEngine can now load rules files (+1 test)
-
-**Problem**: Engine failed to load rules files with error "'YAML' object has no attribute 'safe_load'". Code imported `YAML` class from ruamel.yaml but tried to use it like standard library `yaml.safe_load()`.
-
-**Solution**: Create YAML instance and use its load() method instead of calling nonexistent class method.
-
-**Files Modified**: `src/iac/engine.py:70-73`
-
-### Bug #93: Same-Tenant Detection Failure When Azure CLI Unavailable ⭐
-**Status**: FIXED & VERIFIED (commits 9d6e915, 23051c8)
-**Impact**: Prevents loss of 1,017 role assignments in Issue #502 same-tenant deployments
-**Verification**: ✅ COMPLETE SUCCESS - Role assignments generated in Terraform IaC (verified 2025-11-27)
-
-**Problem**: When running `generate-iac --target-tenant-id X` without `--source-tenant-id` and Azure CLI not logged in:
-- Code tries to get source tenant from `az account show` (cli_handler.py:601-614)
-- Azure CLI unavailable → source tenant defaults to None
-- Comparison: `None != X` → falsely detected as "cross-tenant mode"
-- Cross-tenant mode without identity mapping → SKIPS ALL ROLE ASSIGNMENTS
-
-**Root Cause**: No fallback for source tenant when Azure CLI unavailable (subscription had fallback, tenant didn't).
-
-**Solution**:
-1. **cli_handler.py:629-641**: Added intelligent fallback - if target specified but source unknown AND no identity mapping file, assume same-tenant (source = target)
-2. **ARM emitter (arm_emitter.py:145-158)**: Added is_same_tenant detection before skip
-3. **Bicep emitter (bicep_emitter.py:240-253)**: Added is_same_tenant detection
-4. **Modular Terraform (terraform/handlers/identity/role_assignment.py:72-90)**: Added is_same_tenant detection
-
-**Files Modified**: 4 files, 45 lines changed
-
-**Verification**: Log evidence shows fix working - same-tenant mode correctly detected
-
-### Bug #94: Database Corruption from Missing `upsert_generic` Method ⭐⭐
-**Status**: ALREADY FIXED (commit 63f06a9 - just requires fresh scan)
-**Impact**: 0 role assignments in old database (1,017 resources affected in Issue #502)
-
-**Root Cause**: Database created with code BEFORE commit 63f06a9 which lacked `upsert_generic` method, causing 1,496 AttributeErrors and loss of 1,214 resources (44% data loss) including ALL role assignments.
-
-**What Actually Happened**:
-1. Phase 1.5 DID execute successfully (discovered 676 role assignments)
-2. ResourceProcessor called relationship rules (TagRule, RegionRule)
-3. Rules called non-existent `db_ops.upsert_generic()` method
-4. 1,496 AttributeErrors occurred (silent failures in relationship creation)
-5. Resources processed but relationships failed → 1,214 resources lost
-
-**Previous Understanding (WRONG)**:
-- ❌ "Phase 1.5 never executes" - FALSE (it executed perfectly)
-- ❌ "Discovery problem" - FALSE (discovery worked, processing failed)
-- ❌ "Needs investigation" - FALSE (already fixed by commit 63f06a9)
-
-**The Fix** (commit 63f06a9 - Nov 26):
-- Added missing `upsert_generic()` method to NodeManager (+86 lines)
-- File: `src/services/resource_processing/node_manager.py:499-586`
-- Fixed relationship rule failures
-
-**Verification**: Fresh scan with current code shows 0 `upsert_generic` errors (fix working)
-
-**Solution**: Re-scan with current main branch code (commit 63f06a9 or later)
-
-**Documentation**: `/tmp/BUG_94_FINAL_ROOT_CAUSE.md`, `/tmp/BUG_94_CORRECTED_UNDERSTANDING.md`
-
-### Bug #95: Phase 2 Uses Wrong API for Role Assignments ⭐
-**Status**: FIXED & VERIFIED (2025-11-27) | **GitHub**: Blocks Issue #502
-**Impact**: 100% role assignment loss (0/684 saved) - discovered during Bug #94 verification
-**Verification**: ✅ COMPLETE SUCCESS - 930+ role assignments saved (136% of expected!)
-
-**Problem**: Role assignments discovered in Phase 1.5 were not saved to Neo4j database. Phase 2 property fetching attempted to use `ResourceManagementClient.resources.get_by_id()` for role assignments, but this API only supports ARM resources, not Authorization resources.
-
-**Root Cause**: Phase 2 assumes all resources can be fetched via `ResourceManagementClient`, but role assignments require `AuthorizationManagementClient`. Role assignments already have full properties from Phase 1.5, making Phase 2 fetching redundant and error-prone.
-
-**Discovery Timeline**:
-1. Bug #94 verification scan completed with 0 role assignments in database
-2. Found 18 AuthorizationFailed errors in scan log
-3. Traced to Phase 2 trying to fetch role assignments with wrong API client
-4. Phase 1.5 already provides complete role assignment properties
-
-**Solution** (5-line fix):
-```python
-# In azure_discovery_service.py:_fetch_single_resource_with_properties
-resource_type = resource.get("type", "")
-if resource_type == "Microsoft.Authorization/roleAssignments":
-    logger.debug("Skipping Phase 2 for role assignment (already has full properties)")
-    return resource  # Skip Phase 2 fetching
-```
-
-**Why This Works**:
-- Phase 1.5 uses `AuthorizationManagementClient.role_assignments.list_for_subscription()`
-- Already extracts all properties (principalId, roleDefinitionId, scope, etc.)
-- No need for Phase 2 to re-fetch with different API
-- Eliminates 403 AuthorizationFailed errors
-
-**Files Modified**:
-- `src/services/azure_discovery_service.py:727-735` (add skip logic)
-
-**Verification**:
-1. Clear database: `MATCH (n) DETACH DELETE n;`
-2. Re-run scan with fix
-3. Expected: 684 role assignments saved ✅
-
-**Related**:
-- Bug #93: Same-tenant role assignment generation (needs data to verify)
-- Bug #94: Database corruption (was false alarm - Bug #95 was real cause)
-- Bug #67: Cross-tenant principal ID translation (needs data to verify)
-- Issue #502: 1,017 role assignment gap (blocked by Bug #95)
-
-**Documentation**: `/tmp/BUG_95_ROOT_CAUSE_FINAL.md`, `/tmp/BUG_95_PERMISSIONS_ISSUE.md`
-
-### Bug #59: Subscription ID Abstraction in Dual-Graph Properties ⭐
-**Status**: FIXED (commit faeb284)  
-**Impact**: Eliminates manual sed replacements for cross-tenant deployments
-
-**Problem**: Abstracted Resource nodes in Neo4j had source subscription IDs embedded in properties JSON (roleDefinitionId, scope fields), requiring manual replacement of 2,292 occurrences before deployment.
-
-**Root Cause**: `resource_processor.py:_create_abstracted_node()` abstracted principalId but not subscription IDs.
-
-**Solution**: 
-1. ResourceProcessor: Replace subscription IDs with `/subscriptions/ABSTRACT_SUBSCRIPTION` placeholder at scan time
-2. TerraformEmitter: Update regex to replace placeholder with target subscription at IaC generation time
-
-**Files Modified**:
-- `src/resource_processor.py:528-555`
-- `src/iac/emitters/terraform_emitter.py:3234,3248`
-
-**Documentation**: See `docs/BUG_59_DOCUMENTATION.md` for technical deep dive.
-
-### Bug #57: NIC NSG Deprecated Field
-**Status**: FIXED (commit 2011688)
-
-**Problem**: `network_security_group_id` field deprecated in azurerm provider.
-
-**Solution**: Use `azurerm_network_interface_security_group_association` resources instead.
-
-### Bug #58: Skip NIC NSG When NSG Not Emitted
-**Status**: FIXED (commit 7651fde)
-
-**Problem**: NIC NSG associations created for NSGs that weren't emitted, causing undeclared resource errors.
-
-**Solution**: Validate NSG exists in `_available_resources` before creating association.
-
-### Bug #67: Role Assignment Principal ID Not Translated in Cross-Tenant Mode ⭐
-**Status**: FIXED (commit 30082dc) | **GitHub**: Related to Issue #475, #502
-**Impact**: Enables cross-tenant role assignment deployment with identity mapping
-
-**Problem**: Principal IDs in role assignments were using RAW source tenant GUIDs even when `identity_mapping` was provided, causing cross-tenant deployment failures.
-
-**Root Cause**: Role assignment handler wasn't calling translation logic for principal IDs. The code path existed but wasn't being used.
-
-**Solution**:
-1. Added `_translate_principal_id()` method to role assignment handler
-2. Calls identity mapping lookup for users, groups, service principals, managed identities
-3. Translates source principal ID → target principal ID
-4. Skips role assignment if principal not found in mapping (prevents deployment hang)
-5. Logs all translations for debugging
-
-**Behavior**:
-- **With identity_mapping**: Translates principal IDs using provided mapping file
-- **Without identity_mapping (cross-tenant)**: Skips role assignments with warning
-- **Same-tenant**: No translation needed (Bug #93 handles generation)
-
-**Files Modified**:
-- `src/iac/emitters/terraform/handlers/identity/role_assignment.py:92-159`
-- `src/iac/emitters/arm_emitter.py` (added translation support)
-- `src/iac/emitters/bicep_emitter.py` (added translation support)
-
-**Related Fixes**:
-- Bug #93: Fixed same-tenant role assignment generation
-- Bug #67: Fixed cross-tenant principal ID translation (this bug)
-- Together: Enables role assignments in BOTH same-tenant AND cross-tenant scenarios
-
-**Testing**: Requires identity_mapping.json file with source→target principal ID mappings. See docs/cross-tenant/IDENTITY_MAPPING.md for format.
-
-### Bug #68: Provider Name Case Sensitivity in Resource IDs
-**Status**: FIXED (commit d8ef246) | **GitHub**: Issue #498
-
-**Problem**: Terraform plan failed with 85 validation errors. Neo4j stored lowercase provider names (`microsoft.operationalinsights`) but Terraform requires proper case (`Microsoft.OperationalInsights`).
-
-**Root Cause**: Cross-tenant resource ID translation preserved original casing from Neo4j without normalization.
-
-**Solution**: Added `_normalize_provider_casing()` method to BaseTranslator that normalizes 9 common Microsoft providers. Called automatically in `_translate_resource_id()` so all translators inherit the fix.
-
-**Impact**: Unlocked 85 resources (68 OperationalInsights, 15 Insights, 2 KeyVault). Enabled clean terraform plan for 3,682 resources (50.6% success rate).
-
-**Files Modified**:
-- `src/iac/translators/base_translator.py:321-352, 380-381, 389-390`
-
-**Documentation**: See `docs/BUG_68_DOCUMENTATION.md` for technical deep dive.
-
-### Bug #87: Smart Detector Alert Rules Invalid Location Field ⭐
-**Status**: FIXED (commit f43a32d) | **Issue**: #502
-
-**Problem**: All 72 `azurerm_monitor_smart_detector_alert_rule` resources failed terraform plan validation with "Extraneous JSON object property 'location'" errors. The Smart Detector resource type does not support a location argument.
-
-**Root Cause**: The emitter was including location from `build_base_config()` which adds location by default for most resources, but Smart Detector Alert Rules don't accept this field.
-
-**Solution**: Added `resource_config.pop("location", None)` after Smart Detector configuration to remove the invalid field.
-
-**Impact**: Fixed terraform validation for all 72 Smart Detector Alert Rules. Part of eliminating all terraform plan errors for Issue #502.
-
-**Files Modified**:
-- `src/iac/emitters/terraform_emitter.py:1771`
-
-### Bug #88: Action Group Resource ID Case Sensitivity ⭐
-**Status**: FIXED (commit 1d63c66) | **Issue**: #502
-
-**Problem**: All 72 Smart Detector Alert Rules failed terraform plan with "ID was missing the `actionGroups` element" errors. Action group resource IDs had incorrect casing: `/subscriptions/{}/resourcegroups/{}/providers/microsoft.insights/actiongroups/{}`.
-
-**Root Cause**: Azure API returns action group IDs with lowercase "resourcegroups" and "actiongroups", but Terraform requires proper camelCase: "resourceGroups" and "actionGroups".
-
-**Solution**:
-1. Enhanced `_normalize_azure_resource_id()` to fix "resourcegroups" → "resourceGroups" and "actiongroups" → "actionGroups" casing
-2. Applied normalization to action group IDs in Smart Detector emitter using list comprehension
-
-**Impact**: Fixed all remaining 72 terraform validation errors. **After Bug #87 & #88 fixes: terraform plan validates with 0 configuration errors!** Enables deployment-ready IaC for Issue #502.
-
-**Files Modified**:
-- `src/iac/emitters/terraform_emitter.py:1766` (normalize action group IDs)
-- `src/iac/emitters/terraform_emitter.py:5105-5106` (enhanced normalization function)
-
-**Documentation**: See `/tmp/BUG_88_ACTION_GROUP_ID_FORMAT.md` for technical details.
-
-### Bug #69: Missing account_kind Field for Storage Accounts
-**Status**: FIXED (commit 4daf659) | **GitHub**: Issue #499
-
-**Problem**: Storage accounts had 0/91 success rate (0%) despite being correctly generated in IaC.
-
-**Root Cause**: The required `account_kind` field was missing from Terraform configuration in terraform_emitter.py:1715-1723.
-
-**Solution**: Added `account_kind` field with default value "StorageV2" (most common type).
-
-**Impact**: Unlocks 91 storage accounts (1.25% of 7,273 total resources). Success rate: 0% → expected 95%.
-
-**Files Modified**:
-- `src/iac/emitters/terraform_emitter.py:1722`
-
-**Evidence**: StorageAccountTranslator processed all 91/91 successfully, but Terraform requires account_kind for deployment.
-
-### Bug #70: Missing smartDetectorAlertRules Emitter Support ⭐
-**Status**: FIXED (commit 46647e5)
-**Impact**: +31 resources unlocked (0.4% improvement)
-
-**Problem**: 31 Azure smartDetectorAlertRules were being skipped because type mapping was commented out in terraform_emitter.py.
-
-**Root Cause**: Missing field mappings for required Terraform fields (frequency, severity, scope_resource_ids, detector_type, action_group).
-
-**Solution**:
-1. Uncommented type mapping at line 262
-2. Added field mapping logic at lines 1725-1746
-
-**Files Modified**:
-- `src/iac/emitters/terraform_emitter.py:262,1725-1746`
-
-**Testing**: Quick win - ready for next IaC generation. GitHub Issue: #500
-
-### Bug #43: SQL Database Names with Forward Slashes ⭐
-**Status**: FIXED (commit 0cafe21) | **GitHub**: Issue #469
-**Impact**: Fixes Terraform validation errors for child resources with parent/child naming
-
-**Problem**: Terraform validation fails for SQL databases with forward slashes in names. Azure uses parent/child format (`server_name/database_name`) but Terraform `name` property cannot contain `/`.
-
-**Example Error**:
-```
-Error: a valid name can't contain '/'
-  with resource.azurerm_mssql_database.purviewmetabasedemo2_purview_demo_tenant
-  "name": "purviewmetabasedemo2/purview_demo_tenant"
-```
-
-**Root Cause**: SQL Database handler used full Azure resource name (with parent prefix) in Terraform config. The Terraform resource identifier was sanitized (`server_database`), but the `name` property still contained the slash.
-
-**Solution**: Extract child resource name from parent/child format:
-```python
-# Bug #43: Strip parent prefix from child resource names
-database_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
-config = {
-    "name": database_name,  # Use child name only
-    "server_id": f"${{azurerm_mssql_server.{server_safe}.id}}",
-}
-```
-
-**Why This Works**:
-- Azure format: `purviewmetabasedemo2/purview_demo_tenant`
-- Extracted child: `purview_demo_tenant`
-- Parent reference maintained via `server_id`
-
-**Files Modified**:
-- `src/iac/emitters/terraform/handlers/database/sql_database.py:57-64`
-
-**Note**: VM extensions and VM run commands already handle this correctly (use child name only). Bug only affected SQL databases.
-
-**Testing**: Generate IaC with SQL databases containing `/`, run `terraform validate`
-
-### Bug #72: Skip Entra ID Users in Same-Tenant Deployments (Issue #496 Problem #2) ⭐
-**Status**: FIXED & VERIFIED WORKING (commits abc0770, 9101bef, 5acbbdf, bf57224)
-**Impact**: Eliminates 219 user conflicts in same-tenant deployments
-
-**Problem**: 219 Entra ID users fail in same-tenant deployments because they already exist (source tenant == target tenant).
-
-**Root Cause (Primary)**: EntraUserHandler blindly creates all users without checking if deployment is same-tenant.
-**Root Cause (Secondary - CRITICAL)**: Attribute name mismatch caused fix to not work initially
-- Code checked: `self._source_tenant_id` (with underscore)
-- Actual attribute: `self.source_tenant_id` (without underscore)
-
-**Solution**:
-1. Added same-tenant detection logic (commits abc0770, 5acbbdf)
-2. Fixed attribute names (commit bf57224) - removed underscore prefixes
-- Detect when source_tenant_id == target_tenant_id
-- Skip user emission with debug message
-- Returns None to prevent duplicate user creation
-
-**Files Modified**:
-- `src/iac/emitters/terraform/handlers/identity/entra_user.py:44-57` (handler version)
-- `src/iac/emitters/terraform_emitter.py:2503-2528` (production version)
-- `src/iac/emitters/terraform_emitter.py:2507-2509` (attribute name fix)
-
-**Verification** (2025-11-26): ✅ PASSED
-- Before fix: 219 users generated in same-tenant mode
-- After bf57224: 0 users generated
-- Tests: 47/48 PASSED
-- GitHub Issue: #501
-
-
-## Recent Code Improvements (November 2025)
-
-### Dependency Validation Enhancement
-**Commit**: feat: Add DependencyValidator and enhance TerraformEmitter
-
-**Purpose**: Prevent "undeclared resource" Terraform errors by validating references before emission
-
-**New Files**:
-- `src/iac/validators/dependency_validator.py` - Terraform validation integration
-  - Runs `terraform validate -json`
-  - Parses undeclared resource errors
-  - Returns structured dependency errors
-
-**Enhanced Files**:
-- `src/iac/emitters/terraform_emitter.py`
-  - `_validate_all_references_in_config()` - Recursively validates resource references
-  - NSG association validation - Checks both subnet and NSG exist before creating associations
-  - Skips resources with missing dependencies (prevents invalid IaC)
-
-**Benefits**:
-- Fixes Bug #58: NSG associations for non-existent NSGs
-- Prevents entire category of Terraform errors
-- Clear warning messages for debugging
-- Improves IaC generation quality
-
-**Usage**:
-```python
-from src.iac.validators import DependencyValidator
-
-validator = DependencyValidator()
-result = validator.validate(Path("/tmp/iac_output"))
-if not result.valid:
-    for error in result.errors:
-        print(f"{error.resource_type}.{error.resource_name}: {error.missing_reference}")
-```
-
-### Iteration 19 Breakthrough (2025-11-25) ✅
-**Status**: 🟢 MAJOR SUCCESS - Replication loop now operational
-**Resources Deployed**: **902** (vs 81-resource ceiling)
-**Improvement**: **11.1x** increase
-
-**Bugs Fixed This Session**:
-
-1. **Bug #60: Service Principal Authentication** ✅ (Commits: .env update)
-   - Root cause: Wrong SP credentials in .env (source tenant SP doesn't exist in target)
-   - Fix: Updated .env with target tenant SP (30acd0d7-08b8-40d2-901d-17634bf19136)
-   - Impact: 228 import blocks generated (was 0), broke the "81-Resource Pattern"
-
-2. **Bug #61: Case-Insensitive Type Lookup** ✅ (Commit: 31d8132)
-   - Root cause: Azure API returns "microsoft.insights", mapping expects "Microsoft.Insights"
-   - Fix: Added `_normalize_azure_type()` helper in terraform_emitter.py:128-166
-   - Impact: Infrastructure for case-insensitive lookups
-
-3. **Bug #62: Missing Proper-Case Variants** ✅ (Commit: 53e675e)
-   - Fix: Added Microsoft.Insights/components and actiongroups proper-case mappings
-   - Impact: +36 resources unlocked
-
-4. **Bug #63: Missing Terraform-Supported Types** ✅ (Commit: 76e72a3)
-   - Fix: Added 17 Azure types (Databricks, Synapse, Purview, Communication, etc.)
-   - Impact: +48 resources, 55 types unlocked (117 → 62 unsupported)
-
-5. **Bug #64: Missing Lowercase Variants** ✅ (Commit: 56c22c1)
-   - Fix: Added operationalinsights, metricalerts, VM extensions lowercase mappings
-   - Impact: +22 resources (15 Log Analytics Workspaces!)
-
-6. **Bug #65: Complete Linting Cleanup** ✅ (Commit: 3cc5c5c)
-   - Fix: Resolved all 193 Ruff linting errors
-   - Impact: Clean codebase, production-ready
-
-**New Blockers Discovered**:
-
-1. 🔴 **Limited Import Strategy** (711 resources affected)
-   - Issue: `--import-strategy resource_groups` only imports RGs, not child resources
-   - Solution: Use `--import-strategy all_resources` for next iteration
-   - Expected: +711 import blocks → +711 resources
-
-2. 🔴 **Entra ID User Conflicts** (219 users affected)
-   - Issue: Same-tenant deployment tries to create existing users
-   - Solution: Skip azuread_user when source==target tenant
-   - Expected: +219 resources or graceful skip
-
-**Deployment Metrics**:
-- Import blocks: 228 (resource groups only)
-- Resources created: 615
-- Resources imported: 228
-- Total in state: 902
-- Deployment time: 4h 26min
-
-**Next Steps**:
-- Use `--import-strategy all_resources` to unlock 711 more imports
-- Add same-tenant user detection/skipping
-- Continue mapping expansion for remaining 62 unsupported types
-
-**Documentation**:
-- See `/tmp/COMPREHENSIVE_SESSION_SUMMARY.md` for complete session analysis
-- See `/tmp/ITERATION_19_FINAL_RESULTS.md` for detailed results and blockers
-- See `/tmp/00_PROJECT_STATUS_INDEX_UPDATED.md` for current status
-
-
-### Bug #73: Import Block Generation for Child Resources (Issue #502) ⭐
-**Status**: FIXED (PR #503, commit 8158080)
-**Impact**: +1,369 import blocks (+600% increase)
-
-**Problem**: Import blocks only generated for 228/3,621 resources (6%), causing 2,600+ "already exists" errors during same-tenant deployments.
-
-**Root Cause**: `_build_azure_resource_id()` in terraform_emitter.py assumed ALL Azure resources follow single Resource Group ID pattern. But Azure uses 4+ different patterns!
-
-**Solution**: Created `resource_id_builder.py` with strategy pattern for multi-pattern ID construction:
-- Resource Group Level: Standard Azure resources
-- Child Resources: Subnets with parent VNet reference
-- Subscription Level: Role assignments with scope handling
-- Association Resources: Compound IDs for NSG associations
-
-**Impact**: Import blocks 228 → 1,597
-- Unlocked 266 subnets
-- Unlocked 1,017 role assignments
-- Unlocked 86 NSG associations
-
-**Files Modified**:
-- NEW: `src/iac/resource_id_builder.py` (403 lines)
-- NEW: `tests/iac/test_resource_id_builder.py` (29 tests, 88% coverage)
-- MODIFIED: `src/iac/emitters/terraform_emitter.py`
-
-**Testing**: 29 unit tests, 100% pass rate, CI passed
-
----
-
-### Emitter Coverage Expansion (Fixes #74-82): 9 Resource Types Added
-
-**Status**: ALL COMMITTED to main (commits 36d25eb - 18ae0a8)
-**Impact**: +9 supported resource types (55 → 64)
-
-All previously excluded resource types now have full emitter support:
-
-1. **Microsoft.Synapse/workspaces** (36d25eb)
-2. **Microsoft.Purview/accounts** (db69bcb)
-3. **Microsoft.Portal/dashboards** (199b622)
-4. **Microsoft.Communication/CommunicationServices** (93c0f8c)
-5. **Microsoft.App/jobs** (594d114)
-6. **Microsoft.Communication/EmailServices** (594d114)
-7. **Microsoft.Insights/workbooks** (12c39b6)
-8. **Microsoft.Compute/galleries/images** (a107bb0)
-9. **Microsoft.Insights/scheduledqueryrules** (18ae0a8)
-
----
-
-### Bug #83: NodeManager Missing upsert_generic Methods
-**Status**: FIXED (commit 63f06a9)
-**Impact**: Eliminated 1,938 relationship creation errors during scan
-
-**Problem**: RegionRule and TagRule relationship rules failing with AttributeError during scan.
-
-**Root Cause**: ResourceProcessor refactoring (commit 5c10d20) didn't migrate `upsert_generic()` and `create_generic_rel()` methods to NodeManager.
-
-**Solution**: Added both missing methods to NodeManager class.
-
-**Impact**: Unblocks all relationship creation (Region, Tag, Identity, Network, Diagnostic rules)
-
-**Files Modified**:
-- `src/services/resource_processing/node_manager.py` (+86 lines)
-
+1. Executable tool in `.claude/scenarios/` (the program itself)
+2. Skill in `.claude/skills/` that calls the tool (convenient interface)
