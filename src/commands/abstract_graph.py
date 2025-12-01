@@ -29,6 +29,12 @@ console = Console()
     help="Target number of nodes in abstraction",
 )
 @click.option(
+    "--method",
+    type=click.Choice(["stratified", "embedding"], case_sensitive=False),
+    default="stratified",
+    help="Sampling method: stratified (uniform) or embedding (importance-weighted)",
+)
+@click.option(
     "--seed", type=int, default=None, help="Random seed for reproducible sampling"
 )
 @click.option(
@@ -49,13 +55,49 @@ console = Console()
     default=None,
     help="Comma-separated pattern names to preserve (default: all HIGH criticality)",
 )
+@click.option(
+    "--dimensions",
+    type=int,
+    default=128,
+    help="Embedding dimensions for embedding method (default: 128)",
+)
+@click.option(
+    "--walk-length",
+    type=int,
+    default=80,
+    help="Random walk length for embedding method (default: 80)",
+)
+@click.option(
+    "--num-walks",
+    type=int,
+    default=10,
+    help="Number of walks per node for embedding method (default: 10)",
+)
+@click.option(
+    "--hub-weight",
+    type=float,
+    default=2.0,
+    help="Weight multiplier for hub nodes in embedding method (default: 2.0)",
+)
+@click.option(
+    "--bridge-weight",
+    type=float,
+    default=2.0,
+    help="Weight multiplier for bridge nodes in embedding method (default: 2.0)",
+)
 def abstract_graph(
     tenant_id: str,
     sample_size: int,
+    method: str,
     seed: int | None,
     clear: bool,
     preserve_security_patterns: bool,
     security_patterns: str | None,
+    dimensions: int,
+    walk_length: int,
+    num_walks: int,
+    hub_weight: float,
+    bridge_weight: float,
 ) -> None:
     """Create abstracted subset of Azure tenant graph with optional security preservation.
 
@@ -66,6 +108,7 @@ def abstract_graph(
     Examples:
         Basic sampling (original behavior):
         atg abstract-graph --tenant-id abc-123 --sample-size 100 --clear
+        atg abstract-graph --tenant-id abc-123 --sample-size 100 --method embedding
 
         Security-aware sampling (preserve HIGH criticality patterns):
         atg abstract-graph --tenant-id abc-123 --sample-size 100 --preserve-security-patterns
@@ -76,10 +119,15 @@ def abstract_graph(
             --security-patterns "public_to_sensitive,privilege_escalation"
 
     The command:
-    1. Samples nodes using stratified sampling by resource type
-    2. (Optional) Augments sample to preserve security patterns
-    3. Creates :SAMPLE_OF relationships linking samples to originals
-    4. Displays statistics including security coverage metrics
+    1. Samples nodes using stratified or embedding-based sampling
+    2. Preserves resource type distribution (±15%)
+    3. (Optional) Augments sample to preserve security patterns
+    4. Creates :SAMPLE_OF relationships linking samples to originals
+    5. Displays statistics including security coverage metrics
+
+    Sampling Methods:
+    - stratified: Uniform sampling within each resource type (fast, 70%+ hub preservation)
+    - embedding: Importance-weighted sampling using node2vec (slower, 70%+ hub preservation, better bridge preservation)
 
     \b
     Requirements:
@@ -92,10 +140,16 @@ def abstract_graph(
             _abstract_graph_async(
                 tenant_id,
                 sample_size,
+                method,
                 seed,
                 clear,
                 preserve_security_patterns,
                 security_patterns,
+                dimensions,
+                walk_length,
+                num_walks,
+                hub_weight,
+                bridge_weight,
             )
         )
     except Exception as e:
@@ -106,10 +160,16 @@ def abstract_graph(
 async def _abstract_graph_async(
     tenant_id: str,
     sample_size: int,
+    method: str,
     seed: int | None,
     clear: bool,
     preserve_security_patterns: bool,
     security_patterns: str | None,
+    dimensions: int,
+    walk_length: int,
+    num_walks: int,
+    hub_weight: float,
+    bridge_weight: float,
 ) -> None:
     """Async implementation of abstract-graph command."""
     # Ensure Neo4j is running
@@ -118,6 +178,7 @@ async def _abstract_graph_async(
 
     console.print(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}")
     console.print(f"[bold]Target sample size:[/bold] {sample_size}")
+    console.print(f"[bold]Sampling method:[/bold] {method}")
 
     if preserve_security_patterns:
         console.print(
@@ -144,7 +205,15 @@ async def _abstract_graph_async(
             console.print(f"[bold]Patterns to preserve:[/bold] {', '.join(patterns_list)}")
 
         # Create service and perform abstraction
-        service = GraphAbstractionService(driver)
+        service = GraphAbstractionService(
+            driver,
+            method=method,
+            dimensions=dimensions,
+            walk_length=walk_length,
+            num_walks=num_walks,
+            hub_weight=hub_weight,
+            bridge_weight=bridge_weight,
+        )
 
         result = await service.abstract_tenant_graph(
             tenant_id=tenant_id,

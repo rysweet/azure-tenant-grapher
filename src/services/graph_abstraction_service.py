@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 from neo4j import Driver
 
 from src.services.graph_abstraction_sampler import StratifiedSampler
+from src.services.graph_embedding_sampler import EmbeddingSampler
 from src.services.security_preserving_sampler import (
     SecurityPatternRegistry,
     SecurityPreservingSampler,
@@ -26,16 +27,47 @@ class GraphAbstractionService:
 
     Creates smaller, representative subsets of Azure tenant graphs while
     preserving resource type distribution and (optionally) security patterns.
+    Supports both uniform stratified sampling and embedding-based importance sampling.
     """
 
-    def __init__(self, driver: Driver):
+    def __init__(
+        self,
+        driver: Driver,
+        method: str = "stratified",
+        dimensions: int = 128,
+        walk_length: int = 80,
+        num_walks: int = 10,
+        hub_weight: float = 2.0,
+        bridge_weight: float = 2.0,
+    ):
         """Initialize service with Neo4j driver.
 
         Args:
             driver: Neo4j database driver
+            method: Sampling method - "stratified" (uniform) or "embedding" (importance-weighted)
+            dimensions: Embedding dimensions for embedding method
+            walk_length: Random walk length for embedding method
+            num_walks: Number of walks per node for embedding method
+            hub_weight: Weight multiplier for hub nodes in embedding method
+            bridge_weight: Weight multiplier for bridge nodes in embedding method
         """
         self.driver = driver
-        self.sampler = StratifiedSampler(driver)
+        self.method = method
+
+        # Initialize appropriate sampler based on method
+        if method == "embedding":
+            self.sampler = EmbeddingSampler(
+                driver,
+                dimensions=dimensions,
+                walk_length=walk_length,
+                num_walks=num_walks,
+                hub_weight=hub_weight,
+                bridge_weight=bridge_weight,
+            )
+        else:
+            self.sampler = StratifiedSampler(driver)
+
+        # Initialize security sampler (used optionally)
         self.security_sampler = SecurityPreservingSampler(
             driver, SecurityPatternRegistry()
         )
