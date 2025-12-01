@@ -318,6 +318,42 @@ class AzureDiscoveryService:
                         f"Failed to discover role assignments (continuing with other resources): {role_error}"
                     )
 
+                # Phase 1.6: Discover child resources (Bug #520 fix)
+                # Child resources (subnets, runbooks, etc.) are not returned by resources.list()
+                # They require explicit API calls to parent resource endpoints
+                logger.info("🔍 Phase 1.6: Discovering child resources...")
+                try:
+                    child_resources = await self.discover_child_resources(
+                        subscription_id, resource_basics
+                    )
+
+                    if child_resources:
+                        # Apply filter to child resources if provided
+                        if filter_config:
+                            filtered_children = []
+                            for child in child_resources:
+                                if filter_config.should_include_resource(child):
+                                    filtered_children.append(child)
+                                else:
+                                    logger.debug(
+                                        f"🚫 Filtering out child resource: {child.get('id')}"
+                                    )
+                            child_resources = filtered_children
+                            logger.info(
+                                f"✅ After filtering: {len(child_resources)} child resources included"
+                            )
+
+                        # Merge child resources with main resource list
+                        resource_basics.extend(child_resources)
+                        logger.info(
+                            f"✅ Total resources including children: {len(resource_basics)}"
+                        )
+                except Exception as child_error:
+                    # Log but don't fail - child resources are supplementary
+                    logger.warning(
+                        f"Failed to discover child resources (continuing): {child_error}"
+                    )
+
                 # Phase 2: Fetch full properties in parallel if enabled
                 if self._max_build_threads > 0 and resource_basics:
                     logger.info(
@@ -577,6 +613,132 @@ class AzureDiscoveryService:
                 f"Continuing discovery without role assignments for subscription {subscription_id}"
             )
             return []
+
+    async def discover_child_resources(
+        self,
+        subscription_id: str,
+        parent_resources: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover child resources that resources.list() doesn't return.
+
+        Child resources (subnets, runbooks, etc.) are nested under parent resources
+        and require explicit API calls to parent resource endpoints.
+
+        Args:
+            subscription_id: Azure subscription ID
+            parent_resources: List of parent resources from main discovery
+
+        Returns:
+            List of child resource dictionaries
+
+        Bug #520 fix: Target scanner coverage gaps for child resources
+        """
+        from azure.mgmt.automation import AutomationClient
+        from azure.mgmt.network import NetworkManagementClient
+
+        child_resources = []
+
+        # Group parents by type for efficient processing
+        vnets = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Network/virtualNetworks"
+        ]
+        automation_accounts = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Automation/automationAccounts"
+        ]
+
+        # Discover subnets
+        if vnets:
+            logger.info(f"🔍 Discovering subnets for {len(vnets)} VNets...")
+            try:
+                network_client = NetworkManagementClient(self.credential, subscription_id)
+
+                for vnet in vnets:
+                    try:
+                        rg = vnet.get("resource_group")
+                        vnet_name = vnet.get("name")
+
+                        if not rg or not vnet_name:
+                            continue
+
+                        # Fetch subnets for this VNet
+                        subnets_pager = network_client.subnets.list(rg, vnet_name)
+
+                        for subnet in subnets_pager:
+                            subnet_dict = {
+                                "id": getattr(subnet, "id", None),
+                                "name": getattr(subnet, "name", None),
+                                "type": "Microsoft.Network/subnets",
+                                "location": vnet.get("location"),  # Inherit from parent
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(subnet_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch subnets for {vnet_name}: {e}")
+
+                subnet_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Network/subnets"]
+                )
+                logger.info(f"✅ Found {subnet_count} subnets")
+
+            except Exception as e:
+                logger.warning(f"Failed to create network client: {e}")
+
+        # Discover automation runbooks
+        if automation_accounts:
+            logger.info(
+                f"🔍 Discovering runbooks for {len(automation_accounts)} Automation Accounts..."
+            )
+            try:
+                automation_client = AutomationClient(self.credential, subscription_id)
+
+                for account in automation_accounts:
+                    try:
+                        rg = account.get("resource_group")
+                        account_name = account.get("name")
+
+                        if not rg or not account_name:
+                            continue
+
+                        # Fetch runbooks for this account
+                        runbooks_pager = automation_client.runbook.list_by_automation_account(
+                            rg, account_name
+                        )
+
+                        for runbook in runbooks_pager:
+                            runbook_dict = {
+                                "id": getattr(runbook, "id", None),
+                                "name": getattr(runbook, "name", None),
+                                "type": "Microsoft.Automation/automationAccounts/runbooks",
+                                "location": account.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(runbook_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch runbooks for {account_name}: {e}")
+
+                runbook_count = len(
+                    [r for r in child_resources if "runbooks" in r["type"]]
+                )
+                logger.info(f"✅ Found {runbook_count} runbooks")
+
+            except Exception as e:
+                logger.warning(f"Failed to create automation client: {e}")
+
+        logger.info(
+            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
+        )
+        return child_resources
 
     def _extract_resource_group_from_scope(self, scope: Optional[str]) -> Optional[str]:
         """
