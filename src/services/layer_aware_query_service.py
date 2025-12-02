@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 
 from neo4j.exceptions import Neo4jError
 
-from src.services.layer_management_service import (
+from src.services.layer import (
     LayerManagementService,
     LayerNotFoundError,
 )
