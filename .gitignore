@@ -273,3 +273,5 @@ worktrees/
 demos/simuland_iteration3/demos/
 .claude.backup.*/
 sentinel-output/
+bash-test-output/
+test_*.py
