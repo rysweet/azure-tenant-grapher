@@ -780,6 +780,52 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to discover DNS zone links: {e}")
 
+        # Discover VM extensions (123 resources in source)
+        vms = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Compute/virtualMachines"
+        ]
+        if vms:
+            logger.info(f"🔍 Discovering VM extensions for {len(vms)} VMs...")
+            try:
+                from azure.mgmt.compute import ComputeManagementClient
+                compute_client = ComputeManagementClient(self.credential, subscription_id)
+
+                for vm in vms:
+                    try:
+                        rg = vm.get("resource_group")
+                        vm_name = vm.get("name")
+
+                        if not rg or not vm_name:
+                            continue
+
+                        # Fetch extensions for this VM
+                        extensions_pager = compute_client.virtual_machine_extensions.list(rg, vm_name)
+
+                        for ext in extensions_pager:
+                            ext_dict = {
+                                "id": getattr(ext, "id", None),
+                                "name": getattr(ext, "name", None),
+                                "type": "Microsoft.Compute/virtualMachines/extensions",
+                                "location": vm.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(ext_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch VM extensions for {vm_name}: {e}")
+
+                ext_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Compute/virtualMachines/extensions"]
+                )
+                logger.info(f"✅ Found {ext_count} VM extensions")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover VM extensions: {e}")
+
         logger.info(
             f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
         )
