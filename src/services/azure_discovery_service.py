@@ -922,10 +922,62 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to discover PostgreSQL configurations: {e}")
 
+        # Discover Container Registry webhooks
+        registries = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.ContainerRegistry/registries"
+        ]
+        if registries:
+            logger.info(f"🔍 Discovering webhooks for {len(registries)} container registries...")
+            try:
+                from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+                acr_client = ContainerRegistryManagementClient(self.credential, subscription_id)
+
+                for registry in registries:
+                    try:
+                        rg = registry.get("resource_group")
+                        registry_name = registry.get("name")
+
+                        if not rg or not registry_name:
+                            continue
+
+                        webhooks_pager = acr_client.webhooks.list(rg, registry_name)
+
+                        for webhook in webhooks_pager:
+                            webhook_dict = {
+                                "id": getattr(webhook, "id", None),
+                                "name": getattr(webhook, "name", None),
+                                "type": "Microsoft.ContainerRegistry/registries/webhooks",
+                                "location": registry.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(webhook_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch webhooks for {registry_name}: {e}")
+
+                webhook_count = len(
+                    [r for r in child_resources if "webhooks" in r.get("type", "")]
+                )
+                logger.info(f"✅ Found {webhook_count} container registry webhooks")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover container registry webhooks: {e}")
+
+        # Log final Phase 1.6 summary
+        child_type_counts = {}
+        for child in child_resources:
+            child_type = child.get("type", "unknown")
+            child_type_counts[child_type] = child_type_counts.get(child_type, 0) + 1
+
         logger.info(
-            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered "
-            f"(subnets, VM extensions, DNS links, runbooks, SQL DBs, PostgreSQL configs)"
+            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered across {len(child_type_counts)} types"
         )
+        logger.debug(f"Child resource breakdown: {child_type_counts}")
+
         return child_resources
 
     def _extract_resource_group_from_scope(self, scope: Optional[str]) -> Optional[str]:
