@@ -63,7 +63,7 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
     # Build data rows
     data_lines = []
     for row in rows:
-        cells = [f" {str(cell):<{col_widths[i]}} " for i, cell in enumerate(row)]
+        cells = [f" {cell!s:<{col_widths[i]}} " for i, cell in enumerate(row)]
         data_lines.append("|" + "|".join(cells) + "|")
 
     # Assemble table

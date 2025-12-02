@@ -6,20 +6,15 @@ Testing pyramid distribution:
 """
 
 import sys
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from detect_language import (
-    detect_language,
-    get_debugger_for_language,
-    MANIFEST_MAP,
-    EXTENSION_MAP
-)
-
+from detect_language import detect_language, get_debugger_for_language
 
 # ============================================================================
 # MANIFEST FILE DETECTION TESTS (6 tests)
@@ -258,7 +253,6 @@ class TestCLIInterface:
         # Import and run the main section
         with patch('sys.argv', ["detect_language.py", "--path", str(python_project), "--json"]):
             # Re-run the module
-            import json
             from detect_language import detect_language, get_debugger_for_language
 
             lang, conf = detect_language(str(python_project))

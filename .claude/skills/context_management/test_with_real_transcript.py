@@ -103,7 +103,7 @@ def test_with_real_transcript():
         output = hook.process(hook_input)
 
         print("\n✅ Hook Executed Successfully!")
-        print(f"\nHook Output:")
+        print("\nHook Output:")
         print(json.dumps(output, indent=2))
 
         # Check if automation ran
@@ -114,7 +114,7 @@ def test_with_real_transcript():
             print(f"  Warnings: {auto_data.get('warnings', [])}")
 
             # Verify token count was calculated correctly
-            print(f"\n✅ Token calculation working correctly!")
+            print("\n✅ Token calculation working correctly!")
             print(f"   Expected: {expected_tokens:,}")
             print(f"   Threshold: {(expected_tokens/1_000_000)*100:.1f}% = ", end="")
             if expected_tokens < 400000:
