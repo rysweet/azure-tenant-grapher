@@ -139,9 +139,12 @@ class SentinelConfig:
         return {
             "TENANT_ID": self.tenant_id,
             "AZURE_SUBSCRIPTION_ID": self.subscription_id,
+            "SUBSCRIPTION_ID": self.subscription_id,  # For bash script compatibility
             "WORKSPACE_NAME": self.workspace_name,
             "WORKSPACE_RESOURCE_GROUP": self.resource_group,
+            "RESOURCE_GROUP": self.resource_group,  # For bash script compatibility
             "WORKSPACE_LOCATION": self.location,
+            "LOCATION": self.location,  # For bash script compatibility
             "WORKSPACE_RETENTION_DAYS": str(self.retention_days),
             "WORKSPACE_SKU": self.sku,
             "ENABLE_SENTINEL": "true" if self.enable_sentinel else "false",
@@ -679,13 +682,15 @@ class SentinelSetupOrchestrator:
 @click.command(name="setup-sentinel")
 @click.option(
     "--tenant-id",
-    required=True,
-    help="Azure tenant ID",
+    required=False,
+    envvar="AZURE_SENTINEL_ID",
+    help="Azure tenant ID (or set AZURE_SENTINEL_ID in .env)",
 )
 @click.option(
     "--subscription-id",
-    required=True,
-    help="Azure subscription ID",
+    required=False,
+    envvar="AZURE_SENTINEL_SUBSCRIPTION_ID",
+    help="Azure subscription ID (or set AZURE_SENTINEL_SUBSCRIPTION_ID in .env)",
 )
 @click.option(
     "--workspace-name",
@@ -810,23 +815,79 @@ def setup_sentinel_command(
     # Create output directory
     output_path = Path(output_dir)
 
-    # Create Azure credential from environment variables (if available)
+    # Create Azure credential from service principal
+    # Use AZURE_SENTINEL_CLIENT_ID for Sentinel-specific SP (target tenant)
+    # Fall back to AZURE_CLIENT_ID if not set (for compatibility)
     credential = None
-    client_id = os.environ.get("AZURE_CLIENT_ID")
-    client_secret = os.environ.get("AZURE_CLIENT_SECRET")
+    client_id = os.environ.get("AZURE_SENTINEL_CLIENT_ID") or os.environ.get(
+        "AZURE_CLIENT_ID"
+    )
+    client_secret = os.environ.get("AZURE_SENTINEL_CLIENT_SECRET") or os.environ.get(
+        "AZURE_CLIENT_SECRET"
+    )
 
     if client_id and client_secret:
         from azure.identity import ClientSecretCredential
+        from src.commands.sentinel_permissions import (
+            SentinelPermissionManager,
+            get_sp_object_id_from_client_id,
+        )
 
         try:
+            # Step 1: Get SP object ID from client ID
+            sp_object_id = get_sp_object_id_from_client_id(client_id)
+
+            if not sp_object_id:
+                click.echo(
+                    "⚠️  Could not find service principal. Ensure AZURE_CLIENT_ID is correct.",
+                    err=True,
+                )
+                return 1
+
+            # Step 2: Check and grant permissions if needed
+            click.echo(f"Checking service principal permissions...")
+            perm_manager = SentinelPermissionManager(subscription_id, sp_object_id)
+
+            if not perm_manager.ensure_permissions():
+                click.echo(
+                    "❌ Failed to ensure service principal has required permissions",
+                    err=True,
+                )
+                click.echo(
+                    "Required roles: Contributor, Microsoft Sentinel Contributor",
+                    err=True,
+                )
+                return 1
+
+            click.echo("✅ Service principal has all required permissions")
+
+            # Step 3: Create credential
+            logger.info(f"Creating credential with tenant_id={tenant_id}, client_id={client_id[:8]}...")
             credential = ClientSecretCredential(
                 tenant_id=tenant_id,
                 client_id=client_id,
                 client_secret=client_secret,
             )
-            logger.info("Azure credentials loaded from environment")
+            logger.info("Azure credentials loaded from environment (service principal)")
+
         except Exception as e:
-            logger.warning(f"Failed to create Azure credential: {e}")
+            logger.error(f"Failed to set up service principal: {e}")
+            click.echo(f"❌ Failed to set up service principal: {e}", err=True)
+            return 1
+    else:
+        click.echo(
+            "⚠️  No service principal credentials found in environment",
+            err=True,
+        )
+        click.echo(
+            "Set AZURE_CLIENT_ID and AZURE_CLIENT_SECRET to use service principal",
+            err=True,
+        )
+        click.echo(
+            "Alternatively, ensure you're logged in with 'az login'",
+            err=True,
+        )
+        return 1
 
     # Create orchestrator
     orchestrator = SentinelSetupOrchestrator(

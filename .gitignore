@@ -292,3 +292,5 @@ WSL_LINUX_PATH_FIX_COMPLETE.md
 
 # Sentinel output
 sentinel-output/
+bash-test-output/
+test_*.py
