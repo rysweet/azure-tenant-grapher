@@ -330,7 +330,10 @@ def emit_private_dns_zone_vnet_link(
     dns_zone_name_safe = sanitize(dns_zone_name)
 
     # Validate DNS Zone exists if validation set provided
-    if available_dns_zones is not None and dns_zone_name_safe not in available_dns_zones:
+    if (
+        available_dns_zones is not None
+        and dns_zone_name_safe not in available_dns_zones
+    ):
         logger.error(
             f"Virtual Network Link '{resource_name}' references Private DNS Zone that doesn't exist:\n"
             f"  DNS Zone Terraform name: {dns_zone_name_safe}\n"

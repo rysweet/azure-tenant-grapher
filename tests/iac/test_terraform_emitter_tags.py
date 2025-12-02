@@ -293,10 +293,12 @@ class TestTerraformTagsParsing:
                 "resourceGroup": "test-rg",
                 "subscription_id": "sub-123",
                 "tags": "",  # Empty string
-                "properties": json.dumps({
-                    "tenantId": "tenant-123",
-                    "sku": {"family": "A", "name": "standard"},
-                }),
+                "properties": json.dumps(
+                    {
+                        "tenantId": "tenant-123",
+                        "sku": {"family": "A", "name": "standard"},
+                    }
+                ),
             },
         ]
 

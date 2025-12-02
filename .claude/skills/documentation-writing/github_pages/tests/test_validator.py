@@ -356,7 +356,9 @@ client.authenticate(user, password)
         result = validate_reality(site_dir)
 
         # Should not flag realistic code
-        placeholder_issues = [i for i in result.issues if "placeholder" in i.message.lower()]
+        placeholder_issues = [
+            i for i in result.issues if "placeholder" in i.message.lower()
+        ]
         assert len(placeholder_issues) == 0
 
     def test_grounded_threshold(self, tmp_path: Path):

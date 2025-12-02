@@ -816,7 +816,9 @@ class TerraformEmitter(IaCEmitter):
                     if len(resource_name) > 80:
                         import hashlib
 
-                        name_hash = hashlib.md5(resource_name.encode(), usedforsecurity=False).hexdigest()[:5]
+                        name_hash = hashlib.md5(
+                            resource_name.encode(), usedforsecurity=False
+                        ).hexdigest()[:5]
                         resource_name = resource_name[:74] + "_" + name_hash
 
                     logger.warning(
@@ -1378,7 +1380,9 @@ class TerraformEmitter(IaCEmitter):
 
                     if azure_id:
                         # Bug #NEW: Normalize provider casing in import IDs (fix lowercase providers)
-                        normalized_azure_id = self._normalize_azure_resource_id(azure_id)
+                        normalized_azure_id = self._normalize_azure_resource_id(
+                            azure_id
+                        )
                         resource_name = resource_config.get("name", tf_name)
                         candidate_imports.append(
                             {
@@ -1788,7 +1792,9 @@ class TerraformEmitter(IaCEmitter):
             group_ids = action_groups.get("groupIds", [])
             if group_ids:
                 # Bug #88: Normalize action group resource IDs to correct casing
-                normalized_ids = [self._normalize_azure_resource_id(gid) for gid in group_ids]
+                normalized_ids = [
+                    self._normalize_azure_resource_id(gid) for gid in group_ids
+                ]
                 resource_config["action_group"] = {"ids": normalized_ids}
             else:
                 # Default empty action group if none specified
@@ -2885,7 +2891,9 @@ class TerraformEmitter(IaCEmitter):
 
             # Bug #66: Defensive chaining - if any intermediate value is None, use {} to avoid AttributeError
             app_logs_config = properties.get("appLogsConfiguration") or {}
-            log_analytics_config = app_logs_config.get("logAnalyticsConfiguration") or {}
+            log_analytics_config = (
+                app_logs_config.get("logAnalyticsConfiguration") or {}
+            )
             workspace_id = log_analytics_config.get("customerId")
             if workspace_id:
                 logger.warning(
@@ -3548,10 +3556,16 @@ class TerraformEmitter(IaCEmitter):
             # Bug #96: For same-tenant deployment, use original principal ID (not abstracted)
             if is_same_tenant and resource.get("original_properties"):
                 try:
-                    original_props = json.loads(resource.get("original_properties", "{}"))
+                    original_props = json.loads(
+                        resource.get("original_properties", "{}")
+                    )
                     original_principal_id = original_props.get("principalId")
-                    if original_principal_id and not original_principal_id.startswith("principal-"):
-                        logger.info(f"Using original principal ID for same-tenant: {original_principal_id[:8]}...")
+                    if original_principal_id and not original_principal_id.startswith(
+                        "principal-"
+                    ):
+                        logger.info(
+                            f"Using original principal ID for same-tenant: {original_principal_id[:8]}..."
+                        )
                         principal_id = original_principal_id
                 except Exception as e:
                     logger.warning(f"Could not parse original_properties: {e}")
@@ -4875,7 +4889,9 @@ class TerraformEmitter(IaCEmitter):
         if len(sanitized) > 80:
             import hashlib
 
-            name_hash = hashlib.md5(sanitized.encode(), usedforsecurity=False).hexdigest()[:5]
+            name_hash = hashlib.md5(
+                sanitized.encode(), usedforsecurity=False
+            ).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
             logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
@@ -5145,10 +5161,16 @@ class TerraformEmitter(IaCEmitter):
             normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
 
         # Bug #88: Fix lowercase resourceGroups and actionGroups in resource IDs
-        normalized = re.sub(r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE
+        )
+        normalized = re.sub(
+            r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE
+        )
         # Bug #NEW3: Fix lowercase dnszones
-        normalized = re.sub(r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE
+        )
 
         return normalized
 

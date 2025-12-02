@@ -334,15 +334,15 @@ class BaseTranslator(ABC):
         # Mapping of lowercase -> proper case for common providers
         # Only normalize the /providers/ segment, not the entire string
         normalizations = {
-            '/providers/microsoft.operationalinsights/': '/providers/Microsoft.OperationalInsights/',
-            '/providers/microsoft.insights/': '/providers/Microsoft.Insights/',
-            '/providers/microsoft.keyvault/': '/providers/Microsoft.KeyVault/',
-            '/providers/microsoft.storage/': '/providers/Microsoft.Storage/',
-            '/providers/microsoft.compute/': '/providers/Microsoft.Compute/',
-            '/providers/microsoft.network/': '/providers/Microsoft.Network/',
-            '/providers/microsoft.sql/': '/providers/Microsoft.Sql/',
-            '/providers/microsoft.web/': '/providers/Microsoft.Web/',
-            '/providers/microsoft.authorization/': '/providers/Microsoft.Authorization/',
+            "/providers/microsoft.operationalinsights/": "/providers/Microsoft.OperationalInsights/",
+            "/providers/microsoft.insights/": "/providers/Microsoft.Insights/",
+            "/providers/microsoft.keyvault/": "/providers/Microsoft.KeyVault/",
+            "/providers/microsoft.storage/": "/providers/Microsoft.Storage/",
+            "/providers/microsoft.compute/": "/providers/Microsoft.Compute/",
+            "/providers/microsoft.network/": "/providers/Microsoft.Network/",
+            "/providers/microsoft.sql/": "/providers/Microsoft.Sql/",
+            "/providers/microsoft.web/": "/providers/Microsoft.Web/",
+            "/providers/microsoft.authorization/": "/providers/Microsoft.Authorization/",
         }
 
         normalized = resource_id

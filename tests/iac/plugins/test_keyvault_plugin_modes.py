@@ -328,9 +328,7 @@ class TestKeyVaultProgressReporting:
             with patch.object(
                 plugin, "_replicate_template_mode", return_value=mock_result
             ):
-                plugin.replicate_with_mode(
-                    source, target, ReplicationMode.TEMPLATE
-                )
+                plugin.replicate_with_mode(source, target, ReplicationMode.TEMPLATE)
 
                 # Verify completion was reported
                 mock_reporter.report_completion.assert_called_once()

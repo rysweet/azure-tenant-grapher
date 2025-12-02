@@ -175,7 +175,11 @@ def create_sample_logs():
         log_file = temp_dir / f"sample_{i}.jsonl"
         with open(log_file, "w") as f:
             for j, msg in enumerate(sample_messages[i * 3 : (i + 1) * 3]):
-                entry = {"request": {"body": {"messages": [{"role": "user", "content": msg}]}}}
+                entry = {
+                    "request": {
+                        "body": {"messages": [{"role": "user", "content": msg}]}
+                    }
+                }
                 f.write(json.dumps(entry) + "\n")
 
     return temp_dir

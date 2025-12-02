@@ -41,7 +41,9 @@ class TestGetGitVelocityMetrics:
 
         with patch("subprocess.run") as mock_run:
             # Mock git log call
-            mock_run.return_value = MagicMock(returncode=0, stdout=mock_commits, stderr="")
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout=mock_commits, stderr=""
+            )
 
             result = get_git_velocity_metrics(project_root)
 

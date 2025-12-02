@@ -51,7 +51,10 @@ class StorageAccountHandler(ResourceHandler):
         resource_id = resource.get("id", "")
         resource_group_name = resource.get("resource_group_name", "")
         # Check both ID and resource_group_name field
-        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group_name.lower():
+        if (
+            "databricks-rg" in resource_id.lower()
+            or "databricks-rg" in resource_group_name.lower()
+        ):
             logger.info(
                 f"Skipping Databricks-managed storage account '{resource_name}' in RG '{resource_group_name}' "
                 "(has Azure deny assignments)"

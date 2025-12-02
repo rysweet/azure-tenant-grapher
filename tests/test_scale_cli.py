@@ -53,7 +53,10 @@ class TestScaleUpCommands:
         )
 
         assert result.exit_code != 0
-        assert "template-file" in result.output.lower() or "missing" in result.output.lower()
+        assert (
+            "template-file" in result.output.lower()
+            or "missing" in result.output.lower()
+        )
 
     def test_scale_up_scenario_command_exists(self):
         """Verify scale-up scenario subcommand exists with correct parameters."""
@@ -200,7 +203,9 @@ class TestScaleDownCommands:
         )
 
         assert result.exit_code != 0
-        assert "algorithm" in result.output.lower() or "missing" in result.output.lower()
+        assert (
+            "algorithm" in result.output.lower() or "missing" in result.output.lower()
+        )
 
     def test_scale_down_pattern_requires_pattern_parameter(self):
         """Verify pattern command requires --pattern parameter."""
@@ -290,7 +295,11 @@ class TestScaleCommandOutputFormats:
         result = runner.invoke(cli, ["scale-up", "template", "--help"])
 
         assert "--output-format" in result.output
-        assert "table" in result.output or "json" in result.output or "markdown" in result.output
+        assert (
+            "table" in result.output
+            or "json" in result.output
+            or "markdown" in result.output
+        )
 
     def test_scale_down_algorithm_supports_output_formats(self):
         """Verify scale-down algorithm supports YAML and JSON export."""
@@ -320,7 +329,10 @@ class TestScaleDryRunMode:
         result = runner.invoke(cli, ["scale-up", "template", "--help"])
 
         assert "--dry-run" in result.output
-        assert "preview" in result.output.lower() or "without executing" in result.output.lower()
+        assert (
+            "preview" in result.output.lower()
+            or "without executing" in result.output.lower()
+        )
 
     def test_scale_up_scenario_has_dry_run(self):
         """Verify scale-up scenario supports dry-run."""
@@ -424,7 +436,9 @@ class TestScaleCommandHelpText:
             assert result.exit_code == 0
             # Should have either "Example" or "Usage" in help text
             help_lower = result.output.lower()
-            assert "example" in help_lower or "usage" in help_lower, f"Command {' '.join(cmd)} missing examples"
+            assert "example" in help_lower or "usage" in help_lower, (
+                f"Command {' '.join(cmd)} missing examples"
+            )
 
     def test_scale_commands_have_clear_descriptions(self):
         """Verify scale commands have clear descriptions."""
@@ -477,7 +491,9 @@ class TestScaleCommandErrorHandling:
 
         for cmd in commands:
             result = runner.invoke(cli, [*cmd, "--help"])
-            assert "--no-container" in result.output, f"Command {' '.join(cmd)} missing --no-container"
+            assert "--no-container" in result.output, (
+                f"Command {' '.join(cmd)} missing --no-container"
+            )
 
 
 class TestScaleCommandParameters:

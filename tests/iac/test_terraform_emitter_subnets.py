@@ -670,7 +670,11 @@ def test_terraform_validate_passes_with_subnets(
     }
 
     graph = TenantGraph()
-    graph.resources = [vnet_resource, sample_standalone_subnet, sample_network_interface]
+    graph.resources = [
+        vnet_resource,
+        sample_standalone_subnet,
+        sample_network_interface,
+    ]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         out_dir = Path(temp_dir)

@@ -150,7 +150,10 @@ def test_vnet_link_with_missing_dns_zone_is_skipped(
         assert "privatelink_table_core_windows_net" not in dns_zones
 
         # Verify the VNet Link was SKIPPED (not emitted)
-        if "azurerm_private_dns_zone_virtual_network_link" in terraform_config["resource"]:
+        if (
+            "azurerm_private_dns_zone_virtual_network_link"
+            in terraform_config["resource"]
+        ):
             vnet_links = terraform_config["resource"][
                 "azurerm_private_dns_zone_virtual_network_link"
             ]

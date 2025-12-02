@@ -25,9 +25,7 @@ class TestCLISmartImportValidation:
     async def test_scan_target_without_tenant_id_fails(self) -> None:
         """Test that --scan-target without --scan-target-tenant-id fails with error."""
 
-        with patch(
-            "src.iac.cli_handler.get_neo4j_driver_from_config"
-        ) as mock_driver:
+        with patch("src.iac.cli_handler.get_neo4j_driver_from_config") as mock_driver:
             mock_driver.return_value = Mock()
 
             with patch("src.iac.cli_handler.GraphTraverser") as mock_traverser_cls:
@@ -110,9 +108,7 @@ class TestCLISmartImportWorkflow:
             },
         )
 
-        with patch(
-            "src.iac.cli_handler.get_neo4j_driver_from_config"
-        ) as mock_driver:
+        with patch("src.iac.cli_handler.get_neo4j_driver_from_config") as mock_driver:
             mock_driver.return_value = Mock()
 
             with patch("src.iac.cli_handler.GraphTraverser") as mock_traverser_cls:
@@ -166,18 +162,20 @@ class TestCLISmartImportWorkflow:
                                 import sys
                                 from types import ModuleType
 
-                                fake_neo4j_service = ModuleType("src.services.neo4j_service")
+                                fake_neo4j_service = ModuleType(
+                                    "src.services.neo4j_service"
+                                )
                                 fake_neo4j_service.Neo4jService = Mock()  # type: ignore[attr-defined]
-                                sys.modules["src.services.neo4j_service"] = fake_neo4j_service
+                                sys.modules["src.services.neo4j_service"] = (
+                                    fake_neo4j_service
+                                )
 
                                 try:
                                     # Mock the rest of the pipeline to avoid complex dependencies
                                     with patch(
                                         "src.iac.cli_handler.TransformationEngine"
                                     ):
-                                        with patch(
-                                            "src.iac.cli_handler.get_emitter"
-                                        ):
+                                        with patch("src.iac.cli_handler.get_emitter"):
                                             # Just call with dry_run to avoid full generation
                                             result = await generate_iac_command_handler(
                                                 tenant_id="test-tenant-id",
@@ -224,9 +222,7 @@ class TestCLISmartImportFallback:
             error="Authentication failed",
         )
 
-        with patch(
-            "src.iac.cli_handler.get_neo4j_driver_from_config"
-        ) as mock_driver:
+        with patch("src.iac.cli_handler.get_neo4j_driver_from_config") as mock_driver:
             mock_driver.return_value = Mock()
 
             with patch("src.iac.cli_handler.GraphTraverser") as mock_traverser_cls:
@@ -296,9 +292,7 @@ class TestCLISmartImportFallback:
             error=None,
         )
 
-        with patch(
-            "src.iac.cli_handler.get_neo4j_driver_from_config"
-        ) as mock_driver:
+        with patch("src.iac.cli_handler.get_neo4j_driver_from_config") as mock_driver:
             mock_driver.return_value = Mock()
 
             with patch("src.iac.cli_handler.GraphTraverser") as mock_traverser_cls:

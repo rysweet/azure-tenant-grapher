@@ -132,7 +132,9 @@ class IdentityRule(RelationshipRule):
                 )
                 # ASSIGNED_TO: RoleAssignment → Identity
                 # Note: RoleAssignment is not a Resource, so we use db_ops directly
-                db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, f"{label}:Resource", "id")
+                db_ops.create_generic_rel(
+                    rid, ASSIGNED_TO, principal_id, f"{label}:Resource", "id"
+                )
                 # HAS_ROLE: Identity → RoleDefinition
                 if role_def_id:
                     db_ops.upsert_generic(

@@ -105,7 +105,9 @@ def app_registration(
     )
 
 
-def _show_manual_instructions(name: str, redirect_uri: str, create_secret: bool) -> None:
+def _show_manual_instructions(
+    name: str, redirect_uri: str, create_secret: bool
+) -> None:
     """Show manual app registration instructions."""
     click.echo("Azure CLI not detected. Showing manual instructions...")
     click.echo("\nManual App Registration Steps:")
@@ -202,9 +204,7 @@ def _check_user_permissions() -> None:
                         "   You can create apps but may need a Global Admin to grant consent"
                     )
             else:
-                click.echo(
-                    "   Limited permissions detected - some operations may fail"
-                )
+                click.echo("   Limited permissions detected - some operations may fail")
 
         # Check if user can create applications
         can_create_apps = subprocess.run(
@@ -309,9 +309,7 @@ def _create_app_registration(
         )
 
         if result.returncode != 0:
-            click.echo(
-                f"Failed to create app registration: {result.stderr}", err=True
-            )
+            click.echo(f"Failed to create app registration: {result.stderr}", err=True)
             return
 
         app_info = json.loads(result.stdout)
@@ -331,9 +329,7 @@ def _create_app_registration(
         )
 
         if result.returncode != 0:
-            click.echo(
-                f"Failed to create service principal: {result.stderr}", err=True
-            )
+            click.echo(f"Failed to create service principal: {result.stderr}", err=True)
         else:
             click.echo("Service principal created")
 
@@ -364,9 +360,7 @@ def _create_app_registration(
             )
 
             if result.returncode != 0:
-                click.echo(
-                    f"Failed to create client secret: {result.stderr}", err=True
-                )
+                click.echo(f"Failed to create client secret: {result.stderr}", err=True)
             else:
                 client_secret = result.stdout.strip()
                 click.echo("Client secret created successfully!")
@@ -409,7 +403,9 @@ def _create_app_registration(
             os.remove(manifest_path)
 
 
-def _save_to_env_file(tenant_id: str, app_id: str, client_secret: Optional[str]) -> None:
+def _save_to_env_file(
+    tenant_id: str, app_id: str, client_secret: Optional[str]
+) -> None:
     """Save configuration to .env file."""
     env_file_path = os.path.join(os.getcwd(), ".env")
     click.echo(f"\nSaving configuration to {env_file_path}...")

@@ -88,8 +88,12 @@ def test_mcp_debugging_workflow():
     print("  Bug: calculate_average() subtracts 1 (line 9)")
 
     # Verify bug exists
-    result = subprocess.run(["python3", str(test_program)], capture_output=True, text=True)
-    assert "Bug demonstrated: True" in result.stdout, "Test program should demonstrate bug"
+    result = subprocess.run(
+        ["python3", str(test_program)], capture_output=True, text=True
+    )
+    assert "Bug demonstrated: True" in result.stdout, (
+        "Test program should demonstrate bug"
+    )
     print("  Bug verified: Program outputs 19.0 instead of 20.0")
 
     # Step 2: Detect language
@@ -114,7 +118,10 @@ def test_mcp_debugging_workflow():
     start_script = script_dir / "start_dap_mcp.sh"
 
     start_result = subprocess.run(
-        [str(start_script), "start", str(config_file)], capture_output=True, text=True, timeout=15
+        [str(start_script), "start", str(config_file)],
+        capture_output=True,
+        text=True,
+        timeout=15,
     )
 
     if start_result.returncode != 0:
@@ -129,7 +136,9 @@ def test_mcp_debugging_workflow():
 
     # Step 5: Verify server is running
     print("\n[Step 5] Verifying server status...")
-    status_result = subprocess.run([str(start_script), "status"], capture_output=True, text=True)
+    status_result = subprocess.run(
+        [str(start_script), "status"], capture_output=True, text=True
+    )
 
     if "RUNNING" in status_result.stdout:
         print("  ✅ Server is running")
@@ -140,7 +149,9 @@ def test_mcp_debugging_workflow():
 
     # Step 6: Stop server
     print("\n[Step 6] Stopping server and cleanup...")
-    stop_result = subprocess.run([str(start_script), "stop"], capture_output=True, text=True)
+    stop_result = subprocess.run(
+        [str(start_script), "stop"], capture_output=True, text=True
+    )
 
     if stop_result.returncode == 0:
         print("  ✅ Server stopped gracefully")

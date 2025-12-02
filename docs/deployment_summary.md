@@ -14,7 +14,7 @@
 ### Expected Results
 - **Infrastructure Resources**: ~1,277 expected to deploy successfully
   - Resource Groups
-  - Virtual Networks  
+  - Virtual Networks
   - Storage Accounts
   - Virtual Machines
   - Key Vaults
@@ -28,12 +28,12 @@
 
 ### Bug Fixes Completed This Session
 1. **Bug #57**: NIC NSG deprecated field (use association resources)
-2. **Bug #58**: Skip NIC NSG associations when NSG not emitted  
+2. **Bug #58**: Skip NIC NSG associations when NSG not emitted
 3. **Bug #59**: Abstract subscription IDs in role assignment properties ✅ **ROOT CAUSE FIX**
 
 ### Root Cause Fix (Bug #59)
 **Problem**: Subscription IDs in Neo4j abstracted node properties weren't translated
-**Solution**: 
+**Solution**:
 - ResourceProcessor: Replace with /subscriptions/ABSTRACT_SUBSCRIPTION placeholder
 - TerraformEmitter: Replace placeholder with target subscription ID
 **Impact**: Future deployments won't need manual sed replacements
@@ -41,4 +41,3 @@
 ### Files Modified
 - `src/resource_processor.py:528-555`
 - `src/iac/emitters/terraform_emitter.py:3234,3248`
-
