@@ -30,7 +30,11 @@ from src.commands.database import (
 )
 
 # Import modular commands for CLI registration (Issue #482)
+from src.commands.config import config as config_cmd
+from src.commands.database import container as container_cmd
 from src.commands.deploy import deploy_command
+from src.commands.doctor import check_permissions as check_permissions_cmd
+from src.commands.doctor import doctor as doctor_cmd
 from src.commands.export_abstraction import export_abstraction_command
 from src.commands.list_deployments import list_deployments
 from src.commands.spa import spa_start as spa_start_command
@@ -961,32 +965,19 @@ async def generate_iac(
 
 
 @cli.command()
-def config() -> None:
-    """Show current configuration (without sensitive data)."""
+@click.argument(
+    "backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True)
+)
+def backup_db(backup_path: str) -> None:
+    """Backup the Neo4j database and save it to BACKUP_PATH."""
+    from src.container_manager import Neo4jContainerManager
 
-    try:
-        # Create dummy configuration to show structure
-        config = create_config_from_env("example-tenant-id")
-
-        click.echo("🔧 Current Configuration Template:")
-        click.echo("=" * 60)
-
-        config_dict = config.to_dict()
-
-        def print_dict(d: Any, indent: int = 0) -> None:
-            for key, value in d.items():
-                if isinstance(value, dict):
-                    click.echo("  " * indent + f"{key}:")
-                    print_dict(value, indent + 1)
-                else:
-                    click.echo("  " * indent + f"{key}: {value}")
-
-        print_dict(config_dict)
-        click.echo("=" * 60)
-        click.echo("💡 Set environment variables to customize configuration")
-
-    except Exception as e:
-        click.echo(f"❌ Failed to display configuration: {e}", err=True)
+    container_manager = Neo4jContainerManager()
+    if container_manager.backup_neo4j_database(backup_path):
+        click.echo(f"✅ Neo4j backup completed and saved to {backup_path}")
+    else:
+        click.echo("❌ Neo4j backup failed", err=True)
+        sys.exit(1)
 
 
 @cli.command()
@@ -1082,6 +1073,13 @@ cli.add_command(backup_db_cmd, "backup-db")
 cli.add_command(restore_cmd, "restore")
 cli.add_command(restore_cmd, "restore-db")  # Alias
 cli.add_command(wipe_cmd, "wipe")
+
+# Register diagnostic commands (Phase 4)
+cli.add_command(doctor_cmd, "doctor")
+cli.add_command(check_permissions_cmd, "check-permissions")
+
+# Register infrastructure commands (Phase 4)
+cli.add_command(config_cmd, "config")
 cli.add_command(container_cmd, "container")
 
 
@@ -1567,205 +1565,7 @@ async def cost_report(
     )
 
 
-@cli.command()
-def check_permissions() -> None:
-    """Check Microsoft Graph API permissions for AAD/Entra ID discovery."""
-    click.echo("🔍 Checking Microsoft Graph API Permissions")
 
-    # Run the test script
-    import subprocess
-
-    try:
-        result = subprocess.run(
-            ["uv", "run", "python", "test_graph_api.py"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        # Check if the command failed
-        if result.returncode != 0:
-            click.echo(f"❌ Error running test script: {result.stderr}")
-            return
-
-        # Combine stdout and stderr for parsing (logging might go to stderr)
-        output = result.stdout + result.stderr
-
-        # Parse the output for display
-        if "✅ Can read users" in output:
-            click.echo("✅ User.Read permission granted")
-        else:
-            click.echo("❌ User.Read permission missing")
-
-        if "✅ Can read groups" in output:
-            click.echo("✅ Group.Read permission granted")
-        else:
-            click.echo("❌ Group.Read permission missing")
-
-        if "✅ Can read service principals" in output:
-            click.echo("✅ Application.Read permission granted")
-        else:
-            click.echo("⚠️ Application.Read permission missing (optional)")
-
-        if "✅ Can read directory roles" in output:
-            click.echo("✅ RoleManagement.Read permission granted")
-        else:
-            click.echo("⚠️ RoleManagement.Read permission missing (optional)")
-
-        # Show setup instructions if permissions are missing
-        has_users = "✅ Can read users" in output
-        has_groups = "✅ Can read groups" in output
-
-        if not has_users or not has_groups:
-            click.echo("\n📚 See docs/GRAPH_API_SETUP.md for setup instructions")
-            click.echo(
-                "Or run: uv run python test_graph_api.py for detailed diagnostics"
-            )
-        else:
-            click.echo("\n✅ All required Graph API permissions are configured!")
-
-    except subprocess.TimeoutExpired:
-        click.echo("❌ Permission check timed out")
-    except Exception as e:
-        click.echo(f"❌ Error checking permissions: {e}")
-
-
-@cli.command()
-def doctor() -> None:
-    """Check for all registered CLI tools and offer to install if missing.
-
-    Also validates Azure service principal permissions for role assignment scanning.
-    """
-    try:
-        from src.utils.cli_installer import TOOL_REGISTRY
-    except ImportError:
-        print("Could not import TOOL_REGISTRY. Please check your installation.")
-        return
-
-    # Check CLI tools
-    print("=" * 60)
-    print("🔧 Checking CLI Tools")
-    print("=" * 60)
-    for tool in TOOL_REGISTRY.values():
-        print(f"Checking for '{tool.name}' CLI...")
-        if is_tool_installed(tool.name):
-            print(f"✅ {tool.name} is installed.")
-        else:
-            print(f"❌ {tool.name} is NOT installed.")
-            install_tool(tool.name)
-
-    # Check Azure permissions
-    print("\n" + "=" * 60)
-    print("🔐 Checking Azure Service Principal Permissions")
-    print("=" * 60)
-
-    try:
-        import os
-        import subprocess
-
-        client_id = os.getenv("AZURE_CLIENT_ID")
-        subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
-
-        if not client_id or not subscription_id:
-            print("⚠️  AZURE_CLIENT_ID or AZURE_SUBSCRIPTION_ID not set in environment")
-            print("   Cannot validate permissions without these values")
-            print("")
-            print("Doctor check complete.")
-            return
-
-        print(f"Service Principal: {client_id}")
-        print(f"Subscription: {subscription_id}")
-        print("")
-
-        # Check role assignments
-        result = subprocess.run(
-            [
-                "az",
-                "role",
-                "assignment",
-                "list",
-                "--assignee",
-                client_id,
-                "--output",
-                "json",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if result.returncode != 0:
-            print(f"❌ Failed to check role assignments: {result.stderr}")
-            print("")
-            print("Doctor check complete.")
-            return
-
-        import json
-
-        roles = json.loads(result.stdout)
-        role_names = [r.get("roleDefinitionName") for r in roles]
-
-        print("Assigned Roles:")
-        for role_name in role_names:
-            print(f"  ✅ {role_name}")
-
-        # Check for required roles
-        has_reader = (
-            "Reader" in role_names
-            or "Contributor" in role_names
-            or "Owner" in role_names
-        )
-        has_security_reader = (
-            "Security Reader" in role_names
-            or "Owner" in role_names
-            or "User Access Administrator" in role_names
-        )
-
-        print("")
-        print("Permission Requirements for Full Functionality:")
-
-        if has_reader:
-            print("  ✅ Resource Scanning: Reader, Contributor, or Owner (PRESENT)")
-        else:
-            print("  ❌ Resource Scanning: Reader, Contributor, or Owner (MISSING)")
-            print("     Impact: Cannot scan Azure resources")
-
-        if has_security_reader:
-            print(
-                "  ✅ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (PRESENT)"
-            )
-        else:
-            print(
-                "  ❌ Role Assignment Scanning: Security Reader, User Access Administrator, or Owner (MISSING)"
-            )
-            print(
-                "     Impact: Cannot scan role assignments (RBAC will not be replicated!)"
-            )
-            print("")
-            print("     FIX: Run this command to add Security Reader role:")
-            print("     az role assignment create \\")
-            print(f"       --assignee {client_id} \\")
-            print("       --role 'Security Reader' \\")
-            print(f"       --scope '/subscriptions/{subscription_id}'")
-            print("")
-            print("     OR use the automated script:")
-            print("     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>")
-
-        print("")
-        if has_reader and has_security_reader:
-            print(
-                "✅ ALL REQUIRED PERMISSIONS PRESENT - Ready for full E2E replication!"
-            )
-        else:
-            print("⚠️  MISSING PERMISSIONS - Scanning will be limited!")
-
-    except Exception as e:
-        print(f"⚠️  Could not validate Azure permissions: {e}")
-
-    print("")
-    print("=" * 60)
-    print("Doctor check complete.")
-    print("=" * 60)
 
 
 # ============================================================================
