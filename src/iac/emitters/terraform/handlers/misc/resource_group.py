@@ -42,8 +42,14 @@ class ResourceGroupHandler(ResourceHandler):
         config = {
             "name": resource_name,
             "location": self.get_location(resource),
-            "tags": self.parse_tags(resource, resource_name),
         }
+
+        # Add tags if present (matching legacy behavior)
+        tags = resource.get("tags")
+        if tags:
+            parsed_tags = self.parse_tags(tags, resource_name)
+            if parsed_tags:
+                config["tags"] = parsed_tags
 
         logger.debug(f"Resource Group '{resource_name}' emitted")
 
