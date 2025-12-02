@@ -182,12 +182,14 @@ async def test_node_id_filter_single(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_traverser.traverse.assert_called_once()
     filter_cypher = mock_traverser.traverse.call_args[0][0]
 
-    # Verify Cypher query structure
+    # Verify Cypher query structure (Issue #524: Now uses parameterized query)
     assert filter_cypher is not None
     assert "MATCH (n)" in filter_cypher
-    assert "WHERE n.id IN ['node-1']" in filter_cypher
+    assert "WHERE n.id IN $node_ids" in filter_cypher  # Parameterized
     assert "OPTIONAL MATCH (n)-[rel]-(connected)" in filter_cypher
     assert "RETURN n AS r, rels" in filter_cypher
+    # Ensure no direct value interpolation (security)
+    assert "'node-1'" not in filter_cypher
     # Ensure no invalid UNION syntax
     assert "UNION" not in filter_cypher
     assert "WITH DISTINCT n AS node" not in filter_cypher
@@ -279,13 +281,17 @@ async def test_node_id_filter_multiple(monkeypatch: pytest.MonkeyPatch) -> None:
     mock_traverser.traverse.assert_called_once()
     filter_cypher = mock_traverser.traverse.call_args[0][0]
 
-    # Verify Cypher query structure
+    # Verify Cypher query structure (Issue #524: Now uses parameterized query)
     assert filter_cypher is not None
     assert "MATCH (n)" in filter_cypher
-    assert "WHERE n.id IN ['node-1', 'node-2', 'node-3']" in filter_cypher
+    assert "WHERE n.id IN $node_ids" in filter_cypher  # Parameterized
     assert "OPTIONAL MATCH (n)-[rel]-(connected)" in filter_cypher
     assert "collect(DISTINCT" in filter_cypher
     assert "RETURN n AS r, rels" in filter_cypher
+    # Ensure no direct value interpolation (security)
+    assert "'node-1'" not in filter_cypher
+    assert "'node-2'" not in filter_cypher
+    assert "'node-3'" not in filter_cypher
     # Ensure no invalid UNION syntax
     assert "UNION" not in filter_cypher
 
