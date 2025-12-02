@@ -5,6 +5,7 @@ in the Azure Tenant Grapher CLI.
 """
 
 import json
+import re
 import logging
 import subprocess
 from datetime import datetime
@@ -313,23 +314,32 @@ async def generate_iac_command_handler(
 
         # Build filter if provided
         filter_cypher = None
+        filter_params = {}  # Issue #524: Query parameters for Cypher injection prevention
 
-        # Handle node_ids filter
+        # Handle node_ids filter (Issue #524: Use parameterized query to prevent Cypher injection)
         if node_ids:
-            # Get specified nodes and all their connected nodes
-            node_id_list = ", ".join([f"'{nid}'" for nid in node_ids])
-            filter_cypher = f"""
+            # Validate node_ids are non-empty strings
+            validated_node_ids = []
+            for nid in node_ids:
+                if not isinstance(nid, str) or not nid.strip():
+                    raise ValueError(f"Invalid node ID: {nid}")
+                validated_node_ids.append(nid.strip())
+
+            # Use parameterized query with $node_ids parameter
+            filter_cypher = """
             MATCH (n)
-            WHERE n.id IN [{node_id_list}]
+            WHERE n.id IN $node_ids
             OPTIONAL MATCH (n)-[rel]-(connected)
-            WITH n, collect(DISTINCT {{
+            WITH n, collect(DISTINCT {
                 type: type(rel),
                 target: connected.id,
                 original_type: rel.original_type,
                 narrative_context: rel.narrative_context
-            }}) AS rels
+            }) AS rels
             RETURN n AS r, rels
             """
+            # Store parameters for GraphTraverser
+            filter_params = {"node_ids": validated_node_ids}
         elif resource_filters:
             # Parse resource_filters to support both type-based and property-based filtering
             # Format examples:
@@ -337,8 +347,54 @@ async def generate_iac_command_handler(
             #   - Property filter: "resourceGroup=~'(?i).*(simuland|SimuLand).*'"
             #   - Multiple filters: "Microsoft.Network/virtualNetworks,resourceGroup='myRG'"
 
+            # Issue #524: Property whitelist to prevent Cypher injection
+            ALLOWED_PROPERTIES = {
+                "type", "name", "location", "id",
+                "resourceGroup", "resource_group",  # Both naming conventions
+                "subscriptionId", "subscription_id",
+                "tenantId", "tenant_id"
+            }
+
+            def _validate_and_normalize_property_name(prop_name: str) -> str:
+                """Validate property name against whitelist and normalize it.
+                
+                Args:
+                    prop_name: Property name from user input
+                    
+                Returns:
+                    Normalized property name (canonical form from ALLOWED_PROPERTIES)
+                    
+                Raises:
+                    ValueError: If property name is not in whitelist or contains invalid characters
+                """
+                # First, validate the format (alphanumeric + underscore only)
+                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', prop_name):
+                    raise ValueError(
+                        f"Invalid property name format: '{prop_name}'. "
+                        f"Property names must start with a letter or underscore "
+                        f"and contain only alphanumeric characters and underscores."
+                    )
+                
+                # Check against whitelist (case-insensitive)
+                normalized_name = None
+                prop_lower = prop_name.lower()
+                for allowed_prop in ALLOWED_PROPERTIES:
+                    if allowed_prop.lower() == prop_lower:
+                        normalized_name = allowed_prop
+                        break
+                
+                if normalized_name is None:
+                    raise ValueError(
+                        f"Invalid property name '{prop_name}'. "
+                        f"Allowed properties: {', '.join(sorted(ALLOWED_PROPERTIES))}"
+                    )
+                
+                return normalized_name
+
             filters = [f.strip() for f in resource_filters.split(",")]
             filter_conditions = []
+            filter_params = {}
+            param_counter = 0
 
             for f in filters:
                 if "=" in f:
@@ -357,26 +413,50 @@ async def generate_iac_command_handler(
                         prop_name = prop_name.strip()
                         pattern = pattern.strip()
 
+                    # Issue #524: Validate and normalize property name to prevent injection
+                    prop_name = _validate_and_normalize_property_name(prop_name)
+
+                    # Issue #524: Validate pattern is properly quoted for security
+                    if not (pattern.startswith("'") and pattern.endswith("'")):
+                        raise ValueError(
+                            f"Pattern must be quoted with single quotes: {pattern}"
+                        )
+
+                    # Remove quotes from pattern for parameterization
+                    unquoted_pattern = pattern[1:-1]
+
+                    # Create parameter name
+                    param_name = f"filter_value_{param_counter}"
+                    param_counter += 1
+                    filter_params[param_name] = unquoted_pattern
+
                     # Handle both resourceGroup and resource_group property names
                     if prop_name.lower() in ("resourcegroup", "resource_group"):
                         # Support both field names in Neo4j
                         if is_regex:
                             filter_conditions.append(
-                                f"(r.resource_group =~ {pattern} OR r.resourceGroup =~ {pattern})"
+                                f"(r.resource_group =~ ${param_name} OR r.resourceGroup =~ ${param_name})"
                             )
                         else:
                             filter_conditions.append(
-                                f"(r.resource_group = {pattern} OR r.resourceGroup = {pattern})"
+                                f"(r.resource_group = ${param_name} OR r.resourceGroup = ${param_name})"
                             )
                     else:
-                        # Generic property filter
+                        # Generic property filter with parameterization
                         if is_regex:
-                            filter_conditions.append(f"r.{prop_name} =~ {pattern}")
+                            filter_conditions.append(f"r.{prop_name} =~ ${param_name}")
                         else:
-                            filter_conditions.append(f"r.{prop_name} = {pattern}")
+                            filter_conditions.append(f"r.{prop_name} = ${param_name}")
                 else:
                     # Type-based filter (backward compatible)
-                    filter_conditions.append(f"r.type = '{f}'")
+                    # Validate type string doesn't contain suspicious characters
+                    if any(char in f for char in ["'", '"', "`", ";", "--", "/*", "*/"]):
+                        raise ValueError(f"Invalid characters in type filter: {f}")
+
+                    param_name = f"filter_type_{param_counter}"
+                    param_counter += 1
+                    filter_params[param_name] = f
+                    filter_conditions.append(f"r.type = ${param_name}")
 
             filter_cypher = f"""
             MATCH (r:Resource)
@@ -392,9 +472,10 @@ async def generate_iac_command_handler(
 
             logger.info(f"Applying resource filters: {', '.join(filters)}")
             logger.debug(f"Generated filter Cypher: {filter_cypher}")
+            logger.debug(f"Filter parameters: {filter_params}")
 
-        # Traverse graph
-        graph = await traverser.traverse(filter_cypher)
+        # Traverse graph (Issue #524: Pass parameters for parameterized queries)
+        graph = await traverser.traverse(filter_cypher, parameters=filter_params)
         logger.info(f"Extracted {len(graph.resources)} resources")
 
         # Collect source analysis metrics (Issue #413)

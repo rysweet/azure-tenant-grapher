@@ -37,18 +37,23 @@ class GraphTraverser:
         self.transformation_rules = transformation_rules or []
 
     async def traverse(
-        self, filter_cypher: Optional[str] = None, use_original_ids: bool = False
+        self,
+        filter_cypher: Optional[str] = None,
+        use_original_ids: bool = False,
+        parameters: Optional[Dict[str, Any]] = None,
     ) -> TenantGraph:
         """Traverse and extract tenant graph data.
 
         Args:
             filter_cypher: Optional Cypher filter string
             use_original_ids: If True, query Original nodes; if False (default), query Abstracted nodes
+            parameters: Optional dictionary of query parameters (Issue #524: for parameterized queries)
 
         Returns:
             TenantGraph instance with extracted data
         """
         logger.info("Starting graph traversal")
+        parameters = parameters or {}
 
         def process_result(
             result: list[Any],
@@ -147,7 +152,8 @@ class GraphTraverser:
 
         try:
             with self.driver.session() as session:
-                result = session.run(cast("LiteralString", query))
+                # Issue #524: Pass parameters to prevent Cypher injection
+                result = session.run(cast("LiteralString", query), parameters)
                 # Check if result is empty (consume iterator)
                 result_list = list(result)
                 if not result_list and not filter_cypher:
@@ -184,6 +190,7 @@ class GraphTraverser:
                         logger.info(
                             "No abstracted :Resource nodes found, running fallback query for non-Original nodes with 'type' property"
                         )
+                    # Fallback queries don't use parameters (no user input)
                     result = session.run(cast("LiteralString", fallback_query))
                     result_list = list(result)
                 process_result(result_list, resources, relationships)
