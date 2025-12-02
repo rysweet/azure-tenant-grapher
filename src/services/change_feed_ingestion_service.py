@@ -12,6 +12,8 @@ Future: May be extended to support Event Grid for near-real-time updates.
 
 import asyncio
 import logging
+import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from azure.identity import DefaultAzureCredential
@@ -26,6 +28,65 @@ except ImportError:
     MonitorClient = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
+
+
+def validate_subscription_id(subscription_id: str) -> None:
+    """
+    Validate Azure subscription ID format to prevent KQL injection.
+
+    Args:
+        subscription_id: Azure subscription ID to validate
+
+    Raises:
+        ValueError: If subscription_id is not a valid GUID format
+    """
+    if not subscription_id:
+        raise ValueError("Subscription ID cannot be empty")
+
+    # Azure subscription IDs are GUIDs in the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    guid_pattern = re.compile(
+        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    )
+
+    if not guid_pattern.match(subscription_id):
+        raise ValueError(
+            f"Invalid subscription ID format: {subscription_id}. Must be a valid GUID (e.g., 12345678-1234-1234-1234-123456789012)"
+        )
+
+
+def validate_iso8601_timestamp(timestamp: str) -> None:
+    """
+    Validate ISO8601 timestamp format to prevent KQL injection.
+
+    Args:
+        timestamp: ISO8601 timestamp string to validate
+
+    Raises:
+        ValueError: If timestamp is not valid ISO8601 format
+    """
+    if not timestamp:
+        raise ValueError("Timestamp cannot be empty")
+
+    # ISO8601 format requires 'T' separator between date and time
+    # Formats: 2024-01-01T00:00:00Z or 2024-01-01T00:00:00.000000+00:00
+    if "T" not in timestamp:
+        raise ValueError(
+            f"Invalid timestamp format: {timestamp}. Must be valid ISO8601 format (e.g., 2024-01-01T00:00:00Z)"
+        )
+
+    # Try parsing with datetime to validate ISO8601 format
+    try:
+        # Try fromisoformat (Python 3.7+)
+        if timestamp.endswith("Z"):
+            # Replace Z with +00:00 for fromisoformat compatibility
+            timestamp_normalized = timestamp[:-1] + "+00:00"
+            datetime.fromisoformat(timestamp_normalized)
+        else:
+            datetime.fromisoformat(timestamp)
+    except (ValueError, AttributeError):
+        raise ValueError(
+            f"Invalid timestamp format: {timestamp}. Must be valid ISO8601 format (e.g., 2024-01-01T00:00:00Z)"
+        )
 
 
 class ChangeFeedIngestionService:
@@ -64,11 +125,14 @@ class ChangeFeedIngestionService:
         Ingest resource changes for a given subscription since the provided timestamp.
 
         Args:
-            subscription_id: Azure subscription ID.
+            subscription_id: Azure subscription ID (must be valid GUID format).
             since_timestamp: ISO8601 timestamp string; if None, will use stored LastSyncedTimestamp.
 
         Returns:
             List of upserted or marked resources.
+
+        Raises:
+            ValueError: If subscription_id or since_timestamp have invalid formats
         """
         import datetime
 
@@ -76,7 +140,10 @@ class ChangeFeedIngestionService:
             f"Starting delta ingestion for subscription {subscription_id} since {since_timestamp}"
         )
 
-        # 1. Determine since_timestamp
+        # 1. Validate subscription_id to prevent KQL injection
+        validate_subscription_id(subscription_id)
+
+        # 2. Determine since_timestamp
         if since_timestamp is None:
             since_timestamp = self.get_last_synced_timestamp(subscription_id)
         if since_timestamp is None:
@@ -86,7 +153,11 @@ class ChangeFeedIngestionService:
                 - datetime.timedelta(days=7)
             ).isoformat()
 
-        # 2. Query Azure Resource Graph for resourcechanges
+        # 3. Validate timestamp to prevent KQL injection
+        validate_iso8601_timestamp(since_timestamp)
+
+        # 4. Query Azure Resource Graph for resourcechanges
+        # Note: After validation, these values are safe to use in query construction
         credential = DefaultAzureCredential()
         resourcegraph_client = ResourceGraphClient(credential)
         query = f"""
@@ -106,7 +177,7 @@ class ChangeFeedIngestionService:
             logger.error(f"Failed to query Resource Graph: {e}")
             changes = []
 
-        # 3. Query ARM Activity Logs for deletions
+        # 5. Query ARM Activity Logs for deletions
         deleted_ids = set()
         if MonitorClient is not None:
             monitor_client = MonitorClient(credential, subscription_id)
@@ -125,7 +196,7 @@ class ChangeFeedIngestionService:
                 "MonitorClient is not available; skipping activity log deletion detection."
             )
 
-        # 4. Upsert changed resources
+        # 6. Upsert changed resources
         upsert_resources = []
         for change in changes:
             if change.get("changeType") == "Delete":
@@ -154,7 +225,7 @@ class ChangeFeedIngestionService:
                     self.resource_processing_service.process_resources(upsert_resources)
                 )
 
-        # 5. Mark deleted resources as state="deleted"
+        # 7. Mark deleted resources as state="deleted"
         with self.neo4j_session_manager.session() as session:
             for resource_id in deleted_ids:
                 session.run(
@@ -162,7 +233,7 @@ class ChangeFeedIngestionService:
                     {"id": resource_id},
                 )
 
-        # 6. Update LastSyncedTimestamp
+        # 8. Update LastSyncedTimestamp
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         self.set_last_synced_timestamp(subscription_id, now_iso)
 
