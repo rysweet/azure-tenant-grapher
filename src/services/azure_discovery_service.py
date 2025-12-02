@@ -780,8 +780,151 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to discover DNS zone links: {e}")
 
+        # Discover VM extensions (123 resources in source)
+        vms = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Compute/virtualMachines"
+        ]
+        if vms:
+            logger.info(f"🔍 Discovering VM extensions for {len(vms)} VMs...")
+            try:
+                from azure.mgmt.compute import ComputeManagementClient
+                compute_client = ComputeManagementClient(self.credential, subscription_id)
+
+                for vm in vms:
+                    try:
+                        rg = vm.get("resource_group")
+                        vm_name = vm.get("name")
+
+                        if not rg or not vm_name:
+                            continue
+
+                        # Fetch extensions for this VM
+                        extensions_pager = compute_client.virtual_machine_extensions.list(rg, vm_name)
+
+                        for ext in extensions_pager:
+                            ext_dict = {
+                                "id": getattr(ext, "id", None),
+                                "name": getattr(ext, "name", None),
+                                "type": "Microsoft.Compute/virtualMachines/extensions",
+                                "location": vm.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(ext_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch VM extensions for {vm_name}: {e}")
+
+                ext_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Compute/virtualMachines/extensions"]
+                )
+                logger.info(f"✅ Found {ext_count} VM extensions")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover VM extensions: {e}")
+
+        # Discover SQL databases (child of SQL servers)
+        sql_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Sql/servers"
+        ]
+        if sql_servers:
+            logger.info(f"🔍 Discovering databases for {len(sql_servers)} SQL servers...")
+            try:
+                from azure.mgmt.sql import SqlManagementClient
+                sql_client = SqlManagementClient(self.credential, subscription_id)
+
+                for server in sql_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch databases for this server
+                        databases_pager = sql_client.databases.list_by_server(rg, server_name)
+
+                        for db in databases_pager:
+                            db_dict = {
+                                "id": getattr(db, "id", None),
+                                "name": getattr(db, "name", None),
+                                "type": "Microsoft.Sql/servers/databases",
+                                "location": server.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(db_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch databases for {server_name}: {e}")
+
+                db_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Sql/servers/databases"]
+                )
+                logger.info(f"✅ Found {db_count} SQL databases")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover SQL databases: {e}")
+
+        # Discover PostgreSQL configurations
+        pg_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") in ["Microsoft.DBforPostgreSQL/servers", "Microsoft.DBforPostgreSQL/flexibleServers"]
+        ]
+        if pg_servers:
+            logger.info(f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers...")
+            try:
+                from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
+                pg_client = PostgreSQLManagementClient(self.credential, subscription_id)
+
+                for server in pg_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch configurations for this server
+                        try:
+                            configs_pager = pg_client.configurations.list_by_server(rg, server_name)
+
+                            for config in configs_pager:
+                                config_dict = {
+                                    "id": getattr(config, "id", None),
+                                    "name": getattr(config, "name", None),
+                                    "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+                                    "location": server.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                }
+                                child_resources.append(config_dict)
+                        except Exception:
+                            # Might be flexibleServers which use different API
+                            pass
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch PostgreSQL configs for {server_name}: {e}")
+
+                config_count = len(
+                    [r for r in child_resources if "configurations" in r.get("type", "")]
+                )
+                logger.info(f"✅ Found {config_count} PostgreSQL configurations")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover PostgreSQL configurations: {e}")
+
         logger.info(
-            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
+            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered "
+            f"(subnets, VM extensions, DNS links, runbooks, SQL DBs, PostgreSQL configs)"
         )
         return child_resources
 
