@@ -21,11 +21,11 @@ from typing import Optional
 import click
 import structlog
 
-from src.config_manager import load_config
+from src.config_manager import create_neo4j_config_from_env
 from src.services.ctf_annotation_service import CTFAnnotationService
 from src.services.ctf_deploy_service import CTFDeployService
 from src.services.ctf_import_service import CTFImportService
-from src.utils.session_manager import Neo4jSessionManager
+from src.utils.session_manager import create_session_manager
 
 logger = structlog.get_logger(__name__)
 
@@ -36,10 +36,10 @@ def get_services():
     Returns:
         Tuple of (import_service, deploy_service, annotation_service)
     """
-    config = load_config()
-    neo4j_config = config.get("neo4j", {})
-    session_manager = Neo4jSessionManager(neo4j_config)
-    driver = session_manager.driver
+    config = create_neo4j_config_from_env()
+    session_manager = create_session_manager(config.neo4j)
+    session_manager.connect()
+    driver = session_manager._driver
 
     import_service = CTFImportService(neo4j_driver=driver)
     deploy_service = CTFDeployService(neo4j_driver=driver)
