@@ -5,6 +5,7 @@ in the Azure Tenant Grapher CLI.
 """
 
 import json
+import re
 import logging
 import subprocess
 from datetime import datetime
@@ -314,6 +315,42 @@ async def generate_iac_command_handler(
                 "tenantId", "tenant_id"
             }
 
+            def _validate_and_normalize_property_name(prop_name: str) -> str:
+                """Validate property name against whitelist and normalize it.
+                
+                Args:
+                    prop_name: Property name from user input
+                    
+                Returns:
+                    Normalized property name (canonical form from ALLOWED_PROPERTIES)
+                    
+                Raises:
+                    ValueError: If property name is not in whitelist or contains invalid characters
+                """
+                # First, validate the format (alphanumeric + underscore only)
+                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', prop_name):
+                    raise ValueError(
+                        f"Invalid property name format: '{prop_name}'. "
+                        f"Property names must start with a letter or underscore "
+                        f"and contain only alphanumeric characters and underscores."
+                    )
+                
+                # Check against whitelist (case-insensitive)
+                normalized_name = None
+                prop_lower = prop_name.lower()
+                for allowed_prop in ALLOWED_PROPERTIES:
+                    if allowed_prop.lower() == prop_lower:
+                        normalized_name = allowed_prop
+                        break
+                
+                if normalized_name is None:
+                    raise ValueError(
+                        f"Invalid property name '{prop_name}'. "
+                        f"Allowed properties: {', '.join(sorted(ALLOWED_PROPERTIES))}"
+                    )
+                
+                return normalized_name
+
             filters = [f.strip() for f in resource_filters.split(",")]
             filter_conditions = []
             filter_params = {}
@@ -336,12 +373,8 @@ async def generate_iac_command_handler(
                         prop_name = prop_name.strip()
                         pattern = pattern.strip()
 
-                    # Issue #524: Validate property name against whitelist
-                    if prop_name.lower() not in {p.lower() for p in ALLOWED_PROPERTIES}:
-                        raise ValueError(
-                            f"Invalid property name '{prop_name}'. "
-                            f"Allowed properties: {', '.join(sorted(ALLOWED_PROPERTIES))}"
-                        )
+                    # Issue #524: Validate and normalize property name to prevent injection
+                    prop_name = _validate_and_normalize_property_name(prop_name)
 
                     # Issue #524: Validate pattern is properly quoted for security
                     if not (pattern.startswith("'") and pattern.endswith("'")):
