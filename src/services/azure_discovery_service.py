@@ -318,6 +318,42 @@ class AzureDiscoveryService:
                         f"Failed to discover role assignments (continuing with other resources): {role_error}"
                     )
 
+                # Phase 1.6: Discover child resources (Bug #520 fix)
+                # Child resources (subnets, runbooks, etc.) are not returned by resources.list()
+                # They require explicit API calls to parent resource endpoints
+                logger.info("🔍 Phase 1.6: Discovering child resources...")
+                try:
+                    child_resources = await self.discover_child_resources(
+                        subscription_id, resource_basics
+                    )
+
+                    if child_resources:
+                        # Apply filter to child resources if provided
+                        if filter_config:
+                            filtered_children = []
+                            for child in child_resources:
+                                if filter_config.should_include_resource(child):
+                                    filtered_children.append(child)
+                                else:
+                                    logger.debug(
+                                        f"🚫 Filtering out child resource: {child.get('id')}"
+                                    )
+                            child_resources = filtered_children
+                            logger.info(
+                                f"✅ After filtering: {len(child_resources)} child resources included"
+                            )
+
+                        # Merge child resources with main resource list
+                        resource_basics.extend(child_resources)
+                        logger.info(
+                            f"✅ Total resources including children: {len(resource_basics)}"
+                        )
+                except Exception as child_error:
+                    # Log but don't fail - child resources are supplementary
+                    logger.warning(
+                        f"Failed to discover child resources (continuing): {child_error}"
+                    )
+
                 # Phase 2: Fetch full properties in parallel if enabled
                 if self._max_build_threads > 0 and resource_basics:
                     logger.info(
@@ -577,6 +613,372 @@ class AzureDiscoveryService:
                 f"Continuing discovery without role assignments for subscription {subscription_id}"
             )
             return []
+
+    async def discover_child_resources(
+        self,
+        subscription_id: str,
+        parent_resources: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Discover child resources that resources.list() doesn't return.
+
+        Child resources (subnets, runbooks, etc.) are nested under parent resources
+        and require explicit API calls to parent resource endpoints.
+
+        Args:
+            subscription_id: Azure subscription ID
+            parent_resources: List of parent resources from main discovery
+
+        Returns:
+            List of child resource dictionaries
+
+        Bug #520 fix: Target scanner coverage gaps for child resources
+        """
+        from azure.mgmt.automation import AutomationClient
+        from azure.mgmt.network import NetworkManagementClient
+
+        child_resources = []
+
+        # Group parents by type for efficient processing
+        vnets = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Network/virtualNetworks"
+        ]
+        automation_accounts = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Automation/automationAccounts"
+        ]
+
+        # Discover subnets
+        if vnets:
+            logger.info(f"🔍 Discovering subnets for {len(vnets)} VNets...")
+            try:
+                network_client = NetworkManagementClient(self.credential, subscription_id)
+
+                for vnet in vnets:
+                    try:
+                        rg = vnet.get("resource_group")
+                        vnet_name = vnet.get("name")
+
+                        if not rg or not vnet_name:
+                            continue
+
+                        # Fetch subnets for this VNet
+                        subnets_pager = network_client.subnets.list(rg, vnet_name)
+
+                        for subnet in subnets_pager:
+                            subnet_dict = {
+                                "id": getattr(subnet, "id", None),
+                                "name": getattr(subnet, "name", None),
+                                "type": "Microsoft.Network/subnets",
+                                "location": vnet.get("location"),  # Inherit from parent
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(subnet_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch subnets for {vnet_name}: {e}")
+
+                subnet_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Network/subnets"]
+                )
+                logger.info(f"✅ Found {subnet_count} subnets")
+
+            except Exception as e:
+                logger.warning(f"Failed to create network client: {e}")
+
+        # Discover automation runbooks
+        if automation_accounts:
+            logger.info(
+                f"🔍 Discovering runbooks for {len(automation_accounts)} Automation Accounts..."
+            )
+            try:
+                automation_client = AutomationClient(self.credential, subscription_id)
+
+                for account in automation_accounts:
+                    try:
+                        rg = account.get("resource_group")
+                        account_name = account.get("name")
+
+                        if not rg or not account_name:
+                            continue
+
+                        # Fetch runbooks for this account
+                        runbooks_pager = automation_client.runbook.list_by_automation_account(
+                            rg, account_name
+                        )
+
+                        for runbook in runbooks_pager:
+                            runbook_dict = {
+                                "id": getattr(runbook, "id", None),
+                                "name": getattr(runbook, "name", None),
+                                "type": "Microsoft.Automation/automationAccounts/runbooks",
+                                "location": account.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(runbook_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch runbooks for {account_name}: {e}")
+
+                runbook_count = len(
+                    [r for r in child_resources if "runbooks" in r["type"]]
+                )
+                logger.info(f"✅ Found {runbook_count} runbooks")
+
+            except Exception as e:
+                logger.warning(f"Failed to create automation client: {e}")
+
+        # Discover DNS zone virtual network links (21 errors)
+        dns_zones = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Network/privateDnsZones"
+        ]
+        if dns_zones:
+            logger.info(f"🔍 Discovering virtual network links for {len(dns_zones)} DNS zones...")
+            try:
+                network_client = NetworkManagementClient(self.credential, subscription_id)
+
+                for dns_zone in dns_zones:
+                    try:
+                        rg = dns_zone.get("resource_group")
+                        zone_name = dns_zone.get("name")
+
+                        if not rg or not zone_name:
+                            continue
+
+                        # Fetch virtual network links for this DNS zone
+                        links_pager = network_client.virtual_network_links.list(rg, zone_name)
+
+                        for link in links_pager:
+                            link_dict = {
+                                "id": getattr(link, "id", None),
+                                "name": getattr(link, "name", None),
+                                "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                                "location": dns_zone.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(link_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch DNS links for {zone_name}: {e}")
+
+                link_count = len(
+                    [r for r in child_resources if "virtualNetworkLinks" in r["type"]]
+                )
+                logger.info(f"✅ Found {link_count} DNS zone links")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover DNS zone links: {e}")
+
+        # Discover VM extensions (123 resources in source)
+        vms = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Compute/virtualMachines"
+        ]
+        if vms:
+            logger.info(f"🔍 Discovering VM extensions for {len(vms)} VMs...")
+            try:
+                from azure.mgmt.compute import ComputeManagementClient
+                compute_client = ComputeManagementClient(self.credential, subscription_id)
+
+                for vm in vms:
+                    try:
+                        rg = vm.get("resource_group")
+                        vm_name = vm.get("name")
+
+                        if not rg or not vm_name:
+                            continue
+
+                        # Fetch extensions for this VM
+                        extensions_pager = compute_client.virtual_machine_extensions.list(rg, vm_name)
+
+                        for ext in extensions_pager:
+                            ext_dict = {
+                                "id": getattr(ext, "id", None),
+                                "name": getattr(ext, "name", None),
+                                "type": "Microsoft.Compute/virtualMachines/extensions",
+                                "location": vm.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(ext_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch VM extensions for {vm_name}: {e}")
+
+                ext_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Compute/virtualMachines/extensions"]
+                )
+                logger.info(f"✅ Found {ext_count} VM extensions")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover VM extensions: {e}")
+
+        # Discover SQL databases (child of SQL servers)
+        sql_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Sql/servers"
+        ]
+        if sql_servers:
+            logger.info(f"🔍 Discovering databases for {len(sql_servers)} SQL servers...")
+            try:
+                from azure.mgmt.sql import SqlManagementClient
+                sql_client = SqlManagementClient(self.credential, subscription_id)
+
+                for server in sql_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch databases for this server
+                        databases_pager = sql_client.databases.list_by_server(rg, server_name)
+
+                        for db in databases_pager:
+                            db_dict = {
+                                "id": getattr(db, "id", None),
+                                "name": getattr(db, "name", None),
+                                "type": "Microsoft.Sql/servers/databases",
+                                "location": server.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(db_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch databases for {server_name}: {e}")
+
+                db_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Sql/servers/databases"]
+                )
+                logger.info(f"✅ Found {db_count} SQL databases")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover SQL databases: {e}")
+
+        # Discover PostgreSQL configurations
+        pg_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") in ["Microsoft.DBforPostgreSQL/servers", "Microsoft.DBforPostgreSQL/flexibleServers"]
+        ]
+        if pg_servers:
+            logger.info(f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers...")
+            try:
+                from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
+                pg_client = PostgreSQLManagementClient(self.credential, subscription_id)
+
+                for server in pg_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch configurations for this server
+                        try:
+                            configs_pager = pg_client.configurations.list_by_server(rg, server_name)
+
+                            for config in configs_pager:
+                                config_dict = {
+                                    "id": getattr(config, "id", None),
+                                    "name": getattr(config, "name", None),
+                                    "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+                                    "location": server.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                }
+                                child_resources.append(config_dict)
+                        except Exception:
+                            # Might be flexibleServers which use different API
+                            pass
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch PostgreSQL configs for {server_name}: {e}")
+
+                config_count = len(
+                    [r for r in child_resources if "configurations" in r.get("type", "")]
+                )
+                logger.info(f"✅ Found {config_count} PostgreSQL configurations")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover PostgreSQL configurations: {e}")
+
+        # Discover Container Registry webhooks
+        registries = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.ContainerRegistry/registries"
+        ]
+        if registries:
+            logger.info(f"🔍 Discovering webhooks for {len(registries)} container registries...")
+            try:
+                from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+                acr_client = ContainerRegistryManagementClient(self.credential, subscription_id)
+
+                for registry in registries:
+                    try:
+                        rg = registry.get("resource_group")
+                        registry_name = registry.get("name")
+
+                        if not rg or not registry_name:
+                            continue
+
+                        webhooks_pager = acr_client.webhooks.list(rg, registry_name)
+
+                        for webhook in webhooks_pager:
+                            webhook_dict = {
+                                "id": getattr(webhook, "id", None),
+                                "name": getattr(webhook, "name", None),
+                                "type": "Microsoft.ContainerRegistry/registries/webhooks",
+                                "location": registry.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(webhook_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch webhooks for {registry_name}: {e}")
+
+                webhook_count = len(
+                    [r for r in child_resources if "webhooks" in r.get("type", "")]
+                )
+                logger.info(f"✅ Found {webhook_count} container registry webhooks")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover container registry webhooks: {e}")
+
+        # Log final Phase 1.6 summary
+        child_type_counts = {}
+        for child in child_resources:
+            child_type = child.get("type", "unknown")
+            child_type_counts[child_type] = child_type_counts.get(child_type, 0) + 1
+
+        logger.info(
+            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered across {len(child_type_counts)} types"
+        )
+        logger.debug(f"Child resource breakdown: {child_type_counts}")
+
+        return child_resources
 
     def _extract_resource_group_from_scope(self, scope: Optional[str]) -> Optional[str]:
         """
