@@ -51,9 +51,7 @@ class LayerAwareQueryService:
         self.layer_service = layer_service
         self.logger = logging.getLogger(__name__)
 
-    async def _get_effective_layer_id(
-        self, layer_id: Optional[str] = None
-    ) -> str:
+    async def _get_effective_layer_id(self, layer_id: Optional[str] = None) -> str:
         """
         Get effective layer ID (provided or active).
 
@@ -172,8 +170,31 @@ class LayerAwareQueryService:
             where_clauses.append("r.type = $resource_type")
             params["resource_type"] = resource_type
 
-        # Apply property filters
+        # Apply property filters safely using SafeCypherBuilder
         if filters:
+            from src.utils.safe_cypher_builder import (
+                validate_filter_keys,
+            )
+
+            # Define allowed filter keys for resources
+            ALLOWED_FILTER_KEYS = {
+                "id",
+                "name",
+                "type",
+                "location",
+                "resource_group",
+                "subscription_id",
+                "layer_id",
+                "tenant_id",
+                "sku",
+                "kind",
+                "provisioning_state",
+            }
+
+            # Validate all filter keys against whitelist
+            validate_filter_keys(filters, ALLOWED_FILTER_KEYS)
+
+            # Build parameterized WHERE clauses safely
             for key, value in filters.items():
                 param_name = f"filter_{key.replace('.', '_')}"
                 where_clauses.append(f"r.{key} = ${param_name}")
@@ -187,7 +208,7 @@ class LayerAwareQueryService:
         RETURN properties(r) as props
         """
 
-        # Add pagination
+        # Add pagination (safe - using integer values, not user input in query string)
         if offset > 0:
             query += f" SKIP {offset}"
         if limit:
@@ -455,9 +476,9 @@ class LayerAwareQueryService:
 
             # Average degree
             if stats["total_nodes"] > 0:
-                stats["avg_degree"] = (
-                    stats["total_relationships"] * 2
-                ) / stats["total_nodes"]
+                stats["avg_degree"] = (stats["total_relationships"] * 2) / stats[
+                    "total_nodes"
+                ]
             else:
                 stats["avg_degree"] = 0.0
 
