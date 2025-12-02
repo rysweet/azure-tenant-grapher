@@ -356,7 +356,7 @@ class TerraformEmitter(IaCEmitter):
         domain_name: Optional[str] = None,
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
-        split_by_community: bool = False,
+        split_by_community: bool = True,  # Bug #112: Default to True for parallel deployment
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
@@ -1047,12 +1047,13 @@ class TerraformEmitter(IaCEmitter):
             # Track file creation for generation report (Issue #413)
             self._files_created += 1
 
-        # Bug #24 fix: Write smart import blocks AFTER resource emission completes
-        # This allows us to filter out import blocks for resources that weren't emitted
-        if comparison_result is not None and "smart_import_blocks" in locals():
-            self._write_import_blocks_filtered(
-                smart_import_blocks, terraform_config, out_dir
-            )
+        # Bug #112 fix: DO NOT write separate imports.tf file
+        # Import blocks are already inline in terraform_config["import"]
+        # Writing them twice causes "Duplicate import configuration" errors
+        # if comparison_result is not None and "smart_import_blocks" in locals():
+        #     self._write_import_blocks_filtered(
+        #         smart_import_blocks, terraform_config, out_dir
+        #     )
 
         # Report summary of missing references
         if self._missing_references:

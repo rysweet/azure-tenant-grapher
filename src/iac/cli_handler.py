@@ -252,7 +252,7 @@ async def generate_iac_command_handler(
     scan_target_tenant_id: Optional[str] = None,
     scan_target_subscription_id: Optional[str] = None,
     # Community splitting parameters
-    split_by_community: bool = False,
+    split_by_community: bool = True,  # Bug #112: Default to True for parallel deployment
 ) -> int:
     """Handle the generate-iac CLI command.
 
