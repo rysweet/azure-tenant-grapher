@@ -67,7 +67,7 @@ def test_automation_at_threshold(token_count, expected_action):
         # Check results
         if "context_automation" in output.get("metadata", {}):
             auto_data = output["metadata"]["context_automation"]
-            print(f"\n✅ Automation Triggered!")
+            print("\n✅ Automation Triggered!")
             print(f"   Actions: {auto_data.get('actions', [])}")
             print(f"   Warnings: {auto_data.get('warnings', [])}")
 
@@ -75,7 +75,7 @@ def test_automation_at_threshold(token_count, expected_action):
                 print(f"   💬 {warning}")
 
         else:
-            print(f"\n⭕ No automation (below threshold)")
+            print("\n⭕ No automation (below threshold)")
 
         return output
 
@@ -126,7 +126,7 @@ def main():
 
         if state.get('last_rehydration'):
             rehydration = state['last_rehydration']
-            print(f"  Last Rehydration:")
+            print("  Last Rehydration:")
             print(f"    - Level: {rehydration.get('level')}")
             print(f"    - Snapshot: {rehydration.get('snapshot')}")
 

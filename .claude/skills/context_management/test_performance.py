@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Test performance impact of automation with adaptive frequency."""
 
-import json
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -13,6 +11,7 @@ sys.path.insert(0, str(project_root / ".claude" / "tools" / "amplihack" / "hooks
 sys.path.insert(0, str(project_root / ".claude" / "skills"))
 
 from context_management.automation import ContextAutomation
+
 
 def test_performance():
     """Test performance with adaptive frequency."""
@@ -69,7 +68,7 @@ def test_performance():
 
         elapsed = time.time() - start_time
 
-        print(f"\n📈 Results:")
+        print("\n📈 Results:")
         print(f"   Total tool uses: {num_tools}")
         print(f"   Checks run: {checks_run}")
         print(f"   Skipped: {skips}")

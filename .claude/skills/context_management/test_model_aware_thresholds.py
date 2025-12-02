@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from context_management import TokenMonitor
 
+
 def test_model_aware_thresholds():
     """Test that thresholds adjust based on model size."""
 
