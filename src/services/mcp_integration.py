@@ -176,6 +176,10 @@ class MCPIntegrationService:
 
         # Try MCP first if enabled and requested
         if use_mcp and self.is_available:
+            # Note: This builds a natural language query for MCP, not Cypher
+            # MCP service handles input validation internally
+            # subscription_id comes from Azure SDK (trusted source)
+            # resource_types is a list of strings, joined safely
             query = f"list all resources in subscription {subscription_id}"
             if resource_types:
                 query += f" of types: {', '.join(resource_types)}"

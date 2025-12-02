@@ -218,7 +218,12 @@ class LayerValidationReport:
     ):
         """Add validation error."""
         self.issues.append(
-            {"level": "error", "code": code, "message": message, "details": details or {}}
+            {
+                "level": "error",
+                "code": code,
+                "message": message,
+                "details": details or {},
+            }
         )
         self.checks_failed += 1
         self.is_valid = False
@@ -228,7 +233,12 @@ class LayerValidationReport:
     ):
         """Add validation warning."""
         self.warnings.append(
-            {"level": "warning", "code": code, "message": message, "details": details or {}}
+            {
+                "level": "warning",
+                "code": code,
+                "message": message,
+                "details": details or {},
+            }
         )
         self.checks_warned += 1
 
@@ -299,9 +309,7 @@ class CrossLayerRelationshipError(LayerError):
     """Attempted to create relationship across layers."""
 
     def __init__(self, source_layer: str, target_layer: str):
-        super().__init__(
-            f"Cross-layer relationship: {source_layer} -> {target_layer}"
-        )
+        super().__init__(f"Cross-layer relationship: {source_layer} -> {target_layer}")
         self.source_layer = source_layer
         self.target_layer = target_layer
 
@@ -657,35 +665,52 @@ class LayerManagementService:
         if layer.is_locked and is_locked:
             raise LayerLockedError(layer_id)
 
-        # Build SET clauses
-        set_clauses = ["l.updated_at = datetime()"]
+        # Build safe SET clause using helper to prevent Cypher injection
+
+        # Define allowed update keys for layers (whitelist)
+        ALLOWED_UPDATE_KEYS = {
+            "name",
+            "description",
+            "tags",
+            "metadata",
+            "is_locked",
+            "updated_at",
+        }
+
+        # Build updates dictionary
+        updates_dict = {"updated_at": "datetime()"}  # Special case: datetime() function
         params = {"layer_id": layer_id}
 
         if name is not None:
-            set_clauses.append("l.name = $name")
-            params["name"] = name
-
+            updates_dict["name"] = name
         if description is not None:
-            set_clauses.append("l.description = $description")
-            params["description"] = description
-
+            updates_dict["description"] = description
         if tags is not None:
-            set_clauses.append("l.tags = $tags")
-            params["tags"] = tags
-
+            updates_dict["tags"] = tags
         if metadata is not None:
             # Merge with existing metadata
             merged_metadata = {**layer.metadata, **metadata}
-            set_clauses.append("l.metadata = $metadata")
-            params["metadata"] = json.dumps(merged_metadata)
-
+            updates_dict["metadata"] = json.dumps(merged_metadata)
         if is_locked is not None:
-            set_clauses.append("l.is_locked = $is_locked")
-            params["is_locked"] = is_locked
+            updates_dict["is_locked"] = is_locked
+
+        # Build safe SET clause (prevents injection via property names)
+        set_clauses = []
+        for key, value in updates_dict.items():
+            if key not in ALLOWED_UPDATE_KEYS:
+                raise ValueError(f"Invalid update key: {key}")
+            if key == "updated_at" and value == "datetime()":
+                # Special handling for datetime() function
+                set_clauses.append("l.updated_at = datetime()")
+            else:
+                set_clauses.append(f"l.{key} = ${key}")
+                params[key] = value
+
+        set_clause_str = ", ".join(set_clauses)
 
         query = f"""
         MATCH (l:Layer {{layer_id: $layer_id}})
-        SET {', '.join(set_clauses)}
+        SET {set_clause_str}
         RETURN l
         """
 
@@ -1083,7 +1108,11 @@ class LayerManagementService:
                     l.relationship_count = $rel_count,
                     l.updated_at = datetime()
                 """,
-                {"layer_id": layer_id, "node_count": node_count, "rel_count": rel_count},
+                {
+                    "layer_id": layer_id,
+                    "node_count": node_count,
+                    "rel_count": rel_count,
+                },
             )
 
         self.logger.info(
@@ -1362,7 +1391,9 @@ class LayerManagementService:
         # Refresh stats
         await self.refresh_layer_stats(layer_metadata.layer_id)
 
-        self.logger.info(f"Restored layer {layer_metadata.layer_id} from {archive_path}")
+        self.logger.info(
+            f"Restored layer {layer_metadata.layer_id} from {archive_path}"
+        )
 
         return await self.get_layer(layer_metadata.layer_id)
 

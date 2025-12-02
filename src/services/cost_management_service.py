@@ -805,14 +805,10 @@ class CostManagementService:
         Returns:
             CostSummary object
         """
-        # Build scope filter
-        if "/subscriptions/" in scope:
-            subscription_id = scope.split("/subscriptions/")[1].split("/")[0]
-            scope_filter = "c.subscription_id = $scope_id"
-            scope_id = subscription_id
-        else:
-            scope_filter = "c.resource_id STARTS WITH $scope_id"
-            scope_id = scope
+        # Build safe scope filter using helper to prevent Cypher injection
+        from src.utils.safe_cypher_builder import build_scope_filter
+
+        scope_filter, param_name, param_value = build_scope_filter(scope)
 
         query = f"""
         MATCH (c:Cost)
@@ -827,7 +823,7 @@ class CostManagementService:
 
         result = await tx.run(
             query,
-            scope_id=scope_id,
+            **{param_name: param_value},
             start_date=start_date.isoformat(),
             end_date=end_date.isoformat(),
         )
@@ -857,7 +853,7 @@ class CostManagementService:
             """
             service_result = await tx.run(
                 service_query,
-                scope_id=scope_id,
+                **{param_name: param_value},
                 start_date=start_date.isoformat(),
                 end_date=end_date.isoformat(),
             )
@@ -892,13 +888,10 @@ class CostManagementService:
         Returns:
             List of (date, cost) tuples
         """
-        if "/subscriptions/" in scope:
-            subscription_id = scope.split("/subscriptions/")[1].split("/")[0]
-            scope_filter = "c.subscription_id = $scope_id"
-            scope_id = subscription_id
-        else:
-            scope_filter = "c.resource_id STARTS WITH $scope_id"
-            scope_id = scope
+        # Build safe scope filter using helper to prevent Cypher injection
+        from src.utils.safe_cypher_builder import build_scope_filter
+
+        scope_filter, param_name, param_value = build_scope_filter(scope)
 
         query = f"""
         MATCH (c:Cost)
@@ -912,7 +905,7 @@ class CostManagementService:
 
         result = await tx.run(
             query,
-            scope_id=scope_id,
+            **{param_name: param_value},
             start_date=start_date.isoformat(),
             end_date=end_date.isoformat(),
         )
@@ -1055,13 +1048,10 @@ class CostManagementService:
         Returns:
             Dictionary mapping resource IDs to list of (date, cost) tuples
         """
-        if "/subscriptions/" in scope:
-            subscription_id = scope.split("/subscriptions/")[1].split("/")[0]
-            scope_filter = "c.subscription_id = $scope_id"
-            scope_id = subscription_id
-        else:
-            scope_filter = "c.resource_id STARTS WITH $scope_id"
-            scope_id = scope
+        # Build safe scope filter using helper to prevent Cypher injection
+        from src.utils.safe_cypher_builder import build_scope_filter
+
+        scope_filter, param_name, param_value = build_scope_filter(scope)
 
         query = f"""
         MATCH (c:Cost)
@@ -1074,7 +1064,7 @@ class CostManagementService:
 
         result = await tx.run(
             query,
-            scope_id=scope_id,
+            **{param_name: param_value},
             start_date=start_date.isoformat(),
             end_date=end_date.isoformat(),
         )
@@ -1217,8 +1207,10 @@ class CostManagementService:
         Returns:
             Dictionary mapping tag values to costs
         """
+        # Build safe subscription filter (prevents injection via filter clause construction)
         subscription_filter = ""
         if subscription_ids:
+            # Safe: using parameterized IN clause
             subscription_filter = "AND c.subscription_id IN $subscription_ids"
 
         query = f"""
