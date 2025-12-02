@@ -23,7 +23,6 @@ class DataFactoryHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.DataFactory/factories",
         "microsoft.datafactory/factories",
     }
 

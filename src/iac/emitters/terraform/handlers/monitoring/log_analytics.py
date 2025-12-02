@@ -24,7 +24,6 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.OperationalInsights/workspaces",
-        "microsoft.operationalinsights/workspaces",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
@@ -117,7 +116,6 @@ class LogAnalyticsQueryPackHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.OperationalInsights/queryPacks",
-        "microsoft.operationalInsights/querypacks",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {

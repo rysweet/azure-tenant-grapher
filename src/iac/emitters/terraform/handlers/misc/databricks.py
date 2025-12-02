@@ -23,7 +23,6 @@ class DatabricksWorkspaceHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Databricks/workspaces",
         "microsoft.databricks/workspaces",
     }
 

@@ -23,7 +23,6 @@ class ContainerGroupHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.ContainerInstance/containerGroups",
         "microsoft.containerinstance/containergroups",
     }
 

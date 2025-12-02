@@ -23,7 +23,6 @@ class SearchServiceHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Search/searchServices",
         "microsoft.search/searchservices",
     }
 

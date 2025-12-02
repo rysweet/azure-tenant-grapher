@@ -27,9 +27,7 @@ class WAFPolicyHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Network/frontDoorWebApplicationFirewallPolicies",
         "microsoft.network/frontdoorwebapplicationfirewallpolicies",
-        "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
         "microsoft.network/applicationgatewaywebapplicationfirewallpolicies",
     }
 

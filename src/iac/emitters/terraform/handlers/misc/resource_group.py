@@ -23,7 +23,6 @@ class ResourceGroupHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Resources/resourceGroups",
         "microsoft.resources/resourcegroups",
     }
 

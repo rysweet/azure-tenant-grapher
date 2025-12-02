@@ -24,7 +24,6 @@ class ServiceBusNamespaceHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.ServiceBus/namespaces",
-        "microsoft.servicebus/namespaces",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
@@ -76,7 +75,6 @@ class ServiceBusQueueHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.ServiceBus/namespaces/queues",
-        "microsoft.servicebus/namespaces/queues",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {

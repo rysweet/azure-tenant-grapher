@@ -23,7 +23,6 @@ class DevTestLabHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.DevTestLab/labs",
         "microsoft.devtestlab/labs",
     }
 

@@ -24,7 +24,6 @@ class VMExtensionHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.Compute/virtualMachines/extensions",
-        "microsoft.compute/virtualMachines/extensions",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
@@ -80,7 +79,6 @@ class VMRunCommandHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.Compute/virtualMachines/runCommands",
-        "microsoft.compute/virtualmachines/runcommands",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {

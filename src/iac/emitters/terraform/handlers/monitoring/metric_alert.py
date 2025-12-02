@@ -23,8 +23,6 @@ class MetricAlertHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Insights/metricAlerts",
-        "Microsoft.Insights/metricalerts",
         "microsoft.insights/metricalerts",
     }
 

@@ -24,7 +24,6 @@ class DNSZoneHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.Network/dnsZones",
-        "microsoft.network/dnszones",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
@@ -57,7 +56,6 @@ class PrivateDNSZoneHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.Network/privateDnsZones",
-        "microsoft.network/privatednszones",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
