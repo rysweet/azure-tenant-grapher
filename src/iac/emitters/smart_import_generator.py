@@ -498,6 +498,8 @@ class SmartImportGenerator:
         normalized = re.sub(r'/microsoft\.alertsmanagement/', '/Microsoft.AlertsManagement/', normalized, flags=re.IGNORECASE)
         normalized = re.sub(r'/microsoft\.network/dnszones/', '/Microsoft.Network/dnsZones/', normalized, flags=re.IGNORECASE)
         normalized = re.sub(r'/microsoft\.operationalinsights/', '/Microsoft.OperationalInsights/', normalized, flags=re.IGNORECASE)
+        # Fix querypacks casing (Bug #110: Terraform expects queryPacks not querypacks)
+        normalized = re.sub(r'/querypacks/', '/queryPacks/', normalized, flags=re.IGNORECASE)
 
         return normalized
 
