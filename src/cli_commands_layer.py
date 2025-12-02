@@ -37,7 +37,7 @@ from src.config_manager import create_neo4j_config_from_env
 from src.models.layer_metadata import (
     LayerType,
 )
-from src.services.layer_management_service import (
+from src.services.layer import (
     LayerAlreadyExistsError,
     LayerLockedError,
     LayerManagementService,
