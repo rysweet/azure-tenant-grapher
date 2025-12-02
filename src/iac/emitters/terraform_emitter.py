@@ -26,6 +26,8 @@ from .private_endpoint_emitter import (
     emit_private_dns_zone_vnet_link,
     emit_private_endpoint,
 )
+from .terraform.context import EmitterContext
+from .terraform.handlers import HandlerRegistry, ensure_handlers_registered
 
 logger = logging.getLogger(__name__)
 
@@ -1612,10 +1614,131 @@ class TerraformEmitter(IaCEmitter):
         logger.warning(f"Unexpected tags type for '{resource_name}': {type(tags)}")
         return None
 
+    def _create_emitter_context(self) -> EmitterContext:
+        """Create EmitterContext from current emitter state.
+
+        This builds a context object containing all the shared state that
+        handlers need for resource emission.
+
+        Returns:
+            EmitterContext populated with current emitter state
+        """
+        return EmitterContext(
+            target_subscription_id=self.target_subscription_id,
+            target_tenant_id=self.target_tenant_id,
+            source_subscription_id=self.source_subscription_id,
+            source_tenant_id=self.source_tenant_id,
+            identity_mapping=self.identity_mapping,
+            resource_group_prefix=self.resource_group_prefix,
+            strict_mode=self.strict_mode,
+            terraform_config={},  # Will be populated by handlers
+            available_resources=self._available_resources.copy(),
+            available_subnets=self._available_subnets.copy(),
+            available_resource_groups=self._available_resource_groups.copy(),
+            vnet_id_to_terraform_name=self._vnet_id_to_terraform_name.copy(),
+            nsg_associations=self._nsg_associations.copy(),
+            nic_nsg_associations=self._nic_nsg_associations.copy(),
+            missing_references=self._missing_references.copy(),
+            graph=self._graph,
+            translation_coordinator=self._translation_coordinator,
+        )
+
+    def _sync_context_to_emitter(self, context: EmitterContext) -> None:
+        """Sync modified context state back to emitter instance.
+
+        After a handler emits a resource, it may have modified the context
+        (e.g., tracked new resources, added associations). This syncs those
+        changes back to the emitter's internal state.
+
+        Args:
+            context: EmitterContext with potentially modified state
+        """
+        self._available_resources = context.available_resources
+        self._available_subnets = context.available_subnets
+        self._available_resource_groups = context.available_resource_groups
+        self._vnet_id_to_terraform_name = context.vnet_id_to_terraform_name
+        self._nsg_associations = context.nsg_associations
+        self._nic_nsg_associations = context.nic_nsg_associations
+        self._missing_references = context.missing_references
+
     def _convert_resource(
         self, resource: Dict[str, Any], terraform_config: Dict[str, Any]
     ) -> Optional[tuple[str, str, Dict[str, Any]]]:
         """Convert Azure resource to Terraform resource.
+
+        This method delegates to specialized handlers when available,
+        falling back to legacy implementation for unsupported types.
+
+        Migration Status: PARTIAL (54 handlers available, legacy fallback active)
+
+        Args:
+            resource: Azure resource data
+            terraform_config: The main Terraform configuration dict to add helper resources to
+
+        Returns:
+            Tuple of (terraform_type, resource_name, resource_config) or None
+        """
+        azure_type = resource.get("type", "")
+        resource_name = resource.get("name", "unknown")
+
+        # Ensure handlers are registered
+        ensure_handlers_registered()
+
+        # Try handler-based emission first
+        handler = HandlerRegistry.get_handler(azure_type)
+
+        if handler:
+            try:
+                # Create context from current state
+                context = self._create_emitter_context()
+
+                # Let handler emit the resource
+                result = handler.emit(resource, context)
+
+                if result:
+                    # Sync context state back to emitter
+                    self._sync_context_to_emitter(context)
+
+                    # Merge any helper resources into main config
+                    if context.terraform_config.get("resource"):
+                        for res_type, resources in context.terraform_config["resource"].items():
+                            if res_type not in terraform_config.get("resource", {}):
+                                terraform_config.setdefault("resource", {})[res_type] = {}
+                            terraform_config["resource"][res_type].update(resources)
+
+                    logger.info(
+                        f"✅ Handler emission successful for {azure_type}: {resource_name}"
+                    )
+                    return result
+                else:
+                    logger.warning(
+                        f"⚠️  Handler returned None for {azure_type}: {resource_name}, "
+                        f"falling back to legacy"
+                    )
+
+            except Exception as e:
+                logger.warning(
+                    f"❌ Handler failed for {azure_type}: {resource_name}, "
+                    f"falling back to legacy. Error: {e}"
+                )
+
+        # Fallback to legacy implementation
+        logger.debug(f"Using legacy implementation for {azure_type}: {resource_name}")
+        return self._convert_resource_legacy(resource, terraform_config)
+
+
+    def _convert_resource_legacy(
+        self, resource: Dict[str, Any], terraform_config: Dict[str, Any]
+    ) -> Optional[tuple[str, str, Dict[str, Any]]]:
+        """LEGACY: Convert Azure resource to Terraform resource.
+
+        This is the original 3010-line monolithic implementation, preserved for:
+        1. Fallback when handlers don't support a resource type yet
+        2. Comparison testing (old vs new output validation)
+        3. Gradual migration safety net
+
+        WARNING: DO NOT MODIFY THIS METHOD during handler migration!
+        It must remain frozen to serve as the "source of truth" for testing.
 
         Args:
             resource: Azure resource data
@@ -4621,6 +4744,7 @@ class TerraformEmitter(IaCEmitter):
             )
 
         return terraform_type, safe_name, resource_config
+
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
         """Determine correct App Service Terraform type based on OS.
