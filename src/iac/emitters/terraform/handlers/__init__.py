@@ -200,10 +200,13 @@ def _register_all_handlers() -> None:
 
     # Network handlers
     from .network import (
+        application_gateway,
         bastion,
+        load_balancer,
         nat_gateway,
         nic,
         nsg,
+        nsg_associations,
         public_ip,
         route_table,
         subnet,
