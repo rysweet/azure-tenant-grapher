@@ -1,0 +1,10 @@
+# GitGuardian configuration
+# https://docs.gitguardian.com/internal-repositories-monitoring/integrations/git_hooks/pre_commit
+
+version: 2
+
+# Paths to exclude from scanning
+paths-ignore:
+  - "**/.env.example"
+  - "**/tests/**"
+  - "**/*.example"

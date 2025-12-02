@@ -12,6 +12,8 @@ from typing import Any, Optional
 
 from neo4j import GraphDatabase
 
+from src.utils.secure_credentials import Neo4jCredentials, get_neo4j_credentials
+
 logger = logging.getLogger(__name__)
 
 
@@ -85,19 +87,51 @@ class FidelityMetrics:
 class FidelityCalculator:
     """Calculate resource replication fidelity between subscriptions."""
 
-    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
+    def __init__(
+        self,
+        neo4j_uri: Optional[str] = None,
+        neo4j_user: Optional[str] = None,
+        neo4j_password: Optional[str] = None,
+        credentials: Optional[Neo4jCredentials] = None,
+    ):
         """
         Initialize FidelityCalculator with Neo4j connection.
 
         Args:
-            neo4j_uri: Neo4j connection URI
-            neo4j_user: Neo4j username
-            neo4j_password: Neo4j password
+            neo4j_uri: Neo4j connection URI (deprecated - use credentials parameter)
+            neo4j_user: Neo4j username (deprecated - use credentials parameter)
+            neo4j_password: Neo4j password (deprecated - use credentials parameter)
+            credentials: Neo4jCredentials object (preferred method)
+
+        Note:
+            If credentials parameter is None, will attempt to load from legacy
+            parameters or use get_neo4j_credentials() for secure loading.
         """
-        self.neo4j_uri = neo4j_uri
-        self.neo4j_user = neo4j_user
-        self.neo4j_password = neo4j_password
-        self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+        # Use provided credentials or load securely
+        if credentials:
+            creds = credentials
+        elif neo4j_uri and neo4j_user and neo4j_password:
+            # Legacy path - create credentials from parameters
+            logger.warning(
+                "Passing credentials as individual parameters is deprecated. "
+                "Use credentials parameter or get_neo4j_credentials() instead."
+            )
+            creds = Neo4jCredentials(
+                uri=neo4j_uri, username=neo4j_user, password=neo4j_password
+            )
+        else:
+            # Secure path - load from Key Vault or environment
+            creds = get_neo4j_credentials()
+
+        # Store credentials securely and connect
+        self._credentials = creds
+        self.driver = GraphDatabase.driver(
+            creds.uri, auth=(creds.username, creds.password)
+        )
+
+    def __repr__(self) -> str:
+        """Return string representation without exposing credentials."""
+        return f"FidelityCalculator(uri='{self._credentials.uri}')"
 
     def close(self) -> None:
         """Close Neo4j driver connection."""

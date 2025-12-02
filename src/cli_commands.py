@@ -45,6 +45,7 @@ from src.azure_tenant_grapher import AzureTenantGrapher
 
 # Scale operations command handlers (Issue #427)
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
+from src.utils.secure_credentials import get_neo4j_credentials
 from src.config_manager import (
     create_config_from_env,
     create_neo4j_config_from_env,
@@ -1947,24 +1948,19 @@ async def monitor_command_handler(
     if not no_container:
         ensure_neo4j_running()
 
-    # Get Neo4j connection details from environment
-    neo4j_uri = os.environ.get("NEO4J_URI")
-    if not neo4j_uri:
-        neo4j_port = os.environ.get("NEO4J_PORT")
-        if not neo4j_port:
-            click.echo("❌ Either NEO4J_URI or NEO4J_PORT must be set", err=True)
-            sys.exit(1)
-        neo4j_uri = f"bolt://localhost:{neo4j_port}"
-
-    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-    neo4j_password = os.environ.get("NEO4J_PASSWORD")
-    if not neo4j_password:
-        click.echo("❌ NEO4J_PASSWORD environment variable is required", err=True)
+    # Get Neo4j credentials securely (Key Vault or env fallback)
+    try:
+        credentials = get_neo4j_credentials()
+    except Exception as e:
+        click.echo(f"❌ Failed to retrieve Neo4j credentials: {e}", err=True)
         sys.exit(1)
 
     # Connect to Neo4j
     try:
-        driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+        driver = GraphDatabase.driver(
+            credentials.uri,
+            auth=(credentials.username, credentials.password)
+        )
         # Test connection
         driver.verify_connectivity()
     except Exception as e:

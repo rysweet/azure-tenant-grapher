@@ -7,6 +7,7 @@ from typing import List, Optional
 from neo4j import GraphDatabase, basic_auth
 
 from src.utils.neo4j_startup import ensure_neo4j_running
+from src.utils.secure_credentials import get_neo4j_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -31,39 +32,33 @@ def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -
 
 async def verify_neo4j_connection(max_attempts: int = 5, delay: float = 2.0) -> None:
     """Verify Neo4j is accepting connections, with retries."""
-    # Read connection info from environment
-    neo4j_port = os.environ.get("NEO4J_PORT")
-    if not neo4j_port:
+    # Get credentials securely (Key Vault or env fallback)
+    try:
+        credentials = get_neo4j_credentials()
+    except RuntimeError as e:
         raise RuntimeError(
-            "NEO4J_PORT must be set in the environment (see .env.example)"
-        )
-    neo4j_uri = os.environ.get("NEO4J_URI", f"bolt://localhost:{neo4j_port}")
-    neo4j_user = os.environ.get("NEO4J_USER", "neo4j")
-    neo4j_password = os.environ.get("NEO4J_PASSWORD")
-    if not neo4j_password:
-        raise RuntimeError(
-            "NEO4J_PASSWORD must be set in the environment (see .env.example)"
+            f"Failed to retrieve Neo4j credentials: {e}"
         )
 
     # Try to connect up to max_attempts times
     for attempt in range(max_attempts):
-        if can_connect_to_neo4j(neo4j_uri, neo4j_user, neo4j_password):
+        if can_connect_to_neo4j(credentials.uri, credentials.username, credentials.password):
             logger.info(
-                f"Neo4j database is available and accepting connections at {neo4j_uri}."
+                f"Neo4j database is available and accepting connections at {credentials.uri}."
             )
             return
         else:
             logger.info(
-                f"Waiting for Neo4j database to become available at {neo4j_uri} (attempt {attempt + 1}/{max_attempts})..."
+                f"Waiting for Neo4j database to become available at {credentials.uri} (attempt {attempt + 1}/{max_attempts})..."
             )
             if attempt < max_attempts - 1:  # Don't sleep on the last attempt
                 await asyncio.sleep(delay)
 
     logger.error(
-        f"Neo4j container is running but database is not accepting connections at {neo4j_uri}."
+        f"Neo4j container is running but database is not accepting connections at {credentials.uri}."
     )
     raise RuntimeError(
-        f"Neo4j database is not available at {neo4j_uri}. Please check the container logs and configuration."
+        f"Neo4j database is not available at {credentials.uri}. Please check the container logs and configuration."
     )
 
 
