@@ -810,6 +810,24 @@ def setup_sentinel_command(
     # Create output directory
     output_path = Path(output_dir)
 
+    # Create Azure credential from environment variables (if available)
+    credential = None
+    client_id = os.environ.get("AZURE_CLIENT_ID")
+    client_secret = os.environ.get("AZURE_CLIENT_SECRET")
+
+    if client_id and client_secret:
+        from azure.identity import ClientSecretCredential
+
+        try:
+            credential = ClientSecretCredential(
+                tenant_id=tenant_id,
+                client_id=client_id,
+                client_secret=client_secret,
+            )
+            logger.info("Azure credentials loaded from environment")
+        except Exception as e:
+            logger.warning(f"Failed to create Azure credential: {e}")
+
     # Create orchestrator
     orchestrator = SentinelSetupOrchestrator(
         config=config,
@@ -827,8 +845,8 @@ def setup_sentinel_command(
         click.echo("\n[DRY RUN MODE - No changes will be made]")
 
     try:
-        # Run async workflow
-        results = asyncio.run(orchestrator.execute_all_modules())
+        # Run async workflow with credentials
+        results = asyncio.run(orchestrator.execute_all_modules(credential=credential))
 
         # Display results
         click.echo("\n" + "=" * 60)
