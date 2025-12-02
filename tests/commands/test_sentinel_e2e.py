@@ -17,18 +17,14 @@ IMPORTANT: These tests require:
 
 import os
 from pathlib import Path
-from typing import Any, Dict
-from unittest.mock import patch
+from typing import Dict
 
 import pytest
 
 from src.commands.sentinel import (
-    ResourceDiscovery,
     SentinelConfig,
-    SentinelSetupOrchestrator,
     setup_sentinel_command,
 )
-
 
 # ============================================================================
 # E2E Test Fixtures
@@ -74,7 +70,9 @@ def neo4j_with_real_data(neo4j_container):
             resource_count = record["count"] if record else 0
 
             if resource_count == 0:
-                pytest.skip("Neo4j database is empty. Run 'atg scan' first to populate with real data.")
+                pytest.skip(
+                    "Neo4j database is empty. Run 'atg scan' first to populate with real data."
+                )
 
         return driver
     except Exception as e:
@@ -370,15 +368,23 @@ class TestIntegratedE2E:
         resource_group = f"test-sentinel-rg-{os.urandom(4).hex()}"
 
         try:
-            result = runner.invoke(cli, [
-                "generate-iac",
-                "--tenant-id", azure_credentials["tenant_id"],
-                "--setup-sentinel",
-                "--sentinel-workspace-name", workspace_name,
-                "--sentinel-resource-group", resource_group,
-                "--sentinel-location", "eastus",
-                "--output", str(tmp_path / "iac_output"),
-            ])
+            result = runner.invoke(
+                cli,
+                [
+                    "generate-iac",
+                    "--tenant-id",
+                    azure_credentials["tenant_id"],
+                    "--setup-sentinel",
+                    "--sentinel-workspace-name",
+                    workspace_name,
+                    "--sentinel-resource-group",
+                    resource_group,
+                    "--sentinel-location",
+                    "eastus",
+                    "--output",
+                    str(tmp_path / "iac_output"),
+                ],
+            )
 
             assert result.exit_code == 0
 
@@ -470,15 +476,23 @@ class TestIntegratedE2E:
 
         try:
             runner = CliRunner()
-            result = runner.invoke(cli, [
-                "create-tenant",
-                "--spec", str(spec_file),
-                "--tenant-id", azure_credentials["tenant_id"],
-                "--subscription-id", azure_credentials["subscription_id"],
-                "--setup-sentinel",
-                "--sentinel-workspace-name", workspace_name,
-                "--sentinel-resource-group", resource_group,
-            ])
+            result = runner.invoke(
+                cli,
+                [
+                    "create-tenant",
+                    "--spec",
+                    str(spec_file),
+                    "--tenant-id",
+                    azure_credentials["tenant_id"],
+                    "--subscription-id",
+                    azure_credentials["subscription_id"],
+                    "--setup-sentinel",
+                    "--sentinel-workspace-name",
+                    workspace_name,
+                    "--sentinel-resource-group",
+                    resource_group,
+                ],
+            )
 
             assert result.exit_code == 0
 

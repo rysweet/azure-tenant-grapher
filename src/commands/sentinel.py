@@ -70,7 +70,9 @@ class SentinelConfig:
 
     # Sentinel configuration
     enable_sentinel: bool = True
-    data_connectors: List[str] = field(default_factory=lambda: ["AzureActiveDirectory", "AzureActivity"])
+    data_connectors: List[str] = field(
+        default_factory=lambda: ["AzureActiveDirectory", "AzureActivity"]
+    )
     content_packs: List[str] = field(default_factory=list)
 
     # Cross-tenant support
@@ -104,7 +106,9 @@ class SentinelConfig:
         """
         # Validate GUIDs (Fix #4)
         if not GUID_PATTERN.match(self.tenant_id):
-            raise ValueError(f"Invalid tenant_id format (must be GUID): {self.tenant_id}")
+            raise ValueError(
+                f"Invalid tenant_id format (must be GUID): {self.tenant_id}"
+            )
 
         if not GUID_PATTERN.match(self.subscription_id):
             raise ValueError(
@@ -244,12 +248,14 @@ class ResourceDiscovery:
             resources = []
             for record in result:
                 resource_node = record["r"]
-                resources.append({
-                    "abstracted_id": resource_node.get("abstracted_id"),
-                    "type": resource_node.get("type"),
-                    "name": resource_node.get("name"),
-                    "location": resource_node.get("location"),
-                })
+                resources.append(
+                    {
+                        "abstracted_id": resource_node.get("abstracted_id"),
+                        "type": resource_node.get("type"),
+                        "name": resource_node.get("name"),
+                        "location": resource_node.get("location"),
+                    }
+                )
 
             return resources
 
@@ -287,12 +293,14 @@ class ResourceDiscovery:
         for resource in client.resources.list():
             # Filter to supported types
             if resource.type in resource_types:
-                resources.append({
-                    "id": resource.id,
-                    "type": resource.type,
-                    "name": resource.name,
-                    "location": resource.location,
-                })
+                resources.append(
+                    {
+                        "id": resource.id,
+                        "type": resource.type,
+                        "name": resource.name,
+                        "location": resource.location,
+                    }
+                )
 
         return resources
 
@@ -326,16 +334,26 @@ class ResourceDiscovery:
 
         elif strategy == "neo4j_with_fallback":
             try:
-                resources = await self.discover_from_neo4j(subscription_id, resource_types)
+                resources = await self.discover_from_neo4j(
+                    subscription_id, resource_types
+                )
                 if resources:
                     logger.info(f"Discovered {len(resources)} resources from Neo4j")
                     return resources
                 else:
-                    logger.warning("Neo4j returned no resources, falling back to Azure API")
-                    return await self.discover_from_azure_api(subscription_id, resource_types)
+                    logger.warning(
+                        "Neo4j returned no resources, falling back to Azure API"
+                    )
+                    return await self.discover_from_azure_api(
+                        subscription_id, resource_types
+                    )
             except Exception as e:
-                logger.warning(f"Neo4j discovery failed: {e}, falling back to Azure API")
-                return await self.discover_from_azure_api(subscription_id, resource_types)
+                logger.warning(
+                    f"Neo4j discovery failed: {e}, falling back to Azure API"
+                )
+                return await self.discover_from_azure_api(
+                    subscription_id, resource_types
+                )
 
         else:
             raise ValueError(f"Unknown discovery strategy: {strategy}")
@@ -429,7 +447,7 @@ class SentinelSetupOrchestrator:
             test_file.write_text("test")
             test_file.unlink()
         except Exception as e:
-            raise ValueError(f"Output directory not writable: {self.output_dir}: {e}")
+            raise ValueError(f"Output directory not writable: {self.output_dir}: {e}") from e
 
         return True
 
@@ -549,7 +567,9 @@ class SentinelSetupOrchestrator:
             else:
                 logger.warning(f"Module warnings:\n{result.stderr}")
 
-        logger.info(f"Module {module_name} completed with exit code {result.returncode}")
+        logger.info(
+            f"Module {module_name} completed with exit code {result.returncode}"
+        )
 
         return result
 
@@ -604,16 +624,20 @@ class SentinelSetupOrchestrator:
                 try:
                     # In strict mode, fail-fast on any error
                     check_exit_code = self.config.strict_mode
-                    result = self.execute_module(module, check_exit_code=check_exit_code)
+                    result = self.execute_module(
+                        module, check_exit_code=check_exit_code
+                    )
 
                     if result.returncode == 0:
                         results["modules_executed"].append(module)
                     else:
-                        results["modules_failed"].append({
-                            "module": module,
-                            "exit_code": result.returncode,
-                            "stderr": result.stderr,
-                        })
+                        results["modules_failed"].append(
+                            {
+                                "module": module,
+                                "exit_code": result.returncode,
+                                "stderr": result.stderr,
+                            }
+                        )
 
                         if self.config.strict_mode:
                             raise subprocess.CalledProcessError(
@@ -625,11 +649,13 @@ class SentinelSetupOrchestrator:
 
                 except subprocess.CalledProcessError as e:
                     logger.error(f"Module {module} failed: {e}")
-                    results["modules_failed"].append({
-                        "module": module,
-                        "exit_code": e.returncode,
-                        "stderr": e.stderr,
-                    })
+                    results["modules_failed"].append(
+                        {
+                            "module": module,
+                            "exit_code": e.returncode,
+                            "stderr": e.stderr,
+                        }
+                    )
 
                     if self.config.strict_mode:
                         raise
@@ -776,7 +802,9 @@ def setup_sentinel_command(
 
     # Determine scripts directory (relative to this file)
     current_file = Path(__file__)
-    project_root = current_file.parent.parent.parent  # src/commands/sentinel.py -> project root
+    project_root = (
+        current_file.parent.parent.parent
+    )  # src/commands/sentinel.py -> project root
     scripts_dir = project_root / "scripts" / "sentinel"
 
     # Create output directory
@@ -790,7 +818,7 @@ def setup_sentinel_command(
     )
 
     # Execute workflow
-    click.echo(f"Setting up Azure Sentinel and Log Analytics...")
+    click.echo("Setting up Azure Sentinel and Log Analytics...")
     click.echo(f"Workspace: {config.workspace_name}")
     click.echo(f"Location: {config.location}")
     click.echo(f"Resource Group: {config.resource_group}")
@@ -816,7 +844,9 @@ def setup_sentinel_command(
             if results["modules_failed"]:
                 click.echo("\nFailed modules:")
                 for failure in results["modules_failed"]:
-                    click.echo(f"  - {failure['module']}: exit code {failure['exit_code']}")
+                    click.echo(
+                        f"  - {failure['module']}: exit code {failure['exit_code']}"
+                    )
 
         click.echo("=" * 60)
 
