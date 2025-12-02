@@ -23,8 +23,6 @@ class ActionGroupHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Insights/actionGroups",
-        "Microsoft.Insights/actiongroups",
         "microsoft.insights/actiongroups",
     }
 

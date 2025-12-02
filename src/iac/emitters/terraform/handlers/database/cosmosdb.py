@@ -23,8 +23,6 @@ class CosmosDBHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.DocumentDB/databaseAccounts",
-        "Microsoft.DocumentDb/databaseAccounts",
         "microsoft.documentdb/databaseaccounts",
     }
 

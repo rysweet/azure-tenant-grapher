@@ -24,7 +24,6 @@ class EventHubNamespaceHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.EventHub/namespaces",
-        "microsoft.eventhub/namespaces",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
@@ -72,7 +71,6 @@ class EventHubHandler(ResourceHandler):
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
         "Microsoft.EventHub/namespaces/eventhubs",
-        "microsoft.eventhub/namespaces/eventhubs",
     }
 
     TERRAFORM_TYPES: ClassVar[Set[str]] = {

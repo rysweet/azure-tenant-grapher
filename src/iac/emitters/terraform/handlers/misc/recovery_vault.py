@@ -23,7 +23,6 @@ class RecoveryServicesVaultHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.RecoveryServices/vaults",
         "microsoft.recoveryservices/vaults",
     }
 

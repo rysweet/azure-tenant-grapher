@@ -23,7 +23,6 @@ class RedisCacheHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Cache/Redis",
         "microsoft.cache/redis",
     }
 

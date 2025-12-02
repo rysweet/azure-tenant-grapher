@@ -23,7 +23,6 @@ class AppConfigurationHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.AppConfiguration/configurationStores",
         "microsoft.appconfiguration/configurationstores",
     }
 

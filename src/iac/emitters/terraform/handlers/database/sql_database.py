@@ -23,7 +23,6 @@ class SQLDatabaseHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Sql/servers/databases",
         "microsoft.sql/servers/databases",
     }
 

@@ -23,7 +23,6 @@ class DataCollectionRuleHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Insights/dataCollectionRules",
         "microsoft.insights/dataCollectionRules",
     }
 

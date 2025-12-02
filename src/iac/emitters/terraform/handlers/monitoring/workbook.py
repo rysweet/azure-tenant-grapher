@@ -26,7 +26,6 @@ class WorkbooksHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Insights/workbooks",
         "microsoft.insights/workbooks",
     }
 

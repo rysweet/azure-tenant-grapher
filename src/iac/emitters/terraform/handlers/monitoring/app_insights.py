@@ -23,7 +23,6 @@ class ApplicationInsightsHandler(ResourceHandler):
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
-        "Microsoft.Insights/components",
         "microsoft.insights/components",
     }
 
