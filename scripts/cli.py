@@ -21,6 +21,13 @@ from rich.style import Style
 from src.cli_dashboard_manager import DashboardExitException
 from src.commands.abstract_graph import abstract_graph
 from src.commands.auth import app_registration as app_registration_cmd
+from src.commands.database import (
+    backup as backup_cmd,
+    backup_db as backup_db_cmd,
+    container as container_cmd,
+    restore as restore_cmd,
+    wipe as wipe_cmd,
+)
 
 # Import modular commands for CLI registration (Issue #482)
 from src.commands.deploy import deploy_command
@@ -983,32 +990,6 @@ def config() -> None:
 
 
 @cli.command()
-def container() -> None:
-    """Manage Neo4j container."""
-    # Note: Container management subcommands (start, stop, status) have been removed
-    # as they were unused. Container management is handled automatically by the
-    # build command when needed.
-    click.echo("Container management is handled automatically by build commands.")
-    click.echo("Use 'build --no-container' to disable automatic container management.")
-
-
-@cli.command()
-@click.argument(
-    "backup_path", type=click.Path(dir_okay=False, writable=True, resolve_path=True)
-)
-def backup_db(backup_path: str) -> None:
-    """Backup the Neo4j database and save it to BACKUP_PATH."""
-    from src.container_manager import Neo4jContainerManager
-
-    container_manager = Neo4jContainerManager()
-    if container_manager.backup_neo4j_database(backup_path):
-        click.echo(f"✅ Neo4j backup completed and saved to {backup_path}")
-    else:
-        click.echo("❌ Neo4j backup failed", err=True)
-        sys.exit(1)
-
-
-@cli.command()
 @click.pass_context
 @async_command
 async def mcp_server(ctx: click.Context) -> None:
@@ -1094,6 +1075,14 @@ cli.add_command(validate_deployment_command, "validate-deployment")
 
 # Register export-abstraction command (Issue #508)
 cli.add_command(export_abstraction_command, "export-abstraction")
+
+# Register database commands (Issue #482: CLI Modularization)
+cli.add_command(backup_cmd, "backup")
+cli.add_command(backup_db_cmd, "backup-db")
+cli.add_command(restore_cmd, "restore")
+cli.add_command(restore_cmd, "restore-db")  # Alias
+cli.add_command(wipe_cmd, "wipe")
+cli.add_command(container_cmd, "container")
 
 
 @cli.command()
@@ -1576,134 +1565,6 @@ async def cost_report(
         include_anomalies=include_anomalies,
         output=output,
     )
-
-
-@cli.command("backup")
-@click.option(
-    "--path",
-    "-p",
-    required=True,
-    help="Path to save the backup file (e.g., /path/to/backup.dump)",
-)
-def backup_database(path: str) -> None:
-    """Backup the Neo4j database to a file."""
-    from src.container_manager import Neo4jContainerManager
-
-    click.echo("🔄 Starting database backup...")
-    container_manager = Neo4jContainerManager()
-
-    if not container_manager.is_neo4j_container_running():
-        click.echo("❌ Neo4j container is not running. Please start it first.")
-        return
-
-    if container_manager.backup_neo4j_database(path):
-        click.echo(f"✅ Database backed up successfully to {path}")
-    else:
-        click.echo("❌ Database backup failed. Check the logs for details.")
-
-
-@cli.command("restore")
-@click.option(
-    "--path",
-    "-p",
-    required=True,
-    help="Path to the backup file to restore (e.g., /path/to/backup.dump)",
-)
-def restore_database(path: str) -> None:
-    """Restore the Neo4j database from a backup file."""
-    import os
-
-    from src.container_manager import Neo4jContainerManager
-
-    if not os.path.exists(path):
-        click.echo(f"❌ Backup file not found: {path}")
-        return
-
-    click.echo("🔄 Starting database restore...")
-    click.echo("⚠️  WARNING: This will replace all current data in the database!")
-
-    if not click.confirm("Are you sure you want to continue?"):
-        click.echo("Restore cancelled.")
-        return
-
-    container_manager = Neo4jContainerManager()
-
-    if not container_manager.is_neo4j_container_running():
-        click.echo("❌ Neo4j container is not running. Please start it first.")
-        return
-
-    if container_manager.restore_neo4j_database(path):
-        click.echo("✅ Database restored successfully from backup.")
-        click.echo("The Neo4j database has been restarted with the restored data.")
-    else:
-        click.echo("❌ Database restore failed. Check the logs for details.")
-
-
-# Add alias for restore command
-cli.add_command(restore_database, "restore-db")
-
-
-@cli.command("wipe")
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    help="Skip confirmation prompt",
-)
-def wipe_database(force: bool) -> None:
-    """Wipe all data from the Neo4j database."""
-    import os
-
-    from neo4j import GraphDatabase
-
-    if not force:
-        click.echo("⚠️  WARNING: This will permanently delete ALL data in the database!")
-        click.echo("This action cannot be undone.")
-        if not click.confirm("Are you sure you want to wipe the database?"):
-            click.echo("Wipe cancelled.")
-            return
-
-    click.echo("🔄 Wiping database...")
-
-    try:
-        # Connect to Neo4j
-        uri = os.getenv("NEO4J_URI")
-        if not uri:
-            port = os.getenv("NEO4J_PORT")
-            if not port:
-                console.print(
-                    "[red]❌ Either NEO4J_URI or NEO4J_PORT must be set[/red]"
-                )
-                return False
-            uri = f"bolt://localhost:{port}"
-        user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD")
-        if not password:
-            console.print(
-                "[red]❌ NEO4J_PASSWORD environment variable is required[/red]"
-            )
-            return False
-
-        driver = GraphDatabase.driver(uri, auth=(user, password))
-
-        with driver.session() as session:
-            # Delete all nodes and relationships
-            session.run("MATCH (n) DETACH DELETE n")
-
-            # Verify the database is empty
-            result = session.run("MATCH (n) RETURN count(n) as count")
-            record = result.single()
-            count = record["count"] if record else 0
-
-            if count == 0:
-                click.echo("✅ Database wiped successfully. All data has been removed.")
-            else:
-                click.echo(f"⚠️  Database wipe incomplete. {count} nodes remain.")
-
-        driver.close()
-
-    except Exception as e:
-        click.echo(f"❌ Failed to wipe database: {e}")
 
 
 @cli.command()
