@@ -43,7 +43,7 @@ class ResourceGroupHandler(ResourceHandler):
         config = {
             "name": resource_name,
             "location": self.get_location(resource),
-            "tags": self.parse_tags(resource),
+            "tags": self.parse_tags(resource, resource_name),
         }
 
         logger.debug(f"Resource Group '{resource_name}' emitted")
