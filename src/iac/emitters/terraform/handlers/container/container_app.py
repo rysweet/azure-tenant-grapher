@@ -72,7 +72,8 @@ class ContainerAppHandler(ResourceHandler):
         safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 
-        config = self.build_base_config(resource)
+        # Container Apps: location is computed from environment - not configurable
+        config = self.build_base_config(resource, include_location=False)
 
         # Container app environment ID
         env_id = properties.get("managedEnvironmentId")

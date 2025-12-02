@@ -251,25 +251,30 @@ class ResourceHandler(ABC):
         self,
         resource: Dict[str, Any],
         resource_name_with_suffix: Optional[str] = None,
+        include_location: bool = True,
     ) -> Dict[str, Any]:
         """Build base resource configuration with common fields.
 
         Args:
             resource: Azure resource dict
             resource_name_with_suffix: Optional name with unique suffix applied
+            include_location: Whether to include location field (False for global resources)
 
         Returns:
-            Base config with name, location, resource_group_name
+            Base config with name, location (optional), resource_group_name
         """
         name = resource_name_with_suffix or resource.get("name", "unknown")
-        location = self.get_location(resource)
         rg_name = self.get_resource_group(resource)
 
         config = {
             "name": name,
-            "location": location,
             "resource_group_name": rg_name,
         }
+
+        # Add location for resources that need it (most resources)
+        if include_location:
+            location = self.get_location(resource)
+            config["location"] = location
 
         # Add tags if present
         tags = resource.get("tags")
