@@ -4,15 +4,136 @@ This module provides the 'app-registration' command for creating
 Azure AD app registrations for Azure Tenant Grapher.
 
 Issue #482: CLI Modularization
+Issue #539: Add input validation for subprocess calls
 """
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 from typing import Optional
 
 import click
+
+
+def validate_app_name(name: str) -> str:
+    """Validate and sanitize app registration name.
+
+    Args:
+        name: The app registration name to validate
+
+    Returns:
+        Validated name (stripped of whitespace)
+
+    Raises:
+        ValueError: If name is empty or contains invalid characters
+
+    Note:
+        subprocess.run() with list arguments handles shell escaping automatically,
+        so we don't use shlex.quote() here. The validation ensures only safe
+        characters are present.
+    """
+    if not name or not name.strip():
+        raise ValueError("App name cannot be empty")
+
+    # Allow alphanumeric, spaces, hyphens, underscores
+    if not re.match(r'^[a-zA-Z0-9\s\-_]+$', name):
+        raise ValueError(
+            f"Invalid app name format: {name}. "
+            "Use only letters, numbers, spaces, hyphens, underscores."
+        )
+
+    return name.strip()
+
+
+def validate_redirect_uri(uri: str) -> str:
+    """Validate and sanitize redirect URI.
+
+    Args:
+        uri: The redirect URI to validate
+
+    Returns:
+        Validated URI (stripped of whitespace)
+
+    Raises:
+        ValueError: If URI is empty or has invalid format
+
+    Note:
+        subprocess.run() with list arguments handles shell escaping automatically.
+    """
+    if not uri or not uri.strip():
+        raise ValueError("Redirect URI cannot be empty")
+
+    # Strip whitespace before validation
+    uri_stripped = uri.strip()
+
+    # Basic URI validation (http/https)
+    if not re.match(r'^https?://', uri_stripped):
+        raise ValueError(
+            f"Invalid redirect URI format: {uri_stripped}. "
+            "Must start with http:// or https://"
+        )
+
+    return uri_stripped
+
+
+def validate_tenant_id(tenant_id: str) -> str:
+    """Validate and sanitize tenant ID.
+
+    Args:
+        tenant_id: The tenant ID to validate
+
+    Returns:
+        Validated tenant ID (stripped of whitespace)
+
+    Raises:
+        ValueError: If tenant ID is empty or has invalid format
+
+    Note:
+        subprocess.run() with list arguments handles shell escaping automatically.
+    """
+    if not tenant_id or not tenant_id.strip():
+        raise ValueError("Tenant ID cannot be empty")
+
+    # Tenant ID should be a valid GUID
+    guid_pattern = r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    if not re.match(guid_pattern, tenant_id.strip()):
+        raise ValueError(
+            f"Invalid tenant ID format: {tenant_id}. "
+            "Must be a valid GUID (e.g., 12345678-1234-1234-1234-123456789012)"
+        )
+
+    return tenant_id.strip()
+
+
+def validate_app_id(app_id: str) -> str:
+    """Validate and sanitize application ID.
+
+    Args:
+        app_id: The application ID to validate
+
+    Returns:
+        Validated app ID (stripped of whitespace)
+
+    Raises:
+        ValueError: If app ID is empty or has invalid format
+
+    Note:
+        subprocess.run() with list arguments handles shell escaping automatically.
+    """
+    if not app_id or not app_id.strip():
+        raise ValueError("Application ID cannot be empty")
+
+    # App ID should be a valid GUID
+    guid_pattern = r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    if not re.match(guid_pattern, app_id.strip()):
+        raise ValueError(
+            f"Invalid application ID format: {app_id}. "
+            "Must be a valid GUID (e.g., 12345678-1234-1234-1234-123456789012)"
+        )
+
+    return app_id.strip()
 
 
 @click.command("app-registration")
@@ -67,6 +188,18 @@ def app_registration(
     click.echo("Azure AD App Registration Setup")
     click.echo("=" * 50)
 
+    # Validate inputs early
+    try:
+        validated_name = validate_app_name(name)
+        validated_redirect_uri = validate_redirect_uri(redirect_uri)
+        if tenant_id:
+            validated_tenant_id = validate_tenant_id(tenant_id)
+        else:
+            validated_tenant_id = None
+    except ValueError as e:
+        click.echo(f"Input validation error: {e}", err=True)
+        return
+
     # Check if Azure CLI is installed
     try:
         result = subprocess.run(
@@ -80,7 +213,7 @@ def app_registration(
         has_azure_cli = False
 
     if not has_azure_cli:
-        _show_manual_instructions(name, redirect_uri, create_secret)
+        _show_manual_instructions(validated_name, validated_redirect_uri, create_secret)
         return
 
     # Azure CLI is available, proceed with automated creation
@@ -90,16 +223,22 @@ def app_registration(
     _check_user_permissions()
 
     # Get or use provided tenant ID
-    if not tenant_id:
-        tenant_id = _get_current_tenant_id()
-        if not tenant_id:
+    if not validated_tenant_id:
+        tenant_id_from_cli = _get_current_tenant_id()
+        if not tenant_id_from_cli:
+            return
+        # Validate the tenant ID from CLI
+        try:
+            validated_tenant_id = validate_tenant_id(tenant_id_from_cli)
+        except ValueError as e:
+            click.echo(f"Tenant ID validation error: {e}", err=True)
             return
 
     # Create the app registration
     _create_app_registration(
-        tenant_id=tenant_id,
-        name=name,
-        redirect_uri=redirect_uri,
+        tenant_id=validated_tenant_id,
+        name=validated_name,
+        redirect_uri=validated_redirect_uri,
         create_secret=create_secret,
         save_to_env=save_to_env,
     )
@@ -159,6 +298,19 @@ def _check_user_permissions() -> None:
             f"   Signed in as: {user_info.get('displayName', 'Unknown')} ({user_info.get('userPrincipalName', 'Unknown')})"
         )
 
+        # Validate user ID before using in subprocess call
+        user_id = user_info.get("id", "")
+        if not user_id:
+            click.echo("   Could not retrieve user ID")
+            return
+
+        # User ID should be a GUID - validate it
+        try:
+            validated_user_id = validate_app_id(user_id)  # GUIDs have same format
+        except ValueError:
+            click.echo("   Invalid user ID format from Azure CLI")
+            return
+
         # Check if user has admin roles
         roles_result = subprocess.run(
             [
@@ -167,7 +319,7 @@ def _check_user_permissions() -> None:
                 "assignment",
                 "list",
                 "--assignee",
-                user_info["id"],
+                validated_user_id,
                 "--query",
                 "[].roleDefinitionName",
                 "-o",
@@ -318,14 +470,21 @@ def _create_app_registration(
         app_id = app_info["appId"]
         object_id = app_info["objectId"]
 
+        # Validate app_id from Azure CLI response before using in subsequent calls
+        try:
+            validated_app_id = validate_app_id(app_id)
+        except ValueError as e:
+            click.echo(f"Invalid app ID returned from Azure: {e}", err=True)
+            return
+
         click.echo("App registration created successfully!")
-        click.echo(f"   Client ID: {app_id}")
+        click.echo(f"   Client ID: {validated_app_id}")
         click.echo(f"   Object ID: {object_id}")
 
         # Create service principal
         click.echo("\nCreating service principal...")
         result = subprocess.run(
-            ["az", "ad", "sp", "create", "--id", app_id],
+            ["az", "ad", "sp", "create", "--id", validated_app_id],
             capture_output=True,
             text=True,
         )
@@ -349,7 +508,7 @@ def _create_app_registration(
                     "credential",
                     "reset",
                     "--id",
-                    app_id,
+                    validated_app_id,
                     "--display-name",
                     "Azure Tenant Grapher Secret",
                     "--years",
@@ -374,7 +533,7 @@ def _create_app_registration(
         # Try to grant admin consent automatically
         click.echo("\nAttempting to grant admin consent...")
         consent_result = subprocess.run(
-            ["az", "ad", "app", "permission", "admin-consent", "--id", app_id],
+            ["az", "ad", "app", "permission", "admin-consent", "--id", validated_app_id],
             capture_output=True,
             text=True,
         )
@@ -396,11 +555,11 @@ def _create_app_registration(
 
         # Save to .env file if requested
         if save_to_env:
-            _save_to_env_file(tenant_id, app_id, client_secret)
+            _save_to_env_file(tenant_id, validated_app_id, client_secret)
 
         # Display configuration
         _display_configuration(
-            tenant_id, app_id, client_secret, consent_granted, name, save_to_env
+            tenant_id, validated_app_id, client_secret, consent_granted, name, save_to_env
         )
 
     finally:
