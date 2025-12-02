@@ -1,0 +1,7 @@
+=== DEPLOYMENT CHECKPOINT ===
+Time: Tue Dec  2 19:14:24 UTC 2025
+Runtime: 21+ min
+Imports: 1,953/1,953 COMPLETE
+Creates: 0 complete (role assignments 10-20 min in progress)
+Status: HEALTHY
+Lock: ACTIVE
