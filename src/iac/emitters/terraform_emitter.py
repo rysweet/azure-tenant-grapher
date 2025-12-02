@@ -449,6 +449,9 @@ class TerraformEmitter(IaCEmitter):
         # Bug #31: Map VNet abstracted IDs to terraform names for standalone subnets
         # Format: {abstracted_vnet_id: terraform_name}
         self._vnet_id_to_terraform_name: Dict[str, str] = {}
+        # Bug #112: Map terraform resource names to their resource IDs for community splitting
+        # Format: {sanitized_terraform_name: resource_id}
+        self._terraform_name_to_resource_id: Dict[str, str] = {}
         # Store graph for reference in _convert_resource (needed for DCR workspace validation)
         self._graph = graph
 
@@ -836,6 +839,14 @@ class TerraformEmitter(IaCEmitter):
                 # Track resource count for generation report (Issue #413)
                 self._resource_count += 1
 
+                # Bug #112: Map terraform name to resource ID for community splitting
+                resource_id = resource.get("id", "")
+                if resource_id:
+                    self._terraform_name_to_resource_id[resource_name] = resource_id
+                    logger.debug(
+                        f"Mapped terraform name '{resource_name}' -> resource ID '{resource_id}'"
+                    )
+
         # Emit NSG association resources after all resources are processed
         if self._nsg_associations:
             if (
@@ -946,14 +957,19 @@ class TerraformEmitter(IaCEmitter):
         output_files = []
         if split_by_community:
             try:
+                logger.info("Starting community split process...")
                 # Need Neo4j driver to detect communities
                 # Get driver from session manager
                 from src.config_manager import create_neo4j_config_from_env
                 from src.utils.session_manager import create_session_manager
 
+                logger.debug("Creating Neo4j config from environment")
                 config = create_neo4j_config_from_env()
+                logger.debug("Creating session manager")
                 manager = create_session_manager(config.neo4j)
+                logger.debug("Connecting to Neo4j")
                 manager.connect()
+                logger.debug("Neo4j connected")
                 # pyright: ignore[reportPrivateUsage]
                 if manager._driver is None:  # pyright: ignore[reportPrivateUsage]
                     logger.warning(
@@ -962,8 +978,11 @@ class TerraformEmitter(IaCEmitter):
                     split_by_community = False
                 else:
                     driver = manager._driver  # pyright: ignore[reportPrivateUsage]
+                    logger.debug("Creating CommunityDetector")
                     detector = CommunityDetector(driver)
+                    logger.debug("Detecting communities...")
                     communities = detector.detect_communities()
+                    logger.debug(f"Communities detected, returned {len(communities)} communities")
 
                     logger.info(
                         f"Detected {len(communities)} communities for splitting"
@@ -972,6 +991,7 @@ class TerraformEmitter(IaCEmitter):
 
                     # Split resources by community
                     for i, community_ids in enumerate(communities, start=1):
+                        logger.debug(f"Processing community {i} with {len(community_ids)} resource IDs")
                         # Filter resources for this community
                         community_resources = {
                             resource_type: {
@@ -988,6 +1008,7 @@ class TerraformEmitter(IaCEmitter):
                                 "resource", {}
                             ).items()
                         }
+                        logger.debug(f"Filtered community {i}: {list(community_resources.keys())}")
 
                         # Remove empty resource types
                         community_resources = {
@@ -1033,8 +1054,8 @@ class TerraformEmitter(IaCEmitter):
 
                     manager.disconnect()
             except Exception as e:
-                logger.warning(
-                    f"Failed to split by community: {e}. Writing single file instead."
+                logger.exception(
+                    f"Failed to split by community (debugging traceback above): {type(e).__name__}: {e}"
                 )
                 split_by_community = False
 
@@ -5579,23 +5600,27 @@ class TerraformEmitter(IaCEmitter):
             terraform_type: Terraform resource type (e.g., azurerm_virtual_network)
             terraform_name: Terraform resource name (sanitized)
             community_ids: Set of resource IDs in the community
-            all_resources: All resources from the graph
+            all_resources: All resources from the graph (not used with mapping approach)
 
         Returns:
             True if the resource belongs to the community
         """
-        # Find the corresponding graph resource by matching terraform name
-        for resource in all_resources:
-            resource_name = resource.get("name", "")
-            safe_name = self._sanitize_terraform_name(resource_name)
-
-            if safe_name == terraform_name:
-                # Check if this resource's ID is in the community
-                resource_id = resource.get("id", "")
-                if resource_id in community_ids:
-                    return True
-
-        return False
+        # Bug #112: Use pre-built mapping of terraform names to resource IDs
+        # This avoids the mismatch between sanitized terraform names and unsanitized graph names
+        if terraform_name in self._terraform_name_to_resource_id:
+            resource_id = self._terraform_name_to_resource_id[terraform_name]
+            in_community = resource_id in community_ids
+            logger.debug(
+                f"Resource {terraform_name} (id={resource_id}) "
+                f"in_community={in_community}"
+            )
+            return in_community
+        else:
+            logger.debug(
+                f"WARNING: Terraform name '{terraform_name}' not in mapping. "
+                f"Available names sample: {list(self._terraform_name_to_resource_id.keys())[:5]}"
+            )
+            return False
 
     def _is_import_in_community(
         self,
