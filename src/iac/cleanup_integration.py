@@ -5,6 +5,7 @@ allowing programmatic invocation from the IaC generation workflow.
 """
 
 import logging
+import re
 import subprocess
 from pathlib import Path
 
@@ -15,6 +16,43 @@ class CleanupScriptError(Exception):
     """Raised when cleanup script execution fails."""
 
     pass
+
+
+def validate_subscription_id(subscription_id: str) -> str:
+    """
+    Validate Azure subscription ID format.
+
+    Azure subscription IDs are UUIDs in the format:
+    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+    Args:
+        subscription_id: The subscription ID to validate
+
+    Returns:
+        The validated subscription ID
+
+    Raises:
+        ValueError: If subscription ID format is invalid
+
+    Example:
+        >>> validate_subscription_id("12345678-1234-1234-1234-123456789abc")
+        '12345678-1234-1234-1234-123456789abc'
+        >>> validate_subscription_id("invalid; rm -rf /")
+        ValueError: Invalid Azure subscription ID format...
+    """
+    # Azure subscription IDs are UUIDs (36 characters with hyphens)
+    uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+
+    if not subscription_id:
+        raise ValueError("Subscription ID cannot be empty")
+
+    if not re.match(uuid_pattern, subscription_id, re.IGNORECASE):
+        raise ValueError(
+            f"Invalid Azure subscription ID format: {subscription_id}. "
+            "Expected UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        )
+
+    return subscription_id
 
 
 def invoke_cleanup_script(
@@ -36,7 +74,11 @@ def invoke_cleanup_script(
 
     Raises:
         CleanupScriptError: If script not found or execution fails
+        ValueError: If subscription ID format is invalid
     """
+    # Validate subscription ID to prevent command injection
+    subscription_id = validate_subscription_id(subscription_id)
+
     # Find cleanup script relative to this file
     script_path = (
         Path(__file__).parent.parent.parent

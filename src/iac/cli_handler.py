@@ -27,6 +27,46 @@ from .traverser import GraphTraverser
 logger = logging.getLogger(__name__)
 
 
+def validate_output_path(user_path: str, base_dir: Path = Path("outputs")) -> Path:
+    """
+    Validate and sanitize output path to prevent path traversal attacks.
+
+    Ensures the requested path is within the allowed base directory.
+
+    Args:
+        user_path: User-supplied output path
+        base_dir: Base directory for outputs (default: "outputs")
+
+    Returns:
+        Validated absolute path within base directory
+
+    Raises:
+        ValueError: If path attempts to traverse outside base directory
+
+    Example:
+        >>> validate_output_path("my-output", Path("outputs"))
+        PosixPath('/home/user/project/outputs/my-output')
+        >>> validate_output_path("../../etc/passwd", Path("outputs"))
+        ValueError: Output path must be within outputs...
+    """
+    # Resolve to absolute paths to detect traversal
+    requested_path = Path(user_path).resolve()
+    base_path = base_dir.resolve()
+
+    # Ensure requested path is within base directory
+    try:
+        # relative_to() will raise ValueError if not a subpath
+        requested_path.relative_to(base_path)
+    except ValueError:
+        raise ValueError(
+            f"Output path must be within {base_dir}. "
+            f"Requested path '{user_path}' resolves to '{requested_path}' "
+            f"which is outside allowed base directory '{base_path}'"
+        )
+
+    return requested_path
+
+
 def get_neo4j_driver_from_config() -> Driver:
     """Get Neo4j driver from configuration."""
     config = create_neo4j_config_from_env()
@@ -678,7 +718,7 @@ async def generate_iac_command_handler(
 
                     # Save mapping to output directory for reference
                     if output_path:
-                        mapping_output_dir = Path(output_path)
+                        mapping_output_dir = validate_output_path(output_path)
                     else:
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         mapping_output_dir = Path("outputs") / f"iac-out-{timestamp}"
@@ -911,7 +951,7 @@ async def generate_iac_command_handler(
             else:
                 emitter = emitter_cls(resource_group_prefix=resource_group_prefix)
             if output_path:
-                out_dir = Path(output_path)
+                out_dir = validate_output_path(output_path)
             else:
                 out_dir = default_timestamped_dir()
 
@@ -1034,7 +1074,7 @@ async def generate_iac_command_handler(
 
         # Determine output directory
         if output_path:
-            out_dir = Path(output_path)
+            out_dir = validate_output_path(output_path)
         else:
             out_dir = default_timestamped_dir()
 
