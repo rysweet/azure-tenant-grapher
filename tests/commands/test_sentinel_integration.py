@@ -9,10 +9,6 @@ All tests will FAIL until implementation exists - this is TDD methodology.
 """
 
 import json
-import os
-import subprocess
-from pathlib import Path
-from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -21,9 +17,7 @@ from src.commands.sentinel import (
     ResourceDiscovery,
     SentinelConfig,
     SentinelSetupOrchestrator,
-    setup_sentinel_command,
 )
-
 
 # ============================================================================
 # Python-to-Bash Integration Tests
@@ -195,7 +189,11 @@ echo '{"workspace_id": "/subscriptions/test-sub/resourceGroups/test-rg/providers
         # Mock module 2 returning workspace ID
         workspace_id = "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.OperationalInsights/workspaces/test-workspace"
         mock_run.side_effect = [
-            Mock(returncode=0, stdout=json.dumps({"workspace_id": workspace_id}), stderr=""),
+            Mock(
+                returncode=0,
+                stdout=json.dumps({"workspace_id": workspace_id}),
+                stderr="",
+            ),
             Mock(returncode=0, stdout=workspace_id, stderr=""),
         ]
 
@@ -204,10 +202,12 @@ echo '{"workspace_id": "/subscriptions/test-sub/resourceGroups/test-rg/providers
 
         # Extract workspace ID from module 2 output
         assert result2["success"]
-        orchestrator.set_module_output("create-workspace", json.loads(result2["stdout"]))
+        orchestrator.set_module_output(
+            "create-workspace", json.loads(result2["stdout"])
+        )
 
         # Module 3 should have access to workspace ID
-        result3 = orchestrator.execute_module("enable-sentinel", module3)
+        _result3 = orchestrator.execute_module("enable-sentinel", module3)
 
         # Verify workspace ID was passed to module 3
         call_args = mock_run.call_args_list[1]
@@ -362,25 +362,38 @@ class TestCLIIntegration:
         with patch("src.commands.sentinel.setup_sentinel_command") as mock_command:
             mock_command.return_value = None
 
-            result = runner.invoke(cli, [
-                "setup-sentinel",
-                "--tenant-id", "12345678-1234-1234-1234-123456789012",
-                "--subscription-id", "87654321-4321-4321-4321-210987654321",
-                "--workspace-name", "test-workspace",
-                "--resource-group", "test-rg",
-                "--location", "eastus",
-                "--retention-days", "90",
-                "--sku", "PerGB2018",
-                "--discovery-strategy", "neo4j",
-                "--strict",
-            ])
+            runner.invoke(
+                cli,
+                [
+                    "setup-sentinel",
+                    "--tenant-id",
+                    "12345678-1234-1234-1234-123456789012",
+                    "--subscription-id",
+                    "87654321-4321-4321-4321-210987654321",
+                    "--workspace-name",
+                    "test-workspace",
+                    "--resource-group",
+                    "test-rg",
+                    "--location",
+                    "eastus",
+                    "--retention-days",
+                    "90",
+                    "--sku",
+                    "PerGB2018",
+                    "--discovery-strategy",
+                    "neo4j",
+                    "--strict",
+                ],
+            )
 
             # Command should be called with correct arguments
             mock_command.assert_called_once()
             call_args = mock_command.call_args[1]
 
             assert call_args["tenant_id"] == "12345678-1234-1234-1234-123456789012"
-            assert call_args["subscription_id"] == "87654321-4321-4321-4321-210987654321"
+            assert (
+                call_args["subscription_id"] == "87654321-4321-4321-4321-210987654321"
+            )
             assert call_args["workspace_name"] == "test-workspace"
             assert call_args["resource_group"] == "test-rg"
             assert call_args["location"] == "eastus"
@@ -404,7 +417,7 @@ class TestCLIIntegration:
         with patch("src.commands.sentinel.setup_sentinel_command") as mock_command:
             mock_command.return_value = None
 
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 ["setup-sentinel"],
                 env=env_vars,
@@ -432,12 +445,14 @@ class TestCLIIntegration:
         with patch("src.commands.sentinel.setup_sentinel_command") as mock_command:
             mock_command.return_value = None
 
-            result = runner.invoke(
+            runner.invoke(
                 cli,
                 [
                     "setup-sentinel",
-                    "--tenant-id", "explicit-tenant-789",
-                    "--subscription-id", "explicit-sub-012",
+                    "--tenant-id",
+                    "explicit-tenant-789",
+                    "--subscription-id",
+                    "explicit-sub-012",
                 ],
                 env=env_vars,
             )
@@ -464,11 +479,15 @@ class TestCLIIntegration:
                     "workspace_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.OperationalInsights/workspaces/test",
                 }
 
-                result = runner.invoke(cli, [
-                    "generate-iac",
-                    "--tenant-id", "12345678-1234-1234-1234-123456789012",
-                    "--setup-sentinel",
-                ])
+                runner.invoke(
+                    cli,
+                    [
+                        "generate-iac",
+                        "--tenant-id",
+                        "12345678-1234-1234-1234-123456789012",
+                        "--setup-sentinel",
+                    ],
+                )
 
                 # Sentinel setup should be triggered
                 mock_sentinel.assert_called_once()
@@ -489,11 +508,15 @@ class TestCLIIntegration:
                 "workspace_id": "/subscriptions/test/resourceGroups/test/providers/Microsoft.OperationalInsights/workspaces/test",
             }
 
-            result = runner.invoke(cli, [
-                "create-tenant",
-                "--spec", str(spec_file),
-                "--setup-sentinel",
-            ])
+            runner.invoke(
+                cli,
+                [
+                    "create-tenant",
+                    "--spec",
+                    str(spec_file),
+                    "--setup-sentinel",
+                ],
+            )
 
             # Sentinel setup should be triggered after tenant creation
             mock_sentinel.assert_called_once()

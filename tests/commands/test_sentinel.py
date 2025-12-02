@@ -10,9 +10,7 @@ All tests will FAIL until implementation exists - this is TDD methodology.
 
 import json
 import subprocess
-from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -21,7 +19,6 @@ from src.commands.sentinel import (
     SentinelConfig,
     SentinelSetupOrchestrator,
 )
-
 
 # ============================================================================
 # SentinelConfig Class Tests
@@ -61,7 +58,9 @@ class TestSentinelConfig:
 
     def test_validate_retention_days_too_low(self):
         """Test validation fails for retention days < 30."""
-        with pytest.raises(ValueError, match="Retention days must be between 30 and 730"):
+        with pytest.raises(
+            ValueError, match="Retention days must be between 30 and 730"
+        ):
             SentinelConfig(
                 tenant_id="12345678-1234-1234-1234-123456789012",
                 subscription_id="87654321-4321-4321-4321-210987654321",
@@ -70,7 +69,9 @@ class TestSentinelConfig:
 
     def test_validate_retention_days_too_high(self):
         """Test validation fails for retention days > 730."""
-        with pytest.raises(ValueError, match="Retention days must be between 30 and 730"):
+        with pytest.raises(
+            ValueError, match="Retention days must be between 30 and 730"
+        ):
             SentinelConfig(
                 tenant_id="12345678-1234-1234-1234-123456789012",
                 subscription_id="87654321-4321-4321-4321-210987654321",
@@ -130,7 +131,9 @@ class TestSentinelConfig:
         env_dict = config.to_env_dict()
 
         assert env_dict["TENANT_ID"] == "12345678-1234-1234-1234-123456789012"
-        assert env_dict["AZURE_SUBSCRIPTION_ID"] == "87654321-4321-4321-4321-210987654321"
+        assert (
+            env_dict["AZURE_SUBSCRIPTION_ID"] == "87654321-4321-4321-4321-210987654321"
+        )
         assert env_dict["WORKSPACE_NAME"] == "test-workspace"
         assert env_dict["RESOURCE_GROUP"] == "test-rg"
         assert env_dict["LOCATION"] == "eastus"
@@ -175,14 +178,16 @@ class TestResourceDiscovery:
         mock_session = Mock()
         mock_result = Mock()
         mock_record = Mock()
-        mock_record.__getitem__ = Mock(side_effect=lambda key: {
-            "r": {
-                "abstracted_id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
-                "type": "Microsoft.Compute/virtualMachines",
-                "name": "test-vm",
-                "location": "eastus",
-            }
-        }[key])
+        mock_record.__getitem__ = Mock(
+            side_effect=lambda key: {
+                "r": {
+                    "abstracted_id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/test-vm",
+                    "type": "Microsoft.Compute/virtualMachines",
+                    "name": "test-vm",
+                    "location": "eastus",
+                }
+            }[key]
+        )
 
         mock_result.__iter__ = Mock(return_value=iter([mock_record]))
         mock_session.run = Mock(return_value=mock_result)
@@ -226,7 +231,9 @@ class TestResourceDiscovery:
         mock_driver = Mock()
         mock_driver.session = Mock(side_effect=Exception("Connection failed"))
 
-        with patch("src.commands.sentinel.ResourceDiscovery.discover_from_azure_api") as mock_azure:
+        with patch(
+            "src.commands.sentinel.ResourceDiscovery.discover_from_azure_api"
+        ) as mock_azure:
             mock_azure.return_value = [{"id": "test-resource"}]
 
             discovery = ResourceDiscovery(neo4j_driver=mock_driver)
@@ -252,7 +259,9 @@ class TestResourceDiscovery:
 
         mock_client.resources.list = Mock(return_value=[mock_resource])
 
-        with patch("azure.mgmt.resource.ResourceManagementClient", return_value=mock_client):
+        with patch(
+            "azure.mgmt.resource.ResourceManagementClient", return_value=mock_client
+        ):
             discovery = ResourceDiscovery(credential=mock_credential)
             resources = await discovery.discover_from_azure_api(
                 subscription_id="test-sub",
@@ -270,7 +279,9 @@ class TestResourceDiscovery:
         mock_client = Mock()
         mock_client.resources.list = Mock(side_effect=TimeoutError("Request timed out"))
 
-        with patch("azure.mgmt.resource.ResourceManagementClient", return_value=mock_client):
+        with patch(
+            "azure.mgmt.resource.ResourceManagementClient", return_value=mock_client
+        ):
             discovery = ResourceDiscovery(credential=mock_credential)
 
             with pytest.raises(TimeoutError):
@@ -288,20 +299,24 @@ class TestResourceDiscovery:
 
         # Return both supported and unsupported resource types
         mock_records = []
-        for i, resource_type in enumerate([
-            "Microsoft.Compute/virtualMachines",  # Supported
-            "Microsoft.Unsupported/resource",      # Unsupported
-            "Microsoft.Storage/storageAccounts",   # Supported
-        ]):
+        for i, resource_type in enumerate(
+            [
+                "Microsoft.Compute/virtualMachines",  # Supported
+                "Microsoft.Unsupported/resource",  # Unsupported
+                "Microsoft.Storage/storageAccounts",  # Supported
+            ]
+        ):
             record = Mock()
-            record.__getitem__ = Mock(side_effect=lambda key, rt=resource_type, idx=i: {
-                "r": {
-                    "abstracted_id": f"/subscriptions/test-sub/resourceGroups/test-rg/providers/{rt}/resource-{idx}",
-                    "type": rt,
-                    "name": f"resource-{idx}",
-                    "location": "eastus",
-                }
-            }[key])
+            record.__getitem__ = Mock(
+                side_effect=lambda key, rt=resource_type, idx=i: {
+                    "r": {
+                        "abstracted_id": f"/subscriptions/test-sub/resourceGroups/test-rg/providers/{rt}/resource-{idx}",
+                        "type": rt,
+                        "name": f"resource-{idx}",
+                        "location": "eastus",
+                    }
+                }[key]
+            )
             mock_records.append(record)
 
         mock_result.__iter__ = Mock(return_value=iter(mock_records))
@@ -338,7 +353,9 @@ class TestResourceDiscovery:
 
         discovery = ResourceDiscovery(neo4j_driver=mock_driver)
 
-        with patch.object(discovery, "discover_from_neo4j", wraps=discovery.discover_from_neo4j) as mock_neo4j:
+        with patch.object(
+            discovery, "discover_from_neo4j", wraps=discovery.discover_from_neo4j
+        ) as mock_neo4j:
             await discovery.discover(
                 subscription_id="test-sub",
                 strategy="neo4j",
@@ -353,10 +370,16 @@ class TestResourceDiscovery:
         mock_client = Mock()
         mock_client.resources.list = Mock(return_value=[])
 
-        with patch("azure.mgmt.resource.ResourceManagementClient", return_value=mock_client):
+        with patch(
+            "azure.mgmt.resource.ResourceManagementClient", return_value=mock_client
+        ):
             discovery = ResourceDiscovery(credential=mock_credential)
 
-            with patch.object(discovery, "discover_from_azure_api", wraps=discovery.discover_from_azure_api) as mock_azure:
+            with patch.object(
+                discovery,
+                "discover_from_azure_api",
+                wraps=discovery.discover_from_azure_api,
+            ) as mock_azure:
                 await discovery.discover(
                     subscription_id="test-sub",
                     strategy="azure_api",
