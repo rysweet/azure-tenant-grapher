@@ -98,6 +98,22 @@
 - **[Scale Config Reference](SCALE_CONFIG_REFERENCE.md)** - Configuration options
 - **[Scale Performance Guide](SCALE_PERFORMANCE_GUIDE.md)** - Performance optimization
 
+## CTF Overlay System
+
+### Overview
+- **[ctf_overlay_system/README.md](ctf_overlay_system/README.md)** - Quick start guide and core concepts for CTF overlay system
+
+### Technical Documentation
+- **[ctf_overlay_system/ARCHITECTURE.md](ctf_overlay_system/ARCHITECTURE.md)** - Complete architecture design with properties-only approach
+- **[ctf_overlay_system/API_REFERENCE.md](ctf_overlay_system/API_REFERENCE.md)** - Neo4j Cypher queries and Python API reference
+
+### Key Features
+- Properties-only architecture (no separate annotation nodes)
+- Layer-based isolation for independent CTF scenarios
+- Simple cleanup (delete by layer_id)
+- Integration with TerraformEmitter and TerraformImporter
+- M003 test scenarios support
+
 ### Performance
 - **[Performance Optimizations](performance/optimizations.md)** - System performance tuning
 
