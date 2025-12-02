@@ -826,6 +826,52 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to discover VM extensions: {e}")
 
+        # Discover SQL databases (child of SQL servers)
+        sql_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") == "Microsoft.Sql/servers"
+        ]
+        if sql_servers:
+            logger.info(f"🔍 Discovering databases for {len(sql_servers)} SQL servers...")
+            try:
+                from azure.mgmt.sql import SqlManagementClient
+                sql_client = SqlManagementClient(self.credential, subscription_id)
+
+                for server in sql_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch databases for this server
+                        databases_pager = sql_client.databases.list_by_server(rg, server_name)
+
+                        for db in databases_pager:
+                            db_dict = {
+                                "id": getattr(db, "id", None),
+                                "name": getattr(db, "name", None),
+                                "type": "Microsoft.Sql/servers/databases",
+                                "location": server.get("location"),
+                                "properties": {},
+                                "subscription_id": subscription_id,
+                                "resource_group": rg,
+                            }
+                            child_resources.append(db_dict)
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch databases for {server_name}: {e}")
+
+                db_count = len(
+                    [r for r in child_resources if r["type"] == "Microsoft.Sql/servers/databases"]
+                )
+                logger.info(f"✅ Found {db_count} SQL databases")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover SQL databases: {e}")
+
         logger.info(
             f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
         )
