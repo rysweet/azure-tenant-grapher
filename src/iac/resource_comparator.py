@@ -125,9 +125,11 @@ class ResourceComparator:
 
             # Track matched target resources
             if classification.target_resource:
-                matched_target_ids.add(
-                    classification.target_resource.id.lower()
-                )  # Case-insensitive
+                # Bug #111: Ensure id is not None before calling .lower()
+                if classification.target_resource.id:
+                    matched_target_ids.add(
+                        classification.target_resource.id.lower()
+                    )  # Case-insensitive
 
         # Detect orphaned resources (in target but not in abstracted graph)
         orphaned_classifications = self._detect_orphaned_resources(
@@ -161,6 +163,13 @@ class ResourceComparator:
         """
         resource_map = {}
         for resource in target_resources:
+            # Bug #111: Skip resources with None ID
+            if not resource.id:
+                logger.warning(
+                    f"Target resource has no ID, skipping: {resource.type if hasattr(resource, 'type') else 'unknown'}"
+                )
+                continue
+
             key = resource.id.lower()  # Case-insensitive matching
             if key in resource_map:
                 logger.warning(
@@ -214,6 +223,17 @@ class ResourceComparator:
         # Step 2: Normalize ID for cross-tenant comparison (Bug #13 fix)
         # In cross-tenant mode, replace source subscription with target subscription
         normalized_id = self._normalize_resource_id_for_comparison(original_id)
+
+        # Bug #111: Check if normalized_id is None before calling .lower()
+        if not normalized_id:
+            logger.warning(
+                f"Normalized ID is None for resource {abstracted_id}, classifying as NEW"
+            )
+            return ResourceClassification(
+                abstracted_resource=abstracted_resource,
+                target_resource=None,
+                classification=ResourceState.NEW,
+            )
 
         # Step 3: Find in target scan (case-insensitive)
         target_resource = target_resource_map.get(normalized_id.lower())
@@ -388,8 +408,10 @@ class ResourceComparator:
             )
 
         # Compare location (case-insensitive)
-        abs_location = abstracted_resource.get("location", "").lower()
-        target_location = target_resource.location.lower()
+        # Bug #111: Ensure abstracted location is not None before calling .lower()
+        abs_location = (abstracted_resource.get("location") or "").lower()
+        # Bug #111: Ensure location is not None before calling .lower()
+        target_location = (target_resource.location or "").lower()
         if abs_location and target_location and abs_location != target_location:
             differences.append(
                 {
@@ -477,6 +499,14 @@ class ResourceComparator:
         orphaned_classifications = []
 
         for target_resource in target_resources:
+            # Bug #111: Skip resources with None ID
+            if not target_resource.id:
+                logger.warning(
+                    f"Target resource has no ID in orphan detection, skipping: "
+                    f"{target_resource.type if hasattr(target_resource, 'type') else 'unknown'}"
+                )
+                continue
+
             target_id_lower = target_resource.id.lower()
             if target_id_lower not in matched_target_ids:
                 logger.debug(

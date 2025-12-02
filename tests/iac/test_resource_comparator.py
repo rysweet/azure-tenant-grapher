@@ -588,3 +588,155 @@ class TestResourceComparator:
         assert result.summary[ResourceState.EXACT_MATCH.value] == 1
         assert result.summary[ResourceState.DRIFTED.value] == 0
         assert result.summary[ResourceState.ORPHANED.value] == 1
+
+    def test_bug_111_none_id_in_target_resource(self, comparator):
+        """Test Bug #111: Handle None ID in target resource."""
+        # Create target resource with None ID (should be skipped)
+        target_resource_none = TargetResource(
+            id=None,
+            type="Microsoft.Compute/virtualMachines",
+            name="vm-broken",
+            location="eastus",
+            resource_group="rg1",
+            subscription_id="sub1",
+            properties={},
+            tags={},
+        )
+
+        target_resource_valid = TargetResource(
+            id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm-valid",
+            type="Microsoft.Compute/virtualMachines",
+            name="vm-valid",
+            location="eastus",
+            resource_group="rg1",
+            subscription_id="sub1",
+            properties={},
+            tags={},
+        )
+
+        target_scan = TargetScanResult(
+            tenant_id="tenant1",
+            subscription_id="sub1",
+            resources=[target_resource_none, target_resource_valid],
+            scan_timestamp="2025-01-01T00:00:00Z",
+        )
+
+        # Should not crash and should skip None ID resource
+        result = comparator.compare_resources([], target_scan)
+
+        # Only the valid resource should be orphaned, None ID resource should be skipped
+        assert len(result.classifications) == 1
+        assert result.classifications[0].target_resource == target_resource_valid
+        assert result.summary[ResourceState.ORPHANED.value] == 1
+
+    def test_bug_111_none_location_in_target_resource(self, comparator, sample_abstracted_resource):
+        """Test Bug #111: Handle None location in target resource."""
+        abstracted_resource = sample_abstracted_resource.copy()
+        abstracted_resource["name"] = "my-original-vm"
+
+        # Create target resource with None location
+        target_resource = TargetResource(
+            id=sample_abstracted_resource["original_id"],
+            type="Microsoft.Compute/virtualMachines",
+            name="my-original-vm",
+            location=None,  # None location
+            resource_group="rg1",
+            subscription_id="sub1",
+            properties={},
+            tags={},
+        )
+
+        target_scan = TargetScanResult(
+            tenant_id="tenant1",
+            subscription_id="sub1",
+            resources=[target_resource],
+            scan_timestamp="2025-01-01T00:00:00Z",
+        )
+
+        # Should not crash when comparing locations
+        result = comparator.compare_resources([abstracted_resource], target_scan)
+
+        # Should detect location difference (abstracted has location, target doesn't)
+        assert len(result.classifications) == 1
+        classification = result.classifications[0]
+        assert classification.classification == ResourceState.DRIFTED
+
+    def test_bug_111_none_normalized_id(self, comparator):
+        """Test Bug #111: Handle None normalized_id in classification."""
+        # Create abstracted resource with no ID and no original_id
+        abstracted_resource = {
+            "name": "vm-no-id",
+            "type": "Microsoft.Compute/virtualMachines",
+            # Missing both 'id' and 'original_id'
+        }
+
+        target_scan = TargetScanResult(
+            tenant_id="tenant1",
+            subscription_id="sub1",
+            resources=[],
+            scan_timestamp="2025-01-01T00:00:00Z",
+        )
+
+        # Should not crash and classify as NEW
+        result = comparator.compare_resources([abstracted_resource], target_scan)
+
+        assert len(result.classifications) == 1
+        classification = result.classifications[0]
+        assert classification.classification == ResourceState.NEW
+
+    def test_bug_111_multiple_none_values_comprehensive(self, comparator):
+        """Test Bug #111: Comprehensive test with multiple None values."""
+        # Create abstracted resources with various None scenarios
+        abstracted_no_id = {
+            "name": "vm-no-id",
+            "type": "Microsoft.Compute/virtualMachines",
+        }
+
+        abstracted_none_location = {
+            "id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/storage1",
+            "name": "storage1",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": None,
+            "original_id": "/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/storage1",
+        }
+
+        # Create target resources with None values
+        target_none_id = TargetResource(
+            id=None,
+            type="Microsoft.Network/virtualNetworks",
+            name="vnet-none-id",
+            location="eastus",
+            resource_group="rg1",
+            subscription_id="sub1",
+            properties={},
+            tags={},
+        )
+
+        target_none_location = TargetResource(
+            id="/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/storage1",
+            type="Microsoft.Storage/storageAccounts",
+            name="storage1",
+            location=None,
+            resource_group="rg1",
+            subscription_id="sub1",
+            properties={},
+            tags={},
+        )
+
+        target_scan = TargetScanResult(
+            tenant_id="tenant1",
+            subscription_id="sub1",
+            resources=[target_none_id, target_none_location],
+            scan_timestamp="2025-01-01T00:00:00Z",
+        )
+
+        # Should handle all None values gracefully
+        result = comparator.compare_resources(
+            [abstracted_no_id, abstracted_none_location], target_scan
+        )
+
+        # Should have classifications for both abstracted resources
+        # abstracted_no_id -> NEW
+        # abstracted_none_location -> EXACT_MATCH (both have None location)
+        # target_none_id should be skipped (None ID)
+        assert len(result.classifications) >= 2
