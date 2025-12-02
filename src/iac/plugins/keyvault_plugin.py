@@ -456,11 +456,13 @@ class KeyVaultPlugin(DataPlanePlugin):
         """
         Replicate Key Vault contents from source to target.
 
-        This is a stub implementation. Full implementation will:
-        1. Discover items from source Key Vault
-        2. Connect to target Key Vault
-        3. Replicate secrets, keys, and certificates
-        4. Handle errors and permissions issues
+        **NOTE**: This method is not yet implemented and will raise NotImplementedError.
+
+        Full implementation requires:
+        1. Azure Key Vault SDK for discovering source items
+        2. Authentication and authorization for both vaults
+        3. Logic to copy secrets, keys, and certificates
+        4. Handling of soft-delete and purge protection scenarios
 
         Args:
             source_resource: Source Key Vault resource
@@ -469,12 +471,15 @@ class KeyVaultPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult with operation statistics
 
+        Raises:
+            NotImplementedError: This functionality is not yet implemented
+            ValueError: If source or target resources are invalid
+
         Example:
             >>> source = {"id": "...", "type": "Microsoft.KeyVault/vaults", ...}
             >>> target = {"id": "...", "type": "Microsoft.KeyVault/vaults", ...}
             >>> result = plugin.replicate(source, target)
-            >>> result.success
-            False  # Stub implementation always returns False
+            NotImplementedError: Key Vault replication is not yet implemented...
         """
         if not self.validate_resource(source_resource):
             raise ValueError(f"Invalid source resource: {source_resource}")
@@ -483,35 +488,20 @@ class KeyVaultPlugin(DataPlanePlugin):
             raise ValueError(f"Invalid target resource: {target_resource}")
 
         self.logger.info(
-            f"Replicating from {source_resource.get('name')} "
+            f"Replication requested from {source_resource.get('name')} "
             f"to {target_resource.get('name')}"
         )
 
-        # TODO: Implement actual replication logic
-        # 1. Discover items from source
-        # source_items = self.discover(source_resource)
-        #
-        # 2. Connect to target Key Vault
-        # target_vault_uri = target_resource.get("properties", {}).get("vaultUri")
-        # credential = DefaultAzureCredential()
-        #
-        # 3. Replicate each item
-        # for item in source_items:
-        #     if item.item_type == "secret":
-        #         # Get secret value from source
-        #         # Set secret value in target
-        #         pass
-
-        # Stub: Return unsuccessful result
-        return ReplicationResult(
-            success=False,
-            items_discovered=0,
-            items_replicated=0,
-            errors=["Replication not yet implemented - stub only"],
-            warnings=[
-                "This is a stub implementation. "
-                "Azure SDK integration required for actual replication."
-            ],
+        # Key Vault replication requires Azure SDK integration
+        raise NotImplementedError(
+            "Key Vault replication is not yet implemented. "
+            "Implementation requires:\n"
+            "1. Azure Key Vault SDK for discovering source items\n"
+            "2. Authentication and authorization for both vaults\n"
+            "3. Logic to copy secrets, keys, and certificates\n"
+            "4. Handling of soft-delete and purge protection scenarios\n"
+            "\n"
+            "For cross-tenant replication, manual export/import is recommended."
         )
 
     def _sanitize_name(self, name: str) -> str:
