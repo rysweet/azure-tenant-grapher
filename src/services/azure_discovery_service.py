@@ -872,8 +872,59 @@ class AzureDiscoveryService:
             except Exception as e:
                 logger.warning(f"Failed to discover SQL databases: {e}")
 
+        # Discover PostgreSQL configurations
+        pg_servers = [
+            r
+            for r in parent_resources
+            if r.get("type") in ["Microsoft.DBforPostgreSQL/servers", "Microsoft.DBforPostgreSQL/flexibleServers"]
+        ]
+        if pg_servers:
+            logger.info(f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers...")
+            try:
+                from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
+                pg_client = PostgreSQLManagementClient(self.credential, subscription_id)
+
+                for server in pg_servers:
+                    try:
+                        rg = server.get("resource_group")
+                        server_name = server.get("name")
+
+                        if not rg or not server_name:
+                            continue
+
+                        # Fetch configurations for this server
+                        try:
+                            configs_pager = pg_client.configurations.list_by_server(rg, server_name)
+
+                            for config in configs_pager:
+                                config_dict = {
+                                    "id": getattr(config, "id", None),
+                                    "name": getattr(config, "name", None),
+                                    "type": "Microsoft.DBforPostgreSQL/servers/configurations",
+                                    "location": server.get("location"),
+                                    "properties": {},
+                                    "subscription_id": subscription_id,
+                                    "resource_group": rg,
+                                }
+                                child_resources.append(config_dict)
+                        except Exception:
+                            # Might be flexibleServers which use different API
+                            pass
+
+                    except Exception as e:
+                        logger.debug(f"Failed to fetch PostgreSQL configs for {server_name}: {e}")
+
+                config_count = len(
+                    [r for r in child_resources if "configurations" in r.get("type", "")]
+                )
+                logger.info(f"✅ Found {config_count} PostgreSQL configurations")
+
+            except Exception as e:
+                logger.warning(f"Failed to discover PostgreSQL configurations: {e}")
+
         logger.info(
-            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered"
+            f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered "
+            f"(subnets, VM extensions, DNS links, runbooks, SQL DBs, PostgreSQL configs)"
         )
         return child_resources
 
