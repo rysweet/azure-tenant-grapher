@@ -176,8 +176,7 @@ async def _run_undeploy(
     if not resources:
         click.echo("⚠️  No resources found in Terraform state")
         if not force:
-            response = input("Continue anyway? (yes/no): ").strip().lower()
-            if response not in ["yes", "y"]:
+            if not click.confirm("Continue anyway?", default=False):
                 click.echo("Undeployment cancelled")
                 return
 
