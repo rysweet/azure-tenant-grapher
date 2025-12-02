@@ -215,10 +215,11 @@ class ResourceComparator:
                     target_resource=None,
                     classification=ResourceState.NEW,
                 )
-            logger.debug(
-                f"Using abstracted ID as fallback for {abstracted_id} "
-                "(SCAN_SOURCE_NODE not found)"
+            # Fallback: use abstracted ID with heuristic cleanup
+            logger.warning(
+                f"No SCAN_SOURCE_NODE found for {abstracted_id}, using heuristic-cleaned abstracted ID"
             )
+            original_id = self._cleanup_abstracted_id_heuristics(original_id)
 
         # Step 2: Normalize ID for cross-tenant comparison (Bug #13 fix)
         # In cross-tenant mode, replace source subscription with target subscription
@@ -279,6 +280,37 @@ class ResourceComparator:
                 classification=ResourceState.DRIFTED,
                 drift_details=drift_details,
             )
+
+    def _cleanup_abstracted_id_heuristics(self, resource_id: str) -> str:
+        """
+        Apply heuristic cleanup to abstracted IDs for better matching.
+
+        Handles common transformations applied during graph abstraction:
+        - Remove hash suffixes (e.g., '_abc123')
+        - Replace underscores with hyphens
+        - Normalize to lowercase
+
+        Args:
+            resource_id: Abstracted resource ID
+
+        Returns:
+            Cleaned ID more likely to match real Azure ID
+        """
+        if not resource_id:
+            return resource_id
+
+        import re
+
+        # Remove hash suffix (6+ alphanumeric characters after underscore)
+        cleaned = re.sub(r'_[a-f0-9]{6,}$', '', resource_id, flags=re.IGNORECASE)
+
+        # Replace underscores with hyphens (common transformation)
+        cleaned = cleaned.replace('_', '-')
+
+        # Normalize to lowercase
+        cleaned = cleaned.lower()
+
+        return cleaned
 
     def _get_original_azure_id(
         self, abstracted_resource: Dict[str, Any]
