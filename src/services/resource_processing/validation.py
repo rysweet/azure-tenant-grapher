@@ -29,6 +29,9 @@ def get_required_fields(resource_type: str) -> List[str]:
     """
     if resource_type in GLOBAL_RESOURCE_TYPES:
         return ["id", "name", "type", "subscription_id"]
+    # Subnets are child resources that inherit location from parent VNet
+    elif resource_type == "Microsoft.Network/subnets":
+        return ["id", "name", "type", "resource_group", "subscription_id"]
     else:
         return [
             "id",
