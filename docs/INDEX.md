@@ -54,8 +54,24 @@
 - **Validation Success**: 100%
 - **Architecture Validated**: Dual-graph abstraction works end-to-end
 
+## CTF Overlay System
+
+### Overview
+- **[ctf_overlay_system/README.md](ctf_overlay_system/README.md)** - Quick start guide and core concepts for CTF overlay system
+
+### Technical Documentation
+- **[ctf_overlay_system/ARCHITECTURE.md](ctf_overlay_system/ARCHITECTURE.md)** - Complete architecture design with properties-only approach
+- **[ctf_overlay_system/API_REFERENCE.md](ctf_overlay_system/API_REFERENCE.md)** - Neo4j Cypher queries and Python API reference
+
+### Key Features
+- Properties-only architecture (no separate annotation nodes)
+- Layer-based isolation for independent CTF scenarios
+- Simple cleanup (delete by layer_id)
+- Integration with TerraformEmitter and TerraformImporter
+- M003 test scenarios support
+
 ## See Also
 - `../CLAUDE.md` - Project instructions and context
-- `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema  
+- `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema
 - `DUAL_GRAPH_QUERIES.cypher` - Useful queries for dual-graph architecture
 

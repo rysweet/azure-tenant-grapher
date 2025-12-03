@@ -1093,6 +1093,10 @@ cli.add_command(container_cmd, "container")
 # Register layer command group (Issue #482: CLI Modularization - Phase 3)
 cli.add_command(layer_group)
 
+# Register CTF command group (Issue #552: CTF Overlay System)
+from src.commands.ctf_cmd import ctf as ctf_group
+cli.add_command(ctf_group)
+
 
 @cli.command()
 @click.option(
