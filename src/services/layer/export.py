@@ -16,7 +16,7 @@ Public API (the "studs"):
 
 import json
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 from src.services.layer.models import (
     LayerAlreadyExistsError,
@@ -157,18 +157,30 @@ class LayerExportOperations:
                     progress_callback(copied_nodes, total_nodes)
 
             # Copy relationships
+            # NOTE: SCAN_SOURCE_NODE relationships are preserved to enable
+            # proper resource classification during IaC generation.
+            # These relationships link abstracted Resources to their original
+            # Azure IDs, which is critical for smart import functionality.
+            # See docs/architecture/scan-source-node-relationships.md
+            #
+            # Two types of relationships are copied:
+            # 1. Within-layer relationships: Both nodes are layer nodes
+            # 2. SCAN_SOURCE_NODE relationships: Source is layer node, target is Original
             session.run(
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
-                WHERE NOT r1:Original AND NOT r2:Original
-                  AND r1.layer_id = $source_layer_id
-                  AND r2.layer_id = $source_layer_id
-                  AND type(rel) <> 'SCAN_SOURCE_NODE'
-                WITH r1, r2, rel
+                WHERE NOT r1:Original AND r1.layer_id = $source_layer_id
+                  AND (
+                    (NOT r2:Original AND r2.layer_id = $source_layer_id)
+                    OR (r2:Original)
+                  )
+                WITH r1, r2, rel, type(rel) as rel_type
                 MATCH (new1:Resource {id: r1.id, layer_id: $target_layer_id})
-                MATCH (new2:Resource {id: r2.id, layer_id: $target_layer_id})
-                WITH new1, new2, type(rel) as rel_type, properties(rel) as rel_props
-                CALL apoc.create.relationship(new1, rel_type, rel_props, new2) YIELD rel as new_rel
+                WITH new1, r2, rel, rel_type, properties(rel) as rel_props
+                OPTIONAL MATCH (new2:Resource {id: r2.id, layer_id: $target_layer_id})
+                WHERE NOT r2:Original
+                WITH new1, COALESCE(new2, r2) as target_node, rel_type, rel_props
+                CALL apoc.create.relationship(new1, rel_type, rel_props, target_node) YIELD rel as new_rel
                 RETURN count(new_rel)
                 """,
                 {
@@ -246,13 +258,21 @@ class LayerExportOperations:
                 nodes.append(dict(node))
 
             # Get relationships
+            # NOTE: SCAN_SOURCE_NODE relationships are included in archives
+            # to preserve the connection between abstracted and original nodes.
+            # This is essential for IaC generation workflows.
+            #
+            # Two types of relationships are archived:
+            # 1. Within-layer relationships: Both nodes are layer nodes
+            # 2. SCAN_SOURCE_NODE relationships: Source is layer node, target is Original
             rel_result = session.run(
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
-                WHERE NOT r1:Original AND NOT r2:Original
-                  AND r1.layer_id = $layer_id
-                  AND r2.layer_id = $layer_id
-                  AND type(rel) <> 'SCAN_SOURCE_NODE'
+                WHERE NOT r1:Original AND r1.layer_id = $layer_id
+                  AND (
+                    (NOT r2:Original AND r2.layer_id = $layer_id)
+                    OR (r2:Original)
+                  )
                 RETURN r1.id as source, r2.id as target,
                        type(rel) as type, properties(rel) as props
                 """,
@@ -271,6 +291,8 @@ class LayerExportOperations:
 
         # Write to file
         archive_data = {
+            "version": "2.0",  # Version 2.0 includes SCAN_SOURCE_NODE
+            "includes_scan_source_node": True,  # Flag for backward compat
             "metadata": layer.to_dict() if layer else {},
             "nodes": nodes,
             "relationships": relationships,
@@ -304,6 +326,14 @@ class LayerExportOperations:
         # Load archive
         with open(archive_path) as f:
             archive_data = json.load(f)
+
+        archive_version = archive_data.get("version", "1.0")
+        includes_scan_source = archive_data.get("includes_scan_source_node", False)
+
+        logger.info(
+            f"Restoring layer from archive version {archive_version}, "
+            f"includes_scan_source_node={includes_scan_source}"
+        )
 
         metadata_dict = archive_data["metadata"]
         nodes = archive_data["nodes"]
@@ -344,23 +374,49 @@ class LayerExportOperations:
                 )
 
             # Restore relationships
+            # NOTE: SCAN_SOURCE_NODE relationships need special handling
+            # because they target Original nodes (no layer_id filter)
             for rel in relationships:
-                session.run(
-                    """
-                    MATCH (r1:Resource {id: $source, layer_id: $layer_id})
-                    MATCH (r2:Resource {id: $target, layer_id: $layer_id})
-                    WITH r1, r2
-                    CALL apoc.create.relationship(r1, $rel_type, $props, r2) YIELD rel
-                    RETURN rel
-                    """,
-                    {
-                        "source": rel["source"],
-                        "target": rel["target"],
-                        "layer_id": layer_metadata.layer_id,
-                        "rel_type": rel["type"],
-                        "props": rel["properties"],
-                    },
-                )
+                if rel["type"] == "SCAN_SOURCE_NODE":
+                    # Special handling: target is Original node, no layer_id filter
+                    session.run(
+                        """
+                        MATCH (r1:Resource {id: $source, layer_id: $layer_id})
+                        MATCH (r2:Resource:Original {id: $target})
+                        WITH r1, r2
+                        CALL apoc.create.relationship(r1, $rel_type, $props, r2) YIELD rel
+                        RETURN rel
+                        """,
+                        {
+                            "source": rel["source"],
+                            "target": rel["target"],
+                            "layer_id": target_layer_id
+                            if target_layer_id
+                            else layer_metadata.layer_id,
+                            "rel_type": rel["type"],
+                            "props": rel["properties"],
+                        },
+                    )
+                else:
+                    # Regular within-layer relationships
+                    session.run(
+                        """
+                        MATCH (r1:Resource {id: $source, layer_id: $layer_id})
+                        MATCH (r2:Resource {id: $target, layer_id: $layer_id})
+                        WITH r1, r2
+                        CALL apoc.create.relationship(r1, $rel_type, $props, r2) YIELD rel
+                        RETURN rel
+                        """,
+                        {
+                            "source": rel["source"],
+                            "target": rel["target"],
+                            "layer_id": target_layer_id
+                            if target_layer_id
+                            else layer_metadata.layer_id,
+                            "rel_type": rel["type"],
+                            "props": rel["properties"],
+                        },
+                    )
 
         # Refresh stats
         if self.stats_operations:

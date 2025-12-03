@@ -1,5 +1,10 @@
 # Azure Tenant Grapher - Documentation Index
 
+## Issue #570: SCAN_SOURCE_NODE Preservation Fix
+
+### Fix Summary
+- **[SCAN_SOURCE_NODE_FIX_SUMMARY.md](SCAN_SOURCE_NODE_FIX_SUMMARY.md)** ⭐ - **FIX DEPLOYED**: Layer operations now preserve SCAN_SOURCE_NODE relationships, resolving deployment blocker (900+ false positives eliminated). Includes technical details, migration paths, and complete documentation index.
+
 ## Issue #502: Tenant Replication Improvements
 
 ### Deployment Status
@@ -54,8 +59,15 @@
 - **Validation Success**: 100%
 - **Architecture Validated**: Dual-graph abstraction works end-to-end
 
+## Architecture Documentation
+
+### Dual-Graph Architecture
+- **[architecture/scan-source-node-relationships.md](architecture/scan-source-node-relationships.md)** - SCAN_SOURCE_NODE relationship preservation in layer operations (Bug #117 fix). Explains why these relationships are critical for IaC generation and smart import validation.
+- **[guides/scan-source-node-migration.md](guides/scan-source-node-migration.md)** - Migration guide for layers and archives created before Bug #117 fix. Includes detection, migration paths, and verification steps.
+- **[quickstart/scan-source-node-quick-ref.md](quickstart/scan-source-node-quick-ref.md)** - Quick reference for developers: essential queries, Python API examples, common mistakes, and debugging checklist.
+
 ## See Also
 - `../CLAUDE.md` - Project instructions and context
-- `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema  
+- `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema
 - `DUAL_GRAPH_QUERIES.cypher` - Useful queries for dual-graph architecture
 
