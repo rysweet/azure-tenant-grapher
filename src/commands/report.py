@@ -21,6 +21,7 @@ Philosophy:
 
 import asyncio
 import os
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -34,6 +35,13 @@ from neo4j import AsyncDriver, AsyncGraphDatabase
 from src.config_manager import AzureTenantGrapherConfig
 from src.services.aad_graph_service import AADGraphService
 from src.services.azure_discovery_service import AzureDiscoveryService
+
+# Public API ("studs" for this module)
+__all__ = [
+    "TenantReportData",  # Data model
+    "generate_markdown_report",  # Core report generation
+    "report",  # CLI command
+]
 
 # ============================================================================
 # DATA MODELS
@@ -559,10 +567,35 @@ async def collect_azure_data(
 # ============================================================================
 
 
-def write_report_to_file(content: str, output_path: Path) -> None:
-    """Write report content to file"""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(content)
+def write_report_to_file(content: str, output_path: Path, max_retries: int = 3) -> None:
+    """Write report content to file with cloud sync resilience.
+
+    Handles file I/O errors that can occur when directories are synced
+    with cloud services (OneDrive, Dropbox, iCloud, etc.).
+
+    Args:
+        content: Report content to write
+        output_path: Path where report should be written
+        max_retries: Maximum retry attempts (default: 3)
+    """
+    retry_delay = 0.1
+
+    for attempt in range(max_retries):
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(content)
+            return
+        except OSError as e:
+            if e.errno == 5 and attempt < max_retries - 1:
+                if attempt == 0:
+                    click.echo(
+                        "⚠️ File I/O error - retrying (may be cloud sync issue)...",
+                        err=True,
+                    )
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                raise
 
 
 # ============================================================================
@@ -637,8 +670,14 @@ def get_neo4j_config_from_env() -> Tuple[str, str, str]:
     """Get Neo4j configuration from environment variables"""
     port = os.getenv("NEO4J_PORT", "7687")
     uri = os.getenv("NEO4J_URI", f"bolt://localhost:{port}")
-    user = "neo4j"
-    password = os.getenv("NEO4J_PASSWORD", "password")
+    user = os.getenv("NEO4J_USER", "neo4j")
+    password = os.getenv("NEO4J_PASSWORD")
+
+    if not password:
+        raise click.ClickException(
+            "NEO4J_PASSWORD environment variable is required. "
+            "Please set it in your .env file or environment."
+        )
 
     return uri, user, password
 
