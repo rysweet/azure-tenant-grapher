@@ -130,7 +130,7 @@ def mock_azure_config() -> Dict[str, str]:
     return {
         "tenant_id": "test-tenant-123",
         "client_id": "test-client-456",
-        "client_secret": "test-secret-789",
+        "client_secret": "test-secret-789",  # pragma: allowlist secret
         "subscription_id": "test-sub-abc",
     }
 
@@ -141,7 +141,7 @@ def mock_neo4j_config() -> Dict[str, str]:
     return {
         "uri": "bolt://localhost:7687",
         "username": "neo4j",
-        "password": "test-password",
+        "password": "test-password",  # pragma: allowlist secret
         "database": "neo4j",
     }
 

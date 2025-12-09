@@ -109,7 +109,11 @@ def check_system_command(command: str) -> bool:
             timeout=5,
         )
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        subprocess.TimeoutExpired,
+    ):
         return False
 
 
@@ -125,7 +129,9 @@ def check_dependencies():
 def test_required_dependencies():
     """Test that required Python packages are available."""
     for package in PYTHON_PACKAGES_REQUIRED:
-        assert check_python_package(package), f"Required package {package} not installed"
+        assert check_python_package(package), (
+            f"Required package {package} not installed"
+        )
 
 
 def test_optional_dependencies_status():

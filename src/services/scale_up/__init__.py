@@ -29,7 +29,12 @@ from typing import Any, Callable, Dict, List, Optional
 from neo4j.exceptions import Neo4jError
 
 from src.services.base_scale_service import BaseScaleService
-from src.services.scale_up import common, random_strategy, scenario_strategy, template_strategy
+from src.services.scale_up import (
+    common,
+    random_strategy,
+    scenario_strategy,
+    template_strategy,
+)
 from src.services.scale_validation import ScaleValidation
 from src.utils.session_manager import Neo4jSessionManager
 
@@ -280,7 +285,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -357,21 +364,33 @@ class ScaleUpService(BaseScaleService):
                     resources_created,
                     relationships_created,
                 ) = await scenario_strategy.generate_hub_spoke(
-                    self.session_manager, tenant_id, operation_id, params, progress_callback
+                    self.session_manager,
+                    tenant_id,
+                    operation_id,
+                    params,
+                    progress_callback,
                 )
             elif scenario == "multi-region":
                 (
                     resources_created,
                     relationships_created,
                 ) = await scenario_strategy.generate_multi_region(
-                    self.session_manager, tenant_id, operation_id, params, progress_callback
+                    self.session_manager,
+                    tenant_id,
+                    operation_id,
+                    params,
+                    progress_callback,
                 )
             elif scenario == "dev-test-prod":
                 (
                     resources_created,
                     relationships_created,
                 ) = await scenario_strategy.generate_dev_test_prod(
-                    self.session_manager, tenant_id, operation_id, params, progress_callback
+                    self.session_manager,
+                    tenant_id,
+                    operation_id,
+                    params,
+                    progress_callback,
                 )
             else:
                 raise ValueError(
@@ -421,7 +440,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -588,7 +609,9 @@ class ScaleUpService(BaseScaleService):
                 self.logger.error(f"Rollback failed: {rollback_err}")
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
-                self.logger.exception(f"Unexpected error during rollback: {unexpected_error}")
+                self.logger.exception(
+                    f"Unexpected error during rollback: {unexpected_error}"
+                )
                 raise
 
             return ScaleUpResult(
@@ -657,7 +680,9 @@ class ScaleUpService(BaseScaleService):
             self.logger.exception(f"Rollback failed for operation {operation_id}: {e}")
             raise
         except Exception as e:
-            self.logger.exception(f"Unexpected error during rollback for operation {operation_id}: {e}")
+            self.logger.exception(
+                f"Unexpected error during rollback for operation {operation_id}: {e}"
+            )
             raise
 
     async def _validate_operation(self, operation_id: str) -> bool:
@@ -680,6 +705,6 @@ class ScaleUpService(BaseScaleService):
 
 
 __all__ = [
-    "ScaleUpService",
     "ScaleUpResult",
+    "ScaleUpService",
 ]

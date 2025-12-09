@@ -71,6 +71,6 @@ ps aux | grep "terraform apply" | grep -v grep
 
 ---
 
-**Import phase: COMPLETE ✅**  
-**Creation phase: IN PROGRESS ⏳**  
+**Import phase: COMPLETE ✅**
+**Creation phase: IN PROGRESS ⏳**
 **Lock: ACTIVE 🔒**

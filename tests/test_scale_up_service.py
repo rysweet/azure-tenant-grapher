@@ -130,10 +130,7 @@ async def test_scale_up_template_success(
         scale_up_service, "_get_base_resources", return_value=mock_base_resources
     ), patch.object(
         scale_up_service, "_replicate_resources", return_value=10
-    ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=5
-    ):
-
+    ), patch.object(scale_up_service, "_clone_relationships", return_value=5):
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
         )
@@ -150,7 +147,6 @@ async def test_scale_up_template_success(
 async def test_scale_up_template_tenant_not_found(scale_up_service):
     """Test template scale-up fails when tenant doesn't exist."""
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
-
         result = await scale_up_service.scale_up_template(
             tenant_id="nonexistent", scale_factor=2.0
         )
@@ -163,7 +159,6 @@ async def test_scale_up_template_tenant_not_found(scale_up_service):
 async def test_scale_up_template_invalid_scale_factor(scale_up_service):
     """Test template scale-up fails with invalid scale factor."""
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
-
         # Test zero scale factor
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=0.0
@@ -185,7 +180,6 @@ async def test_scale_up_template_no_base_resources(scale_up_service):
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
     ), patch.object(scale_up_service, "_get_base_resources", return_value=[]):
-
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
         )
@@ -205,10 +199,7 @@ async def test_scale_up_template_with_resource_types(
         scale_up_service, "_get_base_resources", return_value=mock_base_resources
     ), patch.object(
         scale_up_service, "_replicate_resources", return_value=5
-    ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=2
-    ):
-
+    ), patch.object(scale_up_service, "_clone_relationships", return_value=2):
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123",
             scale_factor=2.0,
@@ -237,10 +228,7 @@ async def test_scale_up_template_with_progress_callback(
         scale_up_service, "_get_base_resources", return_value=mock_base_resources
     ), patch.object(
         scale_up_service, "_replicate_resources", return_value=10
-    ), patch.object(
-        scale_up_service, "_clone_relationships", return_value=5
-    ):
-
+    ), patch.object(scale_up_service, "_clone_relationships", return_value=5):
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123",
             scale_factor=2.0,
@@ -262,7 +250,6 @@ async def test_scale_up_template_scale_factor_too_small(
     ), patch.object(
         scale_up_service, "_get_base_resources", return_value=mock_base_resources
     ):
-
         # Scale factor < 1.0 means we'd create negative resources
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=0.5
@@ -282,10 +269,7 @@ async def test_scale_up_scenario_hub_spoke(scale_up_service):
     """Test scenario-based scale-up with hub-spoke topology."""
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
-    ), patch.object(
-        scale_up_service, "_generate_hub_spoke", return_value=(50, 25)
-    ):
-
+    ), patch.object(scale_up_service, "_generate_hub_spoke", return_value=(50, 25)):
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123",
             scenario="hub-spoke",
@@ -304,10 +288,7 @@ async def test_scale_up_scenario_multi_region(scale_up_service):
     """Test scenario-based scale-up with multi-region topology."""
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
-    ), patch.object(
-        scale_up_service, "_generate_multi_region", return_value=(60, 0)
-    ):
-
+    ), patch.object(scale_up_service, "_generate_multi_region", return_value=(60, 0)):
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123",
             scenario="multi-region",
@@ -324,10 +305,7 @@ async def test_scale_up_scenario_dev_test_prod(scale_up_service):
     """Test scenario-based scale-up with dev/test/prod topology."""
     with patch.object(
         scale_up_service, "validate_tenant_exists", return_value=True
-    ), patch.object(
-        scale_up_service, "_generate_dev_test_prod", return_value=(45, 0)
-    ):
-
+    ), patch.object(scale_up_service, "_generate_dev_test_prod", return_value=(45, 0)):
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123",
             scenario="dev-test-prod",
@@ -343,7 +321,6 @@ async def test_scale_up_scenario_dev_test_prod(scale_up_service):
 async def test_scale_up_scenario_unknown_scenario(scale_up_service):
     """Test scenario scale-up fails with unknown scenario."""
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
-
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123", scenario="unknown-scenario", params={}
         )
@@ -356,7 +333,6 @@ async def test_scale_up_scenario_unknown_scenario(scale_up_service):
 async def test_scale_up_scenario_tenant_not_found(scale_up_service):
     """Test scenario scale-up fails when tenant doesn't exist."""
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
-
         result = await scale_up_service.scale_up_scenario(
             tenant_id="nonexistent", scenario="hub-spoke", params={}
         )
@@ -389,7 +365,6 @@ async def test_scale_up_random_success(scale_up_service):
     ), patch.object(
         scale_up_service, "_generate_random_relationships", return_value=30
     ):
-
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=100, config=config
         )
@@ -406,7 +381,6 @@ async def test_scale_up_random_invalid_target_count(scale_up_service):
     config = {"resource_type_distribution": {"Microsoft.Compute/virtualMachines": 1.0}}
 
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
-
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=0, config=config
         )
@@ -419,7 +393,6 @@ async def test_scale_up_random_invalid_target_count(scale_up_service):
 async def test_scale_up_random_missing_distribution(scale_up_service):
     """Test random scale-up fails without resource type distribution."""
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=True):
-
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=100, config={}
         )
@@ -434,7 +407,6 @@ async def test_scale_up_random_tenant_not_found(scale_up_service):
     config = {"resource_type_distribution": {"Microsoft.Compute/virtualMachines": 1.0}}
 
     with patch.object(scale_up_service, "validate_tenant_exists", return_value=False):
-
         result = await scale_up_service.scale_up_random(
             tenant_id="nonexistent", target_count=100, config=config
         )
@@ -475,9 +447,7 @@ async def test_rollback_operation_no_resources(scale_up_service, mock_session):
     mock_result.single = MagicMock(return_value=mock_record)
     mock_session.run = MagicMock(return_value=mock_result)
 
-    deleted_count = await scale_up_service.rollback_operation(
-        "nonexistent-operation"
-    )
+    deleted_count = await scale_up_service.rollback_operation("nonexistent-operation")
 
     assert deleted_count == 0
 
@@ -529,9 +499,7 @@ async def test_get_base_resources_with_filter(scale_up_service, mock_session):
 
 
 @pytest.mark.asyncio
-async def test_replicate_resources(
-    scale_up_service, mock_session, mock_base_resources
-):
+async def test_replicate_resources(scale_up_service, mock_session, mock_base_resources):
     """Test resource replication."""
     with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
         created_count = await scale_up_service._replicate_resources(
@@ -645,16 +613,14 @@ async def test_generate_hub_spoke(scale_up_service, mock_session):
     """Test hub-spoke topology generation."""
     with patch.object(
         scale_up_service, "_insert_resource_batch", return_value=None
-    ), patch.object(
-        scale_up_service, "_insert_relationship_batch", return_value=None
-    ):
-
-        resources_created, relationships_created = (
-            await scale_up_service._generate_hub_spoke(
-                tenant_id="tenant-123",
-                operation_id="scale-123",
-                params={"spoke_count": 3, "resources_per_spoke": 5},
-            )
+    ), patch.object(scale_up_service, "_insert_relationship_batch", return_value=None):
+        (
+            resources_created,
+            relationships_created,
+        ) = await scale_up_service._generate_hub_spoke(
+            tenant_id="tenant-123",
+            operation_id="scale-123",
+            params={"spoke_count": 3, "resources_per_spoke": 5},
         )
 
         # 1 hub + 3 spokes + (3 * 5) spoke resources = 19 resources
@@ -667,13 +633,13 @@ async def test_generate_hub_spoke(scale_up_service, mock_session):
 async def test_generate_multi_region(scale_up_service, mock_session):
     """Test multi-region topology generation."""
     with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
-
-        resources_created, relationships_created = (
-            await scale_up_service._generate_multi_region(
-                tenant_id="tenant-123",
-                operation_id="scale-123",
-                params={"region_count": 3, "resources_per_region": 10},
-            )
+        (
+            resources_created,
+            relationships_created,
+        ) = await scale_up_service._generate_multi_region(
+            tenant_id="tenant-123",
+            operation_id="scale-123",
+            params={"region_count": 3, "resources_per_region": 10},
         )
 
         # 3 regions * 10 resources = 30
@@ -685,13 +651,13 @@ async def test_generate_multi_region(scale_up_service, mock_session):
 async def test_generate_dev_test_prod(scale_up_service, mock_session):
     """Test dev/test/prod topology generation."""
     with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
-
-        resources_created, relationships_created = (
-            await scale_up_service._generate_dev_test_prod(
-                tenant_id="tenant-123",
-                operation_id="scale-123",
-                params={"resources_per_env": 10},
-            )
+        (
+            resources_created,
+            relationships_created,
+        ) = await scale_up_service._generate_dev_test_prod(
+            tenant_id="tenant-123",
+            operation_id="scale-123",
+            params={"resources_per_env": 10},
         )
 
         # 3 environments * 10 resources = 30
@@ -708,7 +674,6 @@ async def test_generate_random_resources(scale_up_service, mock_session):
     }
 
     with patch.object(scale_up_service, "_insert_resource_batch", return_value=None):
-
         created_count = await scale_up_service._generate_random_resources(
             tenant_id="tenant-123",
             operation_id="scale-123",
@@ -726,8 +691,10 @@ async def test_generate_random_relationships(scale_up_service, mock_session):
     mock_result = MagicMock()
     mock_result.__iter__ = MagicMock(
         return_value=iter(
-            [{"id": f"resource-{i}", "type": "Microsoft.Compute/virtualMachines"}
-             for i in range(10)]
+            [
+                {"id": f"resource-{i}", "type": "Microsoft.Compute/virtualMachines"}
+                for i in range(10)
+            ]
         )
     )
     mock_session.run = MagicMock(return_value=mock_result)
@@ -735,7 +702,6 @@ async def test_generate_random_relationships(scale_up_service, mock_session):
     with patch.object(
         scale_up_service, "_insert_relationship_batch", return_value=None
     ):
-
         created_count = await scale_up_service._generate_random_relationships(
             tenant_id="tenant-123", operation_id="scale-123", density=0.2
         )
@@ -756,14 +722,15 @@ async def test_validation_enabled(mock_session_manager):
         session_manager=mock_session_manager, validation_enabled=True
     )
 
-    with patch.object(service, "validate_tenant_exists", return_value=True), patch.object(
-        service, "_get_base_resources", return_value=[{"id": "r1", "type": "t1", "props": {}}]
+    with patch.object(
+        service, "validate_tenant_exists", return_value=True
+    ), patch.object(
+        service,
+        "_get_base_resources",
+        return_value=[{"id": "r1", "type": "t1", "props": {}}],
     ), patch.object(service, "_replicate_resources", return_value=5), patch.object(
         service, "_clone_relationships", return_value=2
-    ), patch.object(
-        service, "_validate_operation", return_value=True
-    ) as mock_validate:
-
+    ), patch.object(service, "_validate_operation", return_value=True) as mock_validate:
         result = await service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
         )
@@ -780,14 +747,15 @@ async def test_validation_disabled(mock_session_manager):
         session_manager=mock_session_manager, validation_enabled=False
     )
 
-    with patch.object(service, "validate_tenant_exists", return_value=True), patch.object(
-        service, "_get_base_resources", return_value=[{"id": "r1", "type": "t1", "props": {}}]
+    with patch.object(
+        service, "validate_tenant_exists", return_value=True
+    ), patch.object(
+        service,
+        "_get_base_resources",
+        return_value=[{"id": "r1", "type": "t1", "props": {}}],
     ), patch.object(service, "_replicate_resources", return_value=5), patch.object(
         service, "_clone_relationships", return_value=2
-    ), patch.object(
-        service, "_validate_operation", return_value=True
-    ) as mock_validate:
-
+    ), patch.object(service, "_validate_operation", return_value=True) as mock_validate:
         result = await service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
         )
@@ -815,7 +783,6 @@ async def test_template_scale_up_rollback_on_error(scale_up_service):
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:
-
         result = await scale_up_service.scale_up_template(
             tenant_id="tenant-123", scale_factor=2.0
         )
@@ -838,7 +805,6 @@ async def test_scenario_scale_up_rollback_on_error(scale_up_service):
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:
-
         result = await scale_up_service.scale_up_scenario(
             tenant_id="tenant-123", scenario="hub-spoke", params={}
         )
@@ -863,7 +829,6 @@ async def test_random_scale_up_rollback_on_error(scale_up_service):
     ), patch.object(
         scale_up_service, "rollback_operation", return_value=0
     ) as mock_rollback:
-
         result = await scale_up_service.scale_up_random(
             tenant_id="tenant-123", target_count=100, config=config
         )

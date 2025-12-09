@@ -14,4 +14,4 @@ import from the new package location.
 # Re-export all public APIs from the new modular package
 from src.services.scale_up import ScaleUpResult, ScaleUpService
 
-__all__ = ["ScaleUpService", "ScaleUpResult"]
+__all__ = ["ScaleUpResult", "ScaleUpService"]

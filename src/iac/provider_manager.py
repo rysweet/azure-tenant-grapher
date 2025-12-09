@@ -57,12 +57,14 @@ class ProviderCheckReport:
     def format_report(self) -> str:
         """Format the report as a human-readable string."""
         lines = []
-        lines.append(f"\n{'='*60}")
+        lines.append(f"\n{'=' * 60}")
         lines.append("AZURE RESOURCE PROVIDER CHECK REPORT")
-        lines.append(f"{'='*60}")
+        lines.append(f"{'=' * 60}")
         lines.append(f"Subscription: {self.subscription_id}")
         lines.append(f"Required Providers: {len(self.required_providers)}")
-        lines.append(f"Already Registered: {len([p for p in self.checked_providers.values() if p.state == ProviderState.REGISTERED])}")
+        lines.append(
+            f"Already Registered: {len([p for p in self.checked_providers.values() if p.state == ProviderState.REGISTERED])}"
+        )
         lines.append(f"Newly Registered: {len(self.registered_providers)}")
         lines.append(f"Failed: {len(self.failed_providers)}")
         lines.append(f"Skipped: {len(self.skipped_providers)}")
@@ -89,7 +91,7 @@ class ProviderCheckReport:
             for provider in sorted(self.skipped_providers):
                 lines.append(f"  - {provider}")
 
-        lines.append(f"{'='*60}\n")
+        lines.append(f"{'=' * 60}\n")
         return "\n".join(lines)
 
 
@@ -137,7 +139,7 @@ class ProviderManager:
         "azurerm_storage_share": "Microsoft.Storage",
         # Key Vault
         "azurerm_key_vault": "Microsoft.KeyVault",
-        "azurerm_key_vault_secret": "Microsoft.KeyVault",
+        "azurerm_key_vault_secret": "Microsoft.KeyVault",  # pragma: allowlist secret
         "azurerm_key_vault_key": "Microsoft.KeyVault",
         "azurerm_key_vault_certificate": "Microsoft.KeyVault",
         # SQL
@@ -248,7 +250,9 @@ class ProviderManager:
 
         # Extract from terraform files if path provided
         if terraform_path:
-            required_providers.update(self._extract_providers_from_files(terraform_path))
+            required_providers.update(
+                self._extract_providers_from_files(terraform_path)
+            )
 
         logger.info(f"Detected {len(required_providers)} required Azure providers")
         logger.debug(f"Required providers: {sorted(required_providers)}")

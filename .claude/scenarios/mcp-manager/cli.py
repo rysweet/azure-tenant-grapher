@@ -67,7 +67,7 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
         data_lines.append("|" + "|".join(cells) + "|")
 
     # Assemble table
-    return "\n".join([separator, header_line, separator] + data_lines + [separator])
+    return "\n".join([separator, header_line, separator, *data_lines, separator])
 
 
 def cmd_list(args: argparse.Namespace) -> int:
@@ -97,13 +97,15 @@ def cmd_list(args: argparse.Namespace) -> int:
             enabled_str = "Yes" if server.enabled else "No"
             env_str = ", ".join(server.env.keys()) if server.env else "(none)"
 
-            rows.append([
-                server.name,
-                server.command,
-                args_str[:40] + "..." if len(args_str) > 40 else args_str,
-                enabled_str,
-                env_str[:30] + "..." if len(env_str) > 30 else env_str,
-            ])
+            rows.append(
+                [
+                    server.name,
+                    server.command,
+                    args_str[:40] + "..." if len(args_str) > 40 else args_str,
+                    enabled_str,
+                    env_str[:30] + "..." if len(env_str) > 30 else env_str,
+                ]
+            )
 
         print(format_table(headers, rows))
         return 0
@@ -263,7 +265,10 @@ def cmd_add(args: argparse.Namespace) -> int:
         if args.env:
             for env_str in args.env:
                 if "=" not in env_str:
-                    print(f"Invalid environment variable format: {env_str}", file=sys.stderr)
+                    print(
+                        f"Invalid environment variable format: {env_str}",
+                        file=sys.stderr,
+                    )
                     print("Format should be KEY=VALUE", file=sys.stderr)
                     return 1
                 key, value = env_str.split("=", 1)
@@ -346,7 +351,7 @@ def cmd_remove(args: argparse.Namespace) -> int:
             print(f"  Command: {server.command}")
             print(f"  Args: {' '.join(server.args) if server.args else '(none)'}")
             response = input("\nAre you sure you want to remove this server? (y/N): ")
-            if response.lower() not in ('y', 'yes'):
+            if response.lower() not in ("y", "yes"):
                 print("Cancelled")
                 return 0
 
@@ -448,7 +453,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         # Write to file or stdout
         if args.output:
             output_path = Path(args.output)
-            output_path.write_text(export_data, encoding='utf-8')
+            output_path.write_text(export_data, encoding="utf-8")
             print(f"Exported {len(servers)} server(s) to: {output_path}")
         else:
             print(export_data)
@@ -476,7 +481,7 @@ def cmd_import(args: argparse.Namespace) -> int:
             print(f"Import file not found: {import_path}", file=sys.stderr)
             return 1
 
-        import_data = import_path.read_text(encoding='utf-8')
+        import_data = import_path.read_text(encoding="utf-8")
 
         # Parse servers
         imported_servers = import_servers(import_data, format=args.format)
@@ -523,7 +528,9 @@ def cmd_import(args: argparse.Namespace) -> int:
                         new_config = add_server(new_config, server)
                         added_count += 1
 
-                print(f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)")
+                print(
+                    f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)"
+                )
             else:
                 # Replace mode: use only imported servers
                 new_config = config.copy()
@@ -532,7 +539,9 @@ def cmd_import(args: argparse.Namespace) -> int:
                 for server in imported_servers:
                     new_config = add_server(new_config, server)
 
-                print(f"\nReplaced configuration with {len(imported_servers)} server(s)")
+                print(
+                    f"\nReplaced configuration with {len(imported_servers)} server(s)"
+                )
 
             # Validate before writing
             errors = validate_config(new_config)
@@ -571,7 +580,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         description="Manage MCP server configurations",
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Command to execute", required=True)
+    subparsers = parser.add_subparsers(
+        dest="command", help="Command to execute", required=True
+    )
 
     # List command
     subparsers.add_parser("list", help="List all MCP servers")
@@ -592,8 +603,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     add_parser.add_argument("name", nargs="?", help="Server name")
     add_parser.add_argument("server_command", nargs="?", help="Command to execute")
     add_parser.add_argument("server_args", nargs="*", help="Command arguments")
-    add_parser.add_argument("--env", action="append", help="Environment variables (KEY=VALUE)")
-    add_parser.add_argument("--disabled", action="store_true", help="Add in disabled state")
+    add_parser.add_argument(
+        "--env", action="append", help="Environment variables (KEY=VALUE)"
+    )
+    add_parser.add_argument(
+        "--disabled", action="store_true", help="Add in disabled state"
+    )
 
     # Remove command
     remove_parser = subparsers.add_parser("remove", help="Remove MCP server")
@@ -606,14 +621,22 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Export command
     export_parser = subparsers.add_parser("export", help="Export configuration")
-    export_parser.add_argument("output", nargs="?", help="Output file (default: stdout)")
-    export_parser.add_argument("--format", default="json", choices=["json"], help="Export format")
+    export_parser.add_argument(
+        "output", nargs="?", help="Output file (default: stdout)"
+    )
+    export_parser.add_argument(
+        "--format", default="json", choices=["json"], help="Export format"
+    )
 
     # Import command
     import_parser = subparsers.add_parser("import", help="Import configuration")
     import_parser.add_argument("input", help="Input file")
-    import_parser.add_argument("--merge", action="store_true", help="Merge with existing")
-    import_parser.add_argument("--format", default="json", choices=["json"], help="Import format")
+    import_parser.add_argument(
+        "--merge", action="store_true", help="Merge with existing"
+    )
+    import_parser.add_argument(
+        "--format", default="json", choices=["json"], help="Import format"
+    )
 
     # Parse arguments
     args = parser.parse_args(argv)
@@ -644,4 +667,3 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

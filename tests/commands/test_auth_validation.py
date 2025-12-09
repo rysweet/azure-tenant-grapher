@@ -4,11 +4,12 @@ Issue #539: Add input validation for subprocess calls to prevent command injecti
 """
 
 import pytest
+
 from src.commands.auth import (
+    validate_app_id,
     validate_app_name,
     validate_redirect_uri,
     validate_tenant_id,
-    validate_app_id,
 )
 
 

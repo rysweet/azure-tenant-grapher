@@ -154,7 +154,7 @@ from src.iac.data_plane_plugins.credential_provider import (
 
 config = CredentialConfig(
     client_id="your-client-id",
-    client_secret="your-client-secret",
+    client_secret="your-client-secret",  # pragma: allowlist secret
     tenant_id="your-tenant-id"
 )
 provider = CredentialProvider(config)

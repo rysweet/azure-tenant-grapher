@@ -1,0 +1,14 @@
+{
+  "tenant_id": "12345678-1234-1234-1234-123456789abc",
+  "resource_limit": null,
+  "max_llm_threads": 5,
+  "max_build_threads": 20,
+  "max_retries": 3,
+  "max_concurrency": 100,
+  "generate_spec": true,
+  "visualize": false,
+  "rebuild_edges": false,
+  "no_aad_import": false,
+  "filter_by_subscriptions": "sub-1,sub-2,sub-3",
+  "filter_by_rgs": null
+}

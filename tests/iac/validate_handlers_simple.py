@@ -11,16 +11,17 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+
 def validate_handler_registration():
     """Validate that all handlers are registered correctly."""
-    print("="* 70)
+    print("=" * 70)
     print("HANDLER REGISTRATION VALIDATION")
-    print("="* 70)
+    print("=" * 70)
 
     try:
         from src.iac.emitters.terraform.handlers import (
             HandlerRegistry,
-            ensure_handlers_registered
+            ensure_handlers_registered,
         )
 
         # Force registration
@@ -30,18 +31,20 @@ def validate_handler_registration():
         handlers = HandlerRegistry.get_all_handlers()
         supported_types = HandlerRegistry.get_all_supported_types()
 
-        print(f"\n✅ Registration successful!")
+        print("\n✅ Registration successful!")
         print(f"   - Handlers registered: {len(handlers)}")
         print(f"   - Azure types supported: {len(supported_types)}")
 
         # List all handlers
         print(f"\n📋 Registered Handlers ({len(handlers)}):")
-        for i, handler_class in enumerate(sorted(handlers, key=lambda h: h.__name__), 1):
+        for i, handler_class in enumerate(
+            sorted(handlers, key=lambda h: h.__name__), 1
+        ):
             types_handled = ", ".join(sorted(handler_class.HANDLED_TYPES))
             print(f"   {i:2d}. {handler_class.__name__:40s} → {types_handled}")
 
         # Check for common types
-        print(f"\n🔍 Common Resource Type Coverage:")
+        print("\n🔍 Common Resource Type Coverage:")
         common_types = [
             "Microsoft.Compute/virtualMachines",
             "Microsoft.Network/virtualNetworks",
@@ -56,7 +59,7 @@ def validate_handler_registration():
             print(f"   {status} {azure_type}")
 
         # Check for duplicates
-        print(f"\n🔎 Checking for duplicate handlers...")
+        print("\n🔎 Checking for duplicate handlers...")
         type_to_handlers = {}
         for handler_class in handlers:
             for azure_type in handler_class.HANDLED_TYPES:
@@ -76,11 +79,11 @@ def validate_handler_registration():
             for azure_type, handler_names in duplicates.items():
                 print(f"      - {azure_type}: {', '.join(handler_names)}")
         else:
-            print(f"   ✅ No duplicate handlers found")
+            print("   ✅ No duplicate handlers found")
 
         # Summary
-        print(f"\n" + "=" * 70)
-        print(f"SUMMARY:")
+        print("\n" + "=" * 70)
+        print("SUMMARY:")
         print(f"  - Total handlers: {len(handlers)}")
         print(f"  - Azure types covered: {len(supported_types)}")
         print(f"  - Duplicate conflicts: {len(duplicates)}")
@@ -91,20 +94,21 @@ def validate_handler_registration():
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
 
 def validate_handler_structure():
     """Validate that handlers have correct structure."""
-    print("\n" + "="* 70)
+    print("\n" + "=" * 70)
     print("HANDLER STRUCTURE VALIDATION")
-    print("="* 70)
+    print("=" * 70)
 
     try:
         from src.iac.emitters.terraform.handlers import (
             HandlerRegistry,
-            ensure_handlers_registered
+            ensure_handlers_registered,
         )
 
         ensure_handlers_registered()
@@ -141,6 +145,7 @@ def validate_handler_structure():
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -153,10 +158,10 @@ if __name__ == "__main__":
     registration_ok = validate_handler_registration()
     structure_ok = validate_handler_structure()
 
-    print("\n" + "="* 70)
+    print("\n" + "=" * 70)
     print("FINAL RESULT:")
     print(f"  Registration: {'✅ PASS' if registration_ok else '❌ FAIL'}")
     print(f"  Structure:    {'✅ PASS' if structure_ok else '❌ FAIL'}")
-    print("="* 70)
+    print("=" * 70)
 
     sys.exit(0 if (registration_ok and structure_ok) else 1)

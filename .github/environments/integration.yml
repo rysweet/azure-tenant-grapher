@@ -1,0 +1,24 @@
+# Integration Environment Configuration
+# Tags: v*-int (e.g., v1.0.0-int)
+
+name: integration
+description: Integration/production-ready environment for ATG Remote Service
+
+# Protection rules for safer deployment
+protection_rules:
+  - type: required_reviewers
+    reviewers: 1
+  - type: wait_timer
+    minutes: 5
+
+deployment_branch_policy:
+  custom_branch_policies: false
+
+# Required secrets (must be configured in GitHub)
+secrets:
+  - NEO4J_URI              # bolt://your-neo4j-int.com:7687
+  - NEO4J_PASSWORD         # Neo4j database password
+  - API_KEY                # API authentication key
+  - TARGET_TENANT_ID       # Azure tenant ID for scanning
+  - AZURE_CREDENTIALS      # Service principal credentials (JSON)
+  - AZURE_SUBSCRIPTION_ID  # Azure subscription ID

@@ -21,30 +21,45 @@ from rich.style import Style
 from src.cli_dashboard_manager import DashboardExitException
 from src.commands.abstract_graph import abstract_graph
 from src.commands.auth import app_registration as app_registration_cmd
-from src.commands.database import (
-    backup as backup_cmd,
-    backup_db as backup_db_cmd,
-    container as container_cmd,
-    restore as restore_cmd,
-    wipe as wipe_cmd,
-)
-from src.commands.scaling import (
-    scale_clean as scale_clean_cmd,
-    scale_down as scale_down_cmd,
-    scale_stats as scale_stats_cmd,
-    scale_up as scale_up_cmd,
-    scale_validate as scale_validate_cmd,
-)
 
 # Import modular commands for CLI registration (Issue #482)
 from src.commands.config import config as config_cmd
-from src.commands.database import container as container_cmd
+from src.commands.database import (
+    backup as backup_cmd,
+)
+from src.commands.database import (
+    backup_db as backup_db_cmd,
+)
+from src.commands.database import (
+    container as container_cmd,
+)
+from src.commands.database import (
+    restore as restore_cmd,
+)
+from src.commands.database import (
+    wipe as wipe_cmd,
+)
 from src.commands.deploy import deploy_command
 from src.commands.doctor import check_permissions as check_permissions_cmd
 from src.commands.doctor import doctor as doctor_cmd
 from src.commands.export_abstraction import export_abstraction_command
 from src.commands.layer_cmd import layer as layer_group
 from src.commands.list_deployments import list_deployments
+from src.commands.scaling import (
+    scale_clean as scale_clean_cmd,
+)
+from src.commands.scaling import (
+    scale_down as scale_down_cmd,
+)
+from src.commands.scaling import (
+    scale_stats as scale_stats_cmd,
+)
+from src.commands.scaling import (
+    scale_up as scale_up_cmd,
+)
+from src.commands.scaling import (
+    scale_validate as scale_validate_cmd,
+)
 from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
 from src.commands.spec import generate_spec_command_handler, spec_command_handler
@@ -52,7 +67,6 @@ from src.commands.tenant import create_tenant as create_tenant_cmd
 from src.commands.undeploy import undeploy
 from src.commands.validate_deployment import validate_deployment_command
 from src.commands.visualize import visualize_command_handler
-from src.utils.neo4j_startup import ensure_neo4j_running
 
 # Initialize console for rich output
 console = Console()
@@ -137,7 +151,6 @@ try:
 
     # Keep handler imports for backward compatibility (deprecated, use modular commands)
     from src.cli_commands import build_command_handler
-    from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(f"Import error: {e}")
@@ -1574,9 +1587,6 @@ async def cost_report(
         include_anomalies=include_anomalies,
         output=output,
     )
-
-
-
 
 
 # ============================================================================

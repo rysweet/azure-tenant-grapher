@@ -124,7 +124,7 @@ describe('ComprehensionAgent', () => {
     agent = createComprehensionAgent({
       llm: {
         provider: 'openai',
-        apiKey: 'test-key',
+        apiKey: 'test-key',  // pragma: allowlist secret
         model: 'gpt-4',
         temperature: 0.1,
         maxTokens: 4000
@@ -193,7 +193,7 @@ Usage: atg build --tenant-id <id>
       const newAgent = createComprehensionAgent({
         llm: {
           provider: 'openai',
-          apiKey: 'test-key',
+          apiKey: 'test-key',  // pragma: allowlist secret
           model: 'gpt-4',
           temperature: 0.1,
           maxTokens: 4000
@@ -334,7 +334,7 @@ describe('createComprehensionAgent', () => {
     const config = {
       llm: {
         provider: 'azure' as const,
-        apiKey: 'test-key',
+        apiKey: 'test-key',  // pragma: allowlist secret
         model: 'gpt-4',
         temperature: 0.2,
         maxTokens: 2000,

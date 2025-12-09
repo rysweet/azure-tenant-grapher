@@ -569,7 +569,12 @@ def create_config_from_env(
         ValueError: If configuration is invalid
     """
     config = AzureTenantGrapherConfig.from_environment(
-        tenant_id, resource_limit, max_retries, max_build_threads, max_concurrency, debug
+        tenant_id,
+        resource_limit,
+        max_retries,
+        max_build_threads,
+        max_concurrency,
+        debug,
     )
     config.validate_all()
     return config

@@ -236,12 +236,12 @@ describe('Configuration Management', () => {
       azure: {
         tenantId: '12345678-1234-1234-1234-123456789012',
         clientId: '87654321-4321-4321-4321-210987654321',
-        clientSecret: 'test-secret',
+        clientSecret: 'test-secret',  // pragma: allowlist secret
       },
       neo4j: {
         uri: 'bolt://localhost:7687',
         username: 'neo4j',
-        password: 'test-password',
+        password: 'test-password',  // pragma: allowlist secret
       },
       app: {
         maxThreads: 10,

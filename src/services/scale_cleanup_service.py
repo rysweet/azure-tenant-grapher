@@ -227,7 +227,10 @@ class ScaleCleanupService(BaseScaleService):
             raise
 
     def _validate_cleanup_params(
-        self, clean_all: bool, session_id: Optional[str], before_date: Optional[datetime]
+        self,
+        clean_all: bool,
+        session_id: Optional[str],
+        before_date: Optional[datetime],
     ) -> None:
         """
         Validate cleanup operation parameters.

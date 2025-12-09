@@ -312,7 +312,11 @@ class TestNeo4jTenantManager:
         """Test retrieving tenant configuration."""
         # Arrange
         tenant_id = "test-tenant"
-        config = {"api_key": "secret", "region": "us-west-2", "nested": {"value": 123}}
+        config = {
+            "api_key": "secret",
+            "region": "us-west-2",
+            "nested": {"value": 123},
+        }  # pragma: allowlist secret
         mock_session_manager.execute_query.return_value = ([], {}, {})
 
         tenant_manager.register_tenant(

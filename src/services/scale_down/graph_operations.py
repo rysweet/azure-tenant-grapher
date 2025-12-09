@@ -72,10 +72,14 @@ class GraphOperations(BaseScaleService):
             ... )
             >>> print(f"Deleted {deleted} nodes")
         """
-        self.logger.info(f"Deleting non-sampled nodes (keeping {len(sampled_node_ids)} nodes)")
+        self.logger.info(
+            f"Deleting non-sampled nodes (keeping {len(sampled_node_ids)} nodes)"
+        )
 
         if not sampled_node_ids:
-            self.logger.warning("No nodes to keep - would delete entire graph. Aborting deletion.")
+            self.logger.warning(
+                "No nodes to keep - would delete entire graph. Aborting deletion."
+            )
             return 0
 
         try:
@@ -158,9 +162,7 @@ class GraphOperations(BaseScaleService):
             ... )
             >>> print(f"Found {len(motifs)} motifs")
         """
-        self.logger.info(
-            f"Discovering motifs (size={motif_size}, max={max_motifs})"
-        )
+        self.logger.info(f"Discovering motifs (size={motif_size}, max={max_motifs})")
 
         if motif_size < 2 or motif_size > 10:
             raise ValueError(f"Motif size must be 2-10, got {motif_size}")

@@ -6,7 +6,7 @@ sampling that preserves hub and bridge nodes.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import networkx as nx
 import numpy as np
@@ -79,9 +79,7 @@ class GraphEmbeddingGenerator:
         if len(graph.nodes) == 0:
             raise ValueError(f"No resources found for tenant {tenant_id}")
 
-        logger.info(
-            f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges"
-        )
+        logger.info(f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
 
         # Generate node2vec embeddings
         embeddings = self._train_node2vec(graph)

@@ -302,10 +302,10 @@ class ResourceComparator:
         import re
 
         # Remove hash suffix (6+ alphanumeric characters after underscore)
-        cleaned = re.sub(r'_[a-f0-9]{6,}$', '', resource_id, flags=re.IGNORECASE)
+        cleaned = re.sub(r"_[a-f0-9]{6,}$", "", resource_id, flags=re.IGNORECASE)
 
         # Replace underscores with hyphens (common transformation)
-        cleaned = cleaned.replace('_', '-')
+        cleaned = cleaned.replace("_", "-")
 
         # Normalize to lowercase
         cleaned = cleaned.lower()
@@ -372,9 +372,7 @@ class ResourceComparator:
             )
             return None
 
-    def _normalize_resource_id_for_comparison(
-        self, resource_id: str
-    ) -> str:
+    def _normalize_resource_id_for_comparison(self, resource_id: str) -> str:
         """
         Normalize resource ID for cross-tenant comparison.
 
@@ -402,7 +400,7 @@ class ResourceComparator:
         # Replace source subscription with target subscription
         normalized_id = resource_id.replace(
             f"/subscriptions/{self.source_subscription_id}/",
-            f"/subscriptions/{self.target_subscription_id}/"
+            f"/subscriptions/{self.target_subscription_id}/",
         )
 
         logger.debug(

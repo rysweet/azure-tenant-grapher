@@ -1,2 +1,0 @@
-# Ignore Terraform provider binaries (too large for GitHub)
-.terraform/providers/*/terraform-provider-*_x5

@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 async def get_base_resources(
     session_manager: Neo4jSessionManager,
     tenant_id: str,
-    resource_types: Optional[List[str]] = None
+    resource_types: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Get base resources from abstracted layer for template replication.
@@ -63,7 +63,7 @@ async def get_base_resources(
         # Whitelist validation: Azure resource types have specific format
         # Format: Provider.Service/resourceType (e.g., Microsoft.Compute/virtualMachines)
         for rt in resource_types:
-            if not re.match(r'^[A-Za-z0-9]+\.[A-Za-z0-9]+/[A-Za-z0-9]+$', rt):
+            if not re.match(r"^[A-Za-z0-9]+\.[A-Za-z0-9]+/[A-Za-z0-9]+$", rt):
                 raise ValueError(f"Invalid resource type format: {rt}")
             if len(rt) > 200:  # Reasonable max length
                 raise ValueError(f"Resource type too long: {rt}")
@@ -262,7 +262,7 @@ async def replicate_resources(
 async def build_resource_mapping(
     session_manager: Neo4jSessionManager,
     operation_id: str,
-    base_resources: List[Dict[str, Any]]
+    base_resources: List[Dict[str, Any]],
 ) -> Dict[str, List[str]]:
     """
     Build mapping from base resource IDs to synthetic resource IDs.
@@ -306,8 +306,7 @@ async def build_resource_mapping(
 
 
 async def get_relationship_patterns(
-    session_manager: Neo4jSessionManager,
-    base_resources: List[Dict[str, Any]]
+    session_manager: Neo4jSessionManager, base_resources: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
     """
     Extract relationship patterns from base resources.
@@ -341,12 +340,12 @@ async def get_relationship_patterns(
         patterns = await _get_relationship_patterns_chunk(session_manager, base_ids)
     else:
         # Large list - chunk and combine
-        logger.info(
-            f"Chunking {len(base_ids)} base IDs into {chunk_size}-ID chunks"
-        )
+        logger.info(f"Chunking {len(base_ids)} base IDs into {chunk_size}-ID chunks")
         for i in range(0, len(base_ids), chunk_size):
             chunk = base_ids[i : i + chunk_size]
-            chunk_patterns = await _get_relationship_patterns_chunk(session_manager, chunk)
+            chunk_patterns = await _get_relationship_patterns_chunk(
+                session_manager, chunk
+            )
             patterns.extend(chunk_patterns)
             logger.debug(
                 f"Processed chunk {i // chunk_size + 1}/{(len(base_ids) + chunk_size - 1) // chunk_size}: "
@@ -357,8 +356,7 @@ async def get_relationship_patterns(
 
 
 async def _get_relationship_patterns_chunk(
-    session_manager: Neo4jSessionManager,
-    base_ids: List[str]
+    session_manager: Neo4jSessionManager, base_ids: List[str]
 ) -> List[Dict[str, Any]]:
     """
     Extract relationship patterns for a chunk of base resources.
@@ -476,9 +474,7 @@ async def clone_relationships(
             )
 
         # Estimate total relationships (for adaptive batching)
-        total_synthetic_resources = sum(
-            len(ids) for ids in base_to_synthetic.values()
-        )
+        total_synthetic_resources = sum(len(ids) for ids in base_to_synthetic.values())
         estimated_relationships = len(patterns) * (
             total_synthetic_resources // len(base_resources)
         )
@@ -529,7 +525,12 @@ async def clone_relationships(
         # For large operations, use parallel batch inserts
         if estimated_relationships > 10000 and len(batches) > 10:
             relationships_created = await common.insert_relationship_batches_parallel(
-                session_manager, batches, progress_callback, progress_start, progress_end, monitor
+                session_manager,
+                batches,
+                progress_callback,
+                progress_start,
+                progress_end,
+                monitor,
             )
         else:
             # Standard sequential processing
@@ -572,9 +573,9 @@ async def clone_relationships(
 
 
 __all__ = [
-    "get_base_resources",
-    "replicate_resources",
-    "clone_relationships",
     "build_resource_mapping",
+    "clone_relationships",
+    "get_base_resources",
     "get_relationship_patterns",
+    "replicate_resources",
 ]

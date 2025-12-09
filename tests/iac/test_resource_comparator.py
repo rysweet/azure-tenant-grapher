@@ -629,7 +629,9 @@ class TestResourceComparator:
         assert result.classifications[0].target_resource == target_resource_valid
         assert result.summary[ResourceState.ORPHANED.value] == 1
 
-    def test_bug_111_none_location_in_target_resource(self, comparator, sample_abstracted_resource):
+    def test_bug_111_none_location_in_target_resource(
+        self, comparator, sample_abstracted_resource
+    ):
         """Test Bug #111: Handle None location in target resource."""
         abstracted_resource = sample_abstracted_resource.copy()
         abstracted_resource["name"] = "my-original-vm"

@@ -37,7 +37,9 @@ def spa_start() -> None:
                 return
             except ProcessLookupError:
                 # Process not running, clean up stale PID file
-                click.echo(f"INFO: Cleaning up stale PID file (process {pid} not found)")
+                click.echo(
+                    f"INFO: Cleaning up stale PID file (process {pid} not found)"
+                )
                 os.remove(SPA_PIDFILE)
         except (OSError, ValueError) as e:
             # Invalid PID file, remove it
@@ -53,7 +55,9 @@ def spa_start() -> None:
 
     try:
         # Change to the spa directory
-        spa_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "spa")
+        spa_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "spa"
+        )
 
         # Check if package.json exists
         if not os.path.exists(os.path.join(spa_dir, "package.json")):

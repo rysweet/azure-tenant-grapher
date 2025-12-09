@@ -85,11 +85,13 @@ class TestFidelityCalculator:
         """Test FidelityCalculator initialization."""
         with patch("src.fidelity_calculator.GraphDatabase.driver") as mock_driver:
             calculator = FidelityCalculator(
-                "bolt://localhost:7687", "neo4j", "password"
+                "bolt://localhost:7687",
+                "neo4j",
+                "password",  # pragma: allowlist secret
             )
             assert calculator.neo4j_uri == "bolt://localhost:7687"
             assert calculator.neo4j_user == "neo4j"
-            assert calculator.neo4j_password == "password"
+            assert calculator.neo4j_password == "password"  # pragma: allowlist secret
             mock_driver.assert_called_once_with(
                 "bolt://localhost:7687", auth=("neo4j", "password")
             )

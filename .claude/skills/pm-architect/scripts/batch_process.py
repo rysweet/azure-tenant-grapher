@@ -27,7 +27,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
@@ -96,7 +96,7 @@ class BatchProcessor:
             f["id"] for f in self.state["failed"]
         ]
 
-    def mark_processed(self, item_id: str, result: Dict = None):
+    def mark_processed(self, item_id: str, result: Optional[Dict] = None):
         """Mark item as successfully processed."""
         if item_id not in self.state["processed"]:
             self.state["processed"].append(item_id)
@@ -121,7 +121,10 @@ class BatchProcessor:
         self.save_state()  # Save after EACH failure
 
     def process_items(
-        self, items: List[Dict], processor_func: Callable[[Dict], Dict], batch_size: int = 10
+        self,
+        items: List[Dict],
+        processor_func: Callable[[Dict], Dict],
+        batch_size: int = 10,
     ) -> Dict:
         """Process items in batches with state tracking.
 
@@ -211,8 +214,12 @@ def main():
     parser.add_argument(
         "--processor", required=True, help="Processor name (e.g., 'analyze_backlog')"
     )
-    parser.add_argument("--batch-size", type=int, default=10, help="Progress report interval")
-    parser.add_argument("--reset", action="store_true", help="Reset state and start fresh")
+    parser.add_argument(
+        "--batch-size", type=int, default=10, help="Progress report interval"
+    )
+    parser.add_argument(
+        "--reset", action="store_true", help="Reset state and start fresh"
+    )
     parser.add_argument("--status", action="store_true", help="Show current progress")
 
     args = parser.parse_args()

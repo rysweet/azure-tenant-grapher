@@ -13,7 +13,6 @@ Public API:
 """
 
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -193,9 +192,6 @@ class JobTracker:
             log_file = self.state_manager.get_log_file(job_id)
             with open(log_file) as f:
                 log_content = f.read()
-                return (
-                    "error" in log_content.lower()
-                    or "failed" in log_content.lower()
-                )
+                return "error" in log_content.lower() or "failed" in log_content.lower()
         except Exception:
             return False

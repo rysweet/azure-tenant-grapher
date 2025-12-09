@@ -36,7 +36,9 @@ class LayerStatsOperations:
     """
 
     def __init__(
-        self, session_manager: Neo4jSessionManager, crud_operations: Optional[object] = None
+        self,
+        session_manager: Neo4jSessionManager,
+        crud_operations: Optional[object] = None,
     ):
         """
         Initialize statistics operations handler.

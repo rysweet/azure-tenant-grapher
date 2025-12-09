@@ -39,7 +39,7 @@ class RandomWalkSampler(BaseSampler):
         self,
         graph: nx.DiGraph,
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using simple Random Walk.
@@ -101,7 +101,9 @@ class RandomWalkSampler(BaseSampler):
                     sampled_nodes.add(current)
 
                 if progress_callback and len(sampled_nodes) % 100 == 0:
-                    progress_callback("Random Walk sampling", len(sampled_nodes), target_count)
+                    progress_callback(
+                        "Random Walk sampling", len(sampled_nodes), target_count
+                    )
 
             self.logger.info(
                 f"Random Walk sampling completed: {len(sampled_nodes)} nodes"
