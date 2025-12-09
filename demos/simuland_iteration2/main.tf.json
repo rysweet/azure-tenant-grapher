@@ -1,0 +1,3495 @@
+{
+  "terraform": {
+    "required_providers": {
+      "azurerm": {
+        "source": "hashicorp/azurerm",
+        "version": ">=3.0"
+      },
+      "random": {
+        "source": "hashicorp/random",
+        "version": ">=3.1"
+      },
+      "tls": {
+        "source": "hashicorp/tls",
+        "version": ">=4.0"
+      }
+    }
+  },
+  "provider": {
+    "azurerm": {
+      "features": {},
+      "resource_provider_registrations": "none"
+    }
+  },
+  "resource": {
+    "azurerm_network_security_group": {
+      "atevet12_bastion_nsg": {
+        "name": "atevet12-bastion-nsg",
+        "location": "westus3",
+        "resource_group_name": "default-rg"
+      },
+      "atevet12_lab_nsg": {
+        "name": "atevet12-lab-nsg",
+        "location": "westus3",
+        "resource_group_name": "default-rg"
+      },
+      "azlin_vm_1760323185NSG": {
+        "name": "azlin-vm-1760323185NSG",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "Server01_nsg": {
+        "name": "Server01-nsg",
+        "location": "westus",
+        "resource_group_name": "default-rg"
+      },
+      "cseifert_windows_vm_nsg": {
+        "name": "cseifert-windows-vm-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_vm_nsg": {
+        "name": "andyye-vm-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_windows_vm_nsg": {
+        "name": "andyye-windows-vm-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_windows_server_vm_nsg": {
+        "name": "andyye-windows-server-vm-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_vm_windows11_nsg": {
+        "name": "andyye-vm-windows11-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "c2server_nsg": {
+        "name": "c2server-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "klakkaraju_abvm_nsg": {
+        "name": "klakkaraju-abvm-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_windows11_vm_nsg": {
+        "name": "andyye-windows11-vm-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_windows11_vm2_nsg": {
+        "name": "andyye-windows11-vm2-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "rotrevino_windows_11_pro_nsg": {
+        "name": "rotrevino-windows-11-pro-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "zixiaochen_AB_nsg": {
+        "name": "zixiaochen-AB-nsg",
+        "location": "westus3",
+        "resource_group_name": "default-rg"
+      },
+      "dayan_vm_nsg": {
+        "name": "dayan-vm-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "arjunc_test_nsg": {
+        "name": "arjunc-test-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "arjunctestnsg962": {
+        "name": "arjunctestnsg962",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "csiska_02_nsg": {
+        "name": "csiska-02-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "csiska_03_nsg": {
+        "name": "csiska-03-nsg",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg"
+      },
+      "arjunctestnsg616": {
+        "name": "arjunctestnsg616",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "arjunctestnsg260": {
+        "name": "arjunctestnsg260",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "alecsolway_nsg": {
+        "name": "alecsolway-nsg",
+        "location": "westus",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_windows11_vm3_nsg": {
+        "name": "andyye-windows11-vm3-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "s005_vm_nsg": {
+        "name": "s005-vm-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "DC001_nsg": {
+        "name": "DC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "IT001_nsg": {
+        "name": "IT001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "IT002_nsg": {
+        "name": "IT002-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "USER001_nsg": {
+        "name": "USER001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "WEB001_nsg": {
+        "name": "WEB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "USER002_nsg": {
+        "name": "USER002-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "HR001_nsg": {
+        "name": "HR001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "DB001_nsg": {
+        "name": "DB001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "DB001nsg109": {
+        "name": "DB001nsg109",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "GUEST002_nsg": {
+        "name": "GUEST002-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "GUEST001_nsg": {
+        "name": "GUEST001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "SEC001_nsg": {
+        "name": "SEC001-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "SEC002_nsg": {
+        "name": "SEC002-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "HR002_nsg": {
+        "name": "HR002-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "svesal_MAIDAP_nsg": {
+        "name": "svesal-MAIDAP-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "tianweichen_MAIDAP_nsg": {
+        "name": "tianweichen-MAIDAP-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "nkumankumah_nsg": {
+        "name": "nkumankumah-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "ajaye_nsg": {
+        "name": "ajaye-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "cbiringa_nsg": {
+        "name": "cbiringa-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "anjelpatel_nsg": {
+        "name": "anjelpatel-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      },
+      "djulienne_nsg": {
+        "name": "djulienne-nsg",
+        "location": "westus2",
+        "resource_group_name": "default-rg"
+      }
+    },
+    "azurerm_public_ip": {
+      "dtlatevet12_infra_vnet_ip": {
+        "name": "dtlatevet12-infra-vnet-ip",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "dtlatevet12_attack_vnet_ip": {
+        "name": "dtlatevet12-attack-vnet-ip",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "azlin_vm_1760323185PublicIP": {
+        "name": "azlin-vm-1760323185PublicIP",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "andyye_vm_vnet_ip": {
+        "name": "andyye-vm-vnet-ip",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "c2servervnetip963": {
+        "name": "c2servervnetip963",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "cseifert_windows_vm_vnet_ip": {
+        "name": "cseifert-windows-vm-vnet-ip",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "rotrevino_rn_ip": {
+        "name": "rotrevino_rn-ip",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "zixiaochen_AB_vnet_ip": {
+        "name": "zixiaochen-AB-vnet-ip",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "DC001_vnet_ip": {
+        "name": "DC001-vnet-ip",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      },
+      "svesal_MAIDAP_vnet_ip": {
+        "name": "svesal-MAIDAP-vnet-ip",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "allocation_method": "Static"
+      }
+    },
+    "azurerm_virtual_network": {
+      "dtlatevet12_infra_vnet": {
+        "name": "dtlatevet12-infra-vnet",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "dtlatevet12_attack_vnet": {
+        "name": "dtlatevet12-attack-vnet",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "azlin_vm_1760323185VNET": {
+        "name": "azlin-vm-1760323185VNET",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "Server01_vnet": {
+        "name": "Server01-vnet",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "cseifert_windows_vm_vnet": {
+        "name": "cseifert-windows-vm-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "andyye_vm_vnet": {
+        "name": "andyye-vm-vnet",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "c2server_vnet": {
+        "name": "c2server-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "rotrevino_rn": {
+        "name": "rotrevino_rn",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "zixiaochen_AB_vnet": {
+        "name": "zixiaochen-AB-vnet",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "alecsolway_vnet": {
+        "name": "alecsolway-vnet",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "s005_vm_vnet": {
+        "name": "s005-vm-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "S005_vnet": {
+        "name": "S005-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "DC001_vnet": {
+        "name": "DC001-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "Ubuntu_vnet": {
+        "name": "Ubuntu-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      },
+      "svesal_MAIDAP_vnet": {
+        "name": "svesal-MAIDAP-vnet",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "address_space": [
+          "10.0.0.0/16"
+        ]
+      }
+    },
+    "azurerm_subnet": {
+      "dtlatevet12_infra_vnet_dtlatevet12_infra_subnet": {
+        "name": "dtlatevet12-infra-subnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.dtlatevet12_infra_vnet.name}",
+        "address_prefixes": [
+          "10.10.10.0/26"
+        ]
+      },
+      "dtlatevet12_infra_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.dtlatevet12_infra_vnet.name}",
+        "address_prefixes": [
+          "10.10.10.96/27"
+        ]
+      },
+      "dtlatevet12_attack_vnet_dtlatevet12_attack_subnet": {
+        "name": "dtlatevet12-attack-subnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.dtlatevet12_attack_vnet.name}",
+        "address_prefixes": [
+          "10.10.0.0/26"
+        ]
+      },
+      "dtlatevet12_attack_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.dtlatevet12_attack_vnet.name}",
+        "address_prefixes": [
+          "10.10.0.96/27"
+        ]
+      },
+      "azlin_vm_1760323185VNET_azlin_vm_1760323185Subnet": {
+        "name": "azlin-vm-1760323185Subnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.azlin_vm_1760323185VNET.name}",
+        "address_prefixes": [
+          "10.0.0.0/24"
+        ]
+      },
+      "Server01_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.Server01_vnet.name}",
+        "address_prefixes": [
+          "10.2.0.0/24"
+        ]
+      },
+      "cseifert_windows_vm_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.cseifert_windows_vm_vnet.name}",
+        "address_prefixes": [
+          "10.0.0.0/24"
+        ]
+      },
+      "cseifert_windows_vm_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.cseifert_windows_vm_vnet.name}",
+        "address_prefixes": [
+          "10.0.1.0/26"
+        ]
+      },
+      "andyye_vm_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.andyye_vm_vnet.name}",
+        "address_prefixes": [
+          "10.0.0.0/24"
+        ]
+      },
+      "andyye_vm_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.andyye_vm_vnet.name}",
+        "address_prefixes": [
+          "10.0.1.0/26"
+        ]
+      },
+      "c2server_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.c2server_vnet.name}",
+        "address_prefixes": [
+          "10.4.0.0/24"
+        ]
+      },
+      "c2server_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.c2server_vnet.name}",
+        "address_prefixes": [
+          "10.4.1.0/26"
+        ]
+      },
+      "rotrevino_rn_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.rotrevino_rn.name}",
+        "address_prefixes": [
+          "10.0.1.0/26"
+        ]
+      },
+      "rotrevino_rn_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.rotrevino_rn.name}",
+        "address_prefixes": [
+          "10.0.0.0/24"
+        ]
+      },
+      "zixiaochen_AB_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.zixiaochen_AB_vnet.name}",
+        "address_prefixes": [
+          "10.0.1.0/26"
+        ]
+      },
+      "zixiaochen_AB_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.zixiaochen_AB_vnet.name}",
+        "address_prefixes": [
+          "10.0.0.0/24"
+        ]
+      },
+      "alecsolway_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.alecsolway_vnet.name}",
+        "address_prefixes": [
+          "10.4.0.0/24"
+        ]
+      },
+      "s005_vm_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.s005_vm_vnet.name}",
+        "address_prefixes": [
+          "10.3.0.0/24"
+        ]
+      },
+      "S005_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.S005_vnet.name}",
+        "address_prefixes": [
+          "10.5.0.0/24"
+        ]
+      },
+      "DC001_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.0.0/24"
+        ]
+      },
+      "DC001_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.DC001_vnet.name}",
+        "address_prefixes": [
+          "10.6.1.0/26"
+        ]
+      },
+      "Ubuntu_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.Ubuntu_vnet.name}",
+        "address_prefixes": [
+          "10.8.0.0/24"
+        ]
+      },
+      "Ubuntu_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.Ubuntu_vnet.name}",
+        "address_prefixes": [
+          "10.8.1.0/26"
+        ]
+      },
+      "svesal_MAIDAP_vnet_default": {
+        "name": "default",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.svesal_MAIDAP_vnet.name}",
+        "address_prefixes": [
+          "10.9.0.0/24"
+        ]
+      },
+      "svesal_MAIDAP_vnet_AzureBastionSubnet": {
+        "name": "AzureBastionSubnet",
+        "resource_group_name": "default-rg",
+        "virtual_network_name": "${azurerm_virtual_network.svesal_MAIDAP_vnet.name}",
+        "address_prefixes": [
+          "10.9.1.0/26"
+        ]
+      }
+    },
+    "azurerm_key_vault": {
+      "atevet12897": {
+        "name": "atevet12897",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "CreatedBy": "DevTestLabs"
+        },
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "atevet12mainvault": {
+        "name": "atevet12mainvault",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "simKV160224hpcp4rein6": {
+        "name": "simKV160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "kv_adaptaie670410800455": {
+        "name": "kv-adaptaie670410800455",
+        "location": "eastus2",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "MSecADAPT": {
+        "name": "MSecADAPT",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "SecurityResearchReaders": {
+        "name": "SecurityResearchReaders",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "AttackBotKV": {
+        "name": "AttackBotKV",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "Order66KV": {
+        "name": "Order66KV",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "SpartaKeyvault": {
+        "name": "SpartaKeyvault",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "andyye_kv": {
+        "name": "andyye-kv",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "andyye_kv2": {
+        "name": "andyye-kv2",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "andyye_kv3": {
+        "name": "andyye-kv3",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "automationTestKV5": {
+        "name": "automationTestKV5",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "S002": {
+        "name": "S002",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "dayan_keyvault1": {
+        "name": "dayan-keyvault1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "s002kvtest": {
+        "name": "s002kvtest",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "ARMageddon": {
+        "name": "ARMageddon",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "SimuLand": {
+        "name": "SimuLand",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "aifoundrry6859317352": {
+        "name": "aifoundrry6859317352",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "red_ai": {
+        "name": "red-ai",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "MAIDAP": {
+        "name": "MAIDAP",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      },
+      "blue_ai": {
+        "name": "blue-ai",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tenant_id": "00000000-0000-0000-0000-000000000000",
+        "sku_name": "standard"
+      }
+    },
+    "azurerm_bastion_host": {
+      "dtlatevet12_attack_vnet": {
+        "name": "dtlatevet12-attack-vnet",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.dtlatevet12_attack_vnet_ip.id}"
+        }
+      },
+      "dtlatevet12_infra_vnet": {
+        "name": "dtlatevet12-infra-vnet",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.dtlatevet12_infra_vnet_ip.id}"
+        }
+      },
+      "Server01_vnet_bastion": {
+        "name": "Server01-vnet-bastion",
+        "location": "westus",
+        "resource_group_name": "default-rg"
+      },
+      "andyye_vm_vnet_bastion": {
+        "name": "andyye-vm-vnet-bastion",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.andyye_vm_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.andyye_vm_vnet_ip.id}"
+        }
+      },
+      "c2server_vnet_bastion": {
+        "name": "c2server-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.c2server_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.c2servervnetip963.id}"
+        }
+      },
+      "cseifert_windows_vm_vnet_bastion": {
+        "name": "cseifert-windows-vm-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.cseifert_windows_vm_vnet_ip.id}"
+        }
+      },
+      "rotrevino_rn_bastion": {
+        "name": "rotrevino_rn-bastion",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.rotrevino_rn_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.rotrevino_rn_ip.id}"
+        }
+      },
+      "zixiaochen_AB_vnet_bastion": {
+        "name": "zixiaochen-AB-vnet-bastion",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.zixiaochen_AB_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.zixiaochen_AB_vnet_ip.id}"
+        }
+      },
+      "DC001_vnet_bastion": {
+        "name": "DC001-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.DC001_vnet_ip.id}"
+        }
+      },
+      "svesal_MAIDAP_vnet_bastion": {
+        "name": "svesal-MAIDAP-vnet-bastion",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "IpConf",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_AzureBastionSubnet.id}",
+          "public_ip_address_id": "${azurerm_public_ip.svesal_MAIDAP_vnet_ip.id}"
+        }
+      }
+    },
+    "azurerm_storage_account": {
+      "aatevet129910": {
+        "name": "aatevet129910",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "atevet12deployment": {
+        "name": "atevet12deployment",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "cm160224hpcp4rein6": {
+        "name": "cm160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "tmp160224v7qxvc2ghd": {
+        "name": "tmp160224v7qxvc2ghd",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "exec160224hpcp4rein6": {
+        "name": "exec160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f"
+        },
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "simulandapia5ea": {
+        "name": "simulandapia5ea",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "stadaptaieas670410800455": {
+        "name": "stadaptaieas670410800455",
+        "location": "eastus2",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "seccorestorage": {
+        "name": "seccorestorage",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "encrypteddatastore": {
+        "name": "encrypteddatastore",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "shieldedblobstorage": {
+        "name": "shieldedblobstorage",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "databackup002": {
+        "name": "databackup002",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "s003sa": {
+        "name": "s003sa",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "s003satest": {
+        "name": "s003satest",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "rotrevinosa": {
+        "name": "rotrevinosa",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "aifoundrry0028435701": {
+        "name": "aifoundrry0028435701",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "simplestorage01": {
+        "name": "simplestorage01",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "testfeb187": {
+        "name": "testfeb187",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      },
+      "testfeb186": {
+        "name": "testfeb186",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "account_tier": "Standard",
+        "account_replication_type": "LRS"
+      }
+    },
+    "azurerm_network_interface": {
+      "atevet12ads001": {
+        "name": "atevet12ads001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "db41dded-0989-40d6-ab3d-30d7a18939fb"
+        },
+        "ip_configuration": {
+          "name": "atevet12ads001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12win001": {
+        "name": "atevet12win001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "dddc60e8-4694-4baf-98a0-eac4e499715d"
+        },
+        "ip_configuration": {
+          "name": "atevet12win001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_dtlatevet12_attack_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12fs001": {
+        "name": "atevet12fs001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "b25abd74-0267-4adb-996c-c63d9102c655"
+        },
+        "ip_configuration": {
+          "name": "atevet12fs001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl005": {
+        "name": "atevet12cl005",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "16f6cf87-016e-487c-abe3-2c16e2cdb792"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl005",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl004": {
+        "name": "atevet12cl004",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "b19c87c7-545b-4c30-b753-01cc769bd45b"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl004",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl001": {
+        "name": "atevet12cl001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "c876eea8-bbe6-4873-b715-06ced14fbe91"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl003": {
+        "name": "atevet12cl003",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "687e6799-d82f-498a-901a-1cb023160896"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl003",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl000": {
+        "name": "atevet12cl000",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "ab6a991e-3671-4aa1-87fc-320db52e5a9a"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl000",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12cl002": {
+        "name": "atevet12cl002",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "124ba6d6-94a6-4fd0-a720-be688ddecc8e"
+        },
+        "ip_configuration": {
+          "name": "atevet12cl002",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12sql001": {
+        "name": "atevet12sql001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "225c6126-b6a1-40ec-8e05-e668317ede50"
+        },
+        "ip_configuration": {
+          "name": "atevet12sql001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12ct001": {
+        "name": "atevet12ct001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "6a3f9c84-2350-4bf6-9370-8f3f0aac9a68"
+        },
+        "ip_configuration": {
+          "name": "atevet12ct001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12ex001": {
+        "name": "atevet12ex001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "77b456da-27ce-48ff-9cf3-c2a07f3307e1"
+        },
+        "ip_configuration": {
+          "name": "atevet12ex001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12kal001": {
+        "name": "atevet12kal001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "2990830c-db4a-4f7e-8681-efe339abff53"
+        },
+        "ip_configuration": {
+          "name": "atevet12kal001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_dtlatevet12_attack_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12rdg001": {
+        "name": "atevet12rdg001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "bff016e5-829d-4c9f-a372-8d1372acaef7"
+        },
+        "ip_configuration": {
+          "name": "atevet12rdg001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12ex002": {
+        "name": "atevet12ex002",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "c6e5dfb6-bfe2-446a-80f1-8e437049d333"
+        },
+        "ip_configuration": {
+          "name": "atevet12ex002",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12android_NIC": {
+        "name": "atevet12android-NIC",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12apache001_NIC": {
+        "name": "atevet12apache001-NIC",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "atevet12ubuntu001": {
+        "name": "atevet12ubuntu001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "a602cd75-3214-4f13-beef-4e603f940870"
+        },
+        "ip_configuration": {
+          "name": "atevet12ubuntu001",
+          "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_dtlatevet12_attack_subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "azlin_vm_1760323185VMNic": {
+        "name": "azlin-vm-1760323185VMNic",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfigazlin-vm-1760323185",
+          "subnet_id": "${azurerm_subnet.azlin_vm_1760323185VNET_azlin_vm_1760323185Subnet.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "cm160224hpcp4rein6_blob_private_endpoint_nic_fb5d0aaa_3647_4862_9ca4_70a4038aa2fd": {
+        "name": "cm160224hpcp4rein6-blob-private-endpoint.nic.fb5d0aaa-3647-4862-9ca4-70a4038aa2fd",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.50a2efda-fd32-464c-9275-5019f9015841",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "exec160224hpcp4rein6_file_private_endpoint_nic_efd5da1b_8201_494e_a3c8_44503c7b0a9a": {
+        "name": "exec160224hpcp4rein6-file-private-endpoint.nic.efd5da1b-8201-494e-a3c8-44503c7b0a9a",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.1e12a750-4a40-457c-ab96-6f558b65e55a",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "exec160224hpcp4rein6_blob_private_endpoint_nic_f482636a_11a9_41e7_a32b_0f4fd2548d34": {
+        "name": "exec160224hpcp4rein6-blob-private-endpoint.nic.f482636a-11a9-41e7-a32b-0f4fd2548d34",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.4d403f11-a76a-43c7-b2f0-a326f9f154b3",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "simKV160224hpcp4rein6_keyvault_private_endp_nic_db1e33b0_d99f_43ed_b2e6_f71b2a5188c1": {
+        "name": "simKV160224hpcp4rein6-keyvault-private-endp.nic.db1e33b0-d99f-43ed-b2e6-f71b2a5188c1",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.1feccdac-336d-49c8-a04e-dcbc5a4451b4",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "cm160224hpcp4rein6_file_private_endpoint_nic_01d50b0e_7da6_4343_a4e3_243f95505ba8": {
+        "name": "cm160224hpcp4rein6-file-private-endpoint.nic.01d50b0e-7da6-4343-a4e3-243f95505ba8",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.2c22b92e-83ef-400c-815d-41125e386098",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "exec160224hpcp4rein6_queue_private_endpoint_nic_94ceb1ef_8322_4c4d_9b3f_5f449b5496ff": {
+        "name": "exec160224hpcp4rein6-queue-private-endpoint.nic.94ceb1ef-8322-4c4d-9b3f-5f449b5496ff",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.e2e7839f-c57d-4344-b5c3-17d7f83c7906",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "aa160224hpcp4rein6_automation_private_endpo_nic_96d8b504_c2ed_4692_905c_df925c9f2579": {
+        "name": "aa160224hpcp4rein6-automation-private-endpo.nic.96d8b504-c2ed-4692-905c-df925c9f2579",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.44b5b45e-3e20-4135-b0f2-c5819ea15744",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "exec160224hpcp4rein6_table_private_endpoint_nic_5f4832c2_6dc4_4f8f_b058_3212e57e2181": {
+        "name": "exec160224hpcp4rein6-table-private-endpoint.nic.5f4832c2-6dc4-4f8f-b058-3212e57e2181",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "privateEndpointIpConfig.6f902384-2821-4e2e-9358-7279dc86d1dc",
+          "subnet_id": "${azurerm_subnet.vnet_ljio3xx7w6o6y_snet_pe.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "server01442": {
+        "name": "server01442",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.Server01_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "cseifert_windows_vm760_z1": {
+        "name": "cseifert-windows-vm760_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "andyye_windows_server_vm247_z1": {
+        "name": "andyye-windows-server-vm247_z1",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.andyye_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "c2server434_z1": {
+        "name": "c2server434_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.c2server_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "klakkaraju_abvm574_z1": {
+        "name": "klakkaraju-abvm574_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "andyye_windows11_vm2663_z1": {
+        "name": "andyye-windows11-vm2663_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "rotrevino_windows_11_pro825_z1": {
+        "name": "rotrevino-windows-11-pro825_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.rotrevino_rn_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "zixiaochen_ab369_z1": {
+        "name": "zixiaochen-ab369_z1",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.zixiaochen_AB_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "dayan_vm566_z1": {
+        "name": "dayan-vm566_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "arjunc_test227_z1": {
+        "name": "arjunc-test227_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "arjunc_test299_z1": {
+        "name": "arjunc-test299_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "csiska_02271_z1": {
+        "name": "csiska-02271_z1",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.andyye_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "csiska_03311_z1": {
+        "name": "csiska-03311_z1",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.andyye_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "arjunc_test484_z1": {
+        "name": "arjunc-test484_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "arjunc_test399_z1": {
+        "name": "arjunc-test399_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "alecsolway951": {
+        "name": "alecsolway951",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.alecsolway_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "andyye_windows11_vm3989_z1": {
+        "name": "andyye-windows11-vm3989_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.cseifert_windows_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "s005_vm357_z1": {
+        "name": "s005-vm357_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.s005_vm_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "s00537_z1": {
+        "name": "s00537_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.S005_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "dc001104_z1": {
+        "name": "dc001104_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "it001244_z1": {
+        "name": "it001244_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "it002397_z1": {
+        "name": "it002397_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "user001120_z1": {
+        "name": "user001120_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "web001520_z1": {
+        "name": "web001520_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "srv001927_z1": {
+        "name": "srv001927_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "user002535_z1": {
+        "name": "user002535_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "hr001136_z1": {
+        "name": "hr001136_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "db001939_z1": {
+        "name": "db001939_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "db001282_z1": {
+        "name": "db001282_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "app001461_z1": {
+        "name": "app001461_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "guest002244_z1": {
+        "name": "guest002244_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "guest001815_z1": {
+        "name": "guest001815_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "sec002314_z1": {
+        "name": "sec002314_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "hr002277_z1": {
+        "name": "hr002277_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "sec001195_z1": {
+        "name": "sec001195_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.DC001_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "svesal_maidap573_z1": {
+        "name": "svesal-maidap573_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "tianweichen_maidap576_z1": {
+        "name": "tianweichen-maidap576_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "nkumankumah11_z1": {
+        "name": "nkumankumah11_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "ajaye522_z1": {
+        "name": "ajaye522_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "cbiringa261_z1": {
+        "name": "cbiringa261_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "anjelpatel176_z1": {
+        "name": "anjelpatel176_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      },
+      "djulienne542_z1": {
+        "name": "djulienne542_z1",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "ip_configuration": {
+          "name": "ipconfig1",
+          "subnet_id": "${azurerm_subnet.svesal_MAIDAP_vnet_default.id}",
+          "private_ip_address_allocation": "Dynamic"
+        }
+      }
+    },
+    "tls_private_key": {
+      "atevet12ads001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12win001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12fs001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl005_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl004_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl003_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl000_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12cl002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12sql001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12ct001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12ex001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12rdg001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12ex002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12android_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12apache001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "atevet12ubuntu001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "azlin_vm_1760323185_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "Server01_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "cseifert_windows_vm_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "andyye_windows_server_vm_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "c2server_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "klakkaraju_abvm_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "andyye_windows11_vm2_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "rotrevino_windows_11_pro_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "zixiaochen_AB_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "dayan_vm_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "csiska_01_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "csiska_02_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "csiska_03_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "arjunc_test_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "alecsolway_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "andyye_windows11_vm3_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "s005_vm_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "S005_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "DC001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "IT001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "IT002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "USER001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "WEB001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SRV001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "USER002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "HR001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "DB001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "APP001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "GUEST002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "GUEST001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SEC001_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "SEC002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "HR002_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "svesal_MAIDAP_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "tianweichen_MAIDAP_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "nkumankumah_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "ajaye_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "cbiringa_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "anjelpatel_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      },
+      "djulienne_ssh_key": {
+        "algorithm": "RSA",
+        "rsa_bits": 4096
+      }
+    },
+    "azurerm_linux_virtual_machine": {
+      "atevet12ads001": {
+        "name": "atevet12ads001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "db41dded-0989-40d6-ab3d-30d7a18939fb"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12ads001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12ads001.id}"
+        ]
+      },
+      "atevet12win001": {
+        "name": "atevet12win001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "dddc60e8-4694-4baf-98a0-eac4e499715d"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12win001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12win001.id}"
+        ]
+      },
+      "atevet12fs001": {
+        "name": "atevet12fs001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "b25abd74-0267-4adb-996c-c63d9102c655"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12fs001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12fs001.id}"
+        ]
+      },
+      "atevet12cl005": {
+        "name": "atevet12cl005",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "16f6cf87-016e-487c-abe3-2c16e2cdb792"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12cl005_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl005.id}"
+        ]
+      },
+      "atevet12cl004": {
+        "name": "atevet12cl004",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "b19c87c7-545b-4c30-b753-01cc769bd45b"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12cl004_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl004.id}"
+        ]
+      },
+      "atevet12cl001": {
+        "name": "atevet12cl001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "c876eea8-bbe6-4873-b715-06ced14fbe91"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12cl001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl001.id}"
+        ]
+      },
+      "atevet12cl003": {
+        "name": "atevet12cl003",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "687e6799-d82f-498a-901a-1cb023160896"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12cl003_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl003.id}"
+        ]
+      },
+      "atevet12cl000": {
+        "name": "atevet12cl000",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "ab6a991e-3671-4aa1-87fc-320db52e5a9a"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.atevet12cl000_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl000.id}"
+        ]
+      },
+      "atevet12cl002": {
+        "name": "atevet12cl002",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "124ba6d6-94a6-4fd0-a720-be688ddecc8e"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12cl002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12cl002.id}"
+        ]
+      },
+      "atevet12sql001": {
+        "name": "atevet12sql001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "225c6126-b6a1-40ec-8e05-e668317ede50"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12sql001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12sql001.id}"
+        ]
+      },
+      "atevet12ct001": {
+        "name": "atevet12ct001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "6a3f9c84-2350-4bf6-9370-8f3f0aac9a68"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12ct001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12ct001.id}"
+        ]
+      },
+      "atevet12ex001": {
+        "name": "atevet12ex001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "77b456da-27ce-48ff-9cf3-c2a07f3307e1"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12ex001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12ex001.id}"
+        ]
+      },
+      "atevet12rdg001": {
+        "name": "atevet12rdg001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "bff016e5-829d-4c9f-a372-8d1372acaef7"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12rdg001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12rdg001.id}"
+        ]
+      },
+      "atevet12ex002": {
+        "name": "atevet12ex002",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "c6e5dfb6-bfe2-446a-80f1-8e437049d333"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12ex002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12ex002.id}"
+        ]
+      },
+      "atevet12android": {
+        "name": "atevet12android",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12android_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12android_NIC.id}"
+        ]
+      },
+      "atevet12apache001": {
+        "name": "atevet12apache001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12apache001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12apache001_NIC.id}"
+        ]
+      },
+      "atevet12ubuntu001": {
+        "name": "atevet12ubuntu001",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-DevTestLabs-LabUId": "61205ded-0d36-4cd5-bff7-edcd92105d78",
+          "hidden-DevTestLabs-LogicalResourceUId": "a602cd75-3214-4f13-beef-4e603f940870"
+        },
+        "size": "Standard_B2s",
+        "admin_username": "atevet12superadmin",
+        "admin_ssh_key": {
+          "username": "atevet12superadmin",
+          "public_key": "${tls_private_key.atevet12ubuntu001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.atevet12ubuntu001.id}"
+        ]
+      },
+      "azlin_vm_1760323185": {
+        "name": "azlin-vm-1760323185",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.azlin_vm_1760323185_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.azlin_vm_1760323185VMNic.id}"
+        ]
+      },
+      "Server01": {
+        "name": "Server01",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "research",
+        "admin_ssh_key": {
+          "username": "research",
+          "public_key": "${tls_private_key.Server01_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.server01442.id}"
+        ]
+      },
+      "cseifert_windows_vm": {
+        "name": "cseifert-windows-vm",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "cseifert",
+        "admin_ssh_key": {
+          "username": "cseifert",
+          "public_key": "${tls_private_key.cseifert_windows_vm_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.cseifert_windows_vm760_z1.id}"
+        ]
+      },
+      "andyye_windows_server_vm": {
+        "name": "andyye-windows-server-vm",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "andyye",
+        "admin_ssh_key": {
+          "username": "andyye",
+          "public_key": "${tls_private_key.andyye_windows_server_vm_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.andyye_windows_server_vm247_z1.id}"
+        ]
+      },
+      "c2server": {
+        "name": "c2server",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.c2server_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.c2server434_z1.id}"
+        ]
+      },
+      "klakkaraju_abvm": {
+        "name": "klakkaraju-abvm",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "adminvm",
+        "admin_ssh_key": {
+          "username": "adminvm",
+          "public_key": "${tls_private_key.klakkaraju_abvm_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.klakkaraju_abvm574_z1.id}"
+        ]
+      },
+      "andyye_windows11_vm2": {
+        "name": "andyye-windows11-vm2",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "andyye",
+        "admin_ssh_key": {
+          "username": "andyye",
+          "public_key": "${tls_private_key.andyye_windows11_vm2_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.andyye_windows11_vm2663_z1.id}"
+        ]
+      },
+      "rotrevino_windows_11_pro": {
+        "name": "rotrevino-windows-11-pro",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "hypothetical_admin",
+        "admin_ssh_key": {
+          "username": "hypothetical_admin",
+          "public_key": "${tls_private_key.rotrevino_windows_11_pro_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.rotrevino_windows_11_pro825_z1.id}"
+        ]
+      },
+      "zixiaochen_AB": {
+        "name": "zixiaochen-AB",
+        "location": "westus3",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "zixiaochen-VM",
+        "admin_ssh_key": {
+          "username": "zixiaochen-VM",
+          "public_key": "${tls_private_key.zixiaochen_AB_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.zixiaochen_ab369_z1.id}"
+        ]
+      },
+      "dayan_vm": {
+        "name": "dayan-vm",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "dayan",
+        "admin_ssh_key": {
+          "username": "dayan",
+          "public_key": "${tls_private_key.dayan_vm_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.dayan_vm566_z1.id}"
+        ]
+      },
+      "csiska_02": {
+        "name": "csiska-02",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "azureuser",
+        "admin_ssh_key": {
+          "username": "azureuser",
+          "public_key": "${tls_private_key.csiska_02_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.csiska_02271_z1.id}"
+        ]
+      },
+      "csiska_03": {
+        "name": "csiska-03",
+        "location": "southcentralus",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "csiska",
+        "admin_ssh_key": {
+          "username": "csiska",
+          "public_key": "${tls_private_key.csiska_03_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.csiska_03311_z1.id}"
+        ]
+      },
+      "arjunc_test": {
+        "name": "arjunc-test",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "arjunc",
+        "admin_ssh_key": {
+          "username": "arjunc",
+          "public_key": "${tls_private_key.arjunc_test_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.arjunc_test399_z1.id}"
+        ]
+      },
+      "alecsolway": {
+        "name": "alecsolway",
+        "location": "westus",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "alecsolway",
+        "admin_ssh_key": {
+          "username": "alecsolway",
+          "public_key": "${tls_private_key.alecsolway_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.alecsolway951.id}"
+        ]
+      },
+      "andyye_windows11_vm3": {
+        "name": "andyye-windows11-vm3",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "andyye",
+        "admin_ssh_key": {
+          "username": "andyye",
+          "public_key": "${tls_private_key.andyye_windows11_vm3_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.andyye_windows11_vm3989_z1.id}"
+        ]
+      },
+      "s005_vm": {
+        "name": "s005-vm",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "s005User",
+        "admin_ssh_key": {
+          "username": "s005User",
+          "public_key": "${tls_private_key.s005_vm_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.s005_vm357_z1.id}"
+        ]
+      },
+      "S005": {
+        "name": "S005",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "s005User",
+        "admin_ssh_key": {
+          "username": "s005User",
+          "public_key": "${tls_private_key.S005_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.s00537_z1.id}"
+        ]
+      },
+      "DC001": {
+        "name": "DC001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "DC001",
+        "admin_ssh_key": {
+          "username": "DC001",
+          "public_key": "${tls_private_key.DC001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.dc001104_z1.id}"
+        ]
+      },
+      "IT001": {
+        "name": "IT001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "IT001",
+        "admin_ssh_key": {
+          "username": "IT001",
+          "public_key": "${tls_private_key.IT001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.it001244_z1.id}"
+        ]
+      },
+      "IT002": {
+        "name": "IT002",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "IT002",
+        "admin_ssh_key": {
+          "username": "IT002",
+          "public_key": "${tls_private_key.IT002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.it002397_z1.id}"
+        ]
+      },
+      "USER001": {
+        "name": "USER001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "USER001",
+        "admin_ssh_key": {
+          "username": "USER001",
+          "public_key": "${tls_private_key.USER001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.user001120_z1.id}"
+        ]
+      },
+      "WEB001": {
+        "name": "WEB001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "WEB001",
+        "admin_ssh_key": {
+          "username": "WEB001",
+          "public_key": "${tls_private_key.WEB001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.web001520_z1.id}"
+        ]
+      },
+      "SRV001": {
+        "name": "SRV001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "SRV001",
+        "admin_ssh_key": {
+          "username": "SRV001",
+          "public_key": "${tls_private_key.SRV001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.srv001927_z1.id}"
+        ]
+      },
+      "USER002": {
+        "name": "USER002",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "USER002",
+        "admin_ssh_key": {
+          "username": "USER002",
+          "public_key": "${tls_private_key.USER002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.user002535_z1.id}"
+        ]
+      },
+      "HR001": {
+        "name": "HR001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "HR001",
+        "admin_ssh_key": {
+          "username": "HR001",
+          "public_key": "${tls_private_key.HR001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.hr001136_z1.id}"
+        ]
+      },
+      "DB001": {
+        "name": "DB001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "DB001",
+        "admin_ssh_key": {
+          "username": "DB001",
+          "public_key": "${tls_private_key.DB001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.db001282_z1.id}"
+        ]
+      },
+      "APP001": {
+        "name": "APP001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "APP001",
+        "admin_ssh_key": {
+          "username": "APP001",
+          "public_key": "${tls_private_key.APP001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.app001461_z1.id}"
+        ]
+      },
+      "GUEST002": {
+        "name": "GUEST002",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "GUEST002",
+        "admin_ssh_key": {
+          "username": "GUEST002",
+          "public_key": "${tls_private_key.GUEST002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest002244_z1.id}"
+        ]
+      },
+      "GUEST001": {
+        "name": "GUEST001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "GUEST001",
+        "admin_ssh_key": {
+          "username": "GUEST001",
+          "public_key": "${tls_private_key.GUEST001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.guest001815_z1.id}"
+        ]
+      },
+      "SEC001": {
+        "name": "SEC001",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "SEC001",
+        "admin_ssh_key": {
+          "username": "SEC001",
+          "public_key": "${tls_private_key.SEC001_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec001195_z1.id}"
+        ]
+      },
+      "SEC002": {
+        "name": "SEC002",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "SEC002",
+        "admin_ssh_key": {
+          "username": "SEC002",
+          "public_key": "${tls_private_key.SEC002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.sec002314_z1.id}"
+        ]
+      },
+      "HR002": {
+        "name": "HR002",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "HR002",
+        "admin_ssh_key": {
+          "username": "HR002",
+          "public_key": "${tls_private_key.HR002_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.hr002277_z1.id}"
+        ]
+      },
+      "svesal_MAIDAP": {
+        "name": "svesal-MAIDAP",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "svesal",
+        "admin_ssh_key": {
+          "username": "svesal",
+          "public_key": "${tls_private_key.svesal_MAIDAP_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.svesal_maidap573_z1.id}"
+        ]
+      },
+      "tianweichen_MAIDAP": {
+        "name": "tianweichen-MAIDAP",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "tianweichen",
+        "admin_ssh_key": {
+          "username": "tianweichen",
+          "public_key": "${tls_private_key.tianweichen_MAIDAP_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.tianweichen_maidap576_z1.id}"
+        ]
+      },
+      "nkumankumah": {
+        "name": "nkumankumah",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "nkumankumah",
+        "admin_ssh_key": {
+          "username": "nkumankumah",
+          "public_key": "${tls_private_key.nkumankumah_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.nkumankumah11_z1.id}"
+        ]
+      },
+      "ajaye": {
+        "name": "ajaye",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "ajaye",
+        "admin_ssh_key": {
+          "username": "ajaye",
+          "public_key": "${tls_private_key.ajaye_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.ajaye522_z1.id}"
+        ]
+      },
+      "cbiringa": {
+        "name": "cbiringa",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "cbiringa",
+        "admin_ssh_key": {
+          "username": "cbiringa",
+          "public_key": "${tls_private_key.cbiringa_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.cbiringa261_z1.id}"
+        ]
+      },
+      "anjelpatel": {
+        "name": "anjelpatel",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "anjelpatel",
+        "admin_ssh_key": {
+          "username": "anjelpatel",
+          "public_key": "${tls_private_key.anjelpatel_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.anjelpatel176_z1.id}"
+        ]
+      },
+      "djulienne": {
+        "name": "djulienne",
+        "location": "westus2",
+        "resource_group_name": "default-rg",
+        "size": "Standard_B2s",
+        "admin_username": "djulienne",
+        "admin_ssh_key": {
+          "username": "djulienne",
+          "public_key": "${tls_private_key.djulienne_ssh_key.public_key_openssh}"
+        },
+        "os_disk": {
+          "caching": "ReadWrite",
+          "storage_account_type": "Standard_LRS"
+        },
+        "source_image_reference": {
+          "publisher": "Canonical",
+          "offer": "0001-com-ubuntu-server-jammy",
+          "sku": "22_04-lts",
+          "version": "latest"
+        },
+        "network_interface_ids": [
+          "${azurerm_network_interface.djulienne542_z1.id}"
+        ]
+      }
+    },
+    "azurerm_app_service": {
+      "simMgr160224hpcp4rein6": {
+        "name": "simMgr160224hpcp4rein6",
+        "location": "northcentralus",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-related:/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/Microsoft.Web/serverfarms/ASP-160224hpcp4rein6": "empty",
+          "Creator": "ARTBAS",
+          "DeployedBy": "mmelndezlujn@microsoft.com",
+          "ARTBasCampaignManager": "160224hpcp4rein6",
+          "LastDeployed": "2024-02-17 00:56:22Z",
+          "ARTBasType": "CampaignManager",
+          "Commit": "d4c1a4bff8fa24c734bcde8f3bedc426543fde9f",
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/ARTBAS-160224hpcp4rein6/providers/microsoft.insights/components/simAI160224hpcp4rein6",
+          "hidden-link: /app-insights-instrumentation-key": "bed2e111-aee6-4cdb-b629-b28ca2e5d673",
+          "hidden-link: /app-insights-conn-string": "InstrumentationKey=bed2e111-aee6-4cdb-b629-b28ca2e5d673;IngestionEndpoint=https://northcentralus-0.in.applicationinsights.azure.com/;LiveEndpoint=https://northcentralus.livediagnostics.monitor.azure.com/;ApplicationId=1623201e-bb7e-48fa-a0dd-13bef395ec8f"
+        },
+        "app_service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan"
+      },
+      "simuland": {
+        "name": "simuland",
+        "location": "eastus",
+        "resource_group_name": "default-rg",
+        "tags": {
+          "hidden-link: /app-insights-resource-id": "/subscriptions/9b00bc5e-9abc-45de-9958-02a9d9277b16/resourceGroups/simuland-api/providers/Microsoft.Insights/components/simuland"
+        },
+        "app_service_plan_id": "/subscriptions/xxx/resourceGroups/default-rg/providers/Microsoft.Web/serverfarms/default-plan"
+      }
+    },
+    "azurerm_subnet_network_security_group_association": {
+      "dtlatevet12_infra_vnet_dtlatevet12_infra_subnet_nsg_association": {
+        "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_dtlatevet12_infra_subnet.id}",
+        "network_security_group_id": "${azurerm_network_security_group.atevet12_lab_nsg.id}"
+      },
+      "dtlatevet12_infra_vnet_AzureBastionSubnet_nsg_association": {
+        "subnet_id": "${azurerm_subnet.dtlatevet12_infra_vnet_AzureBastionSubnet.id}",
+        "network_security_group_id": "${azurerm_network_security_group.atevet12_bastion_nsg.id}"
+      },
+      "dtlatevet12_attack_vnet_dtlatevet12_attack_subnet_nsg_association": {
+        "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_dtlatevet12_attack_subnet.id}",
+        "network_security_group_id": "${azurerm_network_security_group.atevet12_lab_nsg.id}"
+      },
+      "dtlatevet12_attack_vnet_AzureBastionSubnet_nsg_association": {
+        "subnet_id": "${azurerm_subnet.dtlatevet12_attack_vnet_AzureBastionSubnet.id}",
+        "network_security_group_id": "${azurerm_network_security_group.atevet12_bastion_nsg.id}"
+      }
+    }
+  }
+}
