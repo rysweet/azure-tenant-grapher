@@ -67,6 +67,9 @@ dependencies = [
     "python-pptx>=1.0.2",
     # Graph visualization export (Issue #508)
     "pydot>=3.0.0",
+    # Visualization dependencies (optional, for analyze-patterns command)
+    "matplotlib>=3.7.0",
+    "scipy>=1.10.0",
 ]
 
 
