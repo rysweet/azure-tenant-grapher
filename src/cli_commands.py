@@ -45,7 +45,6 @@ from src.azure_tenant_grapher import AzureTenantGrapher
 
 # Scale operations command handlers (Issue #427)
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
-from src.utils.secure_credentials import get_neo4j_credentials
 from src.config_manager import (
     create_config_from_env,
     create_neo4j_config_from_env,
@@ -57,6 +56,7 @@ from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
 from src.utils.graph_id_resolver import split_and_detect_ids
 from src.utils.neo4j_startup import ensure_neo4j_running
+from src.utils.secure_credentials import get_neo4j_credentials
 
 configure_logging()
 
@@ -1958,8 +1958,7 @@ async def monitor_command_handler(
     # Connect to Neo4j
     try:
         driver = GraphDatabase.driver(
-            credentials.uri,
-            auth=(credentials.username, credentials.password)
+            credentials.uri, auth=(credentials.username, credentials.password)
         )
         # Test connection
         driver.verify_connectivity()

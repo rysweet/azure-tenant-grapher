@@ -55,7 +55,9 @@ class SQLDatabaseHandler(ResourceHandler):
 
         # Bug #43: Strip parent prefix from child resource names
         # Azure format: "server_name/database_name", Terraform needs: "database_name"
-        database_name = resource_name.split("/")[-1] if "/" in resource_name else resource_name
+        database_name = (
+            resource_name.split("/")[-1] if "/" in resource_name else resource_name
+        )
 
         # SQL Database only needs server_id, not location/resource_group_name
         config = {

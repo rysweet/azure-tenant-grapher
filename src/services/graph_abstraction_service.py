@@ -164,7 +164,9 @@ class GraphAbstractionService:
 
         # Calculate statistics
         actual_size = len(final_sample_ids)
-        type_distribution = self._get_sample_type_distribution(tenant_id, final_sample_ids)
+        type_distribution = self._get_sample_type_distribution(
+            tenant_id, final_sample_ids
+        )
 
         logger.info(
             f"Abstraction complete: {actual_size} nodes "
@@ -264,9 +266,7 @@ class GraphAbstractionService:
         """
 
         with self.driver.session() as session:
-            result = session.run(
-                query, node_ids=list(sample_ids), tenant_id=tenant_id
-            )
+            result = session.run(query, node_ids=list(sample_ids), tenant_id=tenant_id)
             created = result.consume().counters.relationships_created
             logger.info(f"Created {created} :SAMPLE_OF relationships")
 
@@ -289,7 +289,5 @@ class GraphAbstractionService:
         """
 
         with self.driver.session() as session:
-            result = session.run(
-                query, node_ids=list(sample_ids), tenant_id=tenant_id
-            )
+            result = session.run(query, node_ids=list(sample_ids), tenant_id=tenant_id)
             return {record["resource_type"]: record["count"] for record in result}

@@ -28,12 +28,12 @@ logger = logging.getLogger(__name__)
 
 # Re-export for backward compatibility
 __all__ = [
+    "IaCFormat",
+    "deploy_arm",
+    "deploy_bicep",
     "deploy_iac",
     "deploy_terraform",
-    "deploy_bicep",
-    "deploy_arm",
     "detect_iac_format",
-    "IaCFormat",
 ]
 
 

@@ -346,7 +346,9 @@ class AzureResourceIdBuilder:
                 return None
 
             # Scope is valid - use it
-            role_assignment_id = f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+            role_assignment_id = (
+                f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+            )
             logger.debug(
                 f"Role assignment scope source: explicit scope "
                 f"(scope={scope[:50]}...)"  # Log first 50 chars to avoid huge logs
@@ -419,7 +421,5 @@ class AzureResourceIdBuilder:
             )
             return None
 
-        logger.warning(
-            f"Unknown association resource type: {tf_resource_type}"
-        )
+        logger.warning(f"Unknown association resource type: {tf_resource_type}")
         return None

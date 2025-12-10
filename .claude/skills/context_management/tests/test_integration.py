@@ -57,7 +57,10 @@ class TestIntegration:
         # Step 4: Rehydrate at different levels
         for level in ["essential", "standard", "comprehensive"]:
             rehydrate_result = context_management_skill(
-                "rehydrate", snapshot_id=snapshot_id, level=level, snapshot_dir=temp_snapshot_dir
+                "rehydrate",
+                snapshot_id=snapshot_id,
+                level=level,
+                snapshot_dir=temp_snapshot_dir,
             )
             assert rehydrate_result["status"] == "success"
             assert "JWT authentication" in rehydrate_result["context"]
@@ -107,10 +110,14 @@ class TestIntegration:
 
         # Rehydrate each one
         for snapshot_id in snapshot_ids:
-            result = rehydrate_context(snapshot_id=snapshot_id, snapshot_dir=temp_snapshot_dir)
+            result = rehydrate_context(
+                snapshot_id=snapshot_id, snapshot_dir=temp_snapshot_dir
+            )
             assert result["status"] == "success"
 
-    def test_proactive_management_scenario(self, temp_snapshot_dir, sample_conversation):
+    def test_proactive_management_scenario(
+        self, temp_snapshot_dir, sample_conversation
+    ):
         """Test proactive context management scenario."""
         # Monitor usage as it increases
         usage_levels = [400_000, 700_000, 850_000, 950_000]
@@ -145,7 +152,9 @@ class TestIntegration:
         assert list_result["count"] == 1
 
         # Rehydrate with new instance
-        context = rehydrate_context(snapshot_id=snapshot_id, snapshot_dir=temp_snapshot_dir)
+        context = rehydrate_context(
+            snapshot_id=snapshot_id, snapshot_dir=temp_snapshot_dir
+        )
         assert context["status"] == "success"
 
     def test_error_handling_workflow(self, temp_snapshot_dir):
@@ -155,7 +164,9 @@ class TestIntegration:
         assert result["status"] == "error"
 
         # Try to rehydrate non-existent snapshot
-        result = rehydrate_context(snapshot_id="nonexistent", snapshot_dir=temp_snapshot_dir)
+        result = rehydrate_context(
+            snapshot_id="nonexistent", snapshot_dir=temp_snapshot_dir
+        )
         assert result["status"] == "error"
 
         # List should still work
@@ -181,7 +192,9 @@ class TestIntegration:
             snapshot_id=snapshot_id, level="standard", snapshot_dir=temp_snapshot_dir
         )
         comprehensive = rehydrate_context(
-            snapshot_id=snapshot_id, level="comprehensive", snapshot_dir=temp_snapshot_dir
+            snapshot_id=snapshot_id,
+            level="comprehensive",
+            snapshot_dir=temp_snapshot_dir,
         )
 
         # Essential should be shortest

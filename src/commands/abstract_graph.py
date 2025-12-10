@@ -202,7 +202,9 @@ async def _abstract_graph_async(
         patterns_list = None
         if security_patterns:
             patterns_list = [p.strip() for p in security_patterns.split(",")]
-            console.print(f"[bold]Patterns to preserve:[/bold] {', '.join(patterns_list)}")
+            console.print(
+                f"[bold]Patterns to preserve:[/bold] {', '.join(patterns_list)}"
+            )
 
         # Create service and perform abstraction
         service = GraphAbstractionService(
@@ -250,8 +252,14 @@ def _display_results(result: Dict[str, Any]) -> None:
         console.print(f"  Base Sample: {result['base_sample_size']}")
         console.print(f"  Final Size: [bold]{result['actual_size']}[/bold]")
         overhead = result["actual_size"] - result["base_sample_size"]
-        overhead_pct = (overhead / result["base_sample_size"] * 100) if result["base_sample_size"] > 0 else 0
-        console.print(f"  Security Overhead: [cyan]+{overhead} nodes ({overhead_pct:.1f}%)[/cyan]")
+        overhead_pct = (
+            (overhead / result["base_sample_size"] * 100)
+            if result["base_sample_size"] > 0
+            else 0
+        )
+        console.print(
+            f"  Security Overhead: [cyan]+{overhead} nodes ({overhead_pct:.1f}%)[/cyan]"
+        )
     else:
         console.print(f"  Actual Size: [bold]{result['actual_size']}[/bold]")
 
@@ -272,8 +280,12 @@ def _display_results(result: Dict[str, Any]) -> None:
 
         for pattern_name, count in security_metrics["patterns_preserved"].items():
             coverage = security_metrics["coverage_percentages"][pattern_name]
-            color = "green" if coverage >= 90.0 else "yellow" if coverage >= 70.0 else "red"
-            console.print(f"  {pattern_name}: {count} instances ([{color}]{coverage:.1f}% coverage[/{color}])")
+            color = (
+                "green" if coverage >= 90.0 else "yellow" if coverage >= 70.0 else "red"
+            )
+            console.print(
+                f"  {pattern_name}: {count} instances ([{color}]{coverage:.1f}% coverage[/{color}])"
+            )
 
         added = security_metrics["nodes_added_for_security"]
         console.print(f"\n  [bold]Nodes added for security:[/bold] {added}")

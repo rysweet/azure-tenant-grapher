@@ -3,8 +3,6 @@
 Ensures fixed bugs remain fixed in future changes.
 """
 
-import pytest
-
 from src.iac.emitters.arm_emitter import ArmEmitter
 from src.iac.emitters.bicep_emitter import BicepEmitter
 from src.iac.emitters.terraform_emitter import TerraformEmitter
@@ -48,18 +46,36 @@ class TestBug98And99Regression:
         assert "Microsoft.Insights/actiongroups" in emitter.AZURE_TO_TERRAFORM_MAPPING
 
         # All should map to same resource type
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Insights/actionGroups"] == "azurerm_monitor_action_group"
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["microsoft.insights/actiongroups"] == "azurerm_monitor_action_group"
-        assert emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Insights/actiongroups"] == "azurerm_monitor_action_group"
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Insights/actionGroups"]
+            == "azurerm_monitor_action_group"
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["microsoft.insights/actiongroups"]
+            == "azurerm_monitor_action_group"
+        )
+        assert (
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Insights/actiongroups"]
+            == "azurerm_monitor_action_group"
+        )
 
     def test_query_packs_all_casing_variants_supported(self):
         """Bug #99: All query pack casing variants should be in mapping."""
         emitter = TerraformEmitter()
 
         # All 3 variants should exist
-        assert "Microsoft.OperationalInsights/queryPacks" in emitter.AZURE_TO_TERRAFORM_MAPPING
-        assert "microsoft.operationalinsights/querypacks" in emitter.AZURE_TO_TERRAFORM_MAPPING
-        assert "Microsoft.OperationalInsights/querypacks" in emitter.AZURE_TO_TERRAFORM_MAPPING
+        assert (
+            "Microsoft.OperationalInsights/queryPacks"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            "microsoft.operationalinsights/querypacks"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
+        assert (
+            "Microsoft.OperationalInsights/querypacks"
+            in emitter.AZURE_TO_TERRAFORM_MAPPING
+        )
 
 
 class TestBug100To104Regression:
@@ -96,7 +112,9 @@ class TestBug100To104Regression:
     def test_redis_cache_api_version(self):
         """Bug #104: Redis Cache should use 2024-03-01."""
         validator = ResourceExistenceValidator(subscription_id="test")
-        resource_id = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Cache/Redis/test"
+        resource_id = (
+            "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Cache/Redis/test"
+        )
         api_version = validator._get_api_version(resource_id)
         assert api_version == "2024-03-01"
 
@@ -137,8 +155,7 @@ class TestBug107Regression:
     def test_arm_emitter_same_tenant_detection_works(self):
         """Bug #107: ARM emitter should detect same-tenant without crashing."""
         emitter = ArmEmitter(
-            source_tenant_id="tenant-123",
-            target_tenant_id="tenant-123"
+            source_tenant_id="tenant-123", target_tenant_id="tenant-123"
         )
         # Should not raise AttributeError when checking is_same_tenant
         # The actual check happens in emit() method
@@ -148,8 +165,7 @@ class TestBug107Regression:
     def test_bicep_emitter_same_tenant_detection_works(self):
         """Bug #107: Bicep emitter should detect same-tenant without crashing."""
         emitter = BicepEmitter(
-            source_tenant_id="tenant-123",
-            target_tenant_id="tenant-123"
+            source_tenant_id="tenant-123", target_tenant_id="tenant-123"
         )
         # Should not raise AttributeError when checking is_same_tenant
         assert emitter.source_tenant_id is not None

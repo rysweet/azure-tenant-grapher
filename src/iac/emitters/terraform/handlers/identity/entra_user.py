@@ -44,9 +44,9 @@ class EntraUserHandler(ResourceHandler):
         # Skip users in same-tenant deployments (Issue #496 Problem #2)
         # Users already exist in target tenant - cannot recreate them
         is_same_tenant = (
-            context.source_tenant_id and
-            context.target_tenant_id and
-            context.source_tenant_id == context.target_tenant_id
+            context.source_tenant_id
+            and context.target_tenant_id
+            and context.source_tenant_id == context.target_tenant_id
         )
 
         if is_same_tenant:

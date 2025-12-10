@@ -86,7 +86,9 @@ class TestDCRWorkspaceValidation:
 
             # Verify both resources were generated
             assert "azurerm_log_analytics_workspace" in terraform_config["resource"]
-            assert "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            assert (
+                "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            )
 
             # Verify DCR has correct workspace reference
             dcr_resource = terraform_config["resource"][
@@ -96,13 +98,13 @@ class TestDCRWorkspaceValidation:
             assert "log_analytics" in dcr_resource["destinations"]
             assert len(dcr_resource["destinations"]["log_analytics"]) == 1
             assert (
-                dcr_resource["destinations"]["log_analytics"][0]["workspace_resource_id"]
+                dcr_resource["destinations"]["log_analytics"][0][
+                    "workspace_resource_id"
+                ]
                 == workspace_id
             )
 
-    def test_dcr_with_missing_workspace(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_dcr_with_missing_workspace(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test DCR with non-existent workspace reference.
 
         DCR should be skipped when the referenced workspace doesn't exist in the graph.
@@ -232,7 +234,9 @@ class TestDCRWorkspaceValidation:
 
             # Verify both resources were generated
             assert "azurerm_log_analytics_workspace" in terraform_config["resource"]
-            assert "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            assert (
+                "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            )
 
     def test_dcr_with_case_insensitive_workspace_type(self) -> None:
         """Test DCR validation works with different workspace type casings.
@@ -296,7 +300,9 @@ class TestDCRWorkspaceValidation:
 
             # Verify both resources were generated
             assert "azurerm_log_analytics_workspace" in terraform_config["resource"]
-            assert "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            assert (
+                "azurerm_monitor_data_collection_rule" in terraform_config["resource"]
+            )
 
     def test_dcr_with_multiple_workspaces_one_missing(
         self, caplog: pytest.LogCaptureFixture

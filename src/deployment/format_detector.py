@@ -58,7 +58,9 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
         try:
             with open(json_file) as f:
                 data = json.load(f)
-                if "$schema" in data and "deploymentTemplate" in data.get("$schema", ""):
+                if "$schema" in data and "deploymentTemplate" in data.get(
+                    "$schema", ""
+                ):
                     logger.info(f"Detected ARM template format in {iac_dir}")
                     return "arm"
         except Exception as e:
@@ -69,4 +71,4 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
     return None
 
 
-__all__ = ["detect_iac_format", "IaCFormat"]
+__all__ = ["IaCFormat", "detect_iac_format"]

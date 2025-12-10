@@ -36,7 +36,7 @@ class YamlExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to YAML format.

@@ -229,9 +229,7 @@ class JobSpawner:
 
         return cmd
 
-    def _prepare_environment(
-        self, env: Optional[Dict[str, str]]
-    ) -> Dict[str, str]:
+    def _prepare_environment(self, env: Optional[Dict[str, str]]) -> Dict[str, str]:
         """Prepare process environment variables."""
         process_env: Dict[str, str] = dict(os.environ)
         if env:

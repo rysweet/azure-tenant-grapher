@@ -10,7 +10,7 @@ Test Coverage:
 Target: 80% coverage
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from click.testing import CliRunner

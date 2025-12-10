@@ -16,9 +16,6 @@ import os
 import signal
 import subprocess
 import sys
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, Any
 
 import structlog
 
@@ -114,9 +111,7 @@ class ProcessManager:
                 success = True
 
             if success:
-                self._logger.info(
-                    "Successfully terminated process", pid=pid
-                )
+                self._logger.info("Successfully terminated process", pid=pid)
 
             return success
 
@@ -126,7 +121,5 @@ class ProcessManager:
             raise
 
         except Exception as e:
-            self._logger.exception(
-                "Failed to terminate process", pid=pid, error=str(e)
-            )
+            self._logger.exception("Failed to terminate process", pid=pid, error=str(e))
             return False

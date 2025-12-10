@@ -44,12 +44,10 @@ class TestVMRunCommands:
                 "location": "East US",
                 "resource_group": "test-rg",
                 "id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/missing-vm/runCommands/Test-RunCommand",
-                "properties": json.dumps({
-                    "source": {
-                        "script": "Write-Host 'Hello World'"
-                    }
-                })
-            }
+                "properties": json.dumps(
+                    {"source": {"script": "Write-Host 'Hello World'"}}
+                ),
+            },
         ]
 
         # Create temporary output directory
@@ -67,8 +65,16 @@ class TestVMRunCommands:
                 terraform_config = json.load(f)
 
             # Check that run command was NOT emitted (VM is missing)
-            assert "azurerm_virtual_machine_run_command" not in terraform_config["resource"] or \
-                   len(terraform_config["resource"].get("azurerm_virtual_machine_run_command", {})) == 0
+            assert (
+                "azurerm_virtual_machine_run_command"
+                not in terraform_config["resource"]
+                or len(
+                    terraform_config["resource"].get(
+                        "azurerm_virtual_machine_run_command", {}
+                    )
+                )
+                == 0
+            )
 
     def test_run_command_skipped_when_vm_filtered(self) -> None:
         """Test that run commands are skipped when parent VM was filtered out.
@@ -92,12 +98,14 @@ class TestVMRunCommands:
                 "location": "East US",
                 "resource_group": "test-rg",
                 "id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/incomplete-vm",
-                "properties": json.dumps({
-                    "hardwareProfile": {"vmSize": "Standard_B2s"},
-                    "networkProfile": {
-                        "networkInterfaces": []  # No NICs - will cause VM to be skipped
+                "properties": json.dumps(
+                    {
+                        "hardwareProfile": {"vmSize": "Standard_B2s"},
+                        "networkProfile": {
+                            "networkInterfaces": []  # No NICs - will cause VM to be skipped
+                        },
                     }
-                })
+                ),
             },
             {
                 "type": "Microsoft.Compute/virtualMachines/runCommands",
@@ -105,12 +113,10 @@ class TestVMRunCommands:
                 "location": "East US",
                 "resource_group": "test-rg",
                 "id": "/subscriptions/sub1/resourceGroups/test-rg/providers/Microsoft.Compute/virtualMachines/incomplete-vm/runCommands/Test-RunCommand",
-                "properties": json.dumps({
-                    "source": {
-                        "script": "Write-Host 'Hello World'"
-                    }
-                })
-            }
+                "properties": json.dumps(
+                    {"source": {"script": "Write-Host 'Hello World'"}}
+                ),
+            },
         ]
 
         # Create temporary output directory
@@ -129,11 +135,22 @@ class TestVMRunCommands:
 
             # VM should NOT be emitted (no NICs)
             if "azurerm_linux_virtual_machine" in terraform_config["resource"]:
-                assert "incomplete_vm" not in terraform_config["resource"]["azurerm_linux_virtual_machine"]
+                assert (
+                    "incomplete_vm"
+                    not in terraform_config["resource"]["azurerm_linux_virtual_machine"]
+                )
 
             # Run command should NOT be emitted (parent VM missing)
-            assert "azurerm_virtual_machine_run_command" not in terraform_config["resource"] or \
-                   len(terraform_config["resource"].get("azurerm_virtual_machine_run_command", {})) == 0
+            assert (
+                "azurerm_virtual_machine_run_command"
+                not in terraform_config["resource"]
+                or len(
+                    terraform_config["resource"].get(
+                        "azurerm_virtual_machine_run_command", {}
+                    )
+                )
+                == 0
+            )
 
     def test_run_command_name_extraction(self) -> None:
         """Test that run command names are extracted correctly from hierarchical names.

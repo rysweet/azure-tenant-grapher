@@ -228,7 +228,9 @@ class TestGetCurrentBranch:
     @patch("github_pages.deployer._run_git_command")
     def test_strips_whitespace(self, mock_git_cmd: MagicMock, tmp_path: Path):
         """Test that whitespace is stripped."""
-        mock_git_cmd.return_value = MagicMock(stdout="  feature/branch  \n", returncode=0)
+        mock_git_cmd.return_value = MagicMock(
+            stdout="  feature/branch  \n", returncode=0
+        )
 
         result = _get_current_branch(tmp_path)
 

@@ -311,7 +311,9 @@ class ResourceProcessor:
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
 
-                logger.debug(f"Scheduling worker for resource {rid} (attempt {attempt})")
+                logger.debug(
+                    f"Scheduling worker for resource {rid} (attempt {attempt})"
+                )
 
                 task = asyncio.create_task(
                     worker(resource, resource_index_counter, attempt)

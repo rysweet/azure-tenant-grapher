@@ -155,9 +155,15 @@ def _build_simulation_prompt(size: Optional[int], seed_text: str) -> str:
     # Calculate ranges based on size
     user_range = f"{int(size * 0.8)}-{int(size * 1.2)}" if size else "50-5000"
     group_range = f"{max(10, int(size * 0.1))}-{int(size * 0.3)}" if size else "10-200"
-    sp_range = f"{max(5, int(size * 0.02))}-{max(20, int(size * 0.05))}" if size else "5-50"
-    mi_range = f"{max(3, int(size * 0.01))}-{max(10, int(size * 0.03))}" if size else "3-30"
-    ca_range = f"{max(5, int(size * 0.01))}-{max(15, int(size * 0.02))}" if size else "5-20"
+    sp_range = (
+        f"{max(5, int(size * 0.02))}-{max(20, int(size * 0.05))}" if size else "5-50"
+    )
+    mi_range = (
+        f"{max(3, int(size * 0.01))}-{max(10, int(size * 0.03))}" if size else "3-30"
+    )
+    ca_range = (
+        f"{max(5, int(size * 0.01))}-{max(15, int(size * 0.02))}" if size else "5-20"
+    )
 
     prompt = (
         "You are an expert Azure consultant. Generate a detailed, realistic simulated customer profile "

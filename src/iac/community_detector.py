@@ -107,14 +107,17 @@ class CommunityDetector:
             Dict with resource counts by type, total size, etc.
         """
         with self.driver.session() as session:
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH (r:Resource)
                 WHERE r.id IN $resource_ids AND NOT r:Original
 
                 WITH r.type AS resource_type, count(*) AS count
                 RETURN resource_type, count
                 ORDER BY count DESC
-            """, resource_ids=list(community))
+            """,
+                resource_ids=list(community),
+            )
 
             type_counts = {}
             for record in result:
@@ -123,5 +126,7 @@ class CommunityDetector:
             return {
                 "size": len(community),
                 "type_counts": type_counts,
-                "dominant_type": max(type_counts.items(), key=lambda x: x[1])[0] if type_counts else "unknown"
+                "dominant_type": max(type_counts.items(), key=lambda x: x[1])[0]
+                if type_counts
+                else "unknown",
             }

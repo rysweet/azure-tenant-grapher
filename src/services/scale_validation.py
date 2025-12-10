@@ -87,9 +87,7 @@ class ScaleValidation:
             logger.exception(message)
             return False, message
         except Exception as e:
-            message = (
-                f"Unexpected error checking Original layer contamination: {e}"
-            )
+            message = f"Unexpected error checking Original layer contamination: {e}"
             logger.exception(message)
             return False, f"Validation error: {e}"
 

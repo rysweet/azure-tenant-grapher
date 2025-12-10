@@ -84,10 +84,26 @@ async def test_get_tenant_stats_basic(stats_service, mock_session):
                 __iter__=MagicMock(
                     return_value=iter(
                         [
-                            {"resource_type": "Microsoft.Compute/virtualMachines", "category": "original", "count": 60},
-                            {"resource_type": "Microsoft.Compute/virtualMachines", "category": "synthetic", "count": 30},
-                            {"resource_type": "Microsoft.Network/virtualNetworks", "category": "original", "count": 40},
-                            {"resource_type": "Microsoft.Network/virtualNetworks", "category": "synthetic", "count": 20},
+                            {
+                                "resource_type": "Microsoft.Compute/virtualMachines",
+                                "category": "original",
+                                "count": 60,
+                            },
+                            {
+                                "resource_type": "Microsoft.Compute/virtualMachines",
+                                "category": "synthetic",
+                                "count": 30,
+                            },
+                            {
+                                "resource_type": "Microsoft.Network/virtualNetworks",
+                                "category": "original",
+                                "count": 40,
+                            },
+                            {
+                                "resource_type": "Microsoft.Network/virtualNetworks",
+                                "category": "synthetic",
+                                "count": 20,
+                            },
                         ]
                     )
                 )
@@ -136,8 +152,24 @@ async def test_get_tenant_stats_detailed(stats_service, mock_session):
     """Test getting detailed tenant statistics."""
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "original", "count": 100}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"resource_type": "Type1", "category": "original", "count": 100}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "original", "count": 100}])
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter(
+                        [
+                            {
+                                "resource_type": "Type1",
+                                "category": "original",
+                                "count": 100,
+                            }
+                        ]
+                    )
+                )
+            ),
             MagicMock(
                 __iter__=MagicMock(
                     return_value=iter(
@@ -158,7 +190,11 @@ async def test_get_tenant_stats_detailed(stats_service, mock_session):
                     )
                 )
             ),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "original", "count": 200}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "original", "count": 200}])
+                )
+            ),
         ]
 
         stats = await stats_service.get_tenant_stats("tenant-123", detailed=True)
@@ -174,10 +210,30 @@ async def test_get_tenant_stats_no_synthetic_data(stats_service, mock_session):
     """Test stats when no synthetic data exists."""
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "original", "count": 100}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"resource_type": "Type1", "category": "original", "count": 100}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "original", "count": 100}])
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter(
+                        [
+                            {
+                                "resource_type": "Type1",
+                                "category": "original",
+                                "count": 100,
+                            }
+                        ]
+                    )
+                )
+            ),
             MagicMock(__iter__=MagicMock(return_value=iter([]))),  # No sessions
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "original", "count": 200}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "original", "count": 200}])
+                )
+            ),
         ]
 
         stats = await stats_service.get_tenant_stats("tenant-123")
@@ -228,7 +284,6 @@ async def test_compare_tenants_success(stats_service):
             "get_tenant_stats",
             side_effect=[mock_stats_1, mock_stats_2],
         ):
-
             result = await stats_service.compare_tenants(
                 ["tenant-1", "tenant-2"], detailed=False
             )
@@ -256,13 +311,8 @@ async def test_compare_tenants_detailed(stats_service):
     }
 
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
-        with patch.object(
-            stats_service, "get_tenant_stats", return_value=mock_stats_1
-        ):
-
-            result = await stats_service.compare_tenants(
-                ["tenant-1"], detailed=True
-            )
+        with patch.object(stats_service, "get_tenant_stats", return_value=mock_stats_1):
+            result = await stats_service.compare_tenants(["tenant-1"], detailed=True)
 
             assert isinstance(result["tenants"], dict)
             assert "tenant-1" in result["tenants"]
@@ -339,7 +389,9 @@ async def test_get_session_history_success(stats_service, mock_session):
 async def test_get_session_history_empty(stats_service, mock_session):
     """Test session history when no sessions exist."""
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
-        mock_session.run.return_value = MagicMock(__iter__=MagicMock(return_value=iter([])))
+        mock_session.run.return_value = MagicMock(
+            __iter__=MagicMock(return_value=iter([]))
+        )
 
         history = await stats_service.get_session_history("tenant-123")
 
@@ -370,9 +422,7 @@ async def test_export_stats_json_format(stats_service):
     }
 
     with patch.object(stats_service, "get_tenant_stats", return_value=mock_stats):
-        output = await stats_service.export_stats(
-            tenant_id="tenant-123", format="json"
-        )
+        output = await stats_service.export_stats(tenant_id="tenant-123", format="json")
 
         assert "tenant-123" in output
         assert "100" in output
@@ -518,9 +568,7 @@ async def test_export_stats_table_format(stats_service):
 async def test_export_stats_invalid_format(stats_service):
     """Test export fails with invalid format."""
     with pytest.raises(ValueError, match="Invalid format"):
-        await stats_service.export_stats(
-            tenant_id="tenant-123", format="invalid"
-        )
+        await stats_service.export_stats(tenant_id="tenant-123", format="invalid")
 
 
 @pytest.mark.asyncio
@@ -532,9 +580,7 @@ async def test_export_stats_tenant_not_found(stats_service):
         side_effect=ValueError("not found"),
     ):
         with pytest.raises(ValueError, match="not found"):
-            await stats_service.export_stats(
-                tenant_id="nonexistent", format="json"
-            )
+            await stats_service.export_stats(tenant_id="nonexistent", format="json")
 
 
 # =========================================================================
@@ -622,10 +668,43 @@ async def test_get_tenant_stats_all_synthetic(stats_service, mock_session):
     """Test stats when all resources are synthetic."""
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "synthetic", "count": 100}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"resource_type": "Type1", "category": "synthetic", "count": 100}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "s1", "resource_count": 100, "strategy": "template", "timestamp": "2025-01-10T12:00:00"}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"category": "synthetic", "count": 200}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "synthetic", "count": 100}])
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter(
+                        [
+                            {
+                                "resource_type": "Type1",
+                                "category": "synthetic",
+                                "count": 100,
+                            }
+                        ]
+                    )
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter(
+                        [
+                            {
+                                "session_id": "s1",
+                                "resource_count": 100,
+                                "strategy": "template",
+                                "timestamp": "2025-01-10T12:00:00",
+                            }
+                        ]
+                    )
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"category": "synthetic", "count": 200}])
+                )
+            ),
         ]
 
         stats = await stats_service.get_tenant_stats("tenant-123")
@@ -650,7 +729,6 @@ async def test_compare_tenants_single_tenant(stats_service):
 
     with patch.object(stats_service, "validate_tenant_exists", return_value=True):
         with patch.object(stats_service, "get_tenant_stats", return_value=mock_stats):
-
             result = await stats_service.compare_tenants(["tenant-1"])
 
             assert result["tenant_count"] == 1

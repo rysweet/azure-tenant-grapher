@@ -238,6 +238,10 @@ class TestTerraformAzureADProvider:
 
                 # Verify client_id has the correct value
                 if sp_name == "test_app_sp":
-                    assert sp_config["client_id"] == "12345678-1234-1234-1234-123456789012"
+                    assert (
+                        sp_config["client_id"] == "12345678-1234-1234-1234-123456789012"
+                    )
                 elif sp_name == "test_graph_sp":
-                    assert sp_config["client_id"] == "87654321-4321-4321-4321-210987654321"
+                    assert (
+                        sp_config["client_id"] == "87654321-4321-4321-4321-210987654321"
+                    )
