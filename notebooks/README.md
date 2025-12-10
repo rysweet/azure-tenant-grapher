@@ -1,4 +1,4 @@
-# Azure Tenant Grapher Playbooks
+# Azure Tenant Grapher Notebooks
 
 This directory contains Jupyter notebooks for exploring and analyzing Azure tenant data.
 
@@ -66,7 +66,7 @@ This notebook demonstrates interactive exploration and analysis of your Azure te
 
 1. Start Jupyter:
    ```bash
-   cd playbooks
+   cd notebooks
    uv run jupyter notebook
    ```
 

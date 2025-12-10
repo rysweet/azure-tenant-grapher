@@ -69,8 +69,6 @@ uv run atg generate-spec
 uv run atg generate-iac --tenant-id <TENANT_ID> --format terraform
 uv run atg create-tenant --spec path/to/spec.md
 uv run atg visualize
-uv run atg analyze-patterns  # Analyze architectural patterns in the graph
-uv run atg report well-architected  # Generate Well-Architected Framework report
 uv run atg agent-mode
 uv run atg threat-model
 uv run atg doctor  # Check and install CLI dependencies
@@ -97,18 +95,6 @@ uv run atg generate-iac --auto-register-providers  # Automatically register requ
 uv run atg start    # Launch Electron GUI (desktop mode)
 uv run atg stop     # Stop GUI application
 
-# Architectural Pattern Analysis (NEW)
-uv run atg analyze-patterns                              # Analyze patterns with visualizations
-uv run atg analyze-patterns --no-visualizations          # Skip visualizations (faster, no matplotlib required)
-uv run atg analyze-patterns -o my_analysis               # Custom output directory
-uv run atg analyze-patterns --top-n-nodes 50             # Show more nodes in visualization
-
-# Well-Architected Framework Reports (NEW)
-uv run atg report well-architected                       # Generate full WAF report with all features
-uv run atg report well-architected --skip-description-updates  # Don't update Neo4j resource descriptions
-uv run atg report well-architected --no-visualizations   # Skip visualizations (faster)
-uv run atg report well-architected -o my_waf_report      # Custom output directory
-
 # Web App Mode (NEW)
 cd spa && npm run start:web       # Run as web server (accessible from other machines)
 cd spa && npm run start:web:dev   # Run web server in dev mode with hot reload
@@ -118,23 +104,7 @@ cd spa && npm run start:web:dev   # Run web server in dev mode with hot reload
 
 ### Core Components
 
-1. **Architectural Pattern Analyzer** (`src/architectural_pattern_analyzer.py`):
-   - Analyzes Azure resource graph to identify common architectural patterns
-   - Aggregates resource relationships by type
-   - Detects patterns like Web Apps, VM Workloads, Container Platforms, etc.
-   - Generates NetworkX graphs and JSON exports
-   - Optional visualization with matplotlib/scipy
-   - **Output**: JSON data export, summary report, visualization PNG files
-
-2. **Well-Architected Framework Reporter** (`src/well_architected_reporter.py`):
-   - Generates comprehensive Well-Architected Framework (WAF) analysis reports
-   - Maps detected patterns to WAF pillars (Reliability, Security, etc.)
-   - Updates resource descriptions with WAF insights and documentation links
-   - Generates markdown reports and interactive Jupyter notebooks
-   - Provides actionable recommendations for each pattern
-   - **Output**: Markdown report, Jupyter notebook, JSON insights, visualizations
-
-2. **Azure Discovery Service** (`src/services/azure_discovery_service.py`):
+1. **Azure Discovery Service** (`src/services/azure_discovery_service.py`):
    - Discovers Azure resources using Azure SDK
    - Handles pagination and rate limiting
    - Supports resource limits for testing
