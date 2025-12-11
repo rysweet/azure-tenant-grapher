@@ -155,9 +155,7 @@ class TestRestoreCommand:
 
     @patch("src.container_manager.Neo4jContainerManager")
     @patch("src.commands.database.os.path.exists")
-    def test_restore_success(
-        self, mock_exists, mock_container_manager_class, runner
-    ):
+    def test_restore_success(self, mock_exists, mock_container_manager_class, runner):
         """Test successful database restore."""
         # Mock file exists
         mock_exists.return_value = True
@@ -192,9 +190,7 @@ class TestRestoreCommand:
 
     @patch("src.container_manager.Neo4jContainerManager")
     @patch("src.commands.database.os.path.exists")
-    def test_restore_cancelled(
-        self, mock_exists, mock_container_manager_class, runner
-    ):
+    def test_restore_cancelled(self, mock_exists, mock_container_manager_class, runner):
         """Test restore cancellation."""
         mock_exists.return_value = True
 
@@ -229,9 +225,7 @@ class TestRestoreCommand:
 
     @patch("src.container_manager.Neo4jContainerManager")
     @patch("src.commands.database.os.path.exists")
-    def test_restore_failure(
-        self, mock_exists, mock_container_manager_class, runner
-    ):
+    def test_restore_failure(self, mock_exists, mock_container_manager_class, runner):
         """Test restore failure handling."""
         mock_exists.return_value = True
 

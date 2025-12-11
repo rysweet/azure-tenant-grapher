@@ -322,7 +322,9 @@ class TestNeo4jToNetworkX:
 class TestSamplingAlgorithms:
     """Test sampling algorithms."""
 
-    @pytest.mark.skip(reason="ForestFireSampler has upstream bug in littleballoffur - uses set with random.sample() which fails in Python 3.12+. MHRW and RandomWalk work correctly with node ID conversion.")
+    @pytest.mark.skip(
+        reason="ForestFireSampler has upstream bug in littleballoffur - uses set with random.sample() which fails in Python 3.12+. MHRW and RandomWalk work correctly with node ID conversion."
+    )
     @pytest.mark.asyncio
     async def test_sample_forest_fire(self, scale_down_service, sample_graph):
         """Test Forest Fire sampling algorithm."""

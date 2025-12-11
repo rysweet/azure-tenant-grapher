@@ -157,11 +157,7 @@ class StateManager:
         if not self.jobs_dir.exists():
             return []
 
-        return [
-            job_dir
-            for job_dir in self.jobs_dir.iterdir()
-            if job_dir.is_dir()
-        ]
+        return [job_dir for job_dir in self.jobs_dir.iterdir() if job_dir.is_dir()]
 
     def cleanup_old_jobs(self, days: int = 30) -> int:
         """

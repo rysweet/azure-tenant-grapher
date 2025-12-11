@@ -45,7 +45,9 @@ class NodeManager:
         try:
             self._initialize_dual_graph_services()
         except Exception as e:
-            logger.warning(f"Dual-graph services not initialized (expected in tests): {e}")
+            logger.warning(
+                f"Dual-graph services not initialized (expected in tests): {e}"
+            )
             # Set up fallback abstraction for tests
             self._setup_fallback_abstraction()
 
@@ -571,9 +573,7 @@ class NodeManager:
             """
 
             with self.session_manager.session() as session:
-                session.run(
-                    query, src_id=src_id, tgt_key_value=tgt_key_value
-                )
+                session.run(query, src_id=src_id, tgt_key_value=tgt_key_value)
             return True
 
         except Exception:

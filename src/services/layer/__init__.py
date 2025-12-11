@@ -418,7 +418,9 @@ class LayerManagementService:
             LayerNotFoundError: If layer doesn't exist
         """
         return await self.export.archive_layer(
-            layer_id=layer_id, output_path=output_path, include_original=include_original
+            layer_id=layer_id,
+            output_path=output_path,
+            include_original=include_original,
         )
 
     async def restore_layer(
@@ -446,17 +448,17 @@ class LayerManagementService:
 
 # Export all public API components
 __all__ = [
-    "LayerManagementService",
-    "LayerType",
-    "LayerMetadata",
-    "LayerDiff",
-    "LayerValidationReport",
-    "LayerError",
-    "LayerNotFoundError",
-    "LayerAlreadyExistsError",
-    "LayerProtectedError",
-    "LayerLockedError",
-    "InvalidLayerIdError",
-    "LayerIntegrityError",
     "CrossLayerRelationshipError",
+    "InvalidLayerIdError",
+    "LayerAlreadyExistsError",
+    "LayerDiff",
+    "LayerError",
+    "LayerIntegrityError",
+    "LayerLockedError",
+    "LayerManagementService",
+    "LayerMetadata",
+    "LayerNotFoundError",
+    "LayerProtectedError",
+    "LayerType",
+    "LayerValidationReport",
 ]

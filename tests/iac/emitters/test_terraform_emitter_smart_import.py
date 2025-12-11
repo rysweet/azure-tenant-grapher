@@ -79,7 +79,9 @@ def comparison_result_with_classifications():
                     "id": "vnet-001",
                     "name": "test-vnet",
                     "type": "Microsoft.Network/virtualNetworks",
-                    "properties": {"addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}},
+                    "properties": {
+                        "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]}
+                    },
                     "original_id": "/subscriptions/sub-123/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
                 },
                 target_resource=TargetResource(
@@ -109,7 +111,9 @@ def comparison_result_with_classifications():
                     location="eastus",
                     resource_group="test-rg",
                     subscription_id="sub-123",
-                    properties={"securityRules": [{"name": "extra-rule"}]},  # Different!
+                    properties={
+                        "securityRules": [{"name": "extra-rule"}]
+                    },  # Different!
                 ),
                 classification=ResourceState.DRIFTED,
                 drift_details={"added": ["securityRules"]},

@@ -99,29 +99,31 @@ class TestDependencyValidatorUnit:
         """Test _parse_dependency_errors parses terraform validate JSON correctly."""
         validator = DependencyValidator()
 
-        validate_output = json.dumps({
-            "valid": False,
-            "diagnostics": [
-                {
-                    "severity": "error",
-                    "summary": "Reference to undeclared resource",
-                    "detail": 'A managed resource "azurerm_network_interface" "missing_nic" has not been declared in the root module.',
-                    "address": "azurerm_virtual_machine.vm1",
-                },
-                {
-                    "severity": "error",
-                    "summary": "Reference to undeclared resource",
-                    "detail": 'A managed resource "azurerm_storage_account" "missing_storage" has not been declared in the root module.',
-                    "address": "azurerm_virtual_machine.vm1",
-                },
-                {
-                    "severity": "warning",
-                    "summary": "Deprecated resource",
-                    "detail": "This resource type is deprecated",
-                    "address": "azurerm_old_resource.test",
-                },
-            ],
-        })
+        validate_output = json.dumps(
+            {
+                "valid": False,
+                "diagnostics": [
+                    {
+                        "severity": "error",
+                        "summary": "Reference to undeclared resource",
+                        "detail": 'A managed resource "azurerm_network_interface" "missing_nic" has not been declared in the root module.',
+                        "address": "azurerm_virtual_machine.vm1",
+                    },
+                    {
+                        "severity": "error",
+                        "summary": "Reference to undeclared resource",
+                        "detail": 'A managed resource "azurerm_storage_account" "missing_storage" has not been declared in the root module.',
+                        "address": "azurerm_virtual_machine.vm1",
+                    },
+                    {
+                        "severity": "warning",
+                        "summary": "Deprecated resource",
+                        "detail": "This resource type is deprecated",
+                        "address": "azurerm_old_resource.test",
+                    },
+                ],
+            }
+        )
 
         errors = validator._parse_dependency_errors(validate_output)
 
@@ -143,10 +145,12 @@ class TestDependencyValidatorUnit:
         """Test _parse_dependency_errors returns empty list when validation passes."""
         validator = DependencyValidator()
 
-        validate_output = json.dumps({
-            "valid": True,
-            "diagnostics": [],
-        })
+        validate_output = json.dumps(
+            {
+                "valid": True,
+                "diagnostics": [],
+            }
+        )
 
         errors = validator._parse_dependency_errors(validate_output)
 
@@ -174,17 +178,19 @@ class TestDependencyValidatorUnit:
         """Test _parse_dependency_errors handles diagnostics without address field."""
         validator = DependencyValidator()
 
-        validate_output = json.dumps({
-            "valid": False,
-            "diagnostics": [
-                {
-                    "severity": "error",
-                    "summary": "Reference to undeclared resource",
-                    "detail": 'A managed resource "azurerm_subnet" "test" has not been declared in the root module.',
-                    # No "address" field
-                },
-            ],
-        })
+        validate_output = json.dumps(
+            {
+                "valid": False,
+                "diagnostics": [
+                    {
+                        "severity": "error",
+                        "summary": "Reference to undeclared resource",
+                        "detail": 'A managed resource "azurerm_subnet" "test" has not been declared in the root module.',
+                        # No "address" field
+                    },
+                ],
+            }
+        )
 
         errors = validator._parse_dependency_errors(validate_output)
 
@@ -198,7 +204,9 @@ class TestDependencyValidatorValidateMethod:
     """Tests for the main validate() method."""
 
     @patch("shutil.which")
-    def test_validate_returns_success_when_terraform_not_available(self, mock_which, tmp_path):
+    def test_validate_returns_success_when_terraform_not_available(
+        self, mock_which, tmp_path
+    ):
         """Test validate returns success (skip) when terraform not installed."""
         mock_which.return_value = None
 
@@ -224,7 +232,9 @@ class TestDependencyValidatorValidateMethod:
 
     @patch("shutil.which")
     @patch("subprocess.run")
-    def test_validate_runs_terraform_init_by_default(self, mock_run, mock_which, tmp_path):
+    def test_validate_runs_terraform_init_by_default(
+        self, mock_run, mock_which, tmp_path
+    ):
         """Test validate runs terraform init unless skip_init=True."""
         mock_which.return_value = "/usr/local/bin/terraform"
 
@@ -271,7 +281,9 @@ class TestDependencyValidatorValidateMethod:
 
     @patch("shutil.which")
     @patch("subprocess.run")
-    def test_validate_returns_error_when_init_fails(self, mock_run, mock_which, tmp_path):
+    def test_validate_returns_error_when_init_fails(
+        self, mock_run, mock_which, tmp_path
+    ):
         """Test validate returns error when terraform init fails."""
         mock_which.return_value = "/usr/local/bin/terraform"
 

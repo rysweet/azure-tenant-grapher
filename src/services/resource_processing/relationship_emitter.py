@@ -99,7 +99,9 @@ class RelationshipEmitter:
             # Upsert Subscription and ResourceGroup nodes if node_manager available
             if self._node_manager:
                 self._node_manager.upsert_subscription(subscription_id)
-                self._node_manager.upsert_resource_group(rg_id, rg_name, subscription_id)
+                self._node_manager.upsert_resource_group(
+                    rg_id, rg_name, subscription_id
+                )
 
             # Create relationship: Subscription CONTAINS ResourceGroup
             sub_rg_query = """

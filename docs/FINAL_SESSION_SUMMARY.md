@@ -2,7 +2,7 @@
 
 ## PR #435 Complete
 
-**GitHub PR:** https://github.com/rysweet/azure-tenant-grapher/pull/435  
+**GitHub PR:** https://github.com/rysweet/azure-tenant-grapher/pull/435
 **PowerPoint:** [Scale_Operations_Implementation.pptx](https://github.com/rysweet/azure-tenant-grapher/blob/feat/issue-427-scale-operations/Scale_Operations_Implementation.pptx)
 
 ## Delivered Artifacts

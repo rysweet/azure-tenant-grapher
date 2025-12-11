@@ -72,9 +72,7 @@ class TestNeo4jCredentials:
     def test_empty_password(self):
         """Empty password should raise validation error."""
         with pytest.raises(CredentialValidationError) as exc_info:
-            Neo4jCredentials(
-                uri="bolt://localhost:7687", username="neo4j", password=""
-            )
+            Neo4jCredentials(uri="bolt://localhost:7687", username="neo4j", password="")
         assert "Password cannot be empty" in str(exc_info.value)
 
     def test_whitespace_password(self):
@@ -148,18 +146,14 @@ class TestGetNeo4jCredentials:
 
     def test_environment_variables_missing_password(self):
         """Should raise error if NEO4J_PASSWORD not set."""
-        with patch.dict(
-            os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True
-        ):
+        with patch.dict(os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True):
             with pytest.raises(RuntimeError) as exc_info:
                 get_neo4j_credentials()
             assert "not found" in str(exc_info.value).lower()
 
     def test_environment_variables_missing_uri_and_port(self):
         """Should raise error if neither URI nor PORT set."""
-        with patch.dict(
-            os.environ, {"NEO4J_PASSWORD": "testpass"}, clear=True
-        ):
+        with patch.dict(os.environ, {"NEO4J_PASSWORD": "testpass"}, clear=True):
             with pytest.raises(RuntimeError):
                 get_neo4j_credentials()
 
@@ -187,7 +181,9 @@ class TestGetNeo4jCredentials:
 
         # Clear environment except Key Vault URL
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"},
+            clear=True,
         ):
             creds = get_neo4j_credentials()
             assert creds.uri == "bolt://keyvault.example.com:7687"
@@ -257,11 +253,11 @@ class TestGetNeo4jCredentials:
         ]
 
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://env.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://env.vault.azure.net/"},
+            clear=True,
         ):
-            creds = get_neo4j_credentials(
-                keyvault_url="https://param.vault.azure.net/"
-            )
+            creds = get_neo4j_credentials(keyvault_url="https://param.vault.azure.net/")
             # Verify parameter URL was used
             mock_secret_client.assert_called_with(
                 vault_url="https://param.vault.azure.net/", credential=mock_credential()

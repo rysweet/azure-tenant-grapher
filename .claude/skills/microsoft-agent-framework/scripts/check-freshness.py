@@ -48,7 +48,9 @@ class FreshnessChecker:
         age_days = age.days
 
         if age_days > 30:
-            self.warnings.append(f"Documentation is {age_days} days old (threshold: 30 days)")
+            self.warnings.append(
+                f"Documentation is {age_days} days old (threshold: 30 days)"
+            )
             return False
 
         print(f"✓ Documentation age: {age_days} days (current)")
@@ -110,7 +112,9 @@ class FreshnessChecker:
         """Check for reported breaking changes."""
         breaking_changes = metadata.get("breaking_changes", [])
         if breaking_changes:
-            self.warnings.append(f"Breaking changes reported: {len(breaking_changes)} changes")
+            self.warnings.append(
+                f"Breaking changes reported: {len(breaking_changes)} changes"
+            )
             for change in breaking_changes:
                 print(f"  - {change}")
             return False

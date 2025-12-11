@@ -37,10 +37,14 @@ class TestKeyVaultNaming:
             config = json.load(f)
 
         # Find the key vault resource (structure is dict with resource name as key)
-        assert "azurerm_key_vault" in config["resource"], "azurerm_key_vault not found in config"
+        assert "azurerm_key_vault" in config["resource"], (
+            "azurerm_key_vault not found in config"
+        )
         vault_resources = config["resource"]["azurerm_key_vault"]
         # Get first vault (there should be at least one)
-        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
+        vault_name = (
+            next(iter(vault_resources.values()))["name"] if vault_resources else None
+        )
         assert vault_name, "No key vault resource found"
 
         # Name should start with original name and have suffix
@@ -48,7 +52,9 @@ class TestKeyVaultNaming:
         # Should have hyphen and 6-char hash
         assert len(vault_name.split("-")) == 2
         # Must be <= 24 chars
-        assert len(vault_name) <= 24, f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        assert len(vault_name) <= 24, (
+            f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        )
 
     def test_keyvault_long_name_is_truncated(self, tmp_path: Path):
         """Test that long Key Vault names are truncated before suffix is added.
@@ -81,11 +87,15 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
+        vault_name = (
+            next(iter(vault_resources.values()))["name"] if vault_resources else None
+        )
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
-        assert len(vault_name) <= 24, f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        assert len(vault_name) <= 24, (
+            f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        )
         # Name should have been truncated and then suffixed
         assert "-" in vault_name, f"Key Vault name '{vault_name}' should have suffix"
         # The suffix should be 6 hex chars
@@ -119,11 +129,15 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
+        vault_name = (
+            next(iter(vault_resources.values()))["name"] if vault_resources else None
+        )
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
-        assert len(vault_name) <= 24, f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        assert len(vault_name) <= 24, (
+            f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        )
         # Name should start with original name
         assert vault_name.startswith(name_17)
 
@@ -154,16 +168,22 @@ class TestKeyVaultNaming:
 
         # Find the key vault resource
         vault_resources = config["resource"]["azurerm_key_vault"]
-        vault_name = next(iter(vault_resources.values()))["name"] if vault_resources else None
+        vault_name = (
+            next(iter(vault_resources.values()))["name"] if vault_resources else None
+        )
         assert vault_name, "No key vault resource found"
 
         # Must be <= 24 chars
-        assert len(vault_name) <= 24, f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        assert len(vault_name) <= 24, (
+            f"Key Vault name '{vault_name}' exceeds 24 chars: {len(vault_name)}"
+        )
         # Should have suffix
         assert "-" in vault_name
         # Base part should be 17 chars (truncated)
         parts = vault_name.split("-")
-        assert len(parts[0]) == 17, f"Truncated base should be 17 chars, got: {len(parts[0])}"
+        assert len(parts[0]) == 17, (
+            f"Truncated base should be 17 chars, got: {len(parts[0])}"
+        )
 
     def test_keyvault_other_globally_unique_not_truncated(self, tmp_path: Path):
         """Test that other globally unique resources don't get Key Vault-specific truncation."""
@@ -193,7 +213,9 @@ class TestKeyVaultNaming:
         # Find the app service resource
         if "azurerm_linux_web_app" in config["resource"]:
             web_resources = config["resource"]["azurerm_linux_web_app"]
-            web_name = next(iter(web_resources.values()))["name"] if web_resources else None
+            web_name = (
+                next(iter(web_resources.values()))["name"] if web_resources else None
+            )
             assert web_name, "No web app resource found"
             # Name should start with original long name (not truncated like Key Vault would)
             assert web_name.startswith(long_name)

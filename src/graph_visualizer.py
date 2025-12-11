@@ -256,7 +256,9 @@ class GraphVisualizer:
                 )
 
                 # Add synthetic indicator to display name
-                display_name = f"🔶 SYNTHETIC: {node_name}" if is_synthetic else node_name
+                display_name = (
+                    f"🔶 SYNTHETIC: {node_name}" if is_synthetic else node_name
+                )
 
                 node_data = {
                     "id": node_id,

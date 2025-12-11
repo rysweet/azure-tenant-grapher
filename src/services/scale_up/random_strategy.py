@@ -19,7 +19,7 @@ Public API:
 import logging
 import random
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional
 
 from src.services.scale_up import common
 from src.utils.session_manager import Neo4jSessionManager
@@ -115,8 +115,7 @@ async def generate_random_resources(
 
         if progress_callback:
             progress = progress_start + int(
-                ((i + len(batch)) / len(resources))
-                * (progress_end - progress_start)
+                ((i + len(batch)) / len(resources)) * (progress_end - progress_start)
             )
             progress_callback(
                 f"Created {created_count}/{target_count} resources...",
@@ -221,6 +220,6 @@ async def generate_random_relationships(
 
 
 __all__ = [
-    "generate_random_resources",
     "generate_random_relationships",
+    "generate_random_resources",
 ]

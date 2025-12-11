@@ -27,9 +27,11 @@ import logging
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional
 
-from neo4j import Session
-
-from src.services.scale_performance import AdaptiveBatchSizer, PerformanceMonitor, QueryOptimizer
+from src.services.scale_performance import (
+    AdaptiveBatchSizer,
+    PerformanceMonitor,
+    QueryOptimizer,
+)
 from src.utils.session_manager import Neo4jSessionManager
 
 logger = logging.getLogger(__name__)
@@ -58,10 +60,7 @@ def ensure_indexes(session_manager: Neo4jSessionManager) -> None:
 
 
 def get_adaptive_batch_size(
-    total_items: int,
-    operation_type: str,
-    base_batch_size: int,
-    enable_adaptive: bool
+    total_items: int, operation_type: str, base_batch_size: int, enable_adaptive: bool
 ) -> int:
     """
     Calculate optimal batch size using adaptive sizing if enabled.
@@ -81,17 +80,13 @@ def get_adaptive_batch_size(
     """
     if enable_adaptive and total_items > 1000:
         return AdaptiveBatchSizer.calculate_batch_size(
-            total_items,
-            operation_type,
-            min_size=100,
-            max_size=base_batch_size * 2
+            total_items, operation_type, min_size=100, max_size=base_batch_size * 2
         )
     return base_batch_size
 
 
 async def insert_resource_batch(
-    session_manager: Neo4jSessionManager,
-    resources: List[Dict[str, Any]]
+    session_manager: Neo4jSessionManager, resources: List[Dict[str, Any]]
 ) -> None:
     """
     Insert a batch of resources into Neo4j.
@@ -118,8 +113,7 @@ async def insert_resource_batch(
 
 
 async def insert_relationship_batch(
-    session_manager: Neo4jSessionManager,
-    relationships: List[Dict[str, Any]]
+    session_manager: Neo4jSessionManager, relationships: List[Dict[str, Any]]
 ) -> None:
     """
     Insert a batch of relationships into Neo4j.
@@ -167,7 +161,7 @@ async def insert_batches_parallel(
     progress_callback: Optional[Callable[[str, int, int], None]],
     progress_start: int,
     progress_end: int,
-    monitor: Optional[PerformanceMonitor] = None
+    monitor: Optional[PerformanceMonitor] = None,
 ) -> int:
     """
     Insert resource batches in parallel with controlled concurrency.
@@ -219,8 +213,7 @@ async def insert_batches_parallel(
             # Update progress
             if progress_callback:
                 progress = progress_start + int(
-                    (completed_batches / len(batches))
-                    * (progress_end - progress_start)
+                    (completed_batches / len(batches)) * (progress_end - progress_start)
                 )
                 progress_callback(
                     f"Created {created_count}/{target_count} resources...",
@@ -247,7 +240,7 @@ async def insert_relationship_batches_parallel(
     progress_callback: Optional[Callable[[str, int, int], None]],
     progress_start: int,
     progress_end: int,
-    monitor: Optional[PerformanceMonitor] = None
+    monitor: Optional[PerformanceMonitor] = None,
 ) -> int:
     """
     Insert relationship batches in parallel with controlled concurrency.
@@ -292,8 +285,7 @@ async def insert_relationship_batches_parallel(
 
             if progress_callback:
                 progress = progress_start + int(
-                    (completed_batches / len(batches))
-                    * (progress_end - progress_start)
+                    (completed_batches / len(batches)) * (progress_end - progress_start)
                 )
                 progress_callback(
                     f"Created {created_count} relationships...", progress, 100
@@ -314,8 +306,8 @@ async def insert_relationship_batches_parallel(
 __all__ = [
     "ensure_indexes",
     "get_adaptive_batch_size",
-    "insert_resource_batch",
-    "insert_relationship_batch",
     "insert_batches_parallel",
+    "insert_relationship_batch",
     "insert_relationship_batches_parallel",
+    "insert_resource_batch",
 ]

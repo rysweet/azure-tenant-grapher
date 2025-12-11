@@ -194,9 +194,7 @@ async def fidelity_command_handler(
         if track:
             try:
                 calculator.track_fidelity(metrics)
-                click.echo(
-                    "\nFidelity metrics tracked to demos/fidelity_history.jsonl"
-                )
+                click.echo("\nFidelity metrics tracked to demos/fidelity_history.jsonl")
             except OSError as e:
                 click.echo(f"\nFailed to track metrics: {e}", err=True)
 

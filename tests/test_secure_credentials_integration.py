@@ -7,8 +7,6 @@ and the FidelityCalculator class.
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from src.fidelity_calculator import FidelityCalculator
 from src.utils.secure_credentials import Neo4jCredentials, get_neo4j_credentials
 
@@ -77,9 +75,7 @@ class TestFidelityCalculatorIntegration:
             assert "bolt://localhost:7687" in repr_str
 
     @patch("src.fidelity_calculator.GraphDatabase.driver")
-    def test_fidelity_calculator_credentials_not_stored_as_plaintext(
-        self, mock_driver
-    ):
+    def test_fidelity_calculator_credentials_not_stored_as_plaintext(self, mock_driver):
         """FidelityCalculator should not store credentials as plain attributes."""
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
@@ -180,7 +176,9 @@ class TestEndToEndCredentialFlow:
 
         # Set Key Vault URL
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"},
+            clear=True,
         ):
             # Get credentials
             creds = get_neo4j_credentials()
@@ -230,7 +228,9 @@ class TestCredentialSecurityProperties:
                 # Error message should not contain any actual passwords
                 # (This is a negative test - we can't test what ISN'T there easily,
                 # but we verify the error message is about missing credentials)
-                assert "not found" in error_msg.lower() or "required" in error_msg.lower()
+                assert (
+                    "not found" in error_msg.lower() or "required" in error_msg.lower()
+                )
 
     @patch("src.fidelity_calculator.GraphDatabase.driver")
     def test_credentials_not_in_object_dict(self, mock_driver):

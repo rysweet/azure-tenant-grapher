@@ -655,7 +655,9 @@ class AzureDiscoveryService:
         if vnets:
             logger.info(f"🔍 Discovering subnets for {len(vnets)} VNets...")
             try:
-                network_client = NetworkManagementClient(self.credential, subscription_id)
+                network_client = NetworkManagementClient(
+                    self.credential, subscription_id
+                )
 
                 for vnet in vnets:
                     try:
@@ -684,7 +686,11 @@ class AzureDiscoveryService:
                         logger.debug(f"Failed to fetch subnets for {vnet_name}: {e}")
 
                 subnet_count = len(
-                    [r for r in child_resources if r["type"] == "Microsoft.Network/subnets"]
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.Network/subnets"
+                    ]
                 )
                 logger.info(f"✅ Found {subnet_count} subnets")
 
@@ -708,8 +714,10 @@ class AzureDiscoveryService:
                             continue
 
                         # Fetch runbooks for this account
-                        runbooks_pager = automation_client.runbook.list_by_automation_account(
-                            rg, account_name
+                        runbooks_pager = (
+                            automation_client.runbook.list_by_automation_account(
+                                rg, account_name
+                            )
                         )
 
                         for runbook in runbooks_pager:
@@ -725,7 +733,9 @@ class AzureDiscoveryService:
                             child_resources.append(runbook_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch runbooks for {account_name}: {e}")
+                        logger.debug(
+                            f"Failed to fetch runbooks for {account_name}: {e}"
+                        )
 
                 runbook_count = len(
                     [r for r in child_resources if "runbooks" in r["type"]]
@@ -742,9 +752,13 @@ class AzureDiscoveryService:
             if r.get("type") == "Microsoft.Network/privateDnsZones"
         ]
         if dns_zones:
-            logger.info(f"🔍 Discovering virtual network links for {len(dns_zones)} DNS zones...")
+            logger.info(
+                f"🔍 Discovering virtual network links for {len(dns_zones)} DNS zones..."
+            )
             try:
-                network_client = NetworkManagementClient(self.credential, subscription_id)
+                network_client = NetworkManagementClient(
+                    self.credential, subscription_id
+                )
 
                 for dns_zone in dns_zones:
                     try:
@@ -755,7 +769,9 @@ class AzureDiscoveryService:
                             continue
 
                         # Fetch virtual network links for this DNS zone
-                        links_pager = network_client.virtual_network_links.list(rg, zone_name)
+                        links_pager = network_client.virtual_network_links.list(
+                            rg, zone_name
+                        )
 
                         for link in links_pager:
                             link_dict = {
@@ -790,7 +806,10 @@ class AzureDiscoveryService:
             logger.info(f"🔍 Discovering VM extensions for {len(vms)} VMs...")
             try:
                 from azure.mgmt.compute import ComputeManagementClient
-                compute_client = ComputeManagementClient(self.credential, subscription_id)
+
+                compute_client = ComputeManagementClient(
+                    self.credential, subscription_id
+                )
 
                 for vm in vms:
                     try:
@@ -801,7 +820,9 @@ class AzureDiscoveryService:
                             continue
 
                         # Fetch extensions for this VM
-                        extensions_pager = compute_client.virtual_machine_extensions.list(rg, vm_name)
+                        extensions_pager = (
+                            compute_client.virtual_machine_extensions.list(rg, vm_name)
+                        )
 
                         for ext in extensions_pager:
                             ext_dict = {
@@ -816,10 +837,16 @@ class AzureDiscoveryService:
                             child_resources.append(ext_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch VM extensions for {vm_name}: {e}")
+                        logger.debug(
+                            f"Failed to fetch VM extensions for {vm_name}: {e}"
+                        )
 
                 ext_count = len(
-                    [r for r in child_resources if r["type"] == "Microsoft.Compute/virtualMachines/extensions"]
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.Compute/virtualMachines/extensions"
+                    ]
                 )
                 logger.info(f"✅ Found {ext_count} VM extensions")
 
@@ -828,14 +855,15 @@ class AzureDiscoveryService:
 
         # Discover SQL databases (child of SQL servers)
         sql_servers = [
-            r
-            for r in parent_resources
-            if r.get("type") == "Microsoft.Sql/servers"
+            r for r in parent_resources if r.get("type") == "Microsoft.Sql/servers"
         ]
         if sql_servers:
-            logger.info(f"🔍 Discovering databases for {len(sql_servers)} SQL servers...")
+            logger.info(
+                f"🔍 Discovering databases for {len(sql_servers)} SQL servers..."
+            )
             try:
                 from azure.mgmt.sql import SqlManagementClient
+
                 sql_client = SqlManagementClient(self.credential, subscription_id)
 
                 for server in sql_servers:
@@ -847,7 +875,9 @@ class AzureDiscoveryService:
                             continue
 
                         # Fetch databases for this server
-                        databases_pager = sql_client.databases.list_by_server(rg, server_name)
+                        databases_pager = sql_client.databases.list_by_server(
+                            rg, server_name
+                        )
 
                         for db in databases_pager:
                             db_dict = {
@@ -862,10 +892,16 @@ class AzureDiscoveryService:
                             child_resources.append(db_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch databases for {server_name}: {e}")
+                        logger.debug(
+                            f"Failed to fetch databases for {server_name}: {e}"
+                        )
 
                 db_count = len(
-                    [r for r in child_resources if r["type"] == "Microsoft.Sql/servers/databases"]
+                    [
+                        r
+                        for r in child_resources
+                        if r["type"] == "Microsoft.Sql/servers/databases"
+                    ]
                 )
                 logger.info(f"✅ Found {db_count} SQL databases")
 
@@ -876,12 +912,19 @@ class AzureDiscoveryService:
         pg_servers = [
             r
             for r in parent_resources
-            if r.get("type") in ["Microsoft.DBforPostgreSQL/servers", "Microsoft.DBforPostgreSQL/flexibleServers"]
+            if r.get("type")
+            in [
+                "Microsoft.DBforPostgreSQL/servers",
+                "Microsoft.DBforPostgreSQL/flexibleServers",
+            ]
         ]
         if pg_servers:
-            logger.info(f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers...")
+            logger.info(
+                f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers..."
+            )
             try:
                 from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
+
                 pg_client = PostgreSQLManagementClient(self.credential, subscription_id)
 
                 for server in pg_servers:
@@ -894,7 +937,9 @@ class AzureDiscoveryService:
 
                         # Fetch configurations for this server
                         try:
-                            configs_pager = pg_client.configurations.list_by_server(rg, server_name)
+                            configs_pager = pg_client.configurations.list_by_server(
+                                rg, server_name
+                            )
 
                             for config in configs_pager:
                                 config_dict = {
@@ -912,10 +957,16 @@ class AzureDiscoveryService:
                             pass
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch PostgreSQL configs for {server_name}: {e}")
+                        logger.debug(
+                            f"Failed to fetch PostgreSQL configs for {server_name}: {e}"
+                        )
 
                 config_count = len(
-                    [r for r in child_resources if "configurations" in r.get("type", "")]
+                    [
+                        r
+                        for r in child_resources
+                        if "configurations" in r.get("type", "")
+                    ]
                 )
                 logger.info(f"✅ Found {config_count} PostgreSQL configurations")
 
@@ -929,10 +980,17 @@ class AzureDiscoveryService:
             if r.get("type") == "Microsoft.ContainerRegistry/registries"
         ]
         if registries:
-            logger.info(f"🔍 Discovering webhooks for {len(registries)} container registries...")
+            logger.info(
+                f"🔍 Discovering webhooks for {len(registries)} container registries..."
+            )
             try:
-                from azure.mgmt.containerregistry import ContainerRegistryManagementClient
-                acr_client = ContainerRegistryManagementClient(self.credential, subscription_id)
+                from azure.mgmt.containerregistry import (
+                    ContainerRegistryManagementClient,
+                )
+
+                acr_client = ContainerRegistryManagementClient(
+                    self.credential, subscription_id
+                )
 
                 for registry in registries:
                     try:
@@ -957,7 +1015,9 @@ class AzureDiscoveryService:
                             child_resources.append(webhook_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch webhooks for {registry_name}: {e}")
+                        logger.debug(
+                            f"Failed to fetch webhooks for {registry_name}: {e}"
+                        )
 
                 webhook_count = len(
                     [r for r in child_resources if "webhooks" in r.get("type", "")]

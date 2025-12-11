@@ -184,7 +184,9 @@ class TestConfigLoader:
         with pytest.raises(ConfigError, match="validation failed"):
             loader.load()
 
-    def test_load_from_env(self, temp_config_file: Path, monkeypatch: pytest.MonkeyPatch):
+    def test_load_from_env(
+        self, temp_config_file: Path, monkeypatch: pytest.MonkeyPatch
+    ):
         """Test loading from environment variables."""
         # Set environment variables
         monkeypatch.setenv("ATG_SCALE_SCALE_UP__DEFAULT_SCALE_FACTOR", "3.5")
@@ -200,7 +202,9 @@ class TestConfigLoader:
         assert config.performance.batch_size == 1000
         assert config.validation.strict_mode is False
 
-    def test_env_override_file(self, temp_config_file: Path, monkeypatch: pytest.MonkeyPatch):
+    def test_env_override_file(
+        self, temp_config_file: Path, monkeypatch: pytest.MonkeyPatch
+    ):
         """Test environment variables override file config."""
         # Write file config
         config_data = {

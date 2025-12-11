@@ -53,7 +53,9 @@ async def sequential_workflow():
     workflow.set_entry_point("research")
 
     # Execute workflow
-    result = await workflow.run(initial_message="Research and write about quantum computing")
+    result = await workflow.run(
+        initial_message="Research and write about quantum computing"
+    )
 
     print(f"Final output: {result.final_output}")
     print()
@@ -156,7 +158,9 @@ async def conditional_workflow():
     print(f"Simple query result: {result1.final_output}")
 
     # Test complex query
-    result2 = await workflow.run(initial_message="Explain the implications of quantum entanglement")
+    result2 = await workflow.run(
+        initial_message="Explain the implications of quantum entanglement"
+    )
     print(f"Complex query result: {result2.final_output}")
     print()
 
@@ -166,7 +170,9 @@ async def iterative_workflow():
     print("=== Iterative Workflow ===")
 
     generator = Agent(
-        name="generator", model=ModelClient(model="gpt-4"), instructions="Generate content."
+        name="generator",
+        model=ModelClient(model="gpt-4"),
+        instructions="Generate content.",
     )
 
     reviewer = Agent(

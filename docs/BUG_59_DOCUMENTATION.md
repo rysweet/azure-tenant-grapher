@@ -21,7 +21,7 @@ In `src/resource_processor.py:475-544`, the `_create_abstracted_node()` method:
 {
   "principalId": "hash-abc123",  // ✅ Abstracted
   "roleDefinitionId": "/subscriptions/9b00bc5e-SOURCE-TENANT/providers/...",  // ❌ NOT abstracted
-  "scope": "/subscriptions/9b00bc5e-SOURCE-TENANT/resourceGroups/..."  // ❌ NOT abstracted  
+  "scope": "/subscriptions/9b00bc5e-SOURCE-TENANT/resourceGroups/..."  // ❌ NOT abstracted
 }
 ```
 
@@ -154,4 +154,3 @@ terraform apply
 - **Hash**: faeb284
 - **Branch**: main
 - **Message**: "fix: Abstract subscription IDs in role assignment properties (Bug #59)"
-

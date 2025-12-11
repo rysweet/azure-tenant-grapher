@@ -300,7 +300,7 @@ async def generate_dev_test_prod(
 
 
 __all__ = [
+    "generate_dev_test_prod",
     "generate_hub_spoke",
     "generate_multi_region",
-    "generate_dev_test_prod",
 ]

@@ -1,7 +1,6 @@
 """Tests for graph sampling library imports and basic functionality."""
 
 
-
 def test_littleballoffur_import():
     """Test Little Ball of Fur can be imported."""
     from littleballoffur import ForestFireSampler

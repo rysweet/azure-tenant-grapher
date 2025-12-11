@@ -42,9 +42,7 @@ def mock_session(mock_session_manager):
 @pytest.fixture
 def validation_service(mock_session_manager):
     """Create a ScaleValidationService instance with mocked dependencies."""
-    return ScaleValidationService(
-        session_manager=mock_session_manager, batch_size=10
-    )
+    return ScaleValidationService(session_manager=mock_session_manager, batch_size=10)
 
 
 # =========================================================================
@@ -85,10 +83,7 @@ async def test_validate_graph_all_checks_pass(validation_service, mock_session):
             validation_service, "_check_scan_source_links", return_value=[]
         ), patch.object(
             validation_service, "_check_synthetic_markers", return_value=[]
-        ), patch.object(
-            validation_service, "_check_graph_structure", return_value=[]
-        ):
-
+        ), patch.object(validation_service, "_check_graph_structure", return_value=[]):
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="all"
             )
@@ -113,7 +108,6 @@ async def test_validate_graph_original_contamination_only(validation_service):
         with patch.object(
             validation_service, "_check_original_contamination", return_value=[]
         ):
-
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="original"
             )
@@ -130,7 +124,6 @@ async def test_validate_graph_scan_links_only(validation_service):
         with patch.object(
             validation_service, "_check_scan_source_links", return_value=[]
         ):
-
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="scan_links"
             )
@@ -147,7 +140,6 @@ async def test_validate_graph_markers_only(validation_service):
         with patch.object(
             validation_service, "_check_synthetic_markers", return_value=[]
         ):
-
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="markers"
             )
@@ -164,7 +156,6 @@ async def test_validate_graph_structure_only(validation_service):
         with patch.object(
             validation_service, "_check_graph_structure", return_value=[]
         ):
-
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="structure"
             )
@@ -199,15 +190,14 @@ async def test_validate_graph_with_issues(validation_service):
 
     with patch.object(validation_service, "validate_tenant_exists", return_value=True):
         with patch.object(
-            validation_service, "_check_original_contamination", return_value=mock_issues[:1]
+            validation_service,
+            "_check_original_contamination",
+            return_value=mock_issues[:1],
         ), patch.object(
             validation_service, "_check_scan_source_links", return_value=mock_issues[1:]
         ), patch.object(
             validation_service, "_check_synthetic_markers", return_value=[]
-        ), patch.object(
-            validation_service, "_check_graph_structure", return_value=[]
-        ):
-
+        ), patch.object(validation_service, "_check_graph_structure", return_value=[]):
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="all"
             )
@@ -244,10 +234,7 @@ async def test_validate_graph_with_auto_fix(validation_service):
             validation_service, "_check_synthetic_markers", return_value=[]
         ), patch.object(
             validation_service, "_check_graph_structure", return_value=[]
-        ), patch.object(
-            validation_service, "_apply_auto_fixes", return_value=1
-        ):
-
+        ), patch.object(validation_service, "_apply_auto_fixes", return_value=1):
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="all", auto_fix=True
             )
@@ -287,7 +274,9 @@ async def test_validate_graph_with_progress_callback(validation_service):
     progress_updates = []
 
     def progress_callback(message, current, total):
-        progress_updates.append({"message": message, "current": current, "total": total})
+        progress_updates.append(
+            {"message": message, "current": current, "total": total}
+        )
 
     with patch.object(validation_service, "validate_tenant_exists", return_value=True):
         with patch.object(
@@ -296,10 +285,7 @@ async def test_validate_graph_with_progress_callback(validation_service):
             validation_service, "_check_scan_source_links", return_value=[]
         ), patch.object(
             validation_service, "_check_synthetic_markers", return_value=[]
-        ), patch.object(
-            validation_service, "_check_graph_structure", return_value=[]
-        ):
-
+        ), patch.object(validation_service, "_check_graph_structure", return_value=[]):
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123",
                 check_type="all",
@@ -334,7 +320,6 @@ async def test_fix_validation_issues_success(validation_service, mock_session):
         with patch.object(validation_service, "_fix_missing_marker"), patch.object(
             validation_service, "_fix_invalid_scan_link"
         ):
-
             result = await validation_service.fix_validation_issues(
                 tenant_id="tenant-123", issues=issues
             )
@@ -350,13 +335,16 @@ async def test_fix_validation_issues_success(validation_service, mock_session):
 async def test_fix_validation_issues_partial_success(validation_service, mock_session):
     """Test fixing issues with some failures."""
     issues = [
-        {"type": "missing_marker", "resource_id": "vm-123", "missing_markers": ["scale_operation_id"]},
+        {
+            "type": "missing_marker",
+            "resource_id": "vm-123",
+            "missing_markers": ["scale_operation_id"],
+        },
         {"type": "unknown_type", "resource_id": "vm-456"},  # Will fail
     ]
 
     with patch.object(validation_service, "validate_tenant_exists", return_value=True):
         with patch.object(validation_service, "_fix_missing_marker"):
-
             result = await validation_service.fix_validation_issues(
                 tenant_id="tenant-123", issues=issues
             )
@@ -383,15 +371,24 @@ async def test_fix_validation_issues_with_progress(validation_service):
     progress_updates = []
 
     def progress_callback(message, current, total):
-        progress_updates.append({"message": message, "current": current, "total": total})
+        progress_updates.append(
+            {"message": message, "current": current, "total": total}
+        )
 
-    issues = [{"type": "missing_marker", "resource_id": "vm-123", "missing_markers": ["scale_operation_id"]}]
+    issues = [
+        {
+            "type": "missing_marker",
+            "resource_id": "vm-123",
+            "missing_markers": ["scale_operation_id"],
+        }
+    ]
 
     with patch.object(validation_service, "validate_tenant_exists", return_value=True):
         with patch.object(validation_service, "_fix_missing_marker"):
-
             result = await validation_service.fix_validation_issues(
-                tenant_id="tenant-123", issues=issues, progress_callback=progress_callback
+                tenant_id="tenant-123",
+                issues=issues,
+                progress_callback=progress_callback,
             )
 
             assert result["success"] is True
@@ -569,7 +566,6 @@ async def test_validate_graph_handles_exception(validation_service):
             "_check_original_contamination",
             side_effect=Exception("Database error"),
         ):
-
             result = await validation_service.validate_graph(
                 tenant_id="tenant-123", check_type="all"
             )
@@ -582,7 +578,13 @@ async def test_validate_graph_handles_exception(validation_service):
 @pytest.mark.asyncio
 async def test_fix_issues_handles_fix_exception(validation_service):
     """Test fix handles individual fix exceptions."""
-    issues = [{"type": "missing_marker", "resource_id": "vm-123", "missing_markers": ["scale_operation_id"]}]
+    issues = [
+        {
+            "type": "missing_marker",
+            "resource_id": "vm-123",
+            "missing_markers": ["scale_operation_id"],
+        }
+    ]
 
     with patch.object(validation_service, "validate_tenant_exists", return_value=True):
         with patch.object(
@@ -590,7 +592,6 @@ async def test_fix_issues_handles_fix_exception(validation_service):
             "_fix_missing_marker",
             side_effect=Exception("Fix failed"),
         ):
-
             result = await validation_service.fix_validation_issues(
                 tenant_id="tenant-123", issues=issues
             )

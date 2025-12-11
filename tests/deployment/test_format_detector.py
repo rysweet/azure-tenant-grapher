@@ -2,8 +2,6 @@
 
 import json
 
-import pytest
-
 from src.deployment.format_detector import detect_iac_format
 
 

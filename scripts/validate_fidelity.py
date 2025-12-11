@@ -13,21 +13,19 @@ Criteria:
 - Ownership matches
 """
 
-import json
 import sys
-from pathlib import Path
 
 
 def validate_fidelity(source_data: dict, target_data: dict) -> dict:
     """Validate fidelity between source and target."""
-    
+
     results = {
         "identities": validate_identities(source_data, target_data),
         "rbac": validate_rbac(source_data, target_data),
         "properties": validate_properties(source_data, target_data),
         "relationships": validate_relationships(source_data, target_data),
     }
-    
+
     return results
 
 

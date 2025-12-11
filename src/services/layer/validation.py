@@ -20,7 +20,6 @@ from typing import Optional
 
 from src.services.layer.models import (
     LayerDiff,
-    LayerMetadata,
     LayerNotFoundError,
     LayerValidationReport,
 )
@@ -281,7 +280,9 @@ class LayerValidationOperations:
 
                     if fix_issues and self.stats_operations:
                         await self.stats_operations.refresh_layer_stats(layer_id)
-                        report.add_warning("NODE_COUNT_FIXED", "Updated metadata counts")
+                        report.add_warning(
+                            "NODE_COUNT_FIXED", "Updated metadata counts"
+                        )
 
             # Mark passed checks
             if not report.issues:
