@@ -10,10 +10,12 @@ Public API:
     ExecutionDispatcher: Routes commands to local or remote execution
 """
 
+import asyncio
 import inspect
 import os
 from typing import Any, Callable, Dict, Optional
 
+from ..timeout_config import TimeoutError
 from .client.config import ATGClientConfig
 from .client.remote_client import RemoteClient
 from .common.exceptions import (
@@ -290,6 +292,7 @@ class ExecutionDispatcher:
         Raises:
             RemoteExecutionError: If remote execution fails
             ConnectionError: If cannot connect to service
+            TimeoutError: If operation times out
         """
         # Lazy initialization of remote client
         if not self._remote_client:
@@ -305,13 +308,13 @@ class ExecutionDispatcher:
             )
 
         try:
-            # Map commands to remote client methods
+            # Map commands to remote client methods with timeout enforcement
             if command == "scan":
-                return await self._remote_client.scan(
+                coro = self._remote_client.scan(
                     progress_callback=progress_callback, **kwargs
                 )
             elif command == "generate-iac":
-                return await self._remote_client.generate_iac(
+                coro = self._remote_client.generate_iac(
                     progress_callback=progress_callback, **kwargs
                 )
             else:
@@ -319,11 +322,26 @@ class ExecutionDispatcher:
                     f"Remote execution not implemented for: {command}"
                 )
 
+            # Enforce timeout at dispatcher level
+            try:
+                return await asyncio.wait_for(coro, timeout=self.config.request_timeout)
+            except asyncio.TimeoutError as e:
+                raise TimeoutError(
+                    f"Remote operation timed out after {self.config.request_timeout}s",
+                    operation=f"remote_{command}",
+                    timeout_value=self.config.request_timeout,
+                ) from e
+
+        except TimeoutError:
+            # Re-raise our custom TimeoutError as-is
+            raise
         except Exception as e:
+            # Handle connection errors
             if "connect" in str(e).lower() or "connection" in str(e).lower():
                 raise ConnectionError(
                     f"Failed to connect to remote service: {e}"
                 ) from e
+            # All other errors are remote execution errors
             raise RemoteExecutionError(f"Remote execution failed: {e}") from e
 
     def switch_mode(self, config: Optional[ATGClientConfig] = None) -> None:
@@ -364,4 +382,4 @@ class ExecutionDispatcher:
         return stats
 
 
-__all__ = ["ExecutionDispatcher"]
+__all__ = ["ExecutionDispatcher", "TimeoutError"]

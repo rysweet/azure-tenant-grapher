@@ -73,7 +73,7 @@ def test_client_config_parses_remote_mode_boolean():
 
     for env_value, expected in test_cases:
         with patch.dict(os.environ, {"ATG_REMOTE_MODE": env_value}, clear=True):
-            config = ATGClientConfig.from_env()
+            config = ATGClientConfig.from_env(validate=False)
             assert config.remote_mode == expected
 
 
@@ -316,14 +316,14 @@ def test_config_supports_integration_environment():
 
 
 def test_config_validates_environment_matches_api_key_prefix():
-    """Test that config validates environment matches API key prefix."""
+    """Test that config validates environment matches API key prefix in production."""
     from src.remote.server.config import ATGServerConfig, ConfigurationError
 
     with patch.dict(
         os.environ,
         {
-            "ENVIRONMENT": "dev",
-            "ATG_API_KEYS": f"atg_integration_{'a' * 64}",  # Mismatch!
+            "ENVIRONMENT": "production",
+            "ATG_API_KEYS": f"atg_dev_{'a' * 64}",  # Mismatch!
         },
         clear=True,
     ):

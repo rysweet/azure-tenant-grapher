@@ -40,7 +40,7 @@ def validate_api_key(api_key: str) -> bool:
         True if valid format
 
     Raises:
-        InvalidAPIKeyError: If key format is invalid
+        InvalidAPIKeyError: If key format is invalid with specific reason
     """
     if not api_key:
         raise InvalidAPIKeyError("API key is required")
@@ -48,9 +48,41 @@ def validate_api_key(api_key: str) -> bool:
     if len(api_key) < 72:  # atg_xxx_ (8-9) + 64 hex = ~72-73
         raise InvalidAPIKeyError("API key too short (expected at least 72 characters)")
 
-    if not API_KEY_PATTERN.match(api_key):
+    # Check for proper prefix
+    if not api_key.startswith("atg_"):
         raise InvalidAPIKeyError(
-            "Invalid API key format. Expected: atg_{environment}_{64-hex-chars}"
+            "Invalid format: API key must start with 'atg_' prefix. "
+            "Expected: atg_{environment}_{64-hex-chars}"
+        )
+
+    # Check environment (dev or integration)
+    parts = api_key.split("_", 2)  # Split into ['atg', environment, hex_part]
+    if len(parts) < 3:
+        raise InvalidAPIKeyError(
+            "Invalid format: API key missing environment or hex portion. "
+            "Expected: atg_{environment}_{64-hex-chars}"
+        )
+
+    environment = parts[1]
+    hex_part = parts[2]
+
+    if environment not in ("dev", "integration"):
+        raise InvalidAPIKeyError(
+            f"Invalid format: unsupported environment '{environment}'. "
+            f"Expected 'dev' or 'integration'"
+        )
+
+    # Check hex portion length
+    if len(hex_part) != 64:
+        raise InvalidAPIKeyError(
+            f"Invalid format: hex portion must be exactly 64 characters, got {len(hex_part)}"
+        )
+
+    # Check if hex portion contains only valid hex characters
+    if not all(c in "0123456789abcdefABCDEF" for c in hex_part):
+        raise InvalidAPIKeyError(
+            "Invalid format: hex portion contains non-hexadecimal characters. "
+            "Only 0-9 and a-f are allowed"
         )
 
     return True

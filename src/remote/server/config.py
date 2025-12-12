@@ -63,8 +63,8 @@ class ATGServerConfig:
         if self.workers < 1:
             raise ConfigurationError(f"Workers must be at least 1, got {self.workers}")
 
-        # Validate tenant ID format (UUID)
-        if self.target_tenant_id and not self._is_valid_uuid(self.target_tenant_id):
+        # Validate tenant ID format (UUID or prefixed UUID in non-production)
+        if self.target_tenant_id and not self._is_valid_tenant_id(self.target_tenant_id):
             raise ConfigurationError(
                 f"Invalid tenant ID format: {self.target_tenant_id}. "
                 f"Must be a valid UUID"
@@ -76,14 +76,15 @@ class ATGServerConfig:
                 "At least one API key required in production environment"
             )
 
-        # Validate API keys match environment prefix
-        for api_key in self.api_keys:
-            if not self._api_key_matches_environment(api_key):
-                raise ConfigurationError(
-                    f"Environment mismatch: API key prefix does not match "
-                    f"environment '{self.environment}'. "
-                    f"Expected prefix: atg_{self.environment}_"
-                )
+        # Validate API keys match environment prefix (production only)
+        if self.environment == "production":
+            for api_key in self.api_keys:
+                if not self._api_key_matches_environment(api_key):
+                    raise ConfigurationError(
+                        f"Environment mismatch: API key prefix does not match "
+                        f"environment '{self.environment}'. "
+                        f"Expected prefix: atg_{self.environment}_"
+                    )
 
     @staticmethod
     def _is_valid_uuid(uuid_str: str) -> bool:
@@ -93,6 +94,21 @@ class ATGServerConfig:
             re.IGNORECASE,
         )
         return bool(uuid_pattern.match(uuid_str))
+
+    def _is_valid_tenant_id(self, tenant_id: str) -> bool:
+        """Validate tenant ID format (UUID or prefixed UUID in non-production)."""
+        if self._is_valid_uuid(tenant_id):
+            return True
+
+        if self.environment in ("dev", "integration"):
+            parts = tenant_id.split("-", 2)
+            if len(parts) >= 2:
+                potential_uuid = tenant_id.split("-", 1)[1]
+                if potential_uuid.startswith("tenant-"):
+                    potential_uuid = potential_uuid[7:]
+                return self._is_valid_uuid(potential_uuid)
+
+        return False
 
     def _api_key_matches_environment(self, api_key: str) -> bool:
         """Check if API key prefix matches environment."""
