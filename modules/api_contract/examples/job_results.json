@@ -1,0 +1,22 @@
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "operation": "scan",
+  "status": "completed",
+  "result": {
+    "resources_scanned": 1024,
+    "relationships_created": 3456,
+    "duration_seconds": 1364,
+    "subscriptions": 3,
+    "resource_groups": 11,
+    "success": true
+  },
+  "files": [
+    {
+      "file_id": "abc123def456",
+      "filename": "tenant_spec_20251209_102245.md",
+      "mime_type": "text/markdown",
+      "size": 45678,
+      "download_url": "https://api.atg.example.com/v1/files/abc123def456"
+    }
+  ]
+}

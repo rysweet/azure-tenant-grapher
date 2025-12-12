@@ -20,7 +20,6 @@ from src.iac.resource_comparator import ResourceComparator, ResourceState
 from src.iac.target_scanner import TargetResource, TargetScanResult
 from src.utils.session_manager import Neo4jSessionManager
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -199,7 +198,6 @@ def test_resource_comparator_finds_scan_source_node_in_layers(
     )
 
     # Verify classifications
-    classifications = comparison_result.classifications
     summary = comparison_result.summary
 
     # THIS ASSERTION SHOULD FAIL if SCAN_SOURCE_NODE not preserved
@@ -263,8 +261,7 @@ def test_heuristic_cleanup_not_triggered_with_scan_source_node(
 
     # Check for heuristic cleanup warnings
     heuristic_warnings = [
-        record for record in caplog.records
-        if "heuristic" in record.message.lower()
+        record for record in caplog.records if "heuristic" in record.message.lower()
     ]
 
     # THIS ASSERTION SHOULD FAIL
@@ -500,9 +497,9 @@ def pytest_configure(config):
 
 
 __all__ = [
-    "test_resource_comparator_finds_scan_source_node_in_layers",
-    "test_heuristic_cleanup_not_triggered_with_scan_source_node",
-    "test_iac_generation_after_layer_copy",
-    "test_iac_generation_after_archive_restore",
     "test_cross_tenant_iac_generation_with_scan_source_node",
+    "test_heuristic_cleanup_not_triggered_with_scan_source_node",
+    "test_iac_generation_after_archive_restore",
+    "test_iac_generation_after_layer_copy",
+    "test_resource_comparator_finds_scan_source_node_in_layers",
 ]

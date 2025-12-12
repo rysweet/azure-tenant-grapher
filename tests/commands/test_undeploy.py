@@ -3,11 +3,12 @@
 Tests the security fix for Issue #540 - replacing raw input() with click.confirm().
 """
 
-import pytest
-from click.testing import CliRunner
 from unittest.mock import AsyncMock, Mock, patch
 
-from src.commands.undeploy import undeploy, _run_undeploy
+import pytest
+from click.testing import CliRunner
+
+from src.commands.undeploy import _run_undeploy, undeploy
 
 
 class TestUndeployCommand:
@@ -22,12 +23,15 @@ class TestUndeployCommand:
         runner = CliRunner()
 
         # Mock all the dependencies
-        with patch("src.commands.undeploy.DeploymentRegistry") as mock_registry, \
-             patch("src.commands.undeploy.get_config_for_tenant") as mock_config, \
-             patch("src.commands.undeploy.TerraformDestroyer") as mock_destroyer, \
-             patch("src.commands.undeploy.asyncio.run") as mock_asyncio_run, \
-             patch("click.confirm", return_value=False) as mock_confirm:
-
+        with patch("src.commands.undeploy.DeploymentRegistry") as mock_registry, patch(
+            "src.commands.undeploy.get_config_for_tenant"
+        ) as mock_config, patch(
+            "src.commands.undeploy.TerraformDestroyer"
+        ) as mock_destroyer, patch(
+            "src.commands.undeploy.asyncio.run"
+        ), patch(
+            "click.confirm", return_value=False
+        ):
             # Setup mocks
             mock_reg_instance = Mock()
             mock_reg_instance.get_deployment.return_value = {
@@ -46,10 +50,9 @@ class TestUndeployCommand:
             mock_destroyer.return_value = mock_dest_instance
 
             # Run command with deployment-id
-            result = runner.invoke(undeploy, [
-                "--deployment-id", "test-deploy",
-                "--tenant", "1"
-            ])
+            result = runner.invoke(
+                undeploy, ["--deployment-id", "test-deploy", "--tenant", "1"]
+            )
 
             # Verify click.confirm was called (proves we're not using raw input())
             # Note: The actual call happens in the async function, but we verify
@@ -76,9 +79,9 @@ class TestUndeployCommand:
         mock_registry = Mock()
 
         # Mock click.confirm to return False (user cancels)
-        with patch("click.confirm", return_value=False) as mock_confirm, \
-             patch("click.echo") as mock_echo:
-
+        with patch("click.confirm", return_value=False) as mock_confirm, patch(
+            "click.echo"
+        ) as mock_echo:
             # Run the async function
             await _run_undeploy(
                 destroyer=mock_destroyer,
@@ -118,9 +121,9 @@ class TestUndeployCommand:
         mock_registry.mark_destroyed = Mock()
 
         # Mock click.confirm to return True (user confirms)
-        with patch("click.confirm", return_value=True) as mock_confirm, \
-             patch("click.echo"):
-
+        with patch("click.confirm", return_value=True) as mock_confirm, patch(
+            "click.echo"
+        ):
             # Mock the confirmation flow to skip it since we're testing the no-resources path
             with patch("src.commands.undeploy.UndeploymentConfirmation") as mock_conf:
                 mock_conf_instance = Mock()
@@ -151,26 +154,34 @@ class TestUndeployCommand:
     def test_no_raw_input_in_undeploy_code(self):
         """Verify that raw input() is not used in the undeploy module."""
         # Read the source file
-        import src.commands.undeploy as undeploy_module
         import inspect
+
+        import src.commands.undeploy as undeploy_module
 
         source = inspect.getsource(undeploy_module)
 
         # Verify input() is not used (except in comments/strings)
         # This is a code smell test - input() should never appear in actual code
-        lines = source.split('\n')
+        lines = source.split("\n")
         for line_num, line in enumerate(lines, 1):
             # Skip comments and docstrings
             stripped = line.strip()
-            if stripped.startswith('#') or stripped.startswith('"""') or stripped.startswith("'''"):
+            if (
+                stripped.startswith("#")
+                or stripped.startswith('"""')
+                or stripped.startswith("'''")
+            ):
                 continue
 
             # Check for raw input() call
-            if 'input(' in line and not line.strip().startswith('#'):
+            if "input(" in line and not line.strip().startswith("#"):
                 # Allow input() in comments only
-                if '#' in line:
-                    code_part = line.split('#')[0]
-                    assert 'input(' not in code_part, \
+                if "#" in line:
+                    code_part = line.split("#")[0]
+                    assert "input(" not in code_part, (
                         f"Line {line_num}: Found raw input() call - should use click.confirm()"
+                    )
                 else:
-                    pytest.fail(f"Line {line_num}: Found raw input() call - should use click.confirm()")
+                    pytest.fail(
+                        f"Line {line_num}: Found raw input() call - should use click.confirm()"
+                    )

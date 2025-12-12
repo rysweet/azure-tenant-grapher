@@ -283,6 +283,7 @@ def test_main_invalid_command(capsys):
 
 # Tests for new commands (add, remove, show, export, import)
 
+
 def test_cmd_add(mock_config_path, capsys):
     """Test add command."""
     args = Mock()
@@ -301,7 +302,9 @@ def test_cmd_add(mock_config_path, capsys):
     assert len(updated_config["enabledMcpjsonServers"]) == 2
     assert updated_config["enabledMcpjsonServers"][1]["name"] == "new-server"
     assert updated_config["enabledMcpjsonServers"][1]["command"] == "python"
-    assert updated_config["enabledMcpjsonServers"][1]["env"] == {"API_KEY": "test123"}
+    assert updated_config["enabledMcpjsonServers"][1]["env"] == {
+        "API_KEY": "test123"
+    }  # pragma: allowlist secret
 
     captured = capsys.readouterr()
     assert "Successfully added" in captured.out
@@ -746,4 +749,3 @@ def test_main_import(capsys):
 
         assert result == 0
         mock_import.assert_called_once()
-

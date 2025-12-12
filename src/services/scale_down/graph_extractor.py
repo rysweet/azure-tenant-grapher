@@ -46,7 +46,7 @@ class GraphExtractor(BaseScaleService):
         self,
         tenant_id: str,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
-        batch_size: int = 5000
+        batch_size: int = 5000,
     ) -> Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
         """
         Convert Neo4j graph to NetworkX directed graph.

@@ -28,7 +28,7 @@ scenario:
     valid_email: "user@example.com"
     invalid_email: "not-an-email"
     short_password: "123"
-    valid_password: "SecurePass123!"
+    valid_password: "SecurePass123!"  # pragma: allowlist secret
     username: "testuser"
 
   steps:

@@ -270,7 +270,7 @@ from src.fidelity_calculator import FidelityCalculator
 calculator = FidelityCalculator(
     neo4j_uri="bolt://localhost:7687",
     neo4j_user="neo4j",
-    neo4j_password="password"
+    neo4j_password="password"  # pragma: allowlist secret  # pragma: allowlist secret
 )
 
 # Calculate fidelity

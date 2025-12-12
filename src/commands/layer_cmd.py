@@ -679,15 +679,15 @@ async def layer_restore(
 
 __all__ = [
     "layer",
-    "layer_list",
-    "layer_show",
     "layer_active",
-    "layer_create",
+    "layer_archive",
     "layer_copy",
+    "layer_create",
     "layer_delete",
     "layer_diff",
-    "layer_validate",
+    "layer_list",
     "layer_refresh_stats",
-    "layer_archive",
     "layer_restore",
+    "layer_show",
+    "layer_validate",
 ]

@@ -152,7 +152,6 @@ try:
 
     # Keep handler imports for backward compatibility (deprecated, use modular commands)
     from src.cli_commands import build_command_handler
-    from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
     print(f"Import error: {e}")

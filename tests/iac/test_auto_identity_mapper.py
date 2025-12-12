@@ -252,7 +252,9 @@ async def test_match_user_by_email(
         assert "aaaaaaaa-0000-0000-0000-000000000001" in mapping["users"]
 
         alice_mapping = mapping["users"]["aaaaaaaa-0000-0000-0000-000000000001"]
-        assert alice_mapping["target_object_id"] == "11111111-0000-0000-0000-000000000001"
+        assert (
+            alice_mapping["target_object_id"] == "11111111-0000-0000-0000-000000000001"
+        )
         assert alice_mapping["match_method"] == "email"
         assert alice_mapping["match_confidence"] in ["high", "very_high"]
         assert alice_mapping["source_upn"] == "alice@source.onmicrosoft.com"
@@ -359,7 +361,9 @@ async def test_match_sp_by_app_id(
         assert "service_principals" in mapping
         assert "aaaaaaaa-1111-1111-1111-111111111111" in mapping["service_principals"]
 
-        sp_mapping = mapping["service_principals"]["aaaaaaaa-1111-1111-1111-111111111111"]
+        sp_mapping = mapping["service_principals"][
+            "aaaaaaaa-1111-1111-1111-111111111111"
+        ]
         assert sp_mapping["target_object_id"] == "11111111-1111-1111-1111-111111111111"
         assert sp_mapping["match_method"] == "appId"
         assert sp_mapping["match_confidence"] == "very_high"
@@ -413,7 +417,10 @@ async def test_match_by_display_name_lower_confidence(
         assert "aaaaaaaa-0000-0000-0000-000000000003" in mapping["users"]
 
         charlie_mapping = mapping["users"]["aaaaaaaa-0000-0000-0000-000000000003"]
-        assert charlie_mapping["target_object_id"] == "11111111-0000-0000-0000-000000000003"
+        assert (
+            charlie_mapping["target_object_id"]
+            == "11111111-0000-0000-0000-000000000003"
+        )
         assert charlie_mapping["match_method"] == "displayName"
         assert charlie_mapping["match_confidence"] in ["medium", "low"]
         assert "verify" in charlie_mapping.get("notes", "").lower()
@@ -1113,7 +1120,10 @@ async def test_end_to_end_auto_mapping_workflow(
         translated = translator.translate(role_assignment)
 
         # Verify principal ID was translated
-        assert translated["properties"]["principalId"] == "11111111-0000-0000-0000-000000000001"
+        assert (
+            translated["properties"]["principalId"]
+            == "11111111-0000-0000-0000-000000000001"
+        )
 
 
 # ============================================================================
@@ -1131,7 +1141,9 @@ async def test_invalid_tenant_id_raises_error() -> None:
     mapper = AutoIdentityMapper()
 
     # Invalid tenant IDs will cause authentication errors from Azure SDK
-    with pytest.raises((ValueError, RuntimeError, ClientAuthenticationError, Exception)) as exc_info:
+    with pytest.raises(
+        (ValueError, RuntimeError, ClientAuthenticationError, Exception)
+    ) as exc_info:
         await mapper.create_mapping(
             source_tenant_id="invalid-tenant-id",
             target_tenant_id="also-invalid",
@@ -1139,7 +1151,11 @@ async def test_invalid_tenant_id_raises_error() -> None:
 
     # Verify error message mentions tenant or authentication
     error_msg = str(exc_info.value).lower()
-    assert "tenant" in error_msg or "authentication" in error_msg or "authority" in error_msg
+    assert (
+        "tenant" in error_msg
+        or "authentication" in error_msg
+        or "authority" in error_msg
+    )
 
 
 @pytest.mark.asyncio

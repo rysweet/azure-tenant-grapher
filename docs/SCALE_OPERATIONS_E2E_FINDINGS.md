@@ -11,7 +11,7 @@ Through extensive end-to-end testing, multiple implementation issues were discov
 - **Fix:** Added normalization (dashes → underscores)
 - **Commit:** fdc0f74
 
-### 2. tenant_id Filter Bug ✅ FIXED  
+### 2. tenant_id Filter Bug ✅ FIXED
 - **Issue:** Querying Resource.tenant_id (doesn't exist)
 - **Fix:** Removed tenant_id filter, validate separately
 - **Commit:** a08a087
@@ -46,4 +46,3 @@ Through extensive end-to-end testing, multiple implementation issues were discov
 - Document sparse graph limitation
 - Recommend pattern-based sampling
 - Complete with what we have
-

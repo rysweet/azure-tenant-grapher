@@ -53,7 +53,9 @@ def estimate_complexity(item: dict) -> str:
     return "complex"
 
 
-def find_relevant_files(item: dict, project_root: Path, max_files: int = 10) -> List[str]:
+def find_relevant_files(
+    item: dict, project_root: Path, max_files: int = 10
+) -> List[str]:
     """Find files relevant to backlog item."""
     # Extract keywords from title/description
     text = item.get("title", "") + " " + item.get("description", "")
@@ -224,9 +226,7 @@ Focus on testing behavior, not implementation details.""",
     if category == "bug":
         base += "\n\n**Bug Fix Workflow**: Write failing test first, then fix, verify test passes."
     elif category == "refactor":
-        base += (
-            "\n\n**Refactor Workflow**: Ensure tests pass before and after. No behavior changes."
-        )
+        base += "\n\n**Refactor Workflow**: Ensure tests pass before and after. No behavior changes."
 
     return base
 
@@ -255,7 +255,9 @@ def load_project_context(project_root: Path) -> str:
     return context
 
 
-def create_delegation_package(backlog_id: str, project_root: Path, agent: str = "builder") -> dict:
+def create_delegation_package(
+    backlog_id: str, project_root: Path, agent: str = "builder"
+) -> dict:
     """Create comprehensive delegation package."""
     pm_dir = project_root / ".pm"
 
@@ -311,17 +313,23 @@ def create_delegation_package(backlog_id: str, project_root: Path, agent: str = 
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="Create delegation package for backlog item")
+    parser = argparse.ArgumentParser(
+        description="Create delegation package for backlog item"
+    )
     parser.add_argument("backlog_id", help="Backlog item ID (e.g., BL-001)")
     parser.add_argument(
         "--project-root", type=Path, default=Path.cwd(), help="Project root directory"
     )
-    parser.add_argument("--agent", default="builder", help="Agent role (builder, reviewer, tester)")
+    parser.add_argument(
+        "--agent", default="builder", help="Agent role (builder, reviewer, tester)"
+    )
 
     args = parser.parse_args()
 
     try:
-        package = create_delegation_package(args.backlog_id, args.project_root, args.agent)
+        package = create_delegation_package(
+            args.backlog_id, args.project_root, args.agent
+        )
         print(json.dumps(package, indent=2))
         return 0
     except Exception as e:

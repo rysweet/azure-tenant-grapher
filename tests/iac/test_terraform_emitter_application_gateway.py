@@ -33,7 +33,7 @@ def get_minimal_appgw_properties():
                     "subnet": {
                         "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
                     }
-                }
+                },
             }
         ],
         "frontendIPConfigurations": [
@@ -43,9 +43,9 @@ def get_minimal_appgw_properties():
                     "publicIPAddress": {
                         "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
                     }
-                }
+                },
             }
-        ]
+        ],
     }
 
 
@@ -60,9 +60,7 @@ class TestApplicationGatewayMapping:
             in emitter.AZURE_TO_TERRAFORM_MAPPING
         )
         assert (
-            emitter.AZURE_TO_TERRAFORM_MAPPING[
-                "Microsoft.Network/applicationGateways"
-            ]
+            emitter.AZURE_TO_TERRAFORM_MAPPING["Microsoft.Network/applicationGateways"]
             == "azurerm_application_gateway"
         )
 
@@ -110,28 +108,30 @@ class TestApplicationGatewayConversion:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {
-                            "subnet": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
-                            }
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                                }
+                            },
                         }
-                    }
-                ],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "frontend-ip-config",
-                        "properties": {
-                            "publicIPAddress": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
-                            }
+                    ],
+                    "frontendIPConfigurations": [
+                        {
+                            "name": "frontend-ip-config",
+                            "properties": {
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                                }
+                            },
                         }
-                    }
-                ]
-            }),
+                    ],
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -199,10 +199,7 @@ class TestApplicationGatewayConversion:
             config["http_listener"][0]["frontend_ip_configuration_name"]
             == "frontend-ip-config"
         )
-        assert (
-            config["http_listener"][0]["frontend_port_name"]
-            == "frontend-port-80"
-        )
+        assert config["http_listener"][0]["frontend_port_name"] == "frontend-port-80"
         assert config["http_listener"][0]["protocol"] == "Http"
 
         # Verify request_routing_rule block
@@ -211,8 +208,7 @@ class TestApplicationGatewayConversion:
         assert config["request_routing_rule"][0]["name"] == "routing-rule"
         assert config["request_routing_rule"][0]["rule_type"] == "Basic"
         assert (
-            config["request_routing_rule"][0]["http_listener_name"]
-            == "http-listener"
+            config["request_routing_rule"][0]["http_listener_name"] == "http-listener"
         )
         assert (
             config["request_routing_rule"][0]["backend_address_pool_name"]
@@ -230,11 +226,7 @@ class TestApplicationGatewayConversion:
         setup_appgw_dependencies(emitter)
 
         properties = get_minimal_appgw_properties()
-        properties["sku"] = {
-            "name": "WAF_v2",
-            "tier": "WAF_v2",
-            "capacity": 4
-        }
+        properties["sku"] = {"name": "WAF_v2", "tier": "WAF_v2", "capacity": 4}
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
@@ -261,14 +253,8 @@ class TestApplicationGatewayConversion:
 
         properties = get_minimal_appgw_properties()
         properties["frontendPorts"] = [
-            {
-                "name": "port-80",
-                "properties": {"port": 80}
-            },
-            {
-                "name": "port-443",
-                "properties": {"port": 443}
-            }
+            {"name": "port-80", "properties": {"port": 80}},
+            {"name": "port-443", "properties": {"port": 443}},
         ]
 
         resource = {
@@ -297,7 +283,7 @@ class TestApplicationGatewayConversion:
         properties = get_minimal_appgw_properties()
         properties["backendAddressPools"] = [
             {"name": "backend-pool-1"},
-            {"name": "backend-pool-2"}
+            {"name": "backend-pool-2"},
         ]
 
         resource = {
@@ -325,12 +311,7 @@ class TestApplicationGatewayConversion:
 
         properties = get_minimal_appgw_properties()
         properties["httpListeners"] = [
-            {
-                "name": "https-listener",
-                "properties": {
-                    "protocol": "Https"
-                }
-            }
+            {"name": "https-listener", "properties": {"protocol": "Https"}}
         ]
 
         resource = {
@@ -363,8 +344,8 @@ class TestApplicationGatewayConversion:
                     "port": 8080,
                     "protocol": "Https",
                     "cookieBasedAffinity": "Enabled",
-                    "requestTimeout": 120
-                }
+                    "requestTimeout": 120,
+                },
             }
         ]
 
@@ -397,18 +378,8 @@ class TestApplicationGatewayConversion:
 
         properties = get_minimal_appgw_properties()
         properties["requestRoutingRules"] = [
-            {
-                "name": "rule-1",
-                "properties": {
-                    "ruleType": "Basic"
-                }
-            },
-            {
-                "name": "rule-2",
-                "properties": {
-                    "ruleType": "PathBasedRouting"
-                }
-            }
+            {"name": "rule-1", "properties": {"ruleType": "Basic"}},
+            {"name": "rule-2", "properties": {"ruleType": "PathBasedRouting"}},
         ]
 
         resource = {
@@ -499,14 +470,16 @@ class TestApplicationGatewaySkippingBehavior:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {}  # No subnet reference
-                    }
-                ]
-            }),
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {},  # No subnet reference
+                        }
+                    ]
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -525,18 +498,20 @@ class TestApplicationGatewaySkippingBehavior:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {
-                            "subnet": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
-                            }
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                                }
+                            },
                         }
-                    }
-                ]
-            }),
+                    ]
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -555,24 +530,26 @@ class TestApplicationGatewaySkippingBehavior:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {
-                            "subnet": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
-                            }
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                                }
+                            },
                         }
-                    }
-                ],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "frontend-ip-config",
-                        "properties": {}  # No public IP reference
-                    }
-                ]
-            }),
+                    ],
+                    "frontendIPConfigurations": [
+                        {
+                            "name": "frontend-ip-config",
+                            "properties": {},  # No public IP reference
+                        }
+                    ],
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -593,28 +570,30 @@ class TestApplicationGatewaySkippingBehavior:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {
-                            "subnet": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
-                            }
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                                }
+                            },
                         }
-                    }
-                ],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "frontend-ip-config",
-                        "properties": {
-                            "publicIPAddress": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
-                            }
+                    ],
+                    "frontendIPConfigurations": [
+                        {
+                            "name": "frontend-ip-config",
+                            "properties": {
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                                }
+                            },
                         }
-                    }
-                ]
-            }),
+                    ],
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -627,9 +606,7 @@ class TestApplicationGatewaySkippingBehavior:
         # Add subnet to available subnets
         emitter._available_subnets = {"test_vnet_appgw_subnet"}
         # Add public IP to available resources
-        emitter._available_resources = {
-            "azurerm_public_ip": {"test_pip"}
-        }
+        emitter._available_resources = {"azurerm_public_ip": {"test_pip"}}
 
         resource = {
             "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/applicationGateways/test-appgw",
@@ -637,28 +614,30 @@ class TestApplicationGatewaySkippingBehavior:
             "type": "Microsoft.Network/applicationGateways",
             "location": "eastus",
             "resource_group": "test-rg",
-            "properties": json.dumps({
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "gateway-ip-config",
-                        "properties": {
-                            "subnet": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
-                            }
+            "properties": json.dumps(
+                {
+                    "gatewayIPConfigurations": [
+                        {
+                            "name": "gateway-ip-config",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet/subnets/appgw-subnet"
+                                }
+                            },
                         }
-                    }
-                ],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "frontend-ip-config",
-                        "properties": {
-                            "publicIPAddress": {
-                                "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
-                            }
+                    ],
+                    "frontendIPConfigurations": [
+                        {
+                            "name": "frontend-ip-config",
+                            "properties": {
+                                "publicIPAddress": {
+                                    "id": "/subscriptions/test-sub/resourceGroups/test-rg/providers/Microsoft.Network/publicIPAddresses/test-pip"
+                                }
+                            },
                         }
-                    }
-                ]
-            }),
+                    ],
+                }
+            ),
         }
 
         result = emitter._convert_resource(resource, {"resource": {}})
@@ -667,5 +646,11 @@ class TestApplicationGatewaySkippingBehavior:
         terraform_type, safe_name, config = result
 
         # Verify proper references (not placeholders)
-        assert config["gateway_ip_configuration"][0]["subnet_id"] == "${azurerm_subnet.test_vnet_appgw_subnet.id}"
-        assert config["frontend_ip_configuration"][0]["public_ip_address_id"] == "${azurerm_public_ip.test_pip.id}"
+        assert (
+            config["gateway_ip_configuration"][0]["subnet_id"]
+            == "${azurerm_subnet.test_vnet_appgw_subnet.id}"
+        )
+        assert (
+            config["frontend_ip_configuration"][0]["public_ip_address_id"]
+            == "${azurerm_public_ip.test_pip.id}"
+        )

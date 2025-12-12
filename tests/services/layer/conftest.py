@@ -10,14 +10,14 @@ Philosophy:
 - Fast: Fixtures are lightweight
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, Mock
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, Mock
 
-from src.services.layer.models import LayerMetadata, LayerType
+import pytest
+
 from src.services.layer.export import LayerExportOperations
+from src.services.layer.models import LayerMetadata, LayerType
 from src.utils.session_manager import Neo4jSessionManager
-
 
 # =============================================================================
 # Mock Fixtures (for unit tests)
@@ -184,7 +184,9 @@ def sample_layer_metadata():
 
 
 @pytest.fixture
-def layer_export_operations(mock_session_manager, mock_crud_operations, mock_stats_operations):
+def layer_export_operations(
+    mock_session_manager, mock_crud_operations, mock_stats_operations
+):
     """
     Create LayerExportOperations instance with mocked dependencies.
 

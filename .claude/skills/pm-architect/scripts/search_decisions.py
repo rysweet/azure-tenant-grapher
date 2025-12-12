@@ -19,7 +19,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -58,7 +58,9 @@ def extract_decisions_from_markdown(md_path: Path) -> List[Dict]:
             "decision": match.group(1).strip(),
             "date": match.group(2).strip(),
             "rationale": match.group(3).strip(),
-            "alternatives": match.group(4).strip() if match.group(4) else "None documented",
+            "alternatives": match.group(4).strip()
+            if match.group(4)
+            else "None documented",
         }
         decisions.append(decision)
 
@@ -82,7 +84,9 @@ def extract_session_context(session_dir: Path) -> Dict:
 
     # Get session creation time
     try:
-        context["created"] = datetime.fromtimestamp(session_dir.stat().st_ctime).isoformat()
+        context["created"] = datetime.fromtimestamp(
+            session_dir.stat().st_ctime
+        ).isoformat()
     except Exception:
         pass
 
@@ -100,7 +104,7 @@ def extract_session_context(session_dir: Path) -> Dict:
 
 
 def search_sessions(
-    logs_dir: Path, query: str = None, session_id: str = None, limit: int = None
+    logs_dir: Path, query: Optional[str] = None, session_id: Optional[str] = None, limit: Optional[int] = None
 ) -> List[Dict]:
     """Search PM decisions across all sessions.
 
@@ -121,12 +125,16 @@ def search_sessions(
 
     # Determine sessions to search
     if session_id:
-        session_dirs = [logs_dir / session_id] if (logs_dir / session_id).exists() else []
+        session_dirs = (
+            [logs_dir / session_id] if (logs_dir / session_id).exists() else []
+        )
     else:
         session_dirs = [d for d in logs_dir.iterdir() if d.is_dir()]
 
     # Search each session
-    for session_dir in sorted(session_dirs, key=lambda d: d.stat().st_mtime, reverse=True):
+    for session_dir in sorted(
+        session_dirs, key=lambda d: d.stat().st_mtime, reverse=True
+    ):
         context = extract_session_context(session_dir)
 
         # Search decisions in this session
@@ -236,11 +244,15 @@ def get_decision_patterns(logs_dir: Path, min_frequency: int = 2) -> Dict:
 
     # Filter by frequency
     frequent_types = {k: v for k, v in decision_types.items() if v >= min_frequency}
-    frequent_keywords = {k: v for k, v in rationale_keywords.items() if v >= min_frequency}
+    frequent_keywords = {
+        k: v for k, v in rationale_keywords.items() if v >= min_frequency
+    }
 
     return {
         "total_decisions": len(all_decisions),
-        "decision_types": dict(sorted(frequent_types.items(), key=lambda x: x[1], reverse=True)),
+        "decision_types": dict(
+            sorted(frequent_types.items(), key=lambda x: x[1], reverse=True)
+        ),
         "common_rationale_keywords": dict(
             sorted(frequent_keywords.items(), key=lambda x: x[1], reverse=True)[:20]
         ),
@@ -254,10 +266,14 @@ def main():
     parser.add_argument("--session", help="Specific session ID to search")
     parser.add_argument("--limit", type=int, help="Maximum results to return")
     parser.add_argument(
-        "--restore", help="Restore complete context for session ID", metavar="SESSION_ID"
+        "--restore",
+        help="Restore complete context for session ID",
+        metavar="SESSION_ID",
     )
     parser.add_argument(
-        "--patterns", action="store_true", help="Analyze decision patterns across all sessions"
+        "--patterns",
+        action="store_true",
+        help="Analyze decision patterns across all sessions",
     )
     parser.add_argument(
         "--logs-dir",
@@ -281,10 +297,13 @@ def main():
 
         else:
             # Search decisions
-            results = search_sessions(args.logs_dir, args.query, args.session, args.limit)
+            results = search_sessions(
+                args.logs_dir, args.query, args.session, args.limit
+            )
             print(
                 json.dumps(
-                    {"query": args.query, "session": args.session, "results": results}, indent=2
+                    {"query": args.query, "session": args.session, "results": results},
+                    indent=2,
                 )
             )
 

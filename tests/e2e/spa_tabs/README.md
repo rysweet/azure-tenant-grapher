@@ -63,7 +63,7 @@ export ELECTRON_APP_PATH="/path/to/electron/app"
 export WEBSOCKET_URL="ws://localhost:3001"
 export HEADLESS="false"  # Set to true for headless testing
 export AZURE_TENANT_ID="your-tenant-id"
-export NEO4J_PASSWORD="your-password"
+export NEO4J_PASSWORD="your-password"  # pragma: allowlist secret
 ```
 
 ## Running Tests

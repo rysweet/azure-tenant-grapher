@@ -56,7 +56,7 @@ class TestMCPConfig:
         assert config.endpoint == "http://custom:9090"
         assert config.enabled is True
         assert config.timeout == 45
-        assert config.api_key == "test-key-123"
+        assert config.api_key == "test-key-123"  # pragma: allowlist secret
 
 
 class TestMCPIntegrationService:
@@ -69,7 +69,7 @@ class TestMCPIntegrationService:
             enabled=True,
             endpoint="http://test-mcp:8080",
             timeout=30,
-            api_key="test-api-key",
+            api_key="test-api-key",  # pragma: allowlist secret
         )
 
     @pytest.fixture

@@ -8,17 +8,14 @@ Tests cover:
 """
 
 import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import networkx as nx
 import numpy as np
-import pytest
 
 from src.services.graph_embedding_cache import GraphEmbeddingCache
 from src.services.graph_embedding_generator import GraphEmbeddingGenerator
 from src.services.graph_embedding_sampler import EmbeddingSampler
-
 
 # ==============================================================================
 # Unit Tests - GraphEmbeddingCache
@@ -60,8 +57,12 @@ class TestGraphEmbeddingCache:
             assert len(retrieved) == 2
             assert "node1" in retrieved
             assert "node2" in retrieved
-            np.testing.assert_array_almost_equal(retrieved["node1"], embeddings["node1"])
-            np.testing.assert_array_almost_equal(retrieved["node2"], embeddings["node2"])
+            np.testing.assert_array_almost_equal(
+                retrieved["node1"], embeddings["node1"]
+            )
+            np.testing.assert_array_almost_equal(
+                retrieved["node2"], embeddings["node2"]
+            )
 
     def test_cache_miss(self):
         """Test cache miss returns None."""
@@ -120,11 +121,11 @@ class TestGraphEmbeddingCache:
 
             # Clear tenant1 - note: clear matches by file pattern, so may not find exact match
             # This is OK - we just verify tenant1 is gone after
-            deleted = cache.clear(tenant_id="tenant1")
+            cache.clear(tenant_id="tenant1")
 
             # tenant1 should be gone (even if deleted=0, the cache logic may work differently)
             # What matters is the cache miss after clear
-            result1 = cache.get("tenant1", 3, 30, 200)
+            cache.get("tenant1", 3, 30, 200)
 
             # If clear didn't work, that's OK for this test - just verify the behavior
             # The important thing is tenant2 is still there

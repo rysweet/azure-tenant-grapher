@@ -56,10 +56,10 @@ describe('ConfigTab', () => {
     const mockConfig = {
       'azure.tenantId': 'test-tenant-id',
       'azure.clientId': 'test-client-id',
-      'azure.clientSecret': 'test-secret',
+      'azure.clientSecret': 'test-secret',  // pragma: allowlist secret
       'neo4j.uri': 'bolt://localhost:7687',
       'neo4j.username': 'neo4j',
-      'neo4j.password': 'test-password',
+      'neo4j.password': 'test-password',  // pragma: allowlist secret
       'app.maxThreads': 10,
       'app.resourceLimit': 1000,
     };
@@ -148,8 +148,8 @@ describe('ConfigTab', () => {
 
   test('toggles password visibility', () => {
     (window as any).electronAPI.store.getAll = jest.fn().mockReturnValue({
-      'azure.clientSecret': 'hidden-secret',
-      'neo4j.password': 'hidden-password',
+      'azure.clientSecret': 'hidden-secret',  // pragma: allowlist secret
+      'neo4j.password': 'hidden-password',  // pragma: allowlist secret
     });
 
     renderWithProviders(<ConfigTab />);

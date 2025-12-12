@@ -211,7 +211,10 @@ class ResourceExistenceValidator:
 
                     # Bug #101: Handle provider-specific API versions for ambiguous types
                     # Databricks workspaces need 2024-05-01, OperationalInsights need 2023-09-01
-                    if resource_type == "workspaces" and provider == "Microsoft.Databricks":
+                    if (
+                        resource_type == "workspaces"
+                        and provider == "Microsoft.Databricks"
+                    ):
                         return "2024-05-01"
 
                     # Use known API versions for common types

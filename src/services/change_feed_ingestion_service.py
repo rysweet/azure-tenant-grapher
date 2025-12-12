@@ -83,10 +83,10 @@ def validate_iso8601_timestamp(timestamp: str) -> None:
             datetime.fromisoformat(timestamp_normalized)
         else:
             datetime.fromisoformat(timestamp)
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError) as e:
         raise ValueError(
             f"Invalid timestamp format: {timestamp}. Must be valid ISO8601 format (e.g., 2024-01-01T00:00:00Z)"
-        )
+        ) from e
 
 
 class ChangeFeedIngestionService:

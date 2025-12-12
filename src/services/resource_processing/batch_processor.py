@@ -121,7 +121,9 @@ class BatchProcessor:
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
 
-                logger.debug(f"Scheduling worker for resource {rid} (attempt {attempt})")
+                logger.debug(
+                    f"Scheduling worker for resource {rid} (attempt {attempt})"
+                )
 
                 task = asyncio.create_task(
                     wrapped_worker(resource, resource_index_counter, attempt)
@@ -183,7 +185,9 @@ class BatchProcessor:
                 task_result = t.result()
                 processed_count += 1
 
-                logger.debug(f"Task for resource {rid} completed with result={task_result}")
+                logger.debug(
+                    f"Task for resource {rid} completed with result={task_result}"
+                )
 
                 if task_result:
                     successful_count += 1

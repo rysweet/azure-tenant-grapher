@@ -31,7 +31,7 @@
 - **[BUG_59_DOCUMENTATION.md](BUG_59_DOCUMENTATION.md)** - Deep dive on subscription ID abstraction fix (root cause)
 - **[DEPLOYMENT_TROUBLESHOOTING.md](DEPLOYMENT_TROUBLESHOOTING.md)** - Common issues and solutions
 
-### Quick Start Guides  
+### Quick Start Guides
 - **[QUICK_START_ITERATION_9.md](QUICK_START_ITERATION_9.md)** - Resume deployment after auth refresh
 
 ### Scripts
@@ -41,7 +41,7 @@
 
 ### November 23, 2025
 - **Bug #59**: Subscription ID abstraction (ROOT CAUSE) - commit faeb284
-- **Bug #58**: Skip NIC NSG validation - commit 7651fde  
+- **Bug #58**: Skip NIC NSG validation - commit 7651fde
 - **Bug #57**: NIC NSG deprecated field - commit 2011688
 
 ## Key Achievements
@@ -70,4 +70,3 @@
 - `../CLAUDE.md` - Project instructions and context
 - `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema
 - `DUAL_GRAPH_QUERIES.cypher` - Useful queries for dual-graph architecture
-

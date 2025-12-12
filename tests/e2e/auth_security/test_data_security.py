@@ -142,9 +142,9 @@ class TestDataSecurity:
         # Test data with sensitive fields
         test_data = {
             "username": "testuser",
-            "password": "MySecretPassword123!",
+            "password": "MySecretPassword123!",  # pragma: allowlist secret
             "email": "test@example.com",
-            "api_key": "test_api_key_fake_value_for_testing",
+            "api_key": "test_api_key_fake_value_for_testing",  # pragma: allowlist secret
             "profile": {
                 "name": "Test User",
                 "ssn": "123-45-6789",
@@ -177,12 +177,12 @@ class TestDataSecurity:
         # Test data with various sensitive fields
         test_data = {
             "user_id": "12345",
-            "password": "SecretPass123",
+            "password": "SecretPass123",  # pragma: allowlist secret
             "auth_token": "Bearer eyJhbGciOiJIUzI1NiIs...",
-            "api_secret": "secret_key_value",
+            "api_secret": "secret_key_value",  # pragma: allowlist secret
             "public_info": "This is public",
             "nested": {
-                "private_key": "-----BEGIN RSA PRIVATE KEY-----",
+                "private_key": "-----BEGIN RSA PRIVATE KEY-----",  # pragma: allowlist secret
                 "public_data": "visible",
             },
         }
@@ -274,7 +274,7 @@ class TestDataSecurity:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create test file with sensitive data
             sensitive_content = {
-                "database_password": "db_pass_123",
+                "database_password": "db_pass_123",  # pragma: allowlist secret
                 "api_keys": {"stripe": "test_stripe_key_fake", "aws": "AKIA_test_key"},
             }
 
@@ -297,7 +297,9 @@ class TestDataSecurity:
 
             # Decrypt and verify
             decrypted = service.decrypt_sensitive_data(loaded_data)
-            assert decrypted["database_password"] == "db_pass_123"
+            assert (
+                decrypted["database_password"] == "db_pass_123"
+            )  # pragma: allowlist secret
 
     def test_database_query_parameterization(self):
         """Test that database queries are parameterized to prevent injection."""
@@ -340,7 +342,7 @@ class TestDataSecurity:
         log_data = {
             "event": "user_login",
             "username": "testuser",
-            "password": "SecretPass123",
+            "password": "SecretPass123",  # pragma: allowlist secret
             "ip_address": "192.168.1.100",
             "session_token": "eyJhbGciOiJIUzI1NiIs...",
         }
@@ -365,7 +367,7 @@ class TestDataSecurity:
             file_path = os.path.join(temp_dir, "sensitive.txt")
 
             # Write sensitive data
-            sensitive_data = "PASSWORD=SuperSecret123\nAPI_KEY=sk_live_key"
+            sensitive_data = "PASSWORD=SuperSecret123\nAPI_KEY=sk_live_key"  # pragma: allowlist secret
             with open(file_path, "w") as f:
                 f.write(sensitive_data)
 
@@ -502,7 +504,7 @@ class TestDataSecurity:
                 {"id": 1, "name": "User1", "ssn": "123-45-6789"},
                 {"id": 2, "name": "User2", "ssn": "987-65-4321"},
             ],
-            "api_key": "secret_key_123",
+            "api_key": "secret_key_123",  # pragma: allowlist secret
         }
 
         # Sanitize before export

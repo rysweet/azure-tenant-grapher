@@ -43,9 +43,7 @@ def mock_session(mock_session_manager):
 @pytest.fixture
 def cleanup_service(mock_session_manager):
     """Create a ScaleCleanupService instance with mocked dependencies."""
-    return ScaleCleanupService(
-        session_manager=mock_session_manager, batch_size=10
-    )
+    return ScaleCleanupService(session_manager=mock_session_manager, batch_size=10)
 
 
 # =========================================================================
@@ -55,9 +53,7 @@ def cleanup_service(mock_session_manager):
 
 def test_service_initialization(mock_session_manager):
     """Test ScaleCleanupService initializes correctly."""
-    service = ScaleCleanupService(
-        session_manager=mock_session_manager, batch_size=1000
-    )
+    service = ScaleCleanupService(session_manager=mock_session_manager, batch_size=1000)
 
     assert service.session_manager == mock_session_manager
     assert service.batch_size == 1000
@@ -106,8 +102,14 @@ async def test_preview_cleanup_by_session(cleanup_service, mock_session):
                 __iter__=MagicMock(
                     return_value=iter(
                         [
-                            {"resource_type": "Microsoft.Compute/virtualMachines", "count": 60},
-                            {"resource_type": "Microsoft.Network/virtualNetworks", "count": 40},
+                            {
+                                "resource_type": "Microsoft.Compute/virtualMachines",
+                                "count": 60,
+                            },
+                            {
+                                "resource_type": "Microsoft.Network/virtualNetworks",
+                                "count": 40,
+                            },
                         ]
                     )
                 )
@@ -150,7 +152,14 @@ async def test_preview_cleanup_all(cleanup_service, mock_session):
             ),
             MagicMock(
                 __iter__=MagicMock(
-                    return_value=iter([{"resource_type": "Microsoft.Compute/virtualMachines", "count": 500}])
+                    return_value=iter(
+                        [
+                            {
+                                "resource_type": "Microsoft.Compute/virtualMachines",
+                                "count": 500,
+                            }
+                        ]
+                    )
                 )
             ),
         ]
@@ -172,9 +181,19 @@ async def test_preview_cleanup_before_date(cleanup_service, mock_session):
     with patch.object(cleanup_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
             MagicMock(single=MagicMock(return_value={"resource_count": 150})),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"outgoing_count": 75, "incoming_count": None}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "old-session"}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"resource_type": "Type1", "count": 150}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"outgoing_count": 75, "incoming_count": None}])
+                )
+            ),
+            MagicMock(
+                __iter__=MagicMock(return_value=iter([{"session_id": "old-session"}]))
+            ),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"resource_type": "Type1", "count": 150}])
+                )
+            ),
         ]
 
         result = await cleanup_service.preview_cleanup(
@@ -215,9 +234,19 @@ async def test_cleanup_by_session_success(cleanup_service, mock_session):
         # Mock session list query
         mock_session.run.side_effect = [
             # Session list query
-            MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "session-1"}]))),
+            MagicMock(
+                __iter__=MagicMock(return_value=iter([{"session_id": "session-1"}]))
+            ),
             # First delete batch
-            MagicMock(single=MagicMock(return_value={"deleted_count": 10, "outgoing_rels": 5, "incoming_rels": 3})),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 10,
+                        "outgoing_rels": 5,
+                        "incoming_rels": 3,
+                    }
+                )
+            ),
             # Second delete batch (empty, signals end)
             MagicMock(single=MagicMock(return_value={"deleted_count": 0})),
         ]
@@ -239,13 +268,41 @@ async def test_cleanup_all_synthetic_data(cleanup_service, mock_session):
     with patch.object(cleanup_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
             # Session list
-            MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "s1"}, {"session_id": "s2"}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"session_id": "s1"}, {"session_id": "s2"}])
+                )
+            ),
             # First batch
-            MagicMock(single=MagicMock(return_value={"deleted_count": 10, "outgoing_rels": 5, "incoming_rels": 5})),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 10,
+                        "outgoing_rels": 5,
+                        "incoming_rels": 5,
+                    }
+                )
+            ),
             # Second batch
-            MagicMock(single=MagicMock(return_value={"deleted_count": 10, "outgoing_rels": 5, "incoming_rels": 5})),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 10,
+                        "outgoing_rels": 5,
+                        "incoming_rels": 5,
+                    }
+                )
+            ),
             # Third batch (partial)
-            MagicMock(single=MagicMock(return_value={"deleted_count": 5, "outgoing_rels": 2, "incoming_rels": 2})),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 5,
+                        "outgoing_rels": 2,
+                        "incoming_rels": 2,
+                    }
+                )
+            ),
         ]
 
         result = await cleanup_service.cleanup_synthetic_data(
@@ -265,8 +322,18 @@ async def test_cleanup_before_date(cleanup_service, mock_session):
 
     with patch.object(cleanup_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
-            MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "old-session"}]))),
-            MagicMock(single=MagicMock(return_value={"deleted_count": 50, "outgoing_rels": 25, "incoming_rels": 25})),
+            MagicMock(
+                __iter__=MagicMock(return_value=iter([{"session_id": "old-session"}]))
+            ),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 50,
+                        "outgoing_rels": 25,
+                        "incoming_rels": 25,
+                    }
+                )
+            ),
             MagicMock(single=MagicMock(return_value={"deleted_count": 0})),
         ]
 
@@ -285,12 +352,22 @@ async def test_cleanup_with_progress_callback(cleanup_service, mock_session):
     progress_updates = []
 
     def progress_callback(message, current, total):
-        progress_updates.append({"message": message, "current": current, "total": total})
+        progress_updates.append(
+            {"message": message, "current": current, "total": total}
+        )
 
     with patch.object(cleanup_service, "validate_tenant_exists", return_value=True):
         mock_session.run.side_effect = [
             MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "s1"}]))),
-            MagicMock(single=MagicMock(return_value={"deleted_count": 10, "outgoing_rels": 5, "incoming_rels": 5})),
+            MagicMock(
+                single=MagicMock(
+                    return_value={
+                        "deleted_count": 10,
+                        "outgoing_rels": 5,
+                        "incoming_rels": 5,
+                    }
+                )
+            ),
             MagicMock(single=MagicMock(return_value={"deleted_count": 0})),
         ]
 
@@ -386,7 +463,9 @@ async def test_get_cleanable_sessions_success(cleanup_service, mock_session):
 async def test_get_cleanable_sessions_empty(cleanup_service, mock_session):
     """Test getting sessions when none exist."""
     with patch.object(cleanup_service, "validate_tenant_exists", return_value=True):
-        mock_session.run.return_value = MagicMock(__iter__=MagicMock(return_value=iter([])))
+        mock_session.run.return_value = MagicMock(
+            __iter__=MagicMock(return_value=iter([]))
+        )
 
         sessions = await cleanup_service.get_cleanable_sessions("tenant-123")
 
@@ -432,7 +511,11 @@ async def test_preview_cleanup_with_null_relationships(cleanup_service, mock_ses
             MagicMock(single=MagicMock(return_value={"resource_count": 10})),
             MagicMock(__iter__=MagicMock(return_value=iter([]))),  # No relationships
             MagicMock(__iter__=MagicMock(return_value=iter([{"session_id": "s1"}]))),
-            MagicMock(__iter__=MagicMock(return_value=iter([{"resource_type": "Type1", "count": 10}]))),
+            MagicMock(
+                __iter__=MagicMock(
+                    return_value=iter([{"resource_type": "Type1", "count": 10}])
+                )
+            ),
         ]
 
         result = await cleanup_service.preview_cleanup(

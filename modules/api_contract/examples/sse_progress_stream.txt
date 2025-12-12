@@ -1,0 +1,29 @@
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 5.0, "message": "Starting Azure resource discovery"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 10.0, "message": "Discovered 3 subscriptions"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 15.0, "message": "Discovered 11 resource groups"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 25.0, "message": "Processing resource group 1 of 11: rg-dev-eastus"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 35.0, "message": "Processing resource group 3 of 11: rg-staging-westus"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 45.0, "message": "Processing resource group 5 of 11: rg-production-eastus"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 65.0, "message": "Processing resource group 8 of 11: rg-analytics-centralus"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 85.0, "message": "Creating relationships between resources"}
+
+event: progress
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "running", "progress": 95.0, "message": "Generating tenant specification"}
+
+event: complete
+data: {"job_id": "550e8400-e29b-41d4-a716-446655440000", "status": "completed", "progress": 100.0, "message": "Scan completed successfully"}

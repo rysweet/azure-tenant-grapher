@@ -1,0 +1,768 @@
+openapi: 3.0.0
+info:
+  title: Azure Tenant Grapher Remote API
+  version: 1.0.0
+  description: |
+    REST API for remote execution of Azure Tenant Grapher operations.
+    Supports long-running async operations with job polling and progress updates.
+
+    **Key Features:**
+    - Async job queue for long-running operations (20+ min scans)
+    - Real-time progress updates via SSE
+    - API key authentication
+    - All CLI commands accessible via REST
+
+    **Authentication:**
+    All endpoints require `X-API-Key` header with valid API key.
+
+    **Job Lifecycle:**
+    1. Submit job (POST /jobs/{operation})
+    2. Poll status (GET /jobs/{job_id})
+    3. Get results (GET /jobs/{job_id}/results)
+    4. Stream progress (GET /jobs/{job_id}/progress - SSE)
+
+servers:
+  - url: https://api.atg.example.com/v1
+    description: Production server
+  - url: http://localhost:8000/v1
+    description: Development server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # Health check
+  /health:
+    get:
+      summary: Health check endpoint
+      operationId: health_check
+      tags:
+        - System
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  version:
+                    type: string
+                  neo4j_status:
+                    type: string
+                    enum: [connected, disconnected]
+
+  # Authentication
+  /auth/validate:
+    get:
+      summary: Validate API key
+      operationId: validate_api_key
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: API key is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Job submission endpoints
+  /jobs/scan:
+    post:
+      summary: Submit scan job
+      operationId: submit_scan_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/generate-spec:
+    post:
+      summary: Submit tenant specification generation job
+      operationId: submit_generate_spec_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateSpecJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/generate-iac:
+    post:
+      summary: Submit IaC generation job
+      operationId: submit_generate_iac_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateIacJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/create-tenant:
+    post:
+      summary: Submit tenant creation job
+      operationId: submit_create_tenant_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/visualize:
+    post:
+      summary: Submit visualization job
+      operationId: submit_visualize_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisualizeJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/threat-model:
+    post:
+      summary: Submit threat modeling job
+      operationId: submit_threat_model_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatModelJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /jobs/agent-mode:
+    post:
+      summary: Submit agent mode query job
+      operationId: submit_agent_mode_job
+      tags:
+        - Jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentModeJobRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Job status and results
+  /jobs/{job_id}:
+    get:
+      summary: Get job status
+      operationId: get_job_status
+      tags:
+        - Jobs
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      summary: Cancel job
+      operationId: cancel_job
+      tags:
+        - Jobs
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [cancelled]
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Job cannot be cancelled (already completed/failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/{job_id}/results:
+    get:
+      summary: Get job results
+      operationId: get_job_results
+      tags:
+        - Jobs
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job results retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResults'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Job not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs/{job_id}/progress:
+    get:
+      summary: Stream job progress (Server-Sent Events)
+      operationId: stream_job_progress
+      tags:
+        - Jobs
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Progress stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream with progress updates.
+
+                  Event format:
+                  event: progress
+                  data: {"job_id": "...", "status": "running", "progress": 45, "message": "..."}
+
+                  event: complete
+                  data: {"job_id": "...", "status": "completed"}
+
+                  event: error
+                  data: {"job_id": "...", "status": "failed", "error": "..."}
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Job listing
+  /jobs:
+    get:
+      summary: List all jobs
+      operationId: list_jobs
+      tags:
+        - Jobs
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, running, completed, failed, cancelled]
+        - name: operation
+          in: query
+          schema:
+            type: string
+            enum: [scan, generate-spec, generate-iac, create-tenant, visualize, threat-model, agent-mode]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Jobs retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # File downloads
+  /files/{file_id}:
+    get:
+      summary: Download generated file
+      operationId: download_file
+      tags:
+        - Files
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            text/html:
+              schema:
+                type: string
+            text/markdown:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+  parameters:
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique job identifier
+
+  schemas:
+    # Job request schemas
+    ScanJobRequest:
+      type: object
+      required:
+        - tenant_id
+      properties:
+        tenant_id:
+          type: string
+          description: Azure tenant ID
+        resource_limit:
+          type: integer
+          nullable: true
+          description: Maximum number of resources to process
+        max_llm_threads:
+          type: integer
+          default: 5
+        max_build_threads:
+          type: integer
+          default: 20
+        max_retries:
+          type: integer
+          default: 3
+        max_concurrency:
+          type: integer
+          default: 100
+        generate_spec:
+          type: boolean
+          default: false
+          description: Generate tenant spec after scan
+        visualize:
+          type: boolean
+          default: false
+          description: Generate visualization after scan
+        rebuild_edges:
+          type: boolean
+          default: false
+        no_aad_import:
+          type: boolean
+          default: false
+        filter_by_subscriptions:
+          type: string
+          nullable: true
+          description: Comma-separated subscription IDs
+        filter_by_rgs:
+          type: string
+          nullable: true
+          description: Comma-separated resource group names
+
+    GenerateSpecJobRequest:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          nullable: true
+          description: Optional tenant ID (uses graph if not provided)
+        domain_name:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+          nullable: true
+        hierarchical:
+          type: boolean
+          default: false
+
+    GenerateIacJobRequest:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+          nullable: true
+        target_tenant_id:
+          type: string
+          nullable: true
+          description: Cross-tenant deployment target
+        target_subscription:
+          type: string
+          nullable: true
+        format:
+          type: string
+          enum: [terraform, arm, bicep]
+          default: terraform
+        auto_import_existing:
+          type: boolean
+          default: false
+        import_strategy:
+          type: string
+          enum: [resource_groups, all_resources]
+          nullable: true
+        auto_register_providers:
+          type: boolean
+          default: false
+        auto_fix_subnets:
+          type: boolean
+          default: false
+        skip_subnet_validation:
+          type: boolean
+          default: false
+
+    CreateTenantJobRequest:
+      type: object
+      required:
+        - markdown_spec
+      properties:
+        markdown_spec:
+          type: string
+          description: Tenant specification in markdown format
+
+    VisualizeJobRequest:
+      type: object
+      properties:
+        link_hierarchy:
+          type: boolean
+          default: true
+        output_path:
+          type: string
+          nullable: true
+
+    ThreatModelJobRequest:
+      type: object
+      properties:
+        options:
+          type: object
+          additionalProperties: true
+          description: Threat modeling options
+
+    AgentModeJobRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          description: Question to ask the agent
+
+    # Job status schemas
+    JobStatus:
+      type: object
+      required:
+        - job_id
+        - operation
+        - status
+        - created_at
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        operation:
+          type: string
+          enum: [scan, generate-spec, generate-iac, create-tenant, visualize, threat-model, agent-mode]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Progress percentage
+        message:
+          type: string
+          nullable: true
+          description: Current status message
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        error:
+          type: string
+          nullable: true
+          description: Error message if failed
+
+    JobSummary:
+      type: object
+      required:
+        - job_id
+        - operation
+        - status
+        - created_at
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        operation:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    JobResults:
+      type: object
+      required:
+        - job_id
+        - operation
+        - status
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        operation:
+          type: string
+        status:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+          description: Operation-specific results
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeneratedFile'
+          description: Generated files available for download
+
+    GeneratedFile:
+      type: object
+      required:
+        - file_id
+        - filename
+        - mime_type
+        - size
+      properties:
+        file_id:
+          type: string
+          description: File ID for download endpoint
+        filename:
+          type: string
+        mime_type:
+          type: string
+        size:
+          type: integer
+          description: File size in bytes
+        download_url:
+          type: string
+          format: uri
+          description: Direct download URL
+
+    # Error schema
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code (e.g., INVALID_TENANT_ID, JOB_NOT_FOUND)
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: object
+              additionalProperties: true
+              description: Additional error details
+
+  responses:
+    JobAccepted:
+      description: Job accepted and queued
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - job_id
+              - status
+            properties:
+              job_id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [pending]
+              status_url:
+                type: string
+                format: uri
+                description: URL to poll job status
+              progress_url:
+                type: string
+                format: uri
+                description: SSE endpoint for progress streaming
+
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UnauthorizedError:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: System
+    description: System health and status
+  - name: Authentication
+    description: API key validation
+  - name: Jobs
+    description: Async job submission and monitoring
+  - name: Files
+    description: File downloads

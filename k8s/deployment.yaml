@@ -21,12 +21,12 @@ metadata:
   namespace: azure-tenant-grapher
 type: Opaque
 stringData:
-  NEO4J_PASSWORD: "CHANGE_ME"
+  NEO4J_PASSWORD: "CHANGE_ME"  # pragma: allowlist secret
   AZURE_TENANT_ID: "CHANGE_ME"
   AZURE_CLIENT_ID: "CHANGE_ME"
-  AZURE_CLIENT_SECRET: "CHANGE_ME"
+  AZURE_CLIENT_SECRET: "CHANGE_ME"  # pragma: allowlist secret
   AZURE_OPENAI_ENDPOINT: "CHANGE_ME"
-  AZURE_OPENAI_API_KEY: "CHANGE_ME"
+  AZURE_OPENAI_API_KEY: "CHANGE_ME"  # pragma: allowlist secret  # pragma: allowlist secret
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -305,7 +305,7 @@ spec:
   tls:
   - hosts:
     - atg.yourdomain.com
-    secretName: atg-tls
+    secretName: atg-tls  # pragma: allowlist secret
   rules:
   - host: atg.yourdomain.com
     http:

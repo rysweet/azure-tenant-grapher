@@ -14,15 +14,11 @@ Philosophy:
 """
 
 import json
-from datetime import datetime
-from pathlib import Path
 
 import pytest
 
 from src.services.layer.export import LayerExportOperations
-from src.services.layer.models import LayerMetadata, LayerType
 from src.utils.session_manager import Neo4jSessionManager
-
 
 # =============================================================================
 # Fixtures
@@ -184,7 +180,9 @@ async def test_full_copy_workflow_preserves_scan_source_node(
     """
     # Setup source layer
     setup_info = setup_test_layer(layer_id="source-layer")
-    assert setup_info["scan_source_count"] == 2, "Setup should create 2 SCAN_SOURCE_NODE relationships"
+    assert setup_info["scan_source_count"] == 2, (
+        "Setup should create 2 SCAN_SOURCE_NODE relationships"
+    )
 
     # Copy layer
     await export_operations.copy_layer(
@@ -250,7 +248,8 @@ async def test_full_archive_restore_workflow_preserves_scan_source_node(
         archive_data = json.load(f)
 
     scan_source_rels = [
-        rel for rel in archive_data.get("relationships", [])
+        rel
+        for rel in archive_data.get("relationships", [])
         if rel.get("type") == "SCAN_SOURCE_NODE"
     ]
 
@@ -414,7 +413,9 @@ async def test_layer_isolation_with_real_neo4j(
         )
         layer_a_scan_source = result.single()["layer_a_scan_source"]
 
-    assert layer_a_scan_source == 2, "Layer A should have 2 SCAN_SOURCE_NODE relationships"
+    assert layer_a_scan_source == 2, (
+        "Layer A should have 2 SCAN_SOURCE_NODE relationships"
+    )
 
 
 # =============================================================================
@@ -545,7 +546,8 @@ async def test_archive_restore_with_orphaned_scan_source_node(
     assert len(archive_data["nodes"]) == 1
     # This assertion will fail regardless, but documents expected behavior
     scan_source_rels = [
-        rel for rel in archive_data.get("relationships", [])
+        rel
+        for rel in archive_data.get("relationships", [])
         if rel.get("type") == "SCAN_SOURCE_NODE"
     ]
     # After fix: Should be 0 (orphaned reference skipped) or include warning
@@ -566,10 +568,10 @@ def pytest_configure(config):
 
 
 __all__ = [
-    "test_full_copy_workflow_preserves_scan_source_node",
-    "test_full_archive_restore_workflow_preserves_scan_source_node",
-    "test_copy_preserves_scan_source_to_same_originals",
-    "test_layer_isolation_with_real_neo4j",
-    "test_copy_layer_with_multiple_scan_source_per_resource",
     "test_archive_restore_with_orphaned_scan_source_node",
+    "test_copy_layer_with_multiple_scan_source_per_resource",
+    "test_copy_preserves_scan_source_to_same_originals",
+    "test_full_archive_restore_workflow_preserves_scan_source_node",
+    "test_full_copy_workflow_preserves_scan_source_node",
+    "test_layer_isolation_with_real_neo4j",
 ]

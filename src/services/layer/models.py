@@ -25,11 +25,9 @@ Public API (the "studs"):
     CrossLayerRelationshipError: Attempted to create relationship across layers
 """
 
-import json
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-
 
 # =============================================================================
 # Enums
@@ -323,16 +321,16 @@ class CrossLayerRelationshipError(LayerError):
 
 
 __all__ = [
-    "LayerType",
-    "LayerMetadata",
-    "LayerDiff",
-    "LayerValidationReport",
-    "LayerError",
-    "LayerNotFoundError",
-    "LayerAlreadyExistsError",
-    "LayerProtectedError",
-    "LayerLockedError",
-    "InvalidLayerIdError",
-    "LayerIntegrityError",
     "CrossLayerRelationshipError",
+    "InvalidLayerIdError",
+    "LayerAlreadyExistsError",
+    "LayerDiff",
+    "LayerError",
+    "LayerIntegrityError",
+    "LayerLockedError",
+    "LayerMetadata",
+    "LayerNotFoundError",
+    "LayerProtectedError",
+    "LayerType",
+    "LayerValidationReport",
 ]

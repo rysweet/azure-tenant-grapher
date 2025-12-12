@@ -67,7 +67,9 @@ def test_python_debug_workflow():
 
     # Step 2: Generate configuration
     print("\n[Step 2] Generating debugpy configuration...")
-    config = generate_config(language="python", project_dir=str(test_dir), entry_point=__file__)
+    config = generate_config(
+        language="python", project_dir=str(test_dir), entry_point=__file__
+    )
 
     print(f"  Config type: {config.get('type')}")
     print(f"  Program: {config.get('program')}")

@@ -77,7 +77,9 @@ def test_install_tool_runs(monkeypatch, tool_name, installer, capsys):
     assert len(called_commands) >= 1
     # For chained commands (e.g., "cmd1 && cmd2"), multiple calls are made
     for called_cmd in called_commands:
-        assert isinstance(called_cmd, list), "Commands should be passed as lists, not strings"
+        assert isinstance(called_cmd, list), (
+            "Commands should be passed as lists, not strings"
+        )
 
 
 def test_install_tool_cancel(monkeypatch, capsys):
@@ -225,7 +227,9 @@ def test_bicep_install_command_selection(monkeypatch, installer, expected_cmd, c
     # Verify command was called as a list (Issue #477 security fix)
     assert len(called_commands) >= 1
     for called_cmd in called_commands:
-        assert isinstance(called_cmd, list), "Commands should be passed as lists, not strings"
+        assert isinstance(called_cmd, list), (
+            "Commands should be passed as lists, not strings"
+        )
 
     # Also verify the command appears in the output
     out = capsys.readouterr().out
