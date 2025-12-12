@@ -24,14 +24,18 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def mock_neo4j_driver():
     """Provide mock Neo4j driver for testing."""
+    from unittest.mock import MagicMock
+
     driver = Mock()
     driver.verify_connectivity = AsyncMock()
-    driver.session = Mock()
 
-    # Mock session context manager
+    # Mock session context manager - must be MagicMock to support __aenter__/__aexit__
     mock_session = AsyncMock()
-    driver.session.return_value.__aenter__.return_value = mock_session
-    driver.session.return_value.__aexit__.return_value = None
+    mock_session_context = MagicMock()
+    mock_session_context.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session_context.__aexit__ = AsyncMock(return_value=None)
+
+    driver.session = Mock(return_value=mock_session_context)
 
     return driver
 

@@ -28,6 +28,43 @@ from .traverser import GraphTraverser
 logger = logging.getLogger(__name__)
 
 
+def generate_iac_command(
+    tenant_id: str,
+    output_format: str = "terraform",
+    output_dir: Optional[str] = None,
+    target_tenant_id: Optional[str] = None,
+    auto_import_existing: bool = False,
+) -> int:
+    """
+    Synchronous wrapper for IaC generation used by remote service.
+
+    This function provides a simpler interface for the remote operations service,
+    mapping common parameters to the full generate_iac_command_handler.
+
+    Args:
+        tenant_id: Source tenant ID
+        output_format: Output format (terraform, arm, bicep)
+        output_dir: Output directory path
+        target_tenant_id: Optional target tenant for cross-tenant deployment
+        auto_import_existing: Generate Terraform import blocks
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    import asyncio
+
+    # Run the async handler synchronously
+    return asyncio.run(
+        generate_iac_command_handler(
+            tenant_id=tenant_id,
+            format_type=output_format,
+            output_path=output_dir,
+            target_tenant_id=target_tenant_id,
+            auto_import_existing=auto_import_existing,
+        )
+    )
+
+
 def validate_output_path(user_path: str, base_dir: Path = Path("outputs")) -> Path:
     """
     Validate and sanitize output path to prevent path traversal attacks.

@@ -11,8 +11,10 @@ Public API (the "studs"):
     generate_api_key: Generate cryptographically secure API key
     APIKeyStore: Manage and validate API keys
     require_api_key: Authentication decorator for endpoints
+    InvalidAPIKeyError: Exception raised for invalid API keys
 """
 
+from ..common.exceptions import InvalidAPIKeyError
 from .api_keys import (
     APIKeyStore,
     generate_api_key,
@@ -22,6 +24,7 @@ from .middleware import get_api_key_store, require_api_key
 
 __all__ = [
     "APIKeyStore",
+    "InvalidAPIKeyError",
     "generate_api_key",
     "get_api_key_store",
     "require_api_key",
