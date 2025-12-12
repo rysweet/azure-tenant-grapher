@@ -21,7 +21,7 @@ from .api_keys import (
     generate_api_key,
     validate_api_key,
 )
-from .middleware import get_api_key_store, require_api_key
+from .middleware import get_api_key_store, require_api_key, set_api_key_store
 
 __all__ = [
     "APIKeyStore",
@@ -30,5 +30,6 @@ __all__ = [
     "generate_api_key",
     "get_api_key_store",
     "require_api_key",
+    "set_api_key_store",
     "validate_api_key",
 ]

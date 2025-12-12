@@ -12,6 +12,7 @@ Philosophy:
 """
 
 import asyncio
+import os
 
 import pytest
 
@@ -67,6 +68,10 @@ async def e2e_neo4j_container():
 # =============================================================================
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_complete_remote_scan_workflow(
@@ -118,6 +123,10 @@ async def test_complete_remote_scan_workflow(
     assert progress_updates[-1][0] == 100.0  # Final progress
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_scan_results_stored_in_neo4j(
@@ -160,6 +169,10 @@ async def test_scan_results_stored_in_neo4j(
     await driver.close()
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_cli_to_service_authentication_flow(
@@ -194,6 +207,10 @@ async def test_cli_to_service_authentication_flow(
     assert "401" in str(exc_info.value) or "unauthorized" in str(exc_info.value).lower()
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_websocket_progress_streaming(running_atg_service, e2e_test_api_key):
@@ -233,6 +250,10 @@ async def test_websocket_progress_streaming(running_atg_service, e2e_test_api_ke
         assert time_span > 0  # Updates spread over time
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_error_handling_end_to_end(running_atg_service, e2e_test_api_key):
@@ -256,6 +277,10 @@ async def test_error_handling_end_to_end(running_atg_service, e2e_test_api_key):
     # (In real E2E test, would query service logs)
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_concurrent_scans(running_atg_service, e2e_test_api_key):
@@ -286,6 +311,10 @@ async def test_concurrent_scans(running_atg_service, e2e_test_api_key):
         assert result["status"] == "completed"
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_timeout_handling(running_atg_service, e2e_test_api_key):
@@ -316,6 +345,10 @@ async def test_timeout_handling(running_atg_service, e2e_test_api_key):
 # =============================================================================
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_cross_tenant_iac_generation(running_atg_service, e2e_test_api_key):
@@ -356,6 +389,10 @@ async def test_cross_tenant_iac_generation(running_atg_service, e2e_test_api_key
 # =============================================================================
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_service_recovers_from_neo4j_restart(
@@ -383,6 +420,10 @@ async def test_service_recovers_from_neo4j_restart(
     assert result2["status"] == "completed"
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 def test_service_handles_multiple_client_connections(
     running_atg_service, e2e_test_api_key
@@ -431,6 +472,10 @@ def test_service_handles_multiple_client_connections(
 # =============================================================================
 
 
+@pytest.mark.skipif(
+    os.getenv("ATG_SERVICE_URL") is None,
+    reason="E2E tests require deployed ATG service in Azure ACI"
+)
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_scan_performance_baseline(running_atg_service, e2e_test_api_key):

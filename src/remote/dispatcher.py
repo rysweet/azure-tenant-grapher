@@ -90,12 +90,16 @@ class ExecutionDispatcher:
             config: Client configuration (if None, loads from env)
             remote_mode_override: Override remote mode from CLI flag
         """
-        # Load config if not provided
+        # Load config if not provided (validation happens in from_env)
         if config is None:
-            config = ATGClientConfig.from_env()
+            config = ATGClientConfig.from_env(validate=False)
 
         self.config = config
         self._remote_mode_override = remote_mode_override
+
+        # Validate config if remote mode is active (after override is set)
+        if self.is_remote_mode():
+            self.config.validate()
 
         # Defer remote client initialization until first use
         # (allows tests to check mode detection without needing full config)

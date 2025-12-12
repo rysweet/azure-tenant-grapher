@@ -62,7 +62,7 @@ class ATGClientConfig:
 
             if not self.api_key:
                 raise ConfigurationError(
-                    "ATG_API_KEY is required when remote mode is enabled"
+                    "API key (ATG_API_KEY) is required when remote mode is enabled"
                 )
 
             # Validate service URL format

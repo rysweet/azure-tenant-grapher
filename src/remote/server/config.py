@@ -64,7 +64,9 @@ class ATGServerConfig:
             raise ConfigurationError(f"Workers must be at least 1, got {self.workers}")
 
         # Validate tenant ID format (UUID or prefixed UUID in non-production)
-        if self.target_tenant_id and not self._is_valid_tenant_id(self.target_tenant_id):
+        if self.target_tenant_id and not self._is_valid_tenant_id(
+            self.target_tenant_id
+        ):
             raise ConfigurationError(
                 f"Invalid tenant ID format: {self.target_tenant_id}. "
                 f"Must be a valid UUID"

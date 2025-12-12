@@ -125,7 +125,9 @@ def test_invalid_message_raises_error():
         from_json(invalid_json)
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 def test_message_validates_required_fields():
     """Test that message validation ensures required fields are present."""
     from src.remote.server.websocket.protocol import ProgressMessage, ProtocolError
@@ -178,7 +180,9 @@ async def test_websocket_manager_unregisters_connection():
     assert job_id not in manager.connections
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 @pytest.mark.asyncio
 async def test_websocket_manager_sends_message_to_connection():
     """Test that WebSocketManager sends messages to specific connection."""
@@ -205,7 +209,9 @@ async def test_websocket_manager_sends_message_to_connection():
     assert data["progress"] == 50.0
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 @pytest.mark.asyncio
 async def test_websocket_manager_broadcasts_to_all_connections():
     """Test that WebSocketManager can broadcast to all connections."""
@@ -233,7 +239,9 @@ async def test_websocket_manager_broadcasts_to_all_connections():
     mock_ws2.send.assert_called_once()
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 @pytest.mark.asyncio
 async def test_websocket_manager_handles_closed_connections():
     """Test that WebSocketManager handles closed connections gracefully."""
@@ -377,7 +385,9 @@ async def test_progress_stream_context_manager():
 # =============================================================================
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 def test_progress_validates_percentage_range():
     """Test that progress percentage is validated (0-100)."""
     from src.remote.server.websocket.protocol import ProgressMessage, ProtocolError
@@ -408,7 +418,9 @@ def test_job_id_format_validation():
             ProgressMessage(job_id=job_id, progress=50.0, message="Test")
 
 
-@pytest.mark.skip(reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment")
+@pytest.mark.skip(
+    reason="Pydantic v2 validation edge cases - functionality works, test assertions need adjustment"
+)
 def test_message_size_limit():
     """Test that messages are rejected if too large."""
     from src.remote.server.websocket.protocol import ProgressMessage, ProtocolError
@@ -428,7 +440,9 @@ def test_message_size_limit():
 # =============================================================================
 
 
-@pytest.mark.skip(reason="WebSocketConnection class not implemented - functionality provided by FastAPI router")
+@pytest.mark.skip(
+    reason="WebSocketConnection class not implemented - functionality provided by FastAPI router"
+)
 @pytest.mark.asyncio
 async def test_websocket_connection_accepts_valid_handshake():
     """Test that WebSocket connection accepts valid handshake."""
@@ -445,7 +459,9 @@ async def test_websocket_connection_accepts_valid_handshake():
     mock_websocket.accept.assert_called_once()
 
 
-@pytest.mark.skip(reason="WebSocketConnection class not implemented - functionality provided by FastAPI router")
+@pytest.mark.skip(
+    reason="WebSocketConnection class not implemented - functionality provided by FastAPI router"
+)
 @pytest.mark.asyncio
 async def test_websocket_connection_validates_api_key():
     """Test that WebSocket connection validates API key from query params."""
@@ -462,7 +478,9 @@ async def test_websocket_connection_validates_api_key():
         await conn.accept()
 
 
-@pytest.mark.skip(reason="WebSocketConnection class not implemented - functionality provided by FastAPI router")
+@pytest.mark.skip(
+    reason="WebSocketConnection class not implemented - functionality provided by FastAPI router"
+)
 @pytest.mark.asyncio
 async def test_websocket_connection_closes_gracefully():
     """Test that WebSocket connection closes gracefully."""
@@ -478,7 +496,9 @@ async def test_websocket_connection_closes_gracefully():
     mock_websocket.close.assert_called_once_with(code=1000, reason="Normal closure")
 
 
-@pytest.mark.skip(reason="WebSocketConnection class not implemented - functionality provided by FastAPI router")
+@pytest.mark.skip(
+    reason="WebSocketConnection class not implemented - functionality provided by FastAPI router"
+)
 @pytest.mark.asyncio
 async def test_websocket_connection_handles_ping_pong():
     """Test that WebSocket connection handles ping/pong for keepalive."""
@@ -521,8 +541,6 @@ def test_message_serialization_performance():
 def test_message_deserialization_performance():
     """Test that message deserialization is fast."""
     import time
-
-    from src.remote.server.websocket.protocol import Message
 
     json_str = json.dumps(
         {

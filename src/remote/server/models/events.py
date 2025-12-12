@@ -21,7 +21,8 @@ class BaseEvent(BaseModel):
     type: str = Field(..., description="Event type")
     job_id: str = Field(..., description="Job identifier")
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), description="Event timestamp"
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Event timestamp",
     )
 
 

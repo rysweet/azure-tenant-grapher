@@ -36,7 +36,15 @@ def test_dispatcher_detects_remote_mode_from_env():
 
     from src.remote.dispatcher import ExecutionDispatcher
 
-    with patch.dict(os.environ, {"ATG_REMOTE_MODE": "true"}, clear=True):
+    with patch.dict(
+        os.environ,
+        {
+            "ATG_REMOTE_MODE": "true",
+            "ATG_SERVICE_URL": "https://atg-dev.example.com",
+            "ATG_API_KEY": "atg_dev_" + "a" * 64,
+        },
+        clear=True,
+    ):
         dispatcher = ExecutionDispatcher()
 
     assert dispatcher.is_remote_mode() is True

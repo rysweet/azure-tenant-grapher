@@ -190,6 +190,9 @@ class APIKeyStore:
         if expires_at_str:
             try:
                 expires_at = datetime.fromisoformat(expires_at_str)
+                # If expires_at is timezone-naive, assume it's UTC
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
                 if datetime.now(timezone.utc) > expires_at:
                     return {"valid": False, "reason": "expired"}
             except (ValueError, TypeError):
