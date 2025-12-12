@@ -96,7 +96,7 @@ def test_completion_message_serializes_correctly():
 
 def test_message_deserializes_from_json():
     """Test that messages can be deserialized from JSON."""
-    from src.remote.websocket.protocol import Message
+    from src.remote.websocket.protocol import from_json
 
     json_str = json.dumps(
         {
@@ -108,8 +108,7 @@ def test_message_deserializes_from_json():
         }
     )
 
-    # This function doesn't exist yet - will fail!
-    msg = Message.from_json(json_str)
+    msg = from_json(json_str)
 
     assert msg.type == "progress"
     assert msg.job_id == "scan-abc123"
@@ -118,12 +117,12 @@ def test_message_deserializes_from_json():
 
 def test_invalid_message_raises_error():
     """Test that invalid JSON raises appropriate error."""
-    from src.remote.websocket.protocol import Message, ProtocolError
+    from src.remote.websocket.protocol import ProtocolError, from_json
 
     invalid_json = "not valid json"
 
     with pytest.raises(ProtocolError):
-        Message.from_json(invalid_json)
+        from_json(invalid_json)
 
 
 def test_message_validates_required_fields():
@@ -525,9 +524,11 @@ def test_message_deserialization_performance():
         }
     )
 
+    from src.remote.websocket.protocol import from_json
+
     start = time.perf_counter()
     for _ in range(1000):
-        Message.from_json(json_str)
+        from_json(json_str)
     elapsed = time.perf_counter() - start
 
     # Should deserialize 1000 messages in < 100ms

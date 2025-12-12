@@ -95,7 +95,7 @@ class ATGClientConfig:
         return value.lower() in ("true", "1", "yes", "on")
 
     @classmethod
-    def from_env(cls, validate: bool = False) -> "ATGClientConfig":
+    def from_env(cls, validate: bool = True) -> "ATGClientConfig":
         """
         Load configuration from environment variables.
 
@@ -106,7 +106,7 @@ class ATGClientConfig:
             ATG_REQUEST_TIMEOUT: Request timeout in seconds
 
         Args:
-            validate: Whether to validate config immediately (default: False)
+            validate: Whether to validate config immediately (default: True)
 
         Returns:
             ATGClientConfig instance
