@@ -45,6 +45,7 @@ from src.commands.doctor import doctor as doctor_cmd
 from src.commands.export_abstraction import export_abstraction_command
 from src.commands.layer_cmd import layer as layer_group
 from src.commands.list_deployments import list_deployments
+from src.commands.report import report as report_cmd
 from src.commands.scaling import (
     scale_clean as scale_clean_cmd,
 )
@@ -647,6 +648,145 @@ async def visualize(
     await visualize_command_handler(ctx, link_hierarchy, no_container)
 
 
+@cli.command(name="analyze-patterns")
+@click.option(
+    "--output-dir",
+    "-o",
+    help="Output directory for analysis results (default: outputs/pattern_analysis_<timestamp>)",
+)
+@click.option(
+    "--no-visualizations",
+    is_flag=True,
+    help="Skip generating matplotlib visualizations (only export JSON data)",
+)
+@click.option(
+    "--top-n-nodes",
+    type=int,
+    default=30,
+    help="Number of top nodes to include in visualizations (default: 30)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def analyze_patterns(
+    ctx: click.Context,
+    output_dir: Optional[str],
+    no_visualizations: bool,
+    top_n_nodes: int,
+    no_container: bool,
+) -> None:
+    """Analyze Azure resource graph to identify architectural patterns.
+
+    This command analyzes the relationships between Azure resources in your Neo4j
+    graph database to identify common architectural patterns such as:
+
+    - Web Applications (App Service + Storage + Monitoring)
+    - Virtual Machine Workloads (VMs + Networking + Storage)
+    - Container Platforms (AKS + Container Registry)
+    - Data Platforms (Databases + Private Endpoints)
+    - Serverless Applications (Functions + Storage + Key Vault)
+    - And more...
+
+    The analysis generates:
+    - JSON export of aggregated resource relationships
+    - Summary report with pattern detection results
+    - Visualizations showing resource connections and patterns (requires matplotlib/scipy)
+
+    Examples:
+
+        # Analyze patterns with visualizations
+        atg analyze-patterns
+
+        # Analyze without visualizations (faster, no matplotlib required)
+        atg analyze-patterns --no-visualizations
+
+        # Analyze with custom output directory
+        atg analyze-patterns -o my_analysis
+
+        # Show more nodes in visualization
+        atg analyze-patterns --top-n-nodes 50
+    """
+    from src.cli_commands import analyze_patterns_command_handler
+
+    await analyze_patterns_command_handler(
+        ctx, output_dir, no_visualizations, top_n_nodes, no_container
+    )
+
+
+@cli.group(name="report")
+def report():
+    """Generate various reports from Azure tenant data."""
+    pass
+
+
+@report.command(name="well-architected")
+@click.option(
+    "--output-dir",
+    "-o",
+    help="Output directory for report (default: outputs/well_architected_report_<timestamp>)",
+)
+@click.option(
+    "--no-visualizations",
+    is_flag=True,
+    help="Skip generating matplotlib visualizations",
+)
+@click.option(
+    "--skip-description-updates",
+    is_flag=True,
+    help="Skip updating resource descriptions in Neo4j with WAF insights",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def well_architected(
+    ctx: click.Context,
+    output_dir: Optional[str],
+    no_visualizations: bool,
+    skip_description_updates: bool,
+    no_container: bool,
+) -> None:
+    """Generate Well-Architected Framework analysis report.
+
+    This command analyzes your Azure environment against the Well-Architected
+    Framework, identifying architectural patterns and providing actionable
+    recommendations.
+
+    The report includes:
+    - Pattern analysis with WAF pillar mappings
+    - Markdown report with recommendations
+    - Interactive Jupyter notebook for exploration
+    - Resource description updates with WAF links (optional)
+    - Visualizations showing pattern relationships (optional)
+
+    Examples:
+
+        # Generate full report with all features
+        atg report well-architected
+
+        # Generate report without updating resource descriptions
+        atg report well-architected --skip-description-updates
+
+        # Generate report without visualizations (faster)
+        atg report well-architected --no-visualizations
+
+        # Custom output directory
+        atg report well-architected -o my_waf_report
+    """
+    from src.cli_commands import well_architected_report_command_handler
+
+    await well_architected_report_command_handler(
+        ctx, output_dir, no_visualizations, skip_description_updates, no_container
+    )
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -1102,6 +1242,9 @@ cli.add_command(check_permissions_cmd, "check-permissions")
 # Register infrastructure commands (Phase 4)
 cli.add_command(config_cmd, "config")
 cli.add_command(container_cmd, "container")
+
+# Register reporting commands (Issue #569)
+cli.add_command(report_cmd, "report")
 
 # Register layer command group (Issue #482: CLI Modularization - Phase 3)
 cli.add_command(layer_group)

@@ -11,8 +11,6 @@ Target: >40% coverage (project standard)
 """
 
 import asyncio
-from pathlib import Path
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -53,19 +51,18 @@ class TestMarkdownFormatting:
             "groups": 84,
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_identity_summary
+        # Act
+        from src.commands.report import format_identity_summary
 
-            result = format_identity_summary(identity_data)
+        result = format_identity_summary(identity_data)
 
-            # Expected format when implemented:
-            assert "## Identity Summary" in result
-            assert "| Identity Type | Count |" in result
-            assert "| Users | 214 |" in result
-            assert "| Service Principals | 1,470 |" in result
-            assert "| Managed Identities | 113 |" in result
-            assert "| Groups | 84 |" in result
+        # Assert
+        assert "## Identity Summary" in result
+        assert "| Identity Type | Count |" in result
+        assert "| Users | 214 |" in result
+        assert "| Service Principals | 1,470 |" in result
+        assert "| Managed Identities | 113 |" in result
+        assert "| Groups | 84 |" in result
 
     def test_format_resource_summary_table(self):
         """Test formatting of resource summary section."""
@@ -76,18 +73,17 @@ class TestMarkdownFormatting:
             "regions": 16,
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_resource_summary
+        # Act
+        from src.commands.report import format_resource_summary
 
-            result = format_resource_summary(resource_data)
+        result = format_resource_summary(resource_data)
 
-            # Expected format when implemented:
-            assert "## Resource Summary" in result
-            assert "| Metric | Count |" in result
-            assert "| Total Resources | 2,248 |" in result
-            assert "| Resource Types | 93 |" in result
-            assert "| Regions | 16 |" in result
+        # Assert
+        assert "## Resource Summary" in result
+        assert "| Metric | Count |" in result
+        assert "| Total Resources | 2,248 |" in result
+        assert "| Resource Types | 93 |" in result
+        assert "| Regions | 16 |" in result
 
     def test_format_top_resource_types_table(self):
         """Test formatting of top resource types section."""
@@ -100,17 +96,16 @@ class TestMarkdownFormatting:
             ("Microsoft.Web/sites", 112),
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_top_resource_types
+        # Act
+        from src.commands.report import format_top_resource_types
 
-            result = format_top_resource_types(top_types)
+        result = format_top_resource_types(top_types)
 
-            # Expected format when implemented:
-            assert "## Top Resource Types" in result
-            assert "| Resource Type | Count |" in result
-            assert "| Microsoft.Network/networkSecurityGroups | 245 |" in result
-            assert "| Microsoft.Compute/virtualMachines | 198 |" in result
+        # Assert
+        assert "## Top Resource Types" in result
+        assert "| Resource Type | Count |" in result
+        assert "| Microsoft.Network/networkSecurityGroups | 245 |" in result
+        assert "| Microsoft.Compute/virtualMachines | 198 |" in result
 
     def test_format_region_distribution_table(self):
         """Test formatting of region distribution section."""
@@ -123,17 +118,16 @@ class TestMarkdownFormatting:
             ("northeurope", 156),
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_region_distribution
+        # Act
+        from src.commands.report import format_region_distribution
 
-            result = format_region_distribution(regions)
+        result = format_region_distribution(regions)
 
-            # Expected format when implemented:
-            assert "## Region Distribution" in result
-            assert "| Region | Resource Count |" in result
-            assert "| eastus | 892 |" in result
-            assert "| westus2 | 543 |" in result
+        # Assert
+        assert "## Region Distribution" in result
+        assert "| Region | Resource Count |" in result
+        assert "| eastus | 892 |" in result
+        assert "| westus2 | 543 |" in result
 
     def test_format_security_summary_table(self):
         """Test formatting of security summary section."""
@@ -143,17 +137,16 @@ class TestMarkdownFormatting:
             "custom_roles": 23,
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_security_summary
+        # Act
+        from src.commands.report import format_security_summary
 
-            result = format_security_summary(security_data)
+        result = format_security_summary(security_data)
 
-            # Expected format when implemented:
-            assert "## Security Summary" in result
-            assert "| Metric | Count |" in result
-            assert "| Role Assignments | 1,042 |" in result
-            assert "| Custom Roles | 23 |" in result
+        # Assert
+        assert "## Security Summary" in result
+        assert "| Metric | Count |" in result
+        assert "| Role Assignments | 1,042 |" in result
+        assert "| Custom Roles | 23 |" in result
 
     def test_format_cost_summary_with_data(self):
         """Test formatting of cost summary when cost data is available."""
@@ -164,42 +157,40 @@ class TestMarkdownFormatting:
             "period": "last_30_days",
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_cost_summary
+        # Act
+        from src.commands.report import format_cost_summary
 
-            result = format_cost_summary(cost_data)
+        result = format_cost_summary(cost_data)
 
-            # Expected format when implemented:
-            assert "## Cost Summary" in result
-            assert "| Metric | Value |" in result
-            assert "| Total Cost (30 days) | $125,678.45 USD |" in result
+        # Assert
+        assert "## Cost Summary" in result
+        assert "| Metric | Value |" in result
+        assert "| Total Cost (30 days) | $125,678.45 USD |" in result
 
     def test_format_cost_summary_unavailable(self):
         """Test formatting of cost summary when cost data is unavailable."""
         # Arrange
         cost_data = None
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_cost_summary
+        # Act
+        from src.commands.report import format_cost_summary
 
-            result = format_cost_summary(cost_data)
+        result = format_cost_summary(cost_data)
 
-            # Expected format when implemented:
-            assert "## Cost Summary" in result
-            assert "N/A" in result
+        # Assert
+        assert "## Cost Summary" in result
+        assert "N/A" in result
 
     def test_number_formatting_with_commas(self):
         """Test that large numbers are formatted with thousand separators."""
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_number
+        # Act
+        from src.commands.report import format_number
 
-            assert format_number(1470) == "1,470"
-            assert format_number(125678) == "125,678"
-            assert format_number(2248) == "2,248"
-            assert format_number(84) == "84"
+        # Assert
+        assert format_number(1470) == "1,470"
+        assert format_number(125678) == "125,678"
+        assert format_number(2248) == "2,248"
+        assert format_number(84) == "84"
 
 
 class TestDataAggregation:
@@ -218,17 +209,16 @@ class TestDataAggregation:
             {"type": "Group", "count": 84},
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import aggregate_identity_counts
+        # Act
+        from src.commands.report import aggregate_identity_counts
 
-            result = aggregate_identity_counts(graph_data)
+        result = aggregate_identity_counts(graph_data)
 
-            # Expected aggregation when implemented:
-            assert result["users"] == 214
-            assert result["service_principals"] == 1470
-            assert result["managed_identities"] == 113
-            assert result["groups"] == 84
+        # Assert
+        assert result["users"] == 214
+        assert result["service_principals"] == 1470
+        assert result["managed_identities"] == 113
+        assert result["groups"] == 84
 
     def test_group_resources_by_type(self):
         """Test grouping resources by type and counting."""
@@ -242,16 +232,15 @@ class TestDataAggregation:
             {"type": "Microsoft.Network/networkSecurityGroups"},
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import group_resources_by_type
+        # Act
+        from src.commands.report import group_resources_by_type
 
-            result = group_resources_by_type(resources)
+        result = group_resources_by_type(resources)
 
-            # Expected grouping when implemented:
-            assert result["Microsoft.Network/networkSecurityGroups"] == 3
-            assert result["Microsoft.Compute/virtualMachines"] == 2
-            assert result["Microsoft.Storage/storageAccounts"] == 1
+        # Assert
+        assert result["Microsoft.Network/networkSecurityGroups"] == 3
+        assert result["Microsoft.Compute/virtualMachines"] == 2
+        assert result["Microsoft.Storage/storageAccounts"] == 1
 
     def test_group_resources_by_region(self):
         """Test grouping resources by region and counting."""
@@ -265,16 +254,15 @@ class TestDataAggregation:
             {"location": "centralus"},
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import group_resources_by_region
+        # Act
+        from src.commands.report import group_resources_by_region
 
-            result = group_resources_by_region(resources)
+        result = group_resources_by_region(resources)
 
-            # Expected grouping when implemented:
-            assert result["eastus"] == 3
-            assert result["westus2"] == 2
-            assert result["centralus"] == 1
+        # Assert
+        assert result["eastus"] == 3
+        assert result["westus2"] == 2
+        assert result["centralus"] == 1
 
     def test_count_unique_regions(self):
         """Test counting unique regions from resource data."""
@@ -287,14 +275,13 @@ class TestDataAggregation:
             {"location": "westus2"},
         ]
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import count_unique_regions
+        # Act
+        from src.commands.report import count_unique_regions
 
-            result = count_unique_regions(resources)
+        result = count_unique_regions(resources)
 
-            # Expected count when implemented:
-            assert result == 3  # eastus, westus2, centralus
+        # Assert
+        assert result == 3  # eastus, westus2, centralus
 
     def test_sort_and_limit_top_items(self):
         """Test sorting and limiting to top N items."""
@@ -307,14 +294,13 @@ class TestDataAggregation:
             "type_e": 50,
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import get_top_items
+        # Act
+        from src.commands.report import get_top_items
 
-            result = get_top_items(data, limit=3)
+        result = get_top_items(data, limit=3)
 
-            # Expected sorted top 3 when implemented:
-            assert result == [("type_d", 750), ("type_b", 500), ("type_c", 250)]
+        # Assert
+        assert result == [("type_d", 750), ("type_b", 500), ("type_c", 250)]
 
 
 class TestCostDataHandling:
@@ -329,27 +315,25 @@ class TestCostDataHandling:
             }
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import extract_cost_data
+        # Act
+        from src.commands.report import extract_cost_data
 
-            result = extract_cost_data(cost_response)
+        result = extract_cost_data(cost_response)
 
-            # Expected extraction when implemented:
-            assert result is not None
-            assert result["total_cost"] == 125678.45
-            assert result["currency"] == "USD"
+        # Assert
+        assert result is not None
+        assert result["total_cost"] == 125678.45
+        assert result["currency"] == "USD"
 
     def test_handle_cost_data_unavailable(self):
         """Test handling when cost data is unavailable (API error)."""
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import extract_cost_data
+        # Act
+        from src.commands.report import extract_cost_data
 
-            result = extract_cost_data(None)
+        result = extract_cost_data(None)
 
-            # Expected handling when implemented:
-            assert result is None
+        # Assert
+        assert result is None
 
     def test_handle_cost_data_empty_response(self):
         """Test handling when cost API returns empty data."""
@@ -360,14 +344,13 @@ class TestCostDataHandling:
             }
         }
 
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import extract_cost_data
+        # Act
+        from src.commands.report import extract_cost_data
 
-            result = extract_cost_data(cost_response)
+        result = extract_cost_data(cost_response)
 
-            # Expected handling when implemented:
-            assert result is None
+        # Assert
+        assert result is None
 
 
 class TestErrorMessages:
@@ -375,41 +358,38 @@ class TestErrorMessages:
 
     def test_error_message_neo4j_connection_failed(self):
         """Test error message when Neo4j connection fails."""
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_neo4j_connection_error
+        # Act
+        from src.commands.report import format_neo4j_connection_error
 
-            result = format_neo4j_connection_error("Connection timeout")
+        result = format_neo4j_connection_error("Connection timeout")
 
-            # Expected error message when implemented:
-            assert "Neo4j connection failed" in result
-            assert "Connection timeout" in result
-            assert "ensure Neo4j is running" in result.lower()
+        # Assert
+        assert "Neo4j connection failed" in result
+        assert "Connection timeout" in result
+        assert "ensure neo4j is running" in result.lower()
 
     def test_error_message_azure_auth_failed(self):
         """Test error message when Azure authentication fails."""
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_azure_auth_error
+        # Act
+        from src.commands.report import format_azure_auth_error
 
-            result = format_azure_auth_error("Invalid credentials")
+        result = format_azure_auth_error("Invalid credentials")
 
-            # Expected error message when implemented:
-            assert "Azure authentication failed" in result
-            assert "Invalid credentials" in result
-            assert "check your credentials" in result.lower()
+        # Assert
+        assert "Azure authentication failed" in result
+        assert "Invalid credentials" in result
+        assert "check your credentials" in result.lower()
 
     def test_error_message_no_data_found(self):
         """Test error message when no data is found in Neo4j."""
-        # Act & Assert - This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import format_no_data_error
+        # Act
+        from src.commands.report import format_no_data_error
 
-            result = format_no_data_error()
+        result = format_no_data_error()
 
-            # Expected error message when implemented:
-            assert "No data found" in result
-            assert "run a scan" in result.lower()
+        # Assert
+        assert "No data found" in result
+        assert "run a scan" in result.lower()
 
 
 # ============================================================================
@@ -426,105 +406,100 @@ class TestNeo4jQueryExecution:
     @pytest.mark.asyncio
     async def test_query_identity_counts(self, neo4j_container):
         """Test querying identity counts from Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import query_identity_counts
-            from neo4j import AsyncGraphDatabase
+        from neo4j import AsyncGraphDatabase
 
-            uri, user, password = neo4j_container
-            driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+        from src.commands.report import query_identity_counts
 
-            try:
-                result = await query_identity_counts(driver)
+        uri, user, password = neo4j_container
+        driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-                # Expected structure when implemented:
-                assert "users" in result
-                assert "service_principals" in result
-                assert "managed_identities" in result
-                assert "groups" in result
-            finally:
-                await driver.close()
+        try:
+            result = await query_identity_counts(driver)
+
+            # Assert
+            assert "users" in result
+            assert "service_principals" in result
+            assert "managed_identities" in result
+            assert "groups" in result
+        finally:
+            await driver.close()
 
     @pytest.mark.asyncio
     async def test_query_resource_counts(self, neo4j_container):
         """Test querying resource counts from Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import query_resource_counts
-            from neo4j import AsyncGraphDatabase
+        from neo4j import AsyncGraphDatabase
 
-            uri, user, password = neo4j_container
-            driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+        from src.commands.report import query_resource_counts
 
-            try:
-                result = await query_resource_counts(driver)
+        uri, user, password = neo4j_container
+        driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-                # Expected structure when implemented:
-                assert "total_resources" in result
-                assert "total_types" in result
-                assert "regions" in result
-            finally:
-                await driver.close()
+        try:
+            result = await query_resource_counts(driver)
+
+            # Assert
+            assert "total_resources" in result
+            assert "total_types" in result
+            assert "regions" in result
+        finally:
+            await driver.close()
 
     @pytest.mark.asyncio
     async def test_query_resource_by_type(self, neo4j_container):
         """Test querying resources grouped by type from Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import query_resources_by_type
-            from neo4j import AsyncGraphDatabase
+        from neo4j import AsyncGraphDatabase
 
-            uri, user, password = neo4j_container
-            driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+        from src.commands.report import query_resources_by_type
 
-            try:
-                result = await query_resources_by_type(driver)
+        uri, user, password = neo4j_container
+        driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-                # Expected structure when implemented:
-                assert isinstance(result, dict)
-                # Each entry should be resource_type -> count
-            finally:
-                await driver.close()
+        try:
+            result = await query_resources_by_type(driver)
+
+            # Assert
+            assert isinstance(result, dict)
+            # Each entry should be resource_type -> count
+        finally:
+            await driver.close()
 
     @pytest.mark.asyncio
     async def test_query_resource_by_region(self, neo4j_container):
         """Test querying resources grouped by region from Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import query_resources_by_region
-            from neo4j import AsyncGraphDatabase
+        from neo4j import AsyncGraphDatabase
 
-            uri, user, password = neo4j_container
-            driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+        from src.commands.report import query_resources_by_region
 
-            try:
-                result = await query_resources_by_region(driver)
+        uri, user, password = neo4j_container
+        driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-                # Expected structure when implemented:
-                assert isinstance(result, dict)
-                # Each entry should be region -> count
-            finally:
-                await driver.close()
+        try:
+            result = await query_resources_by_region(driver)
+
+            # Assert
+            assert isinstance(result, dict)
+            # Each entry should be region -> count
+        finally:
+            await driver.close()
 
     @pytest.mark.asyncio
     async def test_query_role_assignments(self, neo4j_container):
         """Test querying role assignment counts from Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import query_role_assignments
-            from neo4j import AsyncGraphDatabase
+        from neo4j import AsyncGraphDatabase
 
-            uri, user, password = neo4j_container
-            driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+        from src.commands.report import query_role_assignments
 
-            try:
-                result = await query_role_assignments(driver)
+        uri, user, password = neo4j_container
+        driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
 
-                # Expected structure when implemented:
-                assert "role_assignments" in result
-                assert isinstance(result["role_assignments"], int)
-            finally:
-                await driver.close()
+        try:
+            result = await query_role_assignments(driver)
+
+            # Assert
+            assert "role_assignments" in result
+            assert isinstance(result["role_assignments"], int)
+        finally:
+            await driver.close()
 
 
 class TestAzureAPIIntegration:
@@ -536,85 +511,77 @@ class TestAzureAPIIntegration:
     @pytest.mark.asyncio
     async def test_fetch_identities_from_azure(self):
         """Test fetching identity data from Azure Graph API."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import fetch_identities_from_azure
+        from src.commands.report import fetch_identities_from_azure
 
-            # Mock Azure Graph service
-            mock_service = Mock()
-            mock_service.fetch_users = AsyncMock(return_value=[{"id": "1"}, {"id": "2"}])
-            mock_service.fetch_service_principals = AsyncMock(
-                return_value=[{"id": "sp1"}, {"id": "sp2"}, {"id": "sp3"}]
-            )
-            mock_service.fetch_groups = AsyncMock(return_value=[{"id": "g1"}])
+        # Mock Azure Graph service
+        mock_service = Mock()
+        mock_service.fetch_users = AsyncMock(return_value=[{"id": "1"}, {"id": "2"}])
+        mock_service.fetch_service_principals = AsyncMock(
+            return_value=[{"id": "sp1"}, {"id": "sp2"}, {"id": "sp3"}]
+        )
+        mock_service.fetch_groups = AsyncMock(return_value=[{"id": "g1"}])
 
-            result = await fetch_identities_from_azure(mock_service)
+        result = await fetch_identities_from_azure(mock_service)
 
-            # Expected structure when implemented:
-            assert result["users"] == 2
-            assert result["service_principals"] == 3
-            assert result["groups"] == 1
+        # Assert
+        assert result["users"] == 2
+        assert result["service_principals"] == 3
+        assert result["groups"] == 1
 
     @pytest.mark.asyncio
     async def test_fetch_resources_from_azure(self):
         """Test fetching resource data from Azure Resource Management API."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import fetch_resources_from_azure
+        from src.commands.report import fetch_resources_from_azure
 
-            # Mock Azure Discovery service
-            mock_service = Mock()
-            mock_service.discover_resources = AsyncMock(
-                return_value=[
-                    {"type": "Microsoft.Compute/virtualMachines", "location": "eastus"},
-                    {"type": "Microsoft.Storage/storageAccounts", "location": "westus"},
-                    {"type": "Microsoft.Compute/virtualMachines", "location": "eastus"},
-                ]
-            )
+        # Mock Azure Discovery service
+        mock_service = Mock()
+        mock_service.discover_resources = AsyncMock(
+            return_value=[
+                {"type": "Microsoft.Compute/virtualMachines", "location": "eastus"},
+                {"type": "Microsoft.Storage/storageAccounts", "location": "westus"},
+                {"type": "Microsoft.Compute/virtualMachines", "location": "eastus"},
+            ]
+        )
 
-            result = await fetch_resources_from_azure(mock_service)
+        result = await fetch_resources_from_azure(mock_service)
 
-            # Expected structure when implemented:
-            assert result["total_resources"] == 3
-            assert "Microsoft.Compute/virtualMachines" in result["by_type"]
+        # Assert
+        assert result["total_resources"] == 3
+        assert "Microsoft.Compute/virtualMachines" in result["by_type"]
 
     @pytest.mark.asyncio
     async def test_fetch_cost_from_azure(self):
         """Test fetching cost data from Azure Cost Management API."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import fetch_cost_from_azure
+        from src.commands.report import fetch_cost_from_azure
 
-            # Mock Cost Management service
-            mock_service = Mock()
-            mock_service.get_subscription_costs = AsyncMock(
-                return_value={"total_cost": 125678.45, "currency": "USD"}
-            )
+        # Mock Cost Management service
+        mock_service = Mock()
+        mock_service.get_subscription_costs = AsyncMock(
+            return_value={"total_cost": 125678.45, "currency": "USD"}
+        )
 
-            result = await fetch_cost_from_azure(mock_service)
+        result = await fetch_cost_from_azure(mock_service)
 
-            # Expected structure when implemented:
-            assert result is not None
-            assert result["total_cost"] == 125678.45
-            assert result["currency"] == "USD"
+        # Assert
+        assert result is not None
+        assert result["total_cost"] == 125678.45
+        assert result["currency"] == "USD"
 
     @pytest.mark.asyncio
     async def test_fetch_cost_from_azure_unavailable(self):
         """Test handling when cost data is unavailable from Azure API."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import fetch_cost_from_azure
+        from src.commands.report import fetch_cost_from_azure
 
-            # Mock Cost Management service that raises exception
-            mock_service = Mock()
-            mock_service.get_subscription_costs = AsyncMock(
-                side_effect=Exception("Cost API unavailable")
-            )
+        # Mock Cost Management service that raises exception
+        mock_service = Mock()
+        mock_service.get_subscription_costs = AsyncMock(
+            side_effect=Exception("Cost API unavailable")
+        )
 
-            result = await fetch_cost_from_azure(mock_service)
+        result = await fetch_cost_from_azure(mock_service)
 
-            # Expected handling when implemented:
-            assert result is None
+        # Assert
+        assert result is None
 
 
 class TestParallelDataCollection:
@@ -626,66 +593,72 @@ class TestParallelDataCollection:
     @pytest.mark.asyncio
     async def test_parallel_neo4j_queries(self):
         """Test that multiple Neo4j queries execute in parallel."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import collect_neo4j_data
-            from neo4j import AsyncGraphDatabase
 
-            # Mock driver
-            mock_driver = Mock(spec=AsyncDriver)
+        from src.commands.report import collect_neo4j_data
 
-            # Create mock session that tracks query execution order
-            queries_executed = []
+        # Mock driver with AsyncMock
+        mock_driver = AsyncMock(spec=AsyncDriver)
 
-            async def mock_run(query, **kwargs):
-                queries_executed.append(query)
-                await asyncio.sleep(0.01)  # Simulate query time
-                return Mock()
+        # Create mock session that tracks query execution order
+        queries_executed = []
 
-            mock_session = Mock(spec=AsyncSession)
-            mock_session.run = mock_run
-            mock_driver.session.return_value.__aenter__.return_value = mock_session
+        async def mock_run(query, **kwargs):
+            queries_executed.append(query)
+            await asyncio.sleep(0.01)  # Simulate query time
+            return Mock()
 
-            # Execute parallel collection
-            await collect_neo4j_data(mock_driver)
+        mock_session = AsyncMock(spec=AsyncSession)
+        mock_session.run = mock_run
 
-            # Expected behavior when implemented:
-            # All queries should start before any complete (parallel execution)
-            assert len(queries_executed) > 0
+        # Configure async context manager properly
+        mock_driver.session.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_driver.session.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        # Execute parallel collection
+        await collect_neo4j_data(mock_driver)
+
+        # Assert
+        # All queries should start before any complete (parallel execution)
+        assert len(queries_executed) > 0
 
     @pytest.mark.asyncio
     async def test_parallel_azure_api_calls(self):
         """Test that multiple Azure API calls execute in parallel."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import collect_azure_data
+        from src.commands.report import collect_azure_data
 
-            # Mock services
-            mock_aad_service = Mock()
-            mock_discovery_service = Mock()
-            mock_cost_service = Mock()
+        # Mock services with AsyncMock
+        mock_aad_service = AsyncMock()
+        mock_discovery_service = AsyncMock()
+        mock_cost_service = AsyncMock()
 
-            # Track call order
-            calls_made = []
+        # Track call order
+        calls_made = []
 
-            async def track_call(name):
-                calls_made.append(f"{name}_start")
-                await asyncio.sleep(0.01)
-                calls_made.append(f"{name}_end")
-                return {}
+        async def track_call(name):
+            calls_made.append(f"{name}_start")
+            await asyncio.sleep(0.01)
+            calls_made.append(f"{name}_end")
+            return {}
 
-            mock_aad_service.fetch_users = lambda: track_call("users")
-            mock_discovery_service.discover_resources = lambda: track_call("resources")
-            mock_cost_service.get_costs = lambda: track_call("costs")
+        # Use AsyncMock instead of lambda
+        mock_aad_service.fetch_users = AsyncMock(
+            side_effect=lambda: track_call("users")
+        )
+        mock_discovery_service.discover_resources = AsyncMock(
+            side_effect=lambda: track_call("resources")
+        )
+        mock_cost_service.get_costs = AsyncMock(side_effect=lambda: track_call("costs"))
 
-            # Execute parallel collection
-            await collect_azure_data(
-                mock_aad_service, mock_discovery_service, mock_cost_service
-            )
+        # Execute parallel collection
+        await collect_azure_data(
+            mock_aad_service, mock_discovery_service, mock_cost_service
+        )
 
-            # Expected behavior when implemented:
-            # Calls should interleave (parallel execution)
-            # Not: users_start, users_end, resources_start, resources_end
+        # Assert
+        # Calls should interleave (parallel execution)
+        # Not: users_start, users_end, resources_start, resources_end
 
 
 class TestFileOutputWriting:
@@ -693,37 +666,33 @@ class TestFileOutputWriting:
 
     def test_write_report_to_file(self, tmp_path):
         """Test writing markdown report to file."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import write_report_to_file
+        from src.commands.report import write_report_to_file
 
-            # Arrange
-            report_content = "# Test Report\n\n## Section 1\n\nContent"
-            output_path = tmp_path / "report.md"
+        # Arrange
+        report_content = "# Test Report\n\n## Section 1\n\nContent"
+        output_path = tmp_path / "report.md"
 
-            # Act
-            write_report_to_file(report_content, output_path)
+        # Act
+        write_report_to_file(report_content, output_path)
 
-            # Assert - Expected behavior when implemented:
-            assert output_path.exists()
-            assert output_path.read_text() == report_content
+        # Assert
+        assert output_path.exists()
+        assert output_path.read_text() == report_content
 
     def test_write_report_creates_directory(self, tmp_path):
         """Test that writing report creates parent directories if needed."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError, ImportError)):
-            from src.commands.report import write_report_to_file
+        from src.commands.report import write_report_to_file
 
-            # Arrange
-            report_content = "# Test Report"
-            output_path = tmp_path / "subdir" / "nested" / "report.md"
+        # Arrange
+        report_content = "# Test Report"
+        output_path = tmp_path / "subdir" / "nested" / "report.md"
 
-            # Act
-            write_report_to_file(report_content, output_path)
+        # Act
+        write_report_to_file(report_content, output_path)
 
-            # Assert - Expected behavior when implemented:
-            assert output_path.exists()
-            assert output_path.parent.exists()
+        # Assert
+        assert output_path.exists()
+        assert output_path.parent.exists()
 
 
 # ============================================================================
@@ -756,18 +725,17 @@ class TestReportCommandE2E:
         self, mock_get_config, mock_graph_database, runner, tmp_path
     ):
         """Test successful report generation in Neo4j mode."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Arrange
-            mock_get_config.return_value = ("bolt://localhost:7687", "neo4j", "password")
-            output_path = tmp_path / "report.md"
+        # Arrange
+        mock_get_config.return_value = ("bolt://localhost:7687", "neo4j", "password")
+        output_path = tmp_path / "report.md"
 
-            # Mock driver and session
-            mock_driver = Mock()
-            mock_session = Mock()
+        # Mock driver with async context manager support
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
 
-            # Mock query results with expected data structure
-            mock_session.run = AsyncMock(side_effect=[
+        # Mock query results with expected data structure
+        mock_session.run = AsyncMock(
+            side_effect=[
                 # Identity counts query result
                 Mock(
                     data=lambda: [
@@ -778,35 +746,39 @@ class TestReportCommandE2E:
                     ]
                 ),
                 # Resource counts query result
-                Mock(
-                    data=lambda: [
-                        {"total": 2248, "types": 93, "regions": 16}
-                    ]
-                ),
+                Mock(data=lambda: [{"total": 2248, "types": 93, "regions": 16}]),
                 # Role assignments query result
                 Mock(data=lambda: [{"count": 1042}]),
-            ])
+            ]
+        )
 
-            mock_driver.session.return_value.__aenter__.return_value = mock_session
-            mock_graph_database.driver.return_value = mock_driver
+        # Configure async context managers properly
+        mock_driver.session.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_driver.session.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_driver.__aenter__ = AsyncMock(return_value=mock_driver)
+        mock_driver.__aexit__ = AsyncMock(return_value=None)
 
-            # Act
-            result = runner.invoke(
-                report,
-                ["--tenant-id", "test-tenant", "--output", str(output_path)],
-            )
+        mock_graph_database.driver.return_value = mock_driver
 
-            # Assert
-            assert result.exit_code == 0
-            assert "Report generated" in result.output
-            assert output_path.exists()
+        # Act
+        result = runner.invoke(
+            report,
+            ["--tenant-id", "test-tenant", "--output", str(output_path)],
+        )
 
-            # Verify report content
-            content = output_path.read_text()
-            assert "# Azure Tenant Report" in content
-            assert "214" in content  # users
-            assert "1,470" in content  # service principals
-            assert "2,248" in content  # total resources
+        # Assert
+        assert result.exit_code == 0
+        assert "Report generated" in result.output
+        assert output_path.exists()
+
+        # Verify report content
+        content = output_path.read_text()
+        assert "# Azure Tenant Report" in content
+        assert "214" in content  # users
+        assert "1,470" in content  # service principals
+        assert "2,248" in content  # total resources
 
     @patch("src.commands.report.AADGraphService")
     @patch("src.commands.report.AzureDiscoveryService")
@@ -820,123 +792,121 @@ class TestReportCommandE2E:
         tmp_path,
     ):
         """Test successful report generation in live mode."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Arrange
-            output_path = tmp_path / "report.md"
+        # Arrange
+        output_path = tmp_path / "report.md"
 
-            # Mock AAD service
-            mock_aad_service = Mock()
-            mock_aad_service.fetch_users = AsyncMock(
-                return_value=[{"id": f"user{i}"} for i in range(214)]
-            )
-            mock_aad_service.fetch_service_principals = AsyncMock(
-                return_value=[{"id": f"sp{i}"} for i in range(1470)]
-            )
-            mock_aad_service.fetch_managed_identities = AsyncMock(
-                return_value=[{"id": f"mi{i}"} for i in range(113)]
-            )
-            mock_aad_service.fetch_groups = AsyncMock(
-                return_value=[{"id": f"g{i}"} for i in range(84)]
-            )
-            mock_aad_service_class.return_value = mock_aad_service
+        # Mock AAD service
+        mock_aad_service = Mock()
+        mock_aad_service.fetch_users = AsyncMock(
+            return_value=[{"id": f"user{i}"} for i in range(214)]
+        )
+        mock_aad_service.fetch_service_principals = AsyncMock(
+            return_value=[{"id": f"sp{i}"} for i in range(1470)]
+        )
+        mock_aad_service.fetch_managed_identities = AsyncMock(
+            return_value=[{"id": f"mi{i}"} for i in range(113)]
+        )
+        mock_aad_service.fetch_groups = AsyncMock(
+            return_value=[{"id": f"g{i}"} for i in range(84)]
+        )
+        mock_aad_service_class.return_value = mock_aad_service
 
-            # Mock Discovery service
-            mock_discovery_service = Mock()
-            mock_discovery_service.discover_resources = AsyncMock(
-                return_value=[
-                    {
-                        "type": "Microsoft.Compute/virtualMachines",
-                        "location": "eastus",
-                    }
-                    for _ in range(2248)
-                ]
-            )
-            mock_discovery_service_class.return_value = mock_discovery_service
+        # Mock Discovery service
+        mock_discovery_service = Mock()
+        mock_discovery_service.discover_resources = AsyncMock(
+            return_value=[
+                {
+                    "type": "Microsoft.Compute/virtualMachines",
+                    "location": "eastus",
+                }
+                for _ in range(2248)
+            ]
+        )
+        mock_discovery_service_class.return_value = mock_discovery_service
 
-            # Mock Cost service
-            mock_cost_service = Mock()
-            mock_cost_service.get_subscription_costs = AsyncMock(
-                return_value={"total_cost": 125678.45, "currency": "USD"}
-            )
-            mock_cost_service_class.return_value = mock_cost_service
+        # Mock Cost service
+        mock_cost_service = Mock()
+        mock_cost_service.get_subscription_costs = AsyncMock(
+            return_value={"total_cost": 125678.45, "currency": "USD"}
+        )
+        mock_cost_service_class.return_value = mock_cost_service
 
-            # Act
-            result = runner.invoke(
-                report,
-                ["--tenant-id", "test-tenant", "--output", str(output_path), "--live"],
-            )
+        # Act
+        result = runner.invoke(
+            report,
+            ["--tenant-id", "test-tenant", "--output", str(output_path), "--live"],
+        )
 
-            # Assert
-            assert result.exit_code == 0
-            assert "Report generated" in result.output
-            assert output_path.exists()
+        # Assert
+        assert result.exit_code == 0
+        assert "Report generated" in result.output
+        assert output_path.exists()
 
-            # Verify report content
-            content = output_path.read_text()
-            assert "# Azure Tenant Report" in content
-            assert "214" in content  # users
-            assert "2,248" in content  # total resources
+        # Verify report content
+        content = output_path.read_text()
+        assert "# Azure Tenant Report" in content
+        assert "214" in content  # users
+        assert "2,248" in content  # total resources
 
     @patch("src.commands.report.get_neo4j_config_from_env")
     def test_report_neo4j_connection_error(self, mock_get_config, runner):
         """Test report when Neo4j connection fails."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Arrange
-            mock_get_config.side_effect = Exception("Connection failed")
+        # Arrange
+        mock_get_config.side_effect = Exception("Connection failed")
 
-            # Act
-            result = runner.invoke(report, ["--tenant-id", "test-tenant"])
+        # Act
+        result = runner.invoke(report, ["--tenant-id", "test-tenant"])
 
-            # Assert
-            assert result.exit_code == 1
-            assert "connection failed" in result.output.lower()
+        # Assert
+        assert result.exit_code == 1
+        assert "connection failed" in result.output.lower()
 
     @patch("src.commands.report.AsyncGraphDatabase")
     @patch("src.commands.report.get_neo4j_config_from_env")
     def test_report_no_data_found(self, mock_get_config, mock_graph_database, runner):
         """Test report when no data is found in Neo4j."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Arrange
-            mock_get_config.return_value = ("bolt://localhost:7687", "neo4j", "password")
+        # Arrange
+        mock_get_config.return_value = ("bolt://localhost:7687", "neo4j", "password")
 
-            # Mock empty results
-            mock_driver = Mock()
-            mock_session = Mock()
-            mock_session.run = AsyncMock(return_value=Mock(data=lambda: []))
-            mock_driver.session.return_value.__aenter__.return_value = mock_session
-            mock_graph_database.driver.return_value = mock_driver
+        # Mock empty results with proper async context managers
+        mock_driver = AsyncMock()
+        mock_session = AsyncMock()
+        mock_session.run = AsyncMock(return_value=Mock(data=lambda: []))
 
-            # Act
-            result = runner.invoke(report, ["--tenant-id", "test-tenant"])
+        # Configure async context managers properly
+        mock_driver.session.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_driver.session.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_driver.__aenter__ = AsyncMock(return_value=mock_driver)
+        mock_driver.__aexit__ = AsyncMock(return_value=None)
 
-            # Assert
-            assert result.exit_code == 1
-            assert "no data found" in result.output.lower()
+        mock_graph_database.driver.return_value = mock_driver
+
+        # Act
+        result = runner.invoke(report, ["--tenant-id", "test-tenant"])
+
+        # Assert
+        assert result.exit_code == 1
+        assert "no data found" in result.output.lower()
 
     def test_report_output_default_location(self, runner):
         """Test that default output location is used when not specified."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Act
-            result = runner.invoke(report, ["--tenant-id", "test-tenant"])
+        # Act
+        result = runner.invoke(report, ["--tenant-id", "test-tenant"])
 
-            # Assert - Should succeed and use default location
-            if result.exit_code == 0:
-                assert "tenant-report.md" in result.output
+        # Assert - Should succeed and use default location
+        if result.exit_code == 0:
+            assert "tenant-report.md" in result.output
 
     def test_report_validates_tenant_id_format(self, runner):
         """Test that invalid tenant ID format is rejected."""
-        # This will FAIL until implementation exists
-        with pytest.raises((NotImplementedError, AttributeError)):
-            # Act
-            result = runner.invoke(report, ["--tenant-id", "invalid-format"])
+        # Act
+        result = runner.invoke(report, ["--tenant-id", "invalid-format"])
 
-            # Assert
-            if "invalid" in result.output.lower():
-                assert result.exit_code == 1
+        # Assert
+        if "invalid" in result.output.lower():
+            assert result.exit_code == 1
 
 
 # ============================================================================
@@ -954,9 +924,7 @@ def sample_neo4j_data():
             {"type": "ManagedIdentity", "count": 113},
             {"type": "Group", "count": 84},
         ],
-        "resources": [
-            {"total": 2248, "types": 93, "regions": 16}
-        ],
+        "resources": [{"total": 2248, "types": 93, "regions": 16}],
         "resource_types": [
             {"type": "Microsoft.Network/networkSecurityGroups", "count": 245},
             {"type": "Microsoft.Compute/virtualMachines", "count": 198},
@@ -979,9 +947,7 @@ def sample_azure_data():
         "service_principals": [
             {"id": f"sp{i}", "displayName": f"SP {i}"} for i in range(1470)
         ],
-        "managed_identities": [
-            {"id": f"mi{i}", "name": f"MI {i}"} for i in range(113)
-        ],
+        "managed_identities": [{"id": f"mi{i}", "name": f"MI {i}"} for i in range(113)],
         "groups": [{"id": f"g{i}", "displayName": f"Group {i}"} for i in range(84)],
         "resources": [
             {
