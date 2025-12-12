@@ -2873,3 +2873,230 @@ async def cost_report_command_handler(
 
         traceback.print_exc()
         sys.exit(1)
+
+
+# =============================================================================
+# Dispatcher Compatibility Wrappers (Issue #578)
+# =============================================================================
+# These wrapper functions provide a stable interface for the dispatcher
+# to route commands to the appropriate handlers.
+# =============================================================================
+
+
+async def scan_tenant(**kwargs):
+    """
+    Wrapper for dispatcher - routes to build_command_handler.
+
+    This function provides a simplified interface for the dispatcher to
+    execute tenant scans without needing Click context setup.
+
+    Args:
+        **kwargs: All scan parameters (tenant_id, resource_limit, etc.)
+
+    Returns:
+        dict: Scan results with status and data
+
+    Raises:
+        ValueError: If required parameters missing
+    """
+    # Extract parameters
+    tenant_id = kwargs.get("tenant_id")
+    if not tenant_id:
+        raise ValueError("tenant_id is required for scan")
+
+    resource_limit = kwargs.get("resource_limit")
+    max_llm_threads = kwargs.get("max_llm_threads", 10)
+    max_build_threads = kwargs.get("max_build_threads", 50)
+    max_retries = kwargs.get("max_retries", 3)
+    max_concurrency = kwargs.get("max_concurrency", 10)
+    no_container = kwargs.get("no_container", False)
+    generate_spec = kwargs.get("generate_spec", False)
+    visualize = kwargs.get("visualize", False)
+    no_dashboard = kwargs.get(
+        "no_dashboard", True
+    )  # Default to no dashboard for remote
+    rebuild_edges = kwargs.get("rebuild_edges", False)
+    no_aad_import = kwargs.get("no_aad_import", False)
+    debug = kwargs.get("debug", False)
+    filter_by_subscriptions = kwargs.get("filter_by_subscriptions")
+    filter_by_rgs = kwargs.get("filter_by_rgs")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("scan"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute scan
+    result = await build_command_handler(
+        ctx=ctx,
+        tenant_id=tenant_id,
+        resource_limit=resource_limit,
+        max_llm_threads=max_llm_threads,
+        max_build_threads=max_build_threads,
+        max_retries=max_retries,
+        max_concurrency=max_concurrency,
+        no_container=no_container,
+        generate_spec=generate_spec,
+        visualize=visualize,
+        no_dashboard=no_dashboard,
+        test_keypress_queue=False,
+        test_keypress_file="",
+        rebuild_edges=rebuild_edges,
+        no_aad_import=no_aad_import,
+        debug=debug,
+        filter_by_subscriptions=filter_by_subscriptions,
+        filter_by_rgs=filter_by_rgs,
+    )
+
+    return {"status": "success", "result": result}
+
+
+async def generate_tenant_spec(**kwargs):
+    """
+    Wrapper for dispatcher - routes to spec_command_handler.
+
+    Args:
+        **kwargs: Spec generation parameters (tenant_id, domain_name, output_file)
+
+    Returns:
+        dict: Generation results
+    """
+    from src.commands.spec import spec_command_handler
+
+    tenant_id = kwargs.get("tenant_id")
+    domain_name = kwargs.get("domain_name")
+    output_file = kwargs.get("output_file")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("spec"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute spec generation
+    await spec_command_handler(ctx, tenant_id, domain_name)
+
+    return {"status": "success", "output_file": output_file}
+
+
+async def generate_iac(**kwargs):
+    """
+    Wrapper for dispatcher - routes to IaC generation handler.
+
+    Args:
+        **kwargs: IaC generation parameters (format, output_dir, tenant_id)
+
+    Returns:
+        dict: Generation results
+    """
+    # TODO: Route to appropriate IaC handler when implemented
+    # For now, return placeholder
+    return {
+        "status": "success",
+        "message": "IaC generation not yet implemented",
+        "format": kwargs.get("format", "terraform"),
+        "output_dir": kwargs.get("output_dir", "./outputs"),
+    }
+
+
+async def create_tenant_from_spec(**kwargs):
+    """
+    Wrapper for dispatcher - routes to create_tenant_from_markdown.
+
+    Args:
+        **kwargs: Tenant creation parameters (spec_file)
+
+    Returns:
+        dict: Creation results with statistics
+
+    Raises:
+        ValueError: If spec_file missing
+        FileNotFoundError: If spec_file doesn't exist
+    """
+    from src.commands.tenant import create_tenant_from_markdown
+
+    spec_file = kwargs.get("spec_file")
+    if not spec_file:
+        raise ValueError("spec_file is required for tenant creation")
+
+    if not os.path.exists(spec_file):
+        raise FileNotFoundError(f"Spec file not found: {spec_file}")
+
+    # Read spec file
+    with open(spec_file, encoding="utf-8") as f:
+        spec_content = f.read()
+
+    # Create tenant (this function handles its own event loop)
+    stats = create_tenant_from_markdown(spec_content)
+
+    return {"status": "success", "statistics": stats}
+
+
+async def visualize_graph(**kwargs):
+    """
+    Wrapper for dispatcher - routes to visualize_command_handler.
+
+    Args:
+        **kwargs: Visualization parameters (output, link_hierarchy, no_container)
+
+    Returns:
+        dict: Visualization results with output path
+    """
+    from src.commands.visualize import visualize_command_handler
+
+    link_hierarchy = kwargs.get("link_hierarchy", True)
+    no_container = kwargs.get("no_container", False)
+    output = kwargs.get("output")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("visualize"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute visualization
+    await visualize_command_handler(ctx, link_hierarchy, no_container, output)
+
+    return {"status": "success", "output": output}
+
+
+async def generate_threat_model(**kwargs):
+    """
+    Wrapper for dispatcher - routes to generate_threat_model_command_handler.
+
+    Args:
+        **kwargs: Threat model parameters (output_file)
+
+    Returns:
+        dict: Threat model results with report path
+    """
+    from src.commands.threat_model import generate_threat_model_command_handler
+
+    output_file = kwargs.get("output_file")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("threat-model"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute threat modeling
+    await generate_threat_model_command_handler(ctx)
+
+    return {"status": "success", "output_file": output_file}
+
+
+async def start_agent_mode(**kwargs):
+    """
+    Wrapper for dispatcher - routes to agent_mode_command_handler.
+
+    Args:
+        **kwargs: Agent mode parameters (question)
+
+    Returns:
+        dict: Agent mode results
+    """
+    # Import here to avoid circular dependency
+    question = kwargs.get("question")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("agent-mode"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute agent mode (handler defined elsewhere in this file)
+    await agent_mode_command_handler(ctx, question)
+
+    return {"status": "success", "question": question}

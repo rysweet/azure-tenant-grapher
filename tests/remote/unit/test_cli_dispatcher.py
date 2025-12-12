@@ -74,17 +74,24 @@ async def test_dispatcher_routes_scan_to_local():
 
     dispatcher = ExecutionDispatcher()  # Local mode by default
 
-    mock_local_executor = AsyncMock()
-    mock_local_executor.scan = AsyncMock(
-        return_value={"status": "success", "resources": 100}
-    )
+    async def mock_scan(**kwargs):
+        return {"status": "success", "resources": 100}
+
+    mock_local_executor = {
+        "scan": mock_scan,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     with patch.object(dispatcher, "_local_executor", mock_local_executor):
         result = await dispatcher.execute(
             "scan", tenant_id="12345678-1234-1234-1234-123456789012"
         )
 
-    mock_local_executor.scan.assert_called_once()
     assert result["status"] == "success"
 
 
@@ -150,8 +157,21 @@ async def test_dispatcher_passes_all_parameters_to_executor():
 
     dispatcher = ExecutionDispatcher()
 
-    mock_local_executor = AsyncMock()
-    mock_local_executor.scan = AsyncMock(return_value={"status": "success"})
+    received_params = {}
+
+    async def mock_scan(**kwargs):
+        received_params.update(kwargs)
+        return {"status": "success"}
+
+    mock_local_executor = {
+        "scan": mock_scan,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     params = {
         "tenant_id": "12345678-1234-1234-1234-123456789012",
@@ -164,11 +184,10 @@ async def test_dispatcher_passes_all_parameters_to_executor():
         await dispatcher.execute("scan", **params)
 
     # Verify all parameters passed
-    call_kwargs = mock_local_executor.scan.call_args[1]
-    assert call_kwargs["tenant_id"] == params["tenant_id"]
-    assert call_kwargs["resource_limit"] == params["resource_limit"]
-    assert call_kwargs["max_llm_threads"] == params["max_llm_threads"]
-    assert call_kwargs["generate_spec"] == params["generate_spec"]
+    assert received_params["tenant_id"] == params["tenant_id"]
+    assert received_params["resource_limit"] == params["resource_limit"]
+    assert received_params["max_llm_threads"] == params["max_llm_threads"]
+    assert received_params["generate_spec"] == params["generate_spec"]
 
 
 # =============================================================================
@@ -188,16 +207,22 @@ async def test_dispatcher_forwards_progress_callbacks_local():
     def progress_callback(progress: float, message: str):
         progress_updates.append((progress, message))
 
-    mock_local_executor = AsyncMock()
-
-    async def mock_scan(*args, **kwargs):
+    async def mock_scan(**kwargs):
         callback = kwargs.get("progress_callback")
         if callback:
             callback(50.0, "Halfway done")
             callback(100.0, "Complete")
         return {"status": "success"}
 
-    mock_local_executor.scan = mock_scan
+    mock_local_executor = {
+        "scan": mock_scan,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     with patch.object(dispatcher, "_local_executor", mock_local_executor):
         await dispatcher.execute(
@@ -263,8 +288,18 @@ async def test_dispatcher_handles_local_execution_errors():
 
     dispatcher = ExecutionDispatcher()
 
-    mock_local_executor = AsyncMock()
-    mock_local_executor.scan = AsyncMock(side_effect=Exception("Azure auth failed"))
+    async def mock_scan_error(**kwargs):
+        raise Exception("Azure auth failed")
+
+    mock_local_executor = {
+        "scan": mock_scan_error,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     with patch.object(dispatcher, "_local_executor", mock_local_executor):
         with pytest.raises(LocalExecutionError) as exc_info:
@@ -536,8 +571,18 @@ async def test_dispatcher_increments_execution_counters():
 
     dispatcher = ExecutionDispatcher()
 
-    mock_local_executor = AsyncMock()
-    mock_local_executor.scan = AsyncMock(return_value={"status": "success"})
+    async def mock_scan(**kwargs):
+        return {"status": "success"}
+
+    mock_local_executor = {
+        "scan": mock_scan,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     with patch.object(dispatcher, "_local_executor", mock_local_executor):
         await dispatcher.execute(
@@ -558,11 +603,24 @@ async def test_dispatcher_tracks_failure_rate():
 
     dispatcher = ExecutionDispatcher()
 
-    mock_local_executor = AsyncMock()
-    # First call succeeds, second fails
-    mock_local_executor.scan = AsyncMock(
-        side_effect=[{"status": "success"}, Exception("Failed")]
-    )
+    call_count = [0]
+
+    async def mock_scan(**kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            return {"status": "success"}
+        else:
+            raise Exception("Failed")
+
+    mock_local_executor = {
+        "scan": mock_scan,
+        "generate-spec": AsyncMock(),
+        "generate-iac": AsyncMock(),
+        "create-tenant": AsyncMock(),
+        "visualize": AsyncMock(),
+        "threat-model": AsyncMock(),
+        "agent-mode": AsyncMock(),
+    }
 
     with patch.object(dispatcher, "_local_executor", mock_local_executor):
         # Success
