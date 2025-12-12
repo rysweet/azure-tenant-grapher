@@ -158,7 +158,7 @@ class ExecutionDispatcher:
         self,
         command: str,
         progress_callback: Optional[Callable[[float, str], None]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Execute command in appropriate mode (local or remote).
@@ -213,7 +213,7 @@ class ExecutionDispatcher:
         self,
         command: str,
         progress_callback: Optional[Callable[[float, str], None]],
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Execute command locally using existing ATG services.
@@ -276,7 +276,7 @@ class ExecutionDispatcher:
         self,
         command: str,
         progress_callback: Optional[Callable[[float, str], None]],
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Execute command via remote service.

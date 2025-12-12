@@ -10,6 +10,7 @@ Public API:
     RemoteProgressDisplay: Display progress for remote operations
 """
 
+from types import TracebackType
 from typing import Optional
 
 from rich.console import Console
@@ -17,6 +18,7 @@ from rich.progress import (
     BarColumn,
     Progress,
     SpinnerColumn,
+    TaskID,
     TaskProgressColumn,
     TextColumn,
 )
@@ -42,7 +44,7 @@ class RemoteProgressDisplay:
         self.show_progress = show_progress
         self.console = Console()
         self._progress: Optional[Progress] = None
-        self._task_id: Optional[int] = None
+        self._task_id: Optional[TaskID] = None
 
     def start(self, description: str = "Executing remote operation...") -> None:
         """
@@ -125,7 +127,12 @@ class RemoteProgressDisplay:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         """Context manager exit - cleanup progress display."""
         if self._progress:
             self._progress.stop()

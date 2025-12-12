@@ -20,8 +20,8 @@ Security Requirements:
 import hmac
 import re
 import secrets
-from datetime import datetime
-from typing import Dict
+from datetime import datetime, timezone
+from typing import Any, Dict
 
 from ..common.exceptions import InvalidAPIKeyError
 
@@ -143,7 +143,7 @@ class APIKeyStore:
         True
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict[str, Any]):
         """
         Initialize API key store.
 
@@ -152,7 +152,7 @@ class APIKeyStore:
         """
         self.keys = config.get("api_keys", {})
 
-    def validate(self, api_key: str) -> Dict[str, any]:
+    def validate(self, api_key: str) -> Dict[str, Any]:
         """
         Validate API key using constant-time comparison.
 
@@ -190,7 +190,7 @@ class APIKeyStore:
         if expires_at_str:
             try:
                 expires_at = datetime.fromisoformat(expires_at_str)
-                if datetime.utcnow() > expires_at:
+                if datetime.now(timezone.utc) > expires_at:
                     return {"valid": False, "reason": "expired"}
             except (ValueError, TypeError):
                 return {"valid": False, "reason": "invalid_expiration"}

@@ -54,7 +54,7 @@ class RemoteClient:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args: Any) -> None:
         """Async context manager exit - cleanup HTTP client."""
         await self._http_client.aclose()
 
@@ -62,7 +62,7 @@ class RemoteClient:
         self,
         tenant_id: str,
         progress_callback: Optional[Callable[[float, str], None]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Execute scan operation on remote service.
@@ -144,7 +144,7 @@ class RemoteClient:
         tenant_id: str,
         output_format: str,
         progress_callback: Optional[Callable[[float, str], None]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Generate IaC via remote service.

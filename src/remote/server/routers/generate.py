@@ -13,7 +13,7 @@ Endpoints:
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 
@@ -112,7 +112,7 @@ async def submit_generate_iac_job(
     return JobResponse(
         job_id=job_id,
         status=JobStatus.QUEUED,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         websocket_url=websocket_url,
     )
 
@@ -238,7 +238,7 @@ async def submit_generate_spec_job(
     return JobResponse(
         job_id=job_id,
         status=JobStatus.QUEUED,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         websocket_url=websocket_url,
     )
 

@@ -10,7 +10,9 @@ This module provides authentication middleware compatible with the tests.
 """
 
 from functools import wraps
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
+
+from fastapi import Request
 
 from ..common.exceptions import AuthenticationError
 from .api_keys import APIKeyStore
@@ -45,7 +47,7 @@ def set_api_key_store(store: APIKeyStore) -> None:
     _api_key_store = store
 
 
-def require_api_key(func: Callable):
+def require_api_key(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator for requiring API key authentication.
 
@@ -70,7 +72,7 @@ def require_api_key(func: Callable):
     """
 
     @wraps(func)
-    async def wrapper(request, *args, **kwargs):
+    async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
         # Extract Authorization header
         auth_header = request.headers.get("Authorization", "")
 

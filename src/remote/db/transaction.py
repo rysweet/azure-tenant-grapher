@@ -22,10 +22,10 @@ T = TypeVar("T")
 
 
 async def chunked_transaction(
-    session,
+    session: Any,
     items: List[T],
     chunk_size: int,
-    process_fn: Callable,
+    process_fn: Callable[..., Any],
     progress_callback: Optional[Callable[[int, int], None]] = None,
 ) -> List[Any]:
     """
@@ -81,8 +81,8 @@ async def chunked_transaction(
 
 
 async def with_retry(
-    session,
-    operation: Callable,
+    session: Any,
+    operation: Callable[..., Any],
     max_retries: int = 3,
     retry_delay: float = 1.0,
 ) -> Any:

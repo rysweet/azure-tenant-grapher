@@ -20,7 +20,7 @@ from .dispatcher import ExecutionDispatcher
 
 
 async def execute_with_remote_support(
-    command: str, remote: bool = False, show_progress: bool = True, **kwargs
+    command: str, remote: bool = False, show_progress: bool = True, **kwargs: Any
 ) -> Dict[str, Any]:
     """
     Execute CLI command with remote mode support.
@@ -108,7 +108,7 @@ def is_remote_mode_enabled(remote_flag: bool = False) -> bool:
     return os.getenv("ATG_REMOTE_MODE", "").lower() == "true"
 
 
-def add_remote_option(command_func: Callable) -> Callable:
+def add_remote_option(command_func: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator to add --remote option to Click commands.
 

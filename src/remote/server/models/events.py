@@ -9,7 +9,7 @@ Philosophy:
 Events are sent from server to client over WebSocket connections.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -21,7 +21,7 @@ class BaseEvent(BaseModel):
     type: str = Field(..., description="Event type")
     job_id: str = Field(..., description="Job identifier")
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Event timestamp"
+        default_factory=lambda: datetime.now(timezone.utc), description="Event timestamp"
     )
 
 
