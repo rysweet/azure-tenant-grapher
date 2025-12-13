@@ -65,7 +65,7 @@ class KeyVaultHandler(ResourceHandler):
         # SKU (required)
         sku = properties.get("sku", {})
         sku_name = sku.get("name", "standard") if isinstance(sku, dict) else "standard"
-        config["sku_name"] = sku_name
+        config["sku_name"] = sku_name.lower()  # Fix #596: Terraform requires lowercase
 
         # Tenant ID (required)
         tenant_id = properties.get("tenantId") or context.target_tenant_id
