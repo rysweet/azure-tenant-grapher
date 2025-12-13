@@ -120,8 +120,22 @@ class VirtualMachineHandler(ResourceHandler):
             }
         )
 
-        # Fix #596: Only add SSH key for Linux VMs, not Windows
-        if not is_windows:
+        # Fix #596: Add authentication based on OS type
+        if is_windows:
+            # Windows VMs require admin_password
+            password_resource_name = f"{safe_name}_admin_password"
+            context.add_helper_resource(
+                "random_password",
+                password_resource_name,
+                {
+                    "length": 16,
+                    "special": True,
+                    "override_special": "!#$%&*()-_=+[]{}<>:?",
+                },
+            )
+            config["admin_password"] = f"${{random_password.{password_resource_name}.result}}"
+        else:
+            # Linux VMs use SSH keys
             config["admin_ssh_key"] = {
                 "username": resource.get("admin_username", "azureuser"),
                 "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
