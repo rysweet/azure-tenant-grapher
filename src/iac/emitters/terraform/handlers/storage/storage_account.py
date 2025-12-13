@@ -109,10 +109,10 @@ class StorageAccountHandler(ResourceHandler):
         if access_tier:
             config["access_tier"] = access_tier
 
-        # Optional: enable_https_traffic_only
+        # Optional: HTTPS traffic only - Fix #596: Property renamed in provider v4+
         https_only = properties.get("supportsHttpsTrafficOnly")
         if https_only is not None:
-            config["enable_https_traffic_only"] = https_only
+            config["https_traffic_only_enabled"] = https_only
 
         # Optional: min_tls_version
         tls_version = properties.get("minimumTlsVersion")
