@@ -287,14 +287,17 @@ class SubsetSelector:
                         included.add(resource_id)
             return included
 
-        # 7. resource_group (query Neo4j for RG resources)
+        # 7. resource_group - Fix #594: Check property not just ID format
         if filter_config.resource_group:
             included = set()
             for resource in graph.resources:
                 resource_id = resource.get("id")
-                # Extract RG name from resource ID
-                # Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/...
-                if resource_id and "/resourceGroups/" in resource_id:
+                # Fix #594: Check resource_group property (works for Abstracted + Original nodes)
+                rg = resource.get("resource_group") or resource.get("resourceGroup")
+                if rg and rg in filter_config.resource_group:
+                    included.add(resource_id)
+                # Fallback: Also check ID format for backwards compatibility
+                elif resource_id and "/resourceGroups/" in resource_id:
                     parts = resource_id.split("/resourceGroups/")
                     if len(parts) > 1:
                         rg_part = parts[1].split("/")[0]
