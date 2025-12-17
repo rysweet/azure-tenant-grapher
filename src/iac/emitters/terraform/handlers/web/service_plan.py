@@ -42,6 +42,10 @@ class ServicePlanHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
+        # Fix #601: Override location if target location specified
+        if hasattr(context, 'target_location') and context.target_location:
+            config["location"] = context.target_location
+
         # OS type (required)
         kind = properties.get("kind", resource.get("kind", "")).lower()
         os_type = "Linux" if "linux" in kind else "Windows"
