@@ -252,6 +252,7 @@ class ResourceHandler(ABC):
         resource: Dict[str, Any],
         resource_name_with_suffix: Optional[str] = None,
         include_location: bool = True,
+        context: Optional[Any] = None,  # Fix #601: Accept context for location override
     ) -> Dict[str, Any]:
         """Build base resource configuration with common fields.
 
@@ -259,6 +260,7 @@ class ResourceHandler(ABC):
             resource: Azure resource dict
             resource_name_with_suffix: Optional name with unique suffix applied
             include_location: Whether to include location field (False for global resources)
+            context: Optional EmitterContext for target_location override
 
         Returns:
             Base config with name, location (optional), resource_group_name
@@ -273,7 +275,11 @@ class ResourceHandler(ABC):
 
         # Add location for resources that need it (most resources)
         if include_location:
-            location = self.get_location(resource)
+            # Fix #601: Use target_location from context if provided, otherwise source location
+            if context and hasattr(context, 'target_location') and context.target_location:
+                location = context.target_location
+            else:
+                location = self.get_location(resource)
             config["location"] = location
 
         # Add tags if present
