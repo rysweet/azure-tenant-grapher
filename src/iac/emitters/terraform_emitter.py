@@ -384,6 +384,9 @@ class TerraformEmitter(IaCEmitter):
 
         logger.info(f"Generating Terraform templates to {out_dir}")
 
+        # Store target location for handlers (Fix #601 - missing piece!)
+        self.target_location = location
+
         # Ensure output directory exists
         out_dir.mkdir(parents=True, exist_ok=True)
 
