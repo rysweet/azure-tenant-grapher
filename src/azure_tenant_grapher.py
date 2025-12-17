@@ -186,11 +186,15 @@ class AzureTenantGrapher:
 
             # 2. Discover resources in all subscriptions
             all_resources: List[Dict[str, Any]] = []
+            resource_limit = getattr(self.config.processing, "resource_limit", None)
+
             for subscription in subscriptions:
                 try:
                     resources = (
                         await self.discovery_service.discover_resources_in_subscription(
-                            subscription["id"], filter_config=filter_config
+                            subscription["id"],
+                            filter_config=filter_config,
+                            resource_limit=resource_limit,
                         )
                     )
                     all_resources.extend(resources)
@@ -218,15 +222,14 @@ class AzureTenantGrapher:
             else:
                 logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
 
-            # Enforce resource_limit if set in config
-            resource_limit = getattr(self.config.processing, "resource_limit", None)
-            if resource_limit:
+            # Apply global resource_limit as defensive check (primary limiting happens per-subscription)
+            if resource_limit and len(all_resources) > resource_limit:
                 logger.info(
-                    f"🔢 Applying resource_limit: {resource_limit} (before: {len(all_resources)})"
+                    f"🔢 Applying global resource_limit (defensive check): {resource_limit} (before: {len(all_resources)})"
                 )
                 all_resources = all_resources[:resource_limit]
                 logger.info(
-                    f"🔢 Resource list truncated to {len(all_resources)} items due to resource_limit"
+                    f"🔢 Global resource list truncated to {len(all_resources)} items"
                 )
             logger.info(
                 f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"

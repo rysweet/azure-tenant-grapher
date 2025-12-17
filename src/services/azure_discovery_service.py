@@ -210,7 +210,10 @@ class AzureDiscoveryService:
         return []
 
     async def discover_resources_in_subscription(
-        self, subscription_id: str, filter_config: Optional[FilterConfig] = None
+        self,
+        subscription_id: str,
+        filter_config: Optional[FilterConfig] = None,
+        resource_limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Discover all resources in a specific subscription with optional parallel property fetching.
@@ -218,6 +221,7 @@ class AzureDiscoveryService:
         Args:
             subscription_id: Azure subscription ID
             filter_config: Optional FilterConfig to filter resources
+            resource_limit: Optional limit on number of resources to discover per subscription
 
         Returns:
             List of resource dictionaries with full properties if max_build_threads > 0
@@ -316,6 +320,18 @@ class AzureDiscoveryService:
                     # Log but don't fail - role assignments are supplementary
                     logger.warning(
                         f"Failed to discover role assignments (continuing with other resources): {role_error}"
+                    )
+
+                # Apply resource_limit BEFORE child discovery to reduce API calls
+                if resource_limit and len(resource_basics) > resource_limit:
+                    logger.info(
+                        f"🔢 Applying per-subscription resource_limit before child discovery: "
+                        f"{resource_limit} (before: {len(resource_basics)})"
+                    )
+                    resource_basics = resource_basics[:resource_limit]
+                    logger.info(
+                        f"🔢 Resource list truncated to {len(resource_basics)} items "
+                        f"(child resources will only be discovered for these {len(resource_basics)} resources)"
                     )
 
                 # Phase 1.6: Discover child resources (Bug #520 fix)
