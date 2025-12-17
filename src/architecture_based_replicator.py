@@ -282,6 +282,8 @@ class ArchitectureBasedReplicator:
         self,
         target_instance_count: Optional[int] = None,
         hops: int = 2,
+        include_orphaned_node_patterns: bool = True,
+        node_coverage_weight: Optional[float] = None,
     ) -> Tuple[List[Tuple[str, List[List[Dict[str, Any]]]]], List[float]]:
         """
         Generate tenant replication plan to match source pattern graph.
@@ -292,6 +294,12 @@ class ArchitectureBasedReplicator:
         Args:
             target_instance_count: Number of architectural instances to select (default: all)
             hops: Number of hops for local subgraph comparison (default: 2)
+            include_orphaned_node_patterns: If True, includes instances containing orphaned
+                                           node resource types to improve coverage (default: True)
+            node_coverage_weight: Weight (0.0-1.0) for prioritizing new nodes vs spectral distance.
+                                 0.0 = only spectral distance (original behavior)
+                                 1.0 = only node coverage (greedy node selection)
+                                 None = randomly choose 0.0 or 1.0 (default, exploration/exploitation)
 
         Returns:
             Tuple of (selected instances, spectral distance history)
@@ -303,6 +311,11 @@ class ArchitectureBasedReplicator:
 
         if not self.detected_patterns:
             raise RuntimeError("No patterns detected in source tenant")
+
+        # Randomly choose between pure spectral (0.0) or pure coverage (1.0) if not specified
+        if node_coverage_weight is None:
+            import random
+            node_coverage_weight = float(random.choice([0, 1]))
 
         logger.info(
             f"Generating replication plan to match source pattern graph..."
@@ -318,23 +331,71 @@ class ArchitectureBasedReplicator:
             for instance in instances:
                 all_instances.append((pattern_name, instance))
 
+        # If requested, add instances containing orphaned node types
+        orphaned_instances_added = 0
+        if include_orphaned_node_patterns:
+            orphaned_instances = self._find_orphaned_node_instances()
+            if orphaned_instances:
+                all_instances.extend(orphaned_instances)
+                orphaned_instances_added = len(orphaned_instances)
+                logger.info(
+                    f"Added {orphaned_instances_added} instances containing orphaned node types"
+                )
+
         # Default to all instances
         if target_instance_count is None:
             target_instance_count = len(all_instances)
 
         logger.info(
             f"Will select up to {target_instance_count} architectural instances "
-            f"from {len(all_instances)} total available"
+            f"from {len(all_instances)} total available "
+            f"({orphaned_instances_added} for orphaned nodes)"
+        )
+        logger.info(
+            f"Node coverage weight: {node_coverage_weight:.2f} "
+            f"(0.0=spectral only, 1.0=coverage only)"
         )
 
-        # Sort instances by size (number of resources in instance)
-        all_instances.sort(key=lambda x: len(x[1]), reverse=True)
+        # Get source node types for coverage tracking
+        source_node_types = set(self.source_pattern_graph.nodes())
 
         selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
         spectral_history: List[float] = []
+        remaining_instances = list(all_instances)  # Make a copy
 
-        # Strategy: Iteratively select instances that help match the source pattern graph
-        for i, (pattern_name, instance) in enumerate(all_instances[:target_instance_count]):
+        # Greedy selection: iteratively pick the instance that best improves our score
+        for i in range(min(target_instance_count, len(remaining_instances))):
+            best_score = float('inf')
+            best_idx = 0
+            best_new_nodes = set()
+
+            # Evaluate each remaining instance
+            for idx, (pattern_name, instance) in enumerate(remaining_instances):
+                # Build hypothetical target graph with this instance added
+                hypothetical_selected = selected_instances + [(pattern_name, instance)]
+                hypothetical_target = self._build_target_pattern_graph_from_instances(
+                    hypothetical_selected
+                )
+
+                # Compute weighted score
+                score = self._compute_weighted_score(
+                    self.source_pattern_graph,
+                    hypothetical_target,
+                    source_node_types,
+                    node_coverage_weight
+                )
+
+                # Track which instance gives best score
+                if score < best_score:
+                    best_score = score
+                    best_idx = idx
+                    best_new_nodes = set(hypothetical_target.nodes()) - (
+                        set(self._build_target_pattern_graph_from_instances(selected_instances).nodes())
+                        if selected_instances else set()
+                    )
+
+            # Select the best instance
+            pattern_name, instance = remaining_instances.pop(best_idx)
             selected_instances.append((pattern_name, instance))
 
             # Build current target pattern graph from selected instances
@@ -342,21 +403,26 @@ class ArchitectureBasedReplicator:
                 selected_instances
             )
 
-            # Compute spectral distance between source and target PATTERN graphs
+            # Track spectral distance for history
             distance = self._compute_spectral_distance(
                 self.source_pattern_graph, target_pattern_graph
             )
             spectral_history.append(distance)
 
+            # Calculate coverage metrics
+            current_nodes = set(target_pattern_graph.nodes())
+            node_coverage = len(current_nodes & source_node_types) / len(source_node_types)
+
             if (i + 1) % 10 == 0 or i < 10:
                 logger.info(
                     f"Selected instance {i + 1}/{target_instance_count}: {pattern_name} "
-                    f"({len(instance)} resources)"
+                    f"({len(instance)} resources, +{len(best_new_nodes)} new types)"
                 )
                 logger.info(
-                    f"  Target now has {target_pattern_graph.number_of_nodes()} types, "
+                    f"  Target: {target_pattern_graph.number_of_nodes()} types "
+                    f"({node_coverage:.1%} coverage), "
                     f"{target_pattern_graph.number_of_edges()} edges, "
-                    f"spectral distance: {distance:.4f}"
+                    f"spectral: {distance:.4f}, score: {best_score:.4f}"
                 )
 
         logger.info(
@@ -377,6 +443,101 @@ class ArchitectureBasedReplicator:
             pattern_instances[pattern_name].append(instance)
 
         return list(pattern_instances.items()), spectral_history
+
+    def _find_orphaned_node_instances(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
+        """
+        Find instances that contain orphaned node resource types.
+
+        Orphaned nodes are resource types not covered by any detected pattern.
+        This method finds actual resource instances containing these types.
+
+        Returns:
+            List of (pseudo_pattern_name, instance) tuples for orphaned resources
+        """
+        # First identify orphaned nodes in source graph
+        source_orphaned = self.analyzer.identify_orphaned_nodes(
+            self.source_pattern_graph, self.detected_patterns
+        )
+
+        if not source_orphaned:
+            logger.info("No orphaned nodes found in source graph")
+            return []
+
+        orphaned_types = {node["resource_type"] for node in source_orphaned}
+        logger.info(f"Found {len(orphaned_types)} orphaned resource types in source")
+
+        # Query Neo4j to find instances containing these orphaned types
+        driver = GraphDatabase.driver(
+            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        )
+
+        orphaned_instances = []
+
+        try:
+            with driver.session() as session:
+                # Find ResourceGroups that contain orphaned resource types
+                query = """
+                MATCH (rg:ResourceGroup)-[:CONTAINS]->(r:Resource:Original)
+                WHERE r.type IN $orphaned_types
+                RETURN rg.id as rg_id,
+                       collect({id: r.id, type: r.type, name: r.name}) as resources
+                """
+
+                # Convert types to full format expected by Neo4j
+                full_orphaned_types = []
+                for otype in orphaned_types:
+                    # Try common provider namespaces
+                    for namespace in [
+                        "Microsoft.Network",
+                        "Microsoft.Compute",
+                        "Microsoft.Storage",
+                        "Microsoft.Insights",
+                        "Microsoft.Web",
+                        "Microsoft.ContainerService",
+                        "Microsoft.OperationalInsights",
+                        "Microsoft.KeyVault",
+                    ]:
+                        full_orphaned_types.append(f"{namespace}/{otype}")
+                    # Also add the simple type
+                    full_orphaned_types.append(otype)
+
+                result = session.run(query, orphaned_types=full_orphaned_types)
+
+                for record in result:
+                    resources = record["resources"]
+                    if resources:
+                        # Simplify resource types
+                        simplified_resources = []
+                        for r in resources:
+                            simplified_type = self.analyzer._get_resource_type_name(
+                                ["Resource"], r["type"]
+                            )
+                            simplified_resources.append({
+                                "id": r["id"],
+                                "type": simplified_type,
+                                "name": r["name"],
+                            })
+
+                        # Only include if at least one resource is an orphaned type
+                        has_orphaned = any(
+                            r["type"] in orphaned_types for r in simplified_resources
+                        )
+
+                        if has_orphaned:
+                            # Create a pseudo-pattern name for these orphaned instances
+                            orphaned_in_instance = {
+                                r["type"] for r in simplified_resources if r["type"] in orphaned_types
+                            }
+                            pseudo_pattern_name = f"Orphaned: {', '.join(sorted(list(orphaned_in_instance)[:3]))}"
+
+                            orphaned_instances.append((pseudo_pattern_name, simplified_resources))
+
+        finally:
+            driver.close()
+
+        logger.info(f"Found {len(orphaned_instances)} instances containing orphaned resource types")
+
+        return orphaned_instances
 
     def _build_target_pattern_graph_from_instances(
         self, selected_instances: List[Tuple[str, List[Dict[str, Any]]]]
@@ -435,17 +596,30 @@ class ArchitectureBasedReplicator:
                         "target_type": record["target_type"],
                     })
 
+                # First, add ALL resource types from selected instances as nodes
+                # This ensures orphaned types without relationships still appear in the graph
+                resource_type_counts = {}
+                for pattern_name, instance in selected_instances:
+                    for resource in instance:
+                        rtype = resource["type"]
+                        resource_type_counts[rtype] = resource_type_counts.get(rtype, 0) + 1
+
+                # Add all resource types as nodes
+                for rtype, count in resource_type_counts.items():
+                    if not target_graph.has_node(rtype):
+                        target_graph.add_node(rtype, count=count)
+
                 # Aggregate relationships by type (same as ArchitecturalPatternAnalyzer)
                 aggregated = self.analyzer.aggregate_relationships(relationships)
 
-                # Build graph from aggregated relationships
+                # Build edges from aggregated relationships
                 for rel in aggregated:
                     source_type = rel["source_type"]
                     target_type = rel["target_type"]
                     rel_type = rel["rel_type"]
                     frequency = rel["frequency"]
 
-                    # Add nodes
+                    # Add nodes if not already added (for relationship endpoints)
                     if not target_graph.has_node(source_type):
                         target_graph.add_node(source_type, count=0)
                     if not target_graph.has_node(target_type):
@@ -463,6 +637,167 @@ class ArchitectureBasedReplicator:
             driver.close()
 
         return target_graph
+
+    def analyze_orphaned_nodes(
+        self, target_pattern_graph: nx.MultiDiGraph
+    ) -> Dict[str, Any]:
+        """
+        Analyze orphaned nodes in source and target graphs.
+
+        Identifies resource types not covered by detected patterns and suggests
+        new patterns or instances to improve coverage.
+
+        Args:
+            target_pattern_graph: The target pattern graph built from selected instances
+
+        Returns:
+            Dictionary with orphaned node analysis including:
+            - source_orphaned: Orphaned nodes in source graph
+            - target_orphaned: Orphaned nodes in target graph
+            - missing_in_target: Nodes in source but not in target
+            - suggested_patterns: Pattern suggestions to improve coverage
+        """
+        if not self.source_pattern_graph or not self.detected_patterns:
+            raise RuntimeError("Must call analyze_source_tenant() first")
+
+        # Identify orphaned nodes in source graph
+        source_orphaned = self.analyzer.identify_orphaned_nodes(
+            self.source_pattern_graph, self.detected_patterns
+        )
+
+        # For target graph, we need to detect which patterns it has
+        # Use the same pattern detection on target graph
+        target_resource_type_counts = dict(target_pattern_graph.nodes(data='count', default=0))
+        target_detected_patterns = self.analyzer.detect_patterns(
+            target_pattern_graph, target_resource_type_counts
+        )
+
+        # Identify orphaned nodes in target graph
+        target_orphaned = self.analyzer.identify_orphaned_nodes(
+            target_pattern_graph, target_detected_patterns
+        )
+
+        # Find nodes that are in source but missing from target
+        source_nodes = set(self.source_pattern_graph.nodes())
+        target_nodes = set(target_pattern_graph.nodes())
+        missing_in_target = source_nodes - target_nodes
+
+        # Get suggested patterns for source orphaned nodes
+        suggested_patterns = self.analyzer.suggest_new_patterns(
+            source_orphaned, self.source_pattern_graph
+        )
+
+        logger.info(
+            f"Orphaned node analysis: "
+            f"{len(source_orphaned)} in source, "
+            f"{len(target_orphaned)} in target, "
+            f"{len(missing_in_target)} missing in target"
+        )
+
+        return {
+            "source_orphaned": source_orphaned,
+            "target_orphaned": target_orphaned,
+            "missing_in_target": list(missing_in_target),
+            "suggested_patterns": suggested_patterns,
+            "source_orphaned_count": len(source_orphaned),
+            "target_orphaned_count": len(target_orphaned),
+            "missing_count": len(missing_in_target),
+        }
+
+    def suggest_replication_improvements(
+        self, orphaned_analysis: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Suggest specific instances to select to improve target graph coverage.
+
+        Analyzes which resource types are missing from the target and suggests
+        which pattern instances would help capture them.
+
+        Args:
+            orphaned_analysis: Result from analyze_orphaned_nodes()
+
+        Returns:
+            List of improvement recommendations with pattern instances
+        """
+        missing_types = set(orphaned_analysis["missing_in_target"])
+        suggestions = []
+
+        # For each missing type, find which patterns contain it
+        for resource_type in missing_types:
+            # Check which detected patterns include this type
+            patterns_with_type = []
+            for pattern_name, pattern_info in self.detected_patterns.items():
+                if resource_type in pattern_info["matched_resources"]:
+                    # Count how many instances have this type
+                    instances_with_type = []
+                    for instance in self.pattern_resources.get(pattern_name, []):
+                        if any(r["type"] == resource_type for r in instance):
+                            instances_with_type.append(instance)
+
+                    if instances_with_type:
+                        patterns_with_type.append({
+                            "pattern_name": pattern_name,
+                            "instance_count": len(instances_with_type),
+                            "sample_instance": instances_with_type[0],
+                        })
+
+            if patterns_with_type:
+                # Sort by instance count (more instances = more reliable pattern)
+                patterns_with_type.sort(key=lambda x: x["instance_count"], reverse=True)
+
+                suggestions.append({
+                    "missing_type": resource_type,
+                    "available_patterns": patterns_with_type,
+                    "recommendation": f"Select more instances from '{patterns_with_type[0]['pattern_name']}' pattern"
+                })
+
+        logger.info(f"Generated {len(suggestions)} improvement recommendations")
+        return suggestions
+
+    def _compute_weighted_score(
+        self,
+        source_graph: nx.DiGraph,
+        target_graph: nx.DiGraph,
+        source_node_types: Set[str],
+        node_coverage_weight: float,
+    ) -> float:
+        """
+        Compute weighted score combining spectral distance and node coverage.
+
+        Lower score is better. The score balances structural similarity (spectral distance)
+        with node type coverage (having the same types as source).
+
+        Args:
+            source_graph: Source pattern graph
+            target_graph: Target pattern graph being built
+            source_node_types: Set of node types in source graph
+            node_coverage_weight: Weight for node coverage (0.0-1.0)
+                                 0.0 = only spectral distance
+                                 1.0 = only node coverage
+                                 0.5 = balanced
+
+        Returns:
+            Weighted score (lower is better)
+        """
+        # Compute spectral distance (structural similarity)
+        spectral_distance = self._compute_spectral_distance(source_graph, target_graph)
+
+        # Compute node coverage penalty (missing types)
+        # This is the fraction of source nodes NOT yet in target
+        target_node_types = set(target_graph.nodes())
+        missing_nodes = source_node_types - target_node_types
+        node_coverage_penalty = len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
+
+        # Weighted combination
+        # node_coverage_weight = 0.0: score = spectral_distance (original behavior)
+        # node_coverage_weight = 1.0: score = node_coverage_penalty (pure greedy)
+        # node_coverage_weight = 0.5: score = balanced average
+        score = (
+            (1.0 - node_coverage_weight) * spectral_distance +
+            node_coverage_weight * node_coverage_penalty
+        )
+
+        return score
 
     def _compute_spectral_distance(
         self, graph1: nx.DiGraph, graph2: nx.DiGraph
