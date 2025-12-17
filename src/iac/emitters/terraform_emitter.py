@@ -356,6 +356,7 @@ class TerraformEmitter(IaCEmitter):
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
         split_by_community: bool = False,  # Fix #593: Default to True for parallel deployment
+        location: Optional[str] = None,  # Fix #601: Target region override
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
@@ -1647,6 +1648,7 @@ class TerraformEmitter(IaCEmitter):
         return EmitterContext(
             target_subscription_id=self.target_subscription_id,
             target_tenant_id=self.target_tenant_id,
+            target_location=getattr(self, 'target_location', None),  # Fix #601: Pass target location
             source_subscription_id=self.source_subscription_id,
             source_tenant_id=self.source_tenant_id,
             identity_mapping=self.identity_mapping,
