@@ -31,6 +31,7 @@ class EmitterContext:
     # Target configuration
     target_subscription_id: Optional[str] = None
     target_tenant_id: Optional[str] = None
+    target_location: Optional[str] = None  # Fix #601: Target region override
     source_subscription_id: Optional[str] = None
     source_tenant_id: Optional[str] = None
     identity_mapping: Optional[Dict[str, Any]] = None
