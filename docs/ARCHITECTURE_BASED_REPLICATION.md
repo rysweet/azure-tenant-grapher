@@ -39,7 +39,7 @@ The system uses spectral graph theory to measure structural similarity between s
 
 ### Core Components
 
-#### ArchitectureBasedReplicator (`src/architecture_based_replicator.py`)
+#### ArchitecturePatternReplicator (`src/architecture_based_replicator.py`)
 
 Main class that orchestrates the architecture-based replication workflow.
 
@@ -98,10 +98,10 @@ jupyter notebook notebooks/architecture_based_replication.ipynb
 ### Python API
 
 ```python
-from src.architecture_based_replicator import ArchitectureBasedReplicator
+from src.architecture_based_replicator import ArchitecturePatternReplicator
 
 # Initialize
-replicator = ArchitectureBasedReplicator(
+replicator = ArchitecturePatternReplicator(
     neo4j_uri="bolt://localhost:7687",
     neo4j_user="neo4j",
     neo4j_password="neo4j123"

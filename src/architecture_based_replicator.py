@@ -28,7 +28,7 @@ from .architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
 logger = logging.getLogger(__name__)
 
 
-class ArchitectureBasedReplicator:
+class ArchitecturePatternReplicator:
     """
     Replicate tenants by selecting architectural pattern groupings.
 
