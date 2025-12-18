@@ -76,14 +76,14 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--max-iterations",
     type=int,
-    default=5,
-    help="Maximum deployment iterations in agent mode (default: 5)",
+    default=20,
+    help="Maximum deployment iterations in agent mode (default: 20)",
 )
 @click.option(
     "--agent-timeout",
     type=int,
-    default=300,
-    help="Timeout in seconds for agent mode deployment (default: 300)",
+    default=6000,
+    help="Timeout in seconds for agent mode deployment (default: 6000)",
 )
 def deploy_command(
     iac_dir: str,

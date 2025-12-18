@@ -133,7 +133,9 @@ class VirtualMachineHandler(ResourceHandler):
                     "override_special": "!#$%&*()-_=+[]{}<>:?",
                 },
             )
-            config["admin_password"] = f"${{random_password.{password_resource_name}.result}}"
+            config["admin_password"] = (
+                f"${{random_password.{password_resource_name}.result}}"
+            )
         else:
             # Linux VMs use SSH keys
             config["admin_ssh_key"] = {
@@ -141,7 +143,9 @@ class VirtualMachineHandler(ResourceHandler):
                 "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
             }
 
-        logger.debug(f"VM '{resource_name}' emitted as {vm_type} with {len(nic_refs)} NIC(s)")
+        logger.debug(
+            f"VM '{resource_name}' emitted as {vm_type} with {len(nic_refs)} NIC(s)"
+        )
 
         return vm_type, safe_name, config
 

@@ -375,7 +375,7 @@ atg deploy \
   --timeout 900 \
   --path ./my-deployment
 
-# Each iteration gets 15 minutes instead of default 5 minutes
+# Each iteration gets 1100 minutes instead of default 100 minutes
 ```
 
 ## Understanding What Can Go Wrong

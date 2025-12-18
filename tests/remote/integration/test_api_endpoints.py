@@ -91,7 +91,7 @@ def api_client(mock_neo4j_driver, mock_azure_credential, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_health_endpoint_returns_200(api_client):
     """Test that /health endpoint returns 200 OK."""
@@ -107,7 +107,7 @@ def test_health_endpoint_returns_200(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_health_endpoint_no_auth_required(api_client):
     """Test that /health endpoint does not require authentication."""
@@ -119,7 +119,7 @@ def test_health_endpoint_no_auth_required(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_health_endpoint_reports_neo4j_status(api_client, mock_neo4j_driver):
     """Test that /health endpoint reports Neo4j connection status."""
@@ -141,7 +141,7 @@ def test_health_endpoint_reports_neo4j_status(api_client, mock_neo4j_driver):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_requires_authentication(api_client):
     """Test that /api/v1/scan requires API key authentication."""
@@ -155,7 +155,7 @@ def test_scan_endpoint_requires_authentication(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_accepts_valid_request(api_client, test_api_key):
     """Test that /api/v1/scan accepts valid authenticated request."""
@@ -170,7 +170,7 @@ def test_scan_endpoint_accepts_valid_request(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_validates_tenant_id_format(api_client, test_api_key):
     """Test that /api/v1/scan validates tenant_id format."""
@@ -187,7 +187,7 @@ def test_scan_endpoint_validates_tenant_id_format(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_validates_required_fields(api_client, test_api_key):
     """Test that /api/v1/scan validates required fields."""
@@ -204,7 +204,7 @@ def test_scan_endpoint_validates_required_fields(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_accepts_optional_parameters(api_client, test_api_key):
     """Test that /api/v1/scan accepts optional parameters."""
@@ -225,7 +225,7 @@ def test_scan_endpoint_accepts_optional_parameters(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_scan_endpoint_returns_scan_result(api_client, test_api_key):
     """Test that /api/v1/scan returns scan result structure."""
@@ -256,7 +256,7 @@ def test_scan_endpoint_returns_scan_result(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_iac_endpoint_requires_authentication(api_client):
     """Test that /api/v1/generate-iac requires authentication."""
@@ -270,7 +270,7 @@ def test_generate_iac_endpoint_requires_authentication(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_iac_endpoint_accepts_format_parameter(api_client, test_api_key):
     """Test that /api/v1/generate-iac accepts format parameter."""
@@ -288,7 +288,7 @@ def test_generate_iac_endpoint_accepts_format_parameter(api_client, test_api_key
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_iac_endpoint_rejects_invalid_format(api_client, test_api_key):
     """Test that /api/v1/generate-iac rejects invalid format."""
@@ -308,7 +308,7 @@ def test_generate_iac_endpoint_rejects_invalid_format(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_iac_endpoint_supports_cross_tenant(api_client, test_api_key):
     """Test that /api/v1/generate-iac supports cross-tenant deployment."""
@@ -332,7 +332,7 @@ def test_generate_iac_endpoint_supports_cross_tenant(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_spec_endpoint_works_without_tenant_id(api_client, test_api_key):
     """Test that /api/v1/generate-spec works without tenant_id (uses graph)."""
@@ -347,7 +347,7 @@ def test_generate_spec_endpoint_works_without_tenant_id(api_client, test_api_key
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_generate_spec_endpoint_accepts_hierarchical_flag(api_client, test_api_key):
     """Test that /api/v1/generate-spec accepts hierarchical parameter."""
@@ -367,7 +367,7 @@ def test_generate_spec_endpoint_accepts_hierarchical_flag(api_client, test_api_k
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_handles_azure_auth_failure(api_client, test_api_key):
     """Test that API handles Azure authentication failures gracefully."""
@@ -389,7 +389,7 @@ def test_api_handles_azure_auth_failure(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_handles_neo4j_connection_failure(api_client, test_api_key):
     """Test that API handles Neo4j connection failures."""
@@ -411,7 +411,7 @@ def test_api_handles_neo4j_connection_failure(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_returns_proper_error_structure(api_client, test_api_key):
     """Test that API returns consistent error structure."""
@@ -435,7 +435,7 @@ def test_api_returns_proper_error_structure(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_enforces_rate_limiting(api_client, test_api_key):
     """Test that API enforces rate limiting per API key."""
@@ -461,7 +461,7 @@ def test_api_enforces_rate_limiting(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_rate_limit_includes_retry_after_header(api_client, test_api_key):
     """Test that rate limit response includes Retry-After header."""
@@ -484,7 +484,7 @@ def test_api_rate_limit_includes_retry_after_header(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 @pytest.mark.asyncio
 async def test_scan_endpoint_handles_long_operation(api_client, test_api_key):
@@ -522,7 +522,7 @@ async def test_scan_endpoint_handles_long_operation(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_generates_request_id(api_client, test_api_key):
     """Test that API generates unique request ID for tracking."""
@@ -539,7 +539,7 @@ def test_api_generates_request_id(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_accepts_client_request_id(api_client, test_api_key):
     """Test that API accepts and uses client-provided request ID."""
@@ -564,7 +564,7 @@ def test_api_accepts_client_request_id(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_version_in_path(api_client):
     """Test that API version is included in path."""
@@ -575,7 +575,7 @@ def test_api_version_in_path(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_rejects_invalid_version(api_client):
     """Test that API rejects invalid version."""
@@ -591,7 +591,7 @@ def test_api_rejects_invalid_version(api_client):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_accepts_json_content_type(api_client, test_api_key):
     """Test that API accepts application/json content type."""
@@ -609,7 +609,7 @@ def test_api_accepts_json_content_type(api_client, test_api_key):
 
 @pytest.mark.skipif(
     os.getenv("ATG_SERVICE_URL") is None,
-    reason="Integration tests require running ATG service"
+    reason="Integration tests require running ATG service",
 )
 def test_api_rejects_unsupported_content_type(api_client, test_api_key):
     """Test that API rejects unsupported content types."""

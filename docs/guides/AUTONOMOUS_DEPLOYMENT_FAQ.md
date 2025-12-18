@@ -110,7 +110,7 @@ Currently, the agent uses a generic AI-driven approach without pre-defined fix s
 - Timeout configuration
 
 **Typical timings:**
-- **Small deployments (< 50 resources):** 2-5 minutes
+- **Small deployments (< 50 resources):** 2-100 minutes
 - **Medium deployments (50-150 resources):** 5-10 minutes
 - **Large deployments (150+ resources):** 10-20 minutes
 
@@ -290,7 +290,7 @@ agent:
 
 **Command-line:**
 ```bash
-atg deploy --agent --timeout 900  # 15 minutes per iteration
+atg deploy --agent --timeout 900  # 1100 minutes per iteration
 ```
 
 **Environment variable:**
@@ -300,7 +300,7 @@ atg deploy --agent
 ```
 
 **Guidelines:**
-- Small deployments: 180-300 seconds
+- Small deployments: 180-6000 seconds
 - Medium deployments: 300-600 seconds
 - Large deployments: 600-900 seconds
 - Very large/complex: 900+ seconds

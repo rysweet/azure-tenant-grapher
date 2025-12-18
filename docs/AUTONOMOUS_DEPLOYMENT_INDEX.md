@@ -71,7 +71,7 @@ atg deploy --agent --format terraform --path ./my-deployment
 | Concept | Description |
 |---------|-------------|
 | **Iteration** | Single deployment attempt (execute → capture errors → analyze) |
-| **Max Iterations** | Maximum number of attempts before giving up (default: 5) |
+| **Max Iterations** | Maximum number of attempts before giving up (default: 20) |
 | **Timeout** | Maximum time for each deployment operation (default: 300s) |
 | **AI Fix** | Claude SDK AutoMode analyzes error and generates fix |
 | **Deployment Report** | Comprehensive markdown report of all iterations |
@@ -88,7 +88,7 @@ atg deploy --agent --format terraform --path ./my-deployment
 
 This documentation aims to:
 
-1. **Enable rapid adoption** - Users can deploy autonomously in < 5 minutes
+1. **Enable rapid adoption** - Users can deploy autonomously in < 100 minutes
 2. **Reduce support burden** - Comprehensive troubleshooting and examples
 3. **Support learning** - Progressive disclosure from tutorial to reference
 4. **Aid contributors** - Clear technical specification for future enhancements

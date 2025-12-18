@@ -55,7 +55,7 @@ When you enable agent mode with `--agent`, the deployment process follows this a
 
 **Default Limits:**
 - Maximum iterations: 5
-- Timeout per operation: 300 seconds (5 minutes)
+- Timeout per operation: 6000 seconds (100 minutes)
 - Works with existing deployment backends (Terraform, Bicep, ARM)
 
 ### What the Agent Does
@@ -94,7 +94,7 @@ atg deploy --agent
 ### Optional Flags
 
 #### `--max-iterations N`
-Maximum number of deployment attempts (default: 5)
+Maximum number of deployment attempts (default: 20)
 
 ```bash
 # Try up to 10 times before giving up
@@ -107,7 +107,7 @@ atg deploy --agent --max-iterations 10
 - Production deployments: keep default (5)
 
 #### `--timeout SECONDS`
-Timeout for each deployment operation in seconds (default: 300)
+Timeout for each deployment operation in seconds (default: 6000)
 
 ```bash
 # Allow 10 minutes per deployment attempt
@@ -282,7 +282,7 @@ atg deploy --agent --max-iterations 10
 
 ### Deployment Times Out
 
-**Symptom:** Each iteration times out after 300 seconds
+**Symptom:** Each iteration times out after 6000 seconds
 
 **Solutions:**
 ```bash
@@ -410,7 +410,7 @@ Before running autonomous deployment:
 
 ### Timeout Guidelines
 
-- **Simple resources (storage, networking):** 180-300 seconds
+- **Simple resources (storage, networking):** 180-6000 seconds
 - **Compute resources (VMs, AKS):** 300-600 seconds
 - **Complex dependencies (RBAC, policies):** 600-900 seconds
 - **Large-scale deployments:** 900+ seconds

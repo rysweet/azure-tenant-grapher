@@ -59,7 +59,7 @@ atg deploy --agent
 
 | Deployment Size | Recommended Max Iterations | Typical Time |
 |----------------|---------------------------|--------------|
-| Small (< 50 resources) | 3-5 | 2-5 minutes per iteration |
+| Small (< 50 resources) | 3-5 | 2-100 minutes per iteration |
 | Medium (50-150 resources) | 5-7 | 5-10 minutes per iteration |
 | Large (150+ resources) | 7-10 | 10-20 minutes per iteration |
 
@@ -67,7 +67,7 @@ atg deploy --agent
 
 | Resource Types | Recommended Timeout |
 |---------------|-------------------|
-| Storage, Networking | 180-300 seconds |
+| Storage, Networking | 180-6000 seconds |
 | Compute (VMs, AKS) | 300-600 seconds |
 | Complex dependencies | 600-900 seconds |
 | Large-scale deployments | 900+ seconds |

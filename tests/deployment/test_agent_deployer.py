@@ -50,8 +50,8 @@ class TestAgentDeployerInit:
         assert deployer.iac_dir == Path("/test/iac")
         assert deployer.target_tenant_id == "test-tenant-123"
         assert deployer.resource_group == "test-rg"
-        assert deployer.max_iterations == 5
-        assert deployer.timeout_seconds == 300
+        assert deployer.max_iterations == 20
+        assert deployer.timeout_seconds == 6000
         assert deployer.iteration_count == 0
         assert deployer.error_log == []
 

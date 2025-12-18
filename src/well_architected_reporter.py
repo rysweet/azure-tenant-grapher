@@ -31,8 +31,8 @@ class WellArchitectedReporter:
                 "Enable auto-scaling based on metrics",
                 "Use deployment slots for zero-downtime deployments",
                 "Implement Application Insights for monitoring",
-                "Configure backup and disaster recovery"
-            ]
+                "Configure backup and disaster recovery",
+            ],
         },
         "Virtual Machine Workload": {
             "pillars": ["Reliability", "Security", "Operational Excellence"],
@@ -43,8 +43,8 @@ class WellArchitectedReporter:
                 "Implement Azure Backup",
                 "Enable disk encryption",
                 "Use managed disks for better reliability",
-                "Right-size VMs based on actual usage"
-            ]
+                "Right-size VMs based on actual usage",
+            ],
         },
         "Container Platform": {
             "pillars": ["Reliability", "Performance Efficiency", "Security"],
@@ -55,8 +55,8 @@ class WellArchitectedReporter:
                 "Use Azure AD integration for RBAC",
                 "Implement network policies",
                 "Enable Container Insights for monitoring",
-                "Use Azure Policy for governance"
-            ]
+                "Use Azure Policy for governance",
+            ],
         },
         "Data Platform": {
             "pillars": ["Security", "Reliability", "Performance Efficiency"],
@@ -67,11 +67,15 @@ class WellArchitectedReporter:
                 "Use geo-replication for disaster recovery",
                 "Implement transparent data encryption",
                 "Enable Advanced Threat Protection",
-                "Configure automated backups"
-            ]
+                "Configure automated backups",
+            ],
         },
         "Serverless Application": {
-            "pillars": ["Cost Optimization", "Performance Efficiency", "Operational Excellence"],
+            "pillars": [
+                "Cost Optimization",
+                "Performance Efficiency",
+                "Operational Excellence",
+            ],
             "waf_url": "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-functions",
             "description": "Function Apps provide automatic scaling and pay-per-execution pricing model.",
             "recommendations": [
@@ -79,11 +83,15 @@ class WellArchitectedReporter:
                 "Implement durable functions for stateful workflows",
                 "Store secrets in Key Vault",
                 "Enable Application Insights",
-                "Use managed identities for authentication"
-            ]
+                "Use managed identities for authentication",
+            ],
         },
         "Data Analytics": {
-            "pillars": ["Performance Efficiency", "Cost Optimization", "Operational Excellence"],
+            "pillars": [
+                "Performance Efficiency",
+                "Cost Optimization",
+                "Operational Excellence",
+            ],
             "waf_url": "https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-data-explorer",
             "description": "Analytics platforms should optimize for query performance and cost-effective data storage.",
             "recommendations": [
@@ -91,8 +99,8 @@ class WellArchitectedReporter:
                 "Use partitioning for large datasets",
                 "Enable caching for frequently accessed data",
                 "Monitor query performance",
-                "Implement cost controls and budgets"
-            ]
+                "Implement cost controls and budgets",
+            ],
         },
         "Secure Workload": {
             "pillars": ["Security", "Reliability"],
@@ -103,8 +111,8 @@ class WellArchitectedReporter:
                 "Implement Private Link for all services",
                 "Enable Azure Private DNS zones",
                 "Use managed identities to eliminate credentials",
-                "Implement network security groups and firewalls"
-            ]
+                "Implement network security groups and firewalls",
+            ],
         },
         "Managed Identity Pattern": {
             "pillars": ["Security", "Operational Excellence"],
@@ -115,8 +123,8 @@ class WellArchitectedReporter:
                 "Grant least-privilege permissions",
                 "Use user-assigned identities for shared access",
                 "Audit managed identity usage",
-                "Implement conditional access policies"
-            ]
+                "Implement conditional access policies",
+            ],
         },
         "Monitoring & Observability": {
             "pillars": ["Operational Excellence", "Reliability"],
@@ -127,8 +135,8 @@ class WellArchitectedReporter:
                 "Implement distributed tracing",
                 "Configure smart detection and alerts",
                 "Use workbooks for visualization",
-                "Implement custom metrics for business KPIs"
-            ]
+                "Implement custom metrics for business KPIs",
+            ],
         },
         "Network Security": {
             "pillars": ["Security", "Reliability"],
@@ -139,9 +147,9 @@ class WellArchitectedReporter:
                 "Use NSGs and Azure Firewall",
                 "Enable DDoS Protection Standard",
                 "Implement Azure Bastion for secure access",
-                "Use Private Link to eliminate public endpoints"
-            ]
-        }
+                "Use Private Link to eliminate public endpoints",
+            ],
+        },
     }
 
     def __init__(
@@ -149,7 +157,7 @@ class WellArchitectedReporter:
         neo4j_uri: str,
         neo4j_user: str,
         neo4j_password: str,
-        openai_api_key: Optional[str] = None
+        openai_api_key: Optional[str] = None,
     ):
         """
         Initialize the Well-Architected Reporter.
@@ -202,7 +210,7 @@ class WellArchitectedReporter:
                     "completeness": match_data["completeness"],
                     "matched_resources": match_data["matched_resources"],
                     "missing_resources": match_data["missing_resources"],
-                    "connection_count": match_data["connection_count"]
+                    "connection_count": match_data["connection_count"],
                 }
 
         return waf_insights
@@ -260,7 +268,9 @@ class WellArchitectedReporter:
                             waf_insight += f"{i}. {rec}\n"
 
                         # Append to existing description or create new
-                        enhanced_desc = current_desc + waf_insight if current_desc else waf_insight
+                        enhanced_desc = (
+                            current_desc + waf_insight if current_desc else waf_insight
+                        )
 
                         # Update in Neo4j
                         update_query = """
@@ -279,7 +289,7 @@ class WellArchitectedReporter:
                             description=enhanced_desc,
                             pattern_name=pattern_name,
                             pillars=pillars,
-                            waf_url=waf_url
+                            waf_url=waf_url,
                         )
 
                         updated_count += 1
@@ -288,9 +298,7 @@ class WellArchitectedReporter:
         return updated_count
 
     def generate_markdown_report(
-        self,
-        waf_insights: Dict[str, Dict[str, Any]],
-        output_path: Path
+        self, waf_insights: Dict[str, Dict[str, Any]], output_path: Path
     ) -> None:
         """
         Generate a markdown report of Well-Architected Framework insights.
@@ -318,9 +326,7 @@ identifying architectural patterns and providing actionable recommendations.
 
         # Sort patterns by completeness
         sorted_patterns = sorted(
-            waf_insights.items(),
-            key=lambda x: x[1]["completeness"],
-            reverse=True
+            waf_insights.items(), key=lambda x: x[1]["completeness"], reverse=True
         )
 
         for pattern_name, insights in sorted_patterns:
@@ -352,7 +358,7 @@ identifying architectural patterns and providing actionable recommendations.
 **Missing**: {", ".join(f"`{r}`" for r in insights["missing_resources"])}
 """
 
-            report += f"""
+            report += """
 ### Recommendations
 
 """
@@ -369,7 +375,7 @@ identifying architectural patterns and providing actionable recommendations.
 """
 
         # Add footer
-        report += f"""
+        report += """
 ## Next Steps
 
 1. Review the recommendations for each pattern
@@ -393,9 +399,7 @@ identifying architectural patterns and providing actionable recommendations.
         logger.info(f"Markdown report written to {output_path}")
 
     def generate_notebook_report(
-        self,
-        waf_insights: Dict[str, Dict[str, Any]],
-        output_path: Path
+        self, waf_insights: Dict[str, Dict[str, Any]], output_path: Path
     ) -> None:
         """
         Generate a Jupyter notebook with interactive WAF analysis.
@@ -418,8 +422,8 @@ identifying architectural patterns and providing actionable recommendations.
                         f"**Generated**: {timestamp}\n",
                         "\n",
                         "This notebook provides an interactive analysis of your Azure environment\n",
-                        "against the Well-Architected Framework.\n"
-                    ]
+                        "against the Well-Architected Framework.\n",
+                    ],
                 },
                 {
                     "cell_type": "code",
@@ -429,8 +433,8 @@ identifying architectural patterns and providing actionable recommendations.
                     "source": [
                         "import pandas as pd\n",
                         "import json\n",
-                        "from IPython.display import display, Markdown, HTML\n"
-                    ]
+                        "from IPython.display import display, Markdown, HTML\n",
+                    ],
                 },
                 {
                     "cell_type": "code",
@@ -439,15 +443,13 @@ identifying architectural patterns and providing actionable recommendations.
                     "outputs": [],
                     "source": [
                         "# WAF Insights Data\n",
-                        f"waf_insights = {json.dumps(waf_insights, indent=2)}\n"
-                    ]
+                        f"waf_insights = {json.dumps(waf_insights, indent=2)}\n",
+                    ],
                 },
                 {
                     "cell_type": "markdown",
                     "metadata": {},
-                    "source": [
-                        "## Pattern Summary\n"
-                    ]
+                    "source": ["## Pattern Summary\n"],
                 },
                 {
                     "cell_type": "code",
@@ -469,15 +471,15 @@ identifying architectural patterns and providing actionable recommendations.
                         "\n",
                         "df_summary = pd.DataFrame(summary_data)\n",
                         "df_summary = df_summary.sort_values('Completeness', ascending=False)\n",
-                        "display(df_summary)\n"
-                    ]
-                }
+                        "display(df_summary)\n",
+                    ],
+                },
             ],
             "metadata": {
                 "kernelspec": {
                     "display_name": "Python 3",
                     "language": "python",
-                    "name": "python3"
+                    "name": "python3",
                 },
                 "language_info": {
                     "codemirror_mode": {"name": "ipython", "version": 3},
@@ -486,52 +488,54 @@ identifying architectural patterns and providing actionable recommendations.
                     "name": "python",
                     "nbconvert_exporter": "python",
                     "pygments_lexer": "ipython3",
-                    "version": "3.12.0"
-                }
+                    "version": "3.12.0",
+                },
             },
             "nbformat": 4,
-            "nbformat_minor": 4
+            "nbformat_minor": 4,
         }
 
         # Add pattern details
         for pattern_name, insights in sorted(
-            waf_insights.items(),
-            key=lambda x: x[1]["completeness"],
-            reverse=True
+            waf_insights.items(), key=lambda x: x[1]["completeness"], reverse=True
         ):
             # Markdown cell for pattern
-            notebook["cells"].append({
-                "cell_type": "markdown",
-                "metadata": {},
-                "source": [
-                    f"## {pattern_name}\n",
-                    "\n",
-                    f"**Completeness**: {insights['completeness']:.0f}%  \n",
-                    f"**WAF Pillars**: {', '.join(insights['waf_pillars'])}  \n",
-                    f"**Learn More**: [{pattern_name} Guide]({insights['waf_url']})\n",
-                    "\n",
-                    f"{insights['description']}\n"
-                ]
-            })
+            notebook["cells"].append(
+                {
+                    "cell_type": "markdown",
+                    "metadata": {},
+                    "source": [
+                        f"## {pattern_name}\n",
+                        "\n",
+                        f"**Completeness**: {insights['completeness']:.0f}%  \n",
+                        f"**WAF Pillars**: {', '.join(insights['waf_pillars'])}  \n",
+                        f"**Learn More**: [{pattern_name} Guide]({insights['waf_url']})\n",
+                        "\n",
+                        f"{insights['description']}\n",
+                    ],
+                }
+            )
 
             # Code cell for recommendations
-            recs_list = '", "'.join(insights['recommendations'])
-            notebook["cells"].append({
-                "cell_type": "code",
-                "execution_count": None,
-                "metadata": {},
-                "outputs": [],
-                "source": [
-                    f"# Recommendations for {pattern_name}\n",
-                    f"recommendations = [\"{recs_list}\"]\n",
-                    "\n",
-                    "for i, rec in enumerate(recommendations, 1):\n",
-                    "    print(f\"{i}. {rec}\")\n"
-                ]
-            })
+            recs_list = '", "'.join(insights["recommendations"])
+            notebook["cells"].append(
+                {
+                    "cell_type": "code",
+                    "execution_count": None,
+                    "metadata": {},
+                    "outputs": [],
+                    "source": [
+                        f"# Recommendations for {pattern_name}\n",
+                        f'recommendations = ["{recs_list}"]\n',
+                        "\n",
+                        "for i, rec in enumerate(recommendations, 1):\n",
+                        '    print(f"{i}. {rec}")\n',
+                    ],
+                }
+            )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(notebook, f, indent=2)
 
         logger.info(f"Notebook report written to {output_path}")
@@ -540,7 +544,7 @@ identifying architectural patterns and providing actionable recommendations.
         self,
         output_dir: Path,
         update_descriptions: bool = True,
-        generate_visualizations: bool = True
+        generate_visualizations: bool = True,
     ) -> Dict[str, Any]:
         """
         Generate a complete Well-Architected Framework report.
@@ -563,8 +567,8 @@ identifying architectural patterns and providing actionable recommendations.
             aggregated_relationships = self.analyzer.aggregate_relationships(
                 all_relationships
             )
-            graph, resource_type_counts, edge_counts = self.analyzer.build_networkx_graph(
-                aggregated_relationships
+            graph, resource_type_counts, edge_counts = (
+                self.analyzer.build_networkx_graph(aggregated_relationships)
             )
             pattern_matches = self.analyzer.detect_patterns(graph, resource_type_counts)
 
@@ -588,7 +592,7 @@ identifying architectural patterns and providing actionable recommendations.
 
             # Generate JSON export
             json_path = output_dir / "well_architected_insights.json"
-            with open(json_path, 'w') as f:
+            with open(json_path, "w") as f:
                 json.dump(waf_insights, f, indent=2)
 
             # Generate visualizations if requested
@@ -600,7 +604,7 @@ identifying architectural patterns and providing actionable recommendations.
                     resource_type_counts,
                     edge_counts,
                     pattern_matches,
-                    output_dir
+                    output_dir,
                 )
 
             summary = {
@@ -612,13 +616,13 @@ identifying architectural patterns and providing actionable recommendations.
                     "markdown": str(markdown_path),
                     "notebook": str(notebook_path),
                     "json": str(json_path),
-                    "visualizations": [str(f) for f in viz_files]
-                }
+                    "visualizations": [str(f) for f in viz_files],
+                },
             }
 
             # Save summary
             summary_path = output_dir / "report_summary.json"
-            with open(summary_path, 'w') as f:
+            with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
 
             logger.info(f"Report generation complete: {output_dir}")

@@ -97,7 +97,8 @@ def delete_work_item(
             handle_error(
                 f"Permission denied: Cannot delete work item {work_item_id}",
                 exit_code=ExitCode.AUTH_ERROR,
-                details=result.stderr + "\n\nYou may not have permission to delete work items in this project",
+                details=result.stderr
+                + "\n\nYou may not have permission to delete work items in this project",
             )
         else:
             handle_error(
@@ -138,7 +139,14 @@ def confirm_deletion(work_item: dict | None, permanent: bool) -> bool:
     else:
         print("WARNING: Could not retrieve work item details")
 
-    print("\nDeletion Type: " + ("PERMANENT (cannot be recovered)" if permanent else "Soft delete (can be recovered)"))
+    print(
+        "\nDeletion Type: "
+        + (
+            "PERMANENT (cannot be recovered)"
+            if permanent
+            else "Soft delete (can be recovered)"
+        )
+    )
     print("=" * 60)
 
     response = input("\nAre you sure you want to delete this work item? (yes/no): ")
@@ -223,7 +231,9 @@ Note:
 
         print(f"\nSuccessfully deleted work item #{work_item_id}")
         if not args.permanent:
-            print("Note: This was a soft delete. The work item can be recovered if needed.")
+            print(
+                "Note: This was a soft delete. The work item can be recovered if needed."
+            )
 
     except Exception as e:
         handle_error(

@@ -77,8 +77,8 @@ class AgentDeployer:
         subscription_id: Optional[str] = None,
         iac_format: Optional[IaCFormat] = None,
         dry_run: bool = False,
-        max_iterations: int = 5,
-        timeout_seconds: int = 300,
+        max_iterations: int = 20,
+        timeout_seconds: int = 6000,
     ):
         """Initialize agent deployer.
 

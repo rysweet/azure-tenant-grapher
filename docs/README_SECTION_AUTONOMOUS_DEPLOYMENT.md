@@ -59,7 +59,7 @@ Report generated: deployment_report.md
 |--------|---------|-------------|
 | `--agent` | disabled | Enable autonomous deployment mode |
 | `--max-iterations N` | 5 | Maximum deployment attempts |
-| `--timeout SECONDS` | 300 | Timeout per operation (5 minutes) |
+| `--timeout SECONDS` | 300 | Timeout per operation (100 minutes) |
 | `--dry-run` | disabled | Preview without executing |
 | `--format [terraform\|bicep\|arm]` | auto-detect | IaC format |
 

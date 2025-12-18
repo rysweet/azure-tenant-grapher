@@ -432,8 +432,8 @@ class DeploymentBackend(ABC):
 ```python
 @click.command()
 @click.option("--agent", is_flag=True, help="Enable autonomous deployment")
-@click.option("--max-iterations", default=5, help="Maximum iterations")
-@click.option("--timeout", default=300, help="Timeout per operation")
+@click.option("--max-iterations", default=20, help="Maximum iterations")
+@click.option("--timeout", default=6000, help="Timeout per operation")
 @click.option("--format", type=click.Choice(["terraform", "bicep", "arm"]))
 def deploy(**kwargs):
     ...

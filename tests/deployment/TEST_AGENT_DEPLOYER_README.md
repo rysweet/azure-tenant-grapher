@@ -65,7 +65,7 @@ This is CORRECT! Tests are written first in TDD.
 As you implement AgentDeployer, tests will start **FAILING** with specific error messages:
 ```
 FAILED tests/deployment/test_agent_deployer.py::TestAgentDeployerInit::test_init_with_defaults
-AssertionError: assert deployer.max_iterations == 5
+AssertionError: assert deployer.max_iterations == 20
 ```
 
 This is PROGRESS! Tests are running but catching bugs.

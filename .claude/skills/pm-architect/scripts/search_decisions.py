@@ -104,7 +104,10 @@ def extract_session_context(session_dir: Path) -> Dict:
 
 
 def search_sessions(
-    logs_dir: Path, query: Optional[str] = None, session_id: Optional[str] = None, limit: Optional[int] = None
+    logs_dir: Path,
+    query: Optional[str] = None,
+    session_id: Optional[str] = None,
+    limit: Optional[int] = None,
 ) -> List[Dict]:
     """Search PM decisions across all sessions.
 

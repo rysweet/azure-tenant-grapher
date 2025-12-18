@@ -27,9 +27,7 @@ class TestUndeployCommand:
             "src.commands.undeploy.get_config_for_tenant"
         ) as mock_config, patch(
             "src.commands.undeploy.TerraformDestroyer"
-        ) as mock_destroyer, patch(
-            "src.commands.undeploy.asyncio.run"
-        ), patch(
+        ) as mock_destroyer, patch("src.commands.undeploy.asyncio.run"), patch(
             "click.confirm", return_value=False
         ):
             # Setup mocks
