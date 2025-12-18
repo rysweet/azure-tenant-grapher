@@ -1,5 +1,26 @@
 # Azure Tenant Grapher - Documentation Index
 
+## Issue #610: Autonomous Deployment with Goal-Seeking Agent
+
+### Overview
+- **[AUTONOMOUS_DEPLOYMENT_INDEX.md](AUTONOMOUS_DEPLOYMENT_INDEX.md)** ⭐ - **COMPLETE**: Comprehensive documentation index for autonomous deployment feature. AI-powered goal-seeking agent automatically recovers from deployment errors through iterative fix-and-retry cycles.
+
+### User Documentation
+- **[Tutorial: Your First Autonomous Deployment](quickstart/AGENT_DEPLOYMENT_TUTORIAL.md)** - 15-minute step-by-step walkthrough with real examples from IaC generation to deployed resources
+- **[Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md)** - Complete user guide covering all command-line options, usage scenarios, and best practices
+- **[Autonomous Deployment FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Frequently asked questions about agent mode, troubleshooting, and configuration
+- **[Agent vs Manual Deployment](guides/AGENT_VS_MANUAL_DEPLOYMENT.md)** - Decision guide comparing agent mode and manual deployment with real-world scenarios
+
+### Technical Documentation
+- **[Agent Deployer Reference](design/AGENT_DEPLOYER_REFERENCE.md)** - Complete technical specification including architecture, API reference, testing strategy, and performance considerations
+
+### Key Features
+- AI-powered autonomous error recovery (Claude SDK AutoMode)
+- Iterative deployment loop (max 5 iterations, 300s timeout)
+- Comprehensive deployment reports with full iteration history
+- Works with all IaC formats (Terraform, Bicep, ARM)
+- Automatic fixes for: provider registration, SKU availability, network conflicts, naming collisions
+
 ## Issue #570: SCAN_SOURCE_NODE Preservation Fix
 
 ### Fix Summary
