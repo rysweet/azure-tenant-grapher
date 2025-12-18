@@ -1312,11 +1312,11 @@ class TerraformEmitter(IaCEmitter):
 
         # Initialize existence validator if needed (Issue #422)
         if self._existence_validator is None:
-            credential = self.credential or DefaultAzureCredential()
-            # Fix #608: Pass target_tenant_id for cross-tenant existence checks
+            # Fix #608: DON'T pass self.credential - it's for source tenant!
+            # Let ResourceExistenceValidator create the right credential for target tenant
             self._existence_validator = ResourceExistenceValidator(
                 subscription_id=subscription_id,
-                credential=credential,
+                credential=None,  # Let validator create tenant-specific credential
                 tenant_id=self.target_tenant_id
             )
             logger.info(
