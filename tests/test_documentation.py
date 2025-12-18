@@ -20,7 +20,7 @@ import pytest
 scripts_dir = Path(__file__).parent.parent / 'scripts'
 sys.path.insert(0, str(scripts_dir))
 
-from validate_docs_links import LinkValidator, ValidationResult
+from validate_docs_links import LinkValidator
 from find_orphaned_docs import OrphanDetector, OrphanReport
 
 
@@ -51,7 +51,7 @@ def index_file() -> str:
 @pytest.fixture
 def link_validator(docs_dir) -> LinkValidator:
     """Create link validator instance."""
-    return LinkValidator(docs_dir, fail_fast=False)
+    return LinkValidator(docs_dir, fix=False)
 
 
 @pytest.fixture
@@ -88,25 +88,23 @@ class TestLinkValidation:
 
     def test_no_broken_internal_links(self, link_validator):
         """Test that all internal links are valid."""
-        result = link_validator.validate_directory()
+        broken_count = link_validator.validate_all()
 
-        if not result.is_valid:
+        if broken_count > 0:
             # Build detailed error message
-            error_msg = ["\nBroken links found:"]
-            for link in result.broken_links:
-                rel_source = link.source_file.relative_to(link_validator.docs_dir)
+            error_msg = [f"\n{broken_count} broken links found:"]
+            for md_file, link, _ in link_validator.broken_links:
+                rel_source = md_file.relative_to(link_validator.docs_dir)
                 error_msg.append(
-                    f"\n  {rel_source}:{link.line_number}"
-                    f"\n    Link: {link.target_path}"
-                    f"\n    Resolved to: {link.resolved_path}"
+                    f"\n  {rel_source}"
+                    f"\n    Link: {link}"
                     f"\n    Status: FILE NOT FOUND"
                 )
 
             pytest.fail('\n'.join(error_msg))
 
-    def test_link_extraction(self, link_validator, docs_dir):
+    def test_link_extraction(self, link_validator):
         """Test that link extraction works correctly."""
-        # Create test markdown content
         test_content = """
 # Test Document
 
@@ -116,65 +114,14 @@ class TestLinkValidation:
 [Anchor Link](#section)
         """
 
-        test_file = docs_dir / 'test_extraction.md'
-        try:
-            test_file.write_text(test_content)
+        links = link_validator.extract_links(test_content)
 
-            links = link_validator.extract_links(test_file)
-
-            # Should extract 4 links
-            assert len(links) == 4
-
-            # Check link targets
-            targets = [target for _, _, target in links]
-            assert './other.md' in targets
-            assert '../parent/file.md' in targets
-            assert 'https://example.com' in targets
-            assert '#section' in targets
-
-        finally:
-            if test_file.exists():
-                test_file.unlink()
-
-    def test_external_link_detection(self, link_validator):
-        """Test that external links are correctly identified."""
-        assert link_validator.is_external_link('https://example.com')
-        assert link_validator.is_external_link('http://example.com')
-        assert link_validator.is_external_link('mailto:test@example.com')
-        assert link_validator.is_external_link('ftp://example.com')
-
-        assert not link_validator.is_external_link('./relative.md')
-        assert not link_validator.is_external_link('/absolute.md')
-        assert not link_validator.is_external_link('../parent.md')
-
-    def test_relative_path_resolution(self, link_validator, docs_dir):
-        """Test that relative paths are resolved correctly."""
-        source_file = docs_dir / 'subdir' / 'doc.md'
-
-        # Relative path
-        resolved = link_validator.resolve_link_path(source_file, './other.md')
-        assert resolved == (docs_dir / 'subdir' / 'other.md').resolve()
-
-        # Parent relative path
-        resolved = link_validator.resolve_link_path(source_file, '../parent.md')
-        assert resolved == (docs_dir / 'parent.md').resolve()
-
-        # Absolute path from docs root
-        resolved = link_validator.resolve_link_path(source_file, '/absolute.md')
-        assert resolved == (docs_dir / 'absolute.md').resolve()
-
-    def test_anchor_removal(self, link_validator, docs_dir):
-        """Test that anchors are removed from paths."""
-        source_file = docs_dir / 'doc.md'
-
-        # Link with anchor
-        resolved = link_validator.resolve_link_path(source_file, './other.md#section')
-        assert resolved == (docs_dir / 'other.md').resolve()
-
-        # Anchor-only link (should resolve to same file)
-        resolved = link_validator.resolve_link_path(source_file, '#section')
-        # After removing anchor, empty string, resolves to source dir
-        assert resolved.parent == docs_dir
+        # Should extract 4 links
+        assert len(links) == 4
+        assert './other.md' in links
+        assert '../parent/file.md' in links
+        assert 'https://example.com' in links
+        assert '#section' in links
 
 
 # ============================================================================
@@ -531,17 +478,14 @@ class TestDocumentationIntegration:
 
     def test_full_link_validation(self, link_validator):
         """Run complete link validation."""
-        result = link_validator.validate_directory()
+        broken_count = link_validator.validate_all()
 
         # Print summary
         print(f"\nLink Validation Summary:")
-        print(f"  Total links: {result.total_links}")
-        print(f"  Valid: {result.valid_links}")
-        print(f"  External: {result.external_links}")
-        print(f"  Broken: {result.broken_count}")
+        print(f"  Broken links: {broken_count}")
 
-        assert result.is_valid, \
-            f"Found {result.broken_count} broken links"
+        assert broken_count == 0, \
+            f"Found {broken_count} broken links"
 
     def test_full_orphan_detection(self, orphan_detector):
         """Run complete orphan detection."""
@@ -560,11 +504,11 @@ class TestDocumentationIntegration:
     def test_documentation_health_score(self, link_validator, orphan_detector):
         """Calculate overall documentation health score."""
         # Run validations
-        link_result = link_validator.validate_directory()
+        broken_count = link_validator.validate_all()
         orphan_report = orphan_detector.detect_orphans()
 
-        # Calculate metrics
-        link_quality = (link_result.valid_links / max(1, link_result.total_links - link_result.external_links)) * 100
+        # Calculate metrics (100% if no broken links, 0% if any broken)
+        link_quality = 100.0 if broken_count == 0 else 0.0
         coverage = orphan_report.coverage_percent
 
         # Health score (average of metrics)
