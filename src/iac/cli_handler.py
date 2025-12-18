@@ -727,6 +727,28 @@ async def generate_iac_command_handler(
         resolved_source_tenant_id = source_tenant_id
         resolved_target_tenant_id = target_tenant_id
 
+        # Bug #11 FIX: Extract source subscription from Neo4j original_id FIRST (before Azure CLI)
+        # This is critical for cross-tenant where Azure CLI might be logged into target tenant
+        if not source_subscription_id and graph.resources:
+            logger.info(f"🔍 Extracting source subscription from {len(graph.resources)} resources...")
+            for resource in graph.resources:
+                # Try original_id first (has real Azure subscription), fallback to id
+                original_id = resource.get("original_id")
+                abstracted_id = resource.get("id", "")
+
+                resource_id = original_id or abstracted_id
+                if "/subscriptions/" in resource_id:
+                    source_subscription_id = resource_id.split("/subscriptions/")[
+                        1
+                    ].split("/")[0]
+                    logger.info(
+                        f"  ✅ Extracted source subscription from {'original_id' if original_id else 'id'}: {source_subscription_id}"
+                    )
+                    break
+
+            if not source_subscription_id:
+                logger.warning("  ⚠️ Could not extract source subscription from any resource")
+
         # Try to get defaults from Azure CLI if not explicitly provided
         if not resolved_source_tenant_id or not source_subscription_id:
             cli_info = _get_default_subscription_from_azure_cli()
@@ -743,18 +765,24 @@ async def generate_iac_command_handler(
                         f"Using source tenant from Azure CLI: {resolved_source_tenant_id}"
                     )
 
-        # Fallback: extract source subscription from resource IDs if still not set
-        if not source_subscription_id and graph.resources:
+        # Removed duplicate extraction code (now happens above before Azure CLI)
+
+        # Bug #11: Extract source tenant from Neo4j original_id if not set
+        # This handles the case where Azure CLI is logged into target tenant
+        if not resolved_source_tenant_id and graph.resources:
             for resource in graph.resources:
-                resource_id = resource.get("id", "")
-                if "/subscriptions/" in resource_id:
-                    source_subscription_id = resource_id.split("/subscriptions/")[
-                        1
-                    ].split("/")[0]
-                    logger.debug(
-                        f"Extracted source subscription from resource ID: {source_subscription_id}"
-                    )
-                    break
+                original_id = resource.get("original_id")
+                if original_id and "/tenantId=" in original_id:
+                    # Extract tenant ID from original_id (for Entra ID resources)
+                    try:
+                        tenant_part = original_id.split("/tenantId=")[1]
+                        resolved_source_tenant_id = tenant_part.split("/")[0]
+                        logger.info(
+                            f"Extracted source tenant from original_id: {resolved_source_tenant_id}"
+                        )
+                        break
+                    except (IndexError, AttributeError):
+                        continue
 
         # Bug #93: Fallback for source tenant ID when Azure CLI not available
         # If target tenant is specified but source tenant is unknown, and there are no

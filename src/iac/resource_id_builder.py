@@ -358,6 +358,12 @@ class AzureResourceIdBuilder:
 
         # Bug #10 Fix: Try original_id first (from Neo4j)
         if original_id_map and resource_name:
+            # DEBUG: Log what we're working with
+            logger.info(f"🔍 DEBUG _build_subnet_id for '{resource_name}':")
+            logger.info(f"  subscription_id (target): {subscription_id}")
+            logger.info(f"  source_subscription_id: {source_subscription_id}")
+            logger.info(f"  original_id_map size: {len(original_id_map)}")
+
             # Search for this subnet in the original_id_map by matching subnet name in Azure ID
             for tf_name, original_id in original_id_map.items():
                 if (
@@ -367,8 +373,8 @@ class AzureResourceIdBuilder:
                     # Extract subnet name from Azure ID: .../subnets/{subnet_name}
                     id_subnet_name = original_id.split("/subnets/")[-1]
                     if id_subnet_name == resource_name:
-                        logger.debug(
-                            f"Using original_id for subnet '{resource_name}': {original_id}"
+                        logger.info(
+                            f"  ✓ Found original_id for subnet '{resource_name}': {original_id}"
                         )
 
                         # Cross-tenant translation if needed
@@ -376,13 +382,13 @@ class AzureResourceIdBuilder:
                             source_subscription_id
                             and source_subscription_id != subscription_id
                         ):
+                            logger.info(f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}...")
                             original_id = self._translate_subscription_in_id(
                                 original_id, source_subscription_id, subscription_id
                             )
-                            logger.debug(
-                                f"Translated subscription in subnet ID: "
-                                f"{source_subscription_id[:8]}... -> {subscription_id[:8]}..."
-                            )
+                            logger.info(f"  ✅ Translated ID: {original_id}")
+                        else:
+                            logger.info(f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}")
 
                         return original_id
 
