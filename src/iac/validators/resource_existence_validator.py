@@ -52,6 +52,7 @@ class ResourceExistenceValidator:
         self,
         subscription_id: str,
         credential: Optional[Any] = None,
+        tenant_id: Optional[str] = None,  # Fix #608: Tenant for cross-tenant auth
         max_retries: int = 3,
         cache_ttl: int = 300,
     ):
@@ -61,11 +62,19 @@ class ResourceExistenceValidator:
         Args:
             subscription_id: Target Azure subscription ID
             credential: Azure credential (defaults to DefaultAzureCredential)
+            tenant_id: Target tenant ID for cross-tenant deployments
             max_retries: Maximum retry attempts for transient errors
             cache_ttl: Cache time-to-live in seconds (default 5 minutes)
         """
         self.subscription_id = subscription_id
-        self.credential = credential or DefaultAzureCredential()
+        self.tenant_id = tenant_id
+        # Fix #608: Create tenant-aware credential
+        if credential:
+            self.credential = credential
+        elif tenant_id:
+            self.credential = DefaultAzureCredential(authority=f"https://login.microsoftonline.com/{tenant_id}")
+        else:
+            self.credential = DefaultAzureCredential()
         self.max_retries = max_retries
         self.cache_ttl = cache_ttl
 
