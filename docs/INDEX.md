@@ -96,6 +96,13 @@
 - **[quickstart/terraform-import-quick-ref.md](quickstart/terraform-import-quick-ref.md)** - Quick reference: commands, one-liners, and common fixes for import blocks.
 - **[patterns/IMPORT_FIRST_STRATEGY.md](patterns/IMPORT_FIRST_STRATEGY.md)** - Why "import first, create second" eliminates deployment conflicts.
 
+## Investigations
+
+### Issue #591: VM Replication
+- **[investigations/issue-591/README.md](investigations/issue-591/README.md)** ⭐ - Complete investigation timeline covering 10 bugs fixed across multiple sessions
+- **[investigations/issue-591/SESSION_20251218_BUG10_FIX.md](investigations/issue-591/SESSION_20251218_BUG10_FIX.md)** - Session report for Bug #10 fix (child resource import blocks)
+- **[investigations/issue-591/PERMISSION_ISSUE.md](investigations/issue-591/PERMISSION_ISSUE.md)** - Cross-tenant permission issue blocking end-to-end testing
+
 ## See Also
 - `../CLAUDE.md` - Project instructions and context
 - `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema
