@@ -60,6 +60,9 @@
 
 ## Bug Fixes
 
+### December 18, 2025
+- **[Bug #10](BUG_10_DOCUMENTATION.md)** ⭐ - Child resources missing import blocks. Impact: Fixed 110/177 missing import blocks (from 37.9% to 100% coverage). Uses dual-graph original_id instead of config reconstruction.
+
 ### November 23, 2025
 - **Bug #59**: Subscription ID abstraction (ROOT CAUSE) - commit faeb284
 - **Bug #58**: Skip NIC NSG validation - commit 7651fde
@@ -86,6 +89,12 @@
 - **[architecture/scan-source-node-relationships.md](architecture/scan-source-node-relationships.md)** - SCAN_SOURCE_NODE relationship preservation in layer operations (Bug #117 fix). Explains why these relationships are critical for IaC generation and smart import validation.
 - **[guides/scan-source-node-migration.md](guides/scan-source-node-migration.md)** - Migration guide for layers and archives created before Bug #117 fix. Includes detection, migration paths, and verification steps.
 - **[quickstart/scan-source-node-quick-ref.md](quickstart/scan-source-node-quick-ref.md)** - Quick reference for developers: essential queries, Python API examples, common mistakes, and debugging checklist.
+
+### Terraform Import Blocks
+- **[concepts/TERRAFORM_IMPORT_BLOCKS.md](concepts/TERRAFORM_IMPORT_BLOCKS.md)** ⭐ - **START HERE**: User-friendly explanation of Terraform import blocks, how ATG generates them, and why they matter. Covers parent vs child resources, cross-tenant translation, and common questions.
+- **[guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md](guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md)** ⭐ - Complete troubleshooting guide for missing or broken Terraform import blocks. Covers verification, diagnostics, and fixes for all common issues.
+- **[quickstart/terraform-import-quick-ref.md](quickstart/terraform-import-quick-ref.md)** - Quick reference: commands, one-liners, and common fixes for import blocks.
+- **[patterns/IMPORT_FIRST_STRATEGY.md](patterns/IMPORT_FIRST_STRATEGY.md)** - Why "import first, create second" eliminates deployment conflicts.
 
 ## See Also
 - `../CLAUDE.md` - Project instructions and context
