@@ -68,12 +68,25 @@ class ResourceExistenceValidator:
         """
         self.subscription_id = subscription_id
         self.tenant_id = tenant_id
-        # Fix #608: Create tenant-aware credential for cross-tenant
+        # Fix #608: Use EXPLICIT SP credentials, not DefaultAzureCredential
+        # For cross-tenant, we MUST use ClientSecretCredential with explicit SP
         if credential:
             self.credential = credential
         elif tenant_id:
-            # CORRECT way for cross-tenant: additionally_allowed_tenants
-            self.credential = DefaultAzureCredential(additionally_allowed_tenants=["*"])
+            # Use explicit SP from environment (same as deployment uses)
+            import os
+            from azure.identity import ClientSecretCredential
+            client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID") or os.getenv("AZURE_CLIENT_ID")
+            client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET") or os.getenv("AZURE_CLIENT_SECRET")
+            if client_id and client_secret:
+                self.credential = ClientSecretCredential(
+                    tenant_id=tenant_id,
+                    client_id=client_id,
+                    client_secret=client_secret
+                )
+            else:
+                # Fallback
+                self.credential = DefaultAzureCredential(additionally_allowed_tenants=["*"])
         else:
             self.credential = DefaultAzureCredential()
         self.max_retries = max_retries
