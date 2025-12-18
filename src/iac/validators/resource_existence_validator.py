@@ -68,11 +68,12 @@ class ResourceExistenceValidator:
         """
         self.subscription_id = subscription_id
         self.tenant_id = tenant_id
-        # Fix #608: Create tenant-aware credential
+        # Fix #608: Create tenant-aware credential for cross-tenant
         if credential:
             self.credential = credential
         elif tenant_id:
-            self.credential = DefaultAzureCredential(authority=f"https://login.microsoftonline.com/{tenant_id}")
+            # CORRECT way for cross-tenant: additionally_allowed_tenants
+            self.credential = DefaultAzureCredential(additionally_allowed_tenants=["*"])
         else:
             self.credential = DefaultAzureCredential()
         self.max_retries = max_retries
