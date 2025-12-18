@@ -418,7 +418,7 @@ class TestAzureADAuthentication:
         from tests.e2e.auth_security.security_utils import EncryptionHelper
 
         # Test password hashing
-        password = "MySecurePassword123!"
+        password = "MySecurePassword123!"  # pragma: allowlist secret
         hashed, salt = EncryptionHelper.hash_password(password)
 
         # Verify hash properties

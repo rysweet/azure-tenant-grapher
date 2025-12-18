@@ -654,7 +654,10 @@ class TestSmartDetectorAlertRuleMapping:
         scope_id = config["scope_resource_ids"][0]
         assert target_subscription in scope_id
         assert "source-sub" not in scope_id
-        assert scope_id == f"/subscriptions/{target_subscription}/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+        assert (
+            scope_id
+            == f"/subscriptions/{target_subscription}/resourceGroups/test-rg/providers/microsoft.insights/components/test-insights"
+        )
 
         # Verify action group IDs also use target subscription
         assert "action_group" in config

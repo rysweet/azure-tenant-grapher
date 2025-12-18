@@ -25,8 +25,6 @@ dependencies = [
     "azure-mgmt-costmanagement>=4.0.0",
     "azure-cosmos>=4.5.0",
     "azure-mgmt-resourcegraph>=8.0.0",
-    "azure-mgmt-subscription>=3.1.1",
-    "azure-mgmt-resourcegraph>=8.0.0",
     # Microsoft Graph SDK for AAD operations
     "msgraph-sdk>=1.0.0",
     "msal>=1.28.0",
@@ -46,7 +44,6 @@ dependencies = [
     "readchar>=4.0.0",
     # Logging and configuration
     "pyyaml>=6.0",
-    "pydantic>=2.0",
     "colorlog>=6.8.0",
     "autogen-ext[mcp]>=0.6.1",
     "autogen_agentchat",
@@ -67,6 +64,11 @@ dependencies = [
     "python-pptx>=1.0.2",
     # Graph visualization export (Issue #508)
     "pydot>=3.0.0",
+    # Remote server dependencies (Phase 2 - Issue #577)
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=14.0",
+    "python-multipart>=0.0.12",
     # Visualization dependencies (optional, for analyze-patterns command)
     "matplotlib>=3.7.0",
     "scipy>=1.10.0",
@@ -122,6 +124,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
     "azure: marks tests that require Azure credentials",
     "timeout(n): set a timeout for a test",
     "dual_graph: marks tests as part of dual graph architecture feature (Issue #420)",

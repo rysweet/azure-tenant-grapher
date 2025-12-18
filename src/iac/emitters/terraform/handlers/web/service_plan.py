@@ -40,7 +40,8 @@ class ServicePlanHandler(ResourceHandler):
         safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 
-        config = self.build_base_config(resource)
+        # Fix #601: Pass context to build_base_config for location override
+        config = self.build_base_config(resource, context=context)
 
         # OS type (required)
         kind = properties.get("kind", resource.get("kind", "")).lower()

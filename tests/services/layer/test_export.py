@@ -16,15 +16,13 @@ Philosophy:
 
 import json
 from datetime import datetime
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 
 from src.services.layer.export import LayerExportOperations
 from src.services.layer.models import LayerMetadata, LayerType
 from src.utils.session_manager import Neo4jSessionManager
-
 
 # =============================================================================
 # Fixtures
@@ -74,7 +72,9 @@ def mock_stats_operations():
 
 
 @pytest.fixture
-def export_operations(mock_session_manager, mock_crud_operations, mock_stats_operations):
+def export_operations(
+    mock_session_manager, mock_crud_operations, mock_stats_operations
+):
     """Create LayerExportOperations instance with mocked dependencies."""
     session_manager, _ = mock_session_manager
     return LayerExportOperations(
@@ -169,7 +169,7 @@ async def test_copy_layer_preserves_scan_source_node(
     mock_session.run.side_effect = track_query
 
     # Execute copy
-    result = await export_operations.copy_layer(
+    await export_operations.copy_layer(
         source_layer_id="source-layer",
         target_layer_id="target-layer",
         name="Target Layer",
@@ -179,7 +179,8 @@ async def test_copy_layer_preserves_scan_source_node(
     # Verify SCAN_SOURCE_NODE relationships were copied
     # THIS ASSERTION SHOULD FAIL
     scan_source_queries = [
-        query for query, params in queries_executed
+        query
+        for query, params in queries_executed
         if "SCAN_SOURCE_NODE" in query and "CREATE" in query.upper()
     ]
 
@@ -228,7 +229,8 @@ async def test_copy_layer_links_to_original_nodes_not_copies(
     # Verify SCAN_SOURCE_NODE points to :Original nodes
     # THIS ASSERTION SHOULD FAIL
     scan_source_to_original = [
-        query for query, params in queries_executed
+        query
+        for query, params in queries_executed
         if "SCAN_SOURCE_NODE" in query and ":Original" in query
     ]
 
@@ -263,9 +265,13 @@ async def test_archive_layer_includes_scan_source_node(
 
     # Mock node query
     mock_node_result = Mock()
-    mock_node_result.__iter__ = Mock(return_value=iter([
-        {"r": {"id": "vm1", "name": "vm1", "layer_id": "test-layer"}},
-    ]))
+    mock_node_result.__iter__ = Mock(
+        return_value=iter(
+            [
+                {"r": {"id": "vm1", "name": "vm1", "layer_id": "test-layer"}},
+            ]
+        )
+    )
 
     # Mock relationship query (currently excludes SCAN_SOURCE_NODE)
     mock_rel_result = Mock()
@@ -286,8 +292,7 @@ async def test_archive_layer_includes_scan_source_node(
 
     relationships = archive_data.get("relationships", [])
     scan_source_rels = [
-        rel for rel in relationships
-        if rel.get("type") == "SCAN_SOURCE_NODE"
+        rel for rel in relationships if rel.get("type") == "SCAN_SOURCE_NODE"
     ]
 
     # THIS ASSERTION SHOULD FAIL
@@ -407,8 +412,7 @@ async def test_restore_layer_recreates_scan_source_node(
     # Verify SCAN_SOURCE_NODE was restored
     # THIS ASSERTION SHOULD FAIL
     scan_source_queries = [
-        query for query, params in queries_executed
-        if "SCAN_SOURCE_NODE" in query
+        query for query, params in queries_executed if "SCAN_SOURCE_NODE" in query
     ]
 
     assert len(scan_source_queries) > 0, (
@@ -503,9 +507,13 @@ async def test_archive_layer_with_no_relationships(
 
     # Mock nodes but no relationships
     mock_node_result = Mock()
-    mock_node_result.__iter__ = Mock(return_value=iter([
-        {"r": {"id": "vm1", "name": "vm1"}},
-    ]))
+    mock_node_result.__iter__ = Mock(
+        return_value=iter(
+            [
+                {"r": {"id": "vm1", "name": "vm1"}},
+            ]
+        )
+    )
 
     mock_rel_result = Mock()
     mock_rel_result.__iter__ = Mock(return_value=iter([]))
@@ -573,13 +581,13 @@ async def test_restore_layer_backward_compatibility_v1_archives(
 
 
 __all__ = [
-    "test_copy_layer_preserves_scan_source_node",
-    "test_copy_layer_links_to_original_nodes_not_copies",
-    "test_archive_layer_includes_scan_source_node",
     "test_archive_layer_has_version_metadata",
-    "test_restore_layer_recreates_scan_source_node",
-    "test_layer_isolation_maintained",
-    "test_copy_layer_empty_source",
+    "test_archive_layer_includes_scan_source_node",
     "test_archive_layer_with_no_relationships",
+    "test_copy_layer_empty_source",
+    "test_copy_layer_links_to_original_nodes_not_copies",
+    "test_copy_layer_preserves_scan_source_node",
+    "test_layer_isolation_maintained",
     "test_restore_layer_backward_compatibility_v1_archives",
+    "test_restore_layer_recreates_scan_source_node",
 ]

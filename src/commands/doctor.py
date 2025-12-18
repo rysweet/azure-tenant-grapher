@@ -62,7 +62,9 @@ def _check_azure_permissions() -> None:
         subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
 
         if not client_id or not subscription_id:
-            click.echo("  AZURE_CLIENT_ID or AZURE_SUBSCRIPTION_ID not set in environment")
+            click.echo(
+                "  AZURE_CLIENT_ID or AZURE_SUBSCRIPTION_ID not set in environment"
+            )
             click.echo("  Cannot validate permissions without these values")
             return
 
@@ -138,7 +140,9 @@ def _check_azure_permissions() -> None:
             click.echo(f"       --scope '/subscriptions/{subscription_id}'")
             click.echo("")
             click.echo("     OR use the automated script:")
-            click.echo("     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>")
+            click.echo(
+                "     ./scripts/setup_service_principal.sh <TENANT_NAME> <TENANT_ID>"
+            )
 
         click.echo("")
         if has_reader and has_security_reader:

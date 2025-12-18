@@ -51,7 +51,10 @@ class StorageAccountHandler(ResourceHandler):
         resource_id = resource.get("id", "")
         resource_group_name = resource.get("resource_group_name", "")
         # Check both ID and resource_group_name field
-        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group_name.lower():
+        if (
+            "databricks-rg" in resource_id.lower()
+            or "databricks-rg" in resource_group_name.lower()
+        ):
             logger.info(
                 f"Skipping Databricks-managed storage account '{resource_name}' in RG '{resource_group_name}' "
                 "(has Azure deny assignments)"
@@ -106,10 +109,10 @@ class StorageAccountHandler(ResourceHandler):
         if access_tier:
             config["access_tier"] = access_tier
 
-        # Optional: enable_https_traffic_only
+        # Optional: HTTPS traffic only - Fix #596: Property renamed in provider v4+
         https_only = properties.get("supportsHttpsTrafficOnly")
         if https_only is not None:
-            config["enable_https_traffic_only"] = https_only
+            config["https_traffic_only_enabled"] = https_only
 
         # Optional: min_tls_version
         tls_version = properties.get("minimumTlsVersion")

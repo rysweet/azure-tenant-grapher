@@ -42,10 +42,23 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # SKU
+        # SKU - Fix #596: Normalize casing for Terraform
         sku = properties.get("sku", {})
         if sku and "name" in sku:
-            config["sku"] = sku["name"]
+            sku_name = sku["name"]
+            # Terraform requires PascalCase: PerGB2018, PerNode, Premium, Standalone, Standard, etc.
+            # Azure returns lowercase: pergb2018, pernode, etc.
+            sku_map = {
+                "pergb2018": "PerGB2018",
+                "pernode": "PerNode",
+                "premium": "Premium",
+                "standalone": "Standalone",
+                "standard": "Standard",
+                "capacityreservation": "CapacityReservation",
+                "lacluster": "LACluster",
+                "unlimited": "Unlimited",
+            }
+            config["sku"] = sku_map.get(sku_name.lower(), sku_name)
 
         # Retention
         retention = properties.get("retentionInDays")

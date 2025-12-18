@@ -41,7 +41,7 @@ def validate_subscription_id(subscription_id: str) -> str:
         ValueError: Invalid Azure subscription ID format...
     """
     # Azure subscription IDs are UUIDs (36 characters with hyphens)
-    uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    uuid_pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
     if not subscription_id:
         raise ValueError("Subscription ID cannot be empty")

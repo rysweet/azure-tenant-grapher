@@ -78,7 +78,7 @@ class PatternSampler(BaseSampler):
         self,
         graph: nx.DiGraph,
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using pattern matching.

@@ -33,7 +33,9 @@ class TestCypherInjectionPrevention:
         """Test that basic SQL-style injection in resource types is blocked."""
         # Create mock session manager
         session_manager = Mock(spec=Neo4jSessionManager)
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         malicious_type = "Microsoft.Compute/virtualMachines') OR 1=1--"
 
@@ -47,7 +49,9 @@ class TestCypherInjectionPrevention:
     async def test_resource_type_injection_comment(self):
         """Test that comment injection in resource types is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         malicious_type = "test'] // malicious comment"
 
@@ -61,7 +65,9 @@ class TestCypherInjectionPrevention:
     async def test_resource_type_injection_nested_query(self):
         """Test that nested query injection in resource types is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         malicious_type = "foo\n} MATCH (x) DETACH DELETE x //"
 
@@ -75,7 +81,9 @@ class TestCypherInjectionPrevention:
     async def test_resource_type_injection_relationship(self):
         """Test that relationship injection in resource types is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         malicious_type = "vm']->(x) WHERE x.secret = 'data"
 
@@ -89,7 +97,9 @@ class TestCypherInjectionPrevention:
     async def test_resource_type_too_long(self):
         """Test that excessively long resource types are rejected."""
         session_manager = Mock(spec=Neo4jSessionManager)
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         # Create a resource type that's over 200 characters
         malicious_type = "A" * 201 + ".B/C"
@@ -113,7 +123,9 @@ class TestCypherInjectionPrevention:
         session_manager.session.return_value.__enter__ = Mock(return_value=mock_session)
         session_manager.session.return_value.__exit__ = Mock(return_value=None)
 
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         valid_types = [
             "Microsoft.Compute/virtualMachines",
@@ -137,7 +149,9 @@ class TestCypherInjectionPrevention:
         assert "$resource_types" in query or "r.type IN $resource_types" in query
         assert params["resource_types"] == valid_types
 
-    @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
+    @pytest.mark.skip(
+        reason="Mock context manager issue - validation logic tested separately"
+    )
     async def test_property_path_injection_blocked(self):
         """Test that property path injection is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
@@ -149,13 +163,17 @@ class TestCypherInjectionPrevention:
         # So we don't need to mock the session manager's context manager
         with pytest.raises(ValueError, match="Invalid pattern property"):
             # Validation happens before tenant check, so this will fail early
-            with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+            with patch.object(
+                ScaleDownService, "validate_tenant_exists", return_value=True
+            ):
                 await service.sample_by_pattern(
                     tenant_id="00000000-0000-0000-0000-000000000000",
                     criteria=malicious_criteria,
                 )
 
-    @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
+    @pytest.mark.skip(
+        reason="Mock context manager issue - validation logic tested separately"
+    )
     async def test_unknown_function(self):
         """Test that nested query injection in pattern properties is blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
@@ -164,13 +182,17 @@ class TestCypherInjectionPrevention:
         malicious_criteria = {"tags.env') RETURN * //": "malicious"}
 
         with pytest.raises(ValueError, match="Invalid pattern property"):
-            with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+            with patch.object(
+                ScaleDownService, "validate_tenant_exists", return_value=True
+            ):
                 await service.sample_by_pattern(
                     tenant_id="00000000-0000-0000-0000-000000000000",
                     criteria=malicious_criteria,
                 )
 
-    @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
+    @pytest.mark.skip(
+        reason="Mock context manager issue - validation logic tested separately"
+    )
     async def test_non_whitelisted_properties_rejected(self):
         """Test that non-whitelisted properties are rejected."""
         session_manager = Mock(spec=Neo4jSessionManager)
@@ -179,13 +201,17 @@ class TestCypherInjectionPrevention:
         malicious_criteria = {"malicious_property": "value"}
 
         with pytest.raises(ValueError, match="Invalid pattern property"):
-            with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+            with patch.object(
+                ScaleDownService, "validate_tenant_exists", return_value=True
+            ):
                 await service.sample_by_pattern(
                     tenant_id="00000000-0000-0000-0000-000000000000",
                     criteria=malicious_criteria,
                 )
 
-    @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
+    @pytest.mark.skip(
+        reason="Mock context manager issue - validation logic tested separately"
+    )
     async def test_command_injection_patterns_blocked(self):
         """Test that command injection attempts in properties are blocked."""
         session_manager = Mock(spec=Neo4jSessionManager)
@@ -194,13 +220,17 @@ class TestCypherInjectionPrevention:
         malicious_criteria = {"type'; DROP DATABASE": "neo4j"}
 
         with pytest.raises(ValueError, match="Invalid pattern property"):
-            with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+            with patch.object(
+                ScaleDownService, "validate_tenant_exists", return_value=True
+            ):
                 await service.sample_by_pattern(
                     tenant_id="00000000-0000-0000-0000-000000000000",
                     criteria=malicious_criteria,
                 )
 
-    @pytest.mark.skip(reason="Mock context manager issue - validation logic tested separately")
+    @pytest.mark.skip(
+        reason="Mock context manager issue - validation logic tested separately"
+    )
     async def test_excessive_criteria_rejected(self):
         """Test that excessive criteria count is rejected."""
         session_manager = Mock(spec=Neo4jSessionManager)
@@ -215,7 +245,9 @@ class TestCypherInjectionPrevention:
         excessive_criteria = {prop: f"value{i}" for i, prop in enumerate(properties)}
 
         with pytest.raises(ValueError, match="Too many criteria"):
-            with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+            with patch.object(
+                ScaleDownService, "validate_tenant_exists", return_value=True
+            ):
                 await service.sample_by_pattern(
                     tenant_id="00000000-0000-0000-0000-000000000000",
                     criteria=excessive_criteria,
@@ -227,13 +259,17 @@ class TestCypherInjectionPrevention:
         session_manager = Mock(spec=Neo4jSessionManager)
 
         # Mock validate_tenant_exists
-        with patch.object(ScaleDownService, 'validate_tenant_exists', return_value=True):
+        with patch.object(
+            ScaleDownService, "validate_tenant_exists", return_value=True
+        ):
             # Mock the session context manager
             mock_session = MagicMock()
             mock_result = MagicMock()
             mock_result.__iter__ = Mock(return_value=iter([]))
             mock_session.run.return_value = mock_result
-            session_manager.session.return_value.__enter__ = Mock(return_value=mock_session)
+            session_manager.session.return_value.__enter__ = Mock(
+                return_value=mock_session
+            )
             session_manager.session.return_value.__exit__ = Mock(return_value=None)
 
             service = ScaleDownService(session_manager)
@@ -282,7 +318,7 @@ class TestCypherEscaping:
         escaped = _escape_cypher_string(malicious)
         # Quotes should be escaped, preventing injection
         assert '\\"' in escaped
-        assert '}) MATCH (x) DETACH DELETE x //' in escaped
+        assert "}) MATCH (x) DETACH DELETE x //" in escaped
 
     def test_escape_identifier_alphanumeric(self):
         """Test that safe identifiers don't need escaping."""
@@ -321,7 +357,9 @@ class TestYAMLInjectionPrevention:
     def test_yaml_safe_load_used(self):
         """Test that yaml.safe_load is used in engine.py."""
         # Read the engine.py file and verify safe_load is used
-        with open("/home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/src/iac/engine.py") as f:
+        with open(
+            "/home/azureuser/src/atg/worktrees/feat-issue-427-scale-operations/src/iac/engine.py"
+        ) as f:
             content = f.read()
 
         # Verify yaml.safe_load is used
@@ -335,7 +373,11 @@ class TestYAMLInjectionPrevention:
             if line.strip().startswith("#"):
                 continue
             # Check for dangerous yaml.load (without safe_ prefix and without Loader)
-            if "yaml.load(" in line and "safe_load" not in line and "Loader=" not in line:
+            if (
+                "yaml.load(" in line
+                and "safe_load" not in line
+                and "Loader=" not in line
+            ):
                 pytest.fail(f"Unsafe yaml.load() found in line: {line}")
 
 
@@ -355,7 +397,9 @@ class TestResourceTypeValidation:
         session_manager.session.return_value.__enter__ = Mock(return_value=mock_session)
         session_manager.session.return_value.__exit__ = Mock(return_value=None)
 
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         # Should not raise any exceptions
         await service._get_base_resources(
@@ -385,7 +429,9 @@ class TestResourceTypeValidation:
         session_manager.session.return_value.__enter__ = Mock(return_value=mock_session)
         session_manager.session.return_value.__exit__ = Mock(return_value=None)
 
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         valid_types = [
             "Microsoft.Compute/virtualMachines",
@@ -422,11 +468,17 @@ class TestIntegrationSecurity:
         session_manager.session.return_value.__enter__ = Mock(return_value=mock_session)
         session_manager.session.return_value.__exit__ = Mock(return_value=None)
 
-        service = ScaleUpService(session_manager, batch_size=100, validation_enabled=False)
+        service = ScaleUpService(
+            session_manager, batch_size=100, validation_enabled=False
+        )
 
         # Create base resources with IDs that could be exploited if not parameterized
         base_resources = [
-            {"id": "vm-1'] MATCH (x) DETACH DELETE x //", "type": "Microsoft.Compute/virtualMachines", "props": {}},
+            {
+                "id": "vm-1'] MATCH (x) DETACH DELETE x //",
+                "type": "Microsoft.Compute/virtualMachines",
+                "props": {},
+            },
             {"id": "vm-2", "type": "Microsoft.Compute/virtualMachines", "props": {}},
         ]
 

@@ -333,4 +333,4 @@ class BackgroundDeploymentManager:
 
 
 # Import datetime for cancel_deployment
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: E402

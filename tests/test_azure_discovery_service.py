@@ -584,6 +584,49 @@ class TestAzureDiscoveryService:
         # Just verify that upsert_resource completed successfully without errors
         # (Internal Cypher query structure may vary with dual-graph architecture)
 
+    @pytest.mark.asyncio
+    async def test_discover_resources_with_resource_limit(
+        self,
+        azure_service: AzureDiscoveryService,
+        mock_resource_client: Mock,
+        mock_authorization_client: Mock,
+    ) -> None:
+        """Test that resource_limit is applied before child resource discovery."""
+        # Create 20 mock resources (including some VNets that would have children)
+        mock_resources = []
+        for i in range(20):
+            resource = Mock()
+            resource.id = f"/subscriptions/test-sub/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet{i}"
+            resource.name = f"vnet{i}"
+            resource.type = "Microsoft.Network/virtualNetworks"
+            resource.location = "eastus"
+            resource.tags = {}
+            resource.properties = {}
+            mock_resources.append(resource)
+
+        mock_resource_client.resources.list.return_value = mock_resources
+        mock_authorization_client.role_assignments.list_for_subscription.return_value = []
+
+        # Mock child resource discovery (subnets) to track if it's called with limited resources
+        with patch.object(
+            azure_service, "discover_child_resources", return_value=[]
+        ) as mock_discover_children:
+            # Apply resource_limit=5 - should only discover children for first 5 resources
+            resources = await azure_service.discover_resources_in_subscription(
+                "test-sub", resource_limit=5
+            )
+
+            # Verify resource_limit was applied (should return only 5 resources)
+            assert len(resources) == 5
+
+            # Verify child discovery was called with limited resource list (5 resources)
+            mock_discover_children.assert_called_once()
+            parent_resources_passed = mock_discover_children.call_args[0][1]
+            assert len(parent_resources_passed) == 5, (
+                f"Expected child discovery to receive 5 resources, "
+                f"but got {len(parent_resources_passed)}"
+            )
+
 
 class TestAzureDiscoveryServiceFactory:
     """Test cases for the factory function."""

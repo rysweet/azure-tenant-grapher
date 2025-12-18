@@ -130,7 +130,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         """
         # Ensure extractor uses the orchestrator's validate_tenant_exists for consistent mocking
         # Copy validation state from orchestrator to extractor for test mocking
-        if hasattr(self, 'validate_tenant_exists'):
+        if hasattr(self, "validate_tenant_exists"):
             self.extractor.validate_tenant_exists = self.validate_tenant_exists
         return await self.extractor.extract_graph(tenant_id, progress_callback)
 
@@ -191,7 +191,17 @@ class ScaleDownOrchestrator(BaseScaleService):
             )
 
         # Align valid_output_modes with what CLI offers
-        valid_output_modes = ["delete", "export", "new-tenant", "yaml", "json", "neo4j", "terraform", "arm", "bicep"]
+        valid_output_modes = [
+            "delete",
+            "export",
+            "new-tenant",
+            "yaml",
+            "json",
+            "neo4j",
+            "terraform",
+            "arm",
+            "bicep",
+        ]
         if output_mode not in valid_output_modes:
             raise ValueError(
                 f"Invalid output_mode: {output_mode}. "
@@ -205,7 +215,9 @@ class ScaleDownOrchestrator(BaseScaleService):
         if progress_callback:
             progress_callback("Extracting graph", 0, 100)
 
-        G, node_properties = await self.extractor.extract_graph(tenant_id, progress_callback)
+        G, node_properties = await self.extractor.extract_graph(
+            tenant_id, progress_callback
+        )
 
         # Calculate target node count
         if target_size < 1.0:
@@ -269,8 +281,7 @@ class ScaleDownOrchestrator(BaseScaleService):
                 progress_callback("Deleting non-sampled nodes", 0, 100)
 
             nodes_deleted = await self.operations.delete_non_sampled_nodes(
-                sampled_node_ids,
-                progress_callback
+                sampled_node_ids, progress_callback
             )
 
             self.logger.info(f"Deleted {nodes_deleted} non-sampled nodes")
@@ -446,7 +457,9 @@ class ScaleDownOrchestrator(BaseScaleService):
         self, graph: nx.Graph, target_count: int, progress_callback=None
     ) -> List[str]:
         """Backward compatibility wrapper for MHRW sampling."""
-        return await self.samplers["mhrw"].sample(graph, target_count, progress_callback)
+        return await self.samplers["mhrw"].sample(
+            graph, target_count, progress_callback
+        )
 
     async def _sample_random_walk(
         self, graph: nx.Graph, target_count: int, progress_callback=None
@@ -460,9 +473,9 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         original_graph: nx.Graph,
         sampled_graph: nx.Graph,
-        node_properties: Dict = None,
-        sampled_ids: Set[str] = None,
-        computation_time: float = None,
+        node_properties: Optional[Dict] = None,
+        sampled_ids: Optional[Set[str]] = None,
+        computation_time: Optional[float] = None,
     ):
         """Backward compatibility wrapper for quality metrics calculation."""
         # Provide defaults if not given
@@ -474,10 +487,16 @@ class ScaleDownOrchestrator(BaseScaleService):
             computation_time = 0.0
 
         return self.metrics_calculator.calculate_metrics(
-            original_graph, sampled_graph, node_properties, sampled_ids, computation_time
+            original_graph,
+            sampled_graph,
+            node_properties,
+            sampled_ids,
+            computation_time,
         )
 
-    def _calculate_kl_divergence(self, dist1: Dict[int, int], dist2: Dict[int, int]) -> float:
+    def _calculate_kl_divergence(
+        self, dist1: Dict[int, int], dist2: Dict[int, int]
+    ) -> float:
         """Backward compatibility wrapper for KL divergence calculation."""
         return self.metrics_calculator._calculate_kl_divergence(dist1, dist2)
 

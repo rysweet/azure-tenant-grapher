@@ -6,9 +6,8 @@ verifying zero breaking changes from the original monolithic implementation.
 """
 
 import json
-import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -284,8 +283,11 @@ class TestCancelDeployment:
     def test_cancel_deployment_success(self, manager, sample_job_dir):
         """Test successful deployment cancellation."""
         # Mock both check_pid and terminate_process
-        with patch.object(manager.process_manager, "check_pid", return_value=True), \
-             patch.object(manager.process_manager, "terminate_process", return_value=True):
+        with patch.object(
+            manager.process_manager, "check_pid", return_value=True
+        ), patch.object(
+            manager.process_manager, "terminate_process", return_value=True
+        ):
             success = manager.cancel_deployment("test-job-123")
 
             assert success is True
@@ -311,12 +313,13 @@ class TestCancelDeployment:
     def test_cancel_deployment_process_not_found(self, manager, sample_job_dir):
         """Test canceling when process already terminated."""
         # Mock check_pid to return True so cancel is attempted
-        with patch.object(manager.process_manager, "check_pid", return_value=True), \
-             patch.object(
-                manager.process_manager,
-                "terminate_process",
-                side_effect=ProcessLookupError(),
-            ):
+        with patch.object(
+            manager.process_manager, "check_pid", return_value=True
+        ), patch.object(
+            manager.process_manager,
+            "terminate_process",
+            side_effect=ProcessLookupError(),
+        ):
             success = manager.cancel_deployment("test-job-123")
 
             assert success is False

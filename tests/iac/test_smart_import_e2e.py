@@ -153,7 +153,10 @@ def abstracted_resources_drifted() -> List[Dict[str, Any]]:
             "location": "eastus",
             "subscription_id": "source-sub-123",
             "resource_group": "test-rg",
-            "tags": {"Environment": "Production", "Owner": "TeamA"},  # Different from target
+            "tags": {
+                "Environment": "Production",
+                "Owner": "TeamA",
+            },  # Different from target
             # original_id points to target tenant (where the resource exists)
             "original_id": "/subscriptions/target-sub-456/resourceGroups/test-rg/providers/Microsoft.Network/networkSecurityGroups/prod-nsg",
             "properties": json.dumps({"securityRules": []}),
@@ -359,25 +362,23 @@ class TestCompleteWorkflowMixedStates:
         assert '"import"' not in content, "Should not be JSON format"
 
         # Verify header comment
-        assert (
-            "# Terraform 1.5+ import blocks" in content
-        ), "Should have header comment"
+        assert "# Terraform 1.5+ import blocks" in content, "Should have header comment"
 
         # Verify specific import blocks for EXACT_MATCH resources
-        assert (
-            "azurerm_resource_group.test_rg" in content
-        ), "Should have RG import block"
-        assert (
-            "azurerm_virtual_network.prod_vnet" in content
-        ), "Should have VNet import block"
+        assert "azurerm_resource_group.test_rg" in content, (
+            "Should have RG import block"
+        )
+        assert "azurerm_virtual_network.prod_vnet" in content, (
+            "Should have VNet import block"
+        )
 
         # Verify specific import blocks for DRIFTED resources
-        assert (
-            "azurerm_network_security_group.prod_nsg" in content
-        ), "Should have NSG import block"
-        assert (
-            "azurerm_storage_account.drifted_storage" in content
-        ), "Should have Storage import block"
+        assert "azurerm_network_security_group.prod_nsg" in content, (
+            "Should have NSG import block"
+        )
+        assert "azurerm_storage_account.drifted_storage" in content, (
+            "Should have Storage import block"
+        )
 
     def _verify_resource_blocks(
         self, output_dir: Path, comparison_result: ComparisonResult
@@ -393,43 +394,41 @@ class TestCompleteWorkflowMixedStates:
 
         # Count total emitted resources (NEW + DRIFTED only)
         total_emitted = sum(len(v) for v in resources.values())
-        assert (
-            total_emitted == 5
-        ), f"Expected 5 resources (3 NEW + 2 DRIFTED), found {total_emitted}"
+        assert total_emitted == 5, (
+            f"Expected 5 resources (3 NEW + 2 DRIFTED), found {total_emitted}"
+        )
 
         # Verify NEW resources are emitted
         assert "azurerm_virtual_network" in resources
         vnet_resources = resources["azurerm_virtual_network"]
-        assert (
-            "vnet_new_abc123" in vnet_resources
-        ), "NEW VNet should be in resource blocks"
+        assert "vnet_new_abc123" in vnet_resources, (
+            "NEW VNet should be in resource blocks"
+        )
 
         assert "azurerm_storage_account" in resources
         storage_resources = resources["azurerm_storage_account"]
-        assert (
-            "storage_new_xyz789" in storage_resources
-        ), "NEW Storage should be in resource blocks"
+        assert "storage_new_xyz789" in storage_resources, (
+            "NEW Storage should be in resource blocks"
+        )
 
         assert "azurerm_network_security_group" in resources
         nsg_resources = resources["azurerm_network_security_group"]
         assert "nsg_new_def456" in nsg_resources, "NEW NSG should be in resource blocks"
 
         # Verify DRIFTED resources are emitted
-        assert (
-            "prod_nsg" in nsg_resources
-        ), "DRIFTED NSG should be in resource blocks"
+        assert "prod_nsg" in nsg_resources, "DRIFTED NSG should be in resource blocks"
 
-        assert (
-            "drifted_storage" in storage_resources
-        ), "DRIFTED Storage should be in resource blocks"
+        assert "drifted_storage" in storage_resources, (
+            "DRIFTED Storage should be in resource blocks"
+        )
 
         # Verify EXACT_MATCH resources are NOT emitted
-        assert (
-            "test_rg" not in resources.get("azurerm_resource_group", {})
-        ), "EXACT_MATCH RG should NOT be in resource blocks"
-        assert (
-            "prod_vnet" not in vnet_resources
-        ), "EXACT_MATCH VNet should NOT be in resource blocks"
+        assert "test_rg" not in resources.get("azurerm_resource_group", {}), (
+            "EXACT_MATCH RG should NOT be in resource blocks"
+        )
+        assert "prod_vnet" not in vnet_resources, (
+            "EXACT_MATCH VNet should NOT be in resource blocks"
+        )
 
     def _verify_orphaned_not_emitted(self, output_dir: Path):
         """Verify orphaned resources are not in any output files."""
@@ -439,15 +438,15 @@ class TestCompleteWorkflowMixedStates:
         # Check main.tf.json
         with open(main_tf) as f:
             main_content = json.dumps(json.load(f))
-        assert (
-            "orphaned-ip" not in main_content
-        ), "Orphaned resource should NOT be in main.tf.json"
+        assert "orphaned-ip" not in main_content, (
+            "Orphaned resource should NOT be in main.tf.json"
+        )
 
         # Check imports.tf
         imports_content = imports_tf.read_text()
-        assert (
-            "orphaned-ip" not in imports_content
-        ), "Orphaned resource should NOT be in imports.tf"
+        assert "orphaned-ip" not in imports_content, (
+            "Orphaned resource should NOT be in imports.tf"
+        )
 
 
 class TestEmptyScenarios:
@@ -754,9 +753,9 @@ class TestImportBlockFormat:
         content = imports_file.read_text()
 
         # Verify Azure resource ID format
-        assert (
-            "/subscriptions/target-sub-456/resourceGroups/test-rg" in content
-        ), "Should contain target resource group ID"
+        assert "/subscriptions/target-sub-456/resourceGroups/test-rg" in content, (
+            "Should contain target resource group ID"
+        )
         assert (
             "/subscriptions/target-sub-456/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/prod-vnet"
             in content
@@ -808,14 +807,14 @@ class TestResourceFiltering:
 
         # EXACT_MATCH resources should not be present
         rg_resources = resources.get("azurerm_resource_group", {})
-        assert (
-            "test_rg" not in rg_resources
-        ), "EXACT_MATCH RG should NOT be in main.tf.json"
+        assert "test_rg" not in rg_resources, (
+            "EXACT_MATCH RG should NOT be in main.tf.json"
+        )
 
         vnet_resources = resources.get("azurerm_virtual_network", {})
-        assert (
-            "prod_vnet" not in vnet_resources
-        ), "EXACT_MATCH VNet should NOT be in main.tf.json"
+        assert "prod_vnet" not in vnet_resources, (
+            "EXACT_MATCH VNet should NOT be in main.tf.json"
+        )
 
     def test_exact_match_in_imports_tf(
         self,
@@ -883,6 +882,6 @@ class TestLogging:
             comparison_result = comparator.compare_resources([], target_scan)
 
         # Should log warning about orphaned resource
-        assert (
-            comparison_result.summary[ResourceState.ORPHANED.value] == 1
-        ), "Should detect orphaned resource"
+        assert comparison_result.summary[ResourceState.ORPHANED.value] == 1, (
+            "Should detect orphaned resource"
+        )

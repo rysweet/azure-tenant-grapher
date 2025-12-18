@@ -60,7 +60,7 @@ class IaCExporter(BaseExporter):
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
         sampled_graph: nx.DiGraph,
-        output_path: str
+        output_path: str,
     ) -> None:
         """
         Export sample to IaC format (Terraform, ARM, or Bicep).
@@ -86,9 +86,7 @@ class IaCExporter(BaseExporter):
             ...     "/tmp/iac_output"
             ... )
         """
-        self.logger.info(
-            f"Exporting sample to {self.iac_format} IaC at {output_path}"
-        )
+        self.logger.info(f"Exporting sample to {self.iac_format} IaC at {output_path}")
 
         # Build TenantGraph from sampled data
         resources = []

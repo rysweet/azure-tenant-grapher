@@ -18,6 +18,15 @@ lib/
 lib64/
 parts/
 sdist/
+
+# Generated test data / IaC output
+iac_output_regenerated/
+iac_output/
+iac_output_new/
+iac_output_with_fixes/
+demos/simuland_iteration2/
+demos/simuland_iteration3/
+demos/simuland_replication_20251012/
 var/
 wheels/
 share/python-wheels/

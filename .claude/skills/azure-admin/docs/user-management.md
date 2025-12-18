@@ -231,7 +231,7 @@ az ad sp create-for-rbac \
 # {
 #   "appId": "12345678-1234-1234-1234-123456789012",
 #   "displayName": "myAppServicePrincipal",
-#   "password": "generated-secret",
+#   "password": "generated-secret",  # pragma: allowlist secret  # pragma: allowlist secret
 #   "tenant": "tenant-id"
 # }
 

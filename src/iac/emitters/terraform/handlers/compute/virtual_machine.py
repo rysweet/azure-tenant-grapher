@@ -76,15 +76,36 @@ class VirtualMachineHandler(ResourceHandler):
             },
         )
 
+        # Detect Windows vs Linux OS FIRST (Fix #596: Need OS type before adding SSH key)
+        os_profile = properties.get("osProfile", {})
+        has_windows_config = "windowsConfiguration" in os_profile
+        has_linux_config = "linuxConfiguration" in os_profile
+
+        # Check osType in storage profile as fallback
+        storage_profile = properties.get("storageProfile", {})
+        os_disk = storage_profile.get("osDisk", {})
+        os_type = os_disk.get("osType", "").lower()
+
+        # Determine VM type
+        if has_windows_config or os_type == "windows":
+            vm_type = "azurerm_windows_virtual_machine"
+            is_windows = True
+        elif has_linux_config or os_type == "linux":
+            vm_type = "azurerm_linux_virtual_machine"
+            is_windows = False
+        else:
+            # Default to Linux if unknown
+            vm_type = "azurerm_linux_virtual_machine"
+            is_windows = False
+            logger.warning(
+                f"VM '{resource_name}' has unclear OS type, defaulting to Linux"
+            )
+
         # Add VM-specific properties
         config.update(
             {
                 "size": resource.get("size", "Standard_B2s"),
                 "admin_username": resource.get("admin_username", "azureuser"),
-                "admin_ssh_key": {
-                    "username": resource.get("admin_username", "azureuser"),
-                    "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
-                },
                 "network_interface_ids": nic_refs,
                 "os_disk": {
                     "caching": "ReadWrite",
@@ -99,27 +120,32 @@ class VirtualMachineHandler(ResourceHandler):
             }
         )
 
-        logger.debug(f"VM '{resource_name}' emitted with {len(nic_refs)} NIC(s)")
-
-        # Detect Windows vs Linux OS
-        os_profile = properties.get("osProfile", {})
-        has_windows_config = "windowsConfiguration" in os_profile
-        has_linux_config = "linuxConfiguration" in os_profile
-
-        # Check osType in storage profile as fallback
-        storage_profile = properties.get("storageProfile", {})
-        os_disk = storage_profile.get("osDisk", {})
-        os_type = os_disk.get("osType", "").lower()
-
-        # Determine VM type
-        if has_windows_config or os_type == "windows":
-            vm_type = "azurerm_windows_virtual_machine"
-        elif has_linux_config or os_type == "linux":
-            vm_type = "azurerm_linux_virtual_machine"
+        # Fix #596: Add authentication based on OS type
+        if is_windows:
+            # Windows VMs require admin_password
+            password_resource_name = f"{safe_name}_admin_password"
+            context.add_helper_resource(
+                "random_password",
+                password_resource_name,
+                {
+                    "length": 16,
+                    "special": True,
+                    "override_special": "!#$%&*()-_=+[]{}<>:?",
+                },
+            )
+            config["admin_password"] = (
+                f"${{random_password.{password_resource_name}.result}}"
+            )
         else:
-            # Default to Linux if unknown
-            vm_type = "azurerm_linux_virtual_machine"
-            logger.warning(f"VM '{resource_name}' has unclear OS type, defaulting to Linux")
+            # Linux VMs use SSH keys
+            config["admin_ssh_key"] = {
+                "username": resource.get("admin_username", "azureuser"),
+                "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
+            }
+
+        logger.debug(
+            f"VM '{resource_name}' emitted as {vm_type} with {len(nic_refs)} NIC(s)"
+        )
 
         return vm_type, safe_name, config
 

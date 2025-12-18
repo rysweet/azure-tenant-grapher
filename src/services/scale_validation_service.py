@@ -405,7 +405,9 @@ class ScaleValidationService(BaseScaleService):
                             "message": f"Unexpected error during fix: {unexpected_error!s}",
                         }
                     )
-                    self.logger.exception(f"Unexpected error fixing issue {issue}: {unexpected_error}")
+                    self.logger.exception(
+                        f"Unexpected error fixing issue {issue}: {unexpected_error}"
+                    )
 
             duration = (datetime.now() - start_time).total_seconds()
 
@@ -509,7 +511,9 @@ class ScaleValidationService(BaseScaleService):
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check Original contamination: {e}")
         except Exception as e:
-            self.logger.exception(f"Unexpected error checking Original contamination: {e}")
+            self.logger.exception(
+                f"Unexpected error checking Original contamination: {e}"
+            )
             raise
 
         return issues
@@ -558,7 +562,9 @@ class ScaleValidationService(BaseScaleService):
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check SCAN_SOURCE_NODE links: {e}")
         except Exception as e:
-            self.logger.exception(f"Unexpected error checking SCAN_SOURCE_NODE links: {e}")
+            self.logger.exception(
+                f"Unexpected error checking SCAN_SOURCE_NODE links: {e}"
+            )
             raise
 
         return issues
@@ -697,7 +703,9 @@ class ScaleValidationService(BaseScaleService):
             except (Neo4jError, ValueError, RuntimeError) as e:
                 self.logger.error(f"Auto-fix failed for issue {issue}: {e}")
             except Exception as e:
-                self.logger.exception(f"Unexpected error during auto-fix for issue {issue}: {e}")
+                self.logger.exception(
+                    f"Unexpected error during auto-fix for issue {issue}: {e}"
+                )
                 # Don't raise here - continue with other fixes
 
         return fixes_applied

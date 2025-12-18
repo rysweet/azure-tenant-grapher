@@ -5,8 +5,8 @@ in the Azure Tenant Grapher CLI.
 """
 
 import json
-import re
 import logging
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -252,7 +252,7 @@ async def generate_iac_command_handler(
     scan_target_tenant_id: Optional[str] = None,
     scan_target_subscription_id: Optional[str] = None,
     # Community splitting parameters
-    split_by_community: bool = True,  # Bug #112: Default to True for parallel deployment
+    split_by_community: bool = False,  # Fix #593: Default to True for parallel deployment
 ) -> int:
     """Handle the generate-iac CLI command.
 
@@ -349,32 +349,38 @@ async def generate_iac_command_handler(
 
             # Issue #524: Property whitelist to prevent Cypher injection
             ALLOWED_PROPERTIES = {
-                "type", "name", "location", "id",
-                "resourceGroup", "resource_group",  # Both naming conventions
-                "subscriptionId", "subscription_id",
-                "tenantId", "tenant_id"
+                "type",
+                "name",
+                "location",
+                "id",
+                "resourceGroup",
+                "resource_group",  # Both naming conventions
+                "subscriptionId",
+                "subscription_id",
+                "tenantId",
+                "tenant_id",
             }
 
             def _validate_and_normalize_property_name(prop_name: str) -> str:
                 """Validate property name against whitelist and normalize it.
-                
+
                 Args:
                     prop_name: Property name from user input
-                    
+
                 Returns:
                     Normalized property name (canonical form from ALLOWED_PROPERTIES)
-                    
+
                 Raises:
                     ValueError: If property name is not in whitelist or contains invalid characters
                 """
                 # First, validate the format (alphanumeric + underscore only)
-                if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', prop_name):
+                if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", prop_name):
                     raise ValueError(
                         f"Invalid property name format: '{prop_name}'. "
                         f"Property names must start with a letter or underscore "
                         f"and contain only alphanumeric characters and underscores."
                     )
-                
+
                 # Check against whitelist (case-insensitive)
                 normalized_name = None
                 prop_lower = prop_name.lower()
@@ -382,13 +388,13 @@ async def generate_iac_command_handler(
                     if allowed_prop.lower() == prop_lower:
                         normalized_name = allowed_prop
                         break
-                
+
                 if normalized_name is None:
                     raise ValueError(
                         f"Invalid property name '{prop_name}'. "
                         f"Allowed properties: {', '.join(sorted(ALLOWED_PROPERTIES))}"
                     )
-                
+
                 return normalized_name
 
             filters = [f.strip() for f in resource_filters.split(",")]
@@ -450,7 +456,9 @@ async def generate_iac_command_handler(
                 else:
                     # Type-based filter (backward compatible)
                     # Validate type string doesn't contain suspicious characters
-                    if any(char in f for char in ["'", '"', "`", ";", "--", "/*", "*/"]):
+                    if any(
+                        char in f for char in ["'", '"', "`", ";", "--", "/*", "*/"]
+                    ):
                         raise ValueError(f"Invalid characters in type filter: {f}")
 
                     param_name = f"filter_type_{param_counter}"
@@ -560,9 +568,9 @@ async def generate_iac_command_handler(
                     for resource in graph.resources:
                         resource_id = resource.get("id", "")
                         if "/subscriptions/" in resource_id:
-                            source_subscription_id = resource_id.split("/subscriptions/")[
-                                1
-                            ].split("/")[0]
+                            source_subscription_id = resource_id.split(
+                                "/subscriptions/"
+                            )[1].split("/")[0]
                             logger.debug(
                                 f"Extracted source subscription from resource ID: {source_subscription_id}"
                             )
@@ -594,7 +602,9 @@ async def generate_iac_command_handler(
                 target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
 
                 if target_client_id and target_client_secret:
-                    logger.info(f"Using tenant-specific credentials for target tenant {scan_target_tenant_id}")
+                    logger.info(
+                        f"Using tenant-specific credentials for target tenant {scan_target_tenant_id}"
+                    )
                     target_credential = ClientSecretCredential(
                         tenant_id=scan_target_tenant_id,
                         client_id=target_client_id,
@@ -613,8 +623,7 @@ async def generate_iac_command_handler(
 
                 # Create discovery service with target tenant credential
                 discovery = AzureDiscoveryService(
-                    config=discovery_config,
-                    credential=target_credential
+                    config=discovery_config, credential=target_credential
                 )
                 scanner = TargetScannerService(discovery)
 
@@ -718,6 +727,28 @@ async def generate_iac_command_handler(
         resolved_source_tenant_id = source_tenant_id
         resolved_target_tenant_id = target_tenant_id
 
+        # Bug #11 FIX: Extract source subscription from Neo4j original_id FIRST (before Azure CLI)
+        # This is critical for cross-tenant where Azure CLI might be logged into target tenant
+        if not source_subscription_id and graph.resources:
+            logger.info(f"🔍 Extracting source subscription from {len(graph.resources)} resources...")
+            for resource in graph.resources:
+                # Try original_id first (has real Azure subscription), fallback to id
+                original_id = resource.get("original_id")
+                abstracted_id = resource.get("id", "")
+
+                resource_id = original_id or abstracted_id
+                if "/subscriptions/" in resource_id:
+                    source_subscription_id = resource_id.split("/subscriptions/")[
+                        1
+                    ].split("/")[0]
+                    logger.info(
+                        f"  ✅ Extracted source subscription from {'original_id' if original_id else 'id'}: {source_subscription_id}"
+                    )
+                    break
+
+            if not source_subscription_id:
+                logger.warning("  ⚠️ Could not extract source subscription from any resource")
+
         # Try to get defaults from Azure CLI if not explicitly provided
         if not resolved_source_tenant_id or not source_subscription_id:
             cli_info = _get_default_subscription_from_azure_cli()
@@ -734,18 +765,24 @@ async def generate_iac_command_handler(
                         f"Using source tenant from Azure CLI: {resolved_source_tenant_id}"
                     )
 
-        # Fallback: extract source subscription from resource IDs if still not set
-        if not source_subscription_id and graph.resources:
+        # Removed duplicate extraction code (now happens above before Azure CLI)
+
+        # Bug #11: Extract source tenant from Neo4j original_id if not set
+        # This handles the case where Azure CLI is logged into target tenant
+        if not resolved_source_tenant_id and graph.resources:
             for resource in graph.resources:
-                resource_id = resource.get("id", "")
-                if "/subscriptions/" in resource_id:
-                    source_subscription_id = resource_id.split("/subscriptions/")[
-                        1
-                    ].split("/")[0]
-                    logger.debug(
-                        f"Extracted source subscription from resource ID: {source_subscription_id}"
-                    )
-                    break
+                original_id = resource.get("original_id")
+                if original_id and "/tenantId=" in original_id:
+                    # Extract tenant ID from original_id (for Entra ID resources)
+                    try:
+                        tenant_part = original_id.split("/tenantId=")[1]
+                        resolved_source_tenant_id = tenant_part.split("/")[0]
+                        logger.info(
+                            f"Extracted source tenant from original_id: {resolved_source_tenant_id}"
+                        )
+                        break
+                    except (IndexError, AttributeError):
+                        continue
 
         # Bug #93: Fallback for source tenant ID when Azure CLI not available
         # If target tenant is specified but source tenant is unknown, and there are no
@@ -859,15 +896,24 @@ async def generate_iac_command_handler(
                 # Create credential for TARGET tenant (not source) for conflict detection
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
-                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+                use_target_creds = (
+                    resolved_target_tenant_id
+                    and resolved_target_tenant_id != resolved_source_tenant_id
+                )
                 conflict_detector_credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 # Initialize detector with proper credential
-                detector = ConflictDetector(subscription_id, credential=conflict_detector_credential)
+                detector = ConflictDetector(
+                    subscription_id, credential=conflict_detector_credential
+                )
 
                 # Detect conflicts
                 conflict_report = await detector.detect_conflicts(graph.resources)
@@ -1008,13 +1054,21 @@ async def generate_iac_command_handler(
                 import os
 
                 from azure.identity import ClientSecretCredential
+
                 target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
                 # Use target tenant credentials if different from source
-                use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+                use_target_creds = (
+                    resolved_target_tenant_id
+                    and resolved_target_tenant_id != resolved_source_tenant_id
+                )
                 credential = ClientSecretCredential(
                     tenant_id=target_tenant,
-                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                    client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_ID"),
+                    client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                    if use_target_creds
+                    else os.getenv("AZURE_CLIENT_SECRET"),
                 )
 
                 emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -1129,13 +1183,21 @@ async def generate_iac_command_handler(
             import os
 
             from azure.identity import ClientSecretCredential
+
             target_tenant = resolved_target_tenant_id or resolved_source_tenant_id
             # Use target tenant credentials if different from source
-            use_target_creds = resolved_target_tenant_id and resolved_target_tenant_id != resolved_source_tenant_id
+            use_target_creds = (
+                resolved_target_tenant_id
+                and resolved_target_tenant_id != resolved_source_tenant_id
+            )
             credential = ClientSecretCredential(
                 tenant_id=target_tenant,
-                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID") if use_target_creds else os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET") if use_target_creds else os.getenv("AZURE_CLIENT_SECRET"),
+                client_id=os.getenv("AZURE_TENANT_2_CLIENT_ID")
+                if use_target_creds
+                else os.getenv("AZURE_CLIENT_ID"),
+                client_secret=os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
+                if use_target_creds
+                else os.getenv("AZURE_CLIENT_SECRET"),
             )
 
             emitter = emitter_cls(  # pyright: ignore[reportCallIssue]
@@ -1179,6 +1241,8 @@ async def generate_iac_command_handler(
             emit_kwargs["comparison_result"] = comparison_result
         if "split_by_community" in emit_signature.parameters:
             emit_kwargs["split_by_community"] = split_by_community
+        if "location" in emit_signature.parameters:  # Fix #601: Pass location to emitter
+            emit_kwargs["location"] = location
 
         paths = emitter.emit(graph, out_dir, **emit_kwargs)
 
@@ -1222,9 +1286,7 @@ async def generate_iac_command_handler(
         # Validate and fix global name conflicts (GAP-014)
         # Skip validation when smart import is enabled (it handles conflicts)
         if scan_target:
-            logger.info(
-                "Skipping name conflict validation (smart import mode enabled)"
-            )
+            logger.info("Skipping name conflict validation (smart import mode enabled)")
         elif format_type.lower() == "terraform" and not skip_name_validation:
             from ..validation import NameConflictValidator
 
@@ -1308,30 +1370,46 @@ async def generate_iac_command_handler(
 
         # Check Azure resource provider registration (before validation/deployment)
         # Use target_subscription if provided (cross-tenant), otherwise use source subscription
-        provider_check_subscription = target_subscription if target_subscription else subscription_id
-        if format_type.lower() == "terraform" and provider_check_subscription and not dry_run:
+        provider_check_subscription = (
+            target_subscription if target_subscription else subscription_id
+        )
+        if (
+            format_type.lower() == "terraform"
+            and provider_check_subscription
+            and not dry_run
+        ):
             from .provider_manager import ProviderManager
 
             try:
-                logger.info(f"Checking Azure resource provider registration in subscription {provider_check_subscription}...")
+                logger.info(
+                    f"Checking Azure resource provider registration in subscription {provider_check_subscription}..."
+                )
 
                 # Bug #19 fix: Use target tenant credentials for cross-tenant provider registration
                 provider_credential = None
-                if target_tenant_id and provider_check_subscription == target_subscription:
+                if (
+                    target_tenant_id
+                    and provider_check_subscription == target_subscription
+                ):
                     # Cross-tenant mode - use target tenant credentials
                     target_client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID")
                     target_client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET")
 
                     if target_client_id and target_client_secret:
                         from azure.identity import ClientSecretCredential
+
                         provider_credential = ClientSecretCredential(
                             tenant_id=target_tenant_id,
                             client_id=target_client_id,
                             client_secret=target_client_secret,
                         )
-                        logger.info(f"Using target tenant credentials for provider registration in {target_tenant_id}")
+                        logger.info(
+                            f"Using target tenant credentials for provider registration in {target_tenant_id}"
+                        )
                     else:
-                        logger.warning("No target tenant credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). Provider registration may fail.")
+                        logger.warning(
+                            "No target tenant credentials found (AZURE_TENANT_2_CLIENT_ID/SECRET). Provider registration may fail."
+                        )
 
                 provider_manager = ProviderManager(
                     subscription_id=provider_check_subscription,

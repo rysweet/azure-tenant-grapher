@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import jwt
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class TokenValidator:
@@ -188,7 +188,7 @@ class EncryptionHelper:
         if salt is None:
             salt = secrets.token_bytes(32)
 
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
@@ -329,7 +329,9 @@ class SecurityScanner:
                 break
 
         # Private key pattern
-        if "BEGIN RSA PRIVATE KEY" in text or "BEGIN PRIVATE KEY" in text:
+        if (
+            "BEGIN RSA PRIVATE KEY" in text or "BEGIN PRIVATE KEY" in text
+        ):  # pragma: allowlist secret
             detected.append("Private key detected")
 
         return detected
@@ -384,7 +386,11 @@ class AuditLogger:
         return event
 
     def log_security_violation(
-        self, violation_type: str, details: str, source_ip: str, user_id: Optional[str] = None
+        self,
+        violation_type: str,
+        details: str,
+        source_ip: str,
+        user_id: Optional[str] = None,
     ):
         """Log security violation."""
         event = {
@@ -460,7 +466,7 @@ class MockAzureADClient:
             raise Exception("Account locked due to multiple failed attempts")
 
         # Check credentials
-        if password == "invalid":
+        if password == "invalid":  # pragma: allowlist secret
             self.failed_attempts[key] += 1
             raise Exception("Invalid credentials")
 

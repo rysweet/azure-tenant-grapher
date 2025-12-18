@@ -245,7 +245,9 @@ class TestNicWithNsg:
 
         # NSG should be in the output
         assert "azurerm_network_security_group" in config["resource"]
-        assert "test_nsg_web_001" in config["resource"]["azurerm_network_security_group"]
+        assert (
+            "test_nsg_web_001" in config["resource"]["azurerm_network_security_group"]
+        )
 
         nic_config = config["resource"]["azurerm_network_interface"]["test_nic_001"]
 

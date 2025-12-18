@@ -39,6 +39,7 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 - **Extensible relationship engine** with modular rules (Tag, Region, CreatedBy, etc.).
 - **Interactive 3D visualization** with filtering, search, and ResourceGroup labels.
 - **CLI dashboard** with live progress, logs, and configuration.
+- **Remote mode** for running ATG operations on powerful remote servers (64GB RAM, 8 vCPUs) - perfect for large tenants. See [Remote Mode Documentation](docs/remote-mode/).
 - **AI-powered documentation** and anonymized tenant specification generation.
 - **Infrastructure-as-Code (IaC) generation** supporting Bicep, ARM, and Terraform, plus transformation rules and deployment scripts.
 - **Agent Mode (MCP/AutoGen)** for natural-language queries over your graph.
@@ -421,6 +422,7 @@ All test output artifacts are excluded from version control via `.gitignore`.
 
 - [Product Requirements](.github/azure-tenant-grapher-prd.md)
 - [Project Specification](.github/azure-tenant-grapher-spec.md)
+- [Remote Mode Documentation](docs/remote-mode/) - Run ATG on powerful remote servers for large tenants
 - [Neo4j Graph Schema Reference](docs/NEO4J_SCHEMA_REFERENCE.md) - Complete reference for node types, relationships, and schema assembly
 - [Architecture-Based Replication](docs/ARCHITECTURE_BASED_REPLICATION.md) - Pattern-based tenant replication using spectral graph comparison
 - [Architectural Pattern Analysis](docs/ARCHITECTURAL_PATTERN_ANALYSIS.md) - Detect and analyze Azure architectural patterns

@@ -241,7 +241,7 @@ agent = Agent(
     model="claude-sonnet-4-5-20250929",
 
     # Authentication (optional if env var set)
-    api_key="sk-ant-...",
+    api_key="sk-ant-...",  # pragma: allowlist secret
 
     # System prompt
     system="You are a helpful assistant.",
@@ -343,7 +343,7 @@ console.log(result.response);
 **Environment Variable (Recommended):**
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_API_KEY="sk-ant-..."  # pragma: allowlist secret
 ```
 
 **Explicit in Code:**
@@ -351,7 +351,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 ```python
 agent = Agent(
     model="claude-sonnet-4-5-20250929",
-    api_key="sk-ant-..."
+    api_key="sk-ant-..."  # pragma: allowlist secret
 )
 ```
 

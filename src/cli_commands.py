@@ -45,7 +45,6 @@ from src.azure_tenant_grapher import AzureTenantGrapher
 
 # Scale operations command handlers (Issue #427)
 from src.cli_dashboard_manager import CLIDashboardManager, DashboardExitException
-from src.utils.secure_credentials import get_neo4j_credentials
 from src.config_manager import (
     create_config_from_env,
     create_neo4j_config_from_env,
@@ -57,6 +56,7 @@ from src.models.filter_config import FilterConfig
 from src.rich_dashboard import RichDashboard
 from src.utils.graph_id_resolver import split_and_detect_ids
 from src.utils.neo4j_startup import ensure_neo4j_running
+from src.utils.secure_credentials import get_neo4j_credentials
 
 configure_logging()
 
@@ -1958,8 +1958,7 @@ async def monitor_command_handler(
     # Connect to Neo4j
     try:
         driver = GraphDatabase.driver(
-            credentials.uri,
-            auth=(credentials.username, credentials.password)
+            credentials.uri, auth=(credentials.username, credentials.password)
         )
         # Test connection
         driver.verify_connectivity()
@@ -2876,6 +2875,238 @@ async def cost_report_command_handler(
         sys.exit(1)
 
 
+# =============================================================================
+# Dispatcher Compatibility Wrappers (Issue #578)
+# =============================================================================
+# These wrapper functions provide a stable interface for the dispatcher
+# to route commands to the appropriate handlers.
+# =============================================================================
+
+
+async def scan_tenant(**kwargs):
+    """
+    Wrapper for dispatcher - routes to build_command_handler.
+
+    This function provides a simplified interface for the dispatcher to
+    execute tenant scans without needing Click context setup.
+
+    Args:
+        **kwargs: All scan parameters (tenant_id, resource_limit, etc.)
+
+    Returns:
+        dict: Scan results with status and data
+
+    Raises:
+        ValueError: If required parameters missing
+    """
+    # Extract parameters
+    tenant_id = kwargs.get("tenant_id")
+    if not tenant_id:
+        raise ValueError("tenant_id is required for scan")
+
+    resource_limit = kwargs.get("resource_limit")
+    max_llm_threads = kwargs.get("max_llm_threads", 10)
+    max_build_threads = kwargs.get("max_build_threads", 50)
+    max_retries = kwargs.get("max_retries", 3)
+    max_concurrency = kwargs.get("max_concurrency", 10)
+    no_container = kwargs.get("no_container", False)
+    generate_spec = kwargs.get("generate_spec", False)
+    visualize = kwargs.get("visualize", False)
+    no_dashboard = kwargs.get(
+        "no_dashboard", True
+    )  # Default to no dashboard for remote
+    rebuild_edges = kwargs.get("rebuild_edges", False)
+    no_aad_import = kwargs.get("no_aad_import", False)
+    debug = kwargs.get("debug", False)
+    filter_by_subscriptions = kwargs.get("filter_by_subscriptions")
+    filter_by_rgs = kwargs.get("filter_by_rgs")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("scan"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute scan
+    result = await build_command_handler(
+        ctx=ctx,
+        tenant_id=tenant_id,
+        resource_limit=resource_limit,
+        max_llm_threads=max_llm_threads,
+        max_build_threads=max_build_threads,
+        max_retries=max_retries,
+        max_concurrency=max_concurrency,
+        no_container=no_container,
+        generate_spec=generate_spec,
+        visualize=visualize,
+        no_dashboard=no_dashboard,
+        test_keypress_queue=False,
+        test_keypress_file="",
+        rebuild_edges=rebuild_edges,
+        no_aad_import=no_aad_import,
+        debug=debug,
+        filter_by_subscriptions=filter_by_subscriptions,
+        filter_by_rgs=filter_by_rgs,
+    )
+
+    return {"status": "success", "result": result}
+
+
+async def generate_tenant_spec(**kwargs):
+    """
+    Wrapper for dispatcher - routes to spec_command_handler.
+
+    Args:
+        **kwargs: Spec generation parameters (tenant_id, domain_name, output_file)
+
+    Returns:
+        dict: Generation results
+    """
+    from src.commands.spec import spec_command_handler
+
+    tenant_id = kwargs.get("tenant_id")
+    domain_name = kwargs.get("domain_name")
+    output_file = kwargs.get("output_file")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("spec"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute spec generation
+    await spec_command_handler(ctx, tenant_id, domain_name)
+
+    return {"status": "success", "output_file": output_file}
+
+
+async def generate_iac(**kwargs):
+    """
+    Wrapper for dispatcher - routes to IaC generation handler.
+
+    Args:
+        **kwargs: IaC generation parameters (format, output_dir, tenant_id)
+
+    Returns:
+        dict: Generation results
+    """
+    # TODO: Route to appropriate IaC handler when implemented
+    # For now, return placeholder
+    return {
+        "status": "success",
+        "message": "IaC generation not yet implemented",
+        "format": kwargs.get("format", "terraform"),
+        "output_dir": kwargs.get("output_dir", "./outputs"),
+    }
+
+
+async def create_tenant_from_spec(**kwargs):
+    """
+    Wrapper for dispatcher - routes to create_tenant_from_markdown.
+
+    Args:
+        **kwargs: Tenant creation parameters (spec_file)
+
+    Returns:
+        dict: Creation results with statistics
+
+    Raises:
+        ValueError: If spec_file missing
+        FileNotFoundError: If spec_file doesn't exist
+    """
+    from src.commands.tenant import create_tenant_from_markdown
+
+    spec_file = kwargs.get("spec_file")
+    if not spec_file:
+        raise ValueError("spec_file is required for tenant creation")
+
+    if not os.path.exists(spec_file):
+        raise FileNotFoundError(f"Spec file not found: {spec_file}")
+
+    # Read spec file
+    with open(spec_file, encoding="utf-8") as f:
+        spec_content = f.read()
+
+    # Create tenant (this function handles its own event loop)
+    stats = create_tenant_from_markdown(spec_content)
+
+    return {"status": "success", "statistics": stats}
+
+
+async def visualize_graph(**kwargs):
+    """
+    Wrapper for dispatcher - routes to visualize_command_handler.
+
+    Args:
+        **kwargs: Visualization parameters (output, link_hierarchy, no_container)
+
+    Returns:
+        dict: Visualization results with output path
+    """
+    from src.commands.visualize import visualize_command_handler
+
+    link_hierarchy = kwargs.get("link_hierarchy", True)
+    no_container = kwargs.get("no_container", False)
+    output = kwargs.get("output")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("visualize"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute visualization
+    await visualize_command_handler(ctx, link_hierarchy, no_container, output)
+
+    return {"status": "success", "output": output}
+
+
+async def generate_threat_model(**kwargs):
+    """
+    Wrapper for dispatcher - routes to generate_threat_model_command_handler.
+
+    Args:
+        **kwargs: Threat model parameters (output_file)
+
+    Returns:
+        dict: Threat model results with report path
+    """
+    from src.commands.threat_model import generate_threat_model_command_handler
+
+    output_file = kwargs.get("output_file")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("threat-model"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute threat modeling
+    await generate_threat_model_command_handler(ctx)
+
+    return {"status": "success", "output_file": output_file}
+
+
+async def start_agent_mode(**kwargs):
+    """
+    Wrapper for dispatcher - routes to agent_mode_command_handler.
+
+    Args:
+        **kwargs: Agent mode parameters (question)
+
+    Returns:
+        dict: Agent mode results
+    """
+    # Import here to avoid circular dependency
+    question = kwargs.get("question")
+
+    # Create minimal Click context
+    ctx = click.Context(click.Command("agent-mode"))
+    ctx.obj = {"log_level": "INFO"}
+
+    # Execute agent mode (handler defined elsewhere in this file)
+    await agent_mode_command_handler(ctx, question)
+
+    return {"status": "success", "question": question}
+
+
+# =============================================================================
+# Pattern Analysis and Well-Architected Reporting Command Handlers
+# =============================================================================
+
+
 async def analyze_patterns_command_handler(
     ctx: click.Context,
     output_dir: Optional[str] = None,
@@ -2959,11 +3190,13 @@ async def analyze_patterns_command_handler(
         stats_table.add_column("Metric", style="cyan")
         stats_table.add_column("Value", style="magenta")
 
-        stats_table.add_row("Total Relationships", f"{summary['total_relationships']:,}")
+        stats_table.add_row(
+            "Total Relationships", f"{summary['total_relationships']:,}"
+        )
         stats_table.add_row("Unique Patterns", f"{summary['unique_patterns']:,}")
         stats_table.add_row("Resource Types", f"{summary['resource_types']:,}")
         stats_table.add_row("Graph Edges", f"{summary['graph_edges']:,}")
-        stats_table.add_row("Detected Patterns", str(summary['detected_patterns']))
+        stats_table.add_row("Detected Patterns", str(summary["detected_patterns"]))
 
         console.print(stats_table)
 
@@ -2981,7 +3214,9 @@ async def analyze_patterns_command_handler(
         # Detected patterns table
         if summary["patterns"]:
             console.print("\n")
-            patterns_table = Table(title="Detected Architectural Patterns", show_header=True)
+            patterns_table = Table(
+                title="Detected Architectural Patterns", show_header=True
+            )
             patterns_table.add_column("Pattern", style="cyan")
             patterns_table.add_column("Completeness", style="green", justify="right")
             patterns_table.add_column("Matched Resources", style="yellow")
@@ -3003,12 +3238,16 @@ async def analyze_patterns_command_handler(
 
         # Output files
         console.print("\n[bold]📁 Output Files:[/bold]")
-        console.print(f"  • JSON Export: [cyan]{summary['output_files']['json']}[/cyan]")
-        console.print(f"  • Summary Report: [cyan]{output_path / 'analysis_summary.json'}[/cyan]")
+        console.print(
+            f"  • JSON Export: [cyan]{summary['output_files']['json']}[/cyan]"
+        )
+        console.print(
+            f"  • Summary Report: [cyan]{output_path / 'analysis_summary.json'}[/cyan]"
+        )
 
-        if summary['output_files']['visualizations']:
+        if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
-            for viz_file in summary['output_files']['visualizations']:
+            for viz_file in summary["output_files"]["visualizations"]:
                 console.print(f"    - [cyan]{viz_file}[/cyan]")
 
         console.print(
@@ -3034,6 +3273,7 @@ async def analyze_patterns_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Failed to analyze patterns: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -3107,17 +3347,19 @@ async def well_architected_report_command_handler(
             config.neo4j.uri or "",
             config.neo4j.user,
             config.neo4j.password,
-            openai_api_key
+            openai_api_key,
         )
 
         # Run analysis
         console.print("\n[yellow]⚙️  Analyzing architectural patterns...[/yellow]")
 
-        with console.status("[bold green]Generating Well-Architected Framework report..."):
+        with console.status(
+            "[bold green]Generating Well-Architected Framework report..."
+        ):
             summary = reporter.generate_full_report(
                 output_path,
                 update_descriptions=not skip_description_updates,
-                generate_visualizations=not no_visualizations
+                generate_visualizations=not no_visualizations,
             )
 
         # Display summary
@@ -3128,22 +3370,30 @@ async def well_architected_report_command_handler(
         stats_table.add_column("Metric", style="cyan")
         stats_table.add_column("Value", style="magenta")
 
-        stats_table.add_row("Patterns Detected", str(summary['patterns_detected']))
-        stats_table.add_row("Total Relationships Analyzed", f"{summary['total_relationships']:,}")
+        stats_table.add_row("Patterns Detected", str(summary["patterns_detected"]))
+        stats_table.add_row(
+            "Total Relationships Analyzed", f"{summary['total_relationships']:,}"
+        )
         if not skip_description_updates:
-            stats_table.add_row("Resources Updated", f"{summary['resources_updated']:,}")
+            stats_table.add_row(
+                "Resources Updated", f"{summary['resources_updated']:,}"
+            )
 
         console.print(stats_table)
 
         # Output files
         console.print("\n[bold]📁 Output Files:[/bold]")
-        console.print(f"  • Markdown Report: [cyan]{summary['output_files']['markdown']}[/cyan]")
-        console.print(f"  • Interactive Notebook: [cyan]{summary['output_files']['notebook']}[/cyan]")
+        console.print(
+            f"  • Markdown Report: [cyan]{summary['output_files']['markdown']}[/cyan]"
+        )
+        console.print(
+            f"  • Interactive Notebook: [cyan]{summary['output_files']['notebook']}[/cyan]"
+        )
         console.print(f"  • JSON Data: [cyan]{summary['output_files']['json']}[/cyan]")
 
-        if summary['output_files']['visualizations']:
+        if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
-            for viz_file in summary['output_files']['visualizations']:
+            for viz_file in summary["output_files"]["visualizations"]:
                 console.print(f"    - [cyan]{viz_file}[/cyan]")
 
         console.print(
@@ -3152,7 +3402,9 @@ async def well_architected_report_command_handler(
 
         console.print("\n[bold]📓 To view the interactive notebook:[/bold]")
         console.print(f"  cd {output_path.parent}")
-        console.print(f"  jupyter notebook {output_path.name}/well_architected_analysis.ipynb")
+        console.print(
+            f"  jupyter notebook {output_path.name}/well_architected_analysis.ipynb"
+        )
 
     except ImportError as e:
         if "matplotlib" in str(e) or "scipy" in str(e):
@@ -3173,5 +3425,6 @@ async def well_architected_report_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Failed to generate report: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

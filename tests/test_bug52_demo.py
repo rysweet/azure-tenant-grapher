@@ -69,15 +69,11 @@ def demo_principal_id_abstraction():
 
     # Example 5: Cross-tenant deployment safety
     print("\n5. Cross-tenant deployment safety:")
-    print(
-        f"   Original principal ID ({source_principal_id}) is from SOURCE tenant"
-    )
+    print(f"   Original principal ID ({source_principal_id}) is from SOURCE tenant")
     print(
         f"   Abstracted ID ({abstracted}) is tenant-agnostic and safe for TARGET tenant"
     )
-    print(
-        "   This prevents SOURCE tenant GUIDs from appearing in deployment templates"
-    )
+    print("   This prevents SOURCE tenant GUIDs from appearing in deployment templates")
 
     print("\n" + "=" * 80)
     print("Bug #52 FIX: Principal IDs are now abstracted at the graph layer!")

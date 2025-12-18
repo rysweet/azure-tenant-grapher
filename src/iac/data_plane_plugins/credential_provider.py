@@ -77,7 +77,7 @@ class CredentialProvider:
     Example:
         >>> config = CredentialConfig(
         ...     client_id="xxx",
-        ...     client_secret="yyy",
+        ...     client_secret="yyy",  # pragma: allowlist secret  # pragma: allowlist secret
         ...     tenant_id="zzz"
         ... )
         >>> provider = CredentialProvider(config)

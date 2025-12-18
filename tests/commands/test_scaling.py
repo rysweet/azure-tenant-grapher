@@ -11,7 +11,7 @@ Test Coverage:
 Target: 80% coverage
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -55,7 +55,10 @@ class TestScaleUpCommands:
         assert "--scale-factor" in result.output
 
     @patch("src.commands.scaling.ensure_neo4j_running")
-    @patch("src.cli_commands_scale.scale_up_template_command_handler", new_callable=AsyncMock)
+    @patch(
+        "src.cli_commands_scale.scale_up_template_command_handler",
+        new_callable=AsyncMock,
+    )
     def test_scale_up_template_success(
         self, mock_handler, mock_neo4j, runner, tmp_path
     ):
@@ -95,7 +98,10 @@ class TestScaleUpCommands:
         assert "multi-region" in result.output
 
     @patch("src.commands.scaling.ensure_neo4j_running")
-    @patch("src.cli_commands_scale.scale_up_scenario_command_handler", new_callable=AsyncMock)
+    @patch(
+        "src.cli_commands_scale.scale_up_scenario_command_handler",
+        new_callable=AsyncMock,
+    )
     def test_scale_up_scenario_success(self, mock_handler, mock_neo4j, runner):
         """Test successful scale-up scenario operation."""
         # Mock Neo4j startup
@@ -141,7 +147,8 @@ class TestScaleDownCommands:
 
     @patch("src.commands.scaling.ensure_neo4j_running")
     @patch(
-        "src.cli_commands_scale.scale_down_algorithm_command_handler", new_callable=AsyncMock
+        "src.cli_commands_scale.scale_down_algorithm_command_handler",
+        new_callable=AsyncMock,
     )
     def test_scale_down_algorithm_success(self, mock_handler, mock_neo4j, runner):
         """Test successful scale-down algorithm operation."""
@@ -170,7 +177,10 @@ class TestScaleDownCommands:
         assert "network" in result.output
 
     @patch("src.commands.scaling.ensure_neo4j_running")
-    @patch("src.cli_commands_scale.scale_down_pattern_command_handler", new_callable=AsyncMock)
+    @patch(
+        "src.cli_commands_scale.scale_down_pattern_command_handler",
+        new_callable=AsyncMock,
+    )
     def test_scale_down_pattern_success(self, mock_handler, mock_neo4j, runner):
         """Test successful scale-down pattern operation."""
         # Mock Neo4j startup
@@ -252,7 +262,9 @@ class TestScaleValidateCommand:
         assert "validation checks" in result.output
 
     @patch("src.commands.scaling.ensure_neo4j_running")
-    @patch("src.cli_commands_scale.scale_validate_command_handler", new_callable=AsyncMock)
+    @patch(
+        "src.cli_commands_scale.scale_validate_command_handler", new_callable=AsyncMock
+    )
     def test_scale_validate_success(self, mock_handler, mock_neo4j, runner):
         """Test successful scale-validate operation."""
         # Mock Neo4j startup
@@ -266,7 +278,9 @@ class TestScaleValidateCommand:
         mock_handler.assert_called_once()
 
     @patch("src.commands.scaling.ensure_neo4j_running")
-    @patch("src.cli_commands_scale.scale_validate_command_handler", new_callable=AsyncMock)
+    @patch(
+        "src.cli_commands_scale.scale_validate_command_handler", new_callable=AsyncMock
+    )
     def test_scale_validate_with_fix(self, mock_handler, mock_neo4j, runner):
         """Test scale-validate with auto-fix flag."""
         # Mock Neo4j startup
@@ -340,15 +354,11 @@ class TestBackwardCompatibility:
             scale_clean,
             scale_clean_command,
             scale_down,
-            scale_down_algorithm,
             scale_down_group,
-            scale_down_pattern,
             scale_stats,
             scale_stats_command,
             scale_up,
             scale_up_group,
-            scale_up_scenario,
-            scale_up_template,
             scale_validate,
             scale_validate_command,
         )

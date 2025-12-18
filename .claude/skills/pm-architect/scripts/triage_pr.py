@@ -130,7 +130,14 @@ def get_related_issues(project_root: Path, pr_body: str) -> str:
     for issue_num in list(issue_numbers)[:5]:  # Limit to 5 issues
         try:
             result = subprocess.run(
-                ["gh", "issue", "view", issue_num, "--json", "number,title,state,labels"],
+                [
+                    "gh",
+                    "issue",
+                    "view",
+                    issue_num,
+                    "--json",
+                    "number,title,state,labels",
+                ],
                 cwd=project_root,
                 capture_output=True,
                 text=True,

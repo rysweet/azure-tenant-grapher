@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import sys
 from typing import List, Optional
 
@@ -36,13 +35,13 @@ async def verify_neo4j_connection(max_attempts: int = 5, delay: float = 2.0) -> 
     try:
         credentials = get_neo4j_credentials()
     except RuntimeError as e:
-        raise RuntimeError(
-            f"Failed to retrieve Neo4j credentials: {e}"
-        )
+        raise RuntimeError(f"Failed to retrieve Neo4j credentials: {e}") from e
 
     # Try to connect up to max_attempts times
     for attempt in range(max_attempts):
-        if can_connect_to_neo4j(credentials.uri, credentials.username, credentials.password):
+        if can_connect_to_neo4j(
+            credentials.uri, credentials.username, credentials.password
+        ):
             logger.info(
                 f"Neo4j database is available and accepting connections at {credentials.uri}."
             )

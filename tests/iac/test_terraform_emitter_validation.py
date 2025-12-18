@@ -57,7 +57,10 @@ class TestTerraformEmitterValidation:
         # VM should reference the default NIC
         vm = config["resource"]["azurerm_linux_virtual_machine"]["test_vm"]
         assert "network_interface_ids" in vm
-        assert "${azurerm_network_interface.test_vm_default_nic.id}" in vm["network_interface_ids"]
+        assert (
+            "${azurerm_network_interface.test_vm_default_nic.id}"
+            in vm["network_interface_ids"]
+        )
 
     def test_vm_with_existing_nic_is_included(self, tmp_path: Path):
         """Test that VMs with valid NIC references are included."""
@@ -282,12 +285,17 @@ class TestTerraformEmitterValidation:
 
         # Default NIC should be created
         assert "azurerm_network_interface" in config["resource"]
-        assert "csiska_01_default_nic" in config["resource"]["azurerm_network_interface"]
+        assert (
+            "csiska_01_default_nic" in config["resource"]["azurerm_network_interface"]
+        )
 
         # VM should reference the default NIC
         vm = config["resource"]["azurerm_linux_virtual_machine"]["csiska_01"]
         assert "network_interface_ids" in vm
-        assert "${azurerm_network_interface.csiska_01_default_nic.id}" in vm["network_interface_ids"]
+        assert (
+            "${azurerm_network_interface.csiska_01_default_nic.id}"
+            in vm["network_interface_ids"]
+        )
 
         # Missing reference should be tracked with cross-RG details
         assert len(emitter._missing_references) == 1

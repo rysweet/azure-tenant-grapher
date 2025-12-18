@@ -167,7 +167,10 @@ class RelationshipRule(ABC):
         """
         try:
             # Check if db_ops has session_manager (new API) or legacy methods
-            if hasattr(db_ops, "session_manager") and db_ops.session_manager is not None:
+            if (
+                hasattr(db_ops, "session_manager")
+                and db_ops.session_manager is not None
+            ):
                 # New API with session_manager
                 prop_string = ""
                 if properties:
@@ -191,7 +194,9 @@ class RelationshipRule(ABC):
                 # Legacy mock API (for tests) - relationship created via generic_rel
                 # These mocks don't actually execute Cypher, they just record calls
                 if hasattr(db_ops, "create_generic_rel"):
-                    db_ops.create_generic_rel(src_id, rel_type, tgt_id, "Resource", "id")
+                    db_ops.create_generic_rel(
+                        src_id, rel_type, tgt_id, "Resource", "id"
+                    )
                 logger.debug(
                     f"Legacy mode (mock): created {rel_type} from {src_id} to {tgt_id}"
                 )

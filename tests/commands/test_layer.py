@@ -10,7 +10,7 @@ Test Coverage:
 Target: 80% coverage
 """
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -72,9 +72,7 @@ class TestLayerListCommand:
         """Test basic layer list invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
-            layer_list, [], obj={"debug": False}, catch_exceptions=False
-        )
+        runner.invoke(layer_list, [], obj={"debug": False}, catch_exceptions=False)
 
         # Command should complete
         assert mock_handler.called
@@ -89,7 +87,7 @@ class TestLayerListCommand:
         """Test layer list with filtering options."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_list,
             [
                 "--tenant-id",
@@ -137,7 +135,7 @@ class TestLayerShowCommand:
         """Test basic layer show invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_show, ["test-layer"], obj={"debug": False}, catch_exceptions=False
         )
 
@@ -168,9 +166,7 @@ class TestLayerActiveCommand:
         """Test showing current active layer."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
-            layer_active, [], obj={"debug": False}, catch_exceptions=False
-        )
+        runner.invoke(layer_active, [], obj={"debug": False}, catch_exceptions=False)
 
         assert mock_handler.called
         call_args = mock_handler.call_args[1]
@@ -181,7 +177,7 @@ class TestLayerActiveCommand:
         """Test setting active layer."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_active,
             ["test-layer"],
             obj={"debug": False},
@@ -215,7 +211,7 @@ class TestLayerCreateCommand:
         """Test basic layer create invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_create,
             ["new-layer", "--yes"],
             obj={"debug": False},
@@ -233,7 +229,7 @@ class TestLayerCreateCommand:
         """Test layer create with various options."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_create,
             [
                 "new-layer",
@@ -286,7 +282,7 @@ class TestLayerCopyCommand:
         """Test basic layer copy invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_copy,
             ["source-layer", "target-layer", "--yes"],
             obj={"debug": False},
@@ -321,7 +317,7 @@ class TestLayerDeleteCommand:
         """Test basic layer delete invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_delete,
             ["test-layer", "--yes"],
             obj={"debug": False},
@@ -339,7 +335,7 @@ class TestLayerDeleteCommand:
         """Test layer delete with archiving."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_delete,
             ["test-layer", "--archive", "/tmp/backup.json", "--force", "--yes"],
             obj={"debug": False},
@@ -373,7 +369,7 @@ class TestLayerDiffCommand:
         """Test basic layer diff invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_diff,
             ["layer-a", "layer-b"],
             obj={"debug": False},
@@ -409,7 +405,7 @@ class TestLayerValidateCommand:
         """Test basic layer validate invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_validate,
             ["test-layer"],
             obj={"debug": False},
@@ -442,7 +438,7 @@ class TestLayerRefreshStatsCommand:
         """Test basic layer refresh-stats invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_refresh_stats,
             ["test-layer"],
             obj={"debug": False},
@@ -475,7 +471,7 @@ class TestLayerArchiveCommand:
         """Test basic layer archive invocation."""
         mock_handler.return_value = AsyncMock()
 
-        result = runner.invoke(
+        runner.invoke(
             layer_archive,
             ["test-layer", "/tmp/archive.json", "--yes"],
             obj={"debug": False},
@@ -514,7 +510,7 @@ class TestLayerRestoreCommand:
         archive_file = tmp_path / "archive.json"
         archive_file.write_text("{}")
 
-        result = runner.invoke(
+        runner.invoke(
             layer_restore,
             [str(archive_file), "--yes"],
             obj={"debug": False},
@@ -547,7 +543,7 @@ class TestBackwardCompatibility:
         test_cli = Group()
         test_cli.add_command(layer)
 
-        result = runner.invoke(
+        runner.invoke(
             test_cli,
             ["layer", "list"],
             obj={"debug": False},

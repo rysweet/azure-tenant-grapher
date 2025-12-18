@@ -50,7 +50,9 @@ class ContextExtractor:
         # Ensure directory exists
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
 
-    def extract_from_conversation(self, conversation_data: List[Dict]) -> Dict[str, Any]:
+    def extract_from_conversation(
+        self, conversation_data: List[Dict]
+    ) -> Dict[str, Any]:
         """Extract essential context from conversation history.
 
         Args:
@@ -106,7 +108,9 @@ class ContextExtractor:
                 return content[:500] + ("..." if len(content) > 500 else "")
         return "No user requirements found"
 
-    def _extract_key_decisions(self, conversation_data: List[Dict]) -> List[Dict[str, str]]:
+    def _extract_key_decisions(
+        self, conversation_data: List[Dict]
+    ) -> List[Dict[str, str]]:
         """Extract key decisions from assistant messages."""
         decisions = []
         decision_keywords = ["decided", "chosen", "selected", "opted", "approach"]
@@ -120,7 +124,10 @@ class ContextExtractor:
                         # Extract sentence containing decision
                         sentences = message.get("content", "").split(".")
                         for sentence in sentences:
-                            if keyword in sentence.lower() and len(sentence.strip()) > 10:
+                            if (
+                                keyword in sentence.lower()
+                                and len(sentence.strip()) > 10
+                            ):
                                 decisions.append(
                                     {
                                         "decision": sentence.strip(),
@@ -137,13 +144,17 @@ class ContextExtractor:
     def _extract_implementation_state(self, conversation_data: List[Dict]) -> str:
         """Summarize current implementation state from tool usage."""
         tool_usage_count = sum(
-            1 for msg in conversation_data if msg.get("role") == "tool_use" or "tool_name" in msg
+            1
+            for msg in conversation_data
+            if msg.get("role") == "tool_use" or "tool_name" in msg
         )
 
         files_modified = []
         for message in conversation_data:
             if message.get("tool_name") in ["Write", "Edit"]:
-                file_path = message.get("file_path", message.get("parameters", {}).get("file_path"))
+                file_path = message.get(
+                    "file_path", message.get("parameters", {}).get("file_path")
+                )
                 if file_path:
                     files_modified.append(Path(file_path).name)
 
@@ -158,7 +169,14 @@ class ContextExtractor:
     def _extract_open_items(self, conversation_data: List[Dict]) -> List[str]:
         """Extract open questions and blockers."""
         open_items = []
-        question_indicators = ["?", "todo", "need to", "should we", "blocker", "pending"]
+        question_indicators = [
+            "?",
+            "todo",
+            "need to",
+            "should we",
+            "blocker",
+            "pending",
+        ]
 
         for message in conversation_data:
             content = message.get("content", "")
@@ -197,9 +215,11 @@ class ContextExtractor:
                 # Tool name might be in parent context
                 pass
 
-        return sorted(list(tools))
+        return sorted(tools)
 
-    def create_snapshot(self, context: Dict[str, Any], name: Optional[str] = None) -> Path:
+    def create_snapshot(
+        self, context: Dict[str, Any], name: Optional[str] = None
+    ) -> Path:
         """Create a named context snapshot.
 
         Args:

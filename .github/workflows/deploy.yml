@@ -1,0 +1,156 @@
+name: Deploy ATG Remote Service
+
+# Tag-based deployment (NOT branch-based!)
+# Use: v*-dev for dev environment
+# Use: v*-int for integration environment
+on:
+  push:
+    tags:
+      - 'v*-dev'      # Triggers dev deployment (e.g., v1.0.0-dev)
+      - 'v*-int'      # Triggers integration deployment (e.g., v1.0.0-int)
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/atg-service
+
+jobs:
+  # Job 1: Detect which environment to deploy to based on tag suffix
+  detect-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.detect.outputs.environment }}
+    steps:
+      - name: Detect environment from tag
+        id: detect
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Analyzing tag: $TAG"
+
+          if [[ "$TAG" =~ -dev$ ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "Detected environment: dev"
+          elif [[ "$TAG" =~ -int$ ]]; then
+            echo "environment=integration" >> $GITHUB_OUTPUT
+            echo "Detected environment: integration"
+          else
+            echo "❌ Invalid tag format. Use v*-dev or v*-int"
+            echo "Examples: v1.0.0-dev, v2.1.3-int"
+            exit 1
+          fi
+
+  # Job 2: Build Docker image and push to GitHub Container Registry
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: detect-environment
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=sha
+            type=raw,value=${{ needs.detect-environment.outputs.environment }}-latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 3: Deploy to Azure Container Instances
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-environment, build-and-push]
+    environment: ${{ needs.detect-environment.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to ACI with Bicep
+        uses: azure/arm-deploy@v1
+        id: deploy
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: atg-${{ needs.detect-environment.outputs.environment }}
+          template: infrastructure/aci.bicep
+          parameters: >
+            environment=${{ needs.detect-environment.outputs.environment }}
+            containerImage=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            neo4jUri=${{ secrets.NEO4J_URI }}
+            neo4jPassword=${{ secrets.NEO4J_PASSWORD }}
+            apiKey=${{ secrets.API_KEY }}
+            targetTenantId=${{ secrets.TARGET_TENANT_ID }}
+
+      - name: Wait for container startup
+        run: |
+          echo "⏳ Waiting 30 seconds for container to initialize..."
+          sleep 30
+
+      - name: Verify deployment health
+        run: |
+          FQDN=$(az container show \
+            --resource-group atg-${{ needs.detect-environment.outputs.environment }} \
+            --name atg-${{ needs.detect-environment.outputs.environment }} \
+            --query ipAddress.fqdn -o tsv)
+
+          echo "🔍 Checking health endpoint at http://${FQDN}:8000/api/v1/health"
+
+          # Retry health check up to 5 times with 10 second intervals
+          for i in {1..5}; do
+            if curl -f http://${FQDN}:8000/api/v1/health; then
+              echo "✅ Deployment successful! Service is healthy."
+              echo "🌐 Service URL: http://${FQDN}:8000"
+              exit 0
+            fi
+            echo "⏳ Health check attempt $i/5 failed, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
+
+      - name: Display deployment info
+        if: success()
+        run: |
+          FQDN=$(az container show \
+            --resource-group atg-${{ needs.detect-environment.outputs.environment }} \
+            --name atg-${{ needs.detect-environment.outputs.environment }} \
+            --query ipAddress.fqdn -o tsv)
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 ATG Remote Service Deployed Successfully!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Environment: ${{ needs.detect-environment.outputs.environment }}"
+          echo "Tag: ${{ github.ref_name }}"
+          echo "Service URL: http://${FQDN}:8000"
+          echo "Health Check: http://${FQDN}:8000/api/v1/health"
+          echo "API Docs: http://${FQDN}:8000/docs"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -273,7 +273,7 @@ class TestServicePrincipalModel:
             displayName="Prod Certificate",
             endDateTime=datetime(2025, 1, 1),
             startDateTime=datetime(2024, 1, 1),
-            thumbprint="ABC123DEF456",
+            thumbprint="ABC123DEF456",  # pragma: allowlist secret
         )
 
         cred2 = ServicePrincipalCredential(
@@ -289,7 +289,9 @@ class TestServicePrincipalModel:
 
         assert len(sp.credentials) == 2
         assert sp.credentials[0].credential_type == "Certificate"
-        assert sp.credentials[0].thumbprint == "ABC123DEF456"
+        assert (
+            sp.credentials[0].thumbprint == "ABC123DEF456"
+        )  # pragma: allowlist secret  # pragma: allowlist secret
         assert sp.credentials[1].credential_type == "ClientSecret"
 
     def test_service_principal_minimal(self):

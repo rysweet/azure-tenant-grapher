@@ -196,7 +196,7 @@ def agent_mode_config(tmp_path, mock_mcp_server):
         "neo4j": {
             "uri": "bolt://localhost:7687",
             "username": "neo4j",
-            "password": "test_password",
+            "password": "test_password",  # pragma: allowlist secret
             "database": "test",
         },
         "azure": {"tenant_id": "test-tenant-1", "subscription_ids": ["test-sub-1"]},
