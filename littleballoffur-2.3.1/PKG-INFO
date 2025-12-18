@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: littleballoffur
+Version: 2.3.1
+Summary: A general purpose library for subsampling graphs.
+Home-page: https://github.com/benedekrozemberczki/littleballoffur
+Author: Benedek Rozemberczki
+Author-email: benedek.rozemberczki@gmail.com
+License: MIT
+Download-URL: https://github.com/benedekrozemberczki/littleballoffur/archive/v_2.3.1.tar.gz
+Description: UNKNOWN
+Keywords: community,detection,networkx,graph,snow ball,metropolis hastings,shortest path,loop erased,spiky ball,graph sampling,sampling,tree sampling,random walk,forest fire
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Build Tools
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.8
