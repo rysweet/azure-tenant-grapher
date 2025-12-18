@@ -98,23 +98,32 @@ uv run atg stop     # Stop GUI application
 # Web App Mode (NEW)
 cd spa && npm run start:web       # Run as web server (accessible from other machines)
 cd spa && npm run start:web:dev   # Run web server in dev mode with hot reload
+
 ```
 
 ## Architecture Overview
 
 ### Core Components
 
-1. **Azure Discovery Service** (`src/services/azure_discovery_service.py`):
+1. **Architecture-Based Replicator** (`src/architecture_based_replicator.py`):
+   - Replicates tenants by selecting connected architectural instances
+   - Uses pattern detection from `ArchitecturalPatternAnalyzer`
+   - Finds connected subgraphs (architectural instances) instead of individual resources
+   - Builds target pattern graph that matches source pattern graph structure
+   - Uses spectral comparison to measure structural similarity
+   - **Output**: Connected instances with guaranteed edges, realistic replication
+
+2. **Azure Discovery Service** (`src/services/azure_discovery_service.py`):
    - Discovers Azure resources using Azure SDK
    - Handles pagination and rate limiting
    - Supports resource limits for testing
 
-2. **Resource Processing Service** (`src/services/resource_processing_service.py`):
+3. **Resource Processing Service** (`src/services/resource_processing_service.py`):
    - Processes discovered resources
    - Creates Neo4j nodes and relationships
    - Applies relationship rules
 
-3. **Relationship Rules** (`src/relationship_rules/`):
+4. **Relationship Rules** (`src/relationship_rules/`):
    - Modular rules for creating graph relationships
    - Each rule handles specific relationship types (network, identity, monitoring, etc.)
    - Plugin-based architecture for extensibility

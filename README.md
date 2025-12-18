@@ -440,12 +440,17 @@ All test output artifacts are excluded from version control via `.gitignore`.
   - [Dual-Graph Architecture](https://rysweet.github.io/pr600/architecture/dual-graph/)
   - [SCAN_SOURCE_NODE Relationships](https://rysweet.github.io/pr600/architecture/scan-source-node-relationships/)
   - [Neo4j Schema Reference](https://rysweet.github.io/pr600/NEO4J_SCHEMA_REFERENCE/)
+  - [Architecture-Based Replication](docs/ARCHITECTURE_BASED_REPLICATION.md) - Pattern-based tenant replication
+  - [Architectural Pattern Analysis](docs/ARCHITECTURAL_PATTERN_ANALYSIS.md) - Detect Azure patterns
 
 - **Local Documentation**
   - [Documentation Index](docs/INDEX.md) - Complete documentation map
   - [Remote Mode Documentation](docs/remote-mode/) - Run ATG on powerful remote servers
+  - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
+  - [3D Visualization](docs/design/iac_subset_bicep.md)
   - [Project Requirements](.github/azure-tenant-grapher-prd.md)
   - [Project Specification](.github/azure-tenant-grapher-spec.md)
+  - [Testing](tests/)
 
 ## Contributing
 
