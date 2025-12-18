@@ -70,7 +70,9 @@ class ResourceExistenceValidator:
         self.tenant_id = tenant_id
 
         # DEBUG: Log what we're initializing with
-        logger.info(f"🔍 ResourceExistenceValidator init: tenant_id={tenant_id}, subscription={subscription_id}")
+        logger.info(
+            f"🔍 ResourceExistenceValidator init: tenant_id={tenant_id}, subscription={subscription_id}"
+        )
 
         # Fix #608: Use EXPLICIT SP credentials, not DefaultAzureCredential
         # For cross-tenant, we MUST use ClientSecretCredential with explicit SP
@@ -80,24 +82,38 @@ class ResourceExistenceValidator:
         elif tenant_id:
             # Use explicit SP from environment (same as deployment uses)
             import os
+
             from azure.identity import ClientSecretCredential
-            client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID") or os.getenv("AZURE_CLIENT_ID")
-            client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET") or os.getenv("AZURE_CLIENT_SECRET")
+
+            client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID") or os.getenv(
+                "AZURE_CLIENT_ID"
+            )
+            client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET") or os.getenv(
+                "AZURE_CLIENT_SECRET"
+            )
             logger.info(f"   Tenant ID provided: {tenant_id}")
-            logger.info(f"   Client ID from env: {client_id[:20]}..." if client_id else "   Client ID: NOT FOUND")
+            logger.info(
+                f"   Client ID from env: {client_id[:20]}..."
+                if client_id
+                else "   Client ID: NOT FOUND"
+            )
             if client_id and client_secret:
                 self.credential = ClientSecretCredential(
                     tenant_id=tenant_id,
                     client_id=client_id,
-                    client_secret=client_secret
+                    client_secret=client_secret,
                 )
-                logger.info(f"   ✅ Created ClientSecretCredential")
+                logger.info("   ✅ Created ClientSecretCredential")
             else:
                 # Fallback
-                logger.warning(f"   ⚠️ No SP credentials in env, using DefaultAzureCredential")
-                self.credential = DefaultAzureCredential(additionally_allowed_tenants=["*"])
+                logger.warning(
+                    "   ⚠️ No SP credentials in env, using DefaultAzureCredential"
+                )
+                self.credential = DefaultAzureCredential(
+                    additionally_allowed_tenants=["*"]
+                )
         else:
-            logger.info(f"   No tenant_id, using DefaultAzureCredential")
+            logger.info("   No tenant_id, using DefaultAzureCredential")
             self.credential = DefaultAzureCredential()
         self.max_retries = max_retries
         self.cache_ttl = cache_ttl

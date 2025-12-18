@@ -137,10 +137,10 @@ Use the deployment script for manual deployments:
 ```bash
 # Set required environment variables
 export NEO4J_URI="bolt://your-neo4j.com:7687"
-export NEO4J_PASSWORD="your-password"
-export API_KEY="your-api-key"
+export NEO4J_PASSWORD="your-password"  # pragma: allowlist secret
+export API_KEY="your-api-key"  # pragma: allowlist secret
 export TARGET_TENANT_ID="your-tenant-id"
-export GITHUB_TOKEN="your-github-token"
+export GITHUB_TOKEN="your-github-token"  # pragma: allowlist secret
 
 # Deploy to dev
 ./scripts/deploy.sh dev v1.0.0-dev
@@ -155,8 +155,8 @@ Test locally with Docker Compose:
 
 ```bash
 # Set environment variables
-export NEO4J_PASSWORD="local-password"
-export API_KEY="local-api-key"
+export NEO4J_PASSWORD="local-password"  # pragma: allowlist secret
+export API_KEY="local-api-key"  # pragma: allowlist secret
 export TARGET_TENANT_ID="your-tenant-id"
 
 # Start services

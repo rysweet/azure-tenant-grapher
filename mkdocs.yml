@@ -1,0 +1,126 @@
+site_name: Azure Tenant Grapher
+site_description: Security-focused tool that builds a Neo4j graph database representation of Azure tenant resources
+site_author: Azure Tenant Grapher Team
+site_url: https://rysweet.github.io/pr600
+
+repo_url: https://github.com/rysweet/pr600
+repo_name: rysweet/pr600
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+# MkDocs-specific Python tags - these are required for Material theme extensions
+# Standard YAML parsers will fail on !!python/name tags; use: mkdocs build --strict
+markdown_extensions:
+  - admonition
+  - codehilite
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - attr_list
+  - def_list
+  - tables
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rysweet/pr600
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Overview: INDEX.md
+      - Installation: quickstart/installation.md
+      - Quick Start: quickstart/quick-start.md
+  - User Guides:
+      - Autonomous Deployment: guides/AUTONOMOUS_DEPLOYMENT.md
+      - Autonomous Deployment FAQ: guides/AUTONOMOUS_DEPLOYMENT_FAQ.md
+      - Agent vs Manual Deployment: guides/AGENT_VS_MANUAL_DEPLOYMENT.md
+      - SCAN_SOURCE_NODE Migration: guides/scan-source-node-migration.md
+      - Terraform Import Troubleshooting: guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md
+  - Tutorials:
+      - Your First Autonomous Deployment: quickstart/AGENT_DEPLOYMENT_TUTORIAL.md
+      - SCAN_SOURCE_NODE Quick Reference: quickstart/scan-source-node-quick-ref.md
+      - Terraform Import Quick Reference: quickstart/terraform-import-quick-ref.md
+  - Concepts:
+      - Terraform Import Blocks: concepts/TERRAFORM_IMPORT_BLOCKS.md
+  - Architecture:
+      - Dual-Graph Architecture: architecture/dual-graph.md
+      - SCAN_SOURCE_NODE Relationships: architecture/scan-source-node-relationships.md
+      - Dataplane Plugin Architecture: DATAPLANE_PLUGIN_ARCHITECTURE.md
+  - Design:
+      - Agent Deployer Reference: design/AGENT_DEPLOYER_REFERENCE.md
+  - Patterns:
+      - Import First Strategy: patterns/IMPORT_FIRST_STRATEGY.md
+  - Reference:
+      - Neo4j Schema: NEO4J_SCHEMA_REFERENCE.md
+      - Dual Graph Queries: DUAL_GRAPH_QUERIES.cypher
+  - Development:
+      - Contributing: CONTRIBUTING.md
+      - Development Setup: development/setup.md
+  - Performance:
+      - Optimizations: performance/optimizations.md
+  - Web Application:
+      - Overview: web-app/summary.md
+      - Web App Mode: quickstart/web-app-mode.md
+  - Testing:
+      - Agentic Testing Design: agentic-testing/DESIGN.md
+      - Agentic Testing Requirements: agentic-testing/REQUIREMENTS.md
+      - Agentic Testing Validation: agentic-testing/VALIDATION.md
+  - Investigations:
+      - Issue 591 (VM Replication): investigations/issue-591/README.md

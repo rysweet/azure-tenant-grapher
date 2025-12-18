@@ -625,7 +625,7 @@ Ask yourself:
 ---
 
 **Next Steps:**
-- **Chose Manual?** See [Deployment Troubleshooting](../DEPLOYMENT_TROUBLESHOOTING.md)
+- **Chose Manual?** See [Deployment Troubleshooting](AUTONOMOUS_DEPLOYMENT_FAQ.md)
 - **Chose Agent?** See [Autonomous Deployment Tutorial](../quickstart/AGENT_DEPLOYMENT_TUTORIAL.md)
 - **Want Both?** Use hybrid strategies above
 

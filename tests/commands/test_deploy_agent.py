@@ -4,9 +4,7 @@ These tests verify the full CLI integration with AgentDeployer.
 Written in TDD style - will fail until implementation is complete.
 """
 
-import asyncio
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -351,7 +349,9 @@ class TestDeploymentReportDisplay:
 
             assert result.exit_code == 0
             # Should show error summary even on success
-            assert "error" in result.output.lower() or "attempt" in result.output.lower()
+            assert (
+                "error" in result.output.lower() or "attempt" in result.output.lower()
+            )
 
 
 class TestAgentModeErrorHandling:
@@ -375,7 +375,10 @@ class TestAgentModeErrorHandling:
         )
 
         assert result.exit_code != 0
-        assert "does not exist" in result.output.lower() or "not found" in result.output.lower()
+        assert (
+            "does not exist" in result.output.lower()
+            or "not found" in result.output.lower()
+        )
 
     def test_agent_deployment_exception_handling(self, tmp_path):
         """Test graceful handling of exceptions during agent deployment."""
@@ -459,7 +462,10 @@ class TestAgentModeDryRun:
                     iteration_count=1,
                     final_status="planned",
                     error_log=[],
-                    deployment_output={"status": "planned", "output": "Plan successful"},
+                    deployment_output={
+                        "status": "planned",
+                        "output": "Plan successful",
+                    },
                 )
             )
             mock_agent_class.return_value = mock_instance
@@ -495,7 +501,11 @@ class TestHelpAndDocumentation:
         assert result.exit_code == 0
         output_lower = result.output.lower()
         assert "--agent" in output_lower
-        assert "autonomous" in output_lower or "goal" in output_lower or "ai" in output_lower
+        assert (
+            "autonomous" in output_lower
+            or "goal" in output_lower
+            or "ai" in output_lower
+        )
 
     def test_help_includes_max_iterations(self):
         """Test that --help includes max-iterations flag."""

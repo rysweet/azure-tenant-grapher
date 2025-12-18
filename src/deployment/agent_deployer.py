@@ -283,9 +283,15 @@ class AgentDeployer:
                         # Check for specific error types and handle programmatically
                         error_message = str(e).lower()
 
-                        if "authentication" in error_message or "login" in error_message:
+                        if (
+                            "authentication" in error_message
+                            or "login" in error_message
+                        ):
                             await self._handle_authentication_error()
-                        elif "provider" in error_message and "not registered" in error_message:
+                        elif (
+                            "provider" in error_message
+                            and "not registered" in error_message
+                        ):
                             await self._handle_provider_registration_error(str(e))
                         else:
                             # Wait before retry for transient errors

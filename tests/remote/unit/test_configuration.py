@@ -425,7 +425,7 @@ def test_neo4j_config_loads_from_env():
         {
             "NEO4J_URI": "bolt://neo4j-dev:7687",
             "NEO4J_USER": "neo4j",
-            "NEO4J_PASSWORD": "SecurePassword123!@#",
+            "NEO4J_PASSWORD": "SecurePassword123!@#",  # pragma: allowlist secret
             "NEO4J_DEV_POOL_SIZE": "50",
             "NEO4J_INTEGRATION_POOL_SIZE": "30",
         },
@@ -435,7 +435,7 @@ def test_neo4j_config_loads_from_env():
 
     assert config.uri == "bolt://neo4j-dev:7687"
     assert config.user == "neo4j"
-    assert config.password == "SecurePassword123!@#"
+    assert config.password == "SecurePassword123!@#"  # pragma: allowlist secret
     assert config.max_pool_size == 50
 
 
@@ -529,7 +529,7 @@ def test_config_to_dict():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
         request_timeout=1800,
     )
 
@@ -538,7 +538,7 @@ def test_config_to_dict():
     assert config_dict["remote_mode"] is True
     assert config_dict["service_url"] == "https://atg-dev.example.com"
     # API key should be redacted in dict
-    assert config_dict["api_key"] == "atg_dev_***"
+    assert config_dict["api_key"] == "atg_dev_***"  # pragma: allowlist secret
 
 
 def test_config_from_dict():
@@ -548,7 +548,7 @@ def test_config_from_dict():
     config_dict = {
         "remote_mode": True,
         "service_url": "https://atg-dev.example.com",
-        "api_key": "atg_dev_" + "a" * 64,
+        "api_key": "atg_dev_" + "a" * 64,  # pragma: allowlist secret
         "request_timeout": 1800,
     }
 

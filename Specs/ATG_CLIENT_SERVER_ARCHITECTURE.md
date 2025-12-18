@@ -891,7 +891,7 @@ async def test_submit_scan_job_success(mock_httpx_client):
 
     client = RemoteClient(
         service_url="https://test.example.com",
-        api_key="test-key"
+        api_key="test-key"  # pragma: allowlist secret
     )
 
     job_id = await client.submit_scan_job(
@@ -912,7 +912,7 @@ async def test_submit_scan_job_auth_failure(mock_httpx_client):
 
     client = RemoteClient(
         service_url="https://test.example.com",
-        api_key="invalid-key"
+        api_key="invalid-key"  # pragma: allowlist secret
     )
 
     with pytest.raises(RemoteExecutionError, match="HTTP 401"):

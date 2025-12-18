@@ -42,7 +42,7 @@ Read these to understand the implementation:
    - Performance considerations
    - **Audience:** Developers, contributors
 
-4. **[Deployment Troubleshooting](DEPLOYMENT_TROUBLESHOOTING.md)**
+4. **Deployment Troubleshooting**
    - Manual troubleshooting techniques
    - Common deployment issues
    - How to work with the agent when it fails
@@ -264,15 +264,12 @@ To improve this documentation:
 - **IaC Generation** - [SCALE_OPERATIONS.md](SCALE_OPERATIONS.md)
 - **Cross-Tenant Deployment** - [cross-tenant/FEATURES.md](cross-tenant/FEATURES.md)
 - **Terraform Import Blocks** - [design/cross-tenant-translation/CLI_FLAGS_SUMMARY.md](design/cross-tenant-translation/CLI_FLAGS_SUMMARY.md)
-- **Manual Troubleshooting** - [DEPLOYMENT_TROUBLESHOOTING.md](DEPLOYMENT_TROUBLESHOOTING.md)
-
 ## Getting Help
 
 If you need assistance with autonomous deployment:
 
 1. **Start with tutorial** - [AGENT_DEPLOYMENT_TUTORIAL.md](quickstart/AGENT_DEPLOYMENT_TUTORIAL.md)
-2. **Check troubleshooting** - [DEPLOYMENT_TROUBLESHOOTING.md](DEPLOYMENT_TROUBLESHOOTING.md)
-3. **Review deployment report** - Generated at `deployment_report.md`
+2. **Review deployment report** - Generated at `deployment_report.md`
 4. **Enable debug mode** - `export ATG_AGENT_DEBUG=1`
 5. **File issue** - Include report, logs, and error output
 

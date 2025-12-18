@@ -1,0 +1,58 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git-revision-date-localized plugin
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-docs.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install MkDocs and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-docs.txt
+
+      - name: Validate MkDocs configuration
+        run: mkdocs build --strict
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force --clean --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create deployment summary
+        if: success()
+        run: |
+          echo "## Documentation Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Documentation has been successfully deployed to GitHub Pages." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **[View Documentation](https://rysweet.github.io/pr600/)**" >> $GITHUB_STEP_SUMMARY

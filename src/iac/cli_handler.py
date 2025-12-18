@@ -1213,7 +1213,9 @@ async def generate_iac_command_handler(
             emit_kwargs["comparison_result"] = comparison_result
         if "split_by_community" in emit_signature.parameters:
             emit_kwargs["split_by_community"] = split_by_community
-        if "location" in emit_signature.parameters:  # Fix #601: Pass location to emitter
+        if (
+            "location" in emit_signature.parameters
+        ):  # Fix #601: Pass location to emitter
             emit_kwargs["location"] = location
 
         paths = emitter.emit(graph, out_dir, **emit_kwargs)

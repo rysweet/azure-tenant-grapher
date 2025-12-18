@@ -30,21 +30,21 @@ az login --tenant <your-tenant-id>
 
 Each CLI command has a dedicated walkthrough page:
 
-- [build](commands/build.md) - Discover and process Azure tenant resources; builds the resource graph and launches the dashboard by default.
-- [rebuild-edges](commands/rebuild-edges.md) - Recompute and refresh all resource relationships (edges) in the Neo4j graph without reloading raw resources.
-- [config](commands/config.md) - Show the current configuration, environment variables, and important settings.
-- [visualize](commands/visualize.md) - Generate interactive or static visualizations of the current tenant graph (e.g., 2D/3D diagrams).
-- [spec](commands/spec.md) - Produce a detailed tenant specification (YAML/JSON/Markdown) representing the discovered Azure environment.
-- [generate-spec](commands/generate-spec.md) - Create an anonymized specification for sharing or documentation, with optional output customization.
-- [generate-iac](commands/generate-iac.md) - Generate Infrastructure-as-Code templates (e.g., Bicep) for resources or subsets of the tenant.
-- [generate-sim-doc](commands/generate-sim-doc.md) - Generate a simulated Azure customer profile as a Markdown narrative for demos and testing.
-- [threat-model](commands/threat-model.md) - Run the threat modeling agent to produce a Data Flow Diagram, enumerate threats, and generate a Markdown report.
-- [agent-mode](commands/agent-mode.md) - Start agent mode, enabling natural language queries and automation via the MCP server and Neo4j.
-- [mcp-server](commands/mcp-server.md) - Launch the MCP server; provides APIs and interfaces for agent-driven tasks and chat.
-- [create-tenant](commands/create-tenant.md) - Simulate or create a new Azure tenant structure for testing or demonstration purposes.
-- [backup-db](commands/backup-db.md) - Create a backup of the Neo4j graph database for disaster recovery or migration.
-- [doctor](commands/doctor.md) - Check for required CLI tools, dependencies, and environment readiness; offers guided fixes.
-- [test](commands/test.md) - Run all available tests (unit, integration, end-to-end) and clean up artifacts after completion.
+- See `atg --help` for command documentation - Discover and process Azure tenant resources; builds the resource graph and launches the dashboard by default.
+- See `atg --help` for command documentation - Recompute and refresh all resource relationships (edges) in the Neo4j graph without reloading raw resources.
+- See `atg --help` for command documentation - Show the current configuration, environment variables, and important settings.
+- See `atg --help` for command documentation - Generate interactive or static visualizations of the current tenant graph (e.g., 2D/3D diagrams).
+- See `atg --help` for command documentation - Produce a detailed tenant specification (YAML/JSON/Markdown) representing the discovered Azure environment.
+- See `atg --help` for command documentation - Create an anonymized specification for sharing or documentation, with optional output customization.
+- See `atg --help` for command documentation - Generate Infrastructure-as-Code templates (e.g., Bicep) for resources or subsets of the tenant.
+- See `atg --help` for command documentation - Generate a simulated Azure customer profile as a Markdown narrative for demos and testing.
+- See `atg --help` for command documentation - Run the threat modeling agent to produce a Data Flow Diagram, enumerate threats, and generate a Markdown report.
+- See `atg --help` for command documentation - Start agent mode, enabling natural language queries and automation via the MCP server and Neo4j.
+- See `atg --help` for command documentation - Launch the MCP server; provides APIs and interfaces for agent-driven tasks and chat.
+- See `atg --help` for command documentation - Simulate or create a new Azure tenant structure for testing or demonstration purposes.
+- See `atg --help` for command documentation - Create a backup of the Neo4j graph database for disaster recovery or migration.
+- See `atg --help` for command documentation - Check for required CLI tools, dependencies, and environment readiness; offers guided fixes.
+- See `atg --help` for command documentation - Run all available tests (unit, integration, end-to-end) and clean up artifacts after completion.
 
 Each walkthrough includes:
 
@@ -55,4 +55,4 @@ Each walkthrough includes:
 
 ---
 
-For advanced usage, troubleshooting, and appendices, see the [Appendix](commands/appendix.md).
+For advanced usage and troubleshooting, see individual command files in the commands/ directory.

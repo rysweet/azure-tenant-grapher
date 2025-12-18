@@ -84,24 +84,24 @@ print(metrics)  # Duration, throughput, memory, Neo4j stats
    - `AdaptiveBatchSizer` - Dynamic batch sizing
    - `QueryOptimizer` - Neo4j optimization utilities
 
-2. **tests/performance/test_scale_performance_benchmarks.py** - Benchmark suite
+2. **../../tests/test_scale_performance_benchmarks.py** - Benchmark suite
    - Small, medium, large graph benchmarks
    - Performance regression testing
    - Adaptive batching tests
 
-3. **docs/SCALE_PERFORMANCE_GUIDE.md** - Complete guide
+3. **../SCALE_PERFORMANCE_GUIDE.md** - Complete guide
    - Usage instructions
    - Performance targets
    - Troubleshooting
    - Best practices
 
-4. **docs/PERFORMANCE_OPTIMIZATION_SUMMARY.md** - High-level summary
+4. **../SCALE_PERFORMANCE_GUIDE.md** - High-level summary
    - What was optimized
    - Architecture decisions
    - Performance targets
    - Testing strategy
 
-5. **examples/performance_optimizations_demo.py** - Interactive demo
+5. **../examples/** - Interactive demo
    - Demonstrates all features
    - Shows before/after comparison
    - Runnable examples
@@ -121,13 +121,13 @@ print(metrics)  # Duration, throughput, memory, Neo4j stats
 pytest tests/test_scale_performance_integration.py -v
 
 # Full benchmark suite
-pytest tests/performance/ -v -m benchmark
+pytest ../../tests/ -v -m benchmark
 
 # Specific benchmark
-pytest tests/performance/test_scale_performance_benchmarks.py::TestScaleUpPerformance -v
+pytest ../../tests/test_scale_performance_benchmarks.py::TestScaleUpPerformance -v
 
 # Skip slow tests
-pytest tests/performance/ -v -m "benchmark and not slow"
+pytest ../../tests/ -v -m "benchmark and not slow"
 ```
 
 ## Demo
@@ -135,7 +135,7 @@ pytest tests/performance/ -v -m "benchmark and not slow"
 Run the interactive demo:
 
 ```bash
-python examples/performance_optimizations_demo.py
+python ../examples/
 ```
 
 This demonstrates:
@@ -148,9 +148,9 @@ This demonstrates:
 
 Comprehensive documentation is available:
 
-1. **[Performance Guide](docs/SCALE_PERFORMANCE_GUIDE.md)** - Complete usage guide
-2. **[Optimization Summary](docs/PERFORMANCE_OPTIMIZATION_SUMMARY.md)** - Technical overview
-3. **[Scale Operations Spec](docs/SCALE_OPERATIONS_SPECIFICATION.md)** - Original specification
+1. **[Performance Guide](../SCALE_PERFORMANCE_GUIDE.md)** - Complete usage guide
+2. **[Optimization Summary](../SCALE_PERFORMANCE_GUIDE.md)** - Technical overview
+3. **[Scale Operations Spec](../SCALE_OPERATIONS.md)** - Original specification
 
 ## Key Improvements
 
@@ -330,9 +330,9 @@ To add more optimizations:
 
 ## Questions?
 
-- Read the [Performance Guide](docs/SCALE_PERFORMANCE_GUIDE.md)
-- Run the [demo](examples/performance_optimizations_demo.py)
-- Check [benchmarks](tests/performance/)
+- Read the [Performance Guide](../SCALE_PERFORMANCE_GUIDE.md)
+- Run the [demo](../examples/)
+- Check [benchmarks](../../tests/)
 - Open GitHub issue with metrics
 
 ---
