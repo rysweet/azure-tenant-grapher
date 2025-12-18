@@ -13,7 +13,7 @@ Philosophy:
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -111,7 +111,9 @@ def test_api_key_store_initializes_from_config():
             "atg_dev_" + secrets.token_hex(32): {
                 "environment": "dev",
                 "client_id": "test-client-001",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
         }
     }
@@ -133,7 +135,9 @@ def test_api_key_store_validates_unexpired_key():
             test_key: {
                 "environment": "dev",
                 "client_id": "test-client-001",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
         }
     }
@@ -182,7 +186,9 @@ def test_api_key_store_rejects_unknown_key():
             known_key: {
                 "environment": "dev",
                 "client_id": "test-client-001",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
         }
     }
@@ -226,7 +232,9 @@ async def test_auth_middleware_accepts_valid_bearer_token():
             test_key: {
                 "environment": "dev",
                 "client_id": "test-client-001",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
         }
     }
@@ -291,7 +299,12 @@ async def test_auth_middleware_rejects_invalid_bearer_format():
 @pytest.mark.asyncio
 async def test_auth_middleware_rejects_expired_key():
     """Test that authentication middleware rejects expired API keys."""
-    from src.remote.auth import APIKeyStore, AuthenticationError, require_api_key, set_api_key_store
+    from src.remote.auth import (
+        APIKeyStore,
+        AuthenticationError,
+        require_api_key,
+        set_api_key_store,
+    )
 
     test_key = f"atg_dev_{secrets.token_hex(32)}"
     mock_config = {
@@ -333,7 +346,9 @@ async def test_auth_middleware_sets_request_context():
             test_key: {
                 "environment": "dev",
                 "client_id": "test-client-001",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
         }
     }
@@ -452,7 +467,9 @@ def test_api_key_store_validation_performance():
             f"atg_dev_{secrets.token_hex(32)}": {
                 "environment": "dev",
                 "client_id": f"client-{i}",
-                "expires_at": (datetime.now(timezone.utc) + timedelta(days=90)).isoformat(),
+                "expires_at": (
+                    datetime.now(timezone.utc) + timedelta(days=90)
+                ).isoformat(),
             }
             for i in range(100)
         }

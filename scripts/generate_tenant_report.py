@@ -5,32 +5,31 @@ Generates comprehensive inventory report using 20+ parallel threads.
 
 Tenant: 3cd87a41-1f61-4aef-a212-cefdecd9a2d1
 """
+
 import asyncio
 import json
+import os
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List
 
-import os
-import sys
-from pathlib import Path
-
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
-env_path = Path(__file__).parent.parent / '.env'
+
+env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
     print(f"📄 Loaded environment from {env_path}")
 
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.resource import ResourceManagementClient, SubscriptionClient
-from msgraph import GraphServiceClient
-from msgraph.generated.models.o_data_errors.o_data_error import ODataError
 
 # Use existing project services
 from src.services.aad_graph_service import AADGraphService
@@ -41,7 +40,9 @@ class TenantInventory:
     """Complete tenant inventory data"""
 
     tenant_id: str
-    generated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    generated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
     # Subscriptions
     subscriptions: List[Dict[str, Any]] = field(default_factory=list)
@@ -56,12 +57,18 @@ class TenantInventory:
     # Resources
     total_resources: int = 0
     resources_by_type: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
-    resources_by_region: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
-    resources_by_subscription: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    resources_by_region: Dict[str, int] = field(
+        default_factory=lambda: defaultdict(int)
+    )
+    resources_by_subscription: Dict[str, int] = field(
+        default_factory=lambda: defaultdict(int)
+    )
 
     # Role Assignments
     total_role_assignments: int = 0
-    role_assignments_by_scope: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    role_assignments_by_scope: Dict[str, int] = field(
+        default_factory=lambda: defaultdict(int)
+    )
     top_roles: List[tuple] = field(default_factory=list)
 
     # Cost (optional)
@@ -120,15 +127,19 @@ class ParallelTenantReporter:
             tasks.append(self.collect_resources_in_subscription(sub_id, sub_name))
 
             # Role Assignments
-            tasks.append(self.collect_role_assignments_in_subscription(sub_id, sub_name))
+            tasks.append(
+                self.collect_role_assignments_in_subscription(sub_id, sub_name)
+            )
 
             # Cost Data (optional)
             tasks.append(self.collect_cost_data_for_subscription(sub_id, sub_name))
 
         print(f"   Launched {len(tasks)} parallel tasks")
-        print(f"   Breakdown:")
-        print(f"     - Entra ID: 4 tasks")
-        print(f"     - Per-subscription: {len(self.inventory.subscriptions)} subs × 3 = {len(self.inventory.subscriptions) * 3} tasks")
+        print("   Breakdown:")
+        print("     - Entra ID: 4 tasks")
+        print(
+            f"     - Per-subscription: {len(self.inventory.subscriptions)} subs × 3 = {len(self.inventory.subscriptions) * 3} tasks"
+        )
         print(f"   Total: {len(tasks)} concurrent threads\n")
 
         # Execute all tasks in parallel
@@ -137,7 +148,7 @@ class ParallelTenantReporter:
         # Check for errors
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                self.inventory.errors.append(f"Task {i} failed: {str(result)}")
+                self.inventory.errors.append(f"Task {i} failed: {result!s}")
 
         # Extract managed identities count from resources
         mi_type = "Microsoft.ManagedIdentity/userAssignedIdentities"
@@ -145,7 +156,7 @@ class ParallelTenantReporter:
             mi_type, 0
         )
 
-        print(f"✅ Data collection complete!\n")
+        print("✅ Data collection complete!\n")
         return self.inventory
 
     async def discover_subscriptions(self):
@@ -217,7 +228,7 @@ class ParallelTenantReporter:
             # We'll count resources of type Microsoft.ManagedIdentity/userAssignedIdentities
             # This gets populated during resource collection, so for now just mark as pending
             # The actual count will come from resources_by_type
-            print(f"   [Thread 4] ⚠️  Managed identities counted from resource discovery")
+            print("   [Thread 4] ⚠️  Managed identities counted from resource discovery")
         except Exception as e:
             error_msg = f"Failed to collect managed identities: {e}"
             self.inventory.errors.append(error_msg)
@@ -225,7 +236,9 @@ class ParallelTenantReporter:
 
     # ========== Per-Subscription Collection (3 threads per sub) ==========
 
-    async def collect_resources_in_subscription(self, subscription_id: str, sub_name: str):
+    async def collect_resources_in_subscription(
+        self, subscription_id: str, sub_name: str
+    ):
         """Collect all resources in a subscription"""
 
         def _sync_collect():
@@ -356,7 +369,9 @@ class ParallelTenantReporter:
         report.append("|----------|-------------|")
         report.append(f"| **Subscriptions** | {self.inventory.subscription_count} |")
         report.append(f"| **Entra ID Users** | {self.inventory.users_count:,} |")
-        report.append(f"| **Service Principals** | {self.inventory.service_principals_count:,} |")
+        report.append(
+            f"| **Service Principals** | {self.inventory.service_principals_count:,} |"
+        )
         report.append(
             f"| **Managed Identities** | {self.inventory.managed_identities_count:,} |"
         )
@@ -424,7 +439,9 @@ class ParallelTenantReporter:
         report.append("")
         report.append("| Scope Type | Count |")
         report.append("|------------|-------|")
-        for scope_type, count in sorted(self.inventory.role_assignments_by_scope.items()):
+        for scope_type, count in sorted(
+            self.inventory.role_assignments_by_scope.items()
+        ):
             report.append(f"| {scope_type} | {count:,} |")
         report.append("")
 
@@ -484,7 +501,9 @@ async def main():
                     "total_resources": inventory.total_resources,
                     "resources_by_type": dict(inventory.resources_by_type),
                     "resources_by_region": dict(inventory.resources_by_region),
-                    "resources_by_subscription": dict(inventory.resources_by_subscription),
+                    "resources_by_subscription": dict(
+                        inventory.resources_by_subscription
+                    ),
                     "total_role_assignments": inventory.total_role_assignments,
                     "role_assignments_by_scope": dict(
                         inventory.role_assignments_by_scope

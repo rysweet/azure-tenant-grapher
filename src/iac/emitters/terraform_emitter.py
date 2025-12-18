@@ -21,11 +21,6 @@ from ..traverser import TenantGraph
 from ..validators import DependencyValidator, ResourceExistenceValidator
 from . import register_emitter
 from .base import IaCEmitter
-from .private_endpoint_emitter import (
-    emit_private_dns_zone,
-    emit_private_dns_zone_vnet_link,
-    emit_private_endpoint,
-)
 from .terraform.context import EmitterContext
 from .terraform.handlers import HandlerRegistry, ensure_handlers_registered
 
@@ -824,7 +819,9 @@ class TerraformEmitter(IaCEmitter):
                     if len(resource_name) > 80:
                         import hashlib
 
-                        name_hash = hashlib.md5(resource_name.encode(), usedforsecurity=False).hexdigest()[:5]
+                        name_hash = hashlib.md5(
+                            resource_name.encode(), usedforsecurity=False
+                        ).hexdigest()[:5]
                         resource_name = resource_name[:74] + "_" + name_hash
 
                     logger.warning(
@@ -985,7 +982,9 @@ class TerraformEmitter(IaCEmitter):
                     detector = CommunityDetector(driver)
                     logger.debug("Detecting communities...")
                     communities = detector.detect_communities()
-                    logger.debug(f"Communities detected, returned {len(communities)} communities")
+                    logger.debug(
+                        f"Communities detected, returned {len(communities)} communities"
+                    )
 
                     logger.info(
                         f"Detected {len(communities)} communities for splitting"
@@ -994,7 +993,9 @@ class TerraformEmitter(IaCEmitter):
 
                     # Split resources by community
                     for i, community_ids in enumerate(communities, start=1):
-                        logger.debug(f"Processing community {i} with {len(community_ids)} resource IDs")
+                        logger.debug(
+                            f"Processing community {i} with {len(community_ids)} resource IDs"
+                        )
                         # Filter resources for this community
                         community_resources = {
                             resource_type: {
@@ -1011,7 +1012,9 @@ class TerraformEmitter(IaCEmitter):
                                 "resource", {}
                             ).items()
                         }
-                        logger.debug(f"Filtered community {i}: {list(community_resources.keys())}")
+                        logger.debug(
+                            f"Filtered community {i}: {list(community_resources.keys())}"
+                        )
 
                         # Remove empty resource types
                         community_resources = {
@@ -1408,7 +1411,9 @@ class TerraformEmitter(IaCEmitter):
 
                     if azure_id:
                         # Bug #NEW: Normalize provider casing in import IDs (fix lowercase providers)
-                        normalized_azure_id = self._normalize_azure_resource_id(azure_id)
+                        normalized_azure_id = self._normalize_azure_resource_id(
+                            azure_id
+                        )
                         resource_name = resource_config.get("name", tf_name)
                         candidate_imports.append(
                             {
@@ -1729,9 +1734,13 @@ class TerraformEmitter(IaCEmitter):
 
                     # Merge any helper resources into main config
                     if context.terraform_config.get("resource"):
-                        for res_type, resources in context.terraform_config["resource"].items():
+                        for res_type, resources in context.terraform_config[
+                            "resource"
+                        ].items():
                             if res_type not in terraform_config.get("resource", {}):
-                                terraform_config.setdefault("resource", {})[res_type] = {}
+                                terraform_config.setdefault("resource", {})[
+                                    res_type
+                                ] = {}
                             terraform_config["resource"][res_type].update(resources)
 
                     logger.info(
@@ -1753,7 +1762,6 @@ class TerraformEmitter(IaCEmitter):
         # No handler available for this resource type
         logger.warning(f"No handler available for {azure_type}: {resource_name}")
         return None
-
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
         """Determine correct App Service Terraform type based on OS.
@@ -2008,7 +2016,9 @@ class TerraformEmitter(IaCEmitter):
         if len(sanitized) > 80:
             import hashlib
 
-            name_hash = hashlib.md5(sanitized.encode(), usedforsecurity=False).hexdigest()[:5]
+            name_hash = hashlib.md5(
+                sanitized.encode(), usedforsecurity=False
+            ).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
             logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
 
@@ -2278,10 +2288,16 @@ class TerraformEmitter(IaCEmitter):
             normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
 
         # Bug #88: Fix lowercase resourceGroups and actionGroups in resource IDs
-        normalized = re.sub(r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE
+        )
+        normalized = re.sub(
+            r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE
+        )
         # Bug #NEW3: Fix lowercase dnszones
-        normalized = re.sub(r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE
+        )
 
         return normalized
 

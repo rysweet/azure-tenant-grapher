@@ -30,7 +30,9 @@ class CodebaseAnalyzer:
         ]
         self.max_file_size = 1024 * 1024  # 1MB
 
-    def analyze(self, target_path: str, options: Optional[dict] = None) -> Dict[str, Any]:
+    def analyze(
+        self, target_path: str, options: Optional[dict] = None
+    ) -> Dict[str, Any]:
         """
         Perform analysis of target codebase.
 

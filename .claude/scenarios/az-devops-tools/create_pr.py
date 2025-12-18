@@ -29,7 +29,6 @@ Philosophy:
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from common import AzCliWrapper, ExitCode, handle_error, load_config
@@ -148,7 +147,8 @@ def create_pull_request(
             handle_error(
                 "Branch does not exist",
                 exit_code=ExitCode.VALIDATION_ERROR,
-                details=result.stderr + "\n\nVerify that source and target branches exist in the repository",
+                details=result.stderr
+                + "\n\nVerify that source and target branches exist in the repository",
             )
         elif "already exists" in result.stderr.lower():
             handle_error(
@@ -160,7 +160,8 @@ def create_pull_request(
             handle_error(
                 "Permission denied",
                 exit_code=ExitCode.AUTH_ERROR,
-                details=result.stderr + "\n\nYou may not have permission to create pull requests in this repository",
+                details=result.stderr
+                + "\n\nYou may not have permission to create pull requests in this repository",
             )
         else:
             handle_error(
@@ -332,7 +333,11 @@ Note:
         if work_items:
             print(f"Linked work items: {', '.join(work_items)}")
 
-        pr_url = pr.get("url", "").replace("_apis/git/repositories", "_git").replace("/pullRequests/", "/pullrequest/")
+        pr_url = (
+            pr.get("url", "")
+            .replace("_apis/git/repositories", "_git")
+            .replace("/pullRequests/", "/pullrequest/")
+        )
         print(f"\nView PR at: {pr_url}")
 
     except Exception as e:

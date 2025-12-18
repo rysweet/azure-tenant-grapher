@@ -72,9 +72,7 @@ class TestLayerListCommand:
         """Test basic layer list invocation."""
         mock_handler.return_value = AsyncMock()
 
-        runner.invoke(
-            layer_list, [], obj={"debug": False}, catch_exceptions=False
-        )
+        runner.invoke(layer_list, [], obj={"debug": False}, catch_exceptions=False)
 
         # Command should complete
         assert mock_handler.called
@@ -168,9 +166,7 @@ class TestLayerActiveCommand:
         """Test showing current active layer."""
         mock_handler.return_value = AsyncMock()
 
-        runner.invoke(
-            layer_active, [], obj={"debug": False}, catch_exceptions=False
-        )
+        runner.invoke(layer_active, [], obj={"debug": False}, catch_exceptions=False)
 
         assert mock_handler.called
         call_args = mock_handler.call_args[1]

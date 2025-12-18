@@ -56,7 +56,7 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
                 "standard": "Standard",
                 "capacityreservation": "CapacityReservation",
                 "lacluster": "LACluster",
-                "unlimited": "Unlimited"
+                "unlimited": "Unlimited",
             }
             config["sku"] = sku_map.get(sku_name.lower(), sku_name)
 

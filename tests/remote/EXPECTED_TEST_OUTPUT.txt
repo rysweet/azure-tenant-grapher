@@ -109,7 +109,7 @@ tests/remote/unit/test_api_authentication.py::test_generate_api_key_uses_cryptog
 
 As implementation proceeds, tests will progressively turn green:
 
-**Week 1:** 
+**Week 1:**
 - ✅ test_api_authentication.py (18/18 tests passing)
 - ✅ test_configuration.py (25/25 tests passing)
 

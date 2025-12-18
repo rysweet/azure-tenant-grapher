@@ -9,7 +9,7 @@ import json
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 from neo4j import Driver, GraphDatabase
@@ -46,7 +46,12 @@ class ArchitecturalPatternAnalyzer:
             "description": "AKS or container-based platform",
         },
         "Data Platform": {
-            "resources": ["servers", "databases", "storageAccounts", "privateEndpoints"],
+            "resources": [
+                "servers",
+                "databases",
+                "storageAccounts",
+                "privateEndpoints",
+            ],
             "description": "Database with secure connectivity and storage",
         },
         "Serverless Application": {
@@ -156,7 +161,9 @@ class ArchitecturalPatternAnalyzer:
 
         # For non-Resource nodes, use the most specific label
         # Filter out generic labels like 'Original'
-        filtered_labels = [label for label in labels if label not in ["Original", "Resource"]]
+        filtered_labels = [
+            label for label in labels if label not in ["Original", "Resource"]
+        ]
         if filtered_labels:
             return filtered_labels[0]
 
@@ -467,7 +474,9 @@ class ArchitecturalPatternAnalyzer:
                 node_colors.append(-1)
 
         # Calculate sizes and edge properties
-        node_sizes = [G_filtered.nodes[node]["count"] / 4 for node in G_filtered.nodes()]
+        node_sizes = [
+            G_filtered.nodes[node]["count"] / 4 for node in G_filtered.nodes()
+        ]
 
         # Separate pattern vs cross-pattern edges
         pattern_edges = []
@@ -625,7 +634,10 @@ class ArchitecturalPatternAnalyzer:
         return generated_files
 
     def analyze_and_export(
-        self, output_dir: Path, generate_visualizations: bool = True, top_n_nodes: int = 30
+        self,
+        output_dir: Path,
+        generate_visualizations: bool = True,
+        top_n_nodes: int = 30,
     ) -> Dict[str, Any]:
         """
         Run complete analysis and export results.

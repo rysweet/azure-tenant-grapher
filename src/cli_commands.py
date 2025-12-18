@@ -3190,11 +3190,13 @@ async def analyze_patterns_command_handler(
         stats_table.add_column("Metric", style="cyan")
         stats_table.add_column("Value", style="magenta")
 
-        stats_table.add_row("Total Relationships", f"{summary['total_relationships']:,}")
+        stats_table.add_row(
+            "Total Relationships", f"{summary['total_relationships']:,}"
+        )
         stats_table.add_row("Unique Patterns", f"{summary['unique_patterns']:,}")
         stats_table.add_row("Resource Types", f"{summary['resource_types']:,}")
         stats_table.add_row("Graph Edges", f"{summary['graph_edges']:,}")
-        stats_table.add_row("Detected Patterns", str(summary['detected_patterns']))
+        stats_table.add_row("Detected Patterns", str(summary["detected_patterns"]))
 
         console.print(stats_table)
 
@@ -3212,7 +3214,9 @@ async def analyze_patterns_command_handler(
         # Detected patterns table
         if summary["patterns"]:
             console.print("\n")
-            patterns_table = Table(title="Detected Architectural Patterns", show_header=True)
+            patterns_table = Table(
+                title="Detected Architectural Patterns", show_header=True
+            )
             patterns_table.add_column("Pattern", style="cyan")
             patterns_table.add_column("Completeness", style="green", justify="right")
             patterns_table.add_column("Matched Resources", style="yellow")
@@ -3234,12 +3238,16 @@ async def analyze_patterns_command_handler(
 
         # Output files
         console.print("\n[bold]📁 Output Files:[/bold]")
-        console.print(f"  • JSON Export: [cyan]{summary['output_files']['json']}[/cyan]")
-        console.print(f"  • Summary Report: [cyan]{output_path / 'analysis_summary.json'}[/cyan]")
+        console.print(
+            f"  • JSON Export: [cyan]{summary['output_files']['json']}[/cyan]"
+        )
+        console.print(
+            f"  • Summary Report: [cyan]{output_path / 'analysis_summary.json'}[/cyan]"
+        )
 
-        if summary['output_files']['visualizations']:
+        if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
-            for viz_file in summary['output_files']['visualizations']:
+            for viz_file in summary["output_files"]["visualizations"]:
                 console.print(f"    - [cyan]{viz_file}[/cyan]")
 
         console.print(
@@ -3265,6 +3273,7 @@ async def analyze_patterns_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Failed to analyze patterns: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
@@ -3338,17 +3347,19 @@ async def well_architected_report_command_handler(
             config.neo4j.uri or "",
             config.neo4j.user,
             config.neo4j.password,
-            openai_api_key
+            openai_api_key,
         )
 
         # Run analysis
         console.print("\n[yellow]⚙️  Analyzing architectural patterns...[/yellow]")
 
-        with console.status("[bold green]Generating Well-Architected Framework report..."):
+        with console.status(
+            "[bold green]Generating Well-Architected Framework report..."
+        ):
             summary = reporter.generate_full_report(
                 output_path,
                 update_descriptions=not skip_description_updates,
-                generate_visualizations=not no_visualizations
+                generate_visualizations=not no_visualizations,
             )
 
         # Display summary
@@ -3359,22 +3370,30 @@ async def well_architected_report_command_handler(
         stats_table.add_column("Metric", style="cyan")
         stats_table.add_column("Value", style="magenta")
 
-        stats_table.add_row("Patterns Detected", str(summary['patterns_detected']))
-        stats_table.add_row("Total Relationships Analyzed", f"{summary['total_relationships']:,}")
+        stats_table.add_row("Patterns Detected", str(summary["patterns_detected"]))
+        stats_table.add_row(
+            "Total Relationships Analyzed", f"{summary['total_relationships']:,}"
+        )
         if not skip_description_updates:
-            stats_table.add_row("Resources Updated", f"{summary['resources_updated']:,}")
+            stats_table.add_row(
+                "Resources Updated", f"{summary['resources_updated']:,}"
+            )
 
         console.print(stats_table)
 
         # Output files
         console.print("\n[bold]📁 Output Files:[/bold]")
-        console.print(f"  • Markdown Report: [cyan]{summary['output_files']['markdown']}[/cyan]")
-        console.print(f"  • Interactive Notebook: [cyan]{summary['output_files']['notebook']}[/cyan]")
+        console.print(
+            f"  • Markdown Report: [cyan]{summary['output_files']['markdown']}[/cyan]"
+        )
+        console.print(
+            f"  • Interactive Notebook: [cyan]{summary['output_files']['notebook']}[/cyan]"
+        )
         console.print(f"  • JSON Data: [cyan]{summary['output_files']['json']}[/cyan]")
 
-        if summary['output_files']['visualizations']:
+        if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
-            for viz_file in summary['output_files']['visualizations']:
+            for viz_file in summary["output_files"]["visualizations"]:
                 console.print(f"    - [cyan]{viz_file}[/cyan]")
 
         console.print(
@@ -3383,7 +3402,9 @@ async def well_architected_report_command_handler(
 
         console.print("\n[bold]📓 To view the interactive notebook:[/bold]")
         console.print(f"  cd {output_path.parent}")
-        console.print(f"  jupyter notebook {output_path.name}/well_architected_analysis.ipynb")
+        console.print(
+            f"  jupyter notebook {output_path.name}/well_architected_analysis.ipynb"
+        )
 
     except ImportError as e:
         if "matplotlib" in str(e) or "scipy" in str(e):
@@ -3404,5 +3425,6 @@ async def well_architected_report_command_handler(
     except Exception as e:
         console.print(f"[red]❌ Failed to generate report: {e}[/red]")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
