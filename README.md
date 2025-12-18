@@ -424,6 +424,8 @@ All test output artifacts are excluded from version control via `.gitignore`.
 - [Project Specification](.github/azure-tenant-grapher-spec.md)
 - [Remote Mode Documentation](docs/remote-mode/) - Run ATG on powerful remote servers for large tenants
 - [Neo4j Graph Schema Reference](docs/NEO4J_SCHEMA_REFERENCE.md) - Complete reference for node types, relationships, and schema assembly
+- [Architecture-Based Replication](docs/ARCHITECTURE_BASED_REPLICATION.md) - Pattern-based tenant replication using spectral graph comparison
+- [Architectural Pattern Analysis](docs/ARCHITECTURAL_PATTERN_ANALYSIS.md) - Detect and analyze Azure architectural patterns
 - [Threat Modeling Agent Demo](docs/threat_model_agent_demo.md)
 - [3D Visualization](docs/design/iac_subset_bicep.md)
 - [Testing](tests/)

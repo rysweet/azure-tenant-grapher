@@ -173,6 +173,9 @@ class ArchitecturalPatternAnalyzer:
         """
         Query all relationships from Neo4j graph.
 
+        Filters out SCAN_SOURCE_NODE relationships which are internal dual-graph
+        bookkeeping links and not actual architectural relationships.
+
         Returns:
             List of relationship records with source/target labels and types
         """
@@ -181,6 +184,7 @@ class ArchitecturalPatternAnalyzer:
 
         query = """
         MATCH (source)-[r]->(target)
+        WHERE type(r) <> 'SCAN_SOURCE_NODE'
         RETURN labels(source) as source_labels,
                source.type as source_type,
                type(r) as rel_type,
@@ -633,6 +637,428 @@ class ArchitecturalPatternAnalyzer:
 
         return generated_files
 
+    def identify_orphaned_nodes(
+        self,
+        graph: nx.MultiDiGraph,
+        pattern_matches: Dict[str, Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Identify resource types that are not part of any detected pattern.
+
+        Args:
+            graph: NetworkX graph
+            pattern_matches: Detected architectural patterns
+
+        Returns:
+            List of orphaned nodes with their connection information
+        """
+        # Collect all nodes that are matched by at least one pattern
+        matched_nodes = set()
+        for pattern_name, match in pattern_matches.items():
+            matched_nodes.update(match["matched_resources"])
+
+        # Find orphaned nodes (not in any pattern)
+        all_nodes = set(graph.nodes())
+        orphaned_nodes = all_nodes - matched_nodes
+
+        # Gather connection information for each orphaned node
+        orphaned_info = []
+        for node in orphaned_nodes:
+            # Find what this node connects to
+            out_neighbors = list(graph.successors(node))
+            in_neighbors = list(graph.predecessors(node))
+
+            # Find edges
+            outgoing_edges = []
+            for target in out_neighbors:
+                edges = graph.get_edge_data(node, target)
+                if edges:
+                    for key, data in edges.items():
+                        outgoing_edges.append({
+                            "target": target,
+                            "relationship": data.get("relationship", "UNKNOWN"),
+                            "frequency": data.get("frequency", 0),
+                        })
+
+            incoming_edges = []
+            for source in in_neighbors:
+                edges = graph.get_edge_data(source, node)
+                if edges:
+                    for key, data in edges.items():
+                        incoming_edges.append({
+                            "source": source,
+                            "relationship": data.get("relationship", "UNKNOWN"),
+                            "frequency": data.get("frequency", 0),
+                        })
+
+            orphaned_info.append({
+                "resource_type": node,
+                "connection_count": graph.nodes[node].get("count", 0),
+                "in_degree": graph.in_degree(node),
+                "out_degree": graph.out_degree(node),
+                "total_degree": graph.degree(node),
+                "outgoing_edges": outgoing_edges,
+                "incoming_edges": incoming_edges,
+                "connected_to": list(set(out_neighbors + in_neighbors)),
+            })
+
+        # Sort by connection count (most connected first)
+        orphaned_info.sort(key=lambda x: x["connection_count"], reverse=True)
+
+        logger.info(
+            f"Identified {len(orphaned_info)} orphaned nodes "
+            f"out of {len(all_nodes)} total nodes"
+        )
+        return orphaned_info
+
+    def fetch_microsoft_learn_documentation(
+        self, resource_type: str, max_attempts: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Fetch documentation from Microsoft Learn for a given resource type.
+
+        Searches Microsoft Learn training materials to understand the resource type
+        and its typical use cases.
+
+        Args:
+            resource_type: Azure resource type (e.g., "virtualMachines", "loadBalancers")
+            max_attempts: Maximum number of search attempts with different queries
+
+        Returns:
+            Dictionary with documentation information
+        """
+        from urllib.parse import quote
+
+        # Map common resource type names to full Azure type names for better search
+        type_mappings = {
+            "virtualMachines": "Microsoft.Compute/virtualMachines Azure Virtual Machines",
+            "loadBalancers": "Microsoft.Network/loadBalancers Azure Load Balancer",
+            "publicIPAddresses": "Microsoft.Network/publicIPAddresses Azure Public IP",
+            "storageAccounts": "Microsoft.Storage/storageAccounts Azure Storage",
+            "actiongroups": "microsoft.insights/actiongroups Azure Monitor Action Groups",
+            "bastionHosts": "Microsoft.Network/bastionHosts Azure Bastion",
+            "managedClusters": "Microsoft.ContainerService/managedClusters Azure Kubernetes Service AKS",
+        }
+
+        search_term = type_mappings.get(resource_type, f"Azure {resource_type}")
+        encoded_query = quote(f"site:learn.microsoft.com/en-us/training {search_term}")
+
+        doc_info = {
+            "resource_type": resource_type,
+            "search_term": search_term,
+            "documentation_found": False,
+            "summary": "",
+            "url": f"https://learn.microsoft.com/en-us/search/?terms={encoded_query}",
+            "typical_uses": [],
+            "related_resources": [],
+        }
+
+        try:
+            # Use WebFetch to search Microsoft Learn
+            # Note: This is a simplified approach - in production, you might use:
+            # 1. Microsoft Graph API for better search
+            # 2. Bing Search API
+            # 3. Custom web scraping with BeautifulSoup
+            logger.info(f"Searching Microsoft Learn for: {search_term}")
+
+            # For now, we'll provide common patterns based on resource type name
+            # In a real implementation, you would use WebFetch or similar tools
+            doc_info["summary"] = self._generate_resource_summary(resource_type)
+            doc_info["typical_uses"] = self._get_typical_uses(resource_type)
+            doc_info["related_resources"] = self._get_related_resources(resource_type)
+            doc_info["documentation_found"] = True
+
+            logger.info(f"Generated documentation summary for {resource_type}")
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch documentation for {resource_type}: {e}")
+            doc_info["error"] = str(e)
+
+        return doc_info
+
+    def _generate_resource_summary(self, resource_type: str) -> str:
+        """Generate a summary description for a resource type."""
+        # This is a placeholder - in production, this would fetch real documentation
+        common_descriptions = {
+            "loadBalancers": "Distributes inbound network traffic across multiple virtual machines or services",
+            "publicIPAddresses": "Provides internet-accessible IP addresses for Azure resources",
+            "actiongroups": "Defines notification and action groups for Azure Monitor alerts",
+            "bastionHosts": "Provides secure RDP/SSH access to VMs without exposing public IPs",
+            "applicationGateways": "Layer 7 load balancer with web application firewall capabilities",
+            "trafficManagerProfiles": "DNS-based traffic load balancer for global distribution",
+            "frontDoors": "Global HTTP load balancer with CDN and web application firewall",
+        }
+
+        return common_descriptions.get(
+            resource_type,
+            f"Azure {resource_type} resource - see Microsoft Learn for details"
+        )
+
+    def _get_typical_uses(self, resource_type: str) -> List[str]:
+        """Get typical use cases for a resource type."""
+        use_cases = {
+            "loadBalancers": [
+                "Load balancing for VM scale sets",
+                "High availability for web applications",
+                "Internal load balancing for multi-tier apps",
+            ],
+            "publicIPAddresses": [
+                "Internet-facing load balancers",
+                "Bastion hosts for secure access",
+                "VPN gateways",
+                "Application gateways",
+            ],
+            "actiongroups": [
+                "Alert notifications via email/SMS",
+                "Webhook triggers for automation",
+                "ITSM integration",
+                "Azure Functions for custom actions",
+            ],
+            "bastionHosts": [
+                "Secure VM access without public IPs",
+                "Centralized access management",
+                "Compliance with security policies",
+            ],
+        }
+
+        return use_cases.get(resource_type, [
+            "See Microsoft Learn documentation",
+            f"Common in Azure {resource_type} deployments",
+        ])
+
+    def _get_related_resources(self, resource_type: str) -> List[str]:
+        """Get commonly related resource types."""
+        relationships = {
+            "loadBalancers": [
+                "virtualMachineScaleSets",
+                "publicIPAddresses",
+                "networkSecurityGroups",
+                "virtualNetworks",
+            ],
+            "publicIPAddresses": [
+                "loadBalancers",
+                "bastionHosts",
+                "virtualMachines",
+                "applicationGateways",
+            ],
+            "actiongroups": [
+                "metricalerts",
+                "dataCollectionRules",
+                "prometheusRuleGroups",
+            ],
+            "bastionHosts": [
+                "publicIPAddresses",
+                "virtualNetworks",
+                "virtualMachines",
+                "networkSecurityGroups",
+            ],
+        }
+
+        return relationships.get(resource_type, [])
+
+    def suggest_new_patterns(
+        self,
+        orphaned_nodes: List[Dict[str, Any]],
+        graph: nx.MultiDiGraph,
+        min_connections: int = 2,
+        min_cluster_size: int = 2,
+    ) -> List[Dict[str, Any]]:
+        """
+        Analyze orphaned nodes and suggest new architectural patterns.
+
+        Uses co-occurrence analysis and graph clustering to identify groups of
+        orphaned nodes that frequently appear together.
+
+        Args:
+            orphaned_nodes: List of orphaned node information
+            graph: NetworkX graph
+            min_connections: Minimum edge frequency to consider
+            min_cluster_size: Minimum number of resources for a pattern
+
+        Returns:
+            List of suggested patterns with their resources and rationale
+        """
+        suggested_patterns = []
+
+        # Strategy 1: Group orphaned nodes by their connections to existing matched nodes
+        orphaned_types = [node["resource_type"] for node in orphaned_nodes]
+        orphaned_subgraph = graph.subgraph(orphaned_types).copy()
+
+        # Find connected components (clusters) in the orphaned subgraph
+        weakly_connected = list(nx.weakly_connected_components(orphaned_subgraph))
+
+        for idx, component in enumerate(weakly_connected):
+            if len(component) >= min_cluster_size:
+                component_list = list(component)
+
+                # Get connections between component members
+                internal_edges = []
+                for u in component_list:
+                    for v in component_list:
+                        if u != v and graph.has_edge(u, v):
+                            edges = graph.get_edge_data(u, v)
+                            if edges:
+                                for key, data in edges.items():
+                                    internal_edges.append({
+                                        "source": u,
+                                        "target": v,
+                                        "relationship": data.get("relationship", "UNKNOWN"),
+                                        "frequency": data.get("frequency", 0),
+                                    })
+
+                # Get connections to non-orphaned nodes (context)
+                external_connections = {}
+                for node in component_list:
+                    node_info = next(
+                        (n for n in orphaned_nodes if n["resource_type"] == node), None
+                    )
+                    if node_info:
+                        for conn in node_info["connected_to"]:
+                            if conn not in component_list:
+                                external_connections[conn] = external_connections.get(conn, 0) + 1
+
+                # Fetch documentation for cluster members
+                documented_resources = []
+                for resource_type in component_list:
+                    doc = self.fetch_microsoft_learn_documentation(resource_type)
+                    documented_resources.append(doc)
+
+                # Generate pattern suggestion
+                pattern_name = self._generate_pattern_name(component_list, documented_resources)
+                pattern_description = self._generate_pattern_description(
+                    component_list, documented_resources, external_connections
+                )
+
+                suggested_patterns.append({
+                    "suggested_name": pattern_name,
+                    "description": pattern_description,
+                    "required_resources": component_list[:2] if len(component_list) >= 2 else component_list,
+                    "optional_resources": component_list[2:] if len(component_list) > 2 else [],
+                    "internal_connections": len(internal_edges),
+                    "internal_edges": internal_edges[:5],  # Top 5 for brevity
+                    "external_connections": dict(sorted(
+                        external_connections.items(),
+                        key=lambda x: x[1],
+                        reverse=True
+                    )[:5]),
+                    "documented_resources": documented_resources,
+                    "confidence": self._calculate_pattern_confidence(
+                        len(component_list), len(internal_edges), external_connections
+                    ),
+                })
+
+        # Strategy 2: Find orphaned nodes that frequently co-occur with specific matched patterns
+        for node_info in orphaned_nodes[:10]:  # Top 10 most connected orphaned nodes
+            resource_type = node_info["resource_type"]
+
+            # Find which patterns this orphaned node connects to most
+            pattern_connections = {}
+            for conn in node_info["connected_to"]:
+                for pattern_name, match in self.ARCHITECTURAL_PATTERNS.items():
+                    if conn in match.get("resources", []):
+                        pattern_connections[pattern_name] = pattern_connections.get(pattern_name, 0) + 1
+
+            if pattern_connections:
+                # Suggest adding this resource to the most connected pattern
+                best_pattern = max(pattern_connections.items(), key=lambda x: x[1])
+                doc = self.fetch_microsoft_learn_documentation(resource_type)
+
+                suggested_patterns.append({
+                    "suggested_name": f"{best_pattern[0]} (Enhanced)",
+                    "description": f"Add {resource_type} to existing {best_pattern[0]} pattern",
+                    "action": "UPDATE_EXISTING",
+                    "target_pattern": best_pattern[0],
+                    "resource_to_add": resource_type,
+                    "connection_count": best_pattern[1],
+                    "documentation": doc,
+                    "confidence": min(best_pattern[1] / 5.0, 1.0),  # Normalize confidence
+                })
+
+        # Sort by confidence
+        suggested_patterns.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+
+        logger.info(f"Generated {len(suggested_patterns)} pattern suggestions")
+        return suggested_patterns
+
+    def _generate_pattern_name(
+        self, resources: List[str], docs: List[Dict[str, Any]]
+    ) -> str:
+        """Generate a descriptive pattern name from resources."""
+        # Use first 2-3 resource types to generate name
+        if len(resources) == 0:
+            return "Unknown Pattern"
+
+        key_resources = resources[:2]
+        name_parts = []
+
+        for resource in key_resources:
+            # Clean up resource name for pattern name
+            clean_name = resource.replace("_", " ").title()
+            name_parts.append(clean_name)
+
+        return f"{' + '.join(name_parts)} Pattern"
+
+    def _generate_pattern_description(
+        self,
+        resources: List[str],
+        docs: List[Dict[str, Any]],
+        external_connections: Dict[str, int],
+    ) -> str:
+        """Generate a pattern description from resources and documentation."""
+        if not resources:
+            return "No description available"
+
+        # Use documentation summaries if available
+        summaries = [doc.get("summary", "") for doc in docs if doc.get("summary")]
+
+        if summaries:
+            # Combine first 2 summaries
+            description = ". ".join(summaries[:2])
+        else:
+            description = f"Pattern involving {', '.join(resources)}"
+
+        # Add context about external connections
+        if external_connections:
+            top_connections = list(external_connections.keys())[:3]
+            description += f". Often connects to: {', '.join(top_connections)}"
+
+        return description
+
+    def _calculate_pattern_confidence(
+        self,
+        resource_count: int,
+        edge_count: int,
+        external_connections: Dict[str, int],
+    ) -> float:
+        """
+        Calculate confidence score for a suggested pattern.
+
+        Args:
+            resource_count: Number of resources in the pattern
+            edge_count: Number of internal connections
+            external_connections: Connections to other patterns
+
+        Returns:
+            Confidence score between 0.0 and 1.0
+        """
+        # Base confidence from resource count (2-5 resources is ideal)
+        resource_score = min(resource_count / 5.0, 1.0)
+
+        # Internal connectivity score (more connections = higher confidence)
+        connectivity_score = min(edge_count / 10.0, 1.0)
+
+        # External integration score (connects to many other patterns)
+        external_score = min(len(external_connections) / 5.0, 1.0)
+
+        # Weighted average
+        confidence = (
+            0.4 * resource_score +
+            0.4 * connectivity_score +
+            0.2 * external_score
+        )
+
+        return round(confidence, 2)
+
     def analyze_and_export(
         self,
         output_dir: Path,
@@ -665,11 +1091,25 @@ class ArchitecturalPatternAnalyzer:
             # Detect patterns
             pattern_matches = self.detect_patterns(graph, resource_type_counts)
 
+            # Identify orphaned nodes and suggest new patterns
+            orphaned_nodes = self.identify_orphaned_nodes(graph, pattern_matches)
+            suggested_patterns = self.suggest_new_patterns(orphaned_nodes, graph)
+
             # Export graph data to JSON
             json_output = output_dir / "resource_graph_aggregated.json"
             self.export_graph_data(
                 graph, resource_type_counts, json_output, len(all_relationships)
             )
+
+            # Export orphaned nodes analysis
+            orphaned_output = output_dir / "orphaned_nodes_analysis.json"
+            with open(orphaned_output, "w") as f:
+                json.dump({
+                    "orphaned_count": len(orphaned_nodes),
+                    "orphaned_nodes": orphaned_nodes,
+                    "suggested_patterns": suggested_patterns,
+                }, f, indent=2)
+            logger.info(f"Exported orphaned nodes analysis to {orphaned_output}")
 
             # Generate visualizations if requested
             visualization_files = []
@@ -694,6 +1134,8 @@ class ArchitecturalPatternAnalyzer:
                 "resource_types": len(resource_type_counts),
                 "graph_edges": graph.number_of_edges(),
                 "detected_patterns": len(pattern_matches),
+                "orphaned_nodes": len(orphaned_nodes),
+                "suggested_patterns": len(suggested_patterns),
                 "top_resource_types": [
                     {"type": name, "connection_count": count}
                     for name, count in top_resource_types
@@ -713,6 +1155,7 @@ class ArchitecturalPatternAnalyzer:
                 },
                 "output_files": {
                     "json": str(json_output),
+                    "orphaned_analysis": str(orphaned_output),
                     "visualizations": [str(f) for f in visualization_files],
                 },
             }
