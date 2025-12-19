@@ -37,6 +37,13 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
     ) -> Optional[Tuple[str, str, Dict[str, Any]]]:
         """Convert Log Analytics Workspace to Terraform configuration."""
         resource_name = resource.get("name", "unknown")
+
+        # Skip Azure-managed workspaces (auto-created by App Insights, AKS, etc.)
+        # These have names starting with "managed-" or "DefaultWorkspace-" or containing system GUIDs
+        if resource_name.startswith("managed-") or resource_name.startswith("DefaultWorkspace-"):
+            logger.debug(f"Skipping Azure-managed Log Analytics Workspace: {resource_name}")
+            return None
+
         safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 
