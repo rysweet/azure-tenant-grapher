@@ -34,9 +34,7 @@ def categorize_item(item: dict) -> str:
         return "test"
     if any(kw in text for kw in ["document", "docs", "readme", "comment", "explain"]):
         return "documentation"
-    if any(
-        kw in text for kw in ["refactor", "clean", "improve", "optimize", "restructure"]
-    ):
+    if any(kw in text for kw in ["refactor", "clean", "improve", "optimize", "restructure"]):
         return "refactor"
     if any(kw in text for kw in ["add", "implement", "create", "new", "feature"]):
         return "feature"
@@ -50,12 +48,8 @@ def extract_technical_signals(item: dict) -> Dict[str, bool]:
 
     return {
         "has_api_changes": any(kw in text for kw in ["api", "endpoint", "route"]),
-        "has_db_changes": any(
-            kw in text for kw in ["database", "db", "schema", "migration"]
-        ),
-        "has_ui_changes": any(
-            kw in text for kw in ["ui", "interface", "frontend", "view"]
-        ),
+        "has_db_changes": any(kw in text for kw in ["database", "db", "schema", "migration"]),
+        "has_ui_changes": any(kw in text for kw in ["ui", "interface", "frontend", "view"]),
         "mentions_testing": any(kw in text for kw in ["test", "coverage", "verify"]),
         "mentions_security": any(
             kw in text for kw in ["security", "auth", "permission", "encryption"]
@@ -157,10 +151,7 @@ def calculate_scores(item: dict, config: dict, all_items: List[dict]) -> dict:
 
     # Total weighted score
     total_score = (
-        priority_score * 0.40
-        + blocking_score * 0.30
-        + ease_score * 0.20
-        + goal_score * 0.10
+        priority_score * 0.40 + blocking_score * 0.30 + ease_score * 0.20 + goal_score * 0.10
     ) * 100
 
     return {
@@ -256,9 +247,7 @@ def analyze_backlog(project_root: Path, max_recommendations: int = 3) -> dict:
         # Check dependencies
         deps = detect_dependencies(item, items)
         unmet_deps = [
-            dep
-            for dep in deps
-            if any(i["id"] == dep and i.get("status") != "DONE" for i in items)
+            dep for dep in deps if any(i["id"] == dep and i.get("status") != "DONE" for i in items)
         ]
 
         if unmet_deps:
@@ -308,17 +297,12 @@ def analyze_backlog(project_root: Path, max_recommendations: int = 3) -> dict:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Analyze backlog and generate recommendations"
-    )
+    parser = argparse.ArgumentParser(description="Analyze backlog and generate recommendations")
     parser.add_argument(
         "--project-root", type=Path, default=Path.cwd(), help="Project root directory"
     )
     parser.add_argument(
-        "--max-recommendations",
-        type=int,
-        default=3,
-        help="Maximum recommendations to return",
+        "--max-recommendations", type=int, default=3, help="Maximum recommendations to return"
     )
 
     args = parser.parse_args()

@@ -20,9 +20,7 @@ class TestContextManagementOrchestrator:
     @pytest.fixture
     def orchestrator(self, temp_snapshot_dir):
         """Create orchestrator with temp directory."""
-        return ContextManagementOrchestrator(
-            snapshot_dir=temp_snapshot_dir, max_tokens=1_000_000
-        )
+        return ContextManagementOrchestrator(snapshot_dir=temp_snapshot_dir, max_tokens=1_000_000)
 
     @pytest.fixture
     def sample_conversation(self):
@@ -38,9 +36,7 @@ class TestContextManagementOrchestrator:
 
     def test_initialization(self, temp_snapshot_dir):
         """Test orchestrator initializes components correctly."""
-        orch = ContextManagementOrchestrator(
-            snapshot_dir=temp_snapshot_dir, max_tokens=500_000
-        )
+        orch = ContextManagementOrchestrator(snapshot_dir=temp_snapshot_dir, max_tokens=500_000)
 
         assert orch.monitor is not None
         assert orch.extractor is not None
@@ -84,9 +80,7 @@ class TestContextManagementOrchestrator:
 
     def test_handle_snapshot_without_name(self, orchestrator, sample_conversation):
         """Test 'snapshot' action without custom name."""
-        result = orchestrator.handle_action(
-            "snapshot", conversation_data=sample_conversation
-        )
+        result = orchestrator.handle_action("snapshot", conversation_data=sample_conversation)
 
         assert result["status"] == "success"
         assert result["snapshot"]["name"] is None
@@ -182,9 +176,7 @@ class TestContextManagementOrchestrator:
 
         # Create snapshot based on recommendation
         snapshot_result = orchestrator.handle_action(
-            "snapshot",
-            conversation_data=sample_conversation,
-            name="high-usage-snapshot",
+            "snapshot", conversation_data=sample_conversation, name="high-usage-snapshot"
         )
         assert snapshot_result["status"] == "success"
 

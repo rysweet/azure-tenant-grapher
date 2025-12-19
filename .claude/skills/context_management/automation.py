@@ -18,6 +18,7 @@ try:
         ContextExtractor,
         ContextRehydrator,
         TokenMonitor,
+        check_status,
     )
 except ImportError:
     # Fallback for when running from hooks
@@ -113,9 +114,9 @@ class ContextAutomation:
         elif percentage < 55:
             check_every = 10  # Warming up - occasional checks
         elif percentage < 70:
-            check_every = 3  # Close to threshold - frequent checks
+            check_every = 3   # Close to threshold - frequent checks
         else:
-            check_every = 1  # Critical zone - check every time
+            check_every = 1   # Critical zone - check every time
 
         # Skip if not time to check yet
         if tool_count % check_every != 0:
@@ -171,9 +172,7 @@ class ContextAutomation:
 
         return False
 
-    def _auto_snapshot(
-        self, threshold: str, conversation_data: list, current_tokens: int
-    ) -> bool:
+    def _auto_snapshot(self, threshold: str, conversation_data: list, current_tokens: int) -> bool:
         """Create automatic snapshot at threshold.
 
         Args:
@@ -222,9 +221,7 @@ class ContextAutomation:
         # Find most recent snapshot
         snapshots = self.state.get("snapshots_created", [])
         if not snapshots:
-            result["warnings"].append(
-                "⚠️  Compaction detected but no snapshots available"
-            )
+            result["warnings"].append("⚠️  Compaction detected but no snapshots available")
             return
 
         # Get most recent snapshot
@@ -249,7 +246,7 @@ class ContextAutomation:
 
         try:
             # Rehydrate context
-            self.rehydrator.rehydrate(snapshot_path, level)
+            rehydrated = self.rehydrator.rehydrate(snapshot_path, level)
 
             result["actions_taken"].append(f"auto_rehydrated_at_{level}_level")
             result["warnings"].append(
