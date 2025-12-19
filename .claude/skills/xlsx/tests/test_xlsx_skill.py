@@ -69,9 +69,7 @@ class TestLevel1SkillLoad:
         skill_file = SKILL_DIR / "SKILL.md"
         content = skill_file.read_text()
 
-        assert content.startswith("---"), (
-            "SKILL.md missing YAML frontmatter start delimiter"
-        )
+        assert content.startswith("---"), "SKILL.md missing YAML frontmatter start delimiter"
 
         # Find the closing ---
         lines = content.split("\n")
@@ -99,9 +97,7 @@ class TestLevel1SkillLoad:
 
         # Verify required fields
         assert "name" in metadata, "YAML missing 'name' field"
-        assert metadata["name"] == "xlsx", (
-            f"Expected name 'xlsx', got '{metadata['name']}'"
-        )
+        assert metadata["name"] == "xlsx", f"Expected name 'xlsx', got '{metadata['name']}'"
         assert "description" in metadata, "YAML missing 'description' field"
         assert "license" in metadata, "YAML missing 'license' field"
 
@@ -160,9 +156,7 @@ class TestLevel2Dependencies:
 
     def test_openpyxl_installed(self):
         """Check if openpyxl is installed."""
-        assert HAS_OPENPYXL, (
-            "openpyxl is not installed. Install with: pip install openpyxl"
-        )
+        assert HAS_OPENPYXL, "openpyxl is not installed. Install with: pip install openpyxl"
 
     def test_libreoffice_available(self):
         """Check if LibreOffice is available."""
@@ -173,9 +167,7 @@ class TestLevel2Dependencies:
 
     def test_python_version(self):
         """Verify Python version is 3.8+."""
-        assert sys.version_info >= (3, 8), (
-            f"Python 3.8+ required, got {sys.version_info}"
-        )
+        assert sys.version_info >= (3, 8), f"Python 3.8+ required, got {sys.version_info}"
 
     @pytest.mark.skipif(not HAS_PANDAS, reason="pandas not installed")
     def test_pandas_version(self):
@@ -191,9 +183,7 @@ class TestLevel2Dependencies:
         import openpyxl
 
         version = tuple(map(int, openpyxl.__version__.split(".")[:2]))
-        assert version >= (3, 0), (
-            f"openpyxl 3.0.0+ required, got {openpyxl.__version__}"
-        )
+        assert version >= (3, 0), f"openpyxl 3.0.0+ required, got {openpyxl.__version__}"
 
 
 # ============================================================================
@@ -201,9 +191,7 @@ class TestLevel2Dependencies:
 # ============================================================================
 
 
-@pytest.mark.skipif(
-    not (HAS_PANDAS and HAS_OPENPYXL), reason="pandas and openpyxl required"
-)
+@pytest.mark.skipif(not (HAS_PANDAS and HAS_OPENPYXL), reason="pandas and openpyxl required")
 class TestLevel3BasicFunctionality:
     """Level 3: Test basic XLSX operations."""
 
@@ -299,9 +287,7 @@ class TestLevel3BasicFunctionality:
             # Read back
             df2 = pd.read_excel(tmp_path)
             assert len(df2) == 3, "Failed to read correct number of rows"
-            assert list(df2.columns) == ["Name", "Age", "Salary"], (
-                "Failed to read correct columns"
-            )
+            assert list(df2.columns) == ["Name", "Age", "Salary"], "Failed to read correct columns"
             assert df2["Name"].tolist() == ["Alice", "Bob", "Charlie"], (
                 "Failed to read correct data"
             )
@@ -365,9 +351,7 @@ class TestLevel3BasicFunctionality:
             output = json.loads(result.stdout)
             assert "status" in output, "recalc.py output missing 'status' field"
             assert output["status"] == "success", f"recalc.py reported errors: {output}"
-            assert output["total_errors"] == 0, (
-                f"Expected 0 errors, got {output['total_errors']}"
-            )
+            assert output["total_errors"] == 0, f"Expected 0 errors, got {output['total_errors']}"
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -377,9 +361,7 @@ class TestLevel3BasicFunctionality:
 # ============================================================================
 
 
-@pytest.mark.skipif(
-    not (HAS_PANDAS and HAS_OPENPYXL), reason="pandas and openpyxl required"
-)
+@pytest.mark.skipif(not (HAS_PANDAS and HAS_OPENPYXL), reason="pandas and openpyxl required")
 class TestLevel4Integration:
     """Level 4: Test realistic usage scenarios."""
 
@@ -638,9 +620,7 @@ def test_summary(capsys):
         print("  Install dependencies: pip install pandas openpyxl")
 
     if not HAS_LIBREOFFICE:
-        print(
-            "\n⚠ Formula recalculation tests will be skipped (LibreOffice not found)."
-        )
+        print("\n⚠ Formula recalculation tests will be skipped (LibreOffice not found).")
         print("  See DEPENDENCIES.md for LibreOffice installation instructions.")
 
     if HAS_PANDAS and HAS_OPENPYXL and HAS_LIBREOFFICE:

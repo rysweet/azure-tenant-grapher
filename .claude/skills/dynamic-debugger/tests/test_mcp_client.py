@@ -51,9 +51,7 @@ class MCPClient:
         # Send initialized notification
         self.send_notification("notifications/initialized")
 
-    def send_request(
-        self, method: str, params: Optional[Dict] = None
-    ) -> Dict[str, Any]:
+    def send_request(self, method: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """Send JSON-RPC 2.0 request to MCP server.
 
         Args:
@@ -206,9 +204,7 @@ def test_mcp_debugging_tools():
 
         # Test 4: Continue execution (should hit breakpoint)
         print("\n[Test 4] Continuing execution to breakpoint...")
-        continue_response = client.call_tool(
-            tool_name="continue_execution", arguments={}
-        )
+        continue_response = client.call_tool(tool_name="continue_execution", arguments={})
         print(f"  Response: {json.dumps(continue_response, indent=2)[:300]}...")
 
         # Test 5: Evaluate variable
@@ -219,9 +215,7 @@ def test_mcp_debugging_tools():
         print(f"  Response: {json.dumps(eval_response, indent=2)[:300]}...")
 
         if "result" in eval_response:
-            value = (
-                eval_response.get("result", {}).get("content", [{}])[0].get("text", "")
-            )
+            value = eval_response.get("result", {}).get("content", [{}])[0].get("text", "")
             print(f"  ✅ Evaluation result: {value}")
         else:
             print(f"  ⚠️  Evaluate response: {eval_response}")

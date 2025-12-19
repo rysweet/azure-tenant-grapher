@@ -126,11 +126,7 @@ def check_system_command(command: str) -> bool:
             timeout=5,
         )
         return True
-    except (
-        subprocess.CalledProcessError,
-        FileNotFoundError,
-        subprocess.TimeoutExpired,
-    ):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
 
@@ -148,9 +144,7 @@ def check_dependencies():
 def test_required_python_dependencies():
     """Test that required Python packages are available."""
     for package in PYTHON_PACKAGES_REQUIRED:
-        assert check_python_package(package), (
-            f"Required package {package} not installed"
-        )
+        assert check_python_package(package), f"Required package {package} not installed"
 
 
 @pytest.mark.skipif(
@@ -160,9 +154,7 @@ def test_required_python_dependencies():
 def test_required_system_dependencies():
     """Test that required system commands are available."""
     for command in SYSTEM_COMMANDS_REQUIRED:
-        assert check_system_command(command), (
-            f"Required command {command} not installed"
-        )
+        assert check_system_command(command), f"Required command {command} not installed"
 
 
 def test_optional_dependencies_status():
@@ -260,10 +252,7 @@ def test_pandoc_basic_functionality():
         # Convert markdown to DOCX
         output_path = tmp_path.replace(".md", ".docx")
         result = subprocess.run(
-            ["pandoc", tmp_path, "-o", output_path],
-            capture_output=True,
-            text=True,
-            timeout=10,
+            ["pandoc", tmp_path, "-o", output_path], capture_output=True, text=True, timeout=10
         )
 
         assert result.returncode == 0, f"Pandoc conversion failed: {result.stderr}"
@@ -287,9 +276,7 @@ def test_soffice_basic_functionality():
     import subprocess
 
     # Just verify soffice can report version
-    result = subprocess.run(
-        ["soffice", "--version"], capture_output=True, text=True, timeout=5
-    )
+    result = subprocess.run(["soffice", "--version"], capture_output=True, text=True, timeout=5)
 
     assert result.returncode == 0, "soffice --version failed"
     assert "libreoffice" in result.stdout.lower(), "Output should mention LibreOffice"
@@ -319,15 +306,11 @@ def test_ooxml_xml_manipulation():
     # Test XML traversal
     text_nodes = doc.getElementsByTagName("w:t")
     assert len(text_nodes) == 1, "Should have 1 text node"
-    assert text_nodes[0].firstChild.nodeValue == "Hello World", (
-        "Text should be 'Hello World'"
-    )
+    assert text_nodes[0].firstChild.nodeValue == "Hello World", "Text should be 'Hello World'"
 
     # Test XML modification
     text_nodes[0].firstChild.nodeValue = "Modified Text"
-    assert text_nodes[0].firstChild.nodeValue == "Modified Text", (
-        "Text should be modified"
-    )
+    assert text_nodes[0].firstChild.nodeValue == "Modified Text", "Text should be modified"
 
     # Test XML serialization
     xml_bytes = doc.toxml(encoding="UTF-8")
@@ -371,16 +354,12 @@ def test_tracked_changes_xml_structure():
     # Verify deletion structure
     deletions = doc.getElementsByTagName("w:del")
     assert len(deletions) == 1, "Should have 1 deletion"
-    assert deletions[0].getAttribute("w:author") == "Reviewer", (
-        "Deletion should have author"
-    )
+    assert deletions[0].getAttribute("w:author") == "Reviewer", "Deletion should have author"
 
     # Verify insertion structure
     insertions = doc.getElementsByTagName("w:ins")
     assert len(insertions) == 1, "Should have 1 insertion"
-    assert insertions[0].getAttribute("w:author") == "Reviewer", (
-        "Insertion should have author"
-    )
+    assert insertions[0].getAttribute("w:author") == "Reviewer", "Insertion should have author"
 
     # Verify deleted text
     del_text_nodes = doc.getElementsByTagName("w:delText")
@@ -440,9 +419,9 @@ def print_dependency_report():
 
     print("\n" + "=" * 60)
 
-    all_required = all(
-        check_python_package(pkg) for pkg in PYTHON_PACKAGES_REQUIRED
-    ) and all(check_system_command(cmd) for cmd in SYSTEM_COMMANDS_REQUIRED)
+    all_required = all(check_python_package(pkg) for pkg in PYTHON_PACKAGES_REQUIRED) and all(
+        check_system_command(cmd) for cmd in SYSTEM_COMMANDS_REQUIRED
+    )
 
     if all_required:
         print("✓ DOCX skill is ready to use (core functionality)")

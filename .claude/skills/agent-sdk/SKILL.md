@@ -72,7 +72,7 @@ npm install @anthropics/agent-sdk
 Set your API key as an environment variable:
 
 ```bash
-export ANTHROPIC_API_KEY="your-api-key-here"  # pragma: allowlist secret
+export ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
 Or pass it explicitly in code:
