@@ -53,8 +53,8 @@ class ServiceBusNamespaceHandler(ResourceHandler):
             config["capacity"] = sku.get("capacity", 1) if isinstance(sku, dict) else 1
 
         # Premium features
-        if properties.get("zoneRedundant"):
-            config["zone_redundant"] = True
+        # REMOVED: zone_redundant is deprecated in azurerm provider v4+
+        # Zone redundancy is now automatically enabled for Premium SKU
         if properties.get("premiumMessagingPartitions"):
             config["premium_messaging_partitions"] = properties.get(
                 "premiumMessagingPartitions"

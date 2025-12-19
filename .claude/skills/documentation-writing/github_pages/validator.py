@@ -224,10 +224,7 @@ def validate_clarity(site_dir: Path) -> ClarityResult:
     # Weight: nav 20%, headings 30%, links 20%, structure 30%
     nav_score = 100 if nav_depth <= 3 else max(0, 100 - (nav_depth - 3) * 20)
     clarity_score = (
-        nav_score * 0.2
-        + heading_score * 0.3
-        + link_quality_score * 0.2
-        + structure_score * 0.3
+        nav_score * 0.2 + heading_score * 0.3 + link_quality_score * 0.2 + structure_score * 0.3
     )
 
     return ClarityResult(
@@ -357,15 +354,11 @@ def _analyze_navigation_depth(nav_structure: dict | list) -> int:
     if isinstance(nav_structure, dict):
         if not nav_structure:
             return 0
-        return 1 + max(
-            (_analyze_navigation_depth(v) for v in nav_structure.values()), default=0
-        )
+        return 1 + max((_analyze_navigation_depth(v) for v in nav_structure.values()), default=0)
     if isinstance(nav_structure, list):
         if not nav_structure:
             return 0
-        return max(
-            (_analyze_navigation_depth(item) for item in nav_structure), default=0
-        )
+        return max((_analyze_navigation_depth(item) for item in nav_structure), default=0)
     return 0
 
 

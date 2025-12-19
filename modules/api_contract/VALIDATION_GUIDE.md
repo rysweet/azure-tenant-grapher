@@ -148,7 +148,7 @@ import requests
 import time
 
 API_BASE = "http://localhost:4010/v1"
-API_KEY = "test-key"
+API_KEY = "test-key" <!-- pragma: allowlist secret -->
 
 def test_scan_workflow():
     """Test complete scan workflow"""

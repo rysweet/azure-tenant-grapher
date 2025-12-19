@@ -106,9 +106,7 @@ def check_source_drift(source: dict) -> dict:
         }
 
     current_hash = generate_hash(content)
-    has_drifted = current_hash != stored_hash and not stored_hash.startswith(
-        "placeholder"
-    )
+    has_drifted = current_hash != stored_hash and not stored_hash.startswith("placeholder")
 
     # Handle placeholder hashes (first run)
     if stored_hash.startswith("placeholder"):
@@ -284,9 +282,7 @@ Examples:
     )
 
     parser.add_argument(
-        "--update",
-        action="store_true",
-        help="Update metadata with new hashes after checking",
+        "--update", action="store_true", help="Update metadata with new hashes after checking"
     )
 
     parser.add_argument(
@@ -313,17 +309,12 @@ Examples:
     # Update metadata if requested
     if args.update:
         if results["error_count"] == results["total_sources"]:
-            print(
-                "Error: Cannot update hashes - all sources failed to fetch",
-                file=sys.stderr,
-            )
+            print("Error: Cannot update hashes - all sources failed to fetch", file=sys.stderr)
             sys.exit(1)
 
         update_metadata_hashes(args.metadata, results)
         print(f"✓ Metadata updated: {args.metadata}")
-        print(
-            f"  Updated {results['total_sources'] - results['error_count']} source hashes"
-        )
+        print(f"  Updated {results['total_sources'] - results['error_count']} source hashes")
 
     # Exit code:
     # 0 = no drift, all ok

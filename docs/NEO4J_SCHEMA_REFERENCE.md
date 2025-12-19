@@ -1051,7 +1051,7 @@ RETURN r.name, subnet.name, nsg.name
 
 ## Related Documentation
 
-- [Architecture Improvements](ARCHITECTURE_IMPROVEMENTS.md) - System architecture and design patterns
+- Architecture Improvements (see architecture/ directory) - System architecture and design patterns
 - [IaC Subset & Rules System](design/iac_subset_bicep.md) - IaC generation and transformation rules
 - [CLAUDE.md](../CLAUDE.md) - Development guide and project overview
 - [README.md](../README.md) - Project overview and quick start

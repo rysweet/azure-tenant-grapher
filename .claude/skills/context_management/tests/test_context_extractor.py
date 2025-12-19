@@ -85,11 +85,7 @@ class TestContextExtractor:
         context = {
             "original_requirements": "Build an API",
             "key_decisions": [
-                {
-                    "decision": "Use FastAPI",
-                    "rationale": "Speed",
-                    "alternatives": "Flask",
-                }
+                {"decision": "Use FastAPI", "rationale": "Speed", "alternatives": "Flask"}
             ],
             "implementation_state": "In progress",
             "open_items": ["Add tests"],
@@ -161,9 +157,7 @@ class TestContextExtractor:
         """Test token count estimation in snapshot."""
         context = {
             "original_requirements": "A" * 400,  # ~100 tokens
-            "key_decisions": [
-                {"decision": "B" * 400, "rationale": "", "alternatives": ""}
-            ],
+            "key_decisions": [{"decision": "B" * 400, "rationale": "", "alternatives": ""}],
             "implementation_state": "C" * 400,
             "open_items": ["D" * 400],
             "tools_used": [],
@@ -176,9 +170,7 @@ class TestContextExtractor:
             # Should estimate roughly (400*4)/4 = 400 tokens
             assert data["token_count"] > 0
 
-    def test_extract_from_conversation_comprehensive(
-        self, extractor, sample_conversation
-    ):
+    def test_extract_from_conversation_comprehensive(self, extractor, sample_conversation):
         """Test complete extraction produces all expected fields."""
         context = extractor.extract_from_conversation(sample_conversation)
 

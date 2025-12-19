@@ -550,5 +550,5 @@ jobs:
 ## See Also
 
 - [Neo4j Graph Schema Reference](../NEO4J_SCHEMA_REFERENCE.md) - Understanding the underlying data model
-- [Agent Mode Guide](./AGENT_MODE_GUIDE.md) - Natural language queries
-- [IaC Generation Guide](./IAC_GENERATION_GUIDE.md) - Infrastructure as Code workflows
+- [Agent Mode Guide](../command-help/report-help-text.md) - Natural language queries
+- [IaC Generation Guide](../quickstart/quick-start.md) - Infrastructure as Code workflows

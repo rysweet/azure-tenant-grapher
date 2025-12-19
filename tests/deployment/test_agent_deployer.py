@@ -9,7 +9,6 @@ Testing Strategy:
 - 10% E2E tests (full CLI integration)
 """
 
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -199,9 +198,7 @@ class TestDeploymentLoop:
         mock_deploy_iac.assert_called_once()
 
     @patch("src.deployment.agent_deployer.deploy_iac")
-    async def test_multiple_iterations_with_recovery(
-        self, mock_deploy_iac
-    ):
+    async def test_multiple_iterations_with_recovery(self, mock_deploy_iac):
         """Test deployment fails first, then succeeds after error analysis."""
         # First call fails, second call succeeds
         mock_deploy_iac.side_effect = [
@@ -251,9 +248,11 @@ class TestDeploymentLoop:
     @patch("src.deployment.agent_deployer.deploy_iac")
     async def test_timeout_handling(self, mock_deploy_iac):
         """Test deployment timeout handling."""
+
         # Mock slow deployment that times out
         def slow_deploy(*args, **kwargs):
             import time
+
             time.sleep(10)  # Longer than timeout
             return {"status": "deployed"}
 
@@ -337,9 +336,7 @@ class TestErrorHandling:
         assert "az provider register" in call_args or "provider" in call_args
 
     @patch("src.deployment.agent_deployer.deploy_iac")
-    async def test_unknown_error_logged_but_not_crash(
-        self, mock_deploy_iac
-    ):
+    async def test_unknown_error_logged_but_not_crash(self, mock_deploy_iac):
         """Test unknown errors are logged but don't crash the agent."""
         # Unknown error type
         mock_deploy_iac.side_effect = [
@@ -364,9 +361,7 @@ class TestAIAnalysisIntegration:
     """Test AI error analysis integration."""
 
     @patch("src.deployment.agent_deployer.deploy_iac")
-    async def test_ai_analysis_invoked_on_error(
-        self, mock_deploy_iac
-    ):
+    async def test_ai_analysis_invoked_on_error(self, mock_deploy_iac):
         """Test AI analysis is invoked when deployment fails."""
         mock_deploy_iac.side_effect = [
             RuntimeError("Deployment failed"),
@@ -387,9 +382,7 @@ class TestAIAnalysisIntegration:
         assert "Deployment failed" in result.error_log[0]["message"]
 
     @patch("src.deployment.agent_deployer.deploy_iac")
-    async def test_analysis_continues_on_max_iterations(
-        self, mock_deploy_iac
-    ):
+    async def test_analysis_continues_on_max_iterations(self, mock_deploy_iac):
         """Test analysis handles max iterations gracefully."""
         mock_deploy_iac.side_effect = RuntimeError("Deployment failed")
 
@@ -432,9 +425,7 @@ class TestDeploymentResult:
             success=False,
             iteration_count=5,
             final_status="max_iterations_reached",
-            error_log=[
-                {"iteration": i, "error": f"Error {i}"} for i in range(1, 6)
-            ],
+            error_log=[{"iteration": i, "error": f"Error {i}"} for i in range(1, 6)],
             deployment_output=None,
         )
 
@@ -454,7 +445,9 @@ class TestCLIIntegration:
     """Test CLI integration with agent deployer."""
 
     @patch("src.commands.deploy.AgentDeployer")
-    def test_cli_agent_flag_routes_to_agent_deployer(self, mock_agent_deployer, tmp_path):
+    def test_cli_agent_flag_routes_to_agent_deployer(
+        self, mock_agent_deployer, tmp_path
+    ):
         """Test --agent flag routes to AgentDeployer."""
         from click.testing import CliRunner
 
@@ -629,7 +622,9 @@ class TestCLIIntegration:
                 success=False,
                 iteration_count=5,
                 final_status="max_iterations_reached",
-                error_log=[{"iteration": i, "error": f"Error {i}"} for i in range(1, 6)],
+                error_log=[
+                    {"iteration": i, "error": f"Error {i}"} for i in range(1, 6)
+                ],
                 deployment_output=None,
             )
         )
@@ -650,4 +645,7 @@ class TestCLIIntegration:
         )
 
         assert result.exit_code != 0
-        assert "failed" in result.output.lower() or "max_iterations" in result.output.lower()
+        assert (
+            "failed" in result.output.lower()
+            or "max_iterations" in result.output.lower()
+        )

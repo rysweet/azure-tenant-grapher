@@ -130,7 +130,7 @@ Note: Height (`-H 1080`) is a suggestion. Mermaid auto-calculates actual height 
 ```markdown
 ## Architecture Overview
 
-![Dual-Graph Architecture](docs/diagrams/dual-graph-architecture.png)
+![Dual-Graph Architecture]
 
 The system uses a dual-graph architecture...
 ```
@@ -153,7 +153,7 @@ layout: page
 title: Scale Operations Architecture
 ---
 
-![Architecture](./diagrams/dual-graph-architecture.png)
+![Architecture]
 ```
 
 ---

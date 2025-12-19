@@ -79,7 +79,7 @@ python scripts/cli.py generate-iac \
   --output ./output/replica-deployment
 ```
 
-**Note**: The subset-filtering flags (`--subset-filter`, `--dest-rg`, `--location`) are part of the planned enhancement described in [`docs/design/iac_subset_bicep.md`](../design/iac_subset_bicep.md). Currently, the [`--rules-file`](../../src/iac/engine.py:29) functionality works with the existing full-graph generation.
+**Note**: The subset-filtering flags (`--subset-filter`, `--dest-rg`, `--location`) are part of the planned enhancement described in [`docs/design/iac_subset_bicep.md`](../design/iac_subset_bicep.md). Currently, the [`--rules-file`](../../src/iac/engine.py) functionality works with the existing full-graph generation.
 
 ## Step 3: Expected Output Structure
 

@@ -126,6 +126,8 @@ class DataCollectionRuleHandler(ResourceHandler):
 
     def _normalize_resource_id(self, resource_id: str) -> str:
         """Normalize resource ID casing."""
+        import re
+
         # Fix common provider casing issues
         normalizations = [
             ("microsoft.operationalinsights", "Microsoft.OperationalInsights"),
@@ -133,9 +135,12 @@ class DataCollectionRuleHandler(ResourceHandler):
         ]
         for old, new in normalizations:
             if old in resource_id.lower():
-                import re
-
                 resource_id = re.sub(old, new, resource_id, flags=re.IGNORECASE)
+
+        # Fix resource type casing issues (Azure returns "Workspaces", Terraform expects "workspaces")
+        # Example: /providers/Microsoft.OperationalInsights/Workspaces/name -> workspaces
+        resource_id = re.sub(r'/Workspaces/', '/workspaces/', resource_id)
+
         return resource_id
 
     def _workspace_exists_in_graph(

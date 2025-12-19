@@ -59,7 +59,7 @@ RETURN count(r) as without_original_id
 - `with_original_id`: Should equal total resource count
 - `without_original_id`: Should be 0
 
-**If relationships missing:** Your scan was performed before Bug #117 fix. See [SCAN_SOURCE_NODE Migration Guide](scan-source-node-migration.md).
+**If relationships missing:** Your scan was performed before Bug #117 fix. See [SCAN_SOURCE_NODE Migration Guide](../architecture/scan-source-node-relationships.md).
 
 **Fix:**
 ```bash
@@ -67,7 +67,7 @@ RETURN count(r) as without_original_id
 uv run atg scan --tenant-id YOUR_TENANT_ID
 
 # Option 2: Migrate existing layer (if re-scan not possible)
-# See migration guide: docs/guides/scan-source-node-migration.md
+# See migration guide: docs/guides/../architecture/scan-source-node-relationships.md
 ```
 
 ### Cause 2: Query Missing original_id Field
@@ -492,5 +492,5 @@ Include in bug report:
 
 - **[Bug #10 Documentation](../BUG_10_DOCUMENTATION.md)** - Child resource import fix
 - **[Import-First Strategy](../patterns/IMPORT_FIRST_STRATEGY.md)** - Why imports matter
-- **[SCAN_SOURCE_NODE Migration](scan-source-node-migration.md)** - Fix missing relationships
+- **[SCAN_SOURCE_NODE Migration](../architecture/scan-source-node-relationships.md)** - Fix missing relationships
 - **[Dual Graph Schema](../DUAL_GRAPH_SCHEMA.md)** - Architecture details

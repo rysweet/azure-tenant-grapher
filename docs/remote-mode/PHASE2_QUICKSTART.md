@@ -79,7 +79,7 @@ curl -X POST http://localhost:8000/api/v1/generate-iac \
 
 **JavaScript Example:**
 ```javascript
-const apiKey = "atg_dev_YOUR_API_KEY_HERE";
+const apiKey = "atg_dev_YOUR_API_KEY_HERE"; <!-- pragma: allowlist secret -->
 const jobId = "scan-a1b2c3d4";
 const ws = new WebSocket(`ws://localhost:8000/ws/progress/${jobId}?api_key=${apiKey}`);
 
@@ -158,7 +158,7 @@ ATG_SERVER_PORT=8000
 ATG_SERVER_WORKERS=4
 
 # Authentication
-ATG_API_KEYS="atg_dev_key1,atg_dev_key2"  # Comma-separated
+ATG_API_KEYS="atg_dev_key1,atg_dev_key2"  # Comma-separated <!-- pragma: allowlist secret -->
 
 # Target Tenant
 ATG_TARGET_TENANT_ID=12345678-1234-1234-1234-123456789abc
@@ -185,7 +185,7 @@ NEO4J_INTEGRATION_POOL_SIZE=30
 ### Valid Request
 ```bash
 # Generate API key for testing (in dev mode)
-API_KEY="atg_dev_$(openssl rand -hex 32)"
+API_KEY="atg_dev_$(openssl rand -hex 32)" <!-- pragma: allowlist secret -->
 
 # Make authenticated request
 curl -X POST http://localhost:8000/api/v1/scan \

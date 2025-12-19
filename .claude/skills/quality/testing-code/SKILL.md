@@ -194,7 +194,7 @@ def test_user_registration_flow():
     # Act: Register user
     response = api.register({
         "email": "test@example.com",
-        "password": "SecurePass123!",  # pragma: allowlist secret  # pragma: allowlist secret
+        "password": "SecurePass123!",
     })
 
     # Assert: User created and email sent

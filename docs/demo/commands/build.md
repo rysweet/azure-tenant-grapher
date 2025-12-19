@@ -55,4 +55,4 @@ You can start the container with 'python scripts/cli.py container' or 'docker-co
 - For troubleshooting, see logs in the outputs/ directory (default) or use `--log-level DEBUG`.
 - If you see a Neo4j connection error, ensure the database is running (see above).
 
-[Back to Command Index](README.md)
+[Back to Command Index]

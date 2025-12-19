@@ -42,6 +42,22 @@ class ContainerRegistryHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
+        # Container Registry names must be globally unique (*.azurecr.io)
+        # Add tenant suffix for cross-tenant deployments
+        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+            original_name = config["name"].replace("-", "").lower()
+
+            # Truncate to fit (50 - 6 = 44 chars for original)
+            if len(original_name) > 44:
+                original_name = original_name[:44]
+
+            config["name"] = f"{original_name}{tenant_suffix}"
+            logger.info(
+                f"Container Registry name updated for cross-tenant deployment: "
+                f"{resource_name} -> {config['name']}"
+            )
+
         # SKU (required)
         sku = properties.get("sku", {})
         sku_name = sku.get("name", "Basic") if isinstance(sku, dict) else "Basic"

@@ -18,7 +18,7 @@ uv run atg monitor
 
 Example output (compact format, default):
 ```
-[23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
+23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
 ```
 
 ### Watch Mode
@@ -31,9 +31,9 @@ uv run atg monitor --watch
 
 Example output:
 ```
-[23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
-[23:46:06] Resources=1708 Relationships=5698 ResourceGroups=185 Types=47
-[23:46:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
+23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
+23:46:06] Resources=1708 Relationships=5698 ResourceGroups=185 Types=47
+23:46:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
 ...
 ```
 
@@ -57,7 +57,7 @@ uv run atg monitor --subscription-id 9b00bc5e-9abc-45de-9958-02a9d9277b16
 
 Example output:
 ```
-[23:45:36] Resources=487 Relationships=1624 ResourceGroups=42 Types=28
+23:45:36] Resources=487 Relationships=1624 ResourceGroups=42 Types=28
 ```
 
 Watch mode with subscription filter:
@@ -79,12 +79,12 @@ uv run atg monitor --watch --detect-stabilization
 
 Example output:
 ```
-[23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
-[23:46:06] Resources=1708 Relationships=5698 ResourceGroups=185 Types=47
-[23:46:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
-[23:47:06] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
-[23:47:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
-[23:48:06] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49 (stable)
+23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
+23:46:06] Resources=1708 Relationships=5698 ResourceGroups=185 Types=47
+23:46:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
+23:47:06] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
+23:47:36] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49
+23:48:06] Resources=1742 Relationships=5782 ResourceGroups=188 Types=49 (stable)
 
 ✅ Database has stabilized (threshold: 3 identical checks)
 ```
@@ -111,7 +111,7 @@ uv run atg monitor --format compact
 
 Output:
 ```
-[23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
+23:45:36] Resources=1674 Relationships=5614 ResourceGroups=182 Types=45
 ```
 
 ### JSON Format
@@ -238,7 +238,7 @@ Retrying in 5 seconds...
 If the subscription ID doesn't exist, you'll get zero counts:
 
 ```
-[23:45:36] Resources=0 Relationships=0 ResourceGroups=0 Types=0
+23:45:36] Resources=0 Relationships=0 ResourceGroups=0 Types=0
 ```
 
 ## Integration with Other Commands
@@ -351,10 +351,10 @@ driver = GraphDatabase.driver(uri, auth=('neo4j', password))
 with driver.session() as session:
     source = session.run(
         "MATCH (r:Resource) WHERE r.subscription_id = '9b00bc5e-9abc-45de-9958-02a9d9277b16' RETURN count(r) as count"
-    ).single()['count']
+    ).single()'count']
 
 driver.close()
-print(f'[{datetime.now().strftime("%H:%M:%S")}] Source={source}')
+print(f'{datetime.now().strftime("%H:%M:%S")}] Source={source}')
 ```
 
 **Problems:**
@@ -392,6 +392,6 @@ Potential future additions:
 
 ## See Also
 
-- [CLI Documentation](../README.md)
-- [Graph Visualization](VISUALIZATION.md)
-- [Build Command](BUILD_COMMAND.md)
+- CLI Documentation](../README.md)
+- Graph Visualization
+- Build Command
