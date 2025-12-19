@@ -98,20 +98,47 @@ class LogAnalyticsSolutionHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # Solution name
-        config["solution_name"] = resource_name
+        # Remove 'name' field - azurerm_log_analytics_solution doesn't support it
+        # Solution uses solution_name and workspace_name instead
+        if "name" in config:
+            del config["name"]
+
+        # Extract solution name and workspace name from resource name
+        # Format: "SolutionName(WorkspaceName)" e.g., "SecurityInsights(MyWorkspace)"
+        if "(" in resource_name and ")" in resource_name:
+            solution_name = resource_name.split("(")[0]
+            workspace_name = resource_name.split("(")[1].rstrip(")")
+            config["solution_name"] = solution_name
+            config["workspace_name"] = workspace_name
+        else:
+            config["solution_name"] = resource_name
+            # Try to extract workspace name from workspace_resource_id
+            workspace_id = properties.get("workspaceResourceId", "")
+            if workspace_id and "/workspaces/" in workspace_id:
+                workspace_name = workspace_id.split("/workspaces/")[-1]
+                config["workspace_name"] = workspace_name
+            else:
+                logger.warning(f"Cannot determine workspace_name for solution '{resource_name}', skipping")
+                return None
 
         # Workspace resource ID
         workspace_id = properties.get("workspaceResourceId")
         if workspace_id:
             config["workspace_resource_id"] = workspace_id
 
-        # Plan
+        # Plan - REQUIRED
         plan = properties.get("plan", {})
         if plan:
-            config["plan"] = {
+            plan_config = {
                 "publisher": plan.get("publisher", "Microsoft"),
-                "product": plan.get("product", "OMSGallery"),
+                "product": plan.get("product", f"OMSGallery/{config['solution_name']}"),
+            }
+            config["plan"] = plan_config
+        else:
+            # Default plan for common solutions
+            config["plan"] = {
+                "publisher": "Microsoft",
+                "product": f"OMSGallery/{config['solution_name']}",
             }
 
         logger.debug(f"Log Analytics Solution '{resource_name}' emitted")

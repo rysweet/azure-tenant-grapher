@@ -42,6 +42,10 @@ class MetricAlertHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
+        # Remove location - metric alerts are global resources and don't support location field
+        if "location" in config:
+            del config["location"]
+
         # Scopes (required)
         scopes = properties.get("scopes", [])
         if scopes:
@@ -62,10 +66,20 @@ class MetricAlertHandler(ResourceHandler):
             if all_of:
                 criteria_config = []
                 for criterion in all_of:
+                    # Skip criteria with missing required fields
+                    metric_namespace = criterion.get("metricNamespace")
+                    metric_name = criterion.get("metricName")
+                    if not metric_namespace or not metric_name:
+                        logger.warning(
+                            f"Skipping metric alert criterion with empty namespace or name: "
+                            f"namespace='{metric_namespace}', name='{metric_name}'"
+                        )
+                        continue
+
                     criteria_config.append(
                         {
-                            "metric_namespace": criterion.get("metricNamespace", ""),
-                            "metric_name": criterion.get("metricName", ""),
+                            "metric_namespace": metric_namespace,
+                            "metric_name": metric_name,
                             "aggregation": criterion.get("timeAggregation", "Average"),
                             "operator": criterion.get("operator", "GreaterThan"),
                             "threshold": criterion.get("threshold", 0),
@@ -73,6 +87,10 @@ class MetricAlertHandler(ResourceHandler):
                     )
                 if criteria_config:
                     config["criteria"] = criteria_config
+                else:
+                    # No valid criteria - cannot create metric alert without criteria
+                    logger.warning(f"Metric alert '{resource_name}' has no valid criteria, skipping")
+                    return None
 
         logger.debug(f"Metric Alert '{resource_name}' emitted")
 

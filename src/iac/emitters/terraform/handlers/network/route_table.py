@@ -42,10 +42,12 @@ class RouteTableHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # Disable BGP route propagation
+        # BGP route propagation
+        # Updated for azurerm provider v4+: renamed from disable_bgp_route_propagation to bgp_route_propagation_enabled
         disable_bgp = properties.get("disableBgpRoutePropagation")
         if disable_bgp is not None:
-            config["disable_bgp_route_propagation"] = disable_bgp
+            # Invert the logic: disableBgpRoutePropagation=true means bgp_route_propagation_enabled=false
+            config["bgp_route_propagation_enabled"] = not disable_bgp
 
         logger.debug(f"Route Table '{resource_name}' emitted")
 
