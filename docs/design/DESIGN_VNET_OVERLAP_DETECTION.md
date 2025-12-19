@@ -1546,12 +1546,12 @@ Azure Tenant Grapher automatically detects overlapping VNet address spaces durin
 - **Non-blocking**: IaC generation continues even with conflicts
 - **Auto-fix option**: Automatically renumber conflicting VNets
 
-See [VNet Overlap Detection Guide](docs/vnet-overlap-detection.md) for details.
+See design documentation for VNet overlap detection details.
 ```
 
 ### 3. New Documentation File
 
-Create `docs/vnet-overlap-detection.md` with:
+Create VNet overlap detection guide with:
 - Overview of the feature
 - Examples of warnings
 - How to interpret conflicts

@@ -1,109 +1,290 @@
 # Azure Tenant Grapher - Documentation Index
 
-## Issue #610: Autonomous Deployment with Goal-Seeking Agent
+> **Note:** This is the comprehensive documentation index. For the MkDocs homepage, see [index.md](index.md).
 
-### Overview
-- **[AUTONOMOUS_DEPLOYMENT_INDEX.md](AUTONOMOUS_DEPLOYMENT_INDEX.md)** ⭐ - **COMPLETE**: Comprehensive documentation index for autonomous deployment feature. AI-powered goal-seeking agent automatically recovers from deployment errors through iterative fix-and-retry cycles.
+## Quick Start
 
-### User Documentation
-- **[Tutorial: Your First Autonomous Deployment](quickstart/AGENT_DEPLOYMENT_TUTORIAL.md)** - 15-minute step-by-step walkthrough with real examples from IaC generation to deployed resources
-- **[Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md)** - Complete user guide covering all command-line options, usage scenarios, and best practices
-- **[Autonomous Deployment FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Frequently asked questions about agent mode, troubleshooting, and configuration
-- **[Agent vs Manual Deployment](guides/AGENT_VS_MANUAL_DEPLOYMENT.md)** - Decision guide comparing agent mode and manual deployment with real-world scenarios
+### Getting Started
+- **[Installation Guide](quickstart/installation.md)** - Set up Azure Tenant Grapher in minutes
+- **[Quick Start Guide](quickstart/quick-start.md)** - Your first scan and IaC generation
+- **[Scale Operations](quickstart/scale-operations.md)** - Working with layers and managing graph data
 
-### Technical Documentation
-- **[Agent Deployer Reference](design/AGENT_DEPLOYER_REFERENCE.md)** - Complete technical specification including architecture, API reference, testing strategy, and performance considerations
+### Tutorials
+- **[Your First Autonomous Deployment](quickstart/AGENT_DEPLOYMENT_TUTORIAL.md)** ⭐ - 15-minute walkthrough with AI-powered deployment
+- **[Autonomous Deployment Quick Reference](quickstart/AUTONOMOUS_DEPLOYMENT_QUICK_REF.md)** - Commands and concepts at a glance
+- **[Terraform Import Quick Reference](quickstart/terraform-import-quick-ref.md)** - Import existing resources
+- **[SCAN_SOURCE_NODE Quick Reference](quickstart/scan-source-node-quick-ref.md)** - Essential queries and examples
+- **[Web App Mode](quickstart/web-app-mode.md)** - Run ATG as a web application
 
-### Key Features
-- AI-powered autonomous error recovery (Claude SDK AutoMode)
-- Iterative deployment loop (max 5 iterations, 300s timeout)
-- Comprehensive deployment reports with full iteration history
-- Works with all IaC formats (Terraform, Bicep, ARM)
-- Automatic fixes for: provider registration, SKU availability, network conflicts, naming collisions
+## User Guides
 
-## Issue #570: SCAN_SOURCE_NODE Preservation Fix
+### Deployment & Operations
+- **[Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md)** ⭐ - Complete guide to AI-powered deployment
+- **[Autonomous Deployment FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Common questions and troubleshooting
+- **[Agent vs Manual Deployment](guides/AGENT_VS_MANUAL_DEPLOYMENT.md)** - Decision guide with scenarios
+- **[Layer Management Quickstart](guides/LAYER_MANAGEMENT_QUICKSTART.md)** - Working with graph layers
+- **[Tenant Inventory Reports](guides/TENANT_INVENTORY_REPORTS.md)** - Generate comprehensive tenant reports
+- **[Terraform Import Troubleshooting](guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md)** - Debug missing or broken import blocks
+- **[SCAN_SOURCE_NODE Migration Guide](guides/scan-source-node-migration.md)** - Migrate legacy layers
 
-### Fix Summary
-- **[SCAN_SOURCE_NODE_FIX_SUMMARY.md](SCAN_SOURCE_NODE_FIX_SUMMARY.md)** ⭐ - **FIX DEPLOYED**: Layer operations now preserve SCAN_SOURCE_NODE relationships, resolving deployment blocker (900+ false positives eliminated). Includes technical details, migration paths, and complete documentation index.
+## Architecture & Concepts
 
-## Issue #502: Tenant Replication Improvements
+### Core Architecture
+- **[Architecture Overview](architecture/README.md)** - System design and components
+- **[Dual-Graph Architecture](architecture/dual-graph.md)** - Original vs abstracted nodes
+- **[SCAN_SOURCE_NODE Relationships](architecture/scan-source-node-relationships.md)** - Why these relationships are critical
+- **[Multi-Layer Graph Architecture](architecture/MULTI_LAYER_GRAPH_ARCHITECTURE.md)** - Layer system design
+- **[Architecture Flow](architecture/ARCHITECTURE_FLOW.md)** - Data flow through the system
+- **[Layer Architecture Summary](architecture/LAYER_ARCHITECTURE_SUMMARY.md)** - Layer implementation details
+- **[Layer CLI Specification](architecture/LAYER_CLI_SPECIFICATION.md)** - Command-line interface for layers
+- **[Layer CLI Implementation](architecture/LAYER_CLI_IMPLEMENTATION.md)** - Implementation guide
+- **[Layer Query Patterns](architecture/LAYER_QUERY_PATTERNS.md)** - Common Cypher queries
+- **[Layer Service Interfaces](architecture/LAYER_SERVICE_INTERFACES.md)** - Service layer APIs
+- **[Layer Implementation Checklist](architecture/LAYER_IMPLEMENTATION_CHECKLIST.md)** - Implementation verification
+- **[CLI Commands](architecture/CLI_COMMANDS.md)** - Command reference
 
-### Deployment Status
-- **[ISSUE_502_DEPLOYMENT_READY.md](ISSUE_502_DEPLOYMENT_READY.md)** ⭐ - **DEPLOYMENT READY**: Terraform validation complete (0 errors), 1,268 import blocks verified, 99.3% resource support achieved. Awaiting Azure credential refresh.
+### Key Concepts
+- **[Terraform Import Blocks](concepts/TERRAFORM_IMPORT_BLOCKS.md)** ⭐ - How ATG generates import blocks
+- **[Import-First Strategy](patterns/IMPORT_FIRST_STRATEGY.md)** - Why import before create
 
-### Deployment Guide
-- **[TENANT_REPLICATION_DEPLOYMENT_GUIDE.md](TENANT_REPLICATION_DEPLOYMENT_GUIDE.md)** - Complete deployment guide for Issue #502 and 16 bug fixes. Covers overview, step-by-step deployment, expected results, troubleshooting, and rollback procedures.
+## Design Documentation
 
-### Bug Documentation (Terraform Validation - November 27, 2025)
-- **[BUG_87_DOCUMENTATION.md](BUG_87_DOCUMENTATION.md)** ⭐ - Smart Detector Alert Rules location field fix. Impact: Fixed 72 terraform validation errors. Result: Part of achieving 0 configuration errors.
-- **[BUG_88_DOCUMENTATION.md](BUG_88_DOCUMENTATION.md)** ⭐ - Action group resource ID case sensitivity fix. Impact: Fixed ALL remaining 72 terraform errors. Result: 0 total configuration errors!
+### Feature Designs
+- **[Design Overview](design/README.md)** - Design documentation index
+- **[Agent Deployer Reference](design/AGENT_DEPLOYER_REFERENCE.md)** ⭐ - Technical spec for autonomous deployment
+- **[Configuration System Quick Start](design/CONFIG_QUICK_START.md)** - ATG configuration overview
+- **[Configuration System Design](design/CONFIG_SYSTEM_DESIGN.md)** - Complete config architecture
+- **[Scale Operations Architecture Diagram](design/SCALE_OPERATIONS_ARCHITECTURE_DIAGRAM.md)** - Visual architecture
+- **[Scale Operations UI Design](design/SCALE_OPERATIONS_UI_DESIGN.md)** - User interface design
+- **[Scale Operations UI Mockups](design/SCALE_OPERATIONS_UI_MOCKUPS.md)** - UI wireframes
+- **[Scale Operations UI Summary](design/SCALE_OPERATIONS_UI_SUMMARY.md)** - UI implementation overview
+- **[SPA Architecture](design/SPA_ARCHITECTURE.md)** - Single-page application design
+- **[SPA Requirements](design/SPA_REQUIREMENTS.md)** - Application requirements
+- **[Design Summary](design/DESIGN_SUMMARY.md)** - Overall design principles
+- **[Graph Enrichment Plan](design/GRAPH_ENRICHMENT_PLAN.md)** - Graph enhancement strategy
+- **[VNet Overlap Detection](design/DESIGN_VNET_OVERLAP_DETECTION.md)** - Network conflict detection
+- **[Dataplane Plugin Architecture](DATAPLANE_PLUGIN_ARCHITECTURE.md)** - Plugin system design
+- **[Dataplane Builder Quickstart](DATAPLANE_BUILDER_QUICKSTART.md)** - Build dataplane plugins
+- **[Azure MCP Integration](design/azure_mcp_integration.md)** - Model Context Protocol integration
+- **[Azure MCP Integration Research](design/azure_mcp_integration_research.md)** - Research findings
+- **[Resource Processing Efficiency](design/resource_processing_efficiency.md)** - Performance optimizations
 
-### Technical Documentation
-- **[BUG_59_DOCUMENTATION.md](BUG_59_DOCUMENTATION.md)** - Deep dive: Subscription ID abstraction in properties
-- **[BUG_68_DOCUMENTATION.md](BUG_68_DOCUMENTATION.md)** - Deep dive: Provider name case sensitivity fix
+### Cross-Tenant Features
+- **[Cross-Tenant Translation Integration](design/cross-tenant-translation/INTEGRATION_SUMMARY.md)** - Complete cross-tenant feature summary
+- **[Cross-Tenant Phase 5 Complete](design/cross-tenant-translation/PHASE5_INTEGRATION_COMPLETE.md)** - Final implementation status
 
-## Iteration 8 Session (November 23, 2025)
+### Special Topics
+- **[Azure MCP Integration](azure-mcp-integration.md)** - MCP server integration
+- **[Graph Abstraction](graph-abstraction/README.md)** - ID abstraction system
 
-### Session Reports
-- **[ITERATION_8_RESULTS.md](ITERATION_8_RESULTS.md)** - Complete session report with metrics and timeline
-- **[deployment_summary.md](deployment_summary.md)** - Quick reference summary
+## Technical Reference
 
-### Technical Documentation
-- **[BUG_59_DOCUMENTATION.md](BUG_59_DOCUMENTATION.md)** - Deep dive on subscription ID abstraction fix (root cause)
-- **[DEPLOYMENT_TROUBLESHOOTING.md](DEPLOYMENT_TROUBLESHOOTING.md)** - Common issues and solutions
+### Database & Schema
+- **[Neo4j Schema Reference](NEO4J_SCHEMA_REFERENCE.md)** ⭐ - Complete graph database schema
+- **[Dual-Graph Index](DUAL_GRAPH_INDEX.md)** - Dual-graph documentation hub
+- **[Dual-Graph Schema](DUAL_GRAPH_SCHEMA.md)** - Detailed schema specification
+- **[Dual-Graph Queries](DUAL_GRAPH_QUERIES.cypher)** - Query cookbook with 100+ examples
+- **[Fidelity Tracking](FIDELITY_TRACKING.md)** - Resource property completeness tracking
+- **[Synthetic Node Visualization](SYNTHETIC_NODE_VISUALIZATION.md)** - Visualizing synthetic nodes
+- **[Synthetic Node Quick Reference](SYNTHETIC_NODE_QUICK_REFERENCE.md)** - Working with synthetic data
 
-### Quick Start Guides
-- **[QUICK_START_ITERATION_9.md](QUICK_START_ITERATION_9.md)** - Resume deployment after auth refresh
+### Scale Operations
+- **[Scale Operations](SCALE_OPERATIONS.md)** ⭐ - Layer operations and management
+- **[Scale Operations Diagrams](SCALE_OPERATIONS_DIAGRAMS.md)** - Visual diagrams
+- **[Scale Operations E2E Demonstration](SCALE_OPERATIONS_E2E_DEMONSTRATION.md)** - End-to-end examples
+- **[Scale Operations E2E Findings](SCALE_OPERATIONS_E2E_FINDINGS.md)** - Testing results
+- **[Scale Operations Bug Fixes](SCALE_OPERATIONS_BUG_FIXES.md)** - Known issues and fixes
+- **[Scale Operations UI Code Review](SCALE_OPERATIONS_UI_CODE_REVIEW.md)** - UI implementation review
+- **[Scale Config Reference](SCALE_CONFIG_REFERENCE.md)** - Configuration options
+- **[Scale Performance Guide](SCALE_PERFORMANCE_GUIDE.md)** - Performance optimization
 
-### Scripts
-- `/tmp/RESUME_DEPLOYMENT.sh` - Automated deployment resume script
+### Performance
+- **[Performance Optimizations](performance/optimizations.md)** - System performance tuning
 
-## Bug Fixes
+## Security
 
-### December 18, 2025
-- **[Bug #10](BUG_10_DOCUMENTATION.md)** ⭐ - Child resources missing import blocks. Impact: Fixed 110/177 missing import blocks (from 37.9% to 100% coverage). Uses dual-graph original_id instead of config reconstruction.
+- **[Security Overview](security/SECURITY.md)** - Security guidelines and best practices
+- **[Security Review](security/SECURITY_REVIEW_FINAL.md)** - Final security assessment
+- **[ATG Client-Server Security Design](security/ATG_CLIENT_SERVER_SECURITY_DESIGN.md)** - Security architecture
+- **[Security Subprocess Guidelines](SECURITY_SUBPROCESS_GUIDELINES.md)** - Safe subprocess execution
 
-### November 23, 2025
-- **Bug #59**: Subscription ID abstraction (ROOT CAUSE) - commit faeb284
-- **Bug #58**: Skip NIC NSG validation - commit 7651fde
-- **Bug #57**: NIC NSG deprecated field - commit 2011688
+## Testing
 
-## Key Achievements
+### Test Strategy
+- **[Scale Operations Testing Complete](testing/scale-operations-complete.md)** - Scale operations test completion report
+- **[Test Specification Table](testing/TEST_SPECIFICATION_TABLE.md)** - Complete test coverage matrix
+- **[Final Test Specification](testing/final_test_spec.md)** - Final test plan
+- **[Test Fix Summary](testing/TEST_FIX_SUMMARY.md)** - Test suite improvements
+- **[TDD Quickstart](TDD_QUICKSTART.md)** - Test-driven development guide
+- **[TDD Test Strategy Tech Debt](TDD_TEST_STRATEGY_TECH_DEBT.md)** - Testing tech debt analysis
+- **[TDD Test Suite Issue #296](TDD_TEST_SUITE_ISSUE_296.md)** - Test suite implementation
+- **[TDD Test Descriptions Issue #296](TDD_TEST_DESCRIPTIONS_ISSUE_296.md)** - Test descriptions
 
-### Terraform Validation
-| Metric | Value |
-|--------|-------|
-| Starting Errors | 6,457 |
-| Final Errors | **0** ✅ |
-| Iterations | 8 |
-| Bug Fixes | 3 |
+### Agentic Testing
+- **[Agentic Testing Design](agentic-testing/DESIGN.md)** - AI-powered test generation
+- **[Agentic Testing Requirements](agentic-testing/REQUIREMENTS.md)** - Requirements and goals
+- **[Agentic Testing Validation](agentic-testing/VALIDATION.md)** - Validation approach
+- **[Scale Operations Agentic Testing](testing/SCALE_OPERATIONS_AGENTIC_TESTING.md)** - Layer testing with AI
+- **[Agent Mode Test Implementation](testing/AGENT_MODE_TEST_IMPLEMENTATION.md)** - Test implementation details
+- **[PR Test Plan](testing/PR_TEST_PLAN.md)** - Pull request testing strategy
+- **[Test Tenant Specification](testing/test_tenant_spec.md)** - Test tenant setup
 
-### Deployment
-- **Resources Planned**: 3,569
-- **Validation Success**: 100%
-- **Architecture Validated**: Dual-graph abstraction works end-to-end
+## Web Application
 
-## Architecture Documentation
+- **[Web App Mode Summary](web-app/summary.md)** - Web application overview
+- **[Azure Bastion Connection Guide](AZURE_BASTION_CONNECTION_GUIDE.md)** - Remote access via Azure Bastion
 
-### Dual-Graph Architecture
-- **[architecture/scan-source-node-relationships.md](architecture/scan-source-node-relationships.md)** - SCAN_SOURCE_NODE relationship preservation in layer operations (Bug #117 fix). Explains why these relationships are critical for IaC generation and smart import validation.
-- **[guides/scan-source-node-migration.md](guides/scan-source-node-migration.md)** - Migration guide for layers and archives created before Bug #117 fix. Includes detection, migration paths, and verification steps.
-- **[quickstart/scan-source-node-quick-ref.md](quickstart/scan-source-node-quick-ref.md)** - Quick reference for developers: essential queries, Python API examples, common mistakes, and debugging checklist.
+## Command Reference
 
-### Terraform Import Blocks
-- **[concepts/TERRAFORM_IMPORT_BLOCKS.md](concepts/TERRAFORM_IMPORT_BLOCKS.md)** ⭐ - **START HERE**: User-friendly explanation of Terraform import blocks, how ATG generates them, and why they matter. Covers parent vs child resources, cross-tenant translation, and common questions.
-- **[guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md](guides/TERRAFORM_IMPORT_TROUBLESHOOTING.md)** ⭐ - Complete troubleshooting guide for missing or broken Terraform import blocks. Covers verification, diagnostics, and fixes for all common issues.
-- **[quickstart/terraform-import-quick-ref.md](quickstart/terraform-import-quick-ref.md)** - Quick reference: commands, one-liners, and common fixes for import blocks.
-- **[patterns/IMPORT_FIRST_STRATEGY.md](patterns/IMPORT_FIRST_STRATEGY.md)** - Why "import first, create second" eliminates deployment conflicts.
+- **[Demo Commands Overview](demo/overview.md)** - Command demonstrations
+- **[Demo Commands Index](demo/commands/README.md)** - All command examples
+- **[Report Help Text](command-help/report-help-text.md)** - Report command usage
+- **[Report Implementation Reference](command-help/report-implementation-reference.md)** - Report implementation details
+- **[Monitor Command](MONITOR_COMMAND.md)** - Real-time monitoring
+
+### Individual Command Demos
+- **[Build Command](demo/commands/build.md)** - Graph building
+- **[Config Command](demo/commands/config.md)** - Configuration management
+- **[Visualize Command](demo/commands/visualize.md)** - Graph visualization
+- **[Spec Command](demo/commands/spec.md)** - Specification generation
+- **[Generate Spec](demo/commands/generate-spec.md)** - Spec generation details
+- **[Generate IaC](demo/commands/generate-iac.md)** - IaC generation details
+- **[Generate Sim Doc](demo/commands/generate-sim-doc.md)** - Simulation documentation
+- **[Threat Model](demo/commands/threat-model.md)** - Threat modeling
+- **[Agent Mode](demo/commands/agent-mode.md)** - AI agent integration
+- **[MCP Server](demo/commands/mcp-server.md)** - MCP server mode
+- **[Create Tenant](demo/commands/create-tenant.md)** - Tenant creation
+- **[Create Tenant Sample](demo/commands/create-tenant-sample.md)** - Sample tenant
+- **[Backup DB](demo/commands/backup-db.md)** - Database backup
+- **[Doctor](demo/commands/doctor.md)** - System diagnostics
+- **[Test](demo/commands/test.md)** - Testing commands
+- **[Subset Bicep Demo](demo/subset_bicep_demo.md)** - Bicep subset generation
+
+## Presentations & Research
+
+### Presentations
+- **[Demo Presentation](demo_presentation.md)** - Product demonstration
+- **[Threat Model Agent Demo](threat_model_agent_demo.md)** - Threat modeling demo
+- **[UI Demo: Cross-Tenant IaC](ui-demo-cross-tenant-iac.md)** - UI walkthrough
+
+### Research
+- **[Azure Lighthouse Evaluation](research/azure_lighthouse_evaluation.md)** - Multi-tenant architecture research
+- **[Azure Lighthouse Hybrid Evaluation](research/azure_lighthouse_hybrid_evaluation.md)** - Hybrid architecture analysis
+- **[Cloud Threat Modelling](resources/CloudThreatModelling.md)** - Threat modeling resources
+
+## Specifications & Analysis
+
+### Bug Documentation
+- **[Bug #10 Documentation](BUG_10_DOCUMENTATION.md)** - Child resource import blocks fix
+- **[Bug #59 Documentation](BUG_59_DOCUMENTATION.md)** - Subscription ID abstraction fix
+- **[Bug #66 Documentation](BUG_66_DOCUMENTATION.md)** - Bug fix details
+- **[Bug #68 Documentation](BUG_68_DOCUMENTATION.md)** - Provider case sensitivity fix
+- **[Bug #87 Documentation](BUG_87_DOCUMENTATION.md)** - Smart Detector location fix
+- **[Bug #88 Documentation](BUG_88_DOCUMENTATION.md)** - Action group resource ID fix
+- **[Bug Association Import Fix](BUG_ASSOCIATION_IMPORT_FIX.md)** - Association import fixes
+- **[KeyVault Name Truncation Fix](KEYVAULT_NAME_TRUNCATION_FIX.md)** - Name truncation handling
+- **[KeyVault Plugin Implementation](KEYVAULT_PLUGIN_IMPLEMENTATION.md)** - Plugin details
+- **[UPN Parentheses Sanitization Fix](UPN_PARENTHESES_SANITIZATION_FIX.md)** - UPN sanitization
+
+### Specifications
+- **[MCP Integration Summary](specs/MCP_INTEGRATION_SUMMARY.md)** - MCP integration details
+- **[Issue #209 Fix Summary](specs/ISSUE_209_FIX_SUMMARY.md)** - Issue resolution
+- **[Issue Hierarchical Spec](specs/ISSUE_HIERARCHICAL_SPEC.md)** - Hierarchical specifications
+- **[Merge Order Recommendation](specs/MERGE_ORDER_RECOMMENDATION.md)** - PR merge strategy
+- **[PR-98 Review Improvements](specs/PR-98-review-improvements.md)** - Review process improvements
+- **[Private DNS Zones Support Complete](specs/PRIVATE_DNS_ZONES_SUPPORT_COMPLETE.md)** - DNS zones implementation
+- **[Private DNS Zones Support Verification](specs/PRIVATE_DNS_ZONES_SUPPORT_VERIFICATION.md)** - Verification results
+- **[Security Fixes](specs/SECURITY_FIXES.md)** - Security improvements
+- **[Timestamp Improvements](specs/TIMESTAMP_IMPROVEMENTS.md)** - Timestamp handling
+
+### Analysis
+- **[Architectural Pattern Analysis](ARCHITECTURAL_PATTERN_ANALYSIS.md)** - Design pattern analysis
+- **[Service Refactoring Analysis](SERVICE_REFACTORING_ANALYSIS.md)** - Refactoring recommendations
+- **[Visualization Alignment Analysis](VISUALIZATION_ALIGNMENT_ANALYSIS.md)** - UI/UX analysis
+- **[Well-Architected Reports](WELL_ARCHITECTED_REPORTS.md)** - Azure Well-Architected Framework assessment
+
+## Diagrams
+
+- **[Diagrams Overview](diagrams/README.md)** - All architecture diagrams
+- **[Diagram Manifest](diagrams/DIAGRAM_MANIFEST.md)** - Diagram inventory
+
+## Development
+
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Development Setup](development/setup.md)** - Developer environment setup
+- **[Timeout Handling](TIMEOUT_HANDLING.md)** - Async timeout patterns
+- **[Gadugi Migration](GADUGI_MIGRATION.md)** - Migration to Gadugi framework
+- **[Cleanup Iteration Resources](cleanup_iteration_resources.md)** - Resource cleanup
+- **[Fix Plan API Versions](fix-plan-api-versions.md)** - API version management
+- **[Implementation Plan: Properties Extraction](implementation-plan-properties-extraction.md)** - Property extraction design
+- **[Workflow](workflow.md)** - Development workflow
+- **[Graph API Setup](GRAPH_API_SETUP.md)** - Microsoft Graph API configuration
+- **[MCP Integration](MCP_INTEGRATION.md)** - Model Context Protocol setup
+
+## Remote Mode
+
+- **[Remote Mode Overview](remote-mode/README.md)** - Remote execution architecture
+- **[Remote Mode User Guide](remote-mode/USER_GUIDE.md)** - Using remote mode
+- **[Remote Mode Configuration](remote-mode/CONFIGURATION.md)** - Configuration options
+- **[Remote Mode Deployment](remote-mode/DEPLOYMENT.md)** - Deployment guide
+- **[Remote Mode API Reference](remote-mode/API_REFERENCE.md)** - API documentation
+- **[Remote Mode Troubleshooting](remote-mode/TROUBLESHOOTING.md)** - Common issues
+- **[Phase 2 Quickstart](remote-mode/PHASE2_QUICKSTART.md)** - Phase 2 features
+
+## Examples
+
+- **[Example Tenant Report](examples/example-tenant-report.md)** - Sample tenant documentation
 
 ## Investigations
 
 ### Issue #591: VM Replication
-- **[investigations/issue-591/README.md](investigations/issue-591/README.md)** ⭐ - Complete investigation timeline covering 10 bugs fixed across multiple sessions
-- **[investigations/issue-591/SESSION_20251218_BUG10_FIX.md](investigations/issue-591/SESSION_20251218_BUG10_FIX.md)** - Session report for Bug #10 fix (child resource import blocks)
-- **[investigations/issue-591/PERMISSION_ISSUE.md](investigations/issue-591/PERMISSION_ISSUE.md)** - Cross-tenant permission issue blocking end-to-end testing
+- **[Investigation README](investigations/issue-591/README.md)** ⭐ - Complete investigation timeline
+- **[Session Report: Bug #10](investigations/issue-591/SESSION_20251218_BUG10_FIX.md)** - Child resource fix session
+- **[Permission Issue](investigations/issue-591/PERMISSION_ISSUE.md)** - Cross-tenant permissions
 
-## See Also
-- `../CLAUDE.md` - Project instructions and context
-- `NEO4J_SCHEMA_REFERENCE.md` - Graph database schema
-- `DUAL_GRAPH_QUERIES.cypher` - Useful queries for dual-graph architecture
+### Final Reports (December 2025)
+- **[Master Achievement Summary](investigations/MASTER_ACHIEVEMENT_SUMMARY_20251201.md)** - Overall achievements
+- **[Final Complete Summary](investigations/FINAL_COMPLETE_SUMMARY_20251201.md)** - Complete final report
+- **[Final Status Report](investigations/FINAL_STATUS_REPORT_20251201.md)** - Final status
+- **[Ultimate Victory Report](investigations/ULTIMATE_VICTORY_REPORT_20251201.md)** - Victory summary
+- **[Role Assignment Investigation](investigations/role_assignment_import_investigation_20251201.md)** - Role assignment deep dive
+
+## Deployment Guides
+
+- **[Tenant Replication Deployment Guide](TENANT_REPLICATION_DEPLOYMENT_GUIDE.md)** ⭐ - Complete deployment guide for Issue #502
+- **[README Section: Autonomous Deployment](README_SECTION_AUTONOMOUS_DEPLOYMENT.md)** - Autonomous deployment for README
+- **[Autonomous Deployment Index](AUTONOMOUS_DEPLOYMENT_INDEX.md)** ⭐ - Complete autonomous deployment documentation
+
+## Visualizations
+
+- **[Dual-Graph Architecture Diagram](DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt)** - ASCII architecture diagram
+- **[Dual-Graph Implementation Example](DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py)** - Python reference implementation
+
+---
+
+## Documentation Conventions
+
+### Priority Indicators
+- ⭐ = Start here / Most important
+- 🔧 = Technical reference
+- 📖 = Conceptual guide
+- 🚀 = Quick start / Tutorial
+
+### Document Status
+- **COMPLETE** = Fully implemented and documented
+- **IN PROGRESS** = Under active development
+- **ARCHIVED** = Historical reference only
+
+### Finding What You Need
+
+1. **First time user?** Start with [Quick Start Guide](quickstart/quick-start.md)
+2. **Want AI deployment?** See [Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md)
+3. **Need architecture details?** Check [Architecture Overview](architecture/README.md)
+4. **Working with graph?** See [Neo4j Schema Reference](NEO4J_SCHEMA_REFERENCE.md)
+5. **Debugging issues?** Check [FAQ](guides/AUTONOMOUS_DEPLOYMENT_FAQ.md) and troubleshooting guides
+
+---
+
+**Last Updated:** 2025-12-18
+**Total Documents:** 174 markdown files
+**Coverage:** 100% (no orphaned documentation)

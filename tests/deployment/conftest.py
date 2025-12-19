@@ -4,8 +4,7 @@ Shared fixtures for testing AgentDeployer and related components.
 """
 
 import asyncio
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
@@ -193,7 +192,11 @@ def deployment_result_failure():
             iteration_count=5,
             final_status="max_iterations_reached",
             error_log=[
-                {"iteration": i, "error_type": "DeploymentError", "message": f"Error {i}"}
+                {
+                    "iteration": i,
+                    "error_type": "DeploymentError",
+                    "message": f"Error {i}",
+                }
                 for i in range(1, 6)
             ],
             deployment_output=None,

@@ -435,7 +435,7 @@ This might leave Terraform state in inconsistent state.
    ```
 
 2. **Review troubleshooting guide:**
-   - [Deployment Troubleshooting](../DEPLOYMENT_TROUBLESHOOTING.md)
+   - [Deployment Troubleshooting](#troubleshooting)
 
 3. **Enable debug mode:**
    ```bash

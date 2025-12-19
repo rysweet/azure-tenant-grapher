@@ -360,7 +360,7 @@ sampled_ids = await scale_down_service.sample_forest_fire(
 
 ## See Also
 
-- [E2E_DEMO_RESULTS.md](../E2E_DEMO_RESULTS.md) - Complete testing results
+- [E2E_DEMO_RESULTS.md](SCALE_OPERATIONS_E2E_DEMONSTRATION.md) - Complete testing results
 - [NEO4J_SCHEMA_REFERENCE.md](NEO4J_SCHEMA_REFERENCE.md) - Graph schema details
 - [Issue #427](https://github.com/rysweet/azure-tenant-grapher/issues/427) - Original feature request
 - [PR #444](https://github.com/rysweet/azure-tenant-grapher/pull/444) - Dual-graph relationship fixes

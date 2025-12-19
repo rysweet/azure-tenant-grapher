@@ -51,7 +51,7 @@ Added new scripts:
 ### 5. Documentation
 
 #### Web App Mode Guide
-**File:** `/spa/docs/WEB_APP_MODE.md`
+**File:** `../../spa/docs/WEB_APP_MODE.md`
 
 Comprehensive guide covering:
 - Quick start instructions
@@ -66,7 +66,7 @@ Comprehensive guide covering:
 - Advanced configurations (systemd, Docker)
 
 #### Azure Bastion Connection Guide
-**File:** `/docs/AZURE_BASTION_CONNECTION_GUIDE.md`
+**File:** `../AZURE_BASTION_CONNECTION_GUIDE.md`
 
 Detailed instructions for:
 - Azure CLI SSH tunnel setup
@@ -80,7 +80,7 @@ Detailed instructions for:
 - Cost considerations
 
 #### Quick Reference
-**File:** `/spa/README_WEB_MODE.md`
+**File:** `../../spa/README.md`
 
 Quick reference for:
 - Mode comparison (Desktop vs Web)
@@ -170,15 +170,15 @@ http://localhost:3000
 ### New Files
 1. `/spa/backend/src/web-server.ts` - Web server entry point
 2. `/spa/config/web-server.config.js` - Configuration file
-3. `/spa/docs/WEB_APP_MODE.md` - Web app mode guide
-4. `/docs/AZURE_BASTION_CONNECTION_GUIDE.md` - Bastion connection guide
-5. `/spa/README_WEB_MODE.md` - Quick reference
+3. `../../spa/docs/WEB_APP_MODE.md` - Web app mode guide
+4. `../AZURE_BASTION_CONNECTION_GUIDE.md` - Bastion connection guide
+5. `../../spa/README.md` - Quick reference
 6. `/spa/.env.example` - Environment template
 
 ### Modified Files
 1. `/spa/package.json` - Added npm scripts
 2. `/spa/backend/src/server.ts` - Enhanced CORS configuration
-3. `/CLAUDE.md` - Updated with web app mode documentation
+3. `../../CLAUDE.md` - Updated with web app mode documentation
 
 ## Architecture
 
@@ -310,11 +310,11 @@ npm run start:web
 
 ## References
 
-- [Web App Mode Guide](/spa/docs/WEB_APP_MODE.md)
-- [Azure Bastion Connection Guide](/docs/AZURE_BASTION_CONNECTION_GUIDE.md)
-- [Main README](/README.md)
-- [Developer Guide (CLAUDE.md)](/CLAUDE.md)
-- [Quick Reference](/spa/README_WEB_MODE.md)
+- [Web App Mode Guide](../../spa/docs/WEB_APP_MODE.md)
+- [Azure Bastion Connection Guide](../AZURE_BASTION_CONNECTION_GUIDE.md)
+- [Main README](../../README.md)
+- [Developer Guide (CLAUDE.md)](../../CLAUDE.md)
+- [Quick Reference](../../spa/README.md)
 
 ## Success Criteria - All Met ✓
 

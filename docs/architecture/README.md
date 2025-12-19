@@ -273,7 +273,7 @@ Before marking implementation complete, verify:
 **Project Documentation**:
 - [CLAUDE.md](/home/azureuser/src/atg/CLAUDE.md) - Project overview
 - [NEO4J_SCHEMA_REFERENCE.md](/home/azureuser/src/atg/docs/NEO4J_SCHEMA_REFERENCE.md) - Current schema
-- [SCALE_OPERATIONS_SPECIFICATION.md](/home/azureuser/src/atg/docs/SCALE_OPERATIONS_SPECIFICATION.md) - Scale operations
+- [SCALE_OPERATIONS_SPECIFICATION.md](../SCALE_OPERATIONS.md) - Scale operations
 
 **Will Need Updates After Implementation**:
 - CLAUDE.md - Add layer concepts

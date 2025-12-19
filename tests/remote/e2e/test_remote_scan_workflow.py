@@ -195,7 +195,9 @@ async def test_cli_to_service_authentication_flow(
 
     # Invalid API key
     invalid_config = ATGClientConfig(
-        remote_mode=True, service_url=running_atg_service, api_key="invalid_key"
+        remote_mode=True,
+        service_url=running_atg_service,
+        api_key="invalid_key",  # pragma: allowlist secret
     )
 
     invalid_client = RemoteClient(invalid_config)

@@ -82,10 +82,10 @@ npm run start:web
 
 ## Full Documentation
 
-- **[Complete Web App Guide](spa/docs/WEB_APP_MODE.md)**
-- **[Azure Bastion Guide](docs/AZURE_BASTION_CONNECTION_GUIDE.md)**
-- **[Summary](WEB_APP_MODE_SUMMARY.md)**
+- **[Complete Web App Guide](../../spa/docs/WEB_APP_MODE.md)**
+- **[Azure Bastion Guide](../AZURE_BASTION_CONNECTION_GUIDE.md)**
+- **[Summary](../web-app/summary.md)**
 
 ## Need Help?
 
-See the comprehensive guides above or check [CLAUDE.md](CLAUDE.md) for development details.
+See the comprehensive guides above or check [../../CLAUDE.md](../../CLAUDE.md) for development details.

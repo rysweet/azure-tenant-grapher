@@ -41,7 +41,7 @@ def test_dispatcher_detects_remote_mode_from_env():
         {
             "ATG_REMOTE_MODE": "true",
             "ATG_SERVICE_URL": "https://atg-dev.example.com",
-            "ATG_API_KEY": "atg_dev_" + "a" * 64,
+            "ATG_API_KEY": "atg_dev_" + "a" * 64,  # pragma: allowlist secret
         },
         clear=True,
     ):
@@ -58,7 +58,7 @@ def test_dispatcher_detects_remote_mode_from_config():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)
@@ -112,7 +112,7 @@ async def test_dispatcher_routes_scan_to_remote():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)
@@ -253,7 +253,7 @@ async def test_dispatcher_forwards_progress_callbacks_remote():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)
@@ -327,7 +327,7 @@ async def test_dispatcher_handles_remote_execution_errors():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)
@@ -353,7 +353,7 @@ async def test_dispatcher_handles_connection_errors():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)
@@ -444,7 +444,7 @@ async def test_dispatcher_can_switch_modes_at_runtime():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher.switch_mode(config)
@@ -461,7 +461,7 @@ async def test_dispatcher_switches_back_to_local_mode():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     dispatcher = ExecutionDispatcher(config=config)  # Start in remote mode
@@ -505,7 +505,7 @@ def test_dispatcher_validates_service_url_format():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="invalid-url",  # Not valid HTTPS URL
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
     )
 
     with pytest.raises(ConfigurationError) as exc_info:
@@ -530,7 +530,7 @@ async def test_dispatcher_respects_timeout_for_remote_operations():
     config = ATGClientConfig(
         remote_mode=True,
         service_url="https://atg-dev.example.com",
-        api_key="atg_dev_" + "a" * 64,
+        api_key="atg_dev_" + "a" * 64,  # pragma: allowlist secret
         request_timeout=1,  # 1 second timeout
     )
 

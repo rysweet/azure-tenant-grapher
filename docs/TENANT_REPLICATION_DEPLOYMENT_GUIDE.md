@@ -972,10 +972,10 @@ uv run pytest tests/ -q --tb=short
 
 ## Related Documentation
 
-- [Resource ID Builder Architecture](../design/resource_id_builder_architecture.md) - Deep dive into ID pattern strategies
+- [Resource ID Builder Architecture](design/resource_processing_efficiency.md) - Deep dive into ID pattern strategies
 - [Bug #59 Documentation](./BUG_59_DOCUMENTATION.md) - Subscription ID abstraction details
 - [Bug #68 Documentation](./BUG_68_DOCUMENTATION.md) - Provider name normalization
-- [Cross-Tenant Translation](../design/cross-tenant-translation/INTEGRATION_SUMMARY.md) - Full cross-tenant flow
+- [Cross-Tenant Translation](design/cross-tenant-translation/INTEGRATION_SUMMARY.md) - Full cross-tenant flow
 - [NEO4J_SCHEMA_REFERENCE.md](./NEO4J_SCHEMA_REFERENCE.md) - Database schema details
 
 ## Deployment Checklist Summary

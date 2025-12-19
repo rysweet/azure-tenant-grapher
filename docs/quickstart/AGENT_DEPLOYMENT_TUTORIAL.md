@@ -452,7 +452,7 @@ Now that you've completed your first autonomous deployment, explore:
 
 - **[Cross-Tenant Features](../cross-tenant/FEATURES.md)** - Deploy between different Azure tenants
 - **[Terraform Import Blocks](../design/cross-tenant-translation/CLI_FLAGS_SUMMARY.md)** - Import existing resources
-- **[Deployment Troubleshooting](../DEPLOYMENT_TROUBLESHOOTING.md)** - Manual troubleshooting techniques
+- **[Deployment Troubleshooting](../guides/AUTONOMOUS_DEPLOYMENT_FAQ.md)** - Manual troubleshooting techniques
 - **[Agent Deployer Reference](../design/AGENT_DEPLOYER_REFERENCE.md)** - Technical details
 
 ## Troubleshooting This Tutorial
