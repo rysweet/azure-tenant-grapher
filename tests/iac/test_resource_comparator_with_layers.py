@@ -272,7 +272,8 @@ def test_heuristic_cleanup_not_triggered_with_scan_source_node(
 
 
 @pytest.mark.e2e
-def test_iac_generation_after_layer_copy(
+@pytest.mark.asyncio
+async def test_iac_generation_after_layer_copy(
     resource_comparator,
     neo4j_session_manager,
     setup_layer_with_scan_source,
@@ -334,7 +335,8 @@ def test_iac_generation_after_layer_copy(
 
 
 @pytest.mark.e2e
-def test_iac_generation_after_archive_restore(
+@pytest.mark.asyncio
+async def test_iac_generation_after_archive_restore(
     resource_comparator,
     neo4j_session_manager,
     setup_layer_with_scan_source,
