@@ -62,7 +62,7 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
     # Build data rows
     data_lines = []
     for row in rows:
-        cells = [f" {cell!s:<{col_widths[i]}} " for i, cell in enumerate(row)]
+        cells = [f" {str(cell):<{col_widths[i]}} " for i, cell in enumerate(row)]
         data_lines.append("|" + "|".join(cells) + "|")
 
     # Assemble table
@@ -96,15 +96,13 @@ def cmd_list(args: argparse.Namespace) -> int:
             enabled_str = "Yes" if server.enabled else "No"
             env_str = ", ".join(server.env.keys()) if server.env else "(none)"
 
-            rows.append(
-                [
-                    server.name,
-                    server.command,
-                    args_str[:40] + "..." if len(args_str) > 40 else args_str,
-                    enabled_str,
-                    env_str[:30] + "..." if len(env_str) > 30 else env_str,
-                ]
-            )
+            rows.append([
+                server.name,
+                server.command,
+                args_str[:40] + "..." if len(args_str) > 40 else args_str,
+                enabled_str,
+                env_str[:30] + "..." if len(env_str) > 30 else env_str,
+            ])
 
         print(format_table(headers, rows))
         return 0
@@ -346,7 +344,7 @@ def cmd_remove(args: argparse.Namespace) -> int:
             print(f"  Command: {server.command}")
             print(f"  Args: {' '.join(server.args) if server.args else '(none)'}")
             response = input("\nAre you sure you want to remove this server? (y/N): ")
-            if response.lower() not in ("y", "yes"):
+            if response.lower() not in ('y', 'yes'):
                 print("Cancelled")
                 return 0
 
@@ -448,7 +446,7 @@ def cmd_export(args: argparse.Namespace) -> int:
         # Write to file or stdout
         if args.output:
             output_path = Path(args.output)
-            output_path.write_text(export_data, encoding="utf-8")
+            output_path.write_text(export_data, encoding='utf-8')
             print(f"Exported {len(servers)} server(s) to: {output_path}")
         else:
             print(export_data)
@@ -476,7 +474,7 @@ def cmd_import(args: argparse.Namespace) -> int:
             print(f"Import file not found: {import_path}", file=sys.stderr)
             return 1
 
-        import_data = import_path.read_text(encoding="utf-8")
+        import_data = import_path.read_text(encoding='utf-8')
 
         # Parse servers
         imported_servers = import_servers(import_data, format=args.format)
@@ -643,3 +641,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

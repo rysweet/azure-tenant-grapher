@@ -6,20 +6,24 @@ Testing pyramid distribution:
 """
 
 import sys
-from pathlib import Path
-from unittest.mock import patch
-
 import pytest
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from detect_language import detect_language, get_debugger_for_language
+from detect_language import (
+    detect_language,
+    get_debugger_for_language,
+    MANIFEST_MAP,
+    EXTENSION_MAP
+)
+
 
 # ============================================================================
 # MANIFEST FILE DETECTION TESTS (6 tests)
 # ============================================================================
-
 
 class TestManifestDetection:
     """Test language detection from manifest files (highest confidence)."""
@@ -65,7 +69,6 @@ class TestManifestDetection:
 # ============================================================================
 # FILE EXTENSION ANALYSIS TESTS (6 tests)
 # ============================================================================
-
 
 class TestExtensionAnalysis:
     """Test language detection from file extensions (medium confidence)."""
@@ -153,7 +156,6 @@ class TestExtensionAnalysis:
 # EDGE CASES AND ERROR HANDLING (6 tests)
 # ============================================================================
 
-
 class TestEdgeCasesAndErrors:
     """Test edge cases and error handling."""
 
@@ -223,23 +225,19 @@ class TestEdgeCasesAndErrors:
 # DEBUGGER MAPPING TESTS (Bonus - not counted in 18)
 # ============================================================================
 
-
 class TestDebuggerMapping:
     """Test debugger recommendations for detected languages."""
 
-    @pytest.mark.parametrize(
-        "language,expected_debugger",
-        [
-            ("python", "debugpy"),
-            ("javascript", "node"),
-            ("typescript", "node"),
-            ("c", "gdb"),
-            ("cpp", "gdb"),
-            ("go", "delve"),
-            ("rust", "rust-gdb"),
-            ("java", "jdwp"),
-        ],
-    )
+    @pytest.mark.parametrize("language,expected_debugger", [
+        ("python", "debugpy"),
+        ("javascript", "node"),
+        ("typescript", "node"),
+        ("c", "gdb"),
+        ("cpp", "gdb"),
+        ("go", "delve"),
+        ("rust", "rust-gdb"),
+        ("java", "jdwp"),
+    ])
     def test_debugger_mapping(self, language, expected_debugger):
         """Test debugger mapping for all supported languages."""
         debugger = get_debugger_for_language(language)
@@ -250,7 +248,6 @@ class TestDebuggerMapping:
 # CLI INTERFACE TESTS (Bonus - not counted in 18)
 # ============================================================================
 
-
 class TestCLIInterface:
     """Test command-line interface."""
 
@@ -259,14 +256,19 @@ class TestCLIInterface:
         sys.argv = ["detect_language.py", "--path", str(python_project), "--json"]
 
         # Import and run the main section
-        with patch("sys.argv", ["detect_language.py", "--path", str(python_project), "--json"]):
+        with patch('sys.argv', ["detect_language.py", "--path", str(python_project), "--json"]):
             # Re-run the module
+            import json
             from detect_language import detect_language, get_debugger_for_language
 
             lang, conf = detect_language(str(python_project))
             debugger = get_debugger_for_language(lang)
 
-            result = {"language": lang, "confidence": round(conf, 2), "debugger": debugger}
+            result = {
+                "language": lang,
+                "confidence": round(conf, 2),
+                "debugger": debugger
+            }
 
             # Verify JSON structure
             assert result["language"] == "python"

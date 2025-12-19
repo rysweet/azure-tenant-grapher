@@ -14,14 +14,14 @@ import argparse
 import asyncio
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import yaml
 
 
-def load_yaml(path: Path) -> dict[str, Any]:
+def load_yaml(path: Path) -> Dict[str, Any]:
     """Load YAML file safely."""
     if not path.exists():
         return {}
@@ -29,10 +29,10 @@ def load_yaml(path: Path) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def detect_stalled_workstreams(workstreams: list[dict], threshold_hours: int = 2) -> list[dict]:
+def detect_stalled_workstreams(workstreams: List[dict], threshold_hours: int = 2) -> List[dict]:
     """Identify workstreams with no progress for threshold period."""
     stalled = []
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
 
     for ws in workstreams:
         if ws.get("status") != "RUNNING":
@@ -62,7 +62,7 @@ def detect_stalled_workstreams(workstreams: list[dict], threshold_hours: int = 2
     return stalled
 
 
-def detect_dependency_conflicts(workstreams: list[dict], backlog_items: list[dict]) -> list[dict]:
+def detect_dependency_conflicts(workstreams: List[dict], backlog_items: List[dict]) -> List[dict]:
     """Detect conflicts between active workstreams."""
     conflicts = []
 
@@ -111,7 +111,7 @@ def analyze_capacity(active_count: int, max_concurrent: int = 5) -> dict:
     }
 
 
-async def analyze_workstream_async(ws: dict, backlog_items: list[dict]) -> dict:
+async def analyze_workstream_async(ws: dict, backlog_items: List[dict]) -> Dict:
     """Analyze single workstream asynchronously.
 
     Pattern: Independent workstream analysis for parallel execution.
@@ -132,7 +132,7 @@ async def analyze_workstream_async(ws: dict, backlog_items: list[dict]) -> dict:
     if last_activity:
         try:
             last_dt = datetime.fromisoformat(last_activity.replace("Z", "+00:00"))
-            hours_idle = (datetime.now(UTC) - last_dt).total_seconds() / 3600
+            hours_idle = (datetime.now(timezone.utc) - last_dt).total_seconds() / 3600
 
             if hours_idle > 2:
                 analysis["health"] = "stalled"
@@ -158,7 +158,7 @@ async def analyze_workstream_async(ws: dict, backlog_items: list[dict]) -> dict:
     return analysis
 
 
-async def parallel_workstream_analysis(workstreams: list[dict], backlog_items: list[dict]) -> dict:
+async def parallel_workstream_analysis(workstreams: List[dict], backlog_items: List[dict]) -> Dict:
     """Analyze multiple workstreams in parallel.
 
     Pattern: Amplifier P10 - Parallel Execution

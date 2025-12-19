@@ -12,12 +12,12 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import yaml
 
 
-def load_yaml(path: Path) -> dict[str, Any]:
+def load_yaml(path: Path) -> Dict[str, Any]:
     """Load YAML file safely."""
     if not path.exists():
         return {}
@@ -53,7 +53,7 @@ def estimate_complexity(item: dict) -> str:
     return "complex"
 
 
-def find_relevant_files(item: dict, project_root: Path, max_files: int = 10) -> list[str]:
+def find_relevant_files(item: dict, project_root: Path, max_files: int = 10) -> List[str]:
     """Find files relevant to backlog item."""
     # Extract keywords from title/description
     text = item.get("title", "") + " " + item.get("description", "")
@@ -86,7 +86,7 @@ def find_relevant_files(item: dict, project_root: Path, max_files: int = 10) -> 
     return relevant[:max_files]
 
 
-def find_similar_patterns(item: dict, category: str) -> list[str]:
+def find_similar_patterns(item: dict, category: str) -> List[str]:
     """Find similar code patterns (guidance)."""
     patterns = []
 
@@ -134,7 +134,7 @@ def find_similar_patterns(item: dict, category: str) -> list[str]:
     return patterns[:5]
 
 
-def generate_test_requirements(category: str) -> list[str]:
+def generate_test_requirements(category: str) -> List[str]:
     """Generate test requirements based on category."""
     if category == "feature":
         return [

@@ -11,9 +11,10 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Dict, Optional
 
 
-def get_issue_pr_details(project_root: Path, number: int, item_type: str) -> dict | None:
+def get_issue_pr_details(project_root: Path, number: int, item_type: str) -> Optional[Dict]:
     """Get issue or PR details using gh CLI.
 
     Args:
@@ -40,7 +41,7 @@ def get_issue_pr_details(project_root: Path, number: int, item_type: str) -> dic
         return None
 
 
-def prepare_delegation_prompt(details: dict, number: int, item_type: str) -> str:
+def prepare_delegation_prompt(details: Dict, number: int, item_type: str) -> str:
     """Prepare delegation prompt from issue/PR details.
 
     Args:

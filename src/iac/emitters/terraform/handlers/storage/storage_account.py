@@ -71,6 +71,23 @@ class StorageAccountHandler(ResourceHandler):
         # Build base configuration
         config = self.build_base_config(resource)
 
+        # Storage account names must be globally unique (*.core.windows.net)
+        # Add tenant-specific suffix for cross-tenant deployments
+        # Constraints: lowercase alphanumeric only, max 24 chars
+        original_name = config["name"]
+        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+            # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
+            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+            # Remove hyphens and convert to lowercase for storage account name
+            original_name = original_name.replace("-", "").lower()
+
+            # Truncate to fit (24 - 6 = 18 chars for original)
+            if len(original_name) > 18:
+                original_name = original_name[:18]
+
+            config["name"] = f"{original_name}{tenant_suffix}"
+            logger.info(f"Storage account name made globally unique: {resource_name} → {config['name']}")
+
         # Storage account specific properties
         properties = self.parse_properties(resource)
 

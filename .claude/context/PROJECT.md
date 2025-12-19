@@ -10,7 +10,7 @@ Replace the sections below with information about your project.
 
 ---
 
-## Project: pr600
+## Project: azure-tenant-grapher
 
 ## Overview
 
@@ -28,6 +28,8 @@ Azure Tenant Grapher discovers every resource in your Azure tenant, stores the r
 
 - **Language**: Python
 - **Language**: JavaScript/TypeScript
+- **Language**: Rust
+- **Language**: Go
 - **Framework**: [Main framework if applicable]
 - **Database**: [Database system if applicable]
 
