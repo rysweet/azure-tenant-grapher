@@ -366,7 +366,7 @@ screen -dmS atg_loop bash -c "uv run python scripts/autonomous_replication_loop.
 docker ps | grep neo4j
 
 # Restart if needed
-docker-compose up -d neo4j
+docker-compose -f docker/docker-compose.yml up -d neo4j
 ```
 
 ### Azure Credentials Expired

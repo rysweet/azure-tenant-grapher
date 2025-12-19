@@ -69,13 +69,13 @@ class Neo4jContainerManager:
     """
 
     def __init__(
-        self, compose_file: str = "docker-compose.yml", debug: bool = False
+        self, compose_file: str = "docker/docker-compose.yml", debug: bool = False
     ) -> None:
         """
         Initialize the container manager.
 
         Args:
-            compose_file: Path to docker-compose.yml file
+            compose_file: Path to docker-compose.yml file (now in docker/ directory)
             debug: Enable debug output
         """
         self.debug = debug

@@ -7,9 +7,7 @@ import tempfile
 from pathlib import Path
 
 # Setup paths
-sys.path.insert(
-    0, str(Path(__file__).parent.parent.parent / "tools" / "amplihack" / "hooks")
-)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools" / "amplihack" / "hooks"))
 
 
 def test_real_hook_integration():
@@ -97,9 +95,7 @@ def test_real_hook_integration():
             print("\n⚠️  Automation did not run (might be below threshold)")
 
         # Check estimated token count
-        total_chars = sum(
-            len(str(msg.get("content", ""))) for msg in extended_conversation
-        )
+        total_chars = sum(len(str(msg.get("content", ""))) for msg in extended_conversation)
         estimated_tokens = total_chars // 4
         print(f"\n📈 Estimated Tokens: {estimated_tokens:,}")
         print(f"   Percentage: {(estimated_tokens / 1_000_000) * 100:.1f}%")

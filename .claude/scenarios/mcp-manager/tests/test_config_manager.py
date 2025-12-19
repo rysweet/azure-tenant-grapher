@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from config_manager import backup_config, read_config, restore_config, write_config
 
 
@@ -127,7 +126,7 @@ def test_backup_cleanup(temp_config):
     # Create 12 backups (should keep only 10 most recent)
     # Timestamps include microseconds for uniqueness
     backups = []
-    for _i in range(12):
+    for i in range(12):
         backup_path = backup_config(temp_config)
         backups.append(backup_path)
 

@@ -6,7 +6,6 @@ Provides commands to list, enable, disable, and validate MCP servers.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 from .config_manager import backup_config, read_config, restore_config, write_config
 from .mcp_operations import (
@@ -67,7 +66,7 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
         data_lines.append("|" + "|".join(cells) + "|")
 
     # Assemble table
-    return "\n".join([separator, header_line, separator, *data_lines, separator])
+    return "\n".join([separator, header_line, separator] + data_lines + [separator])
 
 
 def cmd_list(args: argparse.Namespace) -> int:
@@ -227,11 +226,10 @@ def cmd_validate(args: argparse.Namespace) -> int:
         if not errors:
             print("✓ Configuration is valid")
             return 0
-        else:
-            print("Configuration validation errors:", file=sys.stderr)
-            for error in errors:
-                print(f"  - {error}", file=sys.stderr)
-            return 1
+        print("Configuration validation errors:", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        return 1
 
     except Exception as e:
         print(f"Error validating configuration: {e}", file=sys.stderr)
@@ -265,10 +263,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         if args.env:
             for env_str in args.env:
                 if "=" not in env_str:
-                    print(
-                        f"Invalid environment variable format: {env_str}",
-                        file=sys.stderr,
-                    )
+                    print(f"Invalid environment variable format: {env_str}", file=sys.stderr)
                     print("Format should be KEY=VALUE", file=sys.stderr)
                     return 1
                 key, value = env_str.split("=", 1)
@@ -528,9 +523,7 @@ def cmd_import(args: argparse.Namespace) -> int:
                         new_config = add_server(new_config, server)
                         added_count += 1
 
-                print(
-                    f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)"
-                )
+                print(f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)")
             else:
                 # Replace mode: use only imported servers
                 new_config = config.copy()
@@ -539,9 +532,7 @@ def cmd_import(args: argparse.Namespace) -> int:
                 for server in imported_servers:
                     new_config = add_server(new_config, server)
 
-                print(
-                    f"\nReplaced configuration with {len(imported_servers)} server(s)"
-                )
+                print(f"\nReplaced configuration with {len(imported_servers)} server(s)")
 
             # Validate before writing
             errors = validate_config(new_config)
@@ -566,7 +557,7 @@ def cmd_import(args: argparse.Namespace) -> int:
         return 1
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Main entry point for CLI.
 
     Args:
@@ -580,9 +571,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         description="Manage MCP server configurations",
     )
 
-    subparsers = parser.add_subparsers(
-        dest="command", help="Command to execute", required=True
-    )
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute", required=True)
 
     # List command
     subparsers.add_parser("list", help="List all MCP servers")
@@ -603,12 +592,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     add_parser.add_argument("name", nargs="?", help="Server name")
     add_parser.add_argument("server_command", nargs="?", help="Command to execute")
     add_parser.add_argument("server_args", nargs="*", help="Command arguments")
-    add_parser.add_argument(
-        "--env", action="append", help="Environment variables (KEY=VALUE)"
-    )
-    add_parser.add_argument(
-        "--disabled", action="store_true", help="Add in disabled state"
-    )
+    add_parser.add_argument("--env", action="append", help="Environment variables (KEY=VALUE)")
+    add_parser.add_argument("--disabled", action="store_true", help="Add in disabled state")
 
     # Remove command
     remove_parser = subparsers.add_parser("remove", help="Remove MCP server")
@@ -621,22 +606,14 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     # Export command
     export_parser = subparsers.add_parser("export", help="Export configuration")
-    export_parser.add_argument(
-        "output", nargs="?", help="Output file (default: stdout)"
-    )
-    export_parser.add_argument(
-        "--format", default="json", choices=["json"], help="Export format"
-    )
+    export_parser.add_argument("output", nargs="?", help="Output file (default: stdout)")
+    export_parser.add_argument("--format", default="json", choices=["json"], help="Export format")
 
     # Import command
     import_parser = subparsers.add_parser("import", help="Import configuration")
     import_parser.add_argument("input", help="Input file")
-    import_parser.add_argument(
-        "--merge", action="store_true", help="Merge with existing"
-    )
-    import_parser.add_argument(
-        "--format", default="json", choices=["json"], help="Import format"
-    )
+    import_parser.add_argument("--merge", action="store_true", help="Merge with existing")
+    import_parser.add_argument("--format", default="json", choices=["json"], help="Import format")
 
     # Parse arguments
     args = parser.parse_args(argv)
@@ -644,25 +621,24 @@ def main(argv: Optional[list[str]] = None) -> int:
     # Dispatch to command handler
     if args.command == "list":
         return cmd_list(args)
-    elif args.command == "enable":
+    if args.command == "enable":
         return cmd_enable(args)
-    elif args.command == "disable":
+    if args.command == "disable":
         return cmd_disable(args)
-    elif args.command == "validate":
+    if args.command == "validate":
         return cmd_validate(args)
-    elif args.command == "add":
+    if args.command == "add":
         return cmd_add(args)
-    elif args.command == "remove":
+    if args.command == "remove":
         return cmd_remove(args)
-    elif args.command == "show":
+    if args.command == "show":
         return cmd_show(args)
-    elif args.command == "export":
+    if args.command == "export":
         return cmd_export(args)
-    elif args.command == "import":
+    if args.command == "import":
         return cmd_import(args)
-    else:
-        parser.print_help()
-        return 1
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":

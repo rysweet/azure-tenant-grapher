@@ -17,7 +17,6 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Tuple
 
 # Public API
 __all__ = ["detect_language", "get_debugger_for_language"]
@@ -63,7 +62,7 @@ EXTENSION_MAP = {
 }
 
 
-def detect_language(project_dir: str = ".") -> Tuple[str, float]:
+def detect_language(project_dir: str = ".") -> tuple[str, float]:
     """Detect project language with confidence score.
 
     Returns:
@@ -85,15 +84,7 @@ def detect_language(project_dir: str = ".") -> Tuple[str, float]:
     extensions = Counter()
 
     # Exclude common non-source directories
-    exclude_dirs = {
-        ".git",
-        ".venv",
-        "node_modules",
-        "target",
-        "build",
-        "dist",
-        "__pycache__",
-    }
+    exclude_dirs = {".git", ".venv", "node_modules", "target", "build", "dist", "__pycache__"}
 
     for ext, lang in EXTENSION_MAP.items():
         count = 0

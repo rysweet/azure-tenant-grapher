@@ -450,7 +450,7 @@ Create separate test suite that runs with full backend:
 
 ```bash
 # Start backend and Neo4j
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 npm run start:web &
 
 # Run integration tests

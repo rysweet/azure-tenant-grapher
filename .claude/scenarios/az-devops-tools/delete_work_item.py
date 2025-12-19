@@ -61,9 +61,7 @@ def get_work_item_info(wrapper: AzCliWrapper, work_item_id: int) -> dict | None:
     return None
 
 
-def delete_work_item(
-    wrapper: AzCliWrapper, work_item_id: int, permanent: bool = False
-) -> bool:
+def delete_work_item(wrapper: AzCliWrapper, work_item_id: int, permanent: bool = False) -> bool:
     """Delete work item.
 
     Args:
@@ -141,11 +139,7 @@ def confirm_deletion(work_item: dict | None, permanent: bool) -> bool:
 
     print(
         "\nDeletion Type: "
-        + (
-            "PERMANENT (cannot be recovered)"
-            if permanent
-            else "Soft delete (can be recovered)"
-        )
+        + ("PERMANENT (cannot be recovered)" if permanent else "Soft delete (can be recovered)")
     )
     print("=" * 60)
 
@@ -231,9 +225,7 @@ Note:
 
         print(f"\nSuccessfully deleted work item #{work_item_id}")
         if not args.permanent:
-            print(
-                "Note: This was a soft delete. The work item can be recovered if needed."
-            )
+            print("Note: This was a soft delete. The work item can be recovered if needed.")
 
     except Exception as e:
         handle_error(

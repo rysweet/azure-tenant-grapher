@@ -10,7 +10,7 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root / ".claude" / "tools" / "amplihack" / "hooks"))
 sys.path.insert(0, str(project_root / ".claude" / "skills"))
 
-from context_management.automation import ContextAutomation  # noqa: E402
+from context_management.automation import ContextAutomation
 
 
 def test_performance():
@@ -52,9 +52,7 @@ def test_performance():
     for token_count, num_tools, description in test_scenarios:
         print(f"\n{'=' * 70}")
         print(f"📊 Scenario: {description}")
-        print(
-            f"   Token count: {token_count:,} ({(token_count / 1_000_000) * 100:.0f}%)"
-        )
+        print(f"   Token count: {token_count:,} ({(token_count / 1_000_000) * 100:.0f}%)")
         print(f"   Simulating {num_tools} tool uses")
         print("=" * 70)
 
@@ -67,7 +65,7 @@ def test_performance():
         skips = 0
         start_time = time.time()
 
-        for _i in range(num_tools):
+        for i in range(num_tools):
             result = automation.process_post_tool_use(token_count, sample_conversation)
 
             if result.get("skipped"):

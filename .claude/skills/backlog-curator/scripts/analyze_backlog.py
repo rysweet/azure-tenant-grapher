@@ -11,12 +11,12 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
 
-def load_yaml(path: Path) -> Dict[str, Any]:
+def load_yaml(path: Path) -> dict[str, Any]:
     """Load YAML file safely."""
     if not path.exists():
         return {}
@@ -34,9 +34,7 @@ def categorize_item(item: dict) -> str:
         return "test"
     if any(kw in text for kw in ["document", "docs", "readme", "comment", "explain"]):
         return "documentation"
-    if any(
-        kw in text for kw in ["refactor", "clean", "improve", "optimize", "restructure"]
-    ):
+    if any(kw in text for kw in ["refactor", "clean", "improve", "optimize", "restructure"]):
         return "refactor"
     if any(kw in text for kw in ["add", "implement", "create", "new", "feature"]):
         return "feature"
@@ -44,18 +42,14 @@ def categorize_item(item: dict) -> str:
     return "other"
 
 
-def extract_technical_signals(item: dict) -> Dict[str, bool]:
+def extract_technical_signals(item: dict) -> dict[str, bool]:
     """Extract technical complexity signals."""
     text = (item.get("title", "") + " " + item.get("description", "")).lower()
 
     return {
         "has_api_changes": any(kw in text for kw in ["api", "endpoint", "route"]),
-        "has_db_changes": any(
-            kw in text for kw in ["database", "db", "schema", "migration"]
-        ),
-        "has_ui_changes": any(
-            kw in text for kw in ["ui", "interface", "frontend", "view"]
-        ),
+        "has_db_changes": any(kw in text for kw in ["database", "db", "schema", "migration"]),
+        "has_ui_changes": any(kw in text for kw in ["ui", "interface", "frontend", "view"]),
         "mentions_testing": any(kw in text for kw in ["test", "coverage", "verify"]),
         "mentions_security": any(
             kw in text for kw in ["security", "auth", "permission", "encryption"]
@@ -87,7 +81,7 @@ def estimate_complexity(item: dict) -> str:
     return base
 
 
-def detect_dependencies(item: dict, all_items: List[dict]) -> List[str]:
+def detect_dependencies(item: dict, all_items: list[dict]) -> list[str]:
     """Detect dependencies (simplified - checks for BL-XXX references)."""
     import re
 
@@ -104,7 +98,7 @@ def detect_dependencies(item: dict, all_items: List[dict]) -> List[str]:
     return list(set(dependencies))
 
 
-def count_blocking(item: dict, all_items: List[dict]) -> int:
+def count_blocking(item: dict, all_items: list[dict]) -> int:
     """Count how many items this item would unblock."""
     count = 0
     item_id = item["id"]
@@ -120,7 +114,7 @@ def count_blocking(item: dict, all_items: List[dict]) -> int:
     return count
 
 
-def calculate_scores(item: dict, config: dict, all_items: List[dict]) -> dict:
+def calculate_scores(item: dict, config: dict, all_items: list[dict]) -> dict:
     """Calculate multi-criteria scores."""
     # Priority score (40%)
     priority_map = {"HIGH": 1.0, "MEDIUM": 0.6, "LOW": 0.3}
@@ -157,10 +151,7 @@ def calculate_scores(item: dict, config: dict, all_items: List[dict]) -> dict:
 
     # Total weighted score
     total_score = (
-        priority_score * 0.40
-        + blocking_score * 0.30
-        + ease_score * 0.20
-        + goal_score * 0.10
+        priority_score * 0.40 + blocking_score * 0.30 + ease_score * 0.20 + goal_score * 0.10
     ) * 100
 
     return {
@@ -256,9 +247,7 @@ def analyze_backlog(project_root: Path, max_recommendations: int = 3) -> dict:
         # Check dependencies
         deps = detect_dependencies(item, items)
         unmet_deps = [
-            dep
-            for dep in deps
-            if any(i["id"] == dep and i.get("status") != "DONE" for i in items)
+            dep for dep in deps if any(i["id"] == dep and i.get("status") != "DONE" for i in items)
         ]
 
         if unmet_deps:
@@ -308,17 +297,12 @@ def analyze_backlog(project_root: Path, max_recommendations: int = 3) -> dict:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Analyze backlog and generate recommendations"
-    )
+    parser = argparse.ArgumentParser(description="Analyze backlog and generate recommendations")
     parser.add_argument(
         "--project-root", type=Path, default=Path.cwd(), help="Project root directory"
     )
     parser.add_argument(
-        "--max-recommendations",
-        type=int,
-        default=3,
-        help="Maximum recommendations to return",
+        "--max-recommendations", type=int, default=3, help="Maximum recommendations to return"
     )
 
     args = parser.parse_args()

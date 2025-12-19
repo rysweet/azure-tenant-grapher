@@ -11,13 +11,13 @@ Public API:
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 # Public API
 __all__ = ["generate_config", "validate_config"]
 
 
-def generate_config(language: str, project_dir: str, **kwargs) -> Dict[str, Any]:
+def generate_config(language: str, project_dir: str, **kwargs) -> dict[str, Any]:
     """Generate DAP config for language.
 
     Args:
@@ -72,7 +72,7 @@ def generate_config(language: str, project_dir: str, **kwargs) -> Dict[str, Any]
     return config
 
 
-def validate_config(config: Dict[str, Any]) -> bool:
+def validate_config(config: dict[str, Any]) -> bool:
     """Validate generated configuration matches dap-mcp schema.
 
     Required fields for dap-mcp:
@@ -102,9 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, help="Debug adapter protocol port")
     parser.add_argument("--entry-point", help="Main program entry point")
     parser.add_argument("--output", help="Output file path (default: stdout)")
-    parser.add_argument(
-        "--validate", action="store_true", help="Validate generated config"
-    )
+    parser.add_argument("--validate", action="store_true", help="Validate generated config")
     args = parser.parse_args()
 
     try:

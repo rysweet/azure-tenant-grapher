@@ -61,9 +61,7 @@ class TestGetIssuePrDetails:
     def test_gh_cli_failure(self, project_root, capsys):
         """Test handling of gh CLI failure."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=1, stdout="", stderr="Error: Not found"
-            )
+            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Error: Not found")
 
             result = get_issue_pr_details(project_root, 999, "issue")
 
@@ -147,18 +145,14 @@ class TestPrepareDelegationPrompt:
 class TestRunAutoModeDelegation:
     """Tests for run_auto_mode_delegation function."""
 
-    def test_successful_auto_mode_execution(
-        self, project_root, sample_auto_mode_output
-    ):
+    def test_successful_auto_mode_execution(self, project_root, sample_auto_mode_output):
         """Test successful auto mode execution."""
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout=sample_auto_mode_output, stderr=""
             )
 
-            success, output = run_auto_mode_delegation(
-                "Test prompt", project_root, max_turns=5
-            )
+            success, output = run_auto_mode_delegation("Test prompt", project_root, max_turns=5)
 
             assert success is True
             assert len(output) > 100
@@ -192,9 +186,7 @@ class TestRunAutoModeDelegation:
     def test_insufficient_output(self, project_root):
         """Test handling of insufficient output (< 100 chars)."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout="Short output", stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout="Short output", stderr="")
 
             success, output = run_auto_mode_delegation("Test prompt", project_root)
 
@@ -206,9 +198,7 @@ class TestRunAutoModeDelegation:
         exactly_100 = "x" * 100
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout=exactly_100, stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout=exactly_100, stderr="")
 
             success, output = run_auto_mode_delegation("Test prompt", project_root)
 
@@ -220,9 +210,7 @@ class TestRunAutoModeDelegation:
         exactly_101 = "x" * 101
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout=exactly_101, stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout=exactly_101, stderr="")
 
             success, output = run_auto_mode_delegation("Test prompt", project_root)
 
@@ -231,9 +219,7 @@ class TestRunAutoModeDelegation:
     def test_timeout_handling(self, project_root):
         """Test timeout handling (10 minutes)."""
         with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.TimeoutExpired(
-                cmd="amplihack", timeout=600
-            )
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd="amplihack", timeout=600)
 
             success, output = run_auto_mode_delegation("Test prompt", project_root)
 
@@ -349,15 +335,12 @@ class TestMainFunction:
             # First call: gh issue view
             # Second call: amplihack auto mode
             mock_run.side_effect = [
-                MagicMock(
-                    returncode=0, stdout=json.dumps(sample_issue_data), stderr=""
-                ),
+                MagicMock(returncode=0, stdout=json.dumps(sample_issue_data), stderr=""),
                 MagicMock(returncode=0, stdout=sample_auto_mode_output, stderr=""),
             ]
 
             with patch(
-                "sys.argv",
-                ["delegate_response.py", "123", "issue", "--output", str(output_file)],
+                "sys.argv", ["delegate_response.py", "123", "issue", "--output", str(output_file)]
             ):
                 from delegate_response import main
 
@@ -373,13 +356,10 @@ class TestMainFunction:
         output_file = tmp_path / "response.md"
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=1, stdout="", stderr="Not found"
-            )
+            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Not found")
 
             with patch(
-                "sys.argv",
-                ["delegate_response.py", "999", "issue", "--output", str(output_file)],
+                "sys.argv", ["delegate_response.py", "999", "issue", "--output", str(output_file)]
             ):
                 from delegate_response import main
 
@@ -395,15 +375,12 @@ class TestMainFunction:
         with patch("subprocess.run") as mock_run:
             # First call succeeds, second call fails
             mock_run.side_effect = [
-                MagicMock(
-                    returncode=0, stdout=json.dumps(sample_issue_data), stderr=""
-                ),
+                MagicMock(returncode=0, stdout=json.dumps(sample_issue_data), stderr=""),
                 MagicMock(returncode=1, stdout="Error", stderr="Auto mode failed"),
             ]
 
             with patch(
-                "sys.argv",
-                ["delegate_response.py", "123", "issue", "--output", str(output_file)],
+                "sys.argv", ["delegate_response.py", "123", "issue", "--output", str(output_file)]
             ):
                 from delegate_response import main
 
@@ -441,9 +418,7 @@ class TestEdgeCases:
     def test_malformed_json_from_gh(self, project_root):
         """Test handling of malformed JSON from gh CLI."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout="{ invalid json }", stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout="{ invalid json }", stderr="")
 
             result = get_issue_pr_details(project_root, 123, "issue")
             assert result is None
@@ -459,9 +434,7 @@ class TestEdgeCases:
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
                 futures = [
-                    executor.submit(
-                        run_auto_mode_delegation, f"Prompt {i}", project_root
-                    )
+                    executor.submit(run_auto_mode_delegation, f"Prompt {i}", project_root)
                     for i in range(5)
                 ]
 

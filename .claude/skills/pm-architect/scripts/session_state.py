@@ -21,14 +21,14 @@ Commands:
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
 
-def load_yaml(path: Path) -> Dict[str, Any]:
+def load_yaml(path: Path) -> dict[str, Any]:
     """Load YAML file safely."""
     if not path.exists():
         return {}
@@ -36,7 +36,7 @@ def load_yaml(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def save_yaml(path: Path, data: Dict[str, Any]) -> None:
+def save_yaml(path: Path, data: dict[str, Any]) -> None:
     """Save YAML file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
@@ -45,7 +45,7 @@ def save_yaml(path: Path, data: Dict[str, Any]) -> None:
 
 def get_timestamp() -> str:
     """Get current UTC timestamp."""
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 class PMSessionState:
@@ -62,14 +62,14 @@ class PMSessionState:
         self.yaml_file = session_dir / "session_state.yaml"
         self.state = self.load_state()
 
-    def load_state(self) -> Dict:
+    def load_state(self) -> dict:
         """Load session state from YAML (machine-readable)."""
         if self.yaml_file.exists():
             return load_yaml(self.yaml_file)
 
         return self.initial_state()
 
-    def initial_state(self) -> Dict:
+    def initial_state(self) -> dict:
         """Create initial state structure."""
         return {
             "initialized_at": get_timestamp(),
@@ -132,7 +132,7 @@ class PMSessionState:
 """
         self.state_file.write_text(content)
 
-    def format_decisions(self, decisions: List[Dict]) -> str:
+    def format_decisions(self, decisions: list[dict]) -> str:
         """Format decisions for markdown."""
         if not decisions:
             return "*No decisions recorded*"
@@ -148,7 +148,7 @@ class PMSessionState:
 
         return "\n".join(lines)
 
-    def format_stakeholder_context(self, context: Dict) -> str:
+    def format_stakeholder_context(self, context: dict) -> str:
         """Format stakeholder preferences for markdown."""
         if not context:
             return "*No stakeholder context*"
@@ -161,7 +161,7 @@ class PMSessionState:
 
         return "\n".join(lines)
 
-    def format_questions(self, questions: List[Dict]) -> str:
+    def format_questions(self, questions: list[dict]) -> str:
         """Format open questions for markdown."""
         if not questions:
             return "*No open questions*"
@@ -175,7 +175,7 @@ class PMSessionState:
 
         return "\n".join(lines)
 
-    def format_actions(self, actions: List[Dict]) -> str:
+    def format_actions(self, actions: list[dict]) -> str:
         """Format next actions for markdown."""
         if not actions:
             return "*No actions defined*"
@@ -253,9 +253,7 @@ class PMSessionState:
         if 0 <= question_index < len(self.state["open_questions"]):
             self.state["open_questions"][question_index]["status"] = "RESOLVED"
             self.state["open_questions"][question_index]["resolution"] = resolution
-            self.state["open_questions"][question_index]["resolved_at"] = (
-                get_timestamp()
-            )
+            self.state["open_questions"][question_index]["resolved_at"] = get_timestamp()
             self.state["session_metrics"]["questions_resolved"] += 1
             self.save_state()
 
@@ -267,11 +265,7 @@ class PMSessionState:
             priority: HIGH, MEDIUM, or LOW
         """
         self.state["next_actions"].append(
-            {
-                "description": description,
-                "priority": priority,
-                "added_at": get_timestamp(),
-            }
+            {"description": description, "priority": priority, "added_at": get_timestamp()}
         )
         self.save_state()
 
@@ -280,7 +274,7 @@ class PMSessionState:
         # In future, could track completion explicitly
         # For now, user manually manages via update
 
-    def search_decisions(self, query: str) -> List[Dict]:
+    def search_decisions(self, query: str) -> list[dict]:
         """Search past decisions by keyword.
 
         Args:
@@ -301,7 +295,7 @@ class PMSessionState:
 
         return matches
 
-    def get_stakeholder_profile(self, stakeholder: str) -> Dict:
+    def get_stakeholder_profile(self, stakeholder: str) -> dict:
         """Get all preferences for a stakeholder.
 
         Args:
@@ -311,11 +305,7 @@ class PMSessionState:
             Profile with preferences and patterns
         """
         prefs = self.state["stakeholder_context"].get(stakeholder, [])
-        return {
-            "stakeholder": stakeholder,
-            "total_preferences": len(prefs),
-            "preferences": prefs,
-        }
+        return {"stakeholder": stakeholder, "total_preferences": len(prefs), "preferences": prefs}
 
 
 def main():
@@ -335,9 +325,7 @@ def main():
     decision_parser.add_argument("rationale", help="Why it was decided")
 
     # Track preference command
-    pref_parser = subparsers.add_parser(
-        "track-preference", help="Track stakeholder preference"
-    )
+    pref_parser = subparsers.add_parser("track-preference", help="Track stakeholder preference")
     pref_parser.add_argument("stakeholder", help="Stakeholder name")
     pref_parser.add_argument("preference", help="Preference observed")
 
@@ -354,10 +342,7 @@ def main():
     action_parser = subparsers.add_parser("add-action", help="Add next action")
     action_parser.add_argument("description", help="Action description")
     action_parser.add_argument(
-        "--priority",
-        default="MEDIUM",
-        choices=["HIGH", "MEDIUM", "LOW"],
-        help="Action priority",
+        "--priority", default="MEDIUM", choices=["HIGH", "MEDIUM", "LOW"], help="Action priority"
     )
 
     # Show command
@@ -406,11 +391,7 @@ def main():
 
         elif args.command == "search":
             results = state.search_decisions(args.query)
-            print(
-                json.dumps(
-                    {"query": args.query, "matches": len(results), "results": results}
-                )
-            )
+            print(json.dumps({"query": args.query, "matches": len(results), "results": results}))
 
         return 0
 

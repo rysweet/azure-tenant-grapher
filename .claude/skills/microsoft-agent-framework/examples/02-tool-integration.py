@@ -100,14 +100,8 @@ async def search_docs(query: str, max_results: int = 3) -> list[dict]:
 
     # Mock results
     results = [
-        {
-            "title": f"Document about {query} - Part 1",
-            "snippet": f"Information on {query}...",
-        },
-        {
-            "title": f"Document about {query} - Part 2",
-            "snippet": f"More about {query}...",
-        },
+        {"title": f"Document about {query} - Part 1", "snippet": f"Information on {query}..."},
+        {"title": f"Document about {query} - Part 2", "snippet": f"More about {query}..."},
         {"title": f"{query} FAQ", "snippet": f"Common questions about {query}..."},
     ]
 
@@ -151,9 +145,7 @@ async def multiple_tool_calls():
         parallel_tool_calls=True,  # Enable parallel execution
     )
 
-    response = await agent.run(
-        message="What's the weather and current time in Seattle?"
-    )
+    response = await agent.run(message="What's the weather and current time in Seattle?")
 
     print("User: What's the weather and current time in Seattle?")
     print(f"Agent: {response.content}")
@@ -165,14 +157,10 @@ async def tool_call_inspection():
     print("=== Tool Call Inspection ===")
 
     agent = Agent(
-        name="assistant",
-        model=ModelClient(model="gpt-4"),
-        tools=[calculate, get_weather],
+        name="assistant", model=ModelClient(model="gpt-4"), tools=[calculate, get_weather]
     )
 
-    response = await agent.run(
-        message="What's 15 * 8 and what's the weather in San Francisco?"
-    )
+    response = await agent.run(message="What's 15 * 8 and what's the weather in San Francisco?")
 
     print("User: What's 15 * 8 and what's the weather in San Francisco?")
     print(f"Agent: {response.content}")
@@ -196,9 +184,7 @@ async def async_tool_example():
         tools=[search_docs],
     )
 
-    response = await agent.run(
-        message="Search for information about agents in the docs"
-    )
+    response = await agent.run(message="Search for information about agents in the docs")
 
     print("User: Search for information about agents in the docs")
     print(f"Agent: {response.content}")

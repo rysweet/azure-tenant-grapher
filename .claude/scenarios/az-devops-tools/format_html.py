@@ -166,12 +166,8 @@ def markdown_to_html(markdown: str) -> str:
         # Indented code blocks (4 spaces or tab)
         if line.startswith("    ") or line.startswith("\t"):
             code_lines = []
-            while i < len(lines) and (
-                lines[i].startswith("    ") or lines[i].startswith("\t")
-            ):
-                code_lines.append(
-                    lines[i][4:] if lines[i].startswith("    ") else lines[i][1:]
-                )
+            while i < len(lines) and (lines[i].startswith("    ") or lines[i].startswith("\t")):
+                code_lines.append(lines[i][4:] if lines[i].startswith("    ") else lines[i][1:])
                 i += 1
             code = "\n".join(code_lines)
             html_parts.append(html_code(code))
@@ -301,12 +297,12 @@ if __name__ == "__main__":
 
 
 __all__ = [
-    "html_code",
-    "html_heading",
-    "html_link",
-    "html_list",
-    "html_p",
-    "main",
     "markdown_to_html",
+    "html_p",
+    "html_heading",
+    "html_list",
+    "html_code",
+    "html_link",
     "process_inline_formatting",
+    "main",
 ]

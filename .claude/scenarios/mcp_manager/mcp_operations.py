@@ -224,9 +224,7 @@ def validate_config(config: dict[str, Any]) -> list[str]:
         server_errors = server.validate()
 
         if server_errors:
-            errors.extend(
-                [f"Server '{name}' (index {idx}): {err}" for err in server_errors]
-            )
+            errors.extend([f"Server '{name}' (index {idx}): {err}" for err in server_errors])
 
         # Check for duplicate names
         if name in seen_names:
@@ -374,7 +372,7 @@ def import_servers(data: str, format: str = "json") -> list[MCPServer]:
     try:
         import_data = json.loads(data)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON data: {e}") from e
+        raise ValueError(f"Invalid JSON data: {e}")
 
     # Validate structure
     if not isinstance(import_data, dict):

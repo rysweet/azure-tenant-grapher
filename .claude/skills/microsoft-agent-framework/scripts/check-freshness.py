@@ -13,7 +13,6 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -24,10 +23,10 @@ class FreshnessChecker:
     def __init__(self, skill_root: Path):
         self.skill_root = skill_root
         self.metadata_path = skill_root / "metadata" / "version-tracking.json"
-        self.warnings: List[str] = []
-        self.errors: List[str] = []
+        self.warnings: list[str] = []
+        self.errors: list[str] = []
 
-    def load_metadata(self) -> Dict:
+    def load_metadata(self) -> dict:
         """Load version tracking metadata."""
         if not self.metadata_path.exists():
             self.errors.append(f"Metadata file not found: {self.metadata_path}")
@@ -36,7 +35,7 @@ class FreshnessChecker:
         with open(self.metadata_path) as f:
             return json.load(f)
 
-    def check_documentation_age(self, metadata: Dict) -> bool:
+    def check_documentation_age(self, metadata: dict) -> bool:
         """Check if documentation is within acceptable age."""
         last_updated = metadata.get("last_updated")
         if not last_updated:
@@ -48,9 +47,7 @@ class FreshnessChecker:
         age_days = age.days
 
         if age_days > 30:
-            self.warnings.append(
-                f"Documentation is {age_days} days old (threshold: 30 days)"
-            )
+            self.warnings.append(f"Documentation is {age_days} days old (threshold: 30 days)")
             return False
 
         print(f"✓ Documentation age: {age_days} days (current)")
@@ -76,7 +73,7 @@ class FreshnessChecker:
 
         return False
 
-    def check_source_urls(self, metadata: Dict) -> bool:
+    def check_source_urls(self, metadata: dict) -> bool:
         """Validate all source URLs are accessible."""
         sources = metadata.get("sources", {})
         if not sources:
@@ -99,22 +96,20 @@ class FreshnessChecker:
 
         return all_accessible
 
-    def check_github_version(self, metadata: Dict) -> bool:
+    def check_github_version(self, metadata: dict) -> bool:
         """Check if framework version matches latest GitHub release."""
-        metadata.get("sources", {}).get("github_repository", {})
+        github_info = metadata.get("sources", {}).get("github_repository", {})
         current_version = metadata.get("framework_version", "unknown")
 
         print(f"✓ Framework version: {current_version}")
         print("  (Manual check recommended for latest release)")
         return True
 
-    def check_breaking_changes(self, metadata: Dict) -> bool:
+    def check_breaking_changes(self, metadata: dict) -> bool:
         """Check for reported breaking changes."""
         breaking_changes = metadata.get("breaking_changes", [])
         if breaking_changes:
-            self.warnings.append(
-                f"Breaking changes reported: {len(breaking_changes)} changes"
-            )
+            self.warnings.append(f"Breaking changes reported: {len(breaking_changes)} changes")
             for change in breaking_changes:
                 print(f"  - {change}")
             return False
@@ -122,7 +117,7 @@ class FreshnessChecker:
         print("✓ No breaking changes reported")
         return True
 
-    def check_next_verification(self, metadata: Dict) -> bool:
+    def check_next_verification(self, metadata: dict) -> bool:
         """Check if verification is overdue."""
         next_due = metadata.get("next_verification_due")
         if not next_due:
@@ -161,9 +156,9 @@ class FreshnessChecker:
         # Run checks
         age_ok = self.check_documentation_age(metadata)
         urls_ok = self.check_source_urls(metadata)
-        self.check_github_version(metadata)
-        self.check_breaking_changes(metadata)
-        self.check_next_verification(metadata)
+        version_ok = self.check_github_version(metadata)
+        changes_ok = self.check_breaking_changes(metadata)
+        schedule_ok = self.check_next_verification(metadata)
 
         # Report results
         print()

@@ -24,9 +24,7 @@ def temp_project_dir(tmp_path):
 def python_project(temp_project_dir):
     """Create a minimal Python project structure."""
     # Create manifest files
-    (temp_project_dir / "requirements.txt").write_text(
-        "pytest>=7.0.0\nrequests>=2.28.0\n"
-    )
+    (temp_project_dir / "requirements.txt").write_text("pytest>=7.0.0\nrequests>=2.28.0\n")
     (temp_project_dir / "pyproject.toml").write_text("""
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -65,16 +63,12 @@ def javascript_project(temp_project_dir):
 
     # Create JavaScript files
     (temp_project_dir / "index.js").write_text("console.log('Hello World');\n")
-    (temp_project_dir / "utils.js").write_text(
-        "module.exports = { helper: () => 42 };\n"
-    )
+    (temp_project_dir / "utils.js").write_text("module.exports = { helper: () => 42 };\n")
 
     # Create test files
     tests_dir = temp_project_dir / "tests"
     tests_dir.mkdir()
-    (tests_dir / "app.test.js").write_text(
-        "test('works', () => { expect(true).toBe(true); });\n"
-    )
+    (tests_dir / "app.test.js").write_text("test('works', () => { expect(true).toBe(true); });\n")
 
     return temp_project_dir
 
@@ -160,9 +154,7 @@ mod tests {
 def cpp_project(temp_project_dir):
     """Create a minimal C++ project structure."""
     # Create CMakeLists.txt
-    (
-        temp_project_dir / "CMakeLists.txt"
-    ).write_text("""cmake_minimum_required(VERSION 3.10)
+    (temp_project_dir / "CMakeLists.txt").write_text("""cmake_minimum_required(VERSION 3.10)
 project(TestProject)
 
 set(CMAKE_CXX_STANDARD 17)

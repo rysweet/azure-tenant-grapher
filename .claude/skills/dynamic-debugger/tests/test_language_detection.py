@@ -259,20 +259,14 @@ class TestCLIInterface:
         sys.argv = ["detect_language.py", "--path", str(python_project), "--json"]
 
         # Import and run the main section
-        with patch(
-            "sys.argv", ["detect_language.py", "--path", str(python_project), "--json"]
-        ):
+        with patch("sys.argv", ["detect_language.py", "--path", str(python_project), "--json"]):
             # Re-run the module
             from detect_language import detect_language, get_debugger_for_language
 
             lang, conf = detect_language(str(python_project))
             debugger = get_debugger_for_language(lang)
 
-            result = {
-                "language": lang,
-                "confidence": round(conf, 2),
-                "debugger": debugger,
-            }
+            result = {"language": lang, "confidence": round(conf, 2), "debugger": debugger}
 
             # Verify JSON structure
             assert result["language"] == "python"

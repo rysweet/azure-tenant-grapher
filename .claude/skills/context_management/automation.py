@@ -7,7 +7,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Add parent directories to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -18,6 +18,7 @@ try:
         ContextExtractor,
         ContextRehydrator,
         TokenMonitor,
+        check_status,
     )
 except ImportError:
     # Fallback for when running from hooks
@@ -47,7 +48,7 @@ class ContextAutomation:
         self.rehydrator = ContextRehydrator()
         self.state = self._load_state()
 
-    def _load_state(self) -> Dict[str, Any]:
+    def _load_state(self) -> dict[str, Any]:
         """Load automation state from disk."""
         if STATE_FILE.exists():
             try:
@@ -75,8 +76,8 @@ class ContextAutomation:
             json.dump(self.state, f, indent=2)
 
     def process_post_tool_use(
-        self, current_tokens: int, conversation_data: Optional[list] = None
-    ) -> Dict[str, Any]:
+        self, current_tokens: int, conversation_data: list | None = None
+    ) -> dict[str, Any]:
         """Process after tool use for automatic context management.
 
         Uses adaptive frequency to minimize overhead:
@@ -171,9 +172,7 @@ class ContextAutomation:
 
         return False
 
-    def _auto_snapshot(
-        self, threshold: str, conversation_data: list, current_tokens: int
-    ) -> bool:
+    def _auto_snapshot(self, threshold: str, conversation_data: list, current_tokens: int) -> bool:
         """Create automatic snapshot at threshold.
 
         Args:
@@ -214,7 +213,7 @@ class ContextAutomation:
             # Silently fail - don't interrupt user workflow
             return False
 
-    def _handle_compaction(self, result: Dict[str, Any]) -> None:
+    def _handle_compaction(self, result: dict[str, Any]) -> None:
         """Handle detected compaction by auto-rehydrating.
 
         Uses smart level selection based on last known usage.
@@ -222,9 +221,7 @@ class ContextAutomation:
         # Find most recent snapshot
         snapshots = self.state.get("snapshots_created", [])
         if not snapshots:
-            result["warnings"].append(
-                "⚠️  Compaction detected but no snapshots available"
-            )
+            result["warnings"].append("⚠️  Compaction detected but no snapshots available")
             return
 
         # Get most recent snapshot
@@ -249,7 +246,7 @@ class ContextAutomation:
 
         try:
             # Rehydrate context
-            self.rehydrator.rehydrate(snapshot_path, level)
+            rehydrated = self.rehydrator.rehydrate(snapshot_path, level)
 
             result["actions_taken"].append(f"auto_rehydrated_at_{level}_level")
             result["warnings"].append(
@@ -269,7 +266,7 @@ class ContextAutomation:
             result["warnings"].append(f"⚠️  Auto-rehydration failed: {e}")
 
 
-def run_automation(current_tokens: int, conversation_data: Optional[list] = None):
+def run_automation(current_tokens: int, conversation_data: list | None = None):
     """Run context automation (called from PostToolUse hook).
 
     Args:

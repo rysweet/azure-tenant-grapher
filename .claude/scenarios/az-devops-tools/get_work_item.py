@@ -239,9 +239,7 @@ Examples:
 
     parser.add_argument("--id", required=True, help="Work item ID")
     parser.add_argument("--fields", help="Comma-separated list of fields to retrieve")
-    parser.add_argument(
-        "--relations", action="store_true", help="Include work item relations"
-    )
+    parser.add_argument("--relations", action="store_true", help="Include work item relations")
     parser.add_argument(
         "--format",
         choices=["summary", "detailed", "json"],

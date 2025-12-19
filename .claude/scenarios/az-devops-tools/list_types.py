@@ -122,9 +122,7 @@ def format_types_list(types: list[dict], output_format: str = "table") -> str:
     return format_table(headers, rows)
 
 
-def format_fields_list(
-    fields: dict, output_format: str = "table", show_all: bool = False
-) -> str:
+def format_fields_list(fields: dict, output_format: str = "table", show_all: bool = False) -> str:
     """Format work item type fields for output.
 
     Args:
@@ -162,10 +160,7 @@ def format_fields_list(
         field_defs = [
             f
             for f in field_defs
-            if any(
-                f.get("referenceName", "").startswith(prefix)
-                for prefix in common_prefixes
-            )
+            if any(f.get("referenceName", "").startswith(prefix) for prefix in common_prefixes)
         ]
 
     # Format as table
@@ -304,10 +299,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = [
-    "format_fields_list",
-    "format_types_list",
-    "get_type_fields",
-    "list_types",
-    "main",
-]
+__all__ = ["list_types", "get_type_fields", "format_types_list", "format_fields_list", "main"]

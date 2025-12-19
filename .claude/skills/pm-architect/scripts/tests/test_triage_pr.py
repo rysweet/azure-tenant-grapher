@@ -39,9 +39,7 @@ class TestGetPrDetails:
     def test_pr_not_found(self, project_root):
         """Test handling of non-existent PR."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=1, stdout="", stderr="PR not found"
-            )
+            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="PR not found")
 
             result = get_pr_details(project_root, 999)
 
@@ -59,9 +57,7 @@ class TestGetPrDetails:
     def test_malformed_json(self, project_root, capsys):
         """Test handling of malformed JSON from gh CLI."""
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout="{ invalid json }", stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout="{ invalid json }", stderr="")
 
             result = get_pr_details(project_root, 456)
 
@@ -80,9 +76,7 @@ file2.py | 25 +++---
 2 files changed, 75 insertions(+), 26 deletions(-)"""
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout=diff_output, stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout=diff_output, stderr="")
 
             result = get_pr_diff_summary(project_root, 456)
 
@@ -155,60 +149,35 @@ class TestGetRelatedIssues:
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 123,
-                            "title": "Issue 123",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 123, "title": "Issue 123", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 456,
-                            "title": "Issue 456",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 456, "title": "Issue 456", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 789,
-                            "title": "Issue 789",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 789, "title": "Issue 789", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 111,
-                            "title": "Issue 111",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 111, "title": "Issue 111", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 222,
-                            "title": "Issue 222",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 222, "title": "Issue 222", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
@@ -250,12 +219,7 @@ class TestGetRelatedIssues:
                 MagicMock(
                     returncode=0,
                     stdout=json.dumps(
-                        {
-                            "number": 123,
-                            "title": "Issue 123",
-                            "state": "open",
-                            "labels": [],
-                        }
+                        {"number": 123, "title": "Issue 123", "state": "open", "labels": []}
                     ),
                     stderr="",
                 ),
@@ -345,13 +309,8 @@ Approve for review after addressing minor concerns.
 
         with patch("triage_pr.CLAUDE_SDK_AVAILABLE", True):
             with patch("triage_pr.get_pr_details", return_value=sample_pr_data):
-                with patch(
-                    "triage_pr.get_pr_diff_summary",
-                    return_value="## Diff\nSome changes",
-                ):
-                    with patch(
-                        "triage_pr.get_related_issues", return_value="## Issues\n#123"
-                    ):
+                with patch("triage_pr.get_pr_diff_summary", return_value="## Diff\nSome changes"):
+                    with patch("triage_pr.get_related_issues", return_value="## Issues\n#123"):
                         with patch("triage_pr.query", side_effect=mock_query_generator):
                             result = await triage_pr(project_root, 456)
 
@@ -370,9 +329,7 @@ Approve for review after addressing minor concerns.
         with patch("triage_pr.CLAUDE_SDK_AVAILABLE", True):
             with patch("triage_pr.get_pr_details", return_value=sample_pr_data):
                 with patch("triage_pr.get_pr_diff_summary", return_value="## Diff"):
-                    with patch(
-                        "triage_pr.get_related_issues", return_value="## Issues"
-                    ):
+                    with patch("triage_pr.get_related_issues", return_value="## Issues"):
                         with patch("triage_pr.query", side_effect=mock_query_exception):
                             result = await triage_pr(project_root, 456)
 
@@ -391,9 +348,7 @@ Approve for review after addressing minor concerns.
         with patch("triage_pr.CLAUDE_SDK_AVAILABLE", True):
             with patch("triage_pr.get_pr_details", return_value=sample_pr_data):
                 with patch("triage_pr.get_pr_diff_summary", return_value="## Diff"):
-                    with patch(
-                        "triage_pr.get_related_issues", return_value="## Issues"
-                    ):
+                    with patch("triage_pr.get_related_issues", return_value="## Issues"):
                         with patch("triage_pr.query", side_effect=mock_query_empty):
                             result = await triage_pr(project_root, 456)
 
@@ -461,9 +416,7 @@ class TestMainFunction:
 
         with patch("triage_pr.CLAUDE_SDK_AVAILABLE", True):
             with patch("triage_pr.triage_pr", side_effect=mock_triage_async):
-                with patch(
-                    "sys.argv", ["triage_pr.py", "456", "--output", str(output_file)]
-                ):
+                with patch("sys.argv", ["triage_pr.py", "456", "--output", str(output_file)]):
                     from triage_pr import main
 
                     with pytest.raises(SystemExit) as exc_info:
