@@ -12,9 +12,9 @@ This package provides command-line tools for working with Azure DevOps:
 __version__ = "0.1.0"
 __all__ = [
     "auth_check",
-    "create_work_item",
     "format_html",
+    "create_work_item",
     "link_parent",
-    "list_types",
     "query_wiql",
+    "list_types",
 ]

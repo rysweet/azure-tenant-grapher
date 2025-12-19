@@ -67,7 +67,10 @@ azure-tenant-grapher/
 ├── run_tests.py                  # Test runner with coverage
 ├── pyproject.toml               # Project configuration with UV support
 ├── requirements.txt             # Dependencies (maintained for compatibility)
-├── docker-compose.yml           # Neo4j container setup
+├── docker/
+│   ├── docker-compose.yml       # Neo4j container setup
+│   ├── Dockerfile.mcp           # MCP server container
+│   └── nginx.conf               # Nginx configuration
 ├── uv.lock                      # UV dependency lock file
 └── README.md                    # Documentation
 ```
@@ -515,7 +518,7 @@ AZTG_SPEC_TEMPLATE_STYLE=comprehensive
 
 ## Docker Configuration
 
-### Neo4j Container (docker-compose.yml)
+### Neo4j Container (docker/docker-compose.yml)
 ```yaml
 services:
   neo4j:

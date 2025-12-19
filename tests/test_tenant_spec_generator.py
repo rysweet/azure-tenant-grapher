@@ -38,7 +38,7 @@ class TestTenantSpecificationGenerator:
 
         unique_volume = f"test-neo4j-data-{test_session_id}"
         temp_compose = tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False)
-        with open("docker-compose.yml") as f:
+        with open("docker/docker-compose.yml") as f:
             compose = yaml.safe_load(f)
         compose["services"]["neo4j"]["volumes"][0] = f"{unique_volume}:/data"
         compose["services"]["neo4j"]["container_name"] = (

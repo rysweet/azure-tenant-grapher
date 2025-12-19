@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from config_manager import backup_config, read_config, restore_config, write_config
 
 

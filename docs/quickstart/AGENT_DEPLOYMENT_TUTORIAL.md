@@ -468,7 +468,7 @@ source .venv/bin/activate
 
 Start Neo4j container:
 ```bash
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d neo4j
 ```
 
 ### "No tenants found"

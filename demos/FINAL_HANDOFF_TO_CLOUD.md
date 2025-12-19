@@ -163,7 +163,7 @@ docker exec atg-neo4j neo4j-admin restore --from=/backups/neo4j-backup --force
 #### Option B: Fresh Scan (Recommended if migration complex)
 ```bash
 # Start Neo4j
-docker-compose up -d neo4j
+docker-compose -f docker/docker-compose.yml up -d neo4j
 
 # Scan source tenant
 uv run atg scan-tenant \

@@ -74,7 +74,7 @@ Two deployment environments are supported:
 
 ### Local Development
 
-- **`docker-compose.yml`** - Local testing environment
+- **`docker/docker-compose.yml`** - Local testing environment
   - ATG service + Neo4j database
   - Volume mounts for development
   - Health checks and dependencies
@@ -160,16 +160,16 @@ export API_KEY="local-api-key"  # pragma: allowlist secret
 export TARGET_TENANT_ID="your-tenant-id"
 
 # Start services
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Check health
 curl http://localhost:8000/api/v1/health
 
 # View logs
-docker-compose logs -f atg-service
+docker-compose -f docker/docker-compose.yml logs -f atg-service
 
 # Stop services
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 ```
 
 ## Deployment Workflow

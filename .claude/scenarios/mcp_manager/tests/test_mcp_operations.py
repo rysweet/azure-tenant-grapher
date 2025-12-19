@@ -230,9 +230,7 @@ def test_enable_server_not_found():
 def test_enable_server_immutability():
     """Test that enable_server doesn't modify input."""
     original_config = {
-        "enabledMcpjsonServers": [
-            {"name": "test", "command": "cmd", "args": [], "enabled": False}
-        ],
+        "enabledMcpjsonServers": [{"name": "test", "command": "cmd", "args": [], "enabled": False}],
         "other_key": "other_value",
     }
     config_copy = copy.deepcopy(original_config)
@@ -274,9 +272,7 @@ def test_disable_server_not_found():
 def test_disable_server_immutability():
     """Test that disable_server doesn't modify input."""
     original_config = {
-        "enabledMcpjsonServers": [
-            {"name": "test", "command": "cmd", "args": [], "enabled": True}
-        ]
+        "enabledMcpjsonServers": [{"name": "test", "command": "cmd", "args": [], "enabled": True}]
     }
     config_copy = copy.deepcopy(original_config)
 
@@ -292,9 +288,7 @@ def test_disable_server_immutability():
 def test_validate_config_valid():
     """Test validation of valid config."""
     config = {
-        "enabledMcpjsonServers": [
-            {"name": "test-server", "command": "node", "args": ["server.js"]}
-        ]
+        "enabledMcpjsonServers": [{"name": "test-server", "command": "node", "args": ["server.js"]}]
     }
 
     errors = validate_config(config)
@@ -397,9 +391,7 @@ def test_add_server_to_existing():
 def test_add_server_duplicate_name():
     """Test adding a server with duplicate name."""
     config = {
-        "enabledMcpjsonServers": [
-            {"name": "test", "command": "cmd", "args": [], "enabled": True}
-        ]
+        "enabledMcpjsonServers": [{"name": "test", "command": "cmd", "args": [], "enabled": True}]
     }
     server = MCPServer(name="test", command="node", args=[])
 
@@ -469,9 +461,7 @@ def test_remove_server_not_found():
 def test_remove_server_immutability():
     """Test that remove_server doesn't modify input."""
     original_config = {
-        "enabledMcpjsonServers": [
-            {"name": "test", "command": "cmd", "args": [], "enabled": True}
-        ]
+        "enabledMcpjsonServers": [{"name": "test", "command": "cmd", "args": [], "enabled": True}]
     }
     config_copy = copy.deepcopy(original_config)
 
@@ -716,7 +706,7 @@ def test_import_export_roundtrip():
     # Verify all data preserved
     assert len(imported_servers) == len(original_servers)
 
-    for orig, imported in zip(original_servers, imported_servers):
+    for orig, imported in zip(original_servers, imported_servers, strict=False):
         assert imported.name == orig.name
         assert imported.command == orig.command
         assert imported.args == orig.args

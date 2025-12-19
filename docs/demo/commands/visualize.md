@@ -29,7 +29,7 @@ Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reas
 Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [Errno 61] Connection refused)
 Action: Ensure Neo4j is running and accessible at the configured URI.
 If using Docker, check that the container is started and healthy.
-You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.
+You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.
 ❌ Neo4j is not running and --no-container was specified.
 Action: Start Neo4j manually or remove --no-container to let the CLI manage it.
 ```

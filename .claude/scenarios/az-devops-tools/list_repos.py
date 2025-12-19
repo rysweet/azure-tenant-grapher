@@ -34,9 +34,7 @@ from typing import Any
 from common import AzCliWrapper, ExitCode, format_table, handle_error, load_config
 
 
-def list_repositories(
-    wrapper: AzCliWrapper, include_details: bool = False
-) -> list[dict[str, Any]]:
+def list_repositories(wrapper: AzCliWrapper, include_details: bool = False) -> list[dict[str, Any]]:
     """List repositories from Azure DevOps.
 
     Args:
@@ -66,7 +64,6 @@ def list_repositories(
         # Get additional details if requested
         if include_details and repos:
             for repo in repos:
-                repo_name = repo.get("name")
                 repo_id = repo.get("id")
 
                 # Get repository stats
@@ -92,9 +89,7 @@ def list_repositories(
         return []  # Never reached
 
 
-def format_output(
-    repos: list[dict[str, Any]], output_format: str, include_details: bool
-) -> str:
+def format_output(repos: list[dict[str, Any]], output_format: str, include_details: bool) -> str:
     """Format repositories according to output format.
 
     Args:
@@ -118,9 +113,7 @@ def format_output(
         for repo in repos:
             size_kb = repo.get("size", 0) // 1024 if repo.get("size") else 0
             default_branch = (
-                repo.get("defaultBranch", "").split("/")[-1]
-                if repo.get("defaultBranch")
-                else "N/A"
+                repo.get("defaultBranch", "").split("/")[-1] if repo.get("defaultBranch") else "N/A"
             )
             rows.append(
                 [

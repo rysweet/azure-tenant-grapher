@@ -6,7 +6,6 @@ Provides commands to list, enable, disable, and validate MCP servers.
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 from .config_manager import backup_config, read_config, restore_config, write_config
 from .mcp_operations import (
@@ -225,11 +224,10 @@ def cmd_validate(args: argparse.Namespace) -> int:
         if not errors:
             print("✓ Configuration is valid")
             return 0
-        else:
-            print("Configuration validation errors:", file=sys.stderr)
-            for error in errors:
-                print(f"  - {error}", file=sys.stderr)
-            return 1
+        print("Configuration validation errors:", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        return 1
 
     except Exception as e:
         print(f"Error validating configuration: {e}", file=sys.stderr)
@@ -557,7 +555,7 @@ def cmd_import(args: argparse.Namespace) -> int:
         return 1
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Main entry point for CLI.
 
     Args:
@@ -621,25 +619,24 @@ def main(argv: Optional[list[str]] = None) -> int:
     # Dispatch to command handler
     if args.command == "list":
         return cmd_list(args)
-    elif args.command == "enable":
+    if args.command == "enable":
         return cmd_enable(args)
-    elif args.command == "disable":
+    if args.command == "disable":
         return cmd_disable(args)
-    elif args.command == "validate":
+    if args.command == "validate":
         return cmd_validate(args)
-    elif args.command == "add":
+    if args.command == "add":
         return cmd_add(args)
-    elif args.command == "remove":
+    if args.command == "remove":
         return cmd_remove(args)
-    elif args.command == "show":
+    if args.command == "show":
         return cmd_show(args)
-    elif args.command == "export":
+    if args.command == "export":
         return cmd_export(args)
-    elif args.command == "import":
+    if args.command == "import":
         return cmd_import(args)
-    else:
-        parser.print_help()
-        return 1
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":

@@ -396,7 +396,7 @@ async def _run_no_dashboard_mode(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
-            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+            "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.",
             err=True,
         )
         sys.exit(1)
@@ -476,13 +476,13 @@ async def _run_dashboard_mode(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
-            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'."
+            "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'."
         )
         click.echo(
             f"❌ Failed to connect to Neo4j: {e}\n"
             "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
             "If using Docker, check that the container is started and healthy.\n"
-            "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+            "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.",
             err=True,
         )
         sys.exit(1)
@@ -714,7 +714,7 @@ async def visualize_command_handler(
                 f"⚠️  Failed to connect to Neo4j: {e}\n"
                 "Action: Ensure Neo4j is running and accessible at the configured URI.\n"
                 "If using Docker, check that the container is started and healthy.\n"
-                "You can start the container with 'python scripts/cli.py container' or 'docker-compose up'.",
+                "You can start the container with 'atg container' or 'docker-compose -f docker/docker-compose.yml up -d neo4j'.",
                 err=True,
             )
             if not no_container:
