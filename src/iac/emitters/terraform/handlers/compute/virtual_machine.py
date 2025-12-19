@@ -101,7 +101,7 @@ class VirtualMachineHandler(ResourceHandler):
                 f"VM '{resource_name}' has unclear OS type, defaulting to Linux"
             )
 
-        # Add VM-specific properties
+        # Add VM-specific properties (common to both Windows and Linux)
         config.update(
             {
                 "size": resource.get("size", "Standard_B2s"),
@@ -111,14 +111,24 @@ class VirtualMachineHandler(ResourceHandler):
                     "caching": "ReadWrite",
                     "storage_account_type": "Standard_LRS",
                 },
-                "source_image_reference": {
-                    "publisher": "Canonical",
-                    "offer": "0001-com-ubuntu-server-jammy",
-                    "sku": "22_04-lts",
-                    "version": "latest",
-                },
             }
         )
+
+        # Bug #21: Set source_image_reference based on OS type
+        if is_windows:
+            config["source_image_reference"] = {
+                "publisher": "MicrosoftWindowsServer",
+                "offer": "WindowsServer",
+                "sku": "2022-Datacenter",
+                "version": "latest",
+            }
+        else:
+            config["source_image_reference"] = {
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-jammy",
+                "sku": "22_04-lts",
+                "version": "latest",
+            }
 
         # Fix #596: Add authentication based on OS type
         if is_windows:
