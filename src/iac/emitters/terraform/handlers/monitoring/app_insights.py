@@ -49,6 +49,9 @@ class ApplicationInsightsHandler(ResourceHandler):
         # Workspace ID (for workspace-based App Insights)
         workspace_id = properties.get("WorkspaceResourceId")
         if workspace_id:
+            # Normalize casing for Terraform compatibility
+            workspace_id = workspace_id.replace("/microsoft.operationalinsights/", "/Microsoft.OperationalInsights/")
+            workspace_id = workspace_id.replace("/resourcegroups/", "/resourceGroups/")
             config["workspace_id"] = workspace_id
 
         # Retention

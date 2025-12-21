@@ -276,7 +276,11 @@ class ResourceHandler(ABC):
         # Add location for resources that need it (most resources)
         if include_location:
             # Fix #601: Use target_location from context if provided, otherwise source location
-            if context and hasattr(context, 'target_location') and context.target_location:
+            if (
+                context
+                and hasattr(context, "target_location")
+                and context.target_location
+            ):
                 location = context.target_location
             else:
                 location = self.get_location(resource)

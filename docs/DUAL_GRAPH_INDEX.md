@@ -6,22 +6,15 @@ This index provides quick access to all dual-graph architecture documentation.
 
 ## Core Design Documents
 
-### 1. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md)
+### 1. Dual-Graph Design Overview
 **Start here!** High-level overview and quick reference.
 
-**Contains:**
+See [architecture/dual-graph.md](architecture/dual-graph.md) for details on:
 - What is dual-graph architecture
-- Key design decisions table
+- Key design decisions
 - Node and relationship schemas
 - Quick query patterns
-- Implementation approach summary
-- Success criteria
-- 5-minute read
-
-**Best for:**
-- First-time readers
-- Executives and managers
-- Quick reference during development
+- Implementation approach
 
 ---
 
@@ -89,25 +82,10 @@ This index provides quick access to all dual-graph architecture documentation.
 
 ---
 
-### 5. [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md)
-**Project plan.** Step-by-step implementation guide.
+### 5. Implementation Reference
+**Project plan.** Implementation is complete.
 
-**Contains:**
-- 7-phase implementation plan (6-7 weeks)
-- Detailed task breakdowns
-- Testing strategy
-- Risk mitigation
-- Rollback procedures
-- Success metrics
-- Timeline tracking
-- Stakeholder communication plan
-
-**Best for:**
-- Project managers
-- Team leads
-- Sprint planning
-- Progress tracking
-- Risk management
+For current implementation details, see the source code in `src/` directory and the complete schema in DUAL_GRAPH_SCHEMA.md.
 
 ---
 
@@ -155,7 +133,6 @@ This index provides quick access to all dual-graph architecture documentation.
 ### For Backend Developers
 
 **Start here:**
-1. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Get the overview (10 min)
 2. [DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py](./DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py) - See code patterns (30 min)
 3. [DUAL_GRAPH_SCHEMA.md](./DUAL_GRAPH_SCHEMA.md) - Understand schema (1 hour)
 4. [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher) - Query reference (ongoing)
@@ -173,7 +150,6 @@ This index provides quick access to all dual-graph architecture documentation.
 ### For Database Administrators
 
 **Start here:**
-1. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Get the overview (10 min)
 2. [DUAL_GRAPH_SCHEMA.md](./DUAL_GRAPH_SCHEMA.md) - Complete schema spec (1 hour)
 3. [../migrations/0010_dual_graph_schema.cypher](../migrations/0010_dual_graph_schema.cypher) - Migration script (15 min)
 4. [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher) - Validation queries (30 min)
@@ -190,8 +166,6 @@ This index provides quick access to all dual-graph architecture documentation.
 ### For Project Managers
 
 **Start here:**
-1. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Get the overview (10 min)
-2. [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md) - Full project plan (2 hours)
 3. [DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt](./DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt) - Visual reference (15 min)
 
 **Key sections:**
@@ -206,9 +180,7 @@ This index provides quick access to all dual-graph architecture documentation.
 ### For DevOps Engineers
 
 **Start here:**
-1. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Get the overview (10 min)
 2. [../migrations/0010_dual_graph_schema.cypher](../migrations/0010_dual_graph_schema.cypher) - Migration script (15 min)
-3. [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md) - Deployment plan (1 hour)
 4. [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher) - Monitoring queries (30 min)
 
 **Key sections:**
@@ -224,7 +196,6 @@ This index provides quick access to all dual-graph architecture documentation.
 
 **Start here:**
 1. [DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt](./DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt) - Visual overview (15 min)
-2. [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Detailed summary (20 min)
 3. [DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py](./DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py) - Code walkthrough (1 hour)
 
 **Learning path:**
@@ -240,8 +211,6 @@ This index provides quick access to all dual-graph architecture documentation.
 ### Planning Implementation
 
 **Documents:**
-- [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md) - Full plan
-- [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md) - Quick reference
 
 **Sections:**
 - Implementation Phases (Strategy)
@@ -279,7 +248,6 @@ This index provides quick access to all dual-graph architecture documentation.
 ### Deploying to Production
 
 **Documents:**
-- [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md) - Deployment plan
 - [../migrations/0010_dual_graph_schema.cypher](../migrations/0010_dual_graph_schema.cypher) - Migration
 
 **Sections:**
@@ -308,11 +276,9 @@ For planning reading time:
 
 | Document | Lines | Read Time | Type |
 |----------|-------|-----------|------|
-| DUAL_GRAPH_DESIGN_SUMMARY.md | ~400 | 15 min | Quick reference |
 | DUAL_GRAPH_SCHEMA.md | ~1,200 | 60 min | Comprehensive spec |
 | DUAL_GRAPH_QUERIES.cypher | ~700 | 30 min | Query cookbook |
 | DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py | ~600 | 45 min | Code reference |
-| DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md | ~1,000 | 90 min | Project plan |
 | DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt | ~500 | 20 min | Visual reference |
 | 0010_dual_graph_schema.cypher | ~120 | 10 min | Migration script |
 
@@ -419,7 +385,6 @@ A: See [DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py](./DUAL_GRAPH_IMPLEMENTATION_EXAMPL
 A: See [DUAL_GRAPH_SCHEMA.md](./DUAL_GRAPH_SCHEMA.md) section 4
 
 **Q: How do I rollback?**
-A: See [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md) "Rollback Plan"
 
 **Q: How do I detect orphaned nodes?**
 A: See [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher) section 5
@@ -436,8 +401,6 @@ A: See [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher) section 5
 
 ## Next Steps
 
-1. **First time here?** Start with [DUAL_GRAPH_DESIGN_SUMMARY.md](./DUAL_GRAPH_DESIGN_SUMMARY.md)
-2. **Ready to implement?** Follow [DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md](./DUAL_GRAPH_IMPLEMENTATION_STRATEGY.md)
 3. **Need a specific query?** Search [DUAL_GRAPH_QUERIES.cypher](./DUAL_GRAPH_QUERIES.cypher)
 4. **Writing code?** Reference [DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py](./DUAL_GRAPH_IMPLEMENTATION_EXAMPLE.py)
 5. **Confused?** Look at [DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt](./DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt)

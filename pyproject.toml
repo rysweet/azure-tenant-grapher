@@ -6,7 +6,7 @@ version = "0.1.0"
 description = "A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships."
 authors = [{name = "Azure Tenant Grapher Team"}]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     # Azure SDK dependencies
     "azure-identity>=1.15.0",
@@ -51,11 +51,10 @@ dependencies = [
     "ruamel.yaml",
     # Logging dependencies
     "structlog>=24.1.0",
-    # Graph sampling dependencies (Issue #427)
-    # Using local modified littleballoffur that supports pandas 2.x and Python 3.13
+    # Graph sampling dependencies (Issue #427, #611)
     "networkx>=3.0",
+    "pandas>=2.3.3",
     "numpy>=1.24.0",
-    "pandas>=2.0.0",
     # Graph embeddings dependencies (Issue #509)
     "node2vec>=0.4.6",
     "scikit-learn>=1.3.0",
@@ -204,7 +203,7 @@ skips = ["B101", "B102", "B105", "B108", "B608"]  # Skip common test-related fal
 skips = ["*_test.py", "test_*.py"]
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportMissingImports = false
 reportMissingTypeStubs = false

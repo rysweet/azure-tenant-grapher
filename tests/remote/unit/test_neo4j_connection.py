@@ -45,7 +45,7 @@ async def test_connection_manager_configure_environment():
     config = Neo4jConnectionConfig(
         uri="bolt://neo4j-dev:7687",
         user="neo4j",
-        password="SecurePassword123!@#",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
         max_pool_size=50,
     )
 
@@ -66,7 +66,9 @@ async def test_connection_manager_creates_driver_lazily():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -98,7 +100,9 @@ async def test_connection_manager_verifies_connectivity_on_creation():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -138,7 +142,9 @@ async def test_connection_manager_closes_environment():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -175,7 +181,7 @@ async def test_connection_manager_closes_all_environments():
         config = Neo4jConnectionConfig(
             uri=f"bolt://neo4j-{env}:7687",
             user="neo4j",
-            password="SecurePassword123!@#",
+            password="SecurePassword123!@#",  # pragma: allowlist secret
         )
         await manager.configure(env, config)
 
@@ -215,7 +221,11 @@ def test_neo4j_connection_config_validates_uri():
     from src.remote.db.connection_manager import Neo4jConnectionConfig
 
     with pytest.raises(ValueError) as exc_info:
-        Neo4jConnectionConfig(uri="", user="neo4j", password="SecurePassword123!@#")
+        Neo4jConnectionConfig(
+            uri="",
+            user="neo4j",
+            password="SecurePassword123!@#",  # pragma: allowlist secret
+        )
 
     assert "uri" in str(exc_info.value).lower()
 
@@ -226,7 +236,9 @@ def test_neo4j_connection_config_validates_user():
 
     with pytest.raises(ValueError) as exc_info:
         Neo4jConnectionConfig(
-            uri="bolt://localhost:7687", user="", password="SecurePassword123!@#"
+            uri="bolt://localhost:7687",
+            user="",
+            password="SecurePassword123!@#",  # pragma: allowlist secret
         )
 
     assert "user" in str(exc_info.value).lower()
@@ -250,7 +262,7 @@ def test_neo4j_connection_config_validates_pool_size():
         Neo4jConnectionConfig(
             uri="bolt://localhost:7687",
             user="neo4j",
-            password="SecurePassword123!@#",
+            password="SecurePassword123!@#",  # pragma: allowlist secret
             max_pool_size=0,
         )
 
@@ -265,7 +277,7 @@ def test_neo4j_connection_config_validates_timeout():
         Neo4jConnectionConfig(
             uri="bolt://localhost:7687",
             user="neo4j",
-            password="SecurePassword123!@#",
+            password="SecurePassword123!@#",  # pragma: allowlist secret
             connection_timeout=0,
         )
 
@@ -277,7 +289,9 @@ def test_neo4j_connection_config_default_values():
     from src.remote.db.connection_manager import Neo4jConnectionConfig
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     assert config.max_pool_size == 50
@@ -301,7 +315,9 @@ async def test_health_check_returns_true_for_healthy_connection():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -327,7 +343,9 @@ async def test_health_check_returns_false_for_unhealthy_connection():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -357,7 +375,9 @@ async def test_health_checker_checks_specific_environment():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -401,7 +421,9 @@ async def test_health_checker_reports_errors():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -436,7 +458,9 @@ async def test_health_checker_waits_for_ready():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -475,7 +499,9 @@ async def test_health_checker_timeout_on_wait():
     manager = ConnectionManager()
 
     config = Neo4jConnectionConfig(
-        uri="bolt://localhost:7687", user="neo4j", password="SecurePassword123!@#"
+        uri="bolt://localhost:7687",
+        user="neo4j",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
     )
 
     await manager.configure("dev", config)
@@ -637,14 +663,14 @@ def test_connection_config_pool_size_per_environment():
     dev_config = Neo4jConnectionConfig(
         uri="bolt://neo4j-dev:7687",
         user="neo4j",
-        password="SecurePassword123!@#",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
         max_pool_size=50,
     )
 
     integration_config = Neo4jConnectionConfig(
         uri="bolt://neo4j-int:7687",
         user="neo4j",
-        password="SecurePassword123!@#",
+        password="SecurePassword123!@#",  # pragma: allowlist secret
         max_pool_size=30,
     )
 

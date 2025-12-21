@@ -102,9 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, help="Debug adapter protocol port")
     parser.add_argument("--entry-point", help="Main program entry point")
     parser.add_argument("--output", help="Output file path (default: stdout)")
-    parser.add_argument(
-        "--validate", action="store_true", help="Validate generated config"
-    )
+    parser.add_argument("--validate", action="store_true", help="Validate generated config")
     args = parser.parse_args()
 
     try:

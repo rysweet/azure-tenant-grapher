@@ -604,8 +604,8 @@ For detailed information on visualization features, see [Synthetic Node Visualiz
 
 ## See Also
 
-- [Scale Operations Specification](SCALE_OPERATIONS_SPEC.md)
-- [Scale-Up Command Reference](SCALE_UP_REFERENCE.md)
-- [Scale-Down Command Reference](SCALE_DOWN_REFERENCE.md)
+- [Scale Operations Specification](SCALE_OPERATIONS.md)
+- [Scale-Up Command Reference](SCALE_OPERATIONS.md#scale-up-operations)
+- [Scale-Down Command Reference](SCALE_OPERATIONS.md#scale-down-operations)
 - [Synthetic Node Visualization](SYNTHETIC_NODE_VISUALIZATION.md)
 - [Example Configurations](examples/)

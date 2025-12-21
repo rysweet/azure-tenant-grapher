@@ -344,7 +344,7 @@ uv run atg layer refresh-stats my-layer
 ## Next Steps
 
 - Read the [full specification](../architecture/LAYER_CLI_SPECIFICATION.md)
-- Learn about [scale operations](../SCALE_OPERATIONS_SPECIFICATION.md)
+- Learn about [scale operations](../SCALE_OPERATIONS.md)
 - Understand [dual-graph architecture](../NEO4J_SCHEMA_REFERENCE.md)
 
 ## Need Help?

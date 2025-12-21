@@ -92,8 +92,16 @@ class EntraUserHandler(ResourceHandler):
         """Sanitize user principal name.
 
         Bug #32 fix: Remove spaces and normalize UPN.
+        Bug #12 fix: Ensure UPN is valid email address format.
         """
         upn = upn.strip()
         upn = re.sub(r"\s+", " ", upn)
         upn = upn.replace(" ", "_")
+        upn = upn.replace("(", "").replace(")", "")  # Remove parentheses
+
+        # Ensure UPN is a valid email address
+        if "@" not in upn:
+            # Append default domain to make it a valid email
+            upn = f"{upn}@azuretenant.onmicrosoft.com"
+
         return upn

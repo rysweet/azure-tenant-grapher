@@ -277,7 +277,7 @@ Layer "experimental-01":
 
 - [Dual-Graph Architecture](../DUAL_GRAPH_SCHEMA.md) - Complete dual-graph design
 - [Resource Processing](../../src/services/resource_processing/README.md) - How SCAN_SOURCE_NODE is created
-- [IaC Generation](../../src/iac/README.md) - How SCAN_SOURCE_NODE is queried
+- IaC Generation (see ../../src/iac/ for source code) - How SCAN_SOURCE_NODE is queried
 - [Smart Import Bug Fixes](../smart-import-bug-fixes.md) - Impact on deployment validation
 
 ## References

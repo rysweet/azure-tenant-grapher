@@ -462,7 +462,7 @@ The agent works with Terraform state management:
 
 - [IaC Generation Guide](../SCALE_OPERATIONS.md) - Generate deployable IaC
 - [Cross-Tenant Deployment](../cross-tenant/FEATURES.md) - Deploy to different tenants
-- [Deployment Troubleshooting](../DEPLOYMENT_TROUBLESHOOTING.md) - Manual troubleshooting
+- [Deployment Troubleshooting](AUTONOMOUS_DEPLOYMENT_FAQ.md) - Manual troubleshooting
 - [Terraform Import Blocks](../design/cross-tenant-translation/CLI_FLAGS_SUMMARY.md) - Auto-import existing resources
 
 ## Getting Help

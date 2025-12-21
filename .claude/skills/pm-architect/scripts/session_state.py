@@ -253,9 +253,7 @@ class PMSessionState:
         if 0 <= question_index < len(self.state["open_questions"]):
             self.state["open_questions"][question_index]["status"] = "RESOLVED"
             self.state["open_questions"][question_index]["resolution"] = resolution
-            self.state["open_questions"][question_index]["resolved_at"] = (
-                get_timestamp()
-            )
+            self.state["open_questions"][question_index]["resolved_at"] = get_timestamp()
             self.state["session_metrics"]["questions_resolved"] += 1
             self.save_state()
 
@@ -267,11 +265,7 @@ class PMSessionState:
             priority: HIGH, MEDIUM, or LOW
         """
         self.state["next_actions"].append(
-            {
-                "description": description,
-                "priority": priority,
-                "added_at": get_timestamp(),
-            }
+            {"description": description, "priority": priority, "added_at": get_timestamp()}
         )
         self.save_state()
 
@@ -311,11 +305,7 @@ class PMSessionState:
             Profile with preferences and patterns
         """
         prefs = self.state["stakeholder_context"].get(stakeholder, [])
-        return {
-            "stakeholder": stakeholder,
-            "total_preferences": len(prefs),
-            "preferences": prefs,
-        }
+        return {"stakeholder": stakeholder, "total_preferences": len(prefs), "preferences": prefs}
 
 
 def main():
@@ -335,9 +325,7 @@ def main():
     decision_parser.add_argument("rationale", help="Why it was decided")
 
     # Track preference command
-    pref_parser = subparsers.add_parser(
-        "track-preference", help="Track stakeholder preference"
-    )
+    pref_parser = subparsers.add_parser("track-preference", help="Track stakeholder preference")
     pref_parser.add_argument("stakeholder", help="Stakeholder name")
     pref_parser.add_argument("preference", help="Preference observed")
 
@@ -354,10 +342,7 @@ def main():
     action_parser = subparsers.add_parser("add-action", help="Add next action")
     action_parser.add_argument("description", help="Action description")
     action_parser.add_argument(
-        "--priority",
-        default="MEDIUM",
-        choices=["HIGH", "MEDIUM", "LOW"],
-        help="Action priority",
+        "--priority", default="MEDIUM", choices=["HIGH", "MEDIUM", "LOW"], help="Action priority"
     )
 
     # Show command
@@ -406,11 +391,7 @@ def main():
 
         elif args.command == "search":
             results = state.search_decisions(args.query)
-            print(
-                json.dumps(
-                    {"query": args.query, "matches": len(results), "results": results}
-                )
-            )
+            print(json.dumps({"query": args.query, "matches": len(results), "results": results}))
 
         return 0
 

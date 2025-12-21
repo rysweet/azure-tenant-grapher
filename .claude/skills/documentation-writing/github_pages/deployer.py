@@ -148,9 +148,7 @@ def deploy_site(config: DeploymentConfig) -> DeploymentResult:
             _run_git_command(repo_path, ["commit", "-m", config.commit_message])
 
             # Get commit SHA
-            sha_result = _run_git_command(
-                repo_path, ["rev-parse", "HEAD"], capture_output=True
-            )
+            sha_result = _run_git_command(repo_path, ["rev-parse", "HEAD"], capture_output=True)
             commit_sha = sha_result.stdout.strip()
 
             # Push to remote
@@ -299,7 +297,7 @@ def _run_git_command(
     Returns:
         CompletedProcess result
     """
-    cmd = ["git", *args]
+    cmd = ["git"] + args
 
     result = subprocess.run(
         cmd,

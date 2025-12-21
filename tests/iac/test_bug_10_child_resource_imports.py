@@ -121,9 +121,9 @@ class TestResourceIdBuilderWithOriginalIdMap:
 
         # Should return the original Azure ID, NOT try to build from config
         expected = "/subscriptions/source-sub-123/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/Ubuntu-vnet/subnets/default"
-        assert (
-            resource_id == expected
-        ), f"Expected original_id from map, got: {resource_id}"
+        assert resource_id == expected, (
+            f"Expected original_id from map, got: {resource_id}"
+        )
 
     def test_build_subnet_id_returns_none_when_config_has_terraform_vars_and_no_map(
         self, builder
@@ -147,9 +147,9 @@ class TestResourceIdBuilderWithOriginalIdMap:
         resource_id = builder.build("azurerm_subnet", resource_config, subscription_id)
 
         # Should return None because vnet_name contains Terraform variable
-        assert (
-            resource_id is None
-        ), f"Expected None for Terraform variable in config, got: {resource_id}"
+        assert resource_id is None, (
+            f"Expected None for Terraform variable in config, got: {resource_id}"
+        )
 
     def test_build_subnet_id_falls_back_to_config_when_no_original_id_in_map(
         self, builder
@@ -182,9 +182,9 @@ class TestResourceIdBuilderWithOriginalIdMap:
 
         # Should fall back to building from config
         expected = "/subscriptions/source-sub-123/resourceGroups/app-rg/providers/Microsoft.Network/virtualNetworks/app-vnet/subnets/frontend"
-        assert (
-            resource_id == expected
-        ), f"Expected fallback to config-based ID, got: {resource_id}"
+        assert resource_id == expected, (
+            f"Expected fallback to config-based ID, got: {resource_id}"
+        )
 
     def test_translate_subscription_in_id_for_cross_tenant(self, builder):
         """Test _translate_subscription_in_id() replaces subscription ID in Azure resource ID.
@@ -206,9 +206,9 @@ class TestResourceIdBuilderWithOriginalIdMap:
             )
 
             expected = "/subscriptions/target-sub-456/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/Ubuntu-vnet/subnets/default"
-            assert (
-                translated_id == expected
-            ), f"Expected subscription translated, got: {translated_id}"
+            assert translated_id == expected, (
+                f"Expected subscription translated, got: {translated_id}"
+            )
         except AttributeError as e:
             if "_translate_subscription_in_id" in str(e):
                 pytest.fail(
@@ -249,9 +249,9 @@ class TestResourceIdBuilderWithOriginalIdMap:
 
         # Should use original_id but translate subscription
         expected = "/subscriptions/target-sub-456/resourceGroups/network-rg/providers/Microsoft.Network/virtualNetworks/Ubuntu-vnet/subnets/default"
-        assert (
-            resource_id == expected
-        ), f"Expected cross-tenant translated ID, got: {resource_id}"
+        assert resource_id == expected, (
+            f"Expected cross-tenant translated ID, got: {resource_id}"
+        )
 
     def test_detects_terraform_variable_in_vnet_name(self, builder):
         """Test that Terraform variable syntax is correctly detected in vnet_name.
@@ -275,23 +275,25 @@ class TestResourceIdBuilderWithOriginalIdMap:
             try:
                 is_variable = builder._is_terraform_variable(vnet_name)
                 if should_be_variable:
-                    assert (
-                        is_variable
-                    ), f"Expected '{vnet_name}' to be detected as Terraform variable"
+                    assert is_variable, (
+                        f"Expected '{vnet_name}' to be detected as Terraform variable"
+                    )
                 else:
-                    assert (
-                        not is_variable
-                    ), f"Expected '{vnet_name}' to be detected as literal value"
+                    assert not is_variable, (
+                        f"Expected '{vnet_name}' to be detected as literal value"
+                    )
             except AttributeError as e:
                 if "_is_terraform_variable" in str(e):
                     # Method doesn't exist - use manual check for now
                     is_variable = re.match(r"\$\{.*\}", vnet_name) is not None
                     if should_be_variable:
-                        assert is_variable, f"Variable detection failed for: {vnet_name}"
+                        assert is_variable, (
+                            f"Variable detection failed for: {vnet_name}"
+                        )
                     else:
-                        assert (
-                            not is_variable
-                        ), f"False positive variable detection for: {vnet_name}"
+                        assert not is_variable, (
+                            f"False positive variable detection for: {vnet_name}"
+                        )
                 else:
                     raise
 
@@ -359,12 +361,12 @@ class TestTerraformEmitterImportBlocksWithOriginalId:
         # Verify import ID doesn't contain Terraform variables
         subnet_import = subnet_imports[0]
         import_id = subnet_import["id"]
-        assert (
-            "${" not in import_id
-        ), f"Import ID contains Terraform variable: {import_id}"
-        assert (
-            "Ubuntu-vnet" in import_id or "Ubuntu_vnet" in import_id
-        ), f"Import ID should contain real VNet name: {import_id}"
+        assert "${" not in import_id, (
+            f"Import ID contains Terraform variable: {import_id}"
+        )
+        assert "Ubuntu-vnet" in import_id or "Ubuntu_vnet" in import_id, (
+            f"Import ID should contain real VNet name: {import_id}"
+        )
 
     def test_import_blocks_for_both_parent_and_child_resources(self, emitter):
         """Test that import blocks are generated for BOTH parent (VNet) and child (subnet) resources.
@@ -430,9 +432,9 @@ class TestTerraformEmitterImportBlocksWithOriginalId:
         # Verify both have valid import IDs (no Terraform variables)
         for block in vnet_imports + subnet_imports:
             import_id = block["id"]
-            assert (
-                "${" not in import_id
-            ), f"Import ID contains Terraform variable: {import_id}"
+            assert "${" not in import_id, (
+                f"Import ID contains Terraform variable: {import_id}"
+            )
 
     def test_import_ids_have_no_terraform_variables(self, emitter):
         """Test that ALL import IDs are pure Azure resource IDs with no Terraform variables.
@@ -495,23 +497,23 @@ class TestTerraformEmitterImportBlocksWithOriginalId:
         subnet_imports = [
             block for block in import_blocks if "azurerm_subnet" in block.get("to", "")
         ]
-        assert (
-            len(subnet_imports) == 3
-        ), f"Expected 3 subnet import blocks, got {len(subnet_imports)}"
+        assert len(subnet_imports) == 3, (
+            f"Expected 3 subnet import blocks, got {len(subnet_imports)}"
+        )
 
         # CRITICAL: No import IDs should contain Terraform variables
         terraform_var_pattern = re.compile(r"\$\{.*?\}")
         for block in subnet_imports:
             import_id = block["id"]
             matches = terraform_var_pattern.findall(import_id)
-            assert (
-                not matches
-            ), f"Import ID contains Terraform variables: {import_id} (found: {matches})"
+            assert not matches, (
+                f"Import ID contains Terraform variables: {import_id} (found: {matches})"
+            )
 
             # Verify it's a valid Azure resource ID format
-            assert import_id.startswith(
-                "/subscriptions/"
-            ), f"Invalid Azure resource ID format: {import_id}"
+            assert import_id.startswith("/subscriptions/"), (
+                f"Invalid Azure resource ID format: {import_id}"
+            )
 
     def test_cross_tenant_import_ids_use_target_subscription(self, emitter):
         """Test that cross-tenant import IDs use target subscription, not source.
@@ -557,12 +559,12 @@ class TestTerraformEmitterImportBlocksWithOriginalId:
         import_id = subnet_imports[0]["id"]
 
         # Should use TARGET subscription, not source
-        assert (
-            "target-sub-456" in import_id
-        ), f"Import ID should use target subscription: {import_id}"
-        assert (
-            "source-sub-123" not in import_id
-        ), f"Import ID should not contain source subscription: {import_id}"
+        assert "target-sub-456" in import_id, (
+            f"Import ID should use target subscription: {import_id}"
+        )
+        assert "source-sub-123" not in import_id, (
+            f"Import ID should not contain source subscription: {import_id}"
+        )
 
     def test_backward_compatible_when_original_id_unavailable(self, emitter):
         """Test backward compatibility when original_id property is not in Neo4j.
@@ -608,7 +610,9 @@ class TestTerraformEmitterImportBlocksWithOriginalId:
 
         import_id = subnet_imports[0]["id"]
         assert "legacy-vnet" in import_id, f"Should use config vnet name: {import_id}"
-        assert "legacy-subnet" in import_id, f"Should use config subnet name: {import_id}"
+        assert "legacy-subnet" in import_id, (
+            f"Should use config subnet name: {import_id}"
+        )
 
 
 class TestImportBlockCountRegression:
@@ -723,23 +727,23 @@ class TestImportBlockCountRegression:
 
         # Before fix: subnet_imports would be 0 (child resources skipped)
         # After fix: subnet_imports should be 100
-        assert (
-            len(subnet_imports) == 100
-        ), f"Expected 100 subnet import blocks, got {len(subnet_imports)} (Bug #10: child resources missing import blocks)"
+        assert len(subnet_imports) == 100, (
+            f"Expected 100 subnet import blocks, got {len(subnet_imports)} (Bug #10: child resources missing import blocks)"
+        )
 
         # Parent resources should always work
-        assert (
-            len(vnet_imports) == 10
-        ), f"Expected 10 VNet import blocks, got {len(vnet_imports)}"
-        assert (
-            len(storage_imports) == 67
-        ), f"Expected 67 storage import blocks, got {len(storage_imports)}"
+        assert len(vnet_imports) == 10, (
+            f"Expected 10 VNet import blocks, got {len(vnet_imports)}"
+        )
+        assert len(storage_imports) == 67, (
+            f"Expected 67 storage import blocks, got {len(storage_imports)}"
+        )
 
         # TOTAL: Should be 177 import blocks (10 + 100 + 67)
         total_imports = len(import_blocks)
-        assert (
-            total_imports == 177
-        ), f"Expected 177 total import blocks, got {total_imports} (Bug #10: was 67 before fix)"
+        assert total_imports == 177, (
+            f"Expected 177 total import blocks, got {total_imports} (Bug #10: was 67 before fix)"
+        )
 
 
 if __name__ == "__main__":

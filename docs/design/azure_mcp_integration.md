@@ -667,5 +667,5 @@ ATG: Monitors deployment progress
 ### References
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/docs)
 - [Azure MCP Server Documentation](https://github.com/Azure/azure-mcp)
-- [ATG Architecture Documentation](../README.md)
+- [ATG Architecture Documentation](../INDEX.md)
 - [Azure SDK for Python](https://docs.microsoft.com/en-us/azure/developer/python/)

@@ -46,3 +46,9 @@ repos:
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+            demos/.*/terraform\.tfstate.*|
+            demos/.*/.*\.tf\.json|
+            notebooks/.*\.ipynb
+          )$

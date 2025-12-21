@@ -16,7 +16,6 @@ Example:
     ...     print(f"{server.name}: {server.enabled}")
 """
 
-from .cli import main
 from .config_manager import backup_config, read_config, restore_config, write_config
 from .mcp_operations import (
     MCPServer,
@@ -25,21 +24,23 @@ from .mcp_operations import (
     list_servers,
     validate_config,
 )
+from .cli import main
 
 __all__ = [
-    # MCP operations
-    "MCPServer",
-    "backup_config",
-    "disable_server",
-    "enable_server",
-    "list_servers",
-    # CLI entry point
-    "main",
     # Config management
     "read_config",
-    "restore_config",
-    "validate_config",
     "write_config",
+    "backup_config",
+    "restore_config",
+    # MCP operations
+    "MCPServer",
+    "list_servers",
+    "enable_server",
+    "disable_server",
+    "validate_config",
+    # CLI entry point
+    "main",
 ]
 
 __version__ = "1.0.0"
+

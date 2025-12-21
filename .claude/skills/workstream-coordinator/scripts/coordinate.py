@@ -29,9 +29,7 @@ def load_yaml(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def detect_stalled_workstreams(
-    workstreams: List[dict], threshold_hours: int = 2
-) -> List[dict]:
+def detect_stalled_workstreams(workstreams: List[dict], threshold_hours: int = 2) -> List[dict]:
     """Identify workstreams with no progress for threshold period."""
     stalled = []
     now = datetime.now(timezone.utc)
@@ -64,9 +62,7 @@ def detect_stalled_workstreams(
     return stalled
 
 
-def detect_dependency_conflicts(
-    workstreams: List[dict], backlog_items: List[dict]
-) -> List[dict]:
+def detect_dependency_conflicts(workstreams: List[dict], backlog_items: List[dict]) -> List[dict]:
     """Detect conflicts between active workstreams."""
     conflicts = []
 
@@ -162,9 +158,7 @@ async def analyze_workstream_async(ws: dict, backlog_items: List[dict]) -> Dict:
     return analysis
 
 
-async def parallel_workstream_analysis(
-    workstreams: List[dict], backlog_items: List[dict]
-) -> Dict:
+async def parallel_workstream_analysis(workstreams: List[dict], backlog_items: List[dict]) -> Dict:
     """Analyze multiple workstreams in parallel.
 
     Pattern: Amplifier P10 - Parallel Execution
@@ -187,10 +181,7 @@ async def parallel_workstream_analysis(
 
         if result.get("issues"):
             all_issues.extend(
-                [
-                    {"workstream": result["id"], "issue": issue}
-                    for issue in result["issues"]
-                ]
+                [{"workstream": result["id"], "issue": issue} for issue in result["issues"]]
             )
 
         if result.get("recommendations"):
@@ -247,9 +238,7 @@ def coordinate_workstreams(project_root: Path, parallel: bool = False) -> dict:
     # Analyze issues - use parallel analysis if requested
     if parallel and active:
         # Run async parallel analysis
-        parallel_results = asyncio.run(
-            parallel_workstream_analysis(active, backlog_items)
-        )
+        parallel_results = asyncio.run(parallel_workstream_analysis(active, backlog_items))
         analysis_mode = "parallel"
     else:
         # Use sequential analysis (original behavior)
@@ -271,9 +260,7 @@ def coordinate_workstreams(project_root: Path, parallel: bool = False) -> dict:
     if not active and backlog_items:
         ready_count = sum(1 for item in backlog_items if item.get("status") == "READY")
         if ready_count > 0:
-            recommendations.append(
-                f"No active work - {ready_count} items ready to start"
-            )
+            recommendations.append(f"No active work - {ready_count} items ready to start")
 
     result = {
         "analysis_mode": analysis_mode,
@@ -307,9 +294,7 @@ def coordinate_workstreams(project_root: Path, parallel: bool = False) -> dict:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Coordinate workstreams and detect issues"
-    )
+    parser = argparse.ArgumentParser(description="Coordinate workstreams and detect issues")
     parser.add_argument(
         "--project-root", type=Path, default=Path.cwd(), help="Project root directory"
     )

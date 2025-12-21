@@ -64,10 +64,10 @@ Report generated: deployment_report.md
 | `--format [terraform\|bicep\|arm]` | auto-detect | IaC format |
 
 **Documentation:**
-- **Tutorial:** [Your First Autonomous Deployment](docs/quickstart/AGENT_DEPLOYMENT_TUTORIAL.md) - 15-minute guided walkthrough
-- **User Guide:** [Autonomous Deployment Guide](docs/guides/AUTONOMOUS_DEPLOYMENT.md) - Complete usage documentation
-- **Reference:** [Agent Deployer Reference](docs/design/AGENT_DEPLOYER_REFERENCE.md) - Technical specification
-- **Index:** [Autonomous Deployment Docs](docs/AUTONOMOUS_DEPLOYMENT_INDEX.md) - Complete documentation index
+- **Tutorial:** [Your First Autonomous Deployment](quickstart/AGENT_DEPLOYMENT_TUTORIAL.md) - 15-minute guided walkthrough
+- **User Guide:** [Autonomous Deployment Guide](guides/AUTONOMOUS_DEPLOYMENT.md) - Complete usage documentation
+- **Reference:** [Agent Deployer Reference](design/AGENT_DEPLOYER_REFERENCE.md) - Technical specification
+- **Index:** [Autonomous Deployment Docs](AUTONOMOUS_DEPLOYMENT_INDEX.md) - Complete documentation index
 
 **When to use agent mode:**
 - Cross-tenant deployments with environmental differences

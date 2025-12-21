@@ -470,7 +470,7 @@ async def test_websocket_connection_validates_api_key():
 
     mock_websocket = AsyncMock()
     # Simulate invalid API key in query params
-    mock_websocket.query_params = {"api_key": "invalid_key"}
+    mock_websocket.query_params = {"api_key": "invalid_key"}  # pragma: allowlist secret
 
     conn = WebSocketConnection(mock_websocket)
 

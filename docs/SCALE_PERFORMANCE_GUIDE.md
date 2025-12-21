@@ -455,8 +455,8 @@ print(f"Throughput: {data['throughput_per_second']} items/s")
 
 ## Related Documentation
 
-- [Scale Operations Specification](SCALE_OPERATIONS_SPECIFICATION.md)
-- [Scale Operations Examples](SCALE_OPERATIONS_EXAMPLES.md)
+- [Scale Operations Specification](SCALE_OPERATIONS.md)
+- [Scale Operations Examples](SCALE_OPERATIONS_E2E_DEMONSTRATION.md)
 - [Neo4j Schema Reference](NEO4J_SCHEMA_REFERENCE.md)
 
 ## Contact

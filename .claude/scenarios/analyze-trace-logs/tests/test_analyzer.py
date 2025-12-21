@@ -26,21 +26,14 @@ def sample_jsonl(tmp_path):
     entries = [
         {
             "request": {
-                "body": {
-                    "messages": [
-                        {"role": "user", "content": "Fix the authentication bug"}
-                    ]
-                }
+                "body": {"messages": [{"role": "user", "content": "Fix the authentication bug"}]}
             }
         },
         {
             "request": {
                 "body": {
                     "messages": [
-                        {
-                            "role": "user",
-                            "content": "Create a new feature for user profiles",
-                        }
+                        {"role": "user", "content": "Create a new feature for user profiles"}
                     ]
                 }
             }
@@ -205,11 +198,7 @@ def test_analyze_with_sample_logs(analyzer, tmp_path):
     for i in range(3):
         log_file = log_dir / f"log_{i}.jsonl"
         entry = {
-            "request": {
-                "body": {
-                    "messages": [{"role": "user", "content": f"Fix bug number {i}"}]
-                }
-            }
+            "request": {"body": {"messages": [{"role": "user", "content": f"Fix bug number {i}"}]}}
         }
         with open(log_file, "w") as f:
             f.write(json.dumps(entry) + "\n")
@@ -229,12 +218,7 @@ def test_generate_report(analyzer, tmp_path):
 
     analysis = {
         "file_stats": [
-            {
-                "file": "test.jsonl",
-                "total_entries": 10,
-                "user_messages": 5,
-                "size_mb": 0.1,
-            }
+            {"file": "test.jsonl", "total_entries": 10, "user_messages": 5, "size_mb": 0.1}
         ],
         "total_messages": 100,
         "categories": Counter({"fix_debug": 30, "implement": 40}),
