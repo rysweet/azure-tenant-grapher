@@ -24,11 +24,10 @@ import {
   Update as UpdateIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
-import { io, Socket } from 'socket.io-client';
 import LogViewer from '../common/LogViewer';
 import { useApp } from '../../context/AppContext';
 import { useBackgroundOperations } from '../../hooks/useBackgroundOperations';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocketContext } from '../../context/WebSocketContext';
 import { useLogger } from '../../hooks/useLogger';
 import { isValidTenantId, isValidResourceLimit, isValidThreadCount } from '../../utils/validation';
 
@@ -47,11 +46,11 @@ interface DBStats {
 const ScanTab: React.FC = () => {
   const { state, dispatch } = useApp();
   const { addBackgroundOperation, updateBackgroundOperation, removeBackgroundOperation } = useBackgroundOperations();
-  const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
+  const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput, onProcessExit } = useWebSocketContext();
   const logger = useLogger('Scan');
 
-  // State declarations
-  const [tenantId, setTenantId] = useState(state.config.tenantId || '');
+  // State declarations - safely access state.config
+  const [tenantId, setTenantId] = useState(state?.config?.tenantId || '');
   const [selectedTenant, setSelectedTenant] = useState<'1' | '2'>('1');
   const [filterBySubscriptions, setFilterBySubscriptions] = useState('');
   const [filterByRgs, setFilterByRgs] = useState('');
@@ -65,7 +64,6 @@ const ScanTab: React.FC = () => {
   const [currentProcessId, setCurrentProcessId] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
-  const [processSocket, setProcessSocket] = useState<Socket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
@@ -302,29 +300,6 @@ const ScanTab: React.FC = () => {
     }
   }, [isConnected, dispatch]);
 
-  // Set up dedicated Socket.IO connection for process events
-  useEffect(() => {
-    if (!isConnected || processSocket) {
-      return; // Don't create socket if not connected or socket already exists
-    }
-
-    const socket = io('http://localhost:3001');
-
-    socket.on('connect', () => {
-      // Process event socket connected
-    });
-
-    socket.on('process-exit', handleProcessExit);
-    socket.on('process-error', handleProcessError);
-
-    setProcessSocket(socket);
-
-    return () => {
-      socket.disconnect();
-      setProcessSocket(null);
-    };
-  }, [isConnected, handleProcessExit, handleProcessError]);
-
   // Monitor process output in real-time
   useEffect(() => {
     if (currentProcessId && isRunning) {
@@ -345,6 +320,14 @@ const ScanTab: React.FC = () => {
       }
     };
   }, [currentProcessId, isRunning, unsubscribeFromProcess]);
+
+  // Register process exit handler
+  useEffect(() => {
+    if (currentProcessId && isRunning) {
+      const cleanup = onProcessExit(currentProcessId, handleProcessExit);
+      return cleanup;
+    }
+  }, [currentProcessId, isRunning, onProcessExit, handleProcessExit]);
 
   useEffect(() => {
     // Check Neo4j status and load DB stats on mount with retry
@@ -408,93 +391,113 @@ const ScanTab: React.FC = () => {
   };
 
   const handleStart = async () => {
-    if (!tenantId) {
-      setError('Tenant ID is required');
-      return;
-    }
-
-    if (!isValidTenantId(tenantId)) {
-      setError('Invalid Tenant ID format. Must be a valid UUID or domain.');
-      return;
-    }
-
-    // Only validate resource limit if it's being used
-    if (hasResourceLimit && !isValidResourceLimit(resourceLimit)) {
-      setError('Resource limit must be between 1 and 10000');
-      return;
-    }
-
-    if (!isValidThreadCount(maxLlmThreads) || !isValidThreadCount(maxBuildThreads)) {
-      setError('Thread counts must be between 1 and 100');
-      return;
-    }
-
-    if (!isConnected) {
-      setError('Not connected to backend server. Please check if the backend is running.');
-      return;
-    }
-
-    logger.info(`Starting scan process for tenant: ${tenantId}`, {
-      tenantId,
-      hasResourceLimit,
-      resourceLimit: hasResourceLimit ? resourceLimit : null
-    });
-
-    setError(null);
-    setIsRunning(true);
-    setLogs([]);
-    setProgress(0);
-    setScanStats({
-      resourcesDiscovered: 0,
-      nodesCreated: 0,
-      edgesCreated: 0,
-      currentPhase: 'Initializing'
-    });
-
-    const args = [
-      '--tenant-id', tenantId,
-      '--max-llm-threads', maxLlmThreads.toString(),
-      '--max-build-threads', maxBuildThreads.toString(),
-    ];
-
-    // Add filters if they have values
-    if (filterBySubscriptions) {
-      args.push('--filter-by-subscriptions', filterBySubscriptions);
-    }
-    if (filterByRgs) {
-      args.push('--filter-by-rgs', filterByRgs);
-    }
-
-    // Only add resource limit if checkbox is checked
-    if (hasResourceLimit) {
-      args.push('--resource-limit', resourceLimit.toString());
-    }
-
-    if (rebuildEdges) args.push('--rebuild-edges');
-    if (noAadImport) args.push('--no-aad-import');
-
     try {
+      console.log('handleStart called');
+      
+      if (!tenantId) {
+        setError('Tenant ID is required');
+        return;
+      }
+
+      if (!isValidTenantId(tenantId)) {
+        setError('Invalid Tenant ID format. Must be a valid UUID or domain.');
+        return;
+      }
+
+      // Only validate resource limit if it's being used
+      if (hasResourceLimit && !isValidResourceLimit(resourceLimit)) {
+        setError('Resource limit must be between 1 and 10000');
+        return;
+      }
+
+      if (!isValidThreadCount(maxLlmThreads) || !isValidThreadCount(maxBuildThreads)) {
+        setError('Thread counts must be between 1 and 100');
+        return;
+      }
+
+      console.log('Checking connection status:', isConnected);
+      
+      if (!isConnected) {
+        setError('Not connected to backend server. Please check if the backend is running.');
+        return;
+      }
+
+      logger.info(`Starting scan process for tenant: ${tenantId}`, {
+        tenantId,
+        hasResourceLimit,
+        resourceLimit: hasResourceLimit ? resourceLimit : null
+      });
+
+      setError(null);
+      setIsRunning(true);
+      setLogs([]);
+      setProgress(0);
+      setScanStats({
+        resourcesDiscovered: 0,
+        nodesCreated: 0,
+        edgesCreated: 0,
+        currentPhase: 'Initializing'
+      });
+
+      const args = [
+        '--tenant-id', tenantId,
+        '--max-llm-threads', maxLlmThreads.toString(),
+        '--max-build-threads', maxBuildThreads.toString(),
+      ];
+
+      // Add filters if they have values
+      if (filterBySubscriptions) {
+        args.push('--filter-by-subscriptions', filterBySubscriptions);
+      }
+      if (filterByRgs) {
+        args.push('--filter-by-rgs', filterByRgs);
+      }
+
+      // Only add resource limit if checkbox is checked
+      if (hasResourceLimit) {
+        args.push('--resource-limit', resourceLimit.toString());
+      }
+
+      if (rebuildEdges) args.push('--rebuild-edges');
+      if (noAadImport) args.push('--no-aad-import');
+
       // Use backend API instead of Electron API
       const response = await axios.post('http://localhost:3001/api/execute', {
         command: 'scan',
         args: args
       });
 
+      console.log('Scan request successful, processId:', response.data.processId);
+
       const processId = response.data.processId;
       setCurrentProcessId(processId);
 
-      logger.logProcessEvent(processId, 'started');
+      try {
+        logger.logProcessEvent(processId, 'started');
+      } catch (err) {
+        console.error('Failed to log process event:', err);
+      }
 
-      // Add to background operations tracker
-      addBackgroundOperation({
-        id: processId,
-        type: 'Scan',
-        name: `Scanning tenant ${tenantId}`,
-        // Backend handles PID internally, so we don't include it
-      });
+      try {
+        // Add to background operations tracker
+        addBackgroundOperation({
+          id: processId,
+          type: 'Scan',
+          name: `Scanning tenant ${tenantId}`,
+          // Backend handles PID internally, so we don't include it
+        });
+      } catch (err) {
+        console.error('Failed to add background operation:', err);
+      }
 
-      // Subscribe to process output via WebSocket
-      subscribeToProcess(processId);
+      try {
+        // Subscribe to process output via WebSocket
+        console.log('Subscribing to process:', processId);
+        subscribeToProcess(processId);
+        console.log('Successfully subscribed to process');
+      } catch (err) {
+        console.error('Failed to subscribe to process:', err);
+      }
 
       // Check if process is already running by polling status initially
       setTimeout(async () => {
@@ -510,6 +513,7 @@ const ScanTab: React.FC = () => {
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
 
     } catch (err: any) {
+      console.error('Error in handleStart:', err);
       dispatch({ type: 'ADD_LOG', payload: `Scan failed to start: ${err.message}` });
       setError(err.response?.data?.error || err.message);
       setIsRunning(false);

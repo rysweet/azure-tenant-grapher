@@ -9,6 +9,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import TabErrorBoundary from './components/common/TabErrorBoundary';
 import { useApp } from './context/AppContext';
 import { LayerProvider } from './context/LayerContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import { withErrorHandling, withNetworkErrorHandling } from './utils/errorUtils';
 import { errorService } from './services/errorService';
 
@@ -107,10 +108,19 @@ const App: React.FC = () => {
   const checkConnection = async () => {
     await withErrorHandling(
       async () => {
-        const systemInfo = await window.electronAPI.system.platform();
-        const platform = systemInfo?.platform;
-        if (platform) {
+        // Check if backend server is actually responding
+        try {
+          await axios.get('http://localhost:3001/api/neo4j/status', { timeout: 2000 });
           setConnectionStatus('connected');
+        } catch (error) {
+          // Fallback to checking Electron API
+          const systemInfo = await window.electronAPI.system.platform();
+          const platform = systemInfo?.platform;
+          if (platform) {
+            setConnectionStatus('connected');
+          } else {
+            setConnectionStatus('disconnected');
+          }
         }
       },
       'checkConnection',
@@ -140,6 +150,7 @@ const App: React.FC = () => {
   };
 
   return (
+    <WebSocketProvider>
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header />
       <TabNavigation />
@@ -243,6 +254,7 @@ const App: React.FC = () => {
 
       <StatusBar connectionStatus={connectionStatus} />
     </Box>
+    </WebSocketProvider>
   );
 };
 

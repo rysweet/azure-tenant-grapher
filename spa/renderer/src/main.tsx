@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AppProvider } from './context/AppContext';
 import { LayerProvider } from './context/LayerContext';
+import { WebSocketProvider } from './context/WebSocketContext';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { theme } from './theme';
@@ -54,18 +55,20 @@ const RootErrorFallback = (
 );
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  //<React.StrictMode>
     <ErrorBoundary fallback={RootErrorFallback}>
       <BrowserRouter>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AppProvider>
-            <LayerProvider>
-              <App />
-            </LayerProvider>
+            <WebSocketProvider>
+              <LayerProvider>
+                <App />
+              </LayerProvider>
+            </WebSocketProvider>
           </AppProvider>
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>
-  </React.StrictMode>
+  //</React.StrictMode>
 );

@@ -32,6 +32,8 @@ import {
   Chat as ChatIcon,
 } from '@mui/icons-material';
 import { useChatSessions, Message, ConsoleOutput } from '../../hooks/useChatSessions';
+import { useWebSocketContext } from '../../context/WebSocketContext';
+import axios from 'axios';
 
 interface SampleQuery {
   title: string;
@@ -99,6 +101,8 @@ const AgentModeTab: React.FC = () => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
+  const processedOutputCount = useRef<number>(0);
+  const { subscribeToProcess, unsubscribeFromProcess, getProcessOutput, outputs, onProcessExit } = useWebSocketContext();
 
   const {
     sessions,
@@ -138,92 +142,99 @@ const AgentModeTab: React.FC = () => {
     scrollConsoleToBottom();
   }, [activeSession?.consoleOutput]);
 
-  // Set up event listeners for process output
+  // Subscribe to process on mount
   useEffect(() => {
-    const handleProcessOutput = (data: any) => {
-      // Process output received
+    if (currentProcessId) {
+      subscribeToProcess(currentProcessId);
+      processedOutputCount.current = 0; // Reset counter for new process
+      return () => {
+        unsubscribeFromProcess(currentProcessId);
+      };
+    }
+  }, [currentProcessId, subscribeToProcess, unsubscribeFromProcess]);
 
-      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
-        const lines = Array.isArray(data.data) ? data.data : [data.data];
-        lines.forEach((line: string) => {
-          // Always add to console output, even if empty
-          const output: ConsoleOutput = {
-            type: data.type === 'stderr' ? 'stderr' : 'stdout',
-            content: line || '',
-            timestamp: new Date(),
-          };
-          addConsoleOutput(activeSessionId, output);
+  // Handle process exit
+  useEffect(() => {
+    if (!currentProcessId || !activeSessionId) {
+      return;
+    }
 
-          // Parse for important messages to add to chat
-          if (line && line.trim()) {
-            if (line.includes('🎯 Final Answer:') ||
-                line.includes('✅') ||
-                line.includes('❌') ||
-                line.includes('🔄')) {
-              const assistantMessage: Message = {
-                role: 'assistant',
-                content: line,
-                timestamp: new Date(),
-              };
-              addMessage(activeSessionId, assistantMessage);
-            }
+    const unsubscribe = onProcessExit(currentProcessId, (event) => {
+      setIsProcessing(false);
+      setCurrentProcessId(null);
+
+      // Add console message
+      const exitOutput: ConsoleOutput = {
+        type: 'info',
+        content: `\n=== Process exited with code ${event.code ?? 'unknown'} ===\n`,
+        timestamp: new Date(),
+      };
+      addConsoleOutput(activeSessionId, exitOutput);
+
+      // Add chat message if exit was not successful
+      if (event.code !== 0) {
+        const errorMessage: Message = {
+          role: 'system',
+          content: `Process failed with exit code ${event.code}. Check console output for details.`,
+          timestamp: new Date(),
+        };
+        addMessage(activeSessionId, errorMessage);
+      }
+    });
+
+    return unsubscribe;
+  }, [currentProcessId, activeSessionId, onProcessExit, addMessage, addConsoleOutput]);
+
+  // Watch for output changes and update console
+  useEffect(() => {
+    if (!currentProcessId || !activeSessionId) {
+      return;
+    }
+
+    const processOutputs = outputs.get(currentProcessId);
+    if (!processOutputs || processOutputs.length === 0) {
+      return;
+    }
+
+    // Only process new outputs (outputs we haven't seen before)
+    const newOutputs = processOutputs.slice(processedOutputCount.current);
+    if (newOutputs.length === 0) {
+      return;
+    }
+
+    // Process only new output data
+    newOutputs.forEach((outputData) => {
+      const lines = Array.isArray(outputData.data) ? outputData.data : [outputData.data];
+      lines.forEach((line: string) => {
+        if (!line) return;
+
+        const consoleOutput: ConsoleOutput = {
+          type: outputData.type === 'stderr' ? 'stderr' : 'stdout',
+          content: line,
+          timestamp: new Date(),
+        };
+        addConsoleOutput(activeSessionId, consoleOutput);
+
+        // Parse for important messages to add to chat
+        if (line.trim()) {
+          if (line.includes('🎯 Final Answer:') ||
+              line.includes('✅') ||
+              line.includes('❌') ||
+              line.includes('🔄')) {
+            const assistantMessage: Message = {
+              role: 'assistant',
+              content: line,
+              timestamp: new Date(),
+            };
+            addMessage(activeSessionId, assistantMessage);
           }
-        });
-      }
-    };
-
-    const handleProcessExit = (data: any) => {
-      // Process exit received
-
-      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
-        setIsProcessing(false);
-        setCurrentProcessId(null);
-
-        // Add console message
-        const exitOutput: ConsoleOutput = {
-          type: 'info',
-          content: `\n=== Process exited with code ${data.code} ===\n`,
-          timestamp: new Date(),
-        };
-        addConsoleOutput(activeSessionId, exitOutput);
-
-        // Add chat message if exit was not successful
-        if (data.code !== 0) {
-          const errorMessage: Message = {
-            role: 'system',
-            content: `Process failed with exit code ${data.code}. Check console output for details.`,
-            timestamp: new Date(),
-          };
-          addMessage(activeSessionId, errorMessage);
         }
-      }
-    };
+      });
+    });
 
-    const handleProcessError = (data: any) => {
-      // Process error received
-
-      if (currentProcessId && data.id === currentProcessId && activeSessionId) {
-        const errorOutput: ConsoleOutput = {
-          type: 'stderr',
-          content: `Error: ${data.error}`,
-          timestamp: new Date(),
-        };
-        addConsoleOutput(activeSessionId, errorOutput);
-      }
-    };
-
-    // Subscribe to events
-    window.electronAPI.on('process:output', handleProcessOutput);
-    window.electronAPI.on('process:exit', handleProcessExit);
-    window.electronAPI.on('process:error', handleProcessError);
-
-    // Cleanup
-    return () => {
-      window.electronAPI.off?.('process:output', handleProcessOutput);
-      window.electronAPI.off?.('process:exit', handleProcessExit);
-      window.electronAPI.off?.('process:error', handleProcessError);
-    };
-  }, [currentProcessId, activeSessionId, addMessage, addConsoleOutput]);
+    // Update the processed count
+    processedOutputCount.current = processOutputs.length;
+  }, [outputs, currentProcessId, activeSessionId, addMessage, addConsoleOutput]);
 
   const handleSend = async (queryText?: string) => {
     const messageText = queryText || input;
@@ -258,36 +269,40 @@ const AgentModeTab: React.FC = () => {
     addConsoleOutput(sessionId, startOutput);
 
     try {
-      // Execute with --question parameter
-      const result = await window.electronAPI.cli.execute('agent-mode', ['--question', messageText]);
-      // CLI execute result
+      // Execute via backend API (works in both browser and Electron)
+      const result = await axios.post('http://localhost:3001/api/execute', {
+        command: 'agent-mode',
+        args: ['--question', messageText]
+      });
 
-      if (result.success && result.data?.id) {
-        setCurrentProcessId(result.data.id);
+      if (result.data?.processId) {
+        setCurrentProcessId(result.data.processId);
 
         // Add console info
         const processOutput: ConsoleOutput = {
           type: 'info',
-          content: `Process ID: ${result.data.id}\n`,
+          content: `Process ID: ${result.data.processId}\n`,
           timestamp: new Date(),
         };
         addConsoleOutput(sessionId, processOutput);
       } else {
-        throw new Error(result.error || 'Failed to start agent mode');
+        throw new Error(result.data?.error || 'Failed to start agent mode');
       }
     } catch (err: any) {
       setIsProcessing(false);
 
+      const errorDetails = err.response?.data?.error || err.message;
+      
       const errorMessage: Message = {
         role: 'system',
-        content: `Error: ${err.message}`,
+        content: `Error: ${errorDetails}`,
         timestamp: new Date(),
       };
       addMessage(sessionId, errorMessage);
 
       const errorOutput: ConsoleOutput = {
         type: 'stderr',
-        content: `Error: ${err.message}\n`,
+        content: `Error: ${errorDetails}\n${err.response?.data ? JSON.stringify(err.response.data, null, 2) : ''}\n`,
         timestamp: new Date(),
       };
       addConsoleOutput(sessionId, errorOutput);
