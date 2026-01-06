@@ -3,7 +3,7 @@
   "productName": "Azure Tenant Grapher",
   "version": "1.0.0",
   "description": "Graph visualization and management tool for Azure tenants",
-  "main": "dist/main/index.js",
+  "main": "dist/main/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:main\" \"npm run dev:renderer\" \"npm run dev:backend\"",
     "dev:main": "tsc -w -p main/tsconfig.json",
@@ -22,7 +22,6 @@
     "package:all": "npm run build && electron-builder -mwl",
     "test": "jest",
     "test:e2e": "playwright test",
-    "test:ui": "node test-with-gadugi.js",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
@@ -70,7 +69,6 @@
     "xterm": "^5.3.0"
   },
   "devDependencies": {
-    "@gadugi/agentic-test": "github:rysweet/gadugi-agentic-test#main",
     "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^14.1.0",

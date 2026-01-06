@@ -73,10 +73,21 @@ async function createWindow() {
 // Start the MCP server
 async function startMcpServer() {
   const projectRoot = path.join(__dirname, '../../..');
-  const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
+  // Use Windows path for Python on Windows, Linux path on Linux
+  const pythonPath = process.platform === 'win32'
+    ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+    : path.join(projectRoot, '.venv', 'bin', 'python');
   const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
 
   console.log('Starting MCP server from:', projectRoot);
+  console.log('Python path:', pythonPath);
+
+  // Check if Python exists
+  if (!fs.existsSync(pythonPath)) {
+    console.warn('Python virtual environment not found at:', pythonPath);
+    console.warn('MCP server will not be started. App will continue without it.');
+    return;
+  }
 
   // Ensure outputs directory exists
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
@@ -211,19 +222,29 @@ function startBackendServer() {
   // Since __dirname in compiled code is dist/main, go up to spa and then to backend
   const backendTsPath = path.join(__dirname, '../../backend/src/server.ts');
 
-  backendProcess = spawn('npx', ['tsx', backendTsPath], {
-    cwd: path.join(__dirname, '..'),
-    env: {
-      ...process.env,
-      BACKEND_PORT: '3001',
-      PORT: '3001'  // Some servers check PORT instead of BACKEND_PORT
-      // Pass through all environment variables as-is from the parent process
-    },
-    stdio: ['pipe', 'pipe', 'pipe']  // Properly set up pipes for stdout/stderr
-  });
+  // Check if npx is available
+  const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
-  if (!backendProcess) {
-    console.error('Failed to spawn backend process');
+  try {
+    backendProcess = spawn(npxCommand, ['tsx', backendTsPath], {
+      cwd: path.join(__dirname, '..'),
+      env: {
+        ...process.env,
+        BACKEND_PORT: '3001',
+        PORT: '3001'  // Some servers check PORT instead of BACKEND_PORT
+        // Pass through all environment variables as-is from the parent process
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],  // Properly set up pipes for stdout/stderr
+      shell: process.platform === 'win32'  // Use shell on Windows
+    });
+
+    if (!backendProcess) {
+      console.error('Failed to spawn backend process');
+      return;
+    }
+  } catch (error) {
+    console.error('Error starting backend server:', error);
+    console.warn('Backend server will not be started. App will continue without it.');
     return;
   }
 
@@ -291,32 +312,42 @@ if (process.platform === 'darwin') {
 }
 
 app.whenReady().then(async () => {
-  // Start backend server
-  startBackendServer();
+  // Try to start backend server (non-blocking)
+  try {
+    startBackendServer();
+  } catch (error) {
+    console.warn('Could not start backend server:', error);
+  }
 
-  // Start MCP server
-  await startMcpServer();
+  // Try to start MCP server (non-blocking)
+  try {
+    await startMcpServer();
+  } catch (error) {
+    console.warn('Could not start MCP server:', error);
+  }
 
-  // Wait for MCP server to be ready by checking status file
+  // Wait for MCP server to be ready by checking status file (but don't block window creation)
   const projectRoot = path.join(__dirname, '../../..');
   const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
   let mcpAttempts = 0;
 
-  console.log('Waiting for MCP server to be ready...');
-  while (mcpAttempts < 20) { // Wait up to 10 seconds
-    if (fs.existsSync(statusFile)) {
-      const status = fs.readFileSync(statusFile, 'utf-8').trim();
-      if (status === 'ready') {
-        console.log('MCP server confirmed ready');
-        break;
+  if (mcpServerProcess) {
+    console.log('Waiting for MCP server to be ready...');
+    while (mcpAttempts < 10) { // Wait up to 5 seconds max
+      if (fs.existsSync(statusFile)) {
+        const status = fs.readFileSync(statusFile, 'utf-8').trim();
+        if (status === 'ready') {
+          console.log('MCP server confirmed ready');
+          break;
+        }
       }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      mcpAttempts++;
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
-    mcpAttempts++;
-  }
 
-  if (mcpAttempts >= 20) {
-    console.warn('MCP server may not be fully ready yet');
+    if (mcpAttempts >= 10) {
+      console.warn('MCP server may not be fully ready yet, but continuing...');
+    }
   }
 
   // Initialize process manager
@@ -347,10 +378,8 @@ app.whenReady().then(async () => {
   // Setup IPC handlers
   setupIPCHandlers(processManager);
 
-  // Create the main window after a short delay to ensure backend is starting
-  setTimeout(async () => {
-    await createWindow();
-  }, 1000);
+  // Create the main window immediately - don't wait for backend
+  await createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -361,16 +390,26 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   // Cleanup all processes
-  processManager.cleanup();
+  if (processManager) {
+    processManager.cleanup();
+  }
 
   // Stop backend server
   if (backendProcess) {
-    backendProcess.kill('SIGTERM');
+    try {
+      backendProcess.kill('SIGTERM');
+    } catch (e) {
+      console.error('Error killing backend process:', e);
+    }
   }
 
   // Stop MCP server
   if (mcpServerProcess) {
-    mcpServerProcess.kill('SIGTERM');
+    try {
+      mcpServerProcess.kill('SIGTERM');
+    } catch (e) {
+      console.error('Error killing MCP process:', e);
+    }
   }
 
   // Clean up PID files
@@ -405,9 +444,15 @@ app.on('before-quit', (event) => {
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  processManager.cleanup();
+  if (processManager) {
+    processManager.cleanup();
+  }
   if (mcpServerProcess) {
-    mcpServerProcess.kill('SIGTERM');
+    try {
+      mcpServerProcess.kill('SIGTERM');
+    } catch (e) {
+      // Ignore errors during cleanup
+    }
   }
   // Clean up PID files on unexpected termination
   cleanupPidFiles();
