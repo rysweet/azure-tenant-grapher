@@ -173,12 +173,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  React.useEffect(() => {
-    // Load saved config from electron store
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
+  const loadConfig = React.useCallback(async () => {
     try {
       const savedConfig = await window.electronAPI.config.get('appConfig');
       if (savedConfig) {
@@ -192,14 +187,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Failed to load config
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    // Load saved config from electron store
+    loadConfig();
+  }, [loadConfig]);
 
   // Save config when it changes
   React.useEffect(() => {
-    if (state.config.tenantId) {
-      window.electronAPI.config.set('appConfig', state.config);
+    if (!state) return;
+    if (state.config?.tenantId) {
+      try {
+        window.electronAPI.config.set('appConfig', state.config);
+      } catch (error) {
+        // Failed to save config
+      }
     }
-  }, [state.config]);
+  }, [state?.config]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>
