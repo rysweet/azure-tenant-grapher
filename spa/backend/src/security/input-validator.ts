@@ -15,11 +15,16 @@ const ALLOWED_COMMANDS = new Set([
   'create-tenant',
   'threat-model',
   'config',
-  'cli'
+  'cli',
+  'agent-mode'
 ]);
 
 // Whitelist of allowed CLI arguments
 const ALLOWED_ARGS = new Set([
+  '--tenant-id',
+  '--subscription-id',
+  '--filter-by-subscriptions',
+  '--filter-by-rgs',
   '--tenant-name',
   '--resource-group',
   '--filters',
@@ -29,6 +34,15 @@ const ALLOWED_ARGS = new Set([
   '--verbose',
   '--debug',
   '--help',
+  '--max-llm-threads',
+  '--max-build-threads',
+  '--resource-limit',
+  '--rebuild-edges',
+  '--visualize',
+  '--visualize-only',
+  '--container-only',
+  '--skip-container',
+  '--question',
   '-h',
   '-v'
 ]);
@@ -36,7 +50,7 @@ const ALLOWED_ARGS = new Set([
 // Maximum lengths for various inputs
 const MAX_LENGTHS = {
   command: 50,
-  arg: 100,
+  arg: 500,  // Increased for agent-mode questions
   path: 260,
   tenantName: 50,
   resourceGroup: 90
@@ -46,7 +60,7 @@ const MAX_LENGTHS = {
 const DANGEROUS_PATTERNS = [
   /[;&|`$(){}[\]<>]/g,  // Shell metacharacters
   /\.\./g,               // Path traversal
-  /^-/,                  // Options that could be interpreted as flags
+  ///^-/,                  // Options that could be interpreted as flags
   /\0/g,                 // Null bytes
   /[\r\n]/g              // Line breaks
 ];
@@ -297,8 +311,10 @@ export class InputValidator {
       return '';
     }
 
-    // Remove ANSI escape codes
-    const ansiRegex = /\x1b\[[0-9;]*m/g;
+    // Remove ALL ANSI escape codes (colors, cursor movement, etc.)
+    // This regex matches: ESC [ ... (any letter or @)
+    // eslint-disable-next-line no-control-regex
+    const ansiRegex = /\x1b\[[0-9;?]*[a-zA-Z@]/g;
     let sanitized = output.replace(ansiRegex, '');
 
     // Remove potential sensitive patterns (customize based on your needs)

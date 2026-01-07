@@ -23,16 +23,16 @@ import {
   Clear as ClearIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  VerticalAlignBottom as ScrollDownIcon,
+  // VerticalAlignBottom as ScrollDownIcon, // REMOVED: scroll button disabled
   ExpandMore as ExpandMoreIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
-import Editor from '@monaco-editor/react';
+// import Editor from '@monaco-editor/react'; // REMOVED: Monaco Editor replaced with simple <pre>
 import { useApp } from '../../context/AppContext';
+import { useWebSocketContext } from '../../context/WebSocketContext';
 import { LogEntry as AppLogEntry, LogLevel as AppLogLevel } from '../../context/AppContext';
-import { useWebSocket } from '../../hooks/useWebSocket';
 import {
   getLogs,
   clearLogs,
@@ -96,15 +96,15 @@ const LogsTab: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [pidFilter, setPidFilter] = useState<string>('');
 
-  const editorRef = useRef<any>(null);
+  // const editorRef = useRef<any>(null); // REMOVED: Monaco Editor no longer used
   const containerRef = useRef<HTMLDivElement>(null);
 
   // System logs from WebSocket
   const [systemLogs, setSystemLogs] = useState<AppLogEntry[]>([]);
   const [logWebSocketConnected, setLogWebSocketConnected] = useState(false);
 
-  // Initialize WebSocket connection and logger
-  const webSocket = useWebSocket();
+  // Initialize WebSocket connection and logger - use shared context
+  const webSocket = useWebSocketContext();
   const logger = useMemo(() => createLogger('LogsTab'), []);
 
   // Track active processes that we're subscribing to
@@ -121,20 +121,22 @@ const LogsTab: React.FC = () => {
     // Initial fetch
     updateSystemLogs();
 
-    // Update every 500ms
-    const interval = setInterval(updateSystemLogs, 500);
+    // DISABLED: Polling was causing performance issues
+    // Only update on manual refresh now
+    // const interval = setInterval(updateSystemLogs, 2000);
 
     // For now, assume WebSocket is connected if we have the logger
     setLogWebSocketConnected(true);
 
     return () => {
-      clearInterval(interval);
+      // clearInterval(interval);
     };
   }, []);
 
   // Convert WebSocket process outputs to LogEntry format
   const processLogs = useMemo(() => {
     const logs: AppLogEntry[] = [];
+    let counter = 0;
 
     webSocket.outputs.forEach((outputs, processId) => {
       outputs.forEach(output => {
@@ -143,7 +145,7 @@ const LogsTab: React.FC = () => {
         lines.forEach((line, index) => {
           if (line && line.trim()) {
             logs.push({
-              id: `${processId}-${output.timestamp}-${index}-${Math.random()}`,
+              id: `${processId}-${output.timestamp}-${index}-${counter++}`,
               timestamp: new Date(output.timestamp),
               level: output.type === 'stderr' ? 'error' : 'info',
               source: `Process-${processId.slice(0, 8)}`,
@@ -158,8 +160,17 @@ const LogsTab: React.FC = () => {
   }, [webSocket.outputs]);
 
   // Combine all log sources: state logs, system logs from WebSocket, and process logs
+  // Limit total logs to prevent performance issues
+  const MAX_LOGS = 5000;
   const allLogs = useMemo(() => {
-    return [...state.logs, ...systemLogs, ...processLogs];
+    const combined = [...state.logs, ...systemLogs, ...processLogs];
+    // Keep only the most recent logs if we exceed the limit
+    if (combined.length > MAX_LOGS) {
+      // Sort by timestamp descending and take the most recent
+      combined.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      return combined.slice(0, MAX_LOGS);
+    }
+    return combined;
   }, [state.logs, systemLogs, processLogs]);
 
   // Handle PID parameter from URL
@@ -207,44 +218,26 @@ const LogsTab: React.FC = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
+    // LIMIT to last 100 logs for performance
+    const MAX_DISPLAY_LOGS = 100;
+    if (filtered.length > MAX_DISPLAY_LOGS) {
+      filtered = filtered.slice(-MAX_DISPLAY_LOGS);
+    }
+
     return filtered;
   }, [allLogs, selectedLevels, searchTerm, pidFilter, sortBy, sortOrder]);
 
-  // Format logs as text for Monaco editor
+  // Format logs as text - simplified for performance
   const formattedLogsText = useMemo(() => {
     const formattedText = filteredLogs.map(log => {
       const timestamp = log.timestamp.toISOString().replace('T', ' ').replace('Z', '');
       const level = log.level.toUpperCase().padEnd(7);
       const source = log.source.padEnd(12);
-      let logLine = `[${timestamp}] ${level} ${source} ${log.message}`;
-
-      // Add structured data if present
-      if (log.data) {
-        try {
-          const dataStr = typeof log.data === 'string' ? log.data : JSON.stringify(log.data, null, 2);
-          logLine += `\n    ${dataStr.replace(/\n/g, '\n    ')}`;
-        } catch (e) {
-          logLine += `\n    [Data: ${String(log.data)}]`;
-        }
-      }
-
-      return logLine;
+      return `[${timestamp}] ${level} ${source} ${log.message}`;
     }).join('\n');
 
-    // Optional debug logging (disabled in production)
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('LogsTab: Formatting logs', {
-        totalLogs: allLogs.length,
-        filteredLogs: filteredLogs.length,
-        processLogs: processLogs.length,
-        systemLogs: state.logs.length,
-        webSocketOutputs: webSocket.outputs.size,
-        formattedTextLength: formattedText.length,
-      });
-    }
-
     return formattedText;
-  }, [filteredLogs, allLogs.length, processLogs.length, state.logs.length, webSocket.outputs.size]);
+  }, [filteredLogs]);
 
   // Handle level filter changes
   const handleLevelChange = (event: SelectChangeEvent<LogLevel[]>) => {
@@ -279,6 +272,8 @@ const LogsTab: React.FC = () => {
   };
 
   // Scroll to bottom when new logs arrive (if auto-scroll is enabled)
+  // DISABLED: editorRef no longer exists after Monaco Editor removal
+  /*
   useEffect(() => {
     if (autoScroll && editorRef.current) {
       const editor = editorRef.current;
@@ -290,8 +285,11 @@ const LogsTab: React.FC = () => {
       }
     }
   }, [filteredLogs, autoScroll]);
+  */
 
   // Force scroll to bottom
+  // DISABLED: editorRef no longer exists after Monaco Editor removal
+  /*
   const scrollToBottom = () => {
     if (editorRef.current) {
       const editor = editorRef.current;
@@ -303,6 +301,7 @@ const LogsTab: React.FC = () => {
       }
     }
   };
+  */
 
   // Monitor running processes and auto-subscribe to their logs
   useEffect(() => {
@@ -315,23 +314,26 @@ const LogsTab: React.FC = () => {
             .map(p => p.id)
         );
 
-        // Subscribe to new processes
-        runningProcessIds.forEach(processId => {
-          if (!activeProcesses.has(processId)) {
-            webSocket.subscribeToProcess(processId);
-            logger.debug(`Subscribed to process logs: ${processId}`);
-          }
-        });
+        // Use functional update to avoid dependency on activeProcesses
+        setActiveProcesses(prevActiveProcesses => {
+          // Subscribe to new processes
+          runningProcessIds.forEach(processId => {
+            if (!prevActiveProcesses.has(processId)) {
+              webSocket.subscribeToProcess(processId);
+              logger.debug(`Subscribed to process logs: ${processId}`);
+            }
+          });
 
-        // Unsubscribe from completed processes
-        activeProcesses.forEach(processId => {
-          if (!runningProcessIds.has(processId)) {
-            webSocket.unsubscribeFromProcess(processId);
-            logger.debug(`Unsubscribed from process logs: ${processId}`);
-          }
-        });
+          // Unsubscribe from completed processes
+          prevActiveProcesses.forEach(processId => {
+            if (!runningProcessIds.has(processId)) {
+              webSocket.unsubscribeFromProcess(processId);
+              logger.debug(`Unsubscribed from process logs: ${processId}`);
+            }
+          });
 
-        setActiveProcesses(runningProcessIds);
+          return runningProcessIds;
+        });
       } catch (error) {
         logger.error('Failed to check active processes', { error });
       }
@@ -342,7 +344,7 @@ const LogsTab: React.FC = () => {
     const interval = setInterval(checkActiveProcesses, 5000);
 
     return () => clearInterval(interval);
-  }, [activeProcesses, webSocket]); // Remove logger from deps to prevent re-runs
+  }, [webSocket]); // FIXED: Removed activeProcesses from deps to prevent infinite loop
 
   // Log WebSocket connection status changes
   useEffect(() => {
@@ -388,6 +390,13 @@ const LogsTab: React.FC = () => {
     });
 
     logger.info(`Added test logs for demonstration`);
+    
+    // Manually refresh system logs after adding test logs
+    setTimeout(() => {
+      const logs = getLogs();
+      const convertedLogs = logs.map(convertSystemLogEntry);
+      setSystemLogs(convertedLogs);
+    }, 100);
   };
 
   return (
@@ -448,11 +457,13 @@ const LogsTab: React.FC = () => {
           />
 
           {/* Action buttons */}
+          {/* DISABLED: scrollToBottom function removed with Monaco Editor
           <Tooltip title="Scroll to bottom">
             <IconButton onClick={scrollToBottom} size="small">
               <ScrollDownIcon />
             </IconButton>
           </Tooltip>
+          */}
 
           <Tooltip title="Export logs">
             <IconButton onClick={handleExportLogs} size="small" disabled={allLogs.length === 0}>
@@ -624,46 +635,18 @@ const LogsTab: React.FC = () => {
             </Typography>
           </Box>
         ) : (
-          <Box ref={containerRef} sx={{ flex: 1 }}>
-            <Editor
-              height="100%"
-              defaultLanguage="plaintext"
-              value={formattedLogsText}
-              loading=""
-              onMount={(editor) => {
-                editorRef.current = editor;
-                // Scroll to bottom on mount if auto-scroll is enabled
-                if (autoScroll) {
-                  setTimeout(scrollToBottom, 100);
-                }
-              }}
-              options={{
-                readOnly: true,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-                lineNumbers: 'on',
-                glyphMargin: false,
-                folding: false,
-                lineDecorationsWidth: 0,
-                lineNumbersMinChars: 4,
-                renderLineHighlight: 'none',
-                selectionHighlight: false,
-                occurrencesHighlight: false,
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                scrollbar: {
-                  vertical: 'visible',
-                  horizontal: 'visible',
-                  verticalScrollbarSize: 12,
-                  horizontalScrollbarSize: 12,
-                },
-                fontSize: 13,
-                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                theme: state.theme === 'dark' ? 'vs-dark' : 'vs-light',
-              }}
-              theme={state.theme === 'dark' ? 'vs-dark' : 'vs-light'}
-            />
+          <Box ref={containerRef} sx={{ flex: 1, overflow: 'auto', backgroundColor: '#1e1e1e', p: 2 }}>
+            <pre style={{
+              margin: 0,
+              color: '#d4d4d4',
+              fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+              fontSize: '13px',
+              lineHeight: '1.5',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
+            }}>
+              {formattedLogsText || 'No logs to display'}
+            </pre>
           </Box>
         )}
       </Paper>

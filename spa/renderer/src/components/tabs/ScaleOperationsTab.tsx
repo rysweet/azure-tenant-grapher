@@ -10,7 +10,8 @@ import {
 import { TrendingUp as ScaleUpIcon, TrendingDown as ScaleDownIcon } from '@mui/icons-material';
 import { useScaleOperations, ScaleOperationsProvider } from '../../context/ScaleOperationsContext';
 import { useLayer } from '../../context/LayerContext';
-import { useWebSocket } from '../../hooks/useWebSocket';
+//import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocketContext } from '../../context/WebSocketContext';
 import ScaleUpPanel from '../scale/ScaleUpPanel';
 import ScaleDownPanel from '../scale/ScaleDownPanel';
 import ProgressMonitor from '../scale/ProgressMonitor';
@@ -22,7 +23,8 @@ import LayerSelector from '../layer/LayerSelector';
 const ScaleOperationsTabContent: React.FC = () => {
   const { state, dispatch } = useScaleOperations();
   const { state: layerState } = useLayer();
-  const { isConnected } = useWebSocket();
+  //const { isConnected } = useWebSocket();
+  const { isConnected } = useWebSocketContext();
   const [operationType, setOperationType] = useState<'scale-up' | 'scale-down'>('scale-up');
 
   const handleOperationTypeChange = (

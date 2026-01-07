@@ -19,7 +19,7 @@ import { Code as GenerateIcon, FilterList as FilterIcon, FolderOpen as FolderIco
 import axios from 'axios';
 import { useApp } from '../../context/AppContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface TenantInfo {
   id: string;
