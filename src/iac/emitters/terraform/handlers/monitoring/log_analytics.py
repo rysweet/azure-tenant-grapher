@@ -42,10 +42,18 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # SKU
+        # SKU - Bug #596: Log Analytics SKU must be PerGB2018 (mixed case) not pergb2018
         sku = properties.get("sku", {})
         if sku and "name" in sku:
-            config["sku"] = sku["name"]
+            sku_name = sku["name"]
+            # Normalize common SKU values to Terraform-expected casing
+            sku_normalized = {
+                "pergb2018": "PerGB2018",
+                "free": "Free",
+                "standalone": "Standalone",
+                "premium": "Premium",
+            }
+            config["sku"] = sku_normalized.get(sku_name.lower() if isinstance(sku_name, str) else "", sku_name)
 
         # Retention
         retention = properties.get("retentionInDays")
