@@ -123,14 +123,14 @@ class ArchitecturalPatternAnalyzer:
             # Test the connection
             with self.driver.session() as session:
                 session.run("RETURN 1")
-            logger.info(f"Connected to Neo4j at {self.neo4j_uri}")
+            logger.info(str(f"Connected to Neo4j at {self.neo4j_uri}"))
         except Exception as e:
             logger.exception(f"Failed to connect to Neo4j: {e}")
             raise
 
     def close(self) -> None:
         """Close Neo4j database connection."""
-        if self.driver:
+        if self.driver is not None:
             self.driver.close()
             logger.info("Neo4j connection closed")
 
@@ -206,7 +206,7 @@ class ArchitecturalPatternAnalyzer:
                     }
                 )
 
-        logger.info(f"Loaded {len(all_relationships)} relationships from graph")
+        logger.info(str(f"Loaded {len(all_relationships)} relationships from graph"))
         return all_relationships
 
     def aggregate_relationships(
@@ -351,7 +351,7 @@ class ArchitecturalPatternAnalyzer:
                     * 100,
                 }
 
-        logger.info(f"Detected {len(pattern_matches)} architectural patterns")
+        logger.info(str(f"Detected {len(pattern_matches)} architectural patterns"))
         return pattern_matches
 
     def export_graph_data(
@@ -404,7 +404,7 @@ class ArchitecturalPatternAnalyzer:
         with open(output_path, "w") as f:
             json.dump(graph_export, f, indent=2)
 
-        logger.info(f"Exported graph data to {output_path}")
+        logger.info(str(f"Exported graph data to {output_path}"))
 
     def generate_visualizations(
         self,
@@ -550,7 +550,9 @@ class ArchitecturalPatternAnalyzer:
                         )
                     )
                 except Exception as e:
-                    logger.debug(f"Could not draw boundary for {pattern_name}: {e}")
+                    logger.debug(
+                        str(f"Could not draw boundary for {pattern_name}: {e}")
+                    )
 
         # Draw cross-pattern edges first (gray background)
         if cross_pattern_edges:
@@ -633,7 +635,7 @@ class ArchitecturalPatternAnalyzer:
         plt.savefig(main_viz_path, dpi=150, bbox_inches="tight")
         plt.close()
         generated_files.append(main_viz_path)
-        logger.info(f"Generated main visualization: {main_viz_path}")
+        logger.info(str(f"Generated main visualization: {main_viz_path}"))
 
         return generated_files
 
@@ -765,7 +767,7 @@ class ArchitecturalPatternAnalyzer:
             # 1. Microsoft Graph API for better search
             # 2. Bing Search API
             # 3. Custom web scraping with BeautifulSoup
-            logger.info(f"Searching Microsoft Learn for: {search_term}")
+            logger.info(str(f"Searching Microsoft Learn for: {search_term}"))
 
             # For now, we'll provide common patterns based on resource type name
             # In a real implementation, you would use WebFetch or similar tools
@@ -774,10 +776,12 @@ class ArchitecturalPatternAnalyzer:
             doc_info["related_resources"] = self._get_related_resources(resource_type)
             doc_info["documentation_found"] = True
 
-            logger.info(f"Generated documentation summary for {resource_type}")
+            logger.info(str(f"Generated documentation summary for {resource_type}"))
 
         except Exception as e:
-            logger.warning(f"Failed to fetch documentation for {resource_type}: {e}")
+            logger.warning(
+                str(f"Failed to fetch documentation for {resource_type}: {e}")
+            )
             doc_info["error"] = str(e)
 
         return doc_info
@@ -1010,7 +1014,7 @@ class ArchitecturalPatternAnalyzer:
         # Sort by confidence
         suggested_patterns.sort(key=lambda x: x.get("confidence", 0), reverse=True)
 
-        logger.info(f"Generated {len(suggested_patterns)} pattern suggestions")
+        logger.info(str(f"Generated {len(suggested_patterns)} pattern suggestions"))
         return suggested_patterns
 
     def _generate_pattern_name(
@@ -1144,7 +1148,7 @@ class ArchitecturalPatternAnalyzer:
                     f,
                     indent=2,
                 )
-            logger.info(f"Exported orphaned nodes analysis to {orphaned_output}")
+            logger.info(str(f"Exported orphaned nodes analysis to {orphaned_output}"))
 
             # Generate visualizations if requested
             visualization_files = []
@@ -1200,7 +1204,7 @@ class ArchitecturalPatternAnalyzer:
             with open(summary_output, "w") as f:
                 json.dump(summary, f, indent=2)
 
-            logger.info(f"Analysis complete. Summary saved to {summary_output}")
+            logger.info(str(f"Analysis complete. Summary saved to {summary_output}"))
             return summary
 
         finally:

@@ -97,4 +97,4 @@ def run_pending_migrations():
                 if result.returncode != 0:
                     print("Data migration failed:", result.stderr.decode())
                     raise RuntimeError("Data migration failed")
-            print(f"Applied migration {f}")
+            print(str(f"Applied migration {f}"))

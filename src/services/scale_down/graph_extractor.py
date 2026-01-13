@@ -74,9 +74,11 @@ class GraphExtractor(BaseScaleService):
             >>> G, node_props = await extractor.extract_graph(
             ...     "00000000-0000-0000-0000-000000000000"
             ... )
-            >>> print(f"Loaded {G.number_of_nodes()} nodes")
+            >>> print(str(f"Loaded {G.number_of_nodes()} nodes"))
         """
-        self.logger.info(f"Converting Neo4j graph to NetworkX for tenant {tenant_id}")
+        self.logger.info(
+            str(f"Converting Neo4j graph to NetworkX for tenant {tenant_id}")
+        )
 
         # Validate tenant exists
         if not await self.validate_tenant_exists(tenant_id):
@@ -127,9 +129,9 @@ class GraphExtractor(BaseScaleService):
 
                 # Log progress
                 if nodes_loaded % 10000 == 0:
-                    self.logger.debug(f"Loaded {nodes_loaded} nodes...")
+                    self.logger.debug(str(f"Loaded {nodes_loaded} nodes..."))
 
-        self.logger.info(f"Loaded {nodes_loaded} nodes from Neo4j")
+        self.logger.info(str(f"Loaded {nodes_loaded} nodes from Neo4j"))
 
         if nodes_loaded == 0:
             raise ValueError(f"No resources found for tenant {tenant_id}")
@@ -180,9 +182,9 @@ class GraphExtractor(BaseScaleService):
 
                 # Log progress
                 if edges_loaded % 10000 == 0:
-                    self.logger.debug(f"Loaded {edges_loaded} edges...")
+                    self.logger.debug(str(f"Loaded {edges_loaded} edges..."))
 
-        self.logger.info(f"Loaded {edges_loaded} edges from Neo4j")
+        self.logger.info(str(f"Loaded {edges_loaded} edges from Neo4j"))
         self.logger.info(
             f"Conversion complete: {G.number_of_nodes()} nodes, "
             f"{G.number_of_edges()} edges"

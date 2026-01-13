@@ -76,14 +76,16 @@ async def scale_up_template_command_handler(
 
         # Validate template file
         if not os.path.exists(template_file):
-            console.print(f"[red]❌ Template file not found: {template_file}[/red]")
+            console.print(
+                str(f"[red]❌ Template file not found: {template_file}[/red]")
+            )
             sys.exit(1)
 
         console.print("[blue]🚀 Starting scale-up operation (template-based)...[/blue]")
-        console.print(f"[dim]Template: {template_file}[/dim]")
-        console.print(f"[dim]Scale factor: {scale_factor}x[/dim]")
-        console.print(f"[dim]Batch size: {batch_size}[/dim]")
-        console.print(f"[dim]Dry run: {dry_run}[/dim]")
+        console.print(str(f"[dim]Template: {template_file}[/dim]"))
+        console.print(str(f"[dim]Scale factor: {scale_factor}x[/dim]"))
+        console.print(str(f"[dim]Batch size: {batch_size}[/dim]"))
+        console.print(str(f"[dim]Dry run: {dry_run}[/dim]"))
 
         # Check if --no-container was specified
         if no_container:
@@ -162,9 +164,9 @@ async def scale_up_template_command_handler(
         elif output_format == "markdown":
             console.print("\n## Scale-Up Results\n")
             console.print("- **Operation**: Template-based scale-up")
-            console.print(f"- **Template**: {template_file}")
-            console.print(f"- **Scale Factor**: {scale_factor}x")
-            console.print(f"- **Resources Created**: {result.resources_created}")
+            console.print(str(f"- **Template**: {template_file}"))
+            console.print(str(f"- **Scale Factor**: {scale_factor}x"))
+            console.print(str(f"- **Resources Created**: {result.resources_created}"))
             console.print(
                 f"- **Relationships Created**: {result.relationships_created}"
             )
@@ -184,7 +186,7 @@ async def scale_up_template_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during scale-up operation: {e}[/red]")
+        console.print(str(f"[red]❌ Error during scale-up operation: {e}[/red]"))
         if debug:
             import traceback
 
@@ -243,12 +245,12 @@ async def scale_up_scenario_command_handler(
         console.print(
             f"[blue]🚀 Starting scale-up operation (scenario: {scenario})...[/blue]"
         )
-        console.print(f"[dim]Scale factor: {scale_factor}x[/dim]")
+        console.print(str(f"[dim]Scale factor: {scale_factor}x[/dim]"))
         if scenario == "hub-spoke":
-            console.print(f"[dim]Spoke count: {spoke_count}[/dim]")
+            console.print(str(f"[dim]Spoke count: {spoke_count}[/dim]"))
         if regions:
             console.print(f"[dim]Regions: {', '.join(regions)}[/dim]")
-        console.print(f"[dim]Dry run: {dry_run}[/dim]")
+        console.print(str(f"[dim]Dry run: {dry_run}[/dim]"))
 
         # Check if --no-container was specified
         if no_container:
@@ -320,7 +322,7 @@ async def scale_up_scenario_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during scale-up operation: {e}[/red]")
+        console.print(str(f"[red]❌ Error during scale-up operation: {e}[/red]"))
         if debug:
             import traceback
 
@@ -406,8 +408,8 @@ async def scale_down_algorithm_command_handler(
         console.print(
             f"[dim]Target size: {target_size if not target_count else f'{target_count} nodes'}[/dim]"
         )
-        console.print(f"[dim]Output mode: {output_mode}[/dim]")
-        console.print(f"[dim]Dry run: {dry_run}[/dim]")
+        console.print(str(f"[dim]Output mode: {output_mode}[/dim]"))
+        console.print(str(f"[dim]Dry run: {dry_run}[/dim]"))
 
         # Check if --no-container was specified
         if no_container:
@@ -483,7 +485,7 @@ async def scale_down_algorithm_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during scale-down operation: {e}[/red]")
+        console.print(str(f"[red]❌ Error during scale-down operation: {e}[/red]"))
         if debug:
             import traceback
 
@@ -543,7 +545,7 @@ async def scale_down_pattern_command_handler(
         console.print(
             f"[blue]🚀 Starting scale-down operation (pattern: {pattern})...[/blue]"
         )
-        console.print(f"[dim]Target size: {target_size}[/dim]")
+        console.print(str(f"[dim]Target size: {target_size}[/dim]"))
         if resource_types:
             console.print(f"[dim]Resource types: {', '.join(resource_types)}[/dim]")
 
@@ -634,7 +636,7 @@ async def scale_down_pattern_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during scale-down operation: {e}[/red]")
+        console.print(str(f"[red]❌ Error during scale-down operation: {e}[/red]"))
         if debug:
             import traceback
 
@@ -700,7 +702,7 @@ async def scale_clean_command_handler(
             session_manager.disconnect()
             return
 
-        console.print(f"[yellow]Found {synthetic_count} synthetic nodes.[/yellow]")
+        console.print(str(f"[yellow]Found {synthetic_count} synthetic nodes.[/yellow]"))
 
         # Confirm if not forced
         if not force and not dry_run:
@@ -735,7 +737,7 @@ async def scale_clean_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during cleanup: {e}[/red]")
+        console.print(str(f"[red]❌ Error during cleanup: {e}[/red]"))
         if debug:
             import traceback
 
@@ -837,7 +839,7 @@ async def scale_validate_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error during validation: {e}[/red]")
+        console.print(str(f"[red]❌ Error during validation: {e}[/red]"))
         if debug:
             import traceback
 
@@ -977,7 +979,7 @@ async def scale_stats_command_handler(
         session_manager.disconnect()
 
     except Exception as e:
-        console.print(f"[red]❌ Error gathering statistics: {e}[/red]")
+        console.print(str(f"[red]❌ Error gathering statistics: {e}[/red]"))
         if debug:
             import traceback
 

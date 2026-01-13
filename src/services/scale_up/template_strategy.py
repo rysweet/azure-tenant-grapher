@@ -155,7 +155,7 @@ async def replicate_resources(
         else None
     )
 
-    if monitor:
+    if monitor is not None:
         monitor.__enter__()
 
     try:
@@ -225,7 +225,7 @@ async def replicate_resources(
                 await common.insert_resource_batch(session_manager, batch)
                 created_count += len(batch)
 
-                if monitor:
+                if monitor is not None:
                     monitor.record_items(len(batch))
                     monitor.record_batch(len(batch))
 
@@ -246,14 +246,14 @@ async def replicate_resources(
             f"(batch_size={adaptive_batch_size})"
         )
 
-        if monitor:
+        if monitor is not None:
             monitor.add_metadata("adaptive_batch_size", adaptive_batch_size)
             monitor.add_metadata("num_batches", len(batches))
 
         return created_count
 
     finally:
-        if monitor:
+        if monitor is not None:
             monitor.__exit__(None, None, None)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(str(monitor.get_metrics()))
@@ -340,7 +340,9 @@ async def get_relationship_patterns(
         patterns = await _get_relationship_patterns_chunk(session_manager, base_ids)
     else:
         # Large list - chunk and combine
-        logger.info(f"Chunking {len(base_ids)} base IDs into {chunk_size}-ID chunks")
+        logger.info(
+            str(f"Chunking {len(base_ids)} base IDs into {chunk_size}-ID chunks")
+        )
         for i in range(0, len(base_ids), chunk_size):
             chunk = base_ids[i : i + chunk_size]
             chunk_patterns = await _get_relationship_patterns_chunk(
@@ -447,7 +449,7 @@ async def clone_relationships(
         else None
     )
 
-    if monitor:
+    if monitor is not None:
         monitor.__enter__()
 
     try:
@@ -538,7 +540,7 @@ async def clone_relationships(
                 await common.insert_relationship_batch(session_manager, batch)
                 relationships_created += len(batch)
 
-                if monitor:
+                if monitor is not None:
                     monitor.record_items(len(batch))
                     monitor.record_batch(len(batch))
 
@@ -558,7 +560,7 @@ async def clone_relationships(
             f"(batch_size={adaptive_batch_size})"
         )
 
-        if monitor:
+        if monitor is not None:
             monitor.add_metadata("adaptive_batch_size", adaptive_batch_size)
             monitor.add_metadata("num_batches", len(batches))
             monitor.add_metadata("num_patterns", len(patterns))
@@ -566,7 +568,7 @@ async def clone_relationships(
         return relationships_created
 
     finally:
-        if monitor:
+        if monitor is not None:
             monitor.__exit__(None, None, None)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(str(monitor.get_metrics()))

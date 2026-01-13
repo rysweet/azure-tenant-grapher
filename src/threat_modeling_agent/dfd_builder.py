@@ -40,8 +40,8 @@ class DFDBuilderStrategy:
         # Parse nodes and edges from graph_data
         nodes_raw = graph_data.get("nodes", [])
         edges_raw = graph_data.get("edges", [])
-        print(f"[DFDBuilderStrategy] nodes_raw: {nodes_raw}")
-        print(f"[DFDBuilderStrategy] edges_raw: {edges_raw}")
+        print(str(f"[DFDBuilderStrategy] nodes_raw: {nodes_raw}"))
+        print(str(f"[DFDBuilderStrategy] edges_raw: {edges_raw}"))
 
         # Classify nodes
         def classify_node(node: Dict[str, Any]) -> str:

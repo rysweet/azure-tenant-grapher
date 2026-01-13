@@ -63,9 +63,9 @@ class ForestFireSampler(BaseSampler):
         Example:
             >>> sampler = ForestFireSampler()
             >>> sampled_ids = await sampler.sample(G, 1000)
-            >>> print(f"Sampled {len(sampled_ids)} nodes")
+            >>> print(str(f"Sampled {len(sampled_ids)} nodes"))
         """
-        self.logger.info(f"Applying Forest Fire sampling (target={target_count})")
+        self.logger.info(str(f"Applying Forest Fire sampling (target={target_count})"))
 
         if not graph.nodes():
             raise ValueError("Graph has no nodes")

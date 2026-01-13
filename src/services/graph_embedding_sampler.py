@@ -152,13 +152,13 @@ class EmbeddingSampler(StratifiedSampler):
             )
 
             if cached_embeddings:
-                logger.info(f"Using cached embeddings for tenant {tenant_id}")
+                logger.info(str(f"Using cached embeddings for tenant {tenant_id}"))
                 self.embeddings = cached_embeddings
                 self._calculate_importance_scores()
                 return
 
         # Generate new embeddings
-        logger.info(f"Generating new embeddings for tenant {tenant_id}")
+        logger.info(str(f"Generating new embeddings for tenant {tenant_id}"))
         self.embeddings = self.generator.generate_embeddings(
             tenant_id=tenant_id, use_cache=False
         )

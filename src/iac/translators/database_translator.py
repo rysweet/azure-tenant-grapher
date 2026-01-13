@@ -212,7 +212,9 @@ class DatabaseTranslator(BaseTranslator):
         resource_name = resource.get("name", "unknown")
         resource_type = resource.get("type", "unknown")
 
-        logger.info(f"Translating database resource: {resource_name} ({resource_type})")
+        logger.info(
+            str(f"Translating database resource: {resource_name} ({resource_type})")
+        )
 
         # Translate resource ID
         if "id" in translated:
@@ -250,7 +252,9 @@ class DatabaseTranslator(BaseTranslator):
         # Translate endpoint URIs
         self._translate_endpoints(translated, resource_name, resource_type)
 
-        logger.info(f"Completed translation for database resource: {resource_name}")
+        logger.info(
+            str(f"Completed translation for database resource: {resource_name}")
+        )
         return translated
 
     def _translate_connection_strings(
@@ -585,7 +589,9 @@ class DatabaseTranslator(BaseTranslator):
             if match:
                 account_name = match.group(1)
 
-                logger.debug(f"Cosmos DB connection string: account={account_name}")
+                logger.debug(
+                    str(f"Cosmos DB connection string: account={account_name}")
+                )
 
                 # Check if account exists in target
                 target_exists = self._check_target_exists(

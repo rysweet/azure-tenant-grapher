@@ -117,7 +117,7 @@ class Neo4jSessionManager:
             if not self.config.uri:
                 raise Neo4jConnectionError("Neo4j URI is not configured")
 
-            logger.debug(f"Connecting to Neo4j at {self.config.uri}")
+            logger.debug(str(f"Connecting to Neo4j at {self.config.uri}"))
 
             self._driver = GraphDatabase.driver(
                 self.config.uri,
@@ -130,11 +130,11 @@ class Neo4jSessionManager:
                 session.run("RETURN 1")
 
             self._is_connected = True
-            logger.info(f"✅ Connected to Neo4j at {self.config.uri}")
+            logger.info(str(f"✅ Connected to Neo4j at {self.config.uri}"))
 
         except Exception as e:
             self._is_connected = False
-            if self._driver:
+            if self._driver is not None:
                 self._driver.close()
                 self._driver = None
 
@@ -163,7 +163,7 @@ class Neo4jSessionManager:
                 self._driver.close()
                 logger.info("🔌 Neo4j connection closed")
             except Exception as e:
-                logger.warning(f"Error closing Neo4j connection: {e}")
+                logger.warning(str(f"Error closing Neo4j connection: {e}"))
             finally:
                 self._driver = None
                 self._is_connected = False
@@ -224,7 +224,7 @@ class Neo4jSessionManager:
                 try:
                     session.close()
                 except Exception as e:
-                    logger.warning(f"Error closing Neo4j session: {e}")
+                    logger.warning(str(f"Error closing Neo4j session: {e}"))
 
     def test_connection(self) -> bool:
         """
@@ -385,5 +385,5 @@ def neo4j_session(
         with manager.session(**session_kwargs) as session:
             yield session
     finally:
-        if manager:
+        if manager is not None:
             manager.disconnect()

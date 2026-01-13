@@ -84,7 +84,7 @@ class AzureMCPClient:
             "network": ["network", "vnet", "subnet", "nsg", "firewall"],
         }
 
-        logger.info(f"Azure MCP Client initialized (enabled={self.enabled})")
+        logger.info(str(f"Azure MCP Client initialized (enabled={self.enabled})"))
 
     async def connect(self) -> bool:
         """
@@ -109,17 +109,17 @@ class AzureMCPClient:
             async with self._session.get(f"{self.mcp_endpoint}/health") as response:
                 if response.status == 200:
                     self.connected = True
-                    logger.info(f"Connected to MCP server at {self.mcp_endpoint}")
+                    logger.info(str(f"Connected to MCP server at {self.mcp_endpoint}"))
 
                     # Set initial context
                     await self._set_context()
                     return True
                 else:
-                    logger.warning(f"MCP server returned status {response.status}")
+                    logger.warning(str(f"MCP server returned status {response.status}"))
                     return False
 
         except Exception as e:
-            logger.warning(f"Failed to connect to MCP server: {e}")
+            logger.warning(str(f"Failed to connect to MCP server: {e}"))
             self.connected = False
             return False
 
@@ -150,7 +150,7 @@ class AzureMCPClient:
                         }
                     )
             except Exception as e:
-                logger.debug(f"Could not get current tenant: {e}")
+                logger.debug(str(f"Could not get current tenant: {e}"))
 
     async def discover_tenants(self) -> List[Dict[str, Any]]:
         """
@@ -179,12 +179,12 @@ class AzureMCPClient:
 
             # Process and return tenant information
             tenants = result.get("tenants", [])
-            logger.info(f"Discovered {len(tenants)} tenants via MCP")
+            logger.info(str(f"Discovered {len(tenants)} tenants via MCP"))
 
             return tenants
 
         except Exception as e:
-            logger.error(f"Failed to discover tenants via MCP: {e}")
+            logger.error(str(f"Failed to discover tenants via MCP: {e}"))
             raise MCPOperationError(f"Tenant discovery failed: {e}") from e
 
     async def query_resources(self, natural_language_query: str) -> Dict[str, Any]:
@@ -236,7 +236,7 @@ class AzureMCPClient:
             }
 
         except Exception as e:
-            logger.error(f"Resource query failed: {e}")
+            logger.error(str(f"Resource query failed: {e}"))
             return {
                 "status": "error",
                 "message": str(e),
@@ -278,7 +278,7 @@ class AzureMCPClient:
             }
 
         except Exception as e:
-            logger.error(f"Identity query failed: {e}")
+            logger.error(str(f"Identity query failed: {e}"))
             return {"status": "error", "message": str(e)}
 
     async def execute_operation(self, operation: Dict[str, Any]) -> Dict[str, Any]:
@@ -309,7 +309,7 @@ class AzureMCPClient:
             return result
 
         except Exception as e:
-            logger.error(f"Operation execution failed: {e}")
+            logger.error(str(f"Operation execution failed: {e}"))
             raise MCPOperationError(f"Failed to execute operation: {e}") from e
 
     def _analyze_query(self, query: str) -> str:
@@ -405,7 +405,7 @@ class AzureMCPClient:
                 }
 
         except Exception as e:
-            logger.error(f"MCP request failed: {e}")
+            logger.error(str(f"MCP request failed: {e}"))
             raise MCPOperationError(f"Request execution failed: {e}") from e
 
     async def get_natural_language_help(self) -> List[str]:

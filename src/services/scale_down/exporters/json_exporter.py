@@ -60,7 +60,7 @@ class JsonExporter(BaseExporter):
             ...     "/tmp/sample.json"
             ... )
         """
-        self.logger.info(f"Exporting sample to JSON at {output_path}")
+        self.logger.info(str(f"Exporting sample to JSON at {output_path}"))
 
         nodes = []
         for node_id in node_ids:
@@ -94,4 +94,4 @@ class JsonExporter(BaseExporter):
         with open(output_path, "w") as f:
             json.dump(output_data, f, indent=2)
 
-        self.logger.info(f"JSON export completed: {output_path}")
+        self.logger.info(str(f"JSON export completed: {output_path}"))

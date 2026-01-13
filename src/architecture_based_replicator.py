@@ -476,7 +476,9 @@ class ArchitecturePatternReplicator:
             return []
 
         orphaned_types = {node["resource_type"] for node in source_orphaned}
-        logger.info(f"Found {len(orphaned_types)} orphaned resource types in source")
+        logger.info(
+            str(f"Found {len(orphaned_types)} orphaned resource types in source")
+        )
 
         # Query Neo4j to find instances containing these orphaned types
         driver = GraphDatabase.driver(
@@ -784,7 +786,7 @@ class ArchitecturePatternReplicator:
                     }
                 )
 
-        logger.info(f"Generated {len(suggestions)} improvement recommendations")
+        logger.info(str(f"Generated {len(suggestions)} improvement recommendations"))
         return suggestions
 
     def _compute_weighted_score(
@@ -877,5 +879,5 @@ class ArchitecturePatternReplicator:
             return distance
 
         except Exception as e:
-            logger.warning(f"Failed to compute spectral distance: {e}")
+            logger.warning(str(f"Failed to compute spectral distance: {e}"))
             return 1.0

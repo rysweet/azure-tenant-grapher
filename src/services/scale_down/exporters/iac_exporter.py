@@ -86,7 +86,9 @@ class IaCExporter(BaseExporter):
             ...     "/tmp/iac_output"
             ... )
         """
-        self.logger.info(f"Exporting sample to {self.iac_format} IaC at {output_path}")
+        self.logger.info(
+            str(f"Exporting sample to {self.iac_format} IaC at {output_path}")
+        )
 
         # Build TenantGraph from sampled data
         resources = []
@@ -109,4 +111,6 @@ class IaCExporter(BaseExporter):
         # Generate IaC templates using appropriate emitter
         await self.emitter.emit_template(tenant_graph, output_path)
 
-        self.logger.info(f"IaC export completed ({self.iac_format}): {output_path}")
+        self.logger.info(
+            str(f"IaC export completed ({self.iac_format}): {output_path}")
+        )

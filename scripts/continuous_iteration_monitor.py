@@ -79,7 +79,7 @@ class IterationMonitor:
                 timeout=10,
             )
         except Exception as e:
-            logger.warning(f"Failed to send iMessage: {e}")
+            logger.warning(str(f"Failed to send iMessage: {e}"))
 
     def generate_iteration(self) -> Tuple[bool, Path, str]:
         """
@@ -90,7 +90,7 @@ class IterationMonitor:
         """
         iteration_dir = DEMOS_DIR / f"iteration{self.iteration_num}"
 
-        logger.info(f"Generating iteration {self.iteration_num}...")
+        logger.info(str(f"Generating iteration {self.iteration_num}..."))
 
         cmd = [
             "uv",
@@ -112,7 +112,9 @@ class IterationMonitor:
             )
 
             if result.returncode == 0:
-                logger.info(f"✅ Iteration {self.iteration_num} generated successfully")
+                logger.info(
+                    str(f"✅ Iteration {self.iteration_num} generated successfully")
+                )
                 return True, iteration_dir, "Generation successful"
             else:
                 error = result.stderr[-500:] if result.stderr else "Unknown error"
@@ -122,10 +124,12 @@ class IterationMonitor:
                 return False, iteration_dir, error
 
         except subprocess.TimeoutExpired:
-            logger.error(f"❌ Iteration {self.iteration_num} generation timed out")
+            logger.error(str(f"❌ Iteration {self.iteration_num} generation timed out"))
             return False, iteration_dir, "Generation timeout"
         except Exception as e:
-            logger.error(f"❌ Iteration {self.iteration_num} generation error: {e}")
+            logger.error(
+                str(f"❌ Iteration {self.iteration_num} generation error: {e}")
+            )
             return False, iteration_dir, str(e)
 
     def validate_iteration(self, iteration_dir: Path) -> Tuple[bool, int, List[str]]:
@@ -135,7 +139,7 @@ class IterationMonitor:
         Returns:
             (is_valid, error_count, error_messages)
         """
-        logger.info(f"Validating {iteration_dir.name}...")
+        logger.info(str(f"Validating {iteration_dir.name}..."))
 
         # Run terraform validate
         try:
@@ -148,7 +152,7 @@ class IterationMonitor:
             )
 
             if result.returncode == 0:
-                logger.info(f"✅ {iteration_dir.name} validation PASSED")
+                logger.info(str(f"✅ {iteration_dir.name} validation PASSED"))
                 return True, 0, []
 
             # Parse errors
@@ -164,10 +168,10 @@ class IterationMonitor:
             return False, error_count, errors
 
         except subprocess.TimeoutExpired:
-            logger.error(f"❌ {iteration_dir.name} validation timed out")
+            logger.error(str(f"❌ {iteration_dir.name} validation timed out"))
             return False, -1, ["Validation timeout"]
         except Exception as e:
-            logger.error(f"❌ {iteration_dir.name} validation error: {e}")
+            logger.error(str(f"❌ {iteration_dir.name} validation error: {e}"))
             return False, -1, [str(e)]
 
     def analyze_errors(self, errors: List[str]) -> Dict[str, List[str]]:
@@ -310,7 +314,7 @@ class IterationMonitor:
             # Brief delay between iterations
             time.sleep(5)
 
-        logger.warning(f"Reached max iterations ({max_iterations})")
+        logger.warning(str(f"Reached max iterations ({max_iterations})"))
         self._send_imessage(f"⚠️ Reached max iterations {max_iterations}")
 
 

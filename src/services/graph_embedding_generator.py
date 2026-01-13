@@ -71,7 +71,7 @@ class GraphEmbeddingGenerator:
         Raises:
             ValueError: If tenant has no resources or graph cannot be built
         """
-        logger.info(f"Generating embeddings for tenant {tenant_id}")
+        logger.info(str(f"Generating embeddings for tenant {tenant_id}"))
 
         # Build NetworkX graph from Neo4j
         graph = self._build_networkx_graph(tenant_id)
@@ -79,12 +79,14 @@ class GraphEmbeddingGenerator:
         if len(graph.nodes) == 0:
             raise ValueError(f"No resources found for tenant {tenant_id}")
 
-        logger.info(f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
+        logger.info(
+            str(f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
+        )
 
         # Generate node2vec embeddings
         embeddings = self._train_node2vec(graph)
 
-        logger.info(f"Generated embeddings for {len(embeddings)} nodes")
+        logger.info(str(f"Generated embeddings for {len(embeddings)} nodes"))
 
         return embeddings
 

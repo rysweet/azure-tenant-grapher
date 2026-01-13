@@ -67,9 +67,11 @@ class BaseScaleService:
                 exists = record["exists"] if record else False
 
                 if exists:
-                    self.logger.info(f"Tenant {tenant_id} validated successfully")
+                    self.logger.info(str(f"Tenant {tenant_id} validated successfully"))
                 else:
-                    self.logger.warning(f"Tenant {tenant_id} not found in database")
+                    self.logger.warning(
+                        str(f"Tenant {tenant_id} not found in database")
+                    )
 
                 return exists
 
@@ -149,7 +151,7 @@ class BaseScaleService:
         unique_id = str(uuid.uuid4()).replace("-", "")[:8]
         session_id = f"scale-{timestamp}-{unique_id}"
 
-        self.logger.debug(f"Generated session ID: {session_id}")
+        self.logger.debug(str(f"Generated session ID: {session_id}"))
         return session_id
 
     async def get_tenant_info(self, tenant_id: str) -> Optional[Dict[str, Any]]:
@@ -183,7 +185,7 @@ class BaseScaleService:
                     )
                     return tenant_info
                 else:
-                    self.logger.warning(f"No tenant info found for {tenant_id}")
+                    self.logger.warning(str(f"No tenant info found for {tenant_id}"))
                     return None
 
         except Exception as e:

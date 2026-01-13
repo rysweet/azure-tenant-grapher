@@ -260,10 +260,10 @@ async def cost_analysis_command_handler(
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]Cost management error: {e}[/red]")
+        console.print(str(f"[red]Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error: {e}[/red]")
+        console.print(str(f"[red]Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -375,7 +375,7 @@ async def cost_forecast_command_handler(
         await service.initialize()
 
         # Generate forecast
-        console.print(f"[blue]Forecasting costs for next {days} days...[/blue]")
+        console.print(str(f"[blue]Forecasting costs for next {days} days...[/blue]"))
         forecasts = await service.forecast_costs(scope, forecast_days=days)
 
         if not forecasts:
@@ -431,16 +431,16 @@ async def cost_forecast_command_handler(
             ]
             with open(output, "w") as f:
                 json.dump(forecast_data, f, indent=2)
-            console.print(f"[green]Forecast data written to {output}[/green]")
+            console.print(str(f"[green]Forecast data written to {output}[/green]"))
 
         # Close connections
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]Cost management error: {e}[/red]")
+        console.print(str(f"[red]Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error: {e}[/red]")
+        console.print(str(f"[red]Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -615,7 +615,7 @@ async def cost_report_command_handler(
         if output:
             with open(output, "w") as f:
                 f.write(report_content)
-            console.print(f"[green]Report written to {output}[/green]")
+            console.print(str(f"[green]Report written to {output}[/green]"))
         else:
             # Display to console
             if format_type == "json":
@@ -631,10 +631,10 @@ async def cost_report_command_handler(
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]Cost management error: {e}[/red]")
+        console.print(str(f"[red]Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]Unexpected error: {e}[/red]")
+        console.print(str(f"[red]Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()

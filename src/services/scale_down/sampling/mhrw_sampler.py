@@ -64,7 +64,7 @@ class MHRWSampler(BaseSampler):
         Example:
             >>> sampler = MHRWSampler()
             >>> sampled_ids = await sampler.sample(G, 1000)
-            >>> print(f"Sampled {len(sampled_ids)} nodes")
+            >>> print(str(f"Sampled {len(sampled_ids)} nodes"))
         """
         self.logger.info(
             f"Applying Metropolis-Hastings Random Walk sampling (target={target_count})"
@@ -85,7 +85,9 @@ class MHRWSampler(BaseSampler):
                 G_undirected, target_count, progress_callback
             )
 
-            self.logger.info(f"MHRW sampling completed: {len(sampled_nodes)} nodes")
+            self.logger.info(
+                str(f"MHRW sampling completed: {len(sampled_nodes)} nodes")
+            )
 
             if progress_callback:
                 progress_callback("MHRW sampling", len(sampled_nodes), target_count)

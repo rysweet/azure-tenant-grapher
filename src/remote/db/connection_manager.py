@@ -130,7 +130,7 @@ class ConnectionManager:
                 del self._drivers[environment]
 
             self._configs[environment] = config
-            logger.info(f"Configured environment: {environment} -> {config.uri}")
+            logger.info(str(f"Configured environment: {environment} -> {config.uri}"))
 
     async def _get_or_create_driver(self, environment: str):
         """
@@ -169,10 +169,10 @@ class ConnectionManager:
                 # Verify connectivity before returning
                 await driver.verify_connectivity()
                 self._drivers[environment] = driver
-                logger.info(f"Created driver for {environment}")
+                logger.info(str(f"Created driver for {environment}"))
 
             except Exception as e:
-                logger.error(f"Failed to create driver for {environment}: {e}")
+                logger.error(str(f"Failed to create driver for {environment}: {e}"))
                 raise ConnectionError(
                     f"Failed to connect to Neo4j at {config.uri}: {e}"
                 ) from e
@@ -207,14 +207,14 @@ class ConnectionManager:
             if environment in self._drivers:
                 await self._drivers[environment].close()
                 del self._drivers[environment]
-                logger.info(f"Closed driver for {environment}")
+                logger.info(str(f"Closed driver for {environment}"))
 
     async def close_all(self):
         """Close all connections."""
         async with self._lock:
             for env, driver in list(self._drivers.items()):
                 await driver.close()
-                logger.info(f"Closed driver for {env}")
+                logger.info(str(f"Closed driver for {env}"))
             self._drivers.clear()
 
     async def health_check(self, environment: str) -> bool:
@@ -232,7 +232,7 @@ class ConnectionManager:
             await driver.verify_connectivity()
             return True
         except Exception as e:
-            logger.error(f"Health check failed for {environment}: {e}")
+            logger.error(str(f"Health check failed for {environment}: {e}"))
             return False
 
 

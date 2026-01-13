@@ -205,9 +205,9 @@ class TenantManager:
                     }
                     tenant = Tenant.from_dict(tenant_data)
                     self._tenant_cache[tenant.tenant_id] = tenant
-                    logger.debug(f"Loaded tenant: {tenant.tenant_id}")
+                    logger.debug(str(f"Loaded tenant: {tenant.tenant_id}"))
         except Exception as e:
-            logger.warning(f"Failed to load tenants from Neo4j: {e}")
+            logger.warning(str(f"Failed to load tenants from Neo4j: {e}"))
 
     def _load_current_tenant(self) -> None:
         """Load the current tenant from Neo4j."""
@@ -223,9 +223,11 @@ class TenantManager:
                 record = result.single()
                 if record:
                     self._current_tenant_id = record["tenant_id"]
-                    logger.debug(f"Loaded current tenant: {self._current_tenant_id}")
+                    logger.debug(
+                        str(f"Loaded current tenant: {self._current_tenant_id}")
+                    )
         except Exception as e:
-            logger.warning(f"Failed to load current tenant from Neo4j: {e}")
+            logger.warning(str(f"Failed to load current tenant from Neo4j: {e}"))
 
     def _save_tenant(self, tenant: Tenant) -> None:
         """Save a tenant configuration to Neo4j."""
@@ -251,9 +253,9 @@ class TenantManager:
                     is_active=tenant.is_active,
                     configuration=json.dumps(tenant.configuration),
                 )
-            logger.debug(f"Saved tenant: {tenant.tenant_id}")
+            logger.debug(str(f"Saved tenant: {tenant.tenant_id}"))
         except Exception as e:
-            logger.error(f"Failed to save tenant to Neo4j: {e}")
+            logger.error(str(f"Failed to save tenant to Neo4j: {e}"))
             raise
 
     def _save_state(self) -> None:
@@ -275,9 +277,11 @@ class TenantManager:
                 session.run(clear_query)
                 if self._current_tenant_id:
                     session.run(set_query, tenant_id=self._current_tenant_id)
-            logger.debug(f"Saved state with current tenant: {self._current_tenant_id}")
+            logger.debug(
+                str(f"Saved state with current tenant: {self._current_tenant_id}")
+            )
         except Exception as e:
-            logger.error(f"Failed to save state to Neo4j: {e}")
+            logger.error(str(f"Failed to save state to Neo4j: {e}"))
             raise
 
     def register_tenant(
@@ -307,7 +311,7 @@ class TenantManager:
 
         # Check if tenant already exists
         if tenant_id in self._tenant_cache:
-            logger.info(f"Updating existing tenant: {tenant_id}")
+            logger.info(str(f"Updating existing tenant: {tenant_id}"))
             tenant = self._tenant_cache[tenant_id]
             tenant.display_name = display_name
             if config:
@@ -316,7 +320,7 @@ class TenantManager:
                 tenant.subscription_ids = subscription_ids
             tenant.update_last_accessed()
         else:
-            logger.info(f"Registering new tenant: {tenant_id}")
+            logger.info(str(f"Registering new tenant: {tenant_id}"))
             tenant = Tenant(
                 tenant_id=tenant_id,
                 display_name=display_name,
@@ -372,7 +376,7 @@ class TenantManager:
             self._current_tenant_id = tenant_id
             self._save_state()
 
-            logger.info(f"Switched to tenant: {tenant.display_name} ({tenant_id})")
+            logger.info(str(f"Switched to tenant: {tenant.display_name} ({tenant_id})"))
             return tenant
 
         except Exception as e:
@@ -438,7 +442,7 @@ class TenantManager:
         tenant.update_last_accessed()
         self._save_tenant(tenant)
 
-        logger.info(f"Updated configuration for tenant: {tenant_id}")
+        logger.info(str(f"Updated configuration for tenant: {tenant_id}"))
 
     def remove_tenant(self, tenant_id: str) -> None:
         """
@@ -466,7 +470,7 @@ class TenantManager:
             with self.session_manager.session() as session:
                 session.run(query, tenant_id=tenant_id)
         except Exception as e:
-            logger.error(f"Failed to remove tenant from Neo4j: {e}")
+            logger.error(str(f"Failed to remove tenant from Neo4j: {e}"))
             raise
 
         # If this was the current tenant, clear it
@@ -474,7 +478,7 @@ class TenantManager:
             self._current_tenant_id = None
             self._save_state()
 
-        logger.info(f"Removed tenant: {tenant_id}")
+        logger.info(str(f"Removed tenant: {tenant_id}"))
 
     def deactivate_tenant(self, tenant_id: str) -> None:
         """
@@ -493,7 +497,7 @@ class TenantManager:
         tenant.is_active = False
         self._save_tenant(tenant)
 
-        logger.info(f"Deactivated tenant: {tenant_id}")
+        logger.info(str(f"Deactivated tenant: {tenant_id}"))
 
     def activate_tenant(self, tenant_id: str) -> None:
         """
@@ -513,7 +517,7 @@ class TenantManager:
         tenant.update_last_accessed()
         self._save_tenant(tenant)
 
-        logger.info(f"Activated tenant: {tenant_id}")
+        logger.info(str(f"Activated tenant: {tenant_id}"))
 
     def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
         """
@@ -605,7 +609,7 @@ class TenantManager:
             self._current_tenant_id = data.get("current_tenant_id")
             self._save_state()
 
-            logger.info(f"Imported {len(self._tenant_cache)} tenants")
+            logger.info(str(f"Imported {len(self._tenant_cache)} tenants"))
 
         except Exception as e:
             raise InvalidTenantConfigError(f"Failed to import tenants: {e}") from e

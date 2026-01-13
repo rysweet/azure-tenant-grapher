@@ -115,7 +115,7 @@ class Neo4jExporter(BaseExporter):
             ...     "/tmp/sample.cypher"
             ... )
         """
-        self.logger.info(f"Exporting sample to Neo4j Cypher at {output_path}")
+        self.logger.info(str(f"Exporting sample to Neo4j Cypher at {output_path}"))
 
         cypher_statements = []
 
@@ -141,7 +141,9 @@ class Neo4jExporter(BaseExporter):
             for key, value in props.items():
                 # Validate and escape property name
                 if not _is_safe_cypher_identifier(key):
-                    self.logger.warning(f"Skipping property with unsafe name: {key}")
+                    self.logger.warning(
+                        str(f"Skipping property with unsafe name: {key}")
+                    )
                     continue
 
                 safe_key = _escape_cypher_identifier(key)
@@ -223,4 +225,4 @@ class Neo4jExporter(BaseExporter):
         with open(output_path, "w") as f:
             f.write("\n".join(cypher_statements))
 
-        self.logger.info(f"Neo4j Cypher export completed: {output_path}")
+        self.logger.info(str(f"Neo4j Cypher export completed: {output_path}"))

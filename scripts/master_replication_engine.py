@@ -62,9 +62,9 @@ class ContinuousReplicationEngine:
         try:
             if self.imessage_tool.exists():
                 subprocess.run([str(self.imessage_tool), msg], timeout=10, check=False)
-                logger.info(f"📱 Sent: {msg}")
+                logger.info(str(f"📱 Sent: {msg}"))
         except Exception as e:
-            logger.warning(f"Failed to send iMessage: {e}")
+            logger.warning(str(f"Failed to send iMessage: {e}"))
 
     def _load_state(self) -> Dict:
         """Load engine state from file."""
@@ -73,7 +73,7 @@ class ContinuousReplicationEngine:
                 with open(self.state_file) as f:
                     return json.load(f)
             except Exception as e:
-                logger.warning(f"Failed to load state: {e}")
+                logger.warning(str(f"Failed to load state: {e}"))
 
         return {
             "started_at": datetime.now().isoformat(),
@@ -104,7 +104,7 @@ class ContinuousReplicationEngine:
             with open(self.state_file, "w") as f:
                 json.dump(self.state, f, indent=2)
         except Exception as e:
-            logger.error(f"Failed to save state: {e}")
+            logger.error(str(f"Failed to save state: {e}"))
 
     def _get_current_iteration(self) -> int:
         """Get the current iteration number."""
@@ -135,14 +135,14 @@ class ContinuousReplicationEngine:
             )
             success = result.returncode == 0
             if not success:
-                logger.warning(f"Command failed with code {result.returncode}")
-                logger.warning(f"stderr: {result.stderr[:500]}")
+                logger.warning(str(f"Command failed with code {result.returncode}"))
+                logger.warning(str(f"stderr: {result.stderr[:500]}"))
             return success, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
-            logger.error(f"Command timed out after {timeout}s")
+            logger.error(str(f"Command timed out after {timeout}s"))
             return False, "", f"Timeout after {timeout}s"
         except Exception as e:
-            logger.error(f"Command error: {e}")
+            logger.error(str(f"Command error: {e}"))
             return False, "", str(e)
 
     def scan_source_tenant(self) -> bool:
@@ -179,7 +179,7 @@ print(count)
         if success:
             try:
                 count = int(stdout.strip())
-                logger.info(f"Source tenant has {count} resources in Neo4j")
+                logger.info(str(f"Source tenant has {count} resources in Neo4j"))
                 self.state["metrics"]["source_resources"] = count
 
                 if count > 0:
@@ -198,7 +198,7 @@ print(count)
         )
 
         if not success:
-            logger.error(f"Failed to set subscription: {stderr}")
+            logger.error(str(f"Failed to set subscription: {stderr}"))
             return False
 
         # Run ATG scan
@@ -223,7 +223,7 @@ print(count)
             self._send_message(f"✅ Source tenant {self.source_tenant_name} scanned")
             return True
         else:
-            logger.error(f"Scan failed: {stderr}")
+            logger.error(str(f"Scan failed: {stderr}"))
             self.state["errors"].append(
                 {
                     "phase": "scan_source",
@@ -240,7 +240,7 @@ print(count)
         iteration_dir = self.demos_dir / f"iteration{self.iteration}"
 
         logger.info("=" * 80)
-        logger.info(f"GENERATING ITERATION {self.iteration}")
+        logger.info(str(f"GENERATING ITERATION {self.iteration}"))
         logger.info("=" * 80)
 
         self._send_message(f"🏗️ Generating iteration {self.iteration}")
@@ -263,14 +263,16 @@ print(count)
         success, stdout, stderr = self._run_cmd(cmd, timeout=900)
 
         if success:
-            logger.info(f"✅ Iteration {self.iteration} generated at {iteration_dir}")
+            logger.info(
+                str(f"✅ Iteration {self.iteration} generated at {iteration_dir}")
+            )
             self.state["current_iteration"] = self.iteration
             self.state["metrics"]["iterations_generated"] = self.iteration
             self.state["phases"]["iac_generated"] = True
             self._save_state()
             return True
         else:
-            logger.error(f"Generation failed: {stderr}")
+            logger.error(str(f"Generation failed: {stderr}"))
             self.state["errors"].append(
                 {
                     "phase": "generate",
@@ -287,7 +289,7 @@ print(count)
         iteration_dir = self.demos_dir / f"iteration{self.iteration}"
 
         logger.info("=" * 80)
-        logger.info(f"VALIDATING ITERATION {self.iteration}")
+        logger.info(str(f"VALIDATING ITERATION {self.iteration}"))
         logger.info("=" * 80)
 
         self._send_message(f"✅ Validating iteration {self.iteration}")
@@ -298,7 +300,7 @@ print(count)
         )
 
         if not success:
-            logger.error(f"Terraform init failed: {stderr}")
+            logger.error(str(f"Terraform init failed: {stderr}"))
             return False, [{"detail": f"Init failed: {stderr}"}]
 
         # Terraform validate
@@ -307,7 +309,7 @@ print(count)
         )
 
         if success:
-            logger.info(f"✅ Iteration {self.iteration} validation PASSED")
+            logger.info(str(f"✅ Iteration {self.iteration} validation PASSED"))
             self.state["metrics"]["iterations_validated"] = self.iteration
             self.state["phases"]["iac_validated"] = True
             self._save_state()
@@ -324,7 +326,7 @@ print(count)
             except json.JSONDecodeError:
                 errors = [{"detail": stderr}]
 
-            logger.warning(f"⚠️ Validation failed with {len(errors)} errors")
+            logger.warning(str(f"⚠️ Validation failed with {len(errors)} errors"))
             for i, err in enumerate(errors[:3]):
                 logger.warning(f"  Error {i + 1}: {err.get('detail', err)[:200]}")
 
@@ -348,7 +350,7 @@ print(count)
         iteration_dir = self.demos_dir / f"iteration{self.iteration}"
 
         logger.info("=" * 80)
-        logger.info(f"DEPLOYING ITERATION {self.iteration} TO TARGET TENANT")
+        logger.info(str(f"DEPLOYING ITERATION {self.iteration} TO TARGET TENANT"))
         logger.info("=" * 80)
 
         self._send_message(
@@ -361,7 +363,7 @@ print(count)
         )
 
         if not success:
-            logger.error(f"Failed to set subscription: {stderr}")
+            logger.error(str(f"Failed to set subscription: {stderr}"))
             return False
 
         # Terraform plan
@@ -373,7 +375,7 @@ print(count)
         )
 
         if not success:
-            logger.error(f"Terraform plan failed: {stderr}")
+            logger.error(str(f"Terraform plan failed: {stderr}"))
             self.state["errors"].append(
                 {
                     "phase": "plan",
@@ -398,14 +400,14 @@ print(count)
         )
 
         if success:
-            logger.info(f"✅ Iteration {self.iteration} DEPLOYED successfully!")
+            logger.info(str(f"✅ Iteration {self.iteration} DEPLOYED successfully!"))
             self.state["metrics"]["iterations_deployed"] = self.iteration
             self.state["phases"]["deployed"] = True
             self._save_state()
             self._send_message(f"✅ Iteration {self.iteration} deployed successfully!")
             return True
         else:
-            logger.error(f"Terraform apply failed: {stderr}")
+            logger.error(str(f"Terraform apply failed: {stderr}"))
             self.state["errors"].append(
                 {
                     "phase": "deploy",
@@ -468,7 +470,7 @@ print(count)
             if success2:
                 try:
                     count = int(stdout2.strip())
-                    logger.info(f"Target tenant has {count} resources")
+                    logger.info(str(f"Target tenant has {count} resources"))
                     self.state["metrics"]["target_resources"] = count
                     self.state["phases"]["target_scanned"] = True
                     self._save_state()
@@ -503,13 +505,13 @@ print(count)
 
         objective_achieved = all(criteria.values())
 
-        logger.info(f"Source resources: {source_count}")
-        logger.info(f"Target resources: {target_count}")
-        logger.info(f"Coverage: {coverage:.1f}%")
+        logger.info(str(f"Source resources: {source_count}"))
+        logger.info(str(f"Target resources: {target_count}"))
+        logger.info(str(f"Coverage: {coverage:.1f}%"))
         logger.info("\nSuccess Criteria:")
         for criterion, passed in criteria.items():
             status = "✅" if passed else "❌"
-            logger.info(f"  {status} {criterion}")
+            logger.info(str(f"  {status} {criterion}"))
 
         return objective_achieved, criteria
 
@@ -518,9 +520,9 @@ print(count)
         logger.info("=" * 80)
         logger.info("MASTER CONTINUOUS REPLICATION ENGINE")
         logger.info("=" * 80)
-        logger.info(f"Source: {self.source_tenant_name} ({self.source_tenant_id})")
-        logger.info(f"Target: {self.target_tenant_name} ({self.target_tenant_id})")
-        logger.info(f"Starting iteration: {self.iteration + 1}")
+        logger.info(str(f"Source: {self.source_tenant_name} ({self.source_tenant_id})"))
+        logger.info(str(f"Target: {self.target_tenant_name} ({self.target_tenant_id})"))
+        logger.info(str(f"Starting iteration: {self.iteration + 1}"))
         logger.info("=" * 80)
 
         self._send_message(
@@ -535,7 +537,7 @@ print(count)
 
             try:
                 logger.info(f"\n{'=' * 80}")
-                logger.info(f"CYCLE {cycle}")
+                logger.info(str(f"CYCLE {cycle}"))
                 logger.info(f"{'=' * 80}\n")
 
                 # Phase 1: Ensure source is scanned
@@ -555,7 +557,7 @@ print(count)
                 validated, errors = self.validate_iteration()
 
                 if not validated:
-                    logger.warning(f"Validation failed with {len(errors)} errors")
+                    logger.warning(str(f"Validation failed with {len(errors)} errors"))
                     # TODO: Analyze errors and fix code
                     # For now, continue to next iteration
                     time.sleep(30)
@@ -608,7 +610,7 @@ print(count)
                 self._send_message("⏸️ Engine paused by user")
                 return
             except Exception as e:
-                logger.error(f"Unexpected error in cycle {cycle}: {e}")
+                logger.error(str(f"Unexpected error in cycle {cycle}: {e}"))
                 logger.error(traceback.format_exc())
                 self.state["errors"].append(
                     {
@@ -622,7 +624,7 @@ print(count)
                 self._send_message(f"⚠️ Error in cycle {cycle}: {str(e)[:100]}")
                 time.sleep(60)
 
-        logger.warning(f"Reached max cycles ({max_cycles})")
+        logger.warning(str(f"Reached max cycles ({max_cycles})"))
         self._send_message(
             f"⚠️ Reached max cycles ({max_cycles}) without achieving objective"
         )

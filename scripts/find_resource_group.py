@@ -68,7 +68,7 @@ def find_resource_group(name_pattern: str):
                 records = result2.data()
 
             if records:
-                print(f"✅ Found {len(records)} resource group(s):\n")
+                print(str(f"✅ Found {len(records)} resource group(s):\n"))
                 for record in records:
                     print(f"  📁 Resource Group: {record['name']}")
                     print(f"     Azure ID: {record['azure_id']}")
@@ -136,7 +136,7 @@ def main():
     if len(sys.argv) > 1:
         search_term = sys.argv[1]
 
-    print(f"🔍 Searching for resource group: {search_term}")
+    print(str(f"🔍 Searching for resource group: {search_term}"))
     print("=" * 60)
 
     find_resource_group(search_term)

@@ -291,5 +291,5 @@ def ensure_handlers_registered() -> None:
             _register_all_handlers()
         except ImportError as e:
             # During development, some handlers may not exist yet
-            logger.warning(f"Some handlers not available: {e}")
+            logger.warning(str(f"Some handlers not available: {e}"))
         _handlers_registered = True

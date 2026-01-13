@@ -23,7 +23,7 @@ def send_update(msg):
         if IMESSAGE_TOOL.exists():
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
     except Exception as e:
-        print(f"Failed to send update: {e}")
+        print(str(f"Failed to send update: {e}"))
 
 
 def check_terraform_status(iteration):
@@ -54,7 +54,7 @@ def check_process_running(pid):
 
 def main():
     print("Starting continuous monitoring...")
-    print(f"Monitoring iteration {CURRENT_ITERATION}")
+    print(str(f"Monitoring iteration {CURRENT_ITERATION}"))
 
     last_resource_count = 0
     last_update_time = time.time()
@@ -91,7 +91,7 @@ def main():
             else:
                 msg = f"⏳ Deployment PENDING for iteration {CURRENT_ITERATION}"
 
-            print(f"{datetime.now().isoformat()} - {msg}")
+            print(str(f"{datetime.now().isoformat()} - {msg}"))
             send_update(msg)
 
             last_resource_count = resource_count

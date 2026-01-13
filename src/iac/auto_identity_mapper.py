@@ -100,7 +100,9 @@ class AADGraphService:
             return users
 
         except Exception as e:
-            logger.error(f"Failed to fetch users from tenant {self.tenant_id}: {e}")
+            logger.error(
+                str(f"Failed to fetch users from tenant {self.tenant_id}: {e}")
+            )
             raise
 
     async def get_groups(self) -> List[Dict[str, Any]]:
@@ -144,7 +146,9 @@ class AADGraphService:
             return groups
 
         except Exception as e:
-            logger.error(f"Failed to fetch groups from tenant {self.tenant_id}: {e}")
+            logger.error(
+                str(f"Failed to fetch groups from tenant {self.tenant_id}: {e}")
+            )
             raise
 
     async def get_service_principals(self) -> List[Dict[str, Any]]:
@@ -323,7 +327,7 @@ class AutoIdentityMapper:
                 data = json.load(f)
                 return data.get("identity_mappings", {})
         except Exception as e:
-            logger.warning(f"Failed to load manual mapping file: {e}")
+            logger.warning(str(f"Failed to load manual mapping file: {e}"))
             return {"users": {}, "groups": {}, "service_principals": {}}
 
     def _map_users(
@@ -588,4 +592,4 @@ class AutoIdentityMapper:
         with open(output_file, "w") as f:
             json.dump(file_format, f, indent=2)
 
-        logger.info(f"Saved identity mapping to {output_file}")
+        logger.info(str(f"Saved identity mapping to {output_file}"))

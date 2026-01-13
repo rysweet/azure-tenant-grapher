@@ -610,7 +610,7 @@ Total Warnings: [yellow]{total_warnings}[/yellow]
             if not result.issues and not result.warnings:
                 continue
 
-            console.print(f"[bold cyan]{result.check_name}:[/bold cyan]")
+            console.print(str(f"[bold cyan]{result.check_name}:[/bold cyan]"))
 
             for issue in result.issues + result.warnings:
                 severity_color = "red" if issue.severity == "error" else "yellow"
@@ -634,7 +634,7 @@ Total Warnings: [yellow]{total_warnings}[/yellow]
                     f"  [{severity_color}]{severity_label}[/{severity_color}]: {issue.message}"
                 )
                 if location:
-                    console.print(f"    {location}")
+                    console.print(str(f"    {location}"))
 
             console.print()
 
@@ -670,11 +670,13 @@ Examples:
 
     # Validate directory exists
     if not args.iac_directory.exists():
-        console.print(f"[red]Error: Directory not found: {args.iac_directory}[/red]")
+        console.print(
+            str(f"[red]Error: Directory not found: {args.iac_directory}[/red]")
+        )
         return 2
 
     if not args.iac_directory.is_dir():
-        console.print(f"[red]Error: Not a directory: {args.iac_directory}[/red]")
+        console.print(str(f"[red]Error: Not a directory: {args.iac_directory}[/red]"))
         return 2
 
     # Run validation
@@ -683,7 +685,7 @@ Examples:
     try:
         validator.load_terraform_files()
     except Exception as e:
-        console.print(f"[red]Error loading Terraform files: {e}[/red]")
+        console.print(str(f"[red]Error loading Terraform files: {e}[/red]"))
         return 2
 
     if not validator.terraform_files:

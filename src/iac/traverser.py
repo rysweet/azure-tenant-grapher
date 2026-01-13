@@ -199,7 +199,7 @@ class GraphTraverser:
                 )
 
         except Exception as e:
-            logger.error(f"Error during graph traversal: {e}")
+            logger.error(str(f"Error during graph traversal: {e}"))
             raise
 
         return TenantGraph(resources=resources, relationships=relationships)

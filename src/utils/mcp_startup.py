@@ -59,7 +59,7 @@ class MCPServerManager:
             logger.info("MCP server is already running")
             return True
 
-        logger.info(f"Starting MCP server on port {self.mcp_port}...")
+        logger.info(str(f"Starting MCP server on port {self.mcp_port}..."))
 
         try:
             # Start MCP service in background
@@ -103,7 +103,7 @@ class MCPServerManager:
             return False
 
         except Exception as e:
-            logger.error(f"Failed to start MCP server: {e}")
+            logger.error(str(f"Failed to start MCP server: {e}"))
             return False
 
     async def start_mcp_server_async(self) -> bool:
@@ -112,7 +112,7 @@ class MCPServerManager:
             logger.info("MCP server is already running")
             return True
 
-        logger.info(f"Starting MCP server on port {self.mcp_port}...")
+        logger.info(str(f"Starting MCP server on port {self.mcp_port}..."))
 
         try:
             # Start MCP service in background
@@ -158,7 +158,7 @@ class MCPServerManager:
             return False
 
         except Exception as e:
-            logger.error(f"Failed to start MCP server: {e}")
+            logger.error(str(f"Failed to start MCP server: {e}"))
             return False
 
     def stop_mcp_server(self):
@@ -252,7 +252,7 @@ async def ensure_mcp_running_async(debug: bool = False) -> None:
 def stop_mcp_if_managed():
     """Stop the MCP server if it was started by this manager."""
     global _manager
-    if _manager:
+    if _manager is not None:
         _manager.stop_mcp_server()
 
 

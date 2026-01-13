@@ -375,7 +375,7 @@ class TerraformEmitter(IaCEmitter):
                     resource["userPrincipalName"] = f"{base_name}@{domain_name}"
                     resource["email"] = f"{base_name}@{domain_name}"
 
-        logger.info(f"Generating Terraform templates to {out_dir}")
+        logger.info(str(f"Generating Terraform templates to {out_dir}"))
 
         # Store target location for handlers (Fix #601 - missing piece!)
         self.target_location = location
@@ -560,7 +560,7 @@ class TerraformEmitter(IaCEmitter):
         # Extract and generate resource group resources
         logger.info("Extracting resource groups from discovered resources")
         rg_resources = self._extract_resource_groups(graph.resources)
-        logger.info(f"Found {len(rg_resources)} unique resource groups")
+        logger.info(str(f"Found {len(rg_resources)} unique resource groups"))
 
         # Build RG name mapping (original -> prefixed) for updating resource references
         rg_name_mapping = {}
@@ -572,7 +572,9 @@ class TerraformEmitter(IaCEmitter):
                     rg_name_mapping[original_rg] = prefixed_rg
 
             logger.info(f"Resource group prefix: '{self.resource_group_prefix}'")
-            logger.info(f"Will transform {len(rg_name_mapping)} resource group names")
+            logger.info(
+                str(f"Will transform {len(rg_name_mapping)} resource group names")
+            )
 
             # Apply RG name transform to all resources
             for resource in graph.resources:
@@ -653,13 +655,13 @@ class TerraformEmitter(IaCEmitter):
             )
             logger.info(f"Source Tenant: {self.source_tenant_id or 'Not specified'}")
             logger.info(f"Target Tenant: {self.target_tenant_id or 'Not specified'}")
-            logger.info(f"Strict Mode: {self.strict_mode}")
+            logger.info(str(f"Strict Mode: {self.strict_mode}"))
             logger.info("=" * 70)
 
             self._translation_coordinator = TranslationCoordinator(translation_context)
 
             # Translate all resources
-            logger.info(f"Translating {len(all_resources)} resources...")
+            logger.info(str(f"Translating {len(all_resources)} resources..."))
             try:
                 translated_resources = (
                     self._translation_coordinator.translate_resources(all_resources)
@@ -949,7 +951,7 @@ class TerraformEmitter(IaCEmitter):
             if import_blocks:
                 terraform_config["import"] = import_blocks
                 self._import_blocks_generated = len(import_blocks)
-                logger.info(f"Generated {len(import_blocks)} import blocks")
+                logger.info(str(f"Generated {len(import_blocks)} import blocks"))
 
         # Determine if we should split by community
         output_files = []
@@ -987,7 +989,9 @@ class TerraformEmitter(IaCEmitter):
                     logger.info(
                         f"Detected {len(communities)} communities for splitting"
                     )
-                    logger.info(f"Community sizes: {[len(c) for c in communities]}")
+                    logger.info(
+                        str(f"Community sizes: {[len(c) for c in communities]}")
+                    )
 
                     # Split resources by community
                     for i, community_ids in enumerate(communities, start=1):
@@ -1140,7 +1144,7 @@ class TerraformEmitter(IaCEmitter):
                     for ref in refs[:10]:  # Limit to first 10
                         logger.warning(f"      - {ref['resource_name']}")
                     if len(refs) > 10:
-                        logger.warning(f"      ... and {len(refs) - 10} more")
+                        logger.warning(str(f"      ... and {len(refs) - 10} more"))
 
             logger.warning(
                 f"\n{'=' * 80}\n"
@@ -1165,14 +1169,18 @@ class TerraformEmitter(IaCEmitter):
                 self._translation_coordinator.save_translation_report(
                     str(text_report_path), format="text"
                 )
-                logger.info(f"Translation report (text) saved to: {text_report_path}")
+                logger.info(
+                    str(f"Translation report (text) saved to: {text_report_path}")
+                )
 
                 # Save machine-readable JSON report
                 json_report_path = out_dir / "translation_report.json"
                 self._translation_coordinator.save_translation_report(
                     str(json_report_path), format="json"
                 )
-                logger.info(f"Translation report (JSON) saved to: {json_report_path}")
+                logger.info(
+                    str(f"Translation report (JSON) saved to: {json_report_path}")
+                )
 
                 # Print summary to console
                 formatted_report = (
@@ -1846,7 +1854,7 @@ class TerraformEmitter(IaCEmitter):
                 return None
 
         # No handler available for this resource type
-        logger.warning(f"No handler available for {azure_type}: {resource_name}")
+        logger.warning(str(f"No handler available for {azure_type}: {resource_name}"))
         return None
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
@@ -2106,7 +2114,7 @@ class TerraformEmitter(IaCEmitter):
                 sanitized.encode(), usedforsecurity=False
             ).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
-            logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
+            logger.debug(str(f"Truncated long name to 80 chars: ...{sanitized[-20:]}"))
 
         return sanitized or "unnamed_resource"
 
@@ -2621,7 +2629,7 @@ class TerraformEmitter(IaCEmitter):
 
         for key in required_keys:
             if key not in template_data:
-                logger.error(f"Missing required key in Terraform template: {key}")
+                logger.error(str(f"Missing required key in Terraform template: {key}"))
                 return False
 
         # Basic validation passed

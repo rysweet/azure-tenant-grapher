@@ -294,7 +294,7 @@ class WellArchitectedReporter:
 
                         updated_count += 1
 
-        logger.info(f"Updated {updated_count} resources with WAF insights")
+        logger.info(str(f"Updated {updated_count} resources with WAF insights"))
         return updated_count
 
     def generate_markdown_report(
@@ -396,7 +396,7 @@ identifying architectural patterns and providing actionable recommendations.
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(report)
-        logger.info(f"Markdown report written to {output_path}")
+        logger.info(str(f"Markdown report written to {output_path}"))
 
     def generate_notebook_report(
         self, waf_insights: Dict[str, Dict[str, Any]], output_path: Path
@@ -529,7 +529,7 @@ identifying architectural patterns and providing actionable recommendations.
                         f'recommendations = ["{recs_list}"]\n',
                         "\n",
                         "for i, rec in enumerate(recommendations, 1):\n",
-                        '    print(f"{i}. {rec}")\n',
+                        '    print(str(f"{i}. {rec}"))\n',
                     ],
                 }
             )
@@ -538,7 +538,7 @@ identifying architectural patterns and providing actionable recommendations.
         with open(output_path, "w") as f:
             json.dump(notebook, f, indent=2)
 
-        logger.info(f"Notebook report written to {output_path}")
+        logger.info(str(f"Notebook report written to {output_path}"))
 
     def generate_full_report(
         self,
@@ -625,7 +625,7 @@ identifying architectural patterns and providing actionable recommendations.
             with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
 
-            logger.info(f"Report generation complete: {output_dir}")
+            logger.info(str(f"Report generation complete: {output_dir}"))
             return summary
 
         finally:

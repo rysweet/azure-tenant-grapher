@@ -497,7 +497,7 @@ class TechnicalDebtAnalyzer:
 
         result = ScanResult(scan_metadata=metadata, issues=self.issues, summary=summary)
 
-        print(f"\nScan complete. Found {len(self.issues)} issues.")
+        print(str(f"\nScan complete. Found {len(self.issues)} issues."))
         return result
 
     def _build_summary(self) -> Dict[str, Any]:
@@ -588,7 +588,7 @@ def main():
     json_file = output_dir / f"technical_debt_detailed_{timestamp}.json"
     with open(json_file, "w") as f:
         json.dump(result.to_dict(), f, indent=2)
-    print(f"\nJSON report: {json_file}")
+    print(str(f"\nJSON report: {json_file}"))
 
     # Summary output
     summary_file = output_dir / "technical_debt_summary.txt"
@@ -626,7 +626,7 @@ def main():
             )
             f.write("!" * 60 + "\n")
 
-    print(f"Summary report: {summary_file}")
+    print(str(f"Summary report: {summary_file}"))
 
     # Print summary to console
     print("\n" + "=" * 60)

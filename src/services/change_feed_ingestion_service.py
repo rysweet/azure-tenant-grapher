@@ -174,7 +174,7 @@ class ChangeFeedIngestionService:
             response = resourcegraph_client.resources(query=query_request)
             changes = response.data if hasattr(response, "data") else []
         except Exception as e:
-            logger.error(f"Failed to query Resource Graph: {e}")
+            logger.error(str(f"Failed to query Resource Graph: {e}"))
             changes = []
 
         # 5. Query ARM Activity Logs for deletions
@@ -190,7 +190,7 @@ class ChangeFeedIngestionService:
                     if resource_id:
                         deleted_ids.add(resource_id)
             except Exception as e:
-                logger.error(f"Failed to query Activity Logs: {e}")
+                logger.error(str(f"Failed to query Activity Logs: {e}"))
         else:
             logger.warning(
                 "MonitorClient is not available; skipping activity log deletion detection."
@@ -294,7 +294,7 @@ class ChangeFeedIngestionService:
             logger.warning("No subscriptions found in database")
             return {}
 
-        logger.info(f"Found {len(subscription_ids)} subscriptions to process")
+        logger.info(str(f"Found {len(subscription_ids)} subscriptions to process"))
 
         # Process each subscription concurrently
         tasks = []

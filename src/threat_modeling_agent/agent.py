@@ -71,8 +71,8 @@ class ThreatModelAgent:
         try:
             dfd_graph = self._load_dfd_graph_from_neo4j()
         except Exception as e:
-            self.logger.error(f"Failed to load DFD graph from Neo4j: {e}")
-            print(f"❌ Error: Failed to load DFD graph from Neo4j: {e}")
+            self.logger.error(str(f"Failed to load DFD graph from Neo4j: {e}"))
+            print(str(f"❌ Error: Failed to load DFD graph from Neo4j: {e}"))
             print("Aborting workflow.")
             return None
 
@@ -102,8 +102,8 @@ class ThreatModelAgent:
                         self.logger.warning("TMT runner returned no threats.")
                         print("⚠️  TMT runner returned no threats.")
                 except Exception as e:
-                    self.logger.error(f"TMT runner failed: {e}")
-                    print(f"❌ Error: TMT runner failed: {e}")
+                    self.logger.error(str(f"TMT runner failed: {e}"))
+                    print(str(f"❌ Error: TMT runner failed: {e}"))
 
                 # Threat enumeration stage
                 if tmt_results:
@@ -128,8 +128,8 @@ class ThreatModelAgent:
                             )
                             print("⚠️  Threat enumeration returned no threats.")
                     except Exception as e:
-                        self.logger.error(f"Threat enumeration failed: {e}")
-                        print(f"❌ Error: Threat enumeration failed: {e}")
+                        self.logger.error(str(f"Threat enumeration failed: {e}"))
+                        print(str(f"❌ Error: Threat enumeration failed: {e}"))
 
                     # ASB mapping stage
                     enriched_threats = None
@@ -157,8 +157,8 @@ class ThreatModelAgent:
                                 )
                                 print("⚠️  ASB mapping returned no enriched threats.")
                         except Exception as e:
-                            self.logger.error(f"ASB mapping failed: {e}")
-                            print(f"❌ Error: ASB mapping failed: {e}")
+                            self.logger.error(str(f"ASB mapping failed: {e}"))
+                            print(str(f"❌ Error: ASB mapping failed: {e}"))
 
                         # Report generation stage
                         if enriched_threats:
@@ -183,15 +183,15 @@ class ThreatModelAgent:
                                     self.logger.error("Report generation failed.")
                                     print("❌ Error: Report generation failed.")
                             except Exception as e:
-                                self.logger.error(f"Report generation failed: {e}")
-                                print(f"❌ Error: Report generation failed: {e}")
+                                self.logger.error(str(f"Report generation failed: {e}"))
+                                print(str(f"❌ Error: Report generation failed: {e}"))
 
             else:
                 self.logger.error("DFD artifact could not be built.")
                 print("❌ Error: DFD artifact could not be built.")
         except Exception as e:
-            self.logger.error(f"DFD building failed: {e}")
-            print(f"❌ Error: DFD building failed: {e}")
+            self.logger.error(str(f"DFD building failed: {e}"))
+            print(str(f"❌ Error: DFD building failed: {e}"))
 
         print("=== Threat Modeling Agent: Workflow complete ===")
         return report_path

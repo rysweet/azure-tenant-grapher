@@ -65,7 +65,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         ...     output_mode="yaml",
         ...     output_path="/tmp/sample.yaml"
         ... )
-        >>> print(f"Sampled {len(node_ids)} nodes")
+        >>> print(str(f"Sampled {len(node_ids)} nodes"))
         >>> print(metrics)
     """
 
@@ -126,7 +126,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             >>> G, node_props = await orchestrator.neo4j_to_networkx(
             ...     "00000000-0000-0000-0000-000000000000"
             ... )
-            >>> print(f"Loaded {G.number_of_nodes()} nodes")
+            >>> print(str(f"Loaded {G.number_of_nodes()} nodes"))
         """
         # Ensure extractor uses the orchestrator's validate_tenant_exists for consistent mocking
         # Copy validation state from orchestrator to extractor for test mocking
@@ -174,7 +174,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             ...     target_size=0.1,
             ...     output_mode="delete"
             ... )
-            >>> print(f"Kept {len(node_ids)} nodes, deleted {deleted} nodes")
+            >>> print(str(f"Kept {len(node_ids)} nodes, deleted {deleted} nodes"))
         """
         start_time = datetime.now(UTC)
 
@@ -284,7 +284,7 @@ class ScaleDownOrchestrator(BaseScaleService):
                 sampled_node_ids, progress_callback
             )
 
-            self.logger.info(f"Deleted {nodes_deleted} non-sampled nodes")
+            self.logger.info(str(f"Deleted {nodes_deleted} non-sampled nodes"))
         elif output_path:
             # Export mode
             if progress_callback:
@@ -343,7 +343,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             ...     "/tmp/sample.yaml"
             ... )
         """
-        self.logger.info(f"Exporting sample to {format} at {output_path}")
+        self.logger.info(str(f"Exporting sample to {format} at {output_path}"))
 
         # Handle IaC formats separately (require instantiation)
         if format in ["terraform", "arm", "bicep"]:
@@ -355,7 +355,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
-        self.logger.info(f"Export completed: {output_path}")
+        self.logger.info(str(f"Export completed: {output_path}"))
 
     async def sample_by_pattern(
         self,
@@ -395,7 +395,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             ...     "00000000-0000-0000-0000-000000000000",
             ...     criteria
             ... )
-            >>> print(f"Found {len(node_ids)} matching nodes")
+            >>> print(str(f"Found {len(node_ids)} matching nodes"))
         """
         # Validate tenant exists
         if not await self.validate_tenant_exists(tenant_id):
@@ -439,7 +439,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             ...     motif_size=3,
             ...     max_motifs=10
             ... )
-            >>> print(f"Found {len(motifs)} motifs")
+            >>> print(str(f"Found {len(motifs)} motifs"))
         """
         # Extract graph
         G, _ = await self.extractor.extract_graph(tenant_id, progress_callback)

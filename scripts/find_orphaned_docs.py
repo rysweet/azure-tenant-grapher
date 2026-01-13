@@ -322,7 +322,7 @@ Examples:
 
     # Run detection
     if not args.quiet:
-        print(f"Analyzing documentation in: {docs_dir}")
+        print(str(f"Analyzing documentation in: {docs_dir}"))
         print()
 
     detector = OrphanDetector(docs_dir, index_file=args.index)

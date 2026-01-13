@@ -87,7 +87,7 @@ class LinkValidator:
         """Validate all documentation links."""
         markdown_files = self.find_markdown_files()
 
-        print(f"Validating links in {len(markdown_files)} markdown files...")
+        print(str(f"Validating links in {len(markdown_files)} markdown files..."))
         print()
 
         for md_file in markdown_files:
@@ -111,7 +111,7 @@ class LinkValidator:
             print("✅ All links are valid!")
             return
 
-        print(f"❌ Found {len(self.broken_links)} broken links:\n")
+        print(str(f"❌ Found {len(self.broken_links)} broken links:\n"))
 
         # Group by file
         links_by_file = defaultdict(list)
@@ -120,11 +120,11 @@ class LinkValidator:
 
         for file_path, links in sorted(links_by_file.items()):
             rel_path = file_path.relative_to(self.docs_dir.parent)
-            print(f"📄 {rel_path}")
+            print(str(f"📄 {rel_path}"))
             for link in links:
-                print(f"   - {link}")
+                print(str(f"   - {link}"))
                 if link in self.fixed_links:
-                    print(f"     → Suggested fix: {self.fixed_links[link]}")
+                    print(str(f"     → Suggested fix: {self.fixed_links[link]}"))
             print()
 
     def apply_fixes(self):
@@ -137,7 +137,7 @@ class LinkValidator:
             if link in self.fixed_links:
                 files_to_fix[file_path].append((link, self.fixed_links[link]))
 
-        print(f"\n🔧 Applying fixes to {len(files_to_fix)} files...\n")
+        print(str(f"\n🔧 Applying fixes to {len(files_to_fix)} files...\n"))
 
         for file_path, fixes in files_to_fix.items():
             content = file_path.read_text()
@@ -147,7 +147,7 @@ class LinkValidator:
 
             file_path.write_text(content)
             rel_path = file_path.relative_to(self.docs_dir.parent)
-            print(f"✅ Fixed {len(fixes)} links in {rel_path}")
+            print(str(f"✅ Fixed {len(fixes)} links in {rel_path}"))
 
 
 def main():
@@ -165,7 +165,7 @@ def main():
 
     docs_dir = args.docs_dir.resolve()
     if not docs_dir.exists():
-        print(f"❌ Documentation directory not found: {docs_dir}")
+        print(str(f"❌ Documentation directory not found: {docs_dir}"))
         return 1
 
     validator = LinkValidator(docs_dir, fix=args.fix)

@@ -227,7 +227,7 @@ class TenantSeedManager:
                     )
                     return seed
 
-                logger.debug(f"No seed found for tenant {tenant_id}")
+                logger.debug(str(f"No seed found for tenant {tenant_id}"))
                 return None
 
         except Neo4jError as e:
@@ -336,7 +336,7 @@ class TenantSeedManager:
                     tenant_id=tenant_id,
                 )
 
-            logger.warning(f"Deleted abstraction seed for tenant {tenant_id}")
+            logger.warning(str(f"Deleted abstraction seed for tenant {tenant_id}"))
             return True
 
         except Exception:
@@ -415,7 +415,9 @@ class TenantSeedManager:
         else:
             # Non-hex seeds should be at least 32 characters
             if len(seed) < 32:
-                logger.debug(f"Seed validation failed: seed length {len(seed)} < 32")
+                logger.debug(
+                    str(f"Seed validation failed: seed length {len(seed)} < 32")
+                )
                 return False
 
             # Check character set (alphanumeric only for non-hex)
@@ -467,7 +469,7 @@ class TenantSeedManager:
                         "has_seed": bool(seed),
                     }
 
-                logger.debug(f"Found {len(tenants)} tenants with seeds")
+                logger.debug(str(f"Found {len(tenants)} tenants with seeds"))
                 return tenants
 
         except Neo4jError as e:

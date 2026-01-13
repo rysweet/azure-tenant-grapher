@@ -160,7 +160,7 @@ async def build_command_handler(
                 subscription_ids = [
                     s.strip() for s in filter_by_subscriptions.split(",")
                 ]
-                logger.info(f"📋 Filtering by subscriptions: {subscription_ids}")
+                logger.info(str(f"📋 Filtering by subscriptions: {subscription_ids}"))
 
             if filter_by_rgs:
                 # Split and detect which values are graph IDs vs actual names
@@ -199,7 +199,7 @@ async def build_command_handler(
                     resource_group_names=resource_group_names,
                 )
             except ValueError as e:
-                logger.error(f"❌ Invalid filter configuration: {e}")
+                logger.error(str(f"❌ Invalid filter configuration: {e}"))
                 logger.info(
                     "💡 Tip: Make sure you're using actual Azure resource names, not database IDs.\n"
                     "   Resource group names should only contain alphanumeric characters, hyphens, underscores, periods, and parentheses."
@@ -643,7 +643,7 @@ async def _run_dashboard_mode(
             # Just skip the cleanup for now to avoid attribute errors
             pass
         except Exception as e:
-            logger.error(f"[DEBUG] Error during cleanup: {e}")
+            logger.error(str(f"[DEBUG] Error during cleanup: {e}"))
         # Removed debug print
         return "__DASHBOARD_EXIT__"
 
@@ -2595,10 +2595,10 @@ async def cost_analysis_command_handler(
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        console.print(str(f"[red]❌ Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        console.print(str(f"[red]❌ Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -2671,7 +2671,7 @@ async def cost_forecast_command_handler(
         await service.initialize()
 
         # Generate forecast
-        console.print(f"[blue]📊 Forecasting costs for next {days} days...[/blue]")
+        console.print(str(f"[blue]📊 Forecasting costs for next {days} days...[/blue]"))
         forecasts = await service.forecast_costs(scope, forecast_days=days)
 
         if not forecasts:
@@ -2729,16 +2729,16 @@ async def cost_forecast_command_handler(
             ]
             with open(output, "w") as f:
                 json.dump(forecast_data, f, indent=2)
-            console.print(f"[green]✅ Forecast data written to {output}[/green]")
+            console.print(str(f"[green]✅ Forecast data written to {output}[/green]"))
 
         # Close connections
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        console.print(str(f"[red]❌ Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        console.print(str(f"[red]❌ Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -2849,7 +2849,7 @@ async def cost_report_command_handler(
         if output:
             with open(output, "w") as f:
                 f.write(report_content)
-            console.print(f"[green]✅ Report written to {output}[/green]")
+            console.print(str(f"[green]✅ Report written to {output}[/green]"))
         else:
             # Display to console
             if format == "json":
@@ -2865,10 +2865,10 @@ async def cost_report_command_handler(
         await driver.close()
 
     except CostManagementError as e:
-        console.print(f"[red]❌ Cost management error: {e}[/red]")
+        console.print(str(f"[red]❌ Cost management error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]❌ Unexpected error: {e}[/red]")
+        console.print(str(f"[red]❌ Unexpected error: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -3248,7 +3248,7 @@ async def analyze_patterns_command_handler(
         if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
             for viz_file in summary["output_files"]["visualizations"]:
-                console.print(f"    - [cyan]{viz_file}[/cyan]")
+                console.print(str(f"    - [cyan]{viz_file}[/cyan]"))
 
         console.print(
             f"\n[bold green]✨ Analysis complete! Results saved to: {output_path}[/bold green]"
@@ -3268,10 +3268,10 @@ async def analyze_patterns_command_handler(
                 )
             )
         else:
-            console.print(f"[red]❌ Import error: {e}[/red]")
+            console.print(str(f"[red]❌ Import error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]❌ Failed to analyze patterns: {e}[/red]")
+        console.print(str(f"[red]❌ Failed to analyze patterns: {e}[/red]"))
         import traceback
 
         traceback.print_exc()
@@ -3394,14 +3394,14 @@ async def well_architected_report_command_handler(
         if summary["output_files"]["visualizations"]:
             console.print("  • Visualizations:")
             for viz_file in summary["output_files"]["visualizations"]:
-                console.print(f"    - [cyan]{viz_file}[/cyan]")
+                console.print(str(f"    - [cyan]{viz_file}[/cyan]"))
 
         console.print(
             f"\n[bold green]✨ Report complete! Results saved to: {output_path}[/bold green]"
         )
 
         console.print("\n[bold]📓 To view the interactive notebook:[/bold]")
-        console.print(f"  cd {output_path.parent}")
+        console.print(str(f"  cd {output_path.parent}"))
         console.print(
             f"  jupyter notebook {output_path.name}/well_architected_analysis.ipynb"
         )
@@ -3420,10 +3420,10 @@ async def well_architected_report_command_handler(
                 )
             )
         else:
-            console.print(f"[red]❌ Import error: {e}[/red]")
+            console.print(str(f"[red]❌ Import error: {e}[/red]"))
         sys.exit(1)
     except Exception as e:
-        console.print(f"[red]❌ Failed to generate report: {e}[/red]")
+        console.print(str(f"[red]❌ Failed to generate report: {e}[/red]"))
         import traceback
 
         traceback.print_exc()

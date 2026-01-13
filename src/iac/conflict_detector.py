@@ -231,7 +231,7 @@ class ConflictDetector:
             # Log any unexpected exceptions
             for result in results:
                 if isinstance(result, Exception):
-                    logger.error(f"Conflict detection task failed: {result}")
+                    logger.error(str(f"Conflict detection task failed: {result}"))
 
         # Generate remediation suggestions
         self._add_remediation_suggestions(report)
@@ -295,7 +295,7 @@ class ConflictDetector:
             )
 
         except Exception as e:
-            logger.error(f"Error checking existing resources: {e}")
+            logger.error(str(f"Error checking existing resources: {e}"))
             report.warnings.append(f"Failed to check existing resources: {e!s}")
 
     async def _check_soft_deleted_vaults(
@@ -355,7 +355,7 @@ class ConflictDetector:
             )
 
         except Exception as e:
-            logger.error(f"Error checking soft-deleted vaults: {e}")
+            logger.error(str(f"Error checking soft-deleted vaults: {e}"))
             report.warnings.append(f"Failed to check soft-deleted vaults: {e!s}")
 
     async def _check_locked_resource_groups(
@@ -400,17 +400,17 @@ class ConflictDetector:
 
                 except ResourceNotFoundError:
                     # RG doesn't exist yet (not a conflict)
-                    logger.debug(f"RG {rg_name} not found (will be created)")
+                    logger.debug(str(f"RG {rg_name} not found (will be created)"))
                 except AzureError as e:
                     # Other Azure errors - log but continue
-                    logger.debug(f"Could not check locks for RG {rg_name}: {e}")
+                    logger.debug(str(f"Could not check locks for RG {rg_name}: {e}"))
 
             logger.info(
                 f"Found {report.locked_rgs_found} locked resource group conflicts"
             )
 
         except Exception as e:
-            logger.error(f"Error checking resource group locks: {e}")
+            logger.error(str(f"Error checking resource group locks: {e}"))
             report.warnings.append(f"Failed to check RG locks: {e!s}")
 
     def _extract_resource_groups(self, resources: List[Dict[str, Any]]) -> Set[str]:

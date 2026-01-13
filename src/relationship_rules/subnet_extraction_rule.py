@@ -67,10 +67,10 @@ class SubnetExtractionRule(RelationshipRule):
         subnets = properties.get("subnets", [])
 
         if not subnets:
-            logger.debug(f"VNet {vnet_id} has no subnets to extract")
+            logger.debug(str(f"VNet {vnet_id} has no subnets to extract"))
             return
 
-        logger.info(f"Extracting {len(subnets)} subnets from VNet {vnet_id}")
+        logger.info(str(f"Extracting {len(subnets)} subnets from VNet {vnet_id}"))
 
         # Process each subnet
         for subnet in subnets:
@@ -140,7 +140,7 @@ class SubnetExtractionRule(RelationshipRule):
         subnet_name = subnet.get("name")
 
         if not subnet_name:
-            logger.warning(f"Subnet in VNet {vnet_id} missing name, skipping")
+            logger.warning(str(f"Subnet in VNet {vnet_id} missing name, skipping"))
             return None
 
         # Construct subnet ID following Azure ARM format

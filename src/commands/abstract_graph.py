@@ -153,7 +153,7 @@ def abstract_graph(
             )
         )
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        console.print(str(f"[red]Error:[/red] {e}"))
         raise click.Abort() from e
 
 
@@ -176,9 +176,9 @@ async def _abstract_graph_async(
     container_manager = Neo4jContainerManager()
     await container_manager.ensure_neo4j_running()
 
-    console.print(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}")
-    console.print(f"[bold]Target sample size:[/bold] {sample_size}")
-    console.print(f"[bold]Sampling method:[/bold] {method}")
+    console.print(str(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}"))
+    console.print(str(f"[bold]Target sample size:[/bold] {sample_size}"))
+    console.print(str(f"[bold]Sampling method:[/bold] {method}"))
 
     if preserve_security_patterns:
         console.print(
@@ -230,7 +230,7 @@ async def _abstract_graph_async(
         _display_results(result)
 
     finally:
-        if driver:
+        if driver is not None:
             driver.close()
 
 
@@ -288,7 +288,7 @@ def _display_results(result: Dict[str, Any]) -> None:
             )
 
         added = security_metrics["nodes_added_for_security"]
-        console.print(f"\n  [bold]Nodes added for security:[/bold] {added}")
+        console.print(str(f"\n  [bold]Nodes added for security:[/bold] {added}"))
 
     # Type distribution table
     console.print("\n[bold]Resource Type Distribution:[/bold]")

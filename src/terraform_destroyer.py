@@ -67,7 +67,7 @@ class TerraformDestroyer:
             # Use terraform show to get current state
             result = await self._run_terraform_command(["show", "-json"])
             if result[0] != 0:
-                logger.error(f"Failed to get terraform state: {result[2]}")
+                logger.error(str(f"Failed to get terraform state: {result[2]}"))
                 return []
 
             state_data = json.loads(result[1])
@@ -90,7 +90,7 @@ class TerraformDestroyer:
             return resources
 
         except Exception as e:
-            logger.error(f"Failed to parse terraform state: {e}")
+            logger.error(str(f"Failed to parse terraform state: {e}"))
             return []
 
     async def plan_destroy(self) -> Tuple[int, str, str]:
@@ -118,7 +118,7 @@ class TerraformDestroyer:
         if auto_approve:
             cmd.append("-auto-approve")
 
-        logger.info(f"Executing terraform destroy in {self.working_dir}")
+        logger.info(str(f"Executing terraform destroy in {self.working_dir}"))
         return await self._run_terraform_command(cmd, timeout=timeout)
 
     async def _run_terraform_command(
@@ -163,7 +163,7 @@ class TerraformDestroyer:
             )
 
         except Exception as e:
-            logger.error(f"Failed to run terraform command: {e}")
+            logger.error(str(f"Failed to run terraform command: {e}"))
             return (1, "", str(e))
 
     def check_terraform_installed(self) -> bool:
@@ -260,11 +260,11 @@ class UndeploymentConfirmation:
 
         # Display grouped resources
         for rtype, names in sorted(by_type.items()):
-            print(f"\n{rtype}:")
+            print(str(f"\n{rtype}:"))
             for name in names:
-                print(f"  - {name}")
+                print(str(f"  - {name}"))
 
-        print(f"\nTotal: {len(resources)} resources")
+        print(str(f"\nTotal: {len(resources)} resources"))
         print("=" * 60)
 
     def confirm_tenant(self) -> bool:
@@ -273,7 +273,7 @@ class UndeploymentConfirmation:
         Returns:
             True if confirmed
         """
-        print(f"\n⚠️  Target Tenant: {self.tenant}")
+        print(str(f"\n⚠️  Target Tenant: {self.tenant}"))
         print(f"   Deployment Tenant: {self.deployment['tenant']}")
 
         if self.tenant != self.deployment["tenant"]:

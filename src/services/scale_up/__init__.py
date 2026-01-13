@@ -155,7 +155,7 @@ class ScaleUpService(BaseScaleService):
             ...     scale_factor=2.0,
             ...     resource_types=["Microsoft.Compute/virtualMachines"]
             ... )
-            >>> print(f"Created {result.resources_created} synthetic resources")
+            >>> print(str(f"Created {result.resources_created} synthetic resources"))
         """
         start_time = datetime.now()
         operation_id = await self.generate_session_id()
@@ -186,7 +186,9 @@ class ScaleUpService(BaseScaleService):
                     + (f" with types {resource_types}" if resource_types else "")
                 )
 
-            self.logger.info(f"Found {len(base_resources)} base resources to replicate")
+            self.logger.info(
+                str(f"Found {len(base_resources)} base resources to replicate")
+            )
 
             # Step 2: Calculate target counts
             target_new_resources = int(len(base_resources) * (scale_factor - 1))
@@ -279,10 +281,12 @@ class ScaleUpService(BaseScaleService):
             try:
                 await self.rollback_operation(operation_id)
                 rollback_succeeded = True
-                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+                self.logger.info(
+                    str(f"Rollback succeeded for operation {operation_id}")
+                )
             except (Neo4jError, ValueError, RuntimeError) as rollback_err:
                 rollback_error = str(rollback_err)
-                self.logger.error(f"Rollback failed: {rollback_err}")
+                self.logger.error(str(f"Rollback failed: {rollback_err}"))
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
                 self.logger.exception(
@@ -434,10 +438,12 @@ class ScaleUpService(BaseScaleService):
             try:
                 await self.rollback_operation(operation_id)
                 rollback_succeeded = True
-                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+                self.logger.info(
+                    str(f"Rollback succeeded for operation {operation_id}")
+                )
             except (Neo4jError, ValueError, RuntimeError) as rollback_err:
                 rollback_error = str(rollback_err)
-                self.logger.error(f"Rollback failed: {rollback_err}")
+                self.logger.error(str(f"Rollback failed: {rollback_err}"))
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
                 self.logger.exception(
@@ -603,10 +609,12 @@ class ScaleUpService(BaseScaleService):
             try:
                 await self.rollback_operation(operation_id)
                 rollback_succeeded = True
-                self.logger.info(f"Rollback succeeded for operation {operation_id}")
+                self.logger.info(
+                    str(f"Rollback succeeded for operation {operation_id}")
+                )
             except (Neo4jError, ValueError, RuntimeError) as rollback_err:
                 rollback_error = str(rollback_err)
-                self.logger.error(f"Rollback failed: {rollback_err}")
+                self.logger.error(str(f"Rollback failed: {rollback_err}"))
             except Exception as unexpected_error:
                 rollback_error = str(unexpected_error)
                 self.logger.exception(
@@ -649,9 +657,9 @@ class ScaleUpService(BaseScaleService):
             >>> deleted_count = await service.rollback_operation(
             ...     "scale-20250110T123045-a1b2c3d4"
             ... )
-            >>> print(f"Rolled back {deleted_count} resources")
+            >>> print(str(f"Rolled back {deleted_count} resources"))
         """
-        self.logger.info(f"Rolling back operation: {operation_id}")
+        self.logger.info(str(f"Rolling back operation: {operation_id}"))
 
         try:
             # Delete all synthetic resources for this operation
@@ -700,7 +708,7 @@ class ScaleUpService(BaseScaleService):
                 session, operation_id
             )
             if not is_valid:
-                self.logger.warning(f"Validation failed: {message}")
+                self.logger.warning(str(f"Validation failed: {message}"))
             return is_valid
 
 
