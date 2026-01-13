@@ -7,6 +7,7 @@ Emits: azurerm_redis_cache
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -30,6 +31,11 @@ class RedisCacheHandler(ResourceHandler):
         "azurerm_redis_cache",
     }
 
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
+
     def emit(
         self,
         resource: Dict[str, Any],
@@ -41,6 +47,32 @@ class RedisCacheHandler(ResourceHandler):
         properties = self.parse_properties(resource)
 
         config = self.build_base_config(resource)
+
+        # Redis Cache names must be globally unique (*.redis.cache.windows.net)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.Cache/redis"
+        )
+
+        # Add tenant-specific suffix for cross-tenant deployments
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
+            # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
+            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+
+            # Truncate to fit (63 - 7 = 56 chars for sanitized name + dash)
+            if len(sanitized_name) > 56:
+                sanitized_name = sanitized_name[:56]
+
+            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            logger.info(
+                f"Cross-tenant deployment: Redis Cache '{abstracted_name}' → '{config['name']}' (tenant suffix: {tenant_suffix})"
+            )
+        else:
+            config["name"] = sanitized_name
 
         # SKU configuration
         sku = properties.get("sku", {})

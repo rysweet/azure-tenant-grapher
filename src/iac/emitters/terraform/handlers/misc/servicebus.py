@@ -7,6 +7,7 @@ Emits: azurerm_servicebus_namespace, azurerm_servicebus_queue
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -30,6 +31,11 @@ class ServiceBusNamespaceHandler(ResourceHandler):
         "azurerm_servicebus_namespace",
     }
 
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
+
     def emit(
         self,
         resource: Dict[str, Any],
@@ -41,6 +47,32 @@ class ServiceBusNamespaceHandler(ResourceHandler):
         properties = self.parse_properties(resource)
 
         config = self.build_base_config(resource)
+
+        # Service Bus Namespace names must be globally unique (*.servicebus.windows.net)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.ServiceBus/namespaces"
+        )
+
+        # Add tenant-specific suffix for cross-tenant deployments
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
+            # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
+            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+
+            # Truncate to fit (50 - 7 = 43 chars for sanitized name + dash)
+            if len(sanitized_name) > 43:
+                sanitized_name = sanitized_name[:43]
+
+            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            logger.info(
+                f"Cross-tenant deployment: Service Bus Namespace '{abstracted_name}' → '{config['name']}' (tenant suffix: {tenant_suffix})"
+            )
+        else:
+            config["name"] = sanitized_name
 
         # SKU
         sku = properties.get("sku", {})
