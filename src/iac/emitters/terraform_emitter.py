@@ -356,7 +356,7 @@ class TerraformEmitter(IaCEmitter):
         domain_name: Optional[str] = None,
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
-        split_by_community: bool = True,  # Bug #112: Default to True for parallel deployment
+        split_by_community: bool = False,  # Bug #593: Default to False to prevent unlimited path traversal
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
