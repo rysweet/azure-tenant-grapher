@@ -172,7 +172,9 @@ class ContextAutomation:
 
         return False
 
-    def _auto_snapshot(self, threshold: str, conversation_data: list, current_tokens: int) -> bool:
+    def _auto_snapshot(
+        self, threshold: str, conversation_data: list, current_tokens: int
+    ) -> bool:
         """Create automatic snapshot at threshold.
 
         Args:
@@ -221,7 +223,9 @@ class ContextAutomation:
         # Find most recent snapshot
         snapshots = self.state.get("snapshots_created", [])
         if not snapshots:
-            result["warnings"].append("⚠️  Compaction detected but no snapshots available")
+            result["warnings"].append(
+                "⚠️  Compaction detected but no snapshots available"
+            )
             return
 
         # Get most recent snapshot

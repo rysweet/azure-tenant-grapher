@@ -382,13 +382,17 @@ class AzureResourceIdBuilder:
                             source_subscription_id
                             and source_subscription_id != subscription_id
                         ):
-                            logger.info(f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}...")
+                            logger.info(
+                                f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}..."
+                            )
                             original_id = self._translate_subscription_in_id(
                                 original_id, source_subscription_id, subscription_id
                             )
                             logger.info(f"  ✅ Translated ID: {original_id}")
                         else:
-                            logger.info(f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}")
+                            logger.info(
+                                f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}"
+                            )
 
                         return original_id
 

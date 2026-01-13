@@ -263,7 +263,10 @@ def cmd_add(args: argparse.Namespace) -> int:
         if args.env:
             for env_str in args.env:
                 if "=" not in env_str:
-                    print(f"Invalid environment variable format: {env_str}", file=sys.stderr)
+                    print(
+                        f"Invalid environment variable format: {env_str}",
+                        file=sys.stderr,
+                    )
                     print("Format should be KEY=VALUE", file=sys.stderr)
                     return 1
                 key, value = env_str.split("=", 1)
@@ -523,7 +526,9 @@ def cmd_import(args: argparse.Namespace) -> int:
                         new_config = add_server(new_config, server)
                         added_count += 1
 
-                print(f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)")
+                print(
+                    f"\nAdded {added_count} server(s), skipped {skipped_count} duplicate(s)"
+                )
             else:
                 # Replace mode: use only imported servers
                 new_config = config.copy()
@@ -532,7 +537,9 @@ def cmd_import(args: argparse.Namespace) -> int:
                 for server in imported_servers:
                     new_config = add_server(new_config, server)
 
-                print(f"\nReplaced configuration with {len(imported_servers)} server(s)")
+                print(
+                    f"\nReplaced configuration with {len(imported_servers)} server(s)"
+                )
 
             # Validate before writing
             errors = validate_config(new_config)
@@ -571,7 +578,9 @@ def main(argv: list[str] | None = None) -> int:
         description="Manage MCP server configurations",
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Command to execute", required=True)
+    subparsers = parser.add_subparsers(
+        dest="command", help="Command to execute", required=True
+    )
 
     # List command
     subparsers.add_parser("list", help="List all MCP servers")
@@ -592,8 +601,12 @@ def main(argv: list[str] | None = None) -> int:
     add_parser.add_argument("name", nargs="?", help="Server name")
     add_parser.add_argument("server_command", nargs="?", help="Command to execute")
     add_parser.add_argument("server_args", nargs="*", help="Command arguments")
-    add_parser.add_argument("--env", action="append", help="Environment variables (KEY=VALUE)")
-    add_parser.add_argument("--disabled", action="store_true", help="Add in disabled state")
+    add_parser.add_argument(
+        "--env", action="append", help="Environment variables (KEY=VALUE)"
+    )
+    add_parser.add_argument(
+        "--disabled", action="store_true", help="Add in disabled state"
+    )
 
     # Remove command
     remove_parser = subparsers.add_parser("remove", help="Remove MCP server")
@@ -606,14 +619,22 @@ def main(argv: list[str] | None = None) -> int:
 
     # Export command
     export_parser = subparsers.add_parser("export", help="Export configuration")
-    export_parser.add_argument("output", nargs="?", help="Output file (default: stdout)")
-    export_parser.add_argument("--format", default="json", choices=["json"], help="Export format")
+    export_parser.add_argument(
+        "output", nargs="?", help="Output file (default: stdout)"
+    )
+    export_parser.add_argument(
+        "--format", default="json", choices=["json"], help="Export format"
+    )
 
     # Import command
     import_parser = subparsers.add_parser("import", help="Import configuration")
     import_parser.add_argument("input", help="Input file")
-    import_parser.add_argument("--merge", action="store_true", help="Merge with existing")
-    import_parser.add_argument("--format", default="json", choices=["json"], help="Import format")
+    import_parser.add_argument(
+        "--merge", action="store_true", help="Merge with existing"
+    )
+    import_parser.add_argument(
+        "--format", default="json", choices=["json"], help="Import format"
+    )
 
     # Parse arguments
     args = parser.parse_args(argv)

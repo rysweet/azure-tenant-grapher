@@ -64,14 +64,21 @@ class SQLServerHandler(ResourceHandler):
         # SQL Server names must be globally unique (servername.database.windows.net)
         # Add tenant-specific suffix for cross-tenant deployments
         original_name = config["name"]
-        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
             # Add target tenant suffix (last 6 chars of tenant ID)
-            tenant_suffix = context.target_tenant_id[-6:] if context.target_tenant_id else "000000"
+            tenant_suffix = (
+                context.target_tenant_id[-6:] if context.target_tenant_id else "000000"
+            )
             # Truncate name if needed (max 63 chars, minus 7 for suffix = 56)
             if len(original_name) > 56:
                 original_name = original_name[:56]
             config["name"] = f"{original_name}-{tenant_suffix}"
-            logger.info(f"SQL Server name made globally unique: {resource_name} → {config['name']}")
+            logger.info(
+                f"SQL Server name made globally unique: {resource_name} → {config['name']}"
+            )
 
         config.update(
             {

@@ -80,8 +80,12 @@ class NSGAssociationHandler(ResourceHandler):
 
             # Bug #13: Skip cross-resource-group NSG associations
             # Get resource groups for both resources
-            subnets = context.terraform_config.get("resource", {}).get("azurerm_subnet", {})
-            nsgs = context.terraform_config.get("resource", {}).get("azurerm_network_security_group", {})
+            subnets = context.terraform_config.get("resource", {}).get(
+                "azurerm_subnet", {}
+            )
+            nsgs = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_security_group", {}
+            )
 
             if subnet_tf_name in subnets and nsg_tf_name in nsgs:
                 subnet_rg = subnets[subnet_tf_name].get("resource_group_name")
@@ -127,8 +131,12 @@ class NSGAssociationHandler(ResourceHandler):
 
             # Bug #13: Skip cross-resource-group NSG associations
             # Get resource groups for both resources
-            nics = context.terraform_config.get("resource", {}).get("azurerm_network_interface", {})
-            nsgs = context.terraform_config.get("resource", {}).get("azurerm_network_security_group", {})
+            nics = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_interface", {}
+            )
+            nsgs = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_security_group", {}
+            )
 
             if nic_tf_name in nics and nsg_tf_name in nsgs:
                 nic_rg = nics[nic_tf_name].get("resource_group_name")

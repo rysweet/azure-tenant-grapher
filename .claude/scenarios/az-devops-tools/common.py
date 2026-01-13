@@ -256,7 +256,8 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
 
     # Format rows
     formatted_rows = [
-        " | ".join(str(cell).ljust(w) for cell, w in zip(row, widths, strict=False)) for row in rows
+        " | ".join(str(cell).ljust(w) for cell, w in zip(row, widths, strict=False))
+        for row in rows
     ]
 
     return "\n".join([header_line, separator] + formatted_rows)
@@ -266,8 +267,8 @@ __all__ = [
     "AzCliWrapper",
     "CommandResult",
     "ExitCode",
-    "load_config",
-    "handle_error",
-    "validate_work_item_id",
     "format_table",
+    "handle_error",
+    "load_config",
+    "validate_work_item_id",
 ]

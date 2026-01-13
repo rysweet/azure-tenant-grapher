@@ -32,7 +32,9 @@ def setup_libreoffice_macro():
 
     if not os.path.exists(macro_dir):
         subprocess.run(
-            ["soffice", "--headless", "--terminate_after_init"], capture_output=True, timeout=10
+            ["soffice", "--headless", "--terminate_after_init"],
+            capture_output=True,
+            timeout=10,
         )
         os.makedirs(macro_dir, exist_ok=True)
 
@@ -88,7 +90,10 @@ def recalc(filename, timeout=30):
             # Check if gtimeout is available on macOS
             try:
                 subprocess.run(
-                    ["gtimeout", "--version"], capture_output=True, timeout=1, check=False
+                    ["gtimeout", "--version"],
+                    capture_output=True,
+                    timeout=1,
+                    check=False,
                 )
                 timeout_cmd = "gtimeout"
             except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -109,7 +114,15 @@ def recalc(filename, timeout=30):
     try:
         wb = load_workbook(filename, data_only=True)
 
-        excel_errors = ["#VALUE!", "#DIV/0!", "#REF!", "#NAME?", "#NULL!", "#NUM!", "#N/A"]
+        excel_errors = [
+            "#VALUE!",
+            "#DIV/0!",
+            "#REF!",
+            "#NAME?",
+            "#NULL!",
+            "#NUM!",
+            "#N/A",
+        ]
         error_details = {err: [] for err in excel_errors}
         total_errors = 0
 
@@ -150,7 +163,11 @@ def recalc(filename, timeout=30):
             ws = wb_formulas[sheet_name]
             for row in ws.iter_rows():
                 for cell in row:
-                    if cell.value and isinstance(cell.value, str) and cell.value.startswith("="):
+                    if (
+                        cell.value
+                        and isinstance(cell.value, str)
+                        and cell.value.startswith("=")
+                    ):
                         formula_count += 1
         wb_formulas.close()
 

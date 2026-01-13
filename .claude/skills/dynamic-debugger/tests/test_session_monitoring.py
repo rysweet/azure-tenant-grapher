@@ -84,7 +84,10 @@ class TestProcessInfo:
 
         if info:  # May be None on some systems
             assert isinstance(info, dict)
-            assert all(key in info for key in ["cpu_percent", "memory_mb", "status", "create_time"])
+            assert all(
+                key in info
+                for key in ["cpu_percent", "memory_mb", "status", "create_time"]
+            )
             assert isinstance(info["cpu_percent"], (int, float))
             assert isinstance(info["memory_mb"], (int, float))
             assert isinstance(info["status"], str)
@@ -209,7 +212,8 @@ class TestMonitoringSession:
 
             # Should have warning about memory limit
             assert any(
-                "warnings" in output and len(output.get("warnings", [])) > 0 for output in outputs
+                "warnings" in output and len(output.get("warnings", [])) > 0
+                for output in outputs
             )
 
     @pytest.mark.skipif(not HAS_PSUTIL, reason="psutil not available")
@@ -238,7 +242,8 @@ class TestMonitoringSession:
 
             # Should have warning about timeout
             assert any(
-                "warnings" in output and len(output.get("warnings", [])) > 0 for output in outputs
+                "warnings" in output and len(output.get("warnings", [])) > 0
+                for output in outputs
             )
 
 
@@ -308,7 +313,9 @@ class TestJSONOutputFormat:
             outputs = [json.loads(line) for line in lines]
 
             # Should have monitoring_started and status messages
-            assert any(output.get("status") == "monitoring_started" for output in outputs)
+            assert any(
+                output.get("status") == "monitoring_started" for output in outputs
+            )
 
     def test_json_output_numeric_precision(self, tmp_path, capsys):
         """Test that numeric values have appropriate precision."""
@@ -428,7 +435,12 @@ class TestResourceLimits:
 
         with patch("monitor_session.get_process_info") as mock_get_info:
             # Start, low CPU, high CPU, then stop
-            mock_get_info.side_effect = [mock_info_low, mock_info_low, mock_info_high, None]
+            mock_get_info.side_effect = [
+                mock_info_low,
+                mock_info_low,
+                mock_info_high,
+                None,
+            ]
 
             with patch("sys.stdout", new=StringIO()) as fake_out:
                 monitor_session(str(pid_file), interval=0.1)

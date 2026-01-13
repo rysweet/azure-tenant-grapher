@@ -46,7 +46,9 @@ def get_process_info(pid: int) -> dict[str, Any] | None:
     except psutil.NoSuchProcess:
         return None
     except Exception as e:
-        print(json.dumps({"error": f"Failed to get process info: {e}"}), file=sys.stderr)
+        print(
+            json.dumps({"error": f"Failed to get process info: {e}"}), file=sys.stderr
+        )
         return None
 
 
@@ -108,7 +110,9 @@ def monitor_session(pid_file: str, interval: int = CHECK_INTERVAL_SEC) -> None:
         warnings = []
 
         if mem_mb > MAX_MEMORY_MB:
-            warnings.append(f"Memory limit exceeded: {mem_mb:.1f}MB > {MAX_MEMORY_MB}MB")
+            warnings.append(
+                f"Memory limit exceeded: {mem_mb:.1f}MB > {MAX_MEMORY_MB}MB"
+            )
 
         if duration_min > SESSION_TIMEOUT_MIN:
             warnings.append(
@@ -148,7 +152,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="Monitor debugging session")
     parser.add_argument(
-        "--pid-file", default=".dap_mcp.pid", help="Path to PID file (default: .dap_mcp.pid)"
+        "--pid-file",
+        default=".dap_mcp.pid",
+        help="Path to PID file (default: .dap_mcp.pid)",
     )
     parser.add_argument(
         "--interval",

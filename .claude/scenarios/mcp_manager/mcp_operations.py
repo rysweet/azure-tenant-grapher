@@ -224,7 +224,9 @@ def validate_config(config: dict[str, Any]) -> list[str]:
         server_errors = server.validate()
 
         if server_errors:
-            errors.extend([f"Server '{name}' (index {idx}): {err}" for err in server_errors])
+            errors.extend(
+                [f"Server '{name}' (index {idx}): {err}" for err in server_errors]
+            )
 
         # Check for duplicate names
         if name in seen_names:

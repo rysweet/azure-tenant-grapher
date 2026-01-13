@@ -119,7 +119,9 @@ def test_with_real_transcript():
             # Verify token count was calculated correctly
             print("\n✅ Token calculation working correctly!")
             print(f"   Expected: {expected_tokens:,}")
-            print(f"   Threshold: {(expected_tokens / 1_000_000) * 100:.1f}% = ", end="")
+            print(
+                f"   Threshold: {(expected_tokens / 1_000_000) * 100:.1f}% = ", end=""
+            )
             if expected_tokens < 400000 or expected_tokens < 550000:
                 print("'ok' (no action)")
             elif expected_tokens < 700000:
@@ -130,7 +132,9 @@ def test_with_real_transcript():
                 print("'urgent' (auto-snapshot)")
 
         else:
-            print("\n⚠️  Automation did not add metadata (might be below threshold or error)")
+            print(
+                "\n⚠️  Automation did not add metadata (might be below threshold or error)"
+            )
 
         print("\n" + "=" * 70)
         print("🎉 Real Transcript Test Complete!")

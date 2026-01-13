@@ -84,7 +84,15 @@ def detect_language(project_dir: str = ".") -> tuple[str, float]:
     extensions = Counter()
 
     # Exclude common non-source directories
-    exclude_dirs = {".git", ".venv", "node_modules", "target", "build", "dist", "__pycache__"}
+    exclude_dirs = {
+        ".git",
+        ".venv",
+        "node_modules",
+        "target",
+        "build",
+        "dist",
+        "__pycache__",
+    }
 
     for ext, lang in EXTENSION_MAP.items():
         count = 0

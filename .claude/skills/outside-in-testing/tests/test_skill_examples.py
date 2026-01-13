@@ -64,7 +64,9 @@ class TestExampleFiles:
             scenario = data.get("scenario", {})
 
             for field in required_fields:
-                assert field in scenario, f"{file_path.name} missing required field: {field}"
+                assert field in scenario, (
+                    f"{file_path.name} missing required field: {field}"
+                )
 
     def test_examples_have_valid_type(self, example_files):
         """Verify all examples have valid application type."""
@@ -116,7 +118,9 @@ class TestExampleFiles:
             steps = data.get("scenario", {}).get("steps", [])
 
             for idx, step in enumerate(steps):
-                assert "action" in step, f"{file_path.name} step {idx} missing action field"
+                assert "action" in step, (
+                    f"{file_path.name} step {idx} missing action field"
+                )
 
     def test_examples_have_description(self, example_files):
         """Verify all examples have non-empty description."""

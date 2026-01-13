@@ -52,7 +52,9 @@ def test_performance():
     for token_count, num_tools, description in test_scenarios:
         print(f"\n{'=' * 70}")
         print(f"📊 Scenario: {description}")
-        print(f"   Token count: {token_count:,} ({(token_count / 1_000_000) * 100:.0f}%)")
+        print(
+            f"   Token count: {token_count:,} ({(token_count / 1_000_000) * 100:.0f}%)"
+        )
         print(f"   Simulating {num_tools} tool uses")
         print("=" * 70)
 

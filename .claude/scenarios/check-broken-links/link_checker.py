@@ -72,7 +72,9 @@ def check_prerequisites() -> PrerequisiteCheckResult:
     linkinator_path = shutil.which("linkinator")
 
     if linkinator_path:
-        return PrerequisiteCheckResult(linkinator_available=True, linkinator_path=linkinator_path)
+        return PrerequisiteCheckResult(
+            linkinator_available=True, linkinator_path=linkinator_path
+        )
     return PrerequisiteCheckResult(
         linkinator_available=False, error_message=get_install_instructions("linkinator")
     )
@@ -227,7 +229,9 @@ def format_report(report: LinkCheckReport) -> str:
     lines.append(f"Broken links found: {report.broken_count}")
 
     if report.checked_count > 0:
-        success_rate = ((report.checked_count - report.broken_count) / report.checked_count) * 100
+        success_rate = (
+            (report.checked_count - report.broken_count) / report.checked_count
+        ) * 100
         lines.append(f"Success rate: {success_rate:.1f}%")
 
     lines.append("")
@@ -330,7 +334,11 @@ def check_site(url: str, timeout: int = 120) -> LinkCheckReport:
     # Handle errors
     if returncode == 127:
         return LinkCheckReport(
-            passed=False, checked_count=0, broken_count=0, error=True, error_message=stderr
+            passed=False,
+            checked_count=0,
+            broken_count=0,
+            error=True,
+            error_message=stderr,
         )
     if returncode == 124:
         return LinkCheckReport(
@@ -355,7 +363,11 @@ def check_site(url: str, timeout: int = 120) -> LinkCheckReport:
         return report
     except ValueError as e:
         return LinkCheckReport(
-            passed=False, checked_count=0, broken_count=0, error=True, error_message=str(e)
+            passed=False,
+            checked_count=0,
+            broken_count=0,
+            error=True,
+            error_message=str(e),
         )
 
 
@@ -397,7 +409,11 @@ def check_local(path: Path, timeout: int = 120) -> LinkCheckReport:
     # Handle errors
     if returncode == 127:
         return LinkCheckReport(
-            passed=False, checked_count=0, broken_count=0, error=True, error_message=stderr
+            passed=False,
+            checked_count=0,
+            broken_count=0,
+            error=True,
+            error_message=stderr,
         )
     if returncode == 124:
         return LinkCheckReport(
@@ -422,7 +438,11 @@ def check_local(path: Path, timeout: int = 120) -> LinkCheckReport:
         return report
     except ValueError as e:
         return LinkCheckReport(
-            passed=False, checked_count=0, broken_count=0, error=True, error_message=str(e)
+            passed=False,
+            checked_count=0,
+            broken_count=0,
+            error=True,
+            error_message=str(e),
         )
 
 
@@ -466,8 +486,8 @@ if __name__ == "__main__":
 __all__ = [
     "BrokenLink",
     "LinkCheckReport",
-    "check_site",
     "check_local",
+    "check_site",
     "format_report",
     "get_exit_code",
 ]

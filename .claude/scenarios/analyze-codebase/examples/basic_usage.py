@@ -86,7 +86,9 @@ def example_custom_configuration():
     try:
         result = analyzer.analyze(target_path, {"verbose": True})
         print(result)
-        print(f"\nUsed custom config with max file size: {custom_config['max_file_size']} bytes")
+        print(
+            f"\nUsed custom config with max file size: {custom_config['max_file_size']} bytes"
+        )
     except Exception as e:
         print(f"Error: {e}")
 

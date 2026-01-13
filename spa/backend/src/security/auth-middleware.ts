@@ -110,15 +110,15 @@ export class AuthMiddleware {
     try {
       // In development mode, allow localhost connections without authentication
       const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
-      const isLocalhost = socket.handshake.address === '127.0.0.1' || 
-                          socket.handshake.address === '::1' || 
+      const isLocalhost = socket.handshake.address === '127.0.0.1' ||
+                          socket.handshake.address === '::1' ||
                           socket.handshake.address === '::ffff:127.0.0.1';
-      
+
       if (isDevelopment && isLocalhost) {
         logger.debug('WebSocket connection from localhost in development mode (auth skipped)', {
           address: socket.handshake.address
         });
-        
+
         // Create a temporary session for dev mode
         (socket as any).session = {
           userId: 'dev-user',
@@ -129,7 +129,7 @@ export class AuthMiddleware {
         };
         (socket as any).userId = 'dev-user';
         (socket as any).clientId = 'dev-client';
-        
+
         return next();
       }
 

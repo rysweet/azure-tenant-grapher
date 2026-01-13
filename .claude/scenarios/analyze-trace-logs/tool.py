@@ -86,7 +86,10 @@ class TraceLogAnalyzer:
                             # Handle content blocks
                             text_parts = []
                             for block in content:
-                                if isinstance(block, dict) and block.get("type") == "text":
+                                if (
+                                    isinstance(block, dict)
+                                    and block.get("type") == "text"
+                                ):
                                     text_parts.append(block.get("text", ""))
                             if text_parts:
                                 combined = " ".join(text_parts).strip()
@@ -108,23 +111,43 @@ class TraceLogAnalyzer:
             categories.append("slash_command")
 
         # Development tasks
-        if any(word in message_lower for word in ["fix", "debug", "error", "failing", "broken"]):
+        if any(
+            word in message_lower
+            for word in ["fix", "debug", "error", "failing", "broken"]
+        ):
             categories.append("fix_debug")
-        if any(word in message_lower for word in ["implement", "add", "create", "build"]):
+        if any(
+            word in message_lower for word in ["implement", "add", "create", "build"]
+        ):
             categories.append("implement")
-        if any(word in message_lower for word in ["test", "testing", "pytest", "unittest"]):
+        if any(
+            word in message_lower for word in ["test", "testing", "pytest", "unittest"]
+        ):
             categories.append("testing")
-        if any(word in message_lower for word in ["refactor", "improve", "optimize", "clean"]):
+        if any(
+            word in message_lower
+            for word in ["refactor", "improve", "optimize", "clean"]
+        ):
             categories.append("refactor")
-        if any(word in message_lower for word in ["analyze", "review", "check", "examine"]):
+        if any(
+            word in message_lower for word in ["analyze", "review", "check", "examine"]
+        ):
             categories.append("analyze")
-        if any(word in message_lower for word in ["document", "docs", "readme", "comment"]):
+        if any(
+            word in message_lower for word in ["document", "docs", "readme", "comment"]
+        ):
             categories.append("documentation")
 
         # CI/CD and workflow
-        if any(word in message_lower for word in ["ci", "github actions", "workflow", "pipeline"]):
+        if any(
+            word in message_lower
+            for word in ["ci", "github actions", "workflow", "pipeline"]
+        ):
             categories.append("ci_cd")
-        if any(word in message_lower for word in ["commit", "push", "pull request", "pr", "merge"]):
+        if any(
+            word in message_lower
+            for word in ["commit", "push", "pull request", "pr", "merge"]
+        ):
             categories.append("git_operations")
 
         # Communication patterns
@@ -135,7 +158,8 @@ class TraceLogAnalyzer:
 
         # Decision making
         if any(
-            word in message_lower for word in ["prefer", "choose", "option", "should we", "what if"]
+            word in message_lower
+            for word in ["prefer", "choose", "option", "should we", "what if"]
         ):
             categories.append("decision_request")
 
@@ -231,7 +255,9 @@ class TraceLogAnalyzer:
                 ]
             ):
                 patterns["completeness_required"].append(msg[:200])
-            elif any(phrase in msg_lower for phrase in ["minimal", "just", "only", "simple"]):
+            elif any(
+                phrase in msg_lower for phrase in ["minimal", "just", "only", "simple"]
+            ):
                 patterns["minimal_scope"].append(msg[:200])
 
             # Autonomy preference
@@ -248,7 +274,12 @@ class TraceLogAnalyzer:
                 patterns["high_autonomy"].append(msg[:200])
             elif any(
                 phrase in msg_lower
-                for phrase in ["ask me", "check with me", "confirm", "wait for approval"]
+                for phrase in [
+                    "ask me",
+                    "check with me",
+                    "confirm",
+                    "wait for approval",
+                ]
             ):
                 patterns["low_autonomy"].append(msg[:200])
 
@@ -261,19 +292,23 @@ class TraceLogAnalyzer:
 
             # Quality/thoroughness
             if any(
-                phrase in msg_lower for phrase in ["make sure", "ensure", "verify", "double check"]
+                phrase in msg_lower
+                for phrase in ["make sure", "ensure", "verify", "double check"]
             ):
                 patterns["quality_emphasis"].append(msg[:200])
 
             # Specific instructions
             if any(
-                phrase in msg_lower for phrase in ["please", "can you", "could you", "would you"]
+                phrase in msg_lower
+                for phrase in ["please", "can you", "could you", "would you"]
             ):
                 patterns["polite_requests"].append(msg[:200])
 
         return patterns
 
-    def analyze(self, log_dir: Path, sample_size: int = 15, options: dict = None) -> dict[str, Any]:
+    def analyze(
+        self, log_dir: Path, sample_size: int = 15, options: dict = None
+    ) -> dict[str, Any]:
         """
         Analyze a sample of log files and extract patterns.
 
@@ -302,7 +337,9 @@ class TraceLogAnalyzer:
         file_stats = []
 
         for i, log_file in enumerate(jsonl_files[:sample_size], 1):
-            print(f"Processing {i}/{min(sample_size, len(jsonl_files))}: {log_file.name}...")
+            print(
+                f"Processing {i}/{min(sample_size, len(jsonl_files))}: {log_file.name}..."
+            )
 
             entries = self.parse_jsonl_file(log_file)
             user_messages = self.extract_user_messages(entries)
@@ -328,7 +365,9 @@ class TraceLogAnalyzer:
 
         # Analyze patterns
         decision_patterns = self.identify_decision_patterns(all_user_messages)
-        key_phrases = self.extract_key_phrases(all_user_messages, min_length=15, max_length=150)
+        key_phrases = self.extract_key_phrases(
+            all_user_messages, min_length=15, max_length=150
+        )
 
         # Extract task verbs
         all_verbs = []
@@ -368,7 +407,9 @@ class TraceLogAnalyzer:
             f.write("## Executive Summary\n\n")
             f.write(f"- **Total Messages Analyzed**: {analysis['total_messages']}\n")
             f.write(f"- **Files Processed**: {len(analysis['file_stats'])}\n")
-            f.write(f"- **Analysis Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write(
+                f"- **Analysis Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
 
             # File statistics
             f.write("## File Statistics\n\n")
@@ -391,7 +432,9 @@ class TraceLogAnalyzer:
             # Task verbs
             f.write("## Most Common Task Verbs\n\n")
             f.write("Action verbs found in user requests:\n\n")
-            for i, (verb, count) in enumerate(analysis["task_verbs"].most_common(20), 1):
+            for i, (verb, count) in enumerate(
+                analysis["task_verbs"].most_common(20), 1
+            ):
                 percentage = (count / analysis["total_messages"]) * 100
                 f.write(f"{i}. **{verb}**: {count} times ({percentage:.1f}%)\n")
             f.write("\n")
@@ -408,7 +451,9 @@ class TraceLogAnalyzer:
             # Top short requests
             f.write("## Top 20 Common User Requests\n\n")
             f.write("Most frequent short-form requests (< 100 characters):\n\n")
-            for i, (request, count) in enumerate(analysis["top_short_requests"][:20], 1):
+            for i, (request, count) in enumerate(
+                analysis["top_short_requests"][:20], 1
+            ):
                 request_escaped = request.replace("|", "\\|").replace("\n", " ")
                 f.write(f'{i}. "{request_escaped}" - {count} times\n')
             f.write("\n")
@@ -436,11 +481,15 @@ class TraceLogAnalyzer:
             # Workflow preferences
             f.write("## Workflow Preferences\n\n")
 
-            completeness = len(analysis["decision_patterns"].get("completeness_required", []))
+            completeness = len(
+                analysis["decision_patterns"].get("completeness_required", [])
+            )
             minimal = len(analysis["decision_patterns"].get("minimal_scope", []))
             high_autonomy = len(analysis["decision_patterns"].get("high_autonomy", []))
             low_autonomy = len(analysis["decision_patterns"].get("low_autonomy", []))
-            merge_instr = len(analysis["decision_patterns"].get("merge_instructions", []))
+            merge_instr = len(
+                analysis["decision_patterns"].get("merge_instructions", [])
+            )
             quality = len(analysis["decision_patterns"].get("quality_emphasis", []))
             polite = len(analysis["decision_patterns"].get("polite_requests", []))
 
@@ -460,14 +509,18 @@ class TraceLogAnalyzer:
                     "- User strongly emphasizes **completeness** - prefers 'do it all' over minimal solutions\n"
                 )
             elif minimal > completeness * 2:
-                f.write("- User prefers **minimal scope** - focused, targeted changes\n")
+                f.write(
+                    "- User prefers **minimal scope** - focused, targeted changes\n"
+                )
 
             if high_autonomy > low_autonomy * 2:
                 f.write(
                     "- User strongly prefers **autonomous execution** without frequent check-ins\n"
                 )
             elif low_autonomy > high_autonomy * 2:
-                f.write("- User prefers **guided execution** with regular confirmation\n")
+                f.write(
+                    "- User prefers **guided execution** with regular confirmation\n"
+                )
 
             if merge_instr > 10:
                 f.write(
@@ -475,14 +528,20 @@ class TraceLogAnalyzer:
                 )
 
             if quality > 20:
-                f.write(f"- User emphasizes **quality and verification** ({quality} instances)\n")
+                f.write(
+                    f"- User emphasizes **quality and verification** ({quality} instances)\n"
+                )
 
             fix_count = analysis["categories"].get("fix_debug", 0)
             implement_count = analysis["categories"].get("implement", 0)
             if fix_count > implement_count:
-                f.write("- Primary focus is on **debugging and fixes** rather than new features\n")
+                f.write(
+                    "- Primary focus is on **debugging and fixes** rather than new features\n"
+                )
             else:
-                f.write("- Primary focus is on **implementing new features** and building\n")
+                f.write(
+                    "- Primary focus is on **implementing new features** and building\n"
+                )
 
             top_verbs = analysis["task_verbs"].most_common(3)
             if top_verbs:
@@ -496,12 +555,18 @@ class TraceLogAnalyzer:
             f.write(
                 "1. **Autonomy Level**: Calibrate agent autonomy based on detected preference\n"
             )
-            f.write("2. **Communication Style**: Match user's concise or detailed style\n")
+            f.write(
+                "2. **Communication Style**: Match user's concise or detailed style\n"
+            )
             f.write(
                 "3. **Scope Decisions**: Align with user's aggressive vs. conservative tendencies\n"
             )
-            f.write("4. **Workflow Type**: Prefer parallel or sequential based on user patterns\n")
-            f.write("5. **Task Focus**: Prioritize fix/debug vs. implementation based on usage\n")
+            f.write(
+                "4. **Workflow Type**: Prefer parallel or sequential based on user patterns\n"
+            )
+            f.write(
+                "5. **Task Focus**: Prioritize fix/debug vs. implementation based on usage\n"
+            )
             f.write("\n")
 
 

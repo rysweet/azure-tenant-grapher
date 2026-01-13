@@ -9,9 +9,9 @@ Usage:
 
 import argparse
 import re
-from pathlib import Path
-from typing import List, Tuple, Dict
 from collections import defaultdict
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 class LinkValidator:
@@ -30,17 +30,17 @@ class LinkValidator:
     def extract_links(self, content: str) -> List[str]:
         """Extract all markdown links from content."""
         # Match [text](link) pattern
-        link_pattern = r'\[([^\]]+)\]\(([^\)]+)\)'
+        link_pattern = r"\[([^\]]+)\]\(([^\)]+)\)"
         return [match[1] for match in re.findall(link_pattern, content)]
 
     def validate_link(self, source_file: Path, link: str) -> bool:
         """Validate if a link target exists."""
         # Skip external links
-        if link.startswith(('http://', 'https://', 'mailto:', '#')):
+        if link.startswith(("http://", "https://", "mailto:", "#")):
             return True
 
         # Handle relative links
-        if link.startswith('../') or link.startswith('./'):
+        if link.startswith("../") or link.startswith("./"):
             # Explicit relative path
             target_path = (source_file.parent / link).resolve()
         else:
@@ -51,16 +51,16 @@ class LinkValidator:
                 target_path = (self.docs_dir / link).resolve()
 
         # Remove anchor if present
-        if '#' in str(target_path):
-            target_path = Path(str(target_path).split('#')[0])
+        if "#" in str(target_path):
+            target_path = Path(str(target_path).split("#")[0])
 
         return target_path.exists()
 
     def suggest_fix(self, source_file: Path, broken_link: str) -> str:
         """Suggest a fix for a broken link."""
         # Extract filename from link
-        link_parts = broken_link.split('/')
-        filename = link_parts[-1].split('#')[0]
+        link_parts = broken_link.split("/")
+        filename = link_parts[-1].split("#")[0]
 
         # Search for file in docs directory
         matches = list(self.docs_dir.rglob(filename))
@@ -143,7 +143,7 @@ class LinkValidator:
             content = file_path.read_text()
             for old_link, new_link in fixes:
                 # Replace link while preserving markdown format
-                content = content.replace(f']({old_link})', f']({new_link})')
+                content = content.replace(f"]({old_link})", f"]({new_link})")
 
             file_path.write_text(content)
             rel_path = file_path.relative_to(self.docs_dir.parent)
@@ -153,15 +153,13 @@ class LinkValidator:
 def main():
     parser = argparse.ArgumentParser(description="Validate documentation links")
     parser.add_argument(
-        "--fix",
-        action="store_true",
-        help="Attempt to fix broken links automatically"
+        "--fix", action="store_true", help="Attempt to fix broken links automatically"
     )
     parser.add_argument(
         "--docs-dir",
         type=Path,
         default=Path("docs"),
-        help="Documentation directory (default: docs)"
+        help="Documentation directory (default: docs)",
     )
     args = parser.parse_args()
 

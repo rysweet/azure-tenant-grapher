@@ -13,7 +13,9 @@ import sys
 from pathlib import Path
 
 
-def get_issue_pr_details(project_root: Path, number: int, item_type: str) -> dict | None:
+def get_issue_pr_details(
+    project_root: Path, number: int, item_type: str
+) -> dict | None:
     """Get issue or PR details using gh CLI.
 
     Args:
@@ -25,9 +27,18 @@ def get_issue_pr_details(project_root: Path, number: int, item_type: str) -> dic
         Dictionary with details, or None if retrieval fails
     """
     try:
-        cmd = ["gh", item_type, "view", str(number), "--json", "number,title,author,body,comments"]
+        cmd = [
+            "gh",
+            item_type,
+            "view",
+            str(number),
+            "--json",
+            "number,title,author,body,comments",
+        ]
 
-        result = subprocess.run(cmd, cwd=project_root, capture_output=True, text=True, timeout=15)
+        result = subprocess.run(
+            cmd, cwd=project_root, capture_output=True, text=True, timeout=15
+        )
 
         if result.returncode == 0:
             return json.loads(result.stdout)
@@ -100,7 +111,16 @@ def run_auto_mode_delegation(
     """
     try:
         # Run amplihack auto mode
-        cmd = ["amplihack", "claude", "--auto", "--max-turns", str(max_turns), "--", "-p", prompt]
+        cmd = [
+            "amplihack",
+            "claude",
+            "--auto",
+            "--max-turns",
+            str(max_turns),
+            "--",
+            "-p",
+            prompt,
+        ]
 
         result = subprocess.run(
             cmd,
@@ -172,11 +192,17 @@ def format_response_for_github(output: str) -> str:
 
 def main():
     """Main execution."""
-    parser = argparse.ArgumentParser(description="PM Architect Label-Triggered Delegation")
+    parser = argparse.ArgumentParser(
+        description="PM Architect Label-Triggered Delegation"
+    )
     parser.add_argument("number", type=int, help="Issue or PR number")
     parser.add_argument("type", choices=["issue", "pr"], help="Type: issue or pr")
-    parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="Project root")
-    parser.add_argument("--output", type=Path, required=True, help="Output file for response")
+    parser.add_argument(
+        "--project-root", type=Path, default=Path.cwd(), help="Project root"
+    )
+    parser.add_argument(
+        "--output", type=Path, required=True, help="Output file for response"
+    )
     parser.add_argument("--max-turns", type=int, default=5, help="Max auto mode turns")
 
     args = parser.parse_args()
@@ -195,7 +221,9 @@ def main():
 
     # Run auto mode
     print(f"Running auto mode delegation (max {args.max_turns} turns)...")
-    success, output = run_auto_mode_delegation(prompt, args.project_root, args.max_turns)
+    success, output = run_auto_mode_delegation(
+        prompt, args.project_root, args.max_turns
+    )
 
     if not success:
         print(f"Error: Auto mode failed: {output}", file=sys.stderr)

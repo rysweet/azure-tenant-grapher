@@ -122,7 +122,10 @@ class BatchProcessor:
         self.save_state()  # Save after EACH failure
 
     def process_items(
-        self, items: list[dict], processor_func: Callable[[dict], dict], batch_size: int = 10
+        self,
+        items: list[dict],
+        processor_func: Callable[[dict], dict],
+        batch_size: int = 10,
     ) -> dict:
         """Process items in batches with state tracking.
 
@@ -212,8 +215,12 @@ def main():
     parser.add_argument(
         "--processor", required=True, help="Processor name (e.g., 'analyze_backlog')"
     )
-    parser.add_argument("--batch-size", type=int, default=10, help="Progress report interval")
-    parser.add_argument("--reset", action="store_true", help="Reset state and start fresh")
+    parser.add_argument(
+        "--batch-size", type=int, default=10, help="Progress report interval"
+    )
+    parser.add_argument(
+        "--reset", action="store_true", help="Reset state and start fresh"
+    )
     parser.add_argument("--status", action="store_true", help="Show current progress")
 
     args = parser.parse_args()

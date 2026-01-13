@@ -44,7 +44,10 @@ class ContainerRegistryHandler(ResourceHandler):
 
         # Container Registry names must be globally unique (*.azurecr.io)
         # Add tenant suffix for cross-tenant deployments
-        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
             tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
             original_name = config["name"].replace("-", "").lower()
 

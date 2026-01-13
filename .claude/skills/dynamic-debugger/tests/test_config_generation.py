@@ -257,7 +257,9 @@ class TestRealConfigFiles:
             ("cpp", "gdb.json"),
         ],
     )
-    def test_real_config_files_loadable(self, language, config_file, temp_project_dir, configs_dir):
+    def test_real_config_files_loadable(
+        self, language, config_file, temp_project_dir, configs_dir
+    ):
         """Test that real config files can be loaded and used."""
         config_path = configs_dir / config_file
 
