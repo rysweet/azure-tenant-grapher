@@ -70,7 +70,7 @@ class EmbeddingSampler(StratifiedSampler):
         # State
         self.embeddings: Dict[str, np.ndarray] = {}
         self.importance_scores: Dict[str, float] = {}
-        self.graph: nx.Graph | None = None
+        self.graph: nx.Graph[str] | None = None
 
     def sample_by_type(
         self,
@@ -191,7 +191,7 @@ class EmbeddingSampler(StratifiedSampler):
             # Get tenant_id from first embedding key (hacky but works)
             # In production, pass tenant_id explicitly
             logger.debug("Building graph for degree centrality calculation")
-            self.graph = nx.Graph()
+            self.graph = nx.Graph[str]()
             # Add nodes from embeddings
             for node_id in self.embeddings:
                 self.graph.add_node(node_id)

@@ -261,7 +261,7 @@ class ArchitecturalPatternAnalyzer:
 
     def build_networkx_graph(
         self, aggregated_relationships: List[Dict[str, Any]]
-    ) -> Tuple[nx.MultiDiGraph, Dict[str, int], Dict[Tuple[str, str], int]]:
+    ) -> Tuple[nx.MultiDiGraph[str], Dict[str, int], Dict[Tuple[str, str], int]]:
         """
         Build NetworkX graph from aggregated relationships.
 
@@ -271,7 +271,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             Tuple of (graph, resource_type_counts, edge_counts)
         """
-        G = nx.MultiDiGraph()
+        G = nx.MultiDiGraph[str]()
 
         # Collect all unique resource types and their frequencies
         resource_type_counts: Dict[str, int] = defaultdict(int)
@@ -307,7 +307,7 @@ class ArchitecturalPatternAnalyzer:
         return G, dict(resource_type_counts), dict(edge_counts)
 
     def detect_patterns(
-        self, graph: nx.MultiDiGraph, resource_type_counts: Dict[str, int]
+        self, graph: nx.MultiDiGraph[str], resource_type_counts: Dict[str, int]
     ) -> Dict[str, Dict[str, Any]]:
         """
         Detect architectural patterns in the graph.
@@ -356,7 +356,7 @@ class ArchitecturalPatternAnalyzer:
 
     def export_graph_data(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         resource_type_counts: Dict[str, int],
         output_path: Path,
         all_relationships_count: int,
@@ -408,7 +408,7 @@ class ArchitecturalPatternAnalyzer:
 
     def generate_visualizations(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         resource_type_counts: Dict[str, int],
         edge_counts: Dict[Tuple[str, str], int],
         pattern_matches: Dict[str, Dict[str, Any]],
@@ -500,7 +500,7 @@ class ArchitecturalPatternAnalyzer:
             if shared_patterns:
                 pattern_edges.append((u, v))
                 pattern_edge_widths.append(edge_width * 2.5)
-                shared_pattern = list(shared_patterns)[0]
+                shared_pattern = next(iter(shared_patterns))
                 pattern_index = list(pattern_matches.keys()).index(shared_pattern)
                 pattern_edge_colors.append(pattern_index)
             else:
@@ -639,7 +639,7 @@ class ArchitecturalPatternAnalyzer:
 
     def identify_orphaned_nodes(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         pattern_matches: Dict[str, Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
@@ -868,7 +868,7 @@ class ArchitecturalPatternAnalyzer:
     def suggest_new_patterns(
         self,
         orphaned_nodes: List[Dict[str, Any]],
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         min_connections: int = 2,
         min_cluster_size: int = 2,
     ) -> List[Dict[str, Any]]:

@@ -43,7 +43,7 @@ class MHRWSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph,
+        graph: nx.DiGraph[str],
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
@@ -101,7 +101,7 @@ class MHRWSampler(BaseSampler):
 
     def _mhrw_sample(
         self,
-        graph: nx.Graph,
+        graph: nx.Graph[str],
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:

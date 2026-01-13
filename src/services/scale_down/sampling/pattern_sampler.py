@@ -76,7 +76,7 @@ class PatternSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph,
+        graph: nx.DiGraph[str],
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
