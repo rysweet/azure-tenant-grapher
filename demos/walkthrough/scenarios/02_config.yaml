@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture configuration overview"
     action: "screenshot"
-    description: "Configuration settings overview"
+    output: "Configuration settings overview"
 
   - description: "Expand Azure settings"
     action: "click"
@@ -33,7 +33,7 @@ steps:
 
   - description: "Capture Azure settings"
     action: "screenshot"
-    description: "Azure tenant configuration"
+    output: "Azure tenant configuration"
 
   - description: "Expand scan settings"
     action: "click"
@@ -54,7 +54,7 @@ steps:
 
   - description: "Capture advanced settings"
     action: "screenshot"
-    description: "Advanced configuration options"
+    output: "Advanced configuration options"
 
   - description: "Test save configuration"
     action: "click"

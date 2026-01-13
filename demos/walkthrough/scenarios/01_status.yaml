@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture status overview"
     action: "screenshot"
-    description: "Status dashboard overview"
+    output: "Status dashboard overview"
 
   - description: "Check system health"
     action: "wait"
@@ -33,7 +33,7 @@ steps:
 
   - description: "Capture metrics view"
     action: "screenshot"
-    description: "System metrics display"
+    output: "System metrics display"
 
   - description: "Check for error indicators"
     action: "evaluate"
@@ -48,7 +48,7 @@ steps:
 
   - description: "Capture connection status"
     action: "screenshot"
-    description: "Connection and service status"
+    output: "Connection and service status"
 
 assertions:
   - type: "element_visible"

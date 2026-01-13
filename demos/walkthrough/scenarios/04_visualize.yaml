@@ -23,7 +23,7 @@ steps:
 
   - description: "Capture initial graph view"
     action: "screenshot"
-    description: "Initial graph visualization"
+    output: "Initial graph visualization"
 
   - description: "Open filter panel"
     action: "click"
@@ -45,7 +45,7 @@ steps:
 
   - description: "Capture filtered view"
     action: "screenshot"
-    description: "Filtered resource view"
+    output: "Filtered resource view"
 
   - description: "Reset zoom"
     action: "click"
@@ -81,7 +81,7 @@ steps:
 
   - description: "Capture node details"
     action: "screenshot"
-    description: "Node details panel"
+    output: "Node details panel"
 
   - description: "Toggle layout"
     action: "click"
@@ -91,7 +91,7 @@ steps:
 
   - description: "Capture alternative layout"
     action: "screenshot"
-    description: "Alternative graph layout"
+    output: "Alternative graph layout"
 
   - description: "Export graph"
     action: "click"

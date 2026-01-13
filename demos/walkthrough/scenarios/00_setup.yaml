@@ -30,7 +30,7 @@ steps:
 
   - description: "Verify dashboard loaded"
     action: "screenshot"
-    description: "Dashboard after authentication"
+    output: "Dashboard after authentication"
 
 assertions:
   - type: "element_visible"

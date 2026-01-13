@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture spec generator interface"
     action: "screenshot"
-    description: "Specification generator ready"
+    output: "Specification generator ready"
 
   - description: "Select specification format"
     action: "select"
@@ -40,7 +40,7 @@ steps:
 
   - description: "Capture spec configuration"
     action: "screenshot"
-    description: "Spec generation configured"
+    output: "Spec generation configured"
 
   - description: "Generate specification"
     action: "click"
@@ -54,7 +54,7 @@ steps:
 
   - description: "Capture generated spec"
     action: "screenshot"
-    description: "Generated specification"
+    output: "Generated specification"
 
   - description: "Expand spec sections"
     action: "click"
@@ -69,7 +69,7 @@ steps:
 
   - description: "Capture detailed spec"
     action: "screenshot"
-    description: "Detailed specification view"
+    output: "Detailed specification view"
 
   - description: "Copy spec to clipboard"
     action: "click"

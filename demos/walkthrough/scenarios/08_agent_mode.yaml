@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture agent interface"
     action: "screenshot"
-    description: "Agent mode interface"
+    output: "Agent mode interface"
 
   - description: "Type initial query"
     action: "fill"
@@ -39,7 +39,7 @@ steps:
 
   - description: "Capture agent response"
     action: "screenshot"
-    description: "Agent query response"
+    output: "Agent query response"
 
   - description: "Ask for recommendations"
     action: "fill"
@@ -60,7 +60,7 @@ steps:
 
   - description: "Capture recommendations"
     action: "screenshot"
-    description: "Security recommendations from agent"
+    output: "Security recommendations from agent"
 
   - description: "Scroll chat history"
     action: "scroll"
@@ -87,7 +87,7 @@ steps:
 
   - description: "Capture agent settings"
     action: "screenshot"
-    description: "Agent configuration options"
+    output: "Agent configuration options"
 
   - description: "Export chat history"
     action: "click"
