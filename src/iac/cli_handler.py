@@ -491,17 +491,21 @@ async def generate_iac_command_handler(
             "ResourceGroup",
         }
 
-        # Get emitter to check supported types
-        temp_emitter_cls = get_emitter(format_type)
+        # Get supported types from handler registry for accurate reporting (Bug #594)
+        # This includes types handled by handlers even if not in AZURE_TO_TERRAFORM_MAPPING
         if format_type.lower() == "terraform":
+            from .emitters.terraform.handlers import HandlerRegistry, ensure_handlers_registered
+
+            ensure_handlers_registered()
+            supported_types = set(HandlerRegistry.get_all_supported_types())
+        else:
+            # For other formats, fall back to emitter mapping
+            temp_emitter_cls = get_emitter(format_type)
             temp_emitter = temp_emitter_cls()
-            # Use hasattr to check for terraform-specific attribute
             if hasattr(temp_emitter, "AZURE_TO_TERRAFORM_MAPPING"):
                 supported_types = set(temp_emitter.AZURE_TO_TERRAFORM_MAPPING.keys())  # type: ignore[attr-defined]
             else:
                 supported_types = set()
-        else:
-            supported_types = set()
 
         # Analyze each resource
         unsupported_by_type = {}
