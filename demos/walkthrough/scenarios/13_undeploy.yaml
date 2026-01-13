@@ -19,7 +19,7 @@ steps:
 
   - description: "Capture cleanup interface"
     action: "screenshot"
-    description: "Cleanup options interface"
+    screenshot_description: "Cleanup options interface"
 
   - description: "Select resources to remove"
     action: "click"
@@ -40,7 +40,7 @@ steps:
 
   - description: "Capture cleanup configuration"
     action: "screenshot"
-    description: "Cleanup configuration set"
+    screenshot_description: "Cleanup configuration set"
 
   - description: "Validate cleanup"
     action: "click"
@@ -56,7 +56,7 @@ steps:
 
   - description: "Capture cleanup preview"
     action: "screenshot"
-    description: "Resources to be removed"
+    screenshot_description: "Resources to be removed"
 
   - description: "Confirm cleanup"
     action: "click"
@@ -84,7 +84,7 @@ steps:
 
   - description: "Capture cleanup progress"
     action: "screenshot"
-    description: "Cleanup in progress"
+    screenshot_description: "Cleanup in progress"
 
   - description: "Check cleanup completion"
     action: "wait"
@@ -94,7 +94,7 @@ steps:
 
   - description: "Capture final state"
     action: "screenshot"
-    description: "Cleanup completed"
+    screenshot_description: "Cleanup completed"
 
   - description: "Download cleanup report"
     action: "click"
