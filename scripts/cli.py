@@ -549,15 +549,15 @@ async def scan(
     filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
-    Scan the complete Azure tenant graph with enhanced processing.
+    Build the complete Azure tenant graph with enhanced processing.
 
-    This command discovers all resources in your Azure tenant and builds a comprehensive
-    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs,
-    and interactive controls:
+    By default, shows a live Rich dashboard with progress, logs, and interactive controls:
       - Press 'x' to exit the dashboard at any time.
       - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
+
+    Note: 'scan' is an alias for 'build' - both commands are identical.
     """
     debug = ctx.obj.get("debug", False)
     if debug:
