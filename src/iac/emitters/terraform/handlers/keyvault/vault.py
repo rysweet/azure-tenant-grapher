@@ -67,8 +67,8 @@ class KeyVaultHandler(ResourceHandler):
         sku_name = sku.get("name", "standard") if isinstance(sku, dict) else "standard"
         config["sku_name"] = sku_name
 
-        # Tenant ID (required)
-        tenant_id = properties.get("tenantId") or context.target_tenant_id
+        # Tenant ID (required) - prioritize target tenant for cross-tenant deployments
+        tenant_id = context.target_tenant_id or properties.get("tenantId")
         if tenant_id:
             config["tenant_id"] = tenant_id
         else:
