@@ -56,12 +56,8 @@ def javascript_project(temp_project_dir):
         "name": "test-project",
         "version": "1.0.0",
         "main": "index.js",
-        "scripts": {
-            "test": "jest"
-        },
-        "dependencies": {
-            "express": "^4.18.0"
-        }
+        "scripts": {"test": "jest"},
+        "dependencies": {"express": "^4.18.0"},
     }
     (temp_project_dir / "package.json").write_text(json.dumps(package_json, indent=2))
 
@@ -274,7 +270,7 @@ def sample_dap_config():
         "program": "${project_dir}/main.py",
         "console": "integratedTerminal",
         "cwd": "${project_dir}",
-        "pythonPath": "python3"
+        "pythonPath": "python3",
     }
 
 
