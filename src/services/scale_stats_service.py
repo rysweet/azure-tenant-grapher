@@ -90,9 +90,11 @@ class ScaleStatsService(BaseScaleService):
             >>> print(f"Total: {stats['total_resources']} resources")
             >>> print(f"Synthetic: {stats['synthetic_percentage']:.1f}%")
             >>> for rtype, count in stats['resource_type_breakdown'].items():
-            ...     print(f"  {rtype}: {count}")
+            ...     print(str(f"  {rtype}: {count}"))
         """
-        self.logger.info(f"Getting tenant stats for {tenant_id} (detailed={detailed})")
+        self.logger.info(
+            str(f"Getting tenant stats for {tenant_id} (detailed={detailed})")
+        )
 
         # Validate tenant exists
         if not await self.validate_tenant_exists(tenant_id):
@@ -275,7 +277,7 @@ class ScaleStatsService(BaseScaleService):
             >>> summary = comparison['summary']
             >>> print(f"Total synthetic: {summary['total_synthetic_resources']}")
         """
-        self.logger.info(f"Comparing {len(tenant_ids)} tenants")
+        self.logger.info(str(f"Comparing {len(tenant_ids)} tenants"))
 
         if not tenant_ids:
             raise ValueError("tenant_ids cannot be empty")
@@ -390,12 +392,12 @@ class ScaleStatsService(BaseScaleService):
 
         Example:
             >>> history = await service.get_session_history("abc123")
-            >>> print(f"Found {len(history)} scale operations")
+            >>> print(str(f"Found {len(history)} scale operations"))
             >>> for session in history:
             ...     print(f"{session['timestamp']}: {session['strategy']} - "
             ...           f"{session['resource_count']} resources")
         """
-        self.logger.info(f"Getting session history for tenant {tenant_id}")
+        self.logger.info(str(f"Getting session history for tenant {tenant_id}"))
 
         # Validate tenant exists
         if not await self.validate_tenant_exists(tenant_id):
@@ -442,7 +444,7 @@ class ScaleStatsService(BaseScaleService):
                         }
                     )
 
-            self.logger.info(f"Found {len(history)} scale operation sessions")
+            self.logger.info(str(f"Found {len(history)} scale operation sessions"))
 
             return history
 
@@ -487,7 +489,7 @@ class ScaleStatsService(BaseScaleService):
             ...     output_path="/tmp/stats.md",
             ...     detailed=True
             ... )
-            >>> print(f"Exported to /tmp/stats.md")
+            >>> print(str(f"Exported to /tmp/stats.md"))
             >>>
             >>> # Get as string
             >>> json_output = await service.export_stats(
@@ -496,7 +498,9 @@ class ScaleStatsService(BaseScaleService):
             ... )
             >>> print(json_output)
         """
-        self.logger.info(f"Exporting stats for tenant {tenant_id} in {format} format")
+        self.logger.info(
+            str(f"Exporting stats for tenant {tenant_id} in {format} format")
+        )
 
         valid_formats = ["json", "markdown", "table"]
         if format not in valid_formats:
@@ -521,7 +525,7 @@ class ScaleStatsService(BaseScaleService):
         if output_path:
             with open(output_path, "w") as f:
                 f.write(output)
-            self.logger.info(f"Stats exported to {output_path}")
+            self.logger.info(str(f"Stats exported to {output_path}"))
 
         return output
 

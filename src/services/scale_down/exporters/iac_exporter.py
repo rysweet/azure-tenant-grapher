@@ -59,8 +59,8 @@ class IaCExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph,
-        output_path: str
+        sampled_graph: nx.DiGraph[str],
+        output_path: str,
     ) -> None:
         """
         Export sample to IaC format (Terraform, ARM, or Bicep).
@@ -87,7 +87,7 @@ class IaCExporter(BaseExporter):
             ... )
         """
         self.logger.info(
-            f"Exporting sample to {self.iac_format} IaC at {output_path}"
+            str(f"Exporting sample to {self.iac_format} IaC at {output_path}")
         )
 
         # Build TenantGraph from sampled data
@@ -111,4 +111,6 @@ class IaCExporter(BaseExporter):
         # Generate IaC templates using appropriate emitter
         await self.emitter.emit_template(tenant_graph, output_path)
 
-        self.logger.info(f"IaC export completed ({self.iac_format}): {output_path}")
+        self.logger.info(
+            str(f"IaC export completed ({self.iac_format}): {output_path}")
+        )

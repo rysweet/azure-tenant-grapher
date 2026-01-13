@@ -76,32 +76,7 @@ class VirtualMachineHandler(ResourceHandler):
             },
         )
 
-        # Add VM-specific properties
-        config.update(
-            {
-                "size": resource.get("size", "Standard_B2s"),
-                "admin_username": resource.get("admin_username", "azureuser"),
-                "admin_ssh_key": {
-                    "username": resource.get("admin_username", "azureuser"),
-                    "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
-                },
-                "network_interface_ids": nic_refs,
-                "os_disk": {
-                    "caching": "ReadWrite",
-                    "storage_account_type": "Standard_LRS",
-                },
-                "source_image_reference": {
-                    "publisher": "Canonical",
-                    "offer": "0001-com-ubuntu-server-jammy",
-                    "sku": "22_04-lts",
-                    "version": "latest",
-                },
-            }
-        )
-
-        logger.debug(f"VM '{resource_name}' emitted with {len(nic_refs)} NIC(s)")
-
-        # Detect Windows vs Linux OS
+        # Detect Windows vs Linux OS FIRST (Fix #596: Need OS type before adding SSH key)
         os_profile = properties.get("osProfile", {})
         has_windows_config = "windowsConfiguration" in os_profile
         has_linux_config = "linuxConfiguration" in os_profile
@@ -114,12 +89,73 @@ class VirtualMachineHandler(ResourceHandler):
         # Determine VM type
         if has_windows_config or os_type == "windows":
             vm_type = "azurerm_windows_virtual_machine"
+            is_windows = True
         elif has_linux_config or os_type == "linux":
             vm_type = "azurerm_linux_virtual_machine"
+            is_windows = False
         else:
             # Default to Linux if unknown
             vm_type = "azurerm_linux_virtual_machine"
-            logger.warning(f"VM '{resource_name}' has unclear OS type, defaulting to Linux")
+            is_windows = False
+            logger.warning(
+                f"VM '{resource_name}' has unclear OS type, defaulting to Linux"
+            )
+
+        # Add VM-specific properties (common to both Windows and Linux)
+        config.update(
+            {
+                "size": resource.get("size", "Standard_B2s"),
+                "admin_username": resource.get("admin_username", "azureuser"),
+                "network_interface_ids": nic_refs,
+                "os_disk": {
+                    "caching": "ReadWrite",
+                    "storage_account_type": "Standard_LRS",
+                },
+            }
+        )
+
+        # Bug #21: Set source_image_reference based on OS type
+        if is_windows:
+            config["source_image_reference"] = {
+                "publisher": "MicrosoftWindowsServer",
+                "offer": "WindowsServer",
+                "sku": "2022-Datacenter",
+                "version": "latest",
+            }
+        else:
+            config["source_image_reference"] = {
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-jammy",
+                "sku": "22_04-lts",
+                "version": "latest",
+            }
+
+        # Fix #596: Add authentication based on OS type
+        if is_windows:
+            # Windows VMs require admin_password
+            password_resource_name = f"{safe_name}_admin_password"
+            context.add_helper_resource(
+                "random_password",
+                password_resource_name,
+                {
+                    "length": 16,
+                    "special": True,
+                    "override_special": "!#$%&*()-_=+[]{}<>:?",
+                },
+            )
+            config["admin_password"] = (
+                f"${{random_password.{password_resource_name}.result}}"
+            )
+        else:
+            # Linux VMs use SSH keys
+            config["admin_ssh_key"] = {
+                "username": resource.get("admin_username", "azureuser"),
+                "public_key": f"${{tls_private_key.{ssh_key_resource_name}.public_key_openssh}}",
+            }
+
+        logger.debug(
+            f"VM '{resource_name}' emitted as {vm_type} with {len(nic_refs)} NIC(s)"
+        )
 
         return vm_type, safe_name, config
 

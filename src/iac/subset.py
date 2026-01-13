@@ -100,9 +100,9 @@ class SubsetFilter:
                 try:
                     predicates["depth"] = int(value)
                 except Exception:
-                    logger.warning(f"Invalid depth value: {value}")
+                    logger.warning(str(f"Invalid depth value: {value}"))
             else:
-                logger.warning(f"Unknown subset filter predicate: {key}")
+                logger.warning(str(f"Unknown subset filter predicate: {key}"))
 
         return cls(**predicates)
 
@@ -136,7 +136,7 @@ class SubsetSelector:
             logger.warning("No resources matched subset filter criteria")
             return TenantGraph(resources=[], relationships=[])
 
-        logger.info(f"Initial subset contains {len(included_resources)} resources")
+        logger.info(str(f"Initial subset contains {len(included_resources)} resources"))
 
         # If using policy_state, created_after, tag_selector, or resource_group, do NOT perform closure
         if filter_config.policy_state is not None:
@@ -158,7 +158,7 @@ class SubsetSelector:
                 graph, included_resources, getattr(filter_config, "depth", None)
             )
 
-        logger.info(f"After dependency closure: {len(closed_resources)} resources")
+        logger.info(str(f"After dependency closure: {len(closed_resources)} resources"))
 
         # Step 3: Build filtered graph
         filtered_graph = self._build_filtered_graph(graph, closed_resources)
@@ -287,14 +287,17 @@ class SubsetSelector:
                         included.add(resource_id)
             return included
 
-        # 7. resource_group (query Neo4j for RG resources)
+        # 7. resource_group - Fix #594: Check property not just ID format
         if filter_config.resource_group:
             included = set()
             for resource in graph.resources:
                 resource_id = resource.get("id")
-                # Extract RG name from resource ID
-                # Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/...
-                if resource_id and "/resourceGroups/" in resource_id:
+                # Fix #594: Check resource_group property (works for Abstracted + Original nodes)
+                rg = resource.get("resource_group") or resource.get("resourceGroup")
+                if rg and rg in filter_config.resource_group:
+                    included.add(resource_id)
+                # Fallback: Also check ID format for backwards compatibility
+                elif resource_id and "/resourceGroups/" in resource_id:
                     parts = resource_id.split("/resourceGroups/")
                     if len(parts) > 1:
                         rg_part = parts[1].split("/")[0]
@@ -334,7 +337,7 @@ class SubsetSelector:
         try:
             return bool(re.match(regex_pattern, resource_type, re.IGNORECASE))
         except re.error:
-            logger.warning(f"Invalid type pattern: {pattern}")
+            logger.warning(str(f"Invalid type pattern: {pattern}"))
             return False
 
     def _perform_dependency_closure(

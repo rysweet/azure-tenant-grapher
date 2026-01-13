@@ -221,5 +221,5 @@ class GenerationReport:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to save generation report: {e}")
+            logger.warning(str(f"Failed to save generation report: {e}"))
             return report_path

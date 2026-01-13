@@ -10,8 +10,6 @@ import re
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
-from azure.identity import DefaultAzureCredential
-
 from ..community_detector import CommunityDetector
 from ..dependency_analyzer import DependencyAnalyzer
 from ..resource_id_builder import AzureResourceIdBuilder
@@ -21,11 +19,6 @@ from ..traverser import TenantGraph
 from ..validators import DependencyValidator, ResourceExistenceValidator
 from . import register_emitter
 from .base import IaCEmitter
-from .private_endpoint_emitter import (
-    emit_private_dns_zone,
-    emit_private_dns_zone_vnet_link,
-    emit_private_endpoint,
-)
 from .terraform.context import EmitterContext
 from .terraform.handlers import HandlerRegistry, ensure_handlers_registered
 
@@ -184,8 +177,7 @@ class TerraformEmitter(IaCEmitter):
 
     # Azure resource type to Terraform resource type mapping
     AZURE_TO_TERRAFORM_MAPPING: ClassVar[Dict[str, str]] = {
-        # Bug #NEW4: VMs removed - handler detects Windows vs Linux, import blocks can't
-        # "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",  # REMOVED - let handler decide
+        "Microsoft.Compute/virtualMachines": "azurerm_linux_virtual_machine",  # Fix #594: Re-add to prevent UNSUPPORTED marking (handler dynamically chooses linux/windows)
         "Microsoft.Compute/disks": "azurerm_managed_disk",
         "Microsoft.Compute/virtualMachines/extensions": "azurerm_virtual_machine_extension",
         "Microsoft.Storage/storageAccounts": "azurerm_storage_account",
@@ -356,7 +348,8 @@ class TerraformEmitter(IaCEmitter):
         domain_name: Optional[str] = None,
         subscription_id: Optional[str] = None,
         comparison_result: Optional[Any] = None,
-        split_by_community: bool = True,  # Bug #112: Default to True for parallel deployment
+        split_by_community: bool = False,  # Fix #593: Default to True for parallel deployment
+        location: Optional[str] = None,  # Fix #601: Target region override
     ) -> List[Path]:
         """Generate Terraform template from tenant graph.
 
@@ -382,7 +375,10 @@ class TerraformEmitter(IaCEmitter):
                     resource["userPrincipalName"] = f"{base_name}@{domain_name}"
                     resource["email"] = f"{base_name}@{domain_name}"
 
-        logger.info(f"Generating Terraform templates to {out_dir}")
+        logger.info(str(f"Generating Terraform templates to {out_dir}"))
+
+        # Store target location for handlers (Fix #601 - missing piece!)
+        self.target_location = location
 
         # Ensure output directory exists
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -564,7 +560,7 @@ class TerraformEmitter(IaCEmitter):
         # Extract and generate resource group resources
         logger.info("Extracting resource groups from discovered resources")
         rg_resources = self._extract_resource_groups(graph.resources)
-        logger.info(f"Found {len(rg_resources)} unique resource groups")
+        logger.info(str(f"Found {len(rg_resources)} unique resource groups"))
 
         # Build RG name mapping (original -> prefixed) for updating resource references
         rg_name_mapping = {}
@@ -576,7 +572,9 @@ class TerraformEmitter(IaCEmitter):
                     rg_name_mapping[original_rg] = prefixed_rg
 
             logger.info(f"Resource group prefix: '{self.resource_group_prefix}'")
-            logger.info(f"Will transform {len(rg_name_mapping)} resource group names")
+            logger.info(
+                str(f"Will transform {len(rg_name_mapping)} resource group names")
+            )
 
             # Apply RG name transform to all resources
             for resource in graph.resources:
@@ -657,13 +655,13 @@ class TerraformEmitter(IaCEmitter):
             )
             logger.info(f"Source Tenant: {self.source_tenant_id or 'Not specified'}")
             logger.info(f"Target Tenant: {self.target_tenant_id or 'Not specified'}")
-            logger.info(f"Strict Mode: {self.strict_mode}")
+            logger.info(str(f"Strict Mode: {self.strict_mode}"))
             logger.info("=" * 70)
 
             self._translation_coordinator = TranslationCoordinator(translation_context)
 
             # Translate all resources
-            logger.info(f"Translating {len(all_resources)} resources...")
+            logger.info(str(f"Translating {len(all_resources)} resources..."))
             try:
                 translated_resources = (
                     self._translation_coordinator.translate_resources(all_resources)
@@ -821,7 +819,9 @@ class TerraformEmitter(IaCEmitter):
                     if len(resource_name) > 80:
                         import hashlib
 
-                        name_hash = hashlib.md5(resource_name.encode(), usedforsecurity=False).hexdigest()[:5]
+                        name_hash = hashlib.md5(
+                            resource_name.encode(), usedforsecurity=False
+                        ).hexdigest()[:5]
                         resource_name = resource_name[:74] + "_" + name_hash
 
                     logger.warning(
@@ -951,7 +951,7 @@ class TerraformEmitter(IaCEmitter):
             if import_blocks:
                 terraform_config["import"] = import_blocks
                 self._import_blocks_generated = len(import_blocks)
-                logger.info(f"Generated {len(import_blocks)} import blocks")
+                logger.info(str(f"Generated {len(import_blocks)} import blocks"))
 
         # Determine if we should split by community
         output_files = []
@@ -982,16 +982,22 @@ class TerraformEmitter(IaCEmitter):
                     detector = CommunityDetector(driver)
                     logger.debug("Detecting communities...")
                     communities = detector.detect_communities()
-                    logger.debug(f"Communities detected, returned {len(communities)} communities")
+                    logger.debug(
+                        f"Communities detected, returned {len(communities)} communities"
+                    )
 
                     logger.info(
                         f"Detected {len(communities)} communities for splitting"
                     )
-                    logger.info(f"Community sizes: {[len(c) for c in communities]}")
+                    logger.info(
+                        str(f"Community sizes: {[len(c) for c in communities]}")
+                    )
 
                     # Split resources by community
                     for i, community_ids in enumerate(communities, start=1):
-                        logger.debug(f"Processing community {i} with {len(community_ids)} resource IDs")
+                        logger.debug(
+                            f"Processing community {i} with {len(community_ids)} resource IDs"
+                        )
                         # Filter resources for this community
                         community_resources = {
                             resource_type: {
@@ -1008,7 +1014,9 @@ class TerraformEmitter(IaCEmitter):
                                 "resource", {}
                             ).items()
                         }
-                        logger.debug(f"Filtered community {i}: {list(community_resources.keys())}")
+                        logger.debug(
+                            f"Filtered community {i}: {list(community_resources.keys())}"
+                        )
 
                         # Remove empty resource types
                         community_resources = {
@@ -1136,7 +1144,7 @@ class TerraformEmitter(IaCEmitter):
                     for ref in refs[:10]:  # Limit to first 10
                         logger.warning(f"      - {ref['resource_name']}")
                     if len(refs) > 10:
-                        logger.warning(f"      ... and {len(refs) - 10} more")
+                        logger.warning(str(f"      ... and {len(refs) - 10} more"))
 
             logger.warning(
                 f"\n{'=' * 80}\n"
@@ -1161,14 +1169,18 @@ class TerraformEmitter(IaCEmitter):
                 self._translation_coordinator.save_translation_report(
                     str(text_report_path), format="text"
                 )
-                logger.info(f"Translation report (text) saved to: {text_report_path}")
+                logger.info(
+                    str(f"Translation report (text) saved to: {text_report_path}")
+                )
 
                 # Save machine-readable JSON report
                 json_report_path = out_dir / "translation_report.json"
                 self._translation_coordinator.save_translation_report(
                     str(json_report_path), format="json"
                 )
-                logger.info(f"Translation report (JSON) saved to: {json_report_path}")
+                logger.info(
+                    str(f"Translation report (JSON) saved to: {json_report_path}")
+                )
 
                 # Print summary to console
                 formatted_report = (
@@ -1278,6 +1290,40 @@ class TerraformEmitter(IaCEmitter):
             tf_resource_type, resource_config, subscription_id
         )
 
+    def _build_original_id_map(self, resources: List[Dict[str, Any]]) -> Dict[str, str]:
+        """Build map of Terraform resource names to original Azure IDs.
+
+        Bug #10 Fix: Extracts original Azure IDs from Neo4j resources for use in import blocks.
+
+        Args:
+            resources: Original resources from graph
+
+        Returns:
+            Map of {terraform_resource_name: original_azure_id}
+        """
+        original_id_map = {}
+        for resource in resources:
+            original_id = resource.get("original_id")
+            if original_id:
+                azure_type = resource.get("type")
+                if azure_type:
+                    normalized_type = self._normalize_azure_type(azure_type)
+                    tf_type = self.AZURE_TO_TERRAFORM_MAPPING.get(normalized_type)
+                    if tf_type:
+                        resource_name = resource.get("name", "")
+                        if resource_name:
+                            tf_name = self._sanitize_terraform_name(resource_name)
+                            map_key = f"{tf_type}.{tf_name}"
+                            original_id_map[map_key] = original_id
+                            logger.debug(
+                                f"Added to original_id_map: {map_key} -> {original_id}"
+                            )
+
+        logger.info(
+            f"Built original_id_map with {len(original_id_map)} entries from Neo4j"
+        )
+        return original_id_map
+
     def _generate_import_blocks(
         self, terraform_config: Dict[str, Any], resources: List[Dict[str, Any]]
     ) -> List[Dict[str, str]]:
@@ -1289,6 +1335,11 @@ class TerraformEmitter(IaCEmitter):
         - Caches existence checks to minimize API calls
         - Graceful error handling for transient failures
 
+        Bug #10 Fix:
+        - Builds original_id_map from resources list (Neo4j data)
+        - Passes map to resource_id_builder for child resource import blocks
+        - Enables import blocks for 177/177 resources (not just 67/177)
+
         Args:
             terraform_config: The generated Terraform configuration
             resources: Original resources from graph
@@ -1298,6 +1349,9 @@ class TerraformEmitter(IaCEmitter):
         """
         import_blocks = []
 
+        # Bug #10 Fix: Build original_id_map from resources
+        original_id_map = self._build_original_id_map(resources)
+
         # Get subscription ID for validation
         subscription_id = self.target_subscription_id or self.source_subscription_id
         if not subscription_id:
@@ -1305,13 +1359,18 @@ class TerraformEmitter(IaCEmitter):
                 "Cannot validate resource existence: no subscription ID available"
             )
             # Fall back to old behavior (no validation)
-            return self._generate_import_blocks_no_validation(terraform_config)
+            return self._generate_import_blocks_no_validation(
+                terraform_config, original_id_map, resources
+            )
 
         # Initialize existence validator if needed (Issue #422)
         if self._existence_validator is None:
-            credential = self.credential or DefaultAzureCredential()
+            # Fix #608: DON'T pass self.credential - it's for source tenant!
+            # Let ResourceExistenceValidator create the right credential for target tenant
             self._existence_validator = ResourceExistenceValidator(
-                subscription_id=subscription_id, credential=credential
+                subscription_id=subscription_id,
+                credential=None,  # Let validator create tenant-specific credential
+                tenant_id=self.target_tenant_id,
             )
             logger.info(
                 f"Initialized resource existence validator for subscription {subscription_id}"
@@ -1396,13 +1455,20 @@ class TerraformEmitter(IaCEmitter):
                         continue
 
                     # Build Azure resource ID based on resource type
-                    azure_id = self._build_azure_resource_id(
-                        tf_resource_type, resource_config, subscription_id
+                    # Bug #10: Pass original_id_map and source_subscription_id
+                    azure_id = self._resource_id_builder.build(
+                        tf_resource_type,
+                        resource_config,
+                        subscription_id,
+                        original_id_map=original_id_map,
+                        source_subscription_id=self.source_subscription_id,
                     )
 
                     if azure_id:
                         # Bug #NEW: Normalize provider casing in import IDs (fix lowercase providers)
-                        normalized_azure_id = self._normalize_azure_resource_id(azure_id)
+                        normalized_azure_id = self._normalize_azure_resource_id(
+                            azure_id
+                        )
                         resource_name = resource_config.get("name", tf_name)
                         candidate_imports.append(
                             {
@@ -1481,24 +1547,35 @@ class TerraformEmitter(IaCEmitter):
         return import_blocks
 
     def _generate_import_blocks_no_validation(
-        self, terraform_config: Dict[str, Any]
+        self,
+        terraform_config: Dict[str, Any],
+        original_id_map: Optional[Dict[str, str]] = None,
+        resources: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, str]]:
         """Generate import blocks without existence validation (fallback).
 
         Used when subscription ID is not available for validation.
 
+        Bug #10 Fix: Accepts resources to build original_id_map or accepts pre-built map.
+
         Args:
             terraform_config: The generated Terraform configuration
+            original_id_map: Optional pre-built map of {terraform_resource_name: original_azure_id}
+            resources: Optional resources list from Neo4j to build original_id_map
 
         Returns:
             List of import blocks without validation
         """
         import_blocks = []
         tf_resources = terraform_config.get("resource", {})
-        resource_groups = tf_resources.get("azurerm_resource_group", {})
+        subscription_id = self.target_subscription_id or self.source_subscription_id
+
+        # Bug #10: Build original_id_map from resources if not provided
+        if not original_id_map and resources:
+            original_id_map = self._build_original_id_map(resources)
 
         if self.import_strategy == "resource_groups":
-            subscription_id = self.target_subscription_id or self.source_subscription_id
+            resource_groups = tf_resources.get("azurerm_resource_group", {})
             for rg_tf_name, rg_config in resource_groups.items():
                 rg_name = rg_config.get("name")
                 if rg_name and subscription_id:
@@ -1511,6 +1588,32 @@ class TerraformEmitter(IaCEmitter):
                             "id": azure_id,
                         }
                     )
+        elif self.import_strategy == "all_resources":
+            # Bug #10 Fix: Generate import blocks for ALL resources using original_id_map
+            for tf_resource_type, resources_of_type in tf_resources.items():
+                if not isinstance(resources_of_type, dict):
+                    continue
+
+                for tf_name, resource_config in resources_of_type.items():
+                    if resource_config is None:
+                        continue
+
+                    # Build Azure resource ID with original_id_map support
+                    azure_id = self._resource_id_builder.build(
+                        tf_resource_type,
+                        resource_config,
+                        subscription_id,
+                        original_id_map=original_id_map,
+                        source_subscription_id=self.source_subscription_id,
+                    )
+
+                    if azure_id:
+                        import_blocks.append(
+                            {
+                                "to": f"{tf_resource_type}.{tf_name}",
+                                "id": azure_id,
+                            }
+                        )
 
         logger.warning(
             f"Generated {len(import_blocks)} import blocks WITHOUT existence validation"
@@ -1648,6 +1751,9 @@ class TerraformEmitter(IaCEmitter):
         return EmitterContext(
             target_subscription_id=self.target_subscription_id,
             target_tenant_id=self.target_tenant_id,
+            target_location=getattr(
+                self, "target_location", None
+            ),  # Fix #601: Pass target location
             source_subscription_id=self.source_subscription_id,
             source_tenant_id=self.source_tenant_id,
             identity_mapping=self.identity_mapping,
@@ -1722,9 +1828,13 @@ class TerraformEmitter(IaCEmitter):
 
                     # Merge any helper resources into main config
                     if context.terraform_config.get("resource"):
-                        for res_type, resources in context.terraform_config["resource"].items():
+                        for res_type, resources in context.terraform_config[
+                            "resource"
+                        ].items():
                             if res_type not in terraform_config.get("resource", {}):
-                                terraform_config.setdefault("resource", {})[res_type] = {}
+                                terraform_config.setdefault("resource", {})[
+                                    res_type
+                                ] = {}
                             terraform_config["resource"][res_type].update(resources)
 
                     logger.info(
@@ -1744,9 +1854,8 @@ class TerraformEmitter(IaCEmitter):
                 return None
 
         # No handler available for this resource type
-        logger.warning(f"No handler available for {azure_type}: {resource_name}")
+        logger.warning(str(f"No handler available for {azure_type}: {resource_name}"))
         return None
-
 
     def _get_app_service_terraform_type(self, resource: Dict[str, Any]) -> str:
         """Determine correct App Service Terraform type based on OS.
@@ -2001,9 +2110,11 @@ class TerraformEmitter(IaCEmitter):
         if len(sanitized) > 80:
             import hashlib
 
-            name_hash = hashlib.md5(sanitized.encode(), usedforsecurity=False).hexdigest()[:5]
+            name_hash = hashlib.md5(
+                sanitized.encode(), usedforsecurity=False
+            ).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
-            logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
+            logger.debug(str(f"Truncated long name to 80 chars: ...{sanitized[-20:]}"))
 
         return sanitized or "unnamed_resource"
 
@@ -2249,10 +2360,14 @@ class TerraformEmitter(IaCEmitter):
                 r"/Microsoft\.Cache/Redis/",
                 "/Microsoft.Cache/redis/",
             ),
-            # Bug #109: QueryPacks must be lowercase 'querypacks' not 'QueryPacks' or 'queryPacks'
+            # Bug #19: QueryPacks must be camelCase 'queryPacks' (both variants)
             (
-                r"/Microsoft\.OperationalInsights/[Qq]ueryPacks/",
-                "/Microsoft.OperationalInsights/querypacks/",
+                r"/Microsoft\.OperationalInsights/querypacks/",
+                "/Microsoft.OperationalInsights/queryPacks/",
+            ),
+            (
+                r"/Microsoft\.OperationalInsights/QueryPacks/",
+                "/Microsoft.OperationalInsights/queryPacks/",
             ),
             (r"/microsoft\.insights/", "/Microsoft.Insights/"),
             (r"/microsoft\.alertsmanagement/", "/Microsoft.AlertsManagement/"),
@@ -2271,10 +2386,16 @@ class TerraformEmitter(IaCEmitter):
             normalized = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
 
         # Bug #88: Fix lowercase resourceGroups and actionGroups in resource IDs
-        normalized = re.sub(r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/resourcegroups/", "/resourceGroups/", normalized, flags=re.IGNORECASE
+        )
+        normalized = re.sub(
+            r"/actiongroups/", "/actionGroups/", normalized, flags=re.IGNORECASE
+        )
         # Bug #NEW3: Fix lowercase dnszones
-        normalized = re.sub(r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/dnszones/", "/dnsZones/", normalized, flags=re.IGNORECASE
+        )
 
         return normalized
 
@@ -2508,7 +2629,7 @@ class TerraformEmitter(IaCEmitter):
 
         for key in required_keys:
             if key not in template_data:
-                logger.error(f"Missing required key in Terraform template: {key}")
+                logger.error(str(f"Missing required key in Terraform template: {key}"))
                 return False
 
         # Basic validation passed

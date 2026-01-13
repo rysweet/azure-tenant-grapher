@@ -1,10 +1,14 @@
 """CLI command for deploying IaC."""
 
+import asyncio
 import logging
 from pathlib import Path
+from typing import cast
 
 import click
 
+from ..deployment.agent_deployer import AgentDeployer, DeploymentResult
+from ..deployment.format_detector import IaCFormat
 from ..deployment.orchestrator import deploy_iac
 
 logger = logging.getLogger(__name__)
@@ -64,6 +68,23 @@ logger = logging.getLogger(__name__)
     default=None,
     help="Service principal client secret for dataplane operations (optional)",
 )
+@click.option(
+    "--agent",
+    is_flag=True,
+    help="Enable autonomous goal-seeking agent mode for deployment",
+)
+@click.option(
+    "--max-iterations",
+    type=int,
+    default=20,
+    help="Maximum deployment iterations in agent mode (default: 20)",
+)
+@click.option(
+    "--agent-timeout",
+    type=int,
+    default=6000,
+    help="Timeout in seconds for agent mode deployment (default: 6000)",
+)
 def deploy_command(
     iac_dir: str,
     target_tenant_id: str,
@@ -75,6 +96,9 @@ def deploy_command(
     dataplane: str,
     sp_client_id: str | None,
     sp_client_secret: str | None,
+    agent: bool,
+    max_iterations: int,
+    agent_timeout: int,
 ):
     """Deploy generated IaC to target tenant.
 
@@ -92,18 +116,63 @@ def deploy_command(
 
         # Deploy ARM template to specific subscription
         atg deploy --iac-dir ./arm --target-tenant-id <TENANT_ID> --resource-group my-rg --subscription-id <SUB_ID>
+
+        # Deploy with autonomous goal-seeking agent
+        atg deploy --iac-dir ./output/iac --target-tenant-id <TENANT_ID> --resource-group my-rg --agent
+
+        # Agent mode with custom settings
+        atg deploy --iac-dir ./output/iac --target-tenant-id <TENANT_ID> --resource-group my-rg --agent --max-iterations 10 --agent-timeout 600
     """
     try:
+        # Check if IaC directory exists
+        iac_path = Path(iac_dir)
+        if not iac_path.exists():
+            click.echo(f"Error: IaC directory does not exist: {iac_dir}", err=True)
+            raise SystemExit(1)
+
+        # Route to agent mode if --agent flag is set
+        if agent:
+            click.echo(f"Starting autonomous deployment agent from {iac_dir}...")
+            click.echo(
+                f"Agent configuration: max_iterations={max_iterations}, timeout={agent_timeout}s"
+            )
+
+            # Create agent deployer
+            deployer = AgentDeployer(
+                iac_dir=iac_path,
+                target_tenant_id=target_tenant_id,
+                resource_group=resource_group,
+                location=location,
+                subscription_id=subscription_id,
+                iac_format=cast(IaCFormat, iac_format) if iac_format else None,
+                dry_run=dry_run,
+                max_iterations=max_iterations,
+                timeout_seconds=agent_timeout,
+            )
+
+            # Run agent deployment (async)
+            result = asyncio.run(deployer.deploy_with_agent())
+
+            # Display deployment report
+            _display_agent_report(result)
+
+            # Exit with appropriate code
+            if not result.success:
+                raise SystemExit(1)
+
+            return
+
+        # Normal (non-agent) deployment path
         click.echo(f"Starting deployment from {iac_dir}...")
 
         # Deploy control plane (IaC)
         result = deploy_iac(
-            iac_dir=Path(iac_dir),
+            iac_dir=iac_path,
             target_tenant_id=target_tenant_id,
             resource_group=resource_group,
             location=location,
             subscription_id=subscription_id,
-            iac_format=iac_format,
+            iac_format=cast(IaCFormat, iac_format) if iac_format else None,
             dry_run=dry_run,
         )
 
@@ -160,3 +229,39 @@ def deploy_command(
         click.echo(f"Deployment failed: {e}", err=True)
         logger.exception("Deployment error")
         raise SystemExit(1) from e
+
+
+def _display_agent_report(result: DeploymentResult) -> None:
+    """Display deployment report for agent mode.
+
+    Args:
+        result: DeploymentResult from agent deployment
+    """
+    click.echo("\n" + "=" * 80)
+    click.echo("AUTONOMOUS DEPLOYMENT REPORT")
+    click.echo("=" * 80)
+
+    # Status
+    status_emoji = "✅" if result.success else "❌"
+    click.echo(f"\nStatus: {status_emoji} {result.final_status.upper()}")
+    click.echo(f"Iterations: {result.iteration_count}")
+
+    # Error summary
+    if result.error_log:
+        click.echo(f"\nErrors encountered: {len(result.error_log)}")
+        click.echo("\nError Summary:")
+        for i, error in enumerate(result.error_log, 1):
+            iteration = error.get("iteration", "?")
+            error_type = error.get("error_type", "Error")
+            message = str(error.get("message", ""))[:100]
+            click.echo(f"  {i}. [Iteration {iteration}] {error_type}: {message}")
+
+    # Deployment output
+    if result.deployment_output:
+        click.echo("\nDeployment Output:")
+        click.echo(f"  Format: {result.deployment_output.get('format', 'unknown')}")
+        click.echo(f"  Status: {result.deployment_output.get('status', 'unknown')}")
+        if output := result.deployment_output.get("output"):
+            click.echo(f"\n{output[:500]}")
+
+    click.echo("\n" + "=" * 80)

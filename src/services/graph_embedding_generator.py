@@ -6,7 +6,7 @@ sampling that preserves hub and bridge nodes.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import networkx as nx
 import numpy as np
@@ -71,7 +71,7 @@ class GraphEmbeddingGenerator:
         Raises:
             ValueError: If tenant has no resources or graph cannot be built
         """
-        logger.info(f"Generating embeddings for tenant {tenant_id}")
+        logger.info(str(f"Generating embeddings for tenant {tenant_id}"))
 
         # Build NetworkX graph from Neo4j
         graph = self._build_networkx_graph(tenant_id)
@@ -80,17 +80,17 @@ class GraphEmbeddingGenerator:
             raise ValueError(f"No resources found for tenant {tenant_id}")
 
         logger.info(
-            f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges"
+            str(f"Built graph: {len(graph.nodes)} nodes, {len(graph.edges)} edges")
         )
 
         # Generate node2vec embeddings
         embeddings = self._train_node2vec(graph)
 
-        logger.info(f"Generated embeddings for {len(embeddings)} nodes")
+        logger.info(str(f"Generated embeddings for {len(embeddings)} nodes"))
 
         return embeddings
 
-    def _build_networkx_graph(self, tenant_id: str) -> nx.Graph:
+    def _build_networkx_graph(self, tenant_id: str) -> nx.Graph[str]:
         """Build NetworkX graph from Neo4j relationships.
 
         Extracts all Resource nodes and their relationships for the specified
@@ -112,7 +112,7 @@ class GraphEmbeddingGenerator:
         RETURN source.id AS source_id, target.id AS target_id
         """
 
-        graph = nx.Graph()
+        graph = nx.Graph[str]()
 
         with self.driver.session() as session:
             result = session.run(query, tenant_id=tenant_id)
@@ -131,7 +131,7 @@ class GraphEmbeddingGenerator:
 
         return graph
 
-    def _train_node2vec(self, graph: nx.Graph) -> Dict[str, np.ndarray]:
+    def _train_node2vec(self, graph: nx.Graph[str]) -> Dict[str, np.ndarray]:
         """Train node2vec model and return embeddings.
 
         Args:
@@ -168,7 +168,7 @@ class GraphEmbeddingGenerator:
         return embeddings
 
     def get_node_importance_scores(
-        self, embeddings: Dict[str, np.ndarray], graph: Optional[nx.Graph] = None
+        self, embeddings: Dict[str, np.ndarray], graph: Optional[nx.Graph[str]] = None
     ) -> Dict[str, float]:
         """Calculate importance scores for nodes based on embeddings.
 

@@ -177,13 +177,13 @@ All PNG files have transparent backgrounds and are sized for 16:9 slides (1920x1
 
 ## Architecture
 
-![Dual-Graph Architecture](docs/diagrams/dual-graph-architecture.png)
+![Dual-Graph Architecture](diagrams/dual-graph-architecture.png)
 
 The dual-graph architecture ensures...
 
 ## Operation Flow
 
-![Scale-Up Sequence](docs/diagrams/scale-up-sequence.png)
+![Scale-Up Sequence](diagrams/scale-up-sequence.png)
 
 The scale-up operation follows these steps...
 ```
@@ -269,9 +269,9 @@ Use these colors across all diagrams:
 
 ## Related Documentation
 
-- [Scale Operations Specification](SCALE_OPERATIONS_SPECIFICATION.md) - Technical details
-- [Scale Operations Examples](SCALE_OPERATIONS_EXAMPLES.md) - Usage examples
-- [Scale Operations Quality Assessment](SCALE_OPERATIONS_QUALITY_ASSESSMENT.md) - Test results
+- [Scale Operations Specification](SCALE_OPERATIONS.md) - Technical details
+- [Scale Operations Examples](SCALE_OPERATIONS_E2E_DEMONSTRATION.md) - Usage examples
+- [Scale Operations Quality Assessment](SCALE_OPERATIONS.md) - Test results
 - [Neo4j Schema Reference](NEO4J_SCHEMA_REFERENCE.md) - Database schema
 - [diagrams/README.md](diagrams/README.md) - Diagram-specific documentation
 
@@ -313,7 +313,7 @@ A: Maximum flexibility for insertion into presentations, documents, and websites
 A:
 ```
 Source: Azure Tenant Grapher Scale Operations Documentation
-File: docs/diagrams/dual-graph-architecture.png
+File: diagrams/dual-graph-architecture.png
 Project: https://github.com/your-org/azure-tenant-grapher
 License: [Your License]
 ```

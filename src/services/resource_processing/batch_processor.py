@@ -121,7 +121,9 @@ class BatchProcessor:
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
 
-                logger.debug(f"Scheduling worker for resource {rid} (attempt {attempt})")
+                logger.debug(
+                    f"Scheduling worker for resource {rid} (attempt {attempt})"
+                )
 
                 task = asyncio.create_task(
                     wrapped_worker(resource, resource_index_counter, attempt)
@@ -162,16 +164,18 @@ class BatchProcessor:
                 if retry_queue:
                     soonest = min(next_time for _, _, next_time in retry_queue)
                     sleep_time = max(0.0, soonest - time.time())
-                    logger.debug(f"No tasks, sleeping for {sleep_time}s for next retry")
+                    logger.debug(
+                        str(f"No tasks, sleeping for {sleep_time}s for next retry")
+                    )
                     await asyncio.sleep(sleep_time)
                 else:
                     await asyncio.sleep(0.1)
                 continue
 
             # Wait for any task to complete
-            logger.debug(f"Awaiting {len(tasks)} tasks")
+            logger.debug(str(f"Awaiting {len(tasks)} tasks"))
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            logger.debug(f"{len(done)} tasks completed")
+            logger.debug(str(f"{len(done)} tasks completed"))
 
             for t in done:
                 rid = task_to_rid.pop(t, None)
@@ -183,7 +187,9 @@ class BatchProcessor:
                 task_result = t.result()
                 processed_count += 1
 
-                logger.debug(f"Task for resource {rid} completed with result={task_result}")
+                logger.debug(
+                    f"Task for resource {rid} completed with result={task_result}"
+                )
 
                 if task_result:
                     successful_count += 1
@@ -223,7 +229,7 @@ class BatchProcessor:
                     else:
                         poison_list.append(resource)
                         failed_count += 1
-                        logger.error(f"Poisoned after {attempt} attempts: {rid}")
+                        logger.error(str(f"Poisoned after {attempt} attempts: {rid}"))
 
             # Progress callback
             if progress_callback:

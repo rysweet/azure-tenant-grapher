@@ -89,7 +89,10 @@ def test_mcpserver_validate_invalid_args():
 def test_mcpserver_validate_invalid_env():
     """Test validation with invalid env type."""
     server = MCPServer(
-        name="test", command="node", args=[], env={"key": 123}  # type: ignore
+        name="test",
+        command="node",
+        args=[],
+        env={"key": 123},  # type: ignore
     )
 
     errors = server.validate()
@@ -418,9 +421,7 @@ def test_add_server_invalid():
 def test_add_server_with_env():
     """Test adding server with environment variables."""
     config = {"enabledMcpjsonServers": []}
-    server = MCPServer(
-        name="test", command="node", args=[], env={"KEY": "value"}
-    )
+    server = MCPServer(name="test", command="node", args=[], env={"KEY": "value"})
 
     new_config = add_server(config, server)
 
@@ -489,7 +490,12 @@ def test_get_server_found():
     """Test getting existing server."""
     config = {
         "enabledMcpjsonServers": [
-            {"name": "test-server", "command": "node", "args": ["s.js"], "enabled": True}
+            {
+                "name": "test-server",
+                "command": "node",
+                "args": ["s.js"],
+                "enabled": True,
+            }
         ]
     }
 
@@ -539,6 +545,7 @@ def test_export_servers():
 
     # Verify it's valid JSON
     import json
+
     data = json.loads(export_data)
 
     assert "metadata" in data
@@ -556,6 +563,7 @@ def test_export_servers_empty():
     export_data = export_servers(servers)
 
     import json
+
     data = json.loads(export_data)
 
     assert data["metadata"]["server_count"] == 0
@@ -564,15 +572,12 @@ def test_export_servers_empty():
 
 def test_export_servers_with_env():
     """Test exporting server with environment variables."""
-    servers = [
-        MCPServer(
-            name="test", command="node", args=[], env={"KEY": "value"}
-        )
-    ]
+    servers = [MCPServer(name="test", command="node", args=[], env={"KEY": "value"})]
 
     export_data = export_servers(servers)
 
     import json
+
     data = json.loads(export_data)
 
     assert data["servers"][0]["env"] == {"KEY": "value"}
@@ -715,10 +720,9 @@ def test_import_export_roundtrip():
     # Verify all data preserved
     assert len(imported_servers) == len(original_servers)
 
-    for orig, imported in zip(original_servers, imported_servers):
+    for orig, imported in zip(original_servers, imported_servers, strict=False):
         assert imported.name == orig.name
         assert imported.command == orig.command
         assert imported.args == orig.args
         assert imported.enabled == orig.enabled
         assert imported.env == orig.env
-

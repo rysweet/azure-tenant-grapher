@@ -806,20 +806,20 @@ scale_validate_command = scale_validate
 scale_stats_command = scale_stats
 
 __all__ = [
+    "scale_clean",
+    "scale_clean_command",
+    "scale_down",
+    "scale_down_algorithm",
+    "scale_down_group",
+    "scale_down_pattern",
+    "scale_stats",
+    "scale_stats_command",
     # Command groups
     "scale_up",
     "scale_up_group",
-    "scale_down",
-    "scale_down_group",
+    "scale_up_scenario",
     # Individual commands
     "scale_up_template",
-    "scale_up_scenario",
-    "scale_down_algorithm",
-    "scale_down_pattern",
-    "scale_clean",
-    "scale_clean_command",
     "scale_validate",
     "scale_validate_command",
-    "scale_stats",
-    "scale_stats_command",
 ]

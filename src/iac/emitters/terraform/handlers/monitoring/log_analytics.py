@@ -37,15 +37,39 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
     ) -> Optional[Tuple[str, str, Dict[str, Any]]]:
         """Convert Log Analytics Workspace to Terraform configuration."""
         resource_name = resource.get("name", "unknown")
+
+        # Skip Azure-managed workspaces (auto-created by App Insights, AKS, etc.)
+        # These have names starting with "managed-" or "DefaultWorkspace-" or containing system GUIDs
+        if resource_name.startswith("managed-") or resource_name.startswith(
+            "DefaultWorkspace-"
+        ):
+            logger.debug(
+                f"Skipping Azure-managed Log Analytics Workspace: {resource_name}"
+            )
+            return None
+
         safe_name = self.sanitize_name(resource_name)
         properties = self.parse_properties(resource)
 
         config = self.build_base_config(resource)
 
-        # SKU
+        # SKU - Fix #596: Normalize casing for Terraform
         sku = properties.get("sku", {})
         if sku and "name" in sku:
-            config["sku"] = sku["name"]
+            sku_name = sku["name"]
+            # Terraform requires PascalCase: PerGB2018, PerNode, Premium, Standalone, Standard, etc.
+            # Azure returns lowercase: pergb2018, pernode, etc.
+            sku_map = {
+                "pergb2018": "PerGB2018",
+                "pernode": "PerNode",
+                "premium": "Premium",
+                "standalone": "Standalone",
+                "standard": "Standard",
+                "capacityreservation": "CapacityReservation",
+                "lacluster": "LACluster",
+                "unlimited": "Unlimited",
+            }
+            config["sku"] = sku_map.get(sku_name.lower(), sku_name)
 
         # Retention
         retention = properties.get("retentionInDays")
@@ -85,20 +109,49 @@ class LogAnalyticsSolutionHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # Solution name
-        config["solution_name"] = resource_name
+        # Remove 'name' field - azurerm_log_analytics_solution doesn't support it
+        # Solution uses solution_name and workspace_name instead
+        if "name" in config:
+            del config["name"]
+
+        # Extract solution name and workspace name from resource name
+        # Format: "SolutionName(WorkspaceName)" e.g., "SecurityInsights(MyWorkspace)"
+        if "(" in resource_name and ")" in resource_name:
+            solution_name = resource_name.split("(")[0]
+            workspace_name = resource_name.split("(")[1].rstrip(")")
+            config["solution_name"] = solution_name
+            config["workspace_name"] = workspace_name
+        else:
+            config["solution_name"] = resource_name
+            # Try to extract workspace name from workspace_resource_id
+            workspace_id = properties.get("workspaceResourceId", "")
+            if workspace_id and "/workspaces/" in workspace_id:
+                workspace_name = workspace_id.split("/workspaces/")[-1]
+                config["workspace_name"] = workspace_name
+            else:
+                logger.warning(
+                    f"Cannot determine workspace_name for solution '{resource_name}', skipping"
+                )
+                return None
 
         # Workspace resource ID
         workspace_id = properties.get("workspaceResourceId")
         if workspace_id:
             config["workspace_resource_id"] = workspace_id
 
-        # Plan
+        # Plan - REQUIRED
         plan = properties.get("plan", {})
         if plan:
-            config["plan"] = {
+            plan_config = {
                 "publisher": plan.get("publisher", "Microsoft"),
-                "product": plan.get("product", "OMSGallery"),
+                "product": plan.get("product", f"OMSGallery/{config['solution_name']}"),
+            }
+            config["plan"] = plan_config
+        else:
+            # Default plan for common solutions
+            config["plan"] = {
+                "publisher": "Microsoft",
+                "product": f"OMSGallery/{config['solution_name']}",
             }
 
         logger.debug(f"Log Analytics Solution '{resource_name}' emitted")

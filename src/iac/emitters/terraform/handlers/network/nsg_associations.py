@@ -66,12 +66,37 @@ class NSGAssociationHandler(ResourceHandler):
             context: Emitter context with tracked associations
         """
         # Emit subnet-NSG associations
-        for subnet_tf_name, nsg_tf_name, subnet_name, nsg_name in context.nsg_associations:
+        for (
+            subnet_tf_name,
+            nsg_tf_name,
+            subnet_name,
+            nsg_name,
+        ) in context.nsg_associations:
             # Validate that both resources exist
             if not self._validate_association_resources(
                 context, subnet_tf_name, nsg_tf_name, subnet_name, nsg_name, "subnet"
             ):
                 continue
+
+            # Bug #13: Skip cross-resource-group NSG associations
+            # Get resource groups for both resources
+            subnets = context.terraform_config.get("resource", {}).get(
+                "azurerm_subnet", {}
+            )
+            nsgs = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_security_group", {}
+            )
+
+            if subnet_tf_name in subnets and nsg_tf_name in nsgs:
+                subnet_rg = subnets[subnet_tf_name].get("resource_group_name")
+                nsg_rg = nsgs[nsg_tf_name].get("resource_group_name")
+
+                if subnet_rg != nsg_rg:
+                    logger.warning(
+                        f"Skipping cross-RG NSG association: subnet '{subnet_name}' in {subnet_rg} "
+                        f"cannot associate with NSG '{nsg_name}' in {nsg_rg} (different resource groups)"
+                    )
+                    continue
 
             # Build association resource name
             assoc_name = f"{subnet_tf_name}_{nsg_tf_name}"
@@ -90,16 +115,41 @@ class NSGAssociationHandler(ResourceHandler):
             )
 
             logger.debug(
-                f"Emitted subnet-NSG association: {subnet_name} -> {nsg_name}"
+                str(f"Emitted subnet-NSG association: {subnet_name} -> {nsg_name}")
             )
 
         # Emit NIC-NSG associations
-        for nic_tf_name, nsg_tf_name, nic_name, nsg_name in context.nic_nsg_associations:
+        for (
+            nic_tf_name,
+            nsg_tf_name,
+            nic_name,
+            nsg_name,
+        ) in context.nic_nsg_associations:
             # Validate that both resources exist
             if not self._validate_association_resources(
                 context, nic_tf_name, nsg_tf_name, nic_name, nsg_name, "nic"
             ):
                 continue
+
+            # Bug #13: Skip cross-resource-group NSG associations
+            # Get resource groups for both resources
+            nics = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_interface", {}
+            )
+            nsgs = context.terraform_config.get("resource", {}).get(
+                "azurerm_network_security_group", {}
+            )
+
+            if nic_tf_name in nics and nsg_tf_name in nsgs:
+                nic_rg = nics[nic_tf_name].get("resource_group_name")
+                nsg_rg = nsgs[nsg_tf_name].get("resource_group_name")
+
+                if nic_rg != nsg_rg:
+                    logger.warning(
+                        f"Skipping cross-RG NSG association: NIC '{nic_name}' in {nic_rg} "
+                        f"cannot associate with NSG '{nsg_name}' in {nsg_rg} (different resource groups)"
+                    )
+                    continue
 
             # Build association resource name
             assoc_name = f"{nic_tf_name}_{nsg_tf_name}"
@@ -117,9 +167,7 @@ class NSGAssociationHandler(ResourceHandler):
                 config,
             )
 
-            logger.debug(
-                f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}"
-            )
+            logger.debug(str(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}"))
 
         logger.info(
             f"Emitted {len(context.nsg_associations)} subnet-NSG associations and "
@@ -150,7 +198,10 @@ class NSGAssociationHandler(ResourceHandler):
         """
         # Check subnet/NIC exists
         if resource_type == "subnet":
-            if not context.available_subnets or resource_tf_name not in context.available_subnets:
+            if (
+                not context.available_subnets
+                or resource_tf_name not in context.available_subnets
+            ):
                 logger.warning(
                     f"Skipping {resource_type}-NSG association: {resource_type} '{resource_name}' not found"
                 )

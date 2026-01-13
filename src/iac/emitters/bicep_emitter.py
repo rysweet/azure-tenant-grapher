@@ -260,7 +260,9 @@ class BicepEmitter(IaCEmitter):
         if self.identity_mapping and principal_id:
             translated = self._translate_principal_id(principal_id, principal_type)
             if translated:
-                logger.info(f"Bicep: Translated principal {principal_id} -> {translated}")
+                logger.info(
+                    f"Bicep: Translated principal {principal_id} -> {translated}"
+                )
                 principal_id = translated
             else:
                 logger.warning(
@@ -574,7 +576,9 @@ class BicepEmitter(IaCEmitter):
 
         for field in required_fields:
             if field not in template_data:
-                self.logger.error(f"Missing required field in Bicep template: {field}")
+                self.logger.error(
+                    str(f"Missing required field in Bicep template: {field}")
+                )
                 return False
 
         # Validate resources structure
@@ -585,7 +589,7 @@ class BicepEmitter(IaCEmitter):
         # Validate each resource has required fields
         for idx, resource in enumerate(template_data.get("resources", [])):
             if not isinstance(resource, dict):
-                self.logger.error(f"Resource {idx} is not a dictionary")
+                self.logger.error(str(f"Resource {idx} is not a dictionary"))
                 return False
 
             if "type" not in resource or "name" not in resource:

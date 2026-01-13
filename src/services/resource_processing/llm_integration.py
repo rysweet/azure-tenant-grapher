@@ -229,7 +229,7 @@ class LLMIntegration:
                         }
                     )
 
-            logger.info(f"Found {len(tags)} Tags that need LLM descriptions")
+            logger.info(str(f"Found {len(tags)} Tags that need LLM descriptions"))
 
             for tag in tags:
                 try:

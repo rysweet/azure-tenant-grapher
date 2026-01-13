@@ -52,6 +52,7 @@ class ResourceExistenceValidator:
         self,
         subscription_id: str,
         credential: Optional[Any] = None,
+        tenant_id: Optional[str] = None,  # Fix #608: Tenant for cross-tenant auth
         max_retries: int = 3,
         cache_ttl: int = 300,
     ):
@@ -61,11 +62,61 @@ class ResourceExistenceValidator:
         Args:
             subscription_id: Target Azure subscription ID
             credential: Azure credential (defaults to DefaultAzureCredential)
+            tenant_id: Target tenant ID for cross-tenant deployments
             max_retries: Maximum retry attempts for transient errors
             cache_ttl: Cache time-to-live in seconds (default 5 minutes)
         """
         self.subscription_id = subscription_id
-        self.credential = credential or DefaultAzureCredential()
+        self.tenant_id = tenant_id
+
+        # DEBUG: Log what we're initializing with
+        logger.info(
+            f"🔍 ResourceExistenceValidator init: tenant_id={tenant_id}, subscription={subscription_id}"
+        )
+
+        # Fix #608: Use EXPLICIT SP credentials, not DefaultAzureCredential
+        # For cross-tenant, we MUST use ClientSecretCredential with explicit SP
+        if credential:
+            self.credential = credential
+            logger.info(
+                str(f"   Using provided credential: {type(credential).__name__}")
+            )
+        elif tenant_id:
+            # Use explicit SP from environment (same as deployment uses)
+            import os
+
+            from azure.identity import ClientSecretCredential
+
+            client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID") or os.getenv(
+                "AZURE_CLIENT_ID"
+            )
+            client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET") or os.getenv(
+                "AZURE_CLIENT_SECRET"
+            )
+            logger.info(str(f"   Tenant ID provided: {tenant_id}"))
+            logger.info(
+                f"   Client ID from env: {client_id[:20]}..."
+                if client_id
+                else "   Client ID: NOT FOUND"
+            )
+            if client_id and client_secret:
+                self.credential = ClientSecretCredential(
+                    tenant_id=tenant_id,
+                    client_id=client_id,
+                    client_secret=client_secret,
+                )
+                logger.info("   ✅ Created ClientSecretCredential")
+            else:
+                # Fallback
+                logger.warning(
+                    "   ⚠️ No SP credentials in env, using DefaultAzureCredential"
+                )
+                self.credential = DefaultAzureCredential(
+                    additionally_allowed_tenants=["*"]
+                )
+        else:
+            logger.info("   No tenant_id, using DefaultAzureCredential")
+            self.credential = DefaultAzureCredential()
         self.max_retries = max_retries
         self.cache_ttl = cache_ttl
 
@@ -97,7 +148,7 @@ class ResourceExistenceValidator:
         # Check cache first
         cached_result = self._check_cache(resource_id)
         if cached_result is not None:
-            logger.debug(f"Cache hit for resource: {resource_id}")
+            logger.debug(str(f"Cache hit for resource: {resource_id}"))
             return ResourceExistenceResult(
                 resource_id=resource_id, exists=cached_result, cached=True
             )
@@ -139,7 +190,9 @@ class ResourceExistenceValidator:
 
             except Exception as e:
                 # Unexpected errors
-                logger.error(f"Unexpected error checking resource {resource_id}: {e}")
+                logger.error(
+                    str(f"Unexpected error checking resource {resource_id}: {e}")
+                )
                 return ResourceExistenceResult(
                     resource_id=resource_id, exists=False, error=str(e)
                 )
@@ -211,7 +264,10 @@ class ResourceExistenceValidator:
 
                     # Bug #101: Handle provider-specific API versions for ambiguous types
                     # Databricks workspaces need 2024-05-01, OperationalInsights need 2023-09-01
-                    if resource_type == "workspaces" and provider == "Microsoft.Databricks":
+                    if (
+                        resource_type == "workspaces"
+                        and provider == "Microsoft.Databricks"
+                    ):
                         return "2024-05-01"
 
                     # Use known API versions for common types

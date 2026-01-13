@@ -463,7 +463,7 @@ class IDAbstractionService:
                         result["resource_name"] = resource_name
 
         except (ValueError, IndexError) as e:
-            logger.warning(f"Failed to parse resource ID {resource_id}: {e}")
+            logger.warning(str(f"Failed to parse resource ID {resource_id}: {e}"))
 
         return result
 

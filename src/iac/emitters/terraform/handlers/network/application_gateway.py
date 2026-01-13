@@ -160,7 +160,9 @@ class ApplicationGatewayHandler(ResourceHandler):
             )
             return None
 
-        subnet_reference = self._resolve_subnet_reference(subnet_id, resource_name, context)
+        subnet_reference = self._resolve_subnet_reference(
+            subnet_id, resource_name, context
+        )
         if subnet_reference is None:
             logger.warning(
                 f"Skipping Application Gateway '{resource_name}': Cannot resolve subnet reference '{subnet_id}'"
@@ -498,7 +500,10 @@ class ApplicationGatewayHandler(ResourceHandler):
             subnet_name = self.extract_name_from_id(subnet_id, "subnets")
             if subnet_name != "unknown":
                 subnet_name_safe = self.sanitize_name(subnet_name)
-                if context.available_subnets and subnet_name_safe in context.available_subnets:
+                if (
+                    context.available_subnets
+                    and subnet_name_safe in context.available_subnets
+                ):
                     return f"${{azurerm_subnet.{subnet_name_safe}.id}}"
             return None
 
@@ -516,7 +521,10 @@ class ApplicationGatewayHandler(ResourceHandler):
         scoped_subnet_name = f"{vnet_safe}_{subnet_safe}"
 
         # Check if subnet exists in context
-        if not context.available_subnets or scoped_subnet_name not in context.available_subnets:
+        if (
+            not context.available_subnets
+            or scoped_subnet_name not in context.available_subnets
+        ):
             logger.warning(
                 f"Resource '{resource_name}' references non-existent subnet: {scoped_subnet_name}"
             )

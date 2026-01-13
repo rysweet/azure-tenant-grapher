@@ -91,9 +91,9 @@ class DiscoveryFilterService:
             sub_id = sub.get("id")
             if sub_id in self.config.subscription_ids:
                 filtered.append(sub)
-                logger.debug(f"Including subscription: {sub_id}")
+                logger.debug(str(f"Including subscription: {sub_id}"))
             else:
-                logger.debug(f"Excluding subscription: {sub_id}")
+                logger.debug(str(f"Excluding subscription: {sub_id}"))
 
         logger.info(
             f"Filtered subscriptions: {len(filtered)}/{len(subscriptions)} "

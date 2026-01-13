@@ -57,12 +57,14 @@ class ProviderCheckReport:
     def format_report(self) -> str:
         """Format the report as a human-readable string."""
         lines = []
-        lines.append(f"\n{'='*60}")
+        lines.append(f"\n{'=' * 60}")
         lines.append("AZURE RESOURCE PROVIDER CHECK REPORT")
-        lines.append(f"{'='*60}")
+        lines.append(f"{'=' * 60}")
         lines.append(f"Subscription: {self.subscription_id}")
         lines.append(f"Required Providers: {len(self.required_providers)}")
-        lines.append(f"Already Registered: {len([p for p in self.checked_providers.values() if p.state == ProviderState.REGISTERED])}")
+        lines.append(
+            f"Already Registered: {len([p for p in self.checked_providers.values() if p.state == ProviderState.REGISTERED])}"
+        )
         lines.append(f"Newly Registered: {len(self.registered_providers)}")
         lines.append(f"Failed: {len(self.failed_providers)}")
         lines.append(f"Skipped: {len(self.skipped_providers)}")
@@ -89,7 +91,7 @@ class ProviderCheckReport:
             for provider in sorted(self.skipped_providers):
                 lines.append(f"  - {provider}")
 
-        lines.append(f"{'='*60}\n")
+        lines.append(f"{'=' * 60}\n")
         return "\n".join(lines)
 
 
@@ -137,7 +139,7 @@ class ProviderManager:
         "azurerm_storage_share": "Microsoft.Storage",
         # Key Vault
         "azurerm_key_vault": "Microsoft.KeyVault",
-        "azurerm_key_vault_secret": "Microsoft.KeyVault",
+        "azurerm_key_vault_secret": "Microsoft.KeyVault",  # pragma: allowlist secret
         "azurerm_key_vault_key": "Microsoft.KeyVault",
         "azurerm_key_vault_certificate": "Microsoft.KeyVault",
         # SQL
@@ -248,10 +250,12 @@ class ProviderManager:
 
         # Extract from terraform files if path provided
         if terraform_path:
-            required_providers.update(self._extract_providers_from_files(terraform_path))
+            required_providers.update(
+                self._extract_providers_from_files(terraform_path)
+            )
 
-        logger.info(f"Detected {len(required_providers)} required Azure providers")
-        logger.debug(f"Required providers: {sorted(required_providers)}")
+        logger.info(str(f"Detected {len(required_providers)} required Azure providers"))
+        logger.debug(str(f"Required providers: {sorted(required_providers)}"))
 
         return required_providers
 
@@ -288,7 +292,7 @@ class ProviderManager:
         providers: Set[str] = set()
 
         if not terraform_path.exists():
-            logger.warning(f"Terraform path does not exist: {terraform_path}")
+            logger.warning(str(f"Terraform path does not exist: {terraform_path}"))
             return providers
 
         # Pattern to match Terraform resource declarations
@@ -296,7 +300,9 @@ class ProviderManager:
         resource_pattern = re.compile(r'resource\s+"([^"]+)"\s+"[^"]+"')
 
         tf_files = list(terraform_path.glob("*.tf"))
-        logger.debug(f"Scanning {len(tf_files)} Terraform files in {terraform_path}")
+        logger.debug(
+            str(f"Scanning {len(tf_files)} Terraform files in {terraform_path}")
+        )
 
         for tf_file in tf_files:
             try:
@@ -308,7 +314,7 @@ class ProviderManager:
                         providers.add(provider)
 
             except Exception as e:
-                logger.warning(f"Error reading {tf_file}: {e}")
+                logger.warning(str(f"Error reading {tf_file}: {e}"))
 
         return providers
 
@@ -336,7 +342,7 @@ class ProviderManager:
         """
         status_map: Dict[str, ProviderStatus] = {}
 
-        logger.info(f"Checking registration status for {len(providers)} providers")
+        logger.info(str(f"Checking registration status for {len(providers)} providers"))
 
         for namespace in providers:
             try:
@@ -355,10 +361,10 @@ class ProviderManager:
                     registration_state=state_str,
                 )
 
-                logger.debug(f"Provider {namespace}: {state_str}")
+                logger.debug(str(f"Provider {namespace}: {state_str}"))
 
             except AzureError as e:
-                logger.warning(f"Error checking provider {namespace}: {e}")
+                logger.warning(str(f"Error checking provider {namespace}: {e}"))
                 status_map[namespace] = ProviderStatus(
                     namespace=namespace,
                     state=ProviderState.UNKNOWN,
@@ -403,17 +409,17 @@ class ProviderManager:
                     results[provider] = False
                 return results
 
-        logger.info(f"Registering {len(providers)} Azure providers...")
+        logger.info(str(f"Registering {len(providers)} Azure providers..."))
 
         for namespace in providers:
             try:
-                logger.info(f"Registering provider: {namespace}")
+                logger.info(str(f"Registering provider: {namespace}"))
                 self.client.providers.register(namespace)
                 results[namespace] = True
-                logger.info(f"✓ Successfully registered: {namespace}")
+                logger.info(str(f"✓ Successfully registered: {namespace}"))
 
             except AzureError as e:
-                logger.error(f"✗ Failed to register {namespace}: {e}")
+                logger.error(str(f"✗ Failed to register {namespace}: {e}"))
                 results[namespace] = False
 
         return results

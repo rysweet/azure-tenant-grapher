@@ -656,7 +656,7 @@ az login --tenant $AZURE_TENANT_ID
 az account set --subscription $AZURE_SUBSCRIPTION_ID
 
 # Start Neo4j
-docker-compose up -d neo4j
+docker-compose -f docker/docker-compose.yml up -d neo4j
 
 # Verify setup
 python -c "from azure.identity import DefaultAzureCredential; print('Azure auth OK')"

@@ -19,7 +19,7 @@ try:
     from src.config_manager import create_config_from_env, setup_logging
     from src.container_manager import Neo4jContainerManager
 except ImportError as e:
-    print(f"❌ Import error: {e}")
+    print(str(f"❌ Import error: {e}"))
     sys.exit(1)
 
 
@@ -57,7 +57,7 @@ async def example_basic_run() -> None:
             print(f"❌ Basic run failed: {result.get('error', 'Unknown error')}")
 
     except Exception as e:
-        print(f"❌ Error in basic run: {e}")
+        print(str(f"❌ Error in basic run: {e}"))
 
 
 async def example_advanced_configuration() -> None:
@@ -83,7 +83,7 @@ async def example_advanced_configuration() -> None:
         print("✅ Advanced configuration created successfully!")
 
     except Exception as e:
-        print(f"❌ Error in advanced configuration: {e}")
+        print(str(f"❌ Error in advanced configuration: {e}"))
 
 
 async def example_container_management() -> None:
@@ -110,10 +110,10 @@ async def example_container_management() -> None:
         # Get recent logs
         logs = container_manager.get_container_logs(5)
         if logs:
-            print(f"📋 Recent Neo4j logs:\n{logs}")
+            print(str(f"📋 Recent Neo4j logs:\n{logs}"))
 
     except Exception as e:
-        print(f"❌ Error in container management: {e}")
+        print(str(f"❌ Error in container management: {e}"))
 
 
 async def example_progress_tracking() -> None:
@@ -147,7 +147,7 @@ async def example_progress_tracking() -> None:
         logger.info("Progress tracking example completed")
 
     except Exception as e:
-        print(f"❌ Error in progress tracking: {e}")
+        print(str(f"❌ Error in progress tracking: {e}"))
 
 
 async def example_configuration_validation() -> None:
@@ -165,7 +165,7 @@ async def example_configuration_validation() -> None:
             config.validate_all()
             print("✅ Valid configuration passed validation")
         except Exception as e:
-            print(f"❌ Unexpected validation error: {e}")
+            print(str(f"❌ Unexpected validation error: {e}"))
 
         # Test invalid resource limit
         try:
@@ -178,10 +178,12 @@ async def example_configuration_validation() -> None:
         # Test configuration summary
         config = create_config_from_env("test-tenant-id")
         config_dict = config.to_dict()
-        print(f"✅ Configuration serialization successful: {len(config_dict)} keys")
+        print(
+            str(f"✅ Configuration serialization successful: {len(config_dict)} keys")
+        )
 
     except Exception as e:
-        print(f"❌ Error in configuration validation: {e}")
+        print(str(f"❌ Error in configuration validation: {e}"))
 
 
 def main() -> None:

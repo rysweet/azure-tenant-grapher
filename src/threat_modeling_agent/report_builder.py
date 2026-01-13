@@ -72,11 +72,11 @@ class ThreatModelReportBuilder:
                     logger,
                 )
             else:
-                logger.error(f"Unsupported output format: {output_format}")
+                logger.error(str(f"Unsupported output format: {output_format}"))
                 return None
 
         except Exception as e:
-            logger.error(f"Failed to build comprehensive report: {e}")
+            logger.error(str(f"Failed to build comprehensive report: {e}"))
             return None
 
     def _build_markdown_report(
@@ -756,11 +756,11 @@ class ThreatModelReportBuilder:
                 else:
                     f.write("\n".join(content_lines))
 
-            logger.info(f"Threat model report generated at: {report_path}")
+            logger.info(str(f"Threat model report generated at: {report_path}"))
             return report_path
 
         except Exception as e:
-            logger.error(f"Failed to write report file: {e}")
+            logger.error(str(f"Failed to write report file: {e}"))
             return None
 
 

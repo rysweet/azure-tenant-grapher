@@ -48,6 +48,24 @@ class AppServiceHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
+        # App Service names must be globally unique (*.azurewebsites.net)
+        # Add tenant suffix for cross-tenant deployments
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
+            tenant_suffix = context.target_tenant_id[-6:]
+            original_name = config["name"]
+
+            # Truncate to fit (60 - 7 = 53 chars for original + hyphen)
+            if len(original_name) > 53:
+                original_name = original_name[:53]
+
+            config["name"] = f"{original_name}-{tenant_suffix}"
+            logger.info(
+                f"App Service name made globally unique: {resource_name} → {config['name']}"
+            )
+
         # Build site_config block
         site_config = {}
         site_config_props = properties.get("siteConfig", {})

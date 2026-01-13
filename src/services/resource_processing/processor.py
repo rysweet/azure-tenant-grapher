@@ -174,7 +174,7 @@ class ResourceProcessor:
 
             # Generate LLM description if needed
             if reason in ["new_resource", "needs_llm_description", "retry_failed"]:
-                logger.debug(f"Generating LLM description for {resource_name}")
+                logger.debug(str(f"Generating LLM description for {resource_name}"))
                 llm_success, description = await self._process_single_resource_llm(
                     resource
                 )
@@ -190,7 +190,9 @@ class ResourceProcessor:
                     logger.debug(f'Generated description: "{desc_preview}"')
                 else:
                     self.stats.llm_skipped += 1
-                    logger.warning(f"Using fallback description for {resource_name}")
+                    logger.warning(
+                        str(f"Using fallback description for {resource_name}")
+                    )
 
             # Upsert resource to database
             success = self.db_ops.upsert_resource(
@@ -207,7 +209,7 @@ class ResourceProcessor:
             # Enriched relationships (non-containment)
             self._create_enriched_relationships(resource)
 
-            logger.debug(f"Successfully processed {resource_name}")
+            logger.debug(str(f"Successfully processed {resource_name}"))
             self.stats.successful += 1
             return True
 
@@ -298,7 +300,7 @@ class ResourceProcessor:
         task_to_rid: Dict[asyncio.Task[Any], str] = {}
 
         while main_queue or retry_queue or in_progress:
-            logger.debug(f"Top of main loop iteration {loop_counter}")
+            logger.debug(str(f"Top of main loop iteration {loop_counter}"))
             tasks: List[asyncio.Task[Any]] = []
             now = time.time()
 
@@ -311,7 +313,9 @@ class ResourceProcessor:
                 resource["__attempt"] = attempt
                 resource["__id"] = rid
 
-                logger.debug(f"Scheduling worker for resource {rid} (attempt {attempt})")
+                logger.debug(
+                    f"Scheduling worker for resource {rid} (attempt {attempt})"
+                )
 
                 task = asyncio.create_task(
                     worker(resource, resource_index_counter, attempt)
@@ -347,7 +351,9 @@ class ResourceProcessor:
                 if retry_queue:
                     soonest = min(next_time for _, _, next_time in retry_queue)
                     sleep_time = max(0.0, soonest - time.time())
-                    logger.debug(f"No tasks, sleeping for {sleep_time}s for next retry")
+                    logger.debug(
+                        str(f"No tasks, sleeping for {sleep_time}s for next retry")
+                    )
                     await asyncio.sleep(sleep_time)
                 else:
                     await asyncio.sleep(0.1)
@@ -355,9 +361,9 @@ class ResourceProcessor:
                 continue
 
             # Wait for any task to complete
-            logger.debug(f"Awaiting {len(tasks)} tasks")
+            logger.debug(str(f"Awaiting {len(tasks)} tasks"))
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            logger.debug(f"{len(done)} tasks completed")
+            logger.debug(str(f"{len(done)} tasks completed"))
 
             for t in done:
                 rid = task_to_rid.pop(t, None)
@@ -367,7 +373,9 @@ class ResourceProcessor:
                     in_progress.discard(rid)
 
                 result = t.result()
-                logger.debug(f"Task for resource {rid} completed with result={result}")
+                logger.debug(
+                    str(f"Task for resource {rid} completed with result={result}")
+                )
 
                 if result:
                     pass
@@ -396,7 +404,7 @@ class ResourceProcessor:
                         resource_attempts[rid] = attempt + 1
                     else:
                         poison_list.append(resource)
-                        logger.error(f"Poisoned after {attempt} attempts: {rid}")
+                        logger.error(str(f"Poisoned after {attempt} attempts: {rid}"))
                         self.stats.failed += 1
 
             if progress_callback:
@@ -418,7 +426,7 @@ class ResourceProcessor:
                     f"Success: {self.stats.successful} | Failed: {self.stats.failed} | Skipped: {self.stats.skipped}"
                 )
 
-            logger.debug(f"End of main loop iteration {loop_counter}")
+            logger.debug(str(f"End of main loop iteration {loop_counter}"))
             loop_counter += 1
 
         logger.debug("Exited main processing loop")
@@ -504,7 +512,7 @@ class ResourceProcessor:
                 if hasattr(rule, "flush_relationship_buffer"):
                     flushed = rule.flush_relationship_buffer(self.db_ops)
                     total_flushed += flushed
-            logger.info(f"Flushed {total_flushed} buffered relationships")
+            logger.info(str(f"Flushed {total_flushed} buffered relationships"))
         except Exception as e:
             logger.exception(f"Error flushing relationship buffers: {e}")
 
@@ -569,15 +577,15 @@ class ResourceProcessor:
         logger.info("=" * 60)
         logger.info("FINAL PROCESSING SUMMARY")
         logger.info("=" * 60)
-        logger.info(f"Total Resources: {self.stats.total_resources}")
+        logger.info(str(f"Total Resources: {self.stats.total_resources}"))
         logger.info(
             f"Successful: {self.stats.successful} ({self.stats.success_rate:.1f}%)"
         )
-        logger.info(f"Failed: {self.stats.failed}")
-        logger.info(f"Skipped: {self.stats.skipped}")
+        logger.info(str(f"Failed: {self.stats.failed}"))
+        logger.info(str(f"Skipped: {self.stats.skipped}"))
         if self.llm_generator:
-            logger.info(f"LLM Descriptions Generated: {self.stats.llm_generated}")
-            logger.info(f"LLM Descriptions Skipped: {self.stats.llm_skipped}")
+            logger.info(str(f"LLM Descriptions Generated: {self.stats.llm_generated}"))
+            logger.info(str(f"LLM Descriptions Skipped: {self.stats.llm_skipped}"))
         logger.info("=" * 60)
 
     async def generate_resource_group_summaries(self) -> None:

@@ -77,7 +77,7 @@ def test_write_config_atomic(tmp_path):
     write_config(config_path, config)
 
     # Ensure no .tmp file remains
-    temp_path = config_path.with_suffix('.tmp')
+    temp_path = config_path.with_suffix(".tmp")
     assert not temp_path.exists()
 
     # Verify content
@@ -127,7 +127,7 @@ def test_backup_cleanup(temp_config):
     # Create 12 backups (should keep only 10 most recent)
     # Timestamps include microseconds for uniqueness
     backups = []
-    for i in range(12):
+    for _i in range(12):
         backup_path = backup_config(temp_config)
         backups.append(backup_path)
 
@@ -167,4 +167,3 @@ def test_restore_config_not_found(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         restore_config(backup_path, config_path)
-

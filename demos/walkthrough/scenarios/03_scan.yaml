@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture scan interface"
     action: "screenshot"
-    description: "Scan interface ready"
+    screenshot_description: "Scan interface ready"
 
   - description: "Select subscription"
     action: "click"
@@ -39,7 +39,7 @@ steps:
 
   - description: "Capture scan configuration"
     action: "screenshot"
-    description: "Scan options configured"
+    screenshot_description: "Scan options configured"
 
   - description: "Start scan"
     action: "click"
@@ -53,7 +53,7 @@ steps:
 
   - description: "Capture scan in progress"
     action: "screenshot"
-    description: "Scan in progress"
+    screenshot_description: "Scan in progress"
 
   - description: "Monitor scan status"
     action: "wait"
@@ -68,7 +68,7 @@ steps:
 
   - description: "Capture scan results"
     action: "screenshot"
-    description: "Scan completed with results"
+    screenshot_description: "Scan completed with results"
 
   - description: "Expand results summary"
     action: "click"
@@ -83,7 +83,7 @@ steps:
 
   - description: "Capture detailed results"
     action: "screenshot"
-    description: "Detailed scan results"
+    screenshot_description: "Detailed scan results"
 
 assertions:
   - type: "element_visible"

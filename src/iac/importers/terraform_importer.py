@@ -205,11 +205,11 @@ class TerraformImporter:
 
                 resources.append(resource_dict)
 
-            logger.info(f"Detected {len(resources)} existing resources")
+            logger.info(str(f"Detected {len(resources)} existing resources"))
             return resources
 
         except Exception as e:
-            logger.error(f"Failed to detect existing resources: {e}")
+            logger.error(str(f"Failed to detect existing resources: {e}"))
             raise AzureError(f"Resource detection failed: {e}") from e
 
     def filter_resources_by_strategy(
@@ -276,7 +276,7 @@ class TerraformImporter:
             )
             commands.append(command)
 
-        logger.info(f"Generated {len(commands)} import commands")
+        logger.info(str(f"Generated {len(commands)} import commands"))
         return commands
 
     def _load_terraform_config(self) -> Dict[str, Any]:
@@ -299,7 +299,7 @@ class TerraformImporter:
                     # Store mapping: resource_name -> terraform_type.terraform_name
                     config[resource_name] = f"{resource_type}.{resource_name}"
             except Exception as e:
-                logger.warning(f"Failed to parse {tf_file}: {e}")
+                logger.warning(str(f"Failed to parse {tf_file}: {e}"))
 
         return config
 
@@ -363,7 +363,7 @@ class TerraformImporter:
         if self.dry_run:
             logger.info("DRY RUN: Would execute the following import commands:")
             for cmd in commands:
-                logger.info(f"  {cmd.to_command()}")
+                logger.info(str(f"  {cmd.to_command()}"))
             return report
 
         # Check Terraform is installed and initialized
@@ -375,7 +375,7 @@ class TerraformImporter:
         try:
             self._backup_terraform_state()
         except Exception as e:
-            logger.warning(f"Failed to backup Terraform state: {e}")
+            logger.warning(str(f"Failed to backup Terraform state: {e}"))
             report.warnings.append(f"State backup failed: {e}")
 
         # Execute imports sequentially (Terraform doesn't support parallel imports)
@@ -384,7 +384,7 @@ class TerraformImporter:
             report.add_result(result)
 
             if result.success:
-                logger.info(f"Successfully imported {command.terraform_address}")
+                logger.info(str(f"Successfully imported {command.terraform_address}"))
             else:
                 logger.error(
                     f"Failed to import {command.terraform_address}: {result.error_message}"
@@ -429,7 +429,7 @@ class TerraformImporter:
         backup_file = self.terraform_dir / f"terraform.tfstate.backup.{timestamp}"
 
         shutil.copy2(state_file, backup_file)
-        logger.info(f"Backed up Terraform state to {backup_file}")
+        logger.info(str(f"Backed up Terraform state to {backup_file}"))
 
     async def _execute_single_import(self, command: ImportCommand) -> ImportResult:
         """Execute a single Terraform import command.

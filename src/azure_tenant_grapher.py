@@ -66,7 +66,7 @@ class AzureTenantGrapher:
                 self.aad_graph_service = AADGraphService()
                 logger.info("AAD Graph Service initialized for identity import")
             except Exception as e:
-                logger.warning(f"Failed to initialize AAD Graph Service: {e}")
+                logger.warning(str(f"Failed to initialize AAD Graph Service: {e}"))
 
         self.processing_service = ResourceProcessingService(
             self.session_manager,
@@ -149,7 +149,7 @@ class AzureTenantGrapher:
             await self.specification_service.generate_specification(
                 spec_path, domain_name=domain_name
             )
-            logger.info(f"✅ Tenant specification generated: {spec_path}")
+            logger.info(str(f"✅ Tenant specification generated: {spec_path}"))
         except Exception:
             logger.exception("Error generating tenant specification")
 
@@ -186,11 +186,15 @@ class AzureTenantGrapher:
 
             # 2. Discover resources in all subscriptions
             all_resources: List[Dict[str, Any]] = []
+            resource_limit = getattr(self.config.processing, "resource_limit", None)
+
             for subscription in subscriptions:
                 try:
                     resources = (
                         await self.discovery_service.discover_resources_in_subscription(
-                            subscription["id"], filter_config=filter_config
+                            subscription["id"],
+                            filter_config=filter_config,
+                            resource_limit=resource_limit,
                         )
                     )
                     all_resources.extend(resources)
@@ -201,7 +205,7 @@ class AzureTenantGrapher:
                     continue
 
             # 2.1. Pre-run in-memory de-duplication (Phase 1 efficiency improvement)
-            logger.info(f"🗂️  Processing {len(all_resources)} discovered resources")
+            logger.info(str(f"🗂️  Processing {len(all_resources)} discovered resources"))
             id_map: Dict[str, Dict[str, Any]] = {}
             for r in all_resources:
                 rid = r.get("id")
@@ -216,17 +220,18 @@ class AzureTenantGrapher:
                     f"🗂️  De-duplicated list → {len(all_resources)} unique IDs (removed {dedupe_count} duplicates)"
                 )
             else:
-                logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
-
-            # Enforce resource_limit if set in config
-            resource_limit = getattr(self.config.processing, "resource_limit", None)
-            if resource_limit:
                 logger.info(
-                    f"🔢 Applying resource_limit: {resource_limit} (before: {len(all_resources)})"
+                    str(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+                )
+
+            # Apply global resource_limit as defensive check (primary limiting happens per-subscription)
+            if resource_limit and len(all_resources) > resource_limit:
+                logger.info(
+                    f"🔢 Applying global resource_limit (defensive check): {resource_limit} (before: {len(all_resources)})"
                 )
                 all_resources = all_resources[:resource_limit]
                 logger.info(
-                    f"🔢 Resource list truncated to {len(all_resources)} items due to resource_limit"
+                    f"🔢 Global resource list truncated to {len(all_resources)} items"
                 )
             logger.info(
                 f"[DEBUG][BUILD_GRAPH] Completed resource discovery and deduplication. Resource count: {len(all_resources)}"
@@ -401,7 +406,7 @@ class AzureTenantGrapher:
             result = stats.to_dict()
             result["subscriptions"] = len(subscriptions)
             result["success"] = True
-            logger.info(f"[DEBUG][BUILD_GRAPH] Returning build result: {result}")
+            logger.info(str(f"[DEBUG][BUILD_GRAPH] Returning build result: {result}"))
             return result
 
         except Exception as e:

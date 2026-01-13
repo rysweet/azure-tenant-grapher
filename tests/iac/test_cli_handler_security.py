@@ -6,8 +6,7 @@ attacks through input validation and parameterized queries.
 
 import os
 from pathlib import Path
-from typing import Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -18,12 +17,17 @@ from src.iac.cli_handler import generate_iac_command_handler
 def setup_azure_env():
     """Set up minimal Azure environment variables for all tests."""
     os.environ["AZURE_CLIENT_ID"] = "test-client-id"
-    os.environ["AZURE_CLIENT_SECRET"] = "test-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "test-secret"  # pragma: allowlist secret
     os.environ["AZURE_TENANT_ID"] = "test-tenant-id"
     os.environ["AZURE_SUBSCRIPTION_ID"] = "test-subscription-id"
     yield
     # Cleanup
-    for key in ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "AZURE_TENANT_ID", "AZURE_SUBSCRIPTION_ID"]:
+    for key in [
+        "AZURE_CLIENT_ID",
+        "AZURE_CLIENT_SECRET",
+        "AZURE_TENANT_ID",
+        "AZURE_SUBSCRIPTION_ID",
+    ]:
         os.environ.pop(key, None)
 
 
@@ -79,9 +83,7 @@ async def test_node_ids_injection_prevented(
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     mock_engine = MagicMock()
     mock_engine.apply.side_effect = lambda r: r
@@ -163,7 +165,9 @@ async def test_property_name_whitelist_enforcement(
 
 
 @pytest.mark.asyncio
-async def test_pattern_quote_validation(monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock) -> None:
+async def test_pattern_quote_validation(
+    monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
+) -> None:
     """Test that patterns must be properly quoted."""
     # Mock Neo4j driver
     mock_driver = MagicMock()
@@ -199,7 +203,9 @@ async def test_pattern_quote_validation(monkeypatch: pytest.MonkeyPatch, mock_az
 
 
 @pytest.mark.asyncio
-async def test_type_filter_character_validation(monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock) -> None:
+async def test_type_filter_character_validation(
+    monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
+) -> None:
     """Test that type filters reject suspicious characters."""
     # Mock Neo4j driver
     mock_driver = MagicMock()
@@ -235,7 +241,9 @@ async def test_type_filter_character_validation(monkeypatch: pytest.MonkeyPatch,
 
 
 @pytest.mark.asyncio
-async def test_parameterized_property_filter(monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock) -> None:
+async def test_parameterized_property_filter(
+    monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
+) -> None:
     """Test that property filters use parameterized queries."""
     # Mock Neo4j driver
     mock_driver = MagicMock()
@@ -273,9 +281,7 @@ async def test_parameterized_property_filter(monkeypatch: pytest.MonkeyPatch, mo
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     mock_engine = MagicMock()
     mock_engine.apply.side_effect = lambda r: r
@@ -311,7 +317,9 @@ async def test_parameterized_property_filter(monkeypatch: pytest.MonkeyPatch, mo
 
 
 @pytest.mark.asyncio
-async def test_regex_filter_parameterization(monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock) -> None:
+async def test_regex_filter_parameterization(
+    monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
+) -> None:
     """Test that regex filters are properly parameterized."""
     # Mock Neo4j driver
     mock_driver = MagicMock()
@@ -349,9 +357,7 @@ async def test_regex_filter_parameterization(monkeypatch: pytest.MonkeyPatch, mo
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     mock_engine = MagicMock()
     mock_engine.apply.side_effect = lambda r: r
@@ -388,7 +394,9 @@ async def test_regex_filter_parameterization(monkeypatch: pytest.MonkeyPatch, mo
 
 
 @pytest.mark.asyncio
-async def test_empty_node_id_rejected(monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock) -> None:
+async def test_empty_node_id_rejected(
+    monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
+) -> None:
     """Test that empty or whitespace-only node IDs are rejected."""
     # Mock Neo4j driver
     mock_driver = MagicMock()
@@ -464,9 +472,7 @@ async def test_multiple_filters_all_parameterized(
         def emit(self, *args, **kwargs):
             return mock_emitter_instance.emit(*args, **kwargs)
 
-    monkeypatch.setattr(
-        "src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass
-    )
+    monkeypatch.setattr("src.iac.cli_handler.get_emitter", lambda fmt: MockEmitterClass)
 
     mock_engine = MagicMock()
     mock_engine.apply.side_effect = lambda r: r
@@ -509,16 +515,16 @@ async def test_property_name_injection_blocked(
     monkeypatch: pytest.MonkeyPatch, mock_azure_credential: MagicMock
 ) -> None:
     """Test that property name injection attacks are blocked - CRITICAL SECURITY TEST.
-    
+
     This test validates the fix for the property name injection vulnerability where
     an attacker could inject malicious Cypher code through the property name itself.
-    
+
     Attack vector example:
         resourceFilters="location'; MATCH (n) DETACH DELETE n //='value'"
-    
+
     This would have executed:
         r.location'; MATCH (n) DETACH DELETE n // = $param
-    
+
     Which would:
         1. Close the property access (r.location')
         2. Execute destructive command (MATCH (n) DETACH DELETE n)

@@ -21,7 +21,7 @@ class GroupType(str, Enum):
 class AuthenticationMethod(str, Enum):
     """Authentication methods for users."""
 
-    PASSWORD = "Password"
+    PASSWORD = "Password"  # pragma: allowlist secret
     MFA_SMS = "MfaSms"
     MFA_VOICE = "MfaVoice"
     MFA_APP = "MfaApp"

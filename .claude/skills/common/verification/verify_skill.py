@@ -17,10 +17,9 @@ Examples:
 import importlib
 import subprocess
 import sys
-from typing import List, Tuple
 
 
-def check_python_package(package: str) -> Tuple[bool, str]:
+def check_python_package(package: str) -> tuple[bool, str]:
     """Check if Python package is installed.
 
     Args:
@@ -37,7 +36,7 @@ def check_python_package(package: str) -> Tuple[bool, str]:
         return False, "Not installed"
 
 
-def check_system_command(command: str) -> Tuple[bool, str]:
+def check_system_command(command: str) -> tuple[bool, str]:
     """Check if system command is available.
 
     Args:
@@ -70,9 +69,9 @@ def check_system_command(command: str) -> Tuple[bool, str]:
 
 def verify_skill(
     skill_name: str,
-    python_packages_required: List[str],
-    python_packages_optional: List[str],
-    system_commands_optional: List[str],
+    python_packages_required: list[str],
+    python_packages_optional: list[str],
+    system_commands_optional: list[str],
 ) -> bool:
     """Verify all dependencies for a skill.
 
@@ -123,15 +122,21 @@ def verify_skill(
     else:
         print(f"✗ {skill_name} skill is missing required dependencies")
         print("\nInstall missing packages:")
-        missing = [pkg for pkg in python_packages_required if not check_python_package(pkg)[0]]
+        missing = [
+            pkg for pkg in python_packages_required if not check_python_package(pkg)[0]
+        ]
         if missing:
             print(f"  pip install {' '.join(missing)}")
 
     # Optional features summary
-    optional_available = sum(1 for pkg in python_packages_optional if check_python_package(pkg)[0])
+    optional_available = sum(
+        1 for pkg in python_packages_optional if check_python_package(pkg)[0]
+    )
     optional_total = len(python_packages_optional)
 
-    system_available = sum(1 for cmd in system_commands_optional if check_system_command(cmd)[0])
+    system_available = sum(
+        1 for cmd in system_commands_optional if check_system_command(cmd)[0]
+    )
     system_total = len(system_commands_optional)
 
     if optional_total > 0 or system_total > 0:

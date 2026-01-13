@@ -37,7 +37,7 @@ from src.config_manager import create_neo4j_config_from_env
 from src.models.layer_metadata import (
     LayerType,
 )
-from src.services.layer_management_service import (
+from src.services.layer import (
     LayerAlreadyExistsError,
     LayerLockedError,
     LayerManagementService,
@@ -142,7 +142,7 @@ async def layer_list_command_handler(
         try:
             layer_type_enum = LayerType(layer_type.lower())
         except ValueError:
-            console.print(f"[red]Invalid layer type: {layer_type}[/red]")
+            console.print(str(f"[red]Invalid layer type: {layer_type}[/red]"))
             console.print(f"Valid types: {', '.join([t.value for t in LayerType])}")
             sys.exit(1)
 
@@ -205,12 +205,12 @@ async def layer_list_command_handler(
                 )
 
             console.print(table)
-            console.print(f"\nTotal layers: {len(layers)}")
+            console.print(str(f"\nTotal layers: {len(layers)}"))
             if active_layer_id:
-                console.print(f"Active layer: [cyan]{active_layer_id}[/cyan]")
+                console.print(str(f"Active layer: [cyan]{active_layer_id}[/cyan]"))
 
     except Exception as e:
-        console.print(f"[red]Error listing layers: {e}[/red]")
+        console.print(str(f"[red]Error listing layers: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(1)
@@ -241,7 +241,7 @@ async def layer_show_command_handler(
         layer = await service.get_layer(layer_id)
 
         if not layer:
-            console.print(f"[red]Layer not found: {layer_id}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
 
             # Show available layers
             available = get_available_layers(service)
@@ -253,7 +253,7 @@ async def layer_show_command_handler(
                 if suggestions:
                     console.print("\nDid you mean one of these?")
                     for suggestion in suggestions:
-                        console.print(f"  - {suggestion}")
+                        console.print(str(f"  - {suggestion}"))
 
             sys.exit(1)
 
@@ -341,7 +341,7 @@ async def layer_show_command_handler(
             console.print(panel)
 
     except Exception as e:
-        console.print(f"[red]Error showing layer: {e}[/red]")
+        console.print(str(f"[red]Error showing layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -405,7 +405,7 @@ Subsequent operations will use this layer."""
                     console.print(panel)
 
             except LayerNotFoundError:
-                console.print(f"[red]Layer not found: {layer_id}[/red]")
+                console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
 
                 # Show available layers
                 available = get_available_layers(service)
@@ -440,7 +440,7 @@ All operations will use this layer by default."""
                 console.print(panel)
 
     except Exception as e:
-        console.print(f"[red]Error managing active layer: {e}[/red]")
+        console.print(str(f"[red]Error managing active layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -486,17 +486,17 @@ async def layer_create_command_handler(
     try:
         layer_type_enum = LayerType(layer_type.lower())
     except ValueError:
-        console.print(f"[red]Invalid layer type: {layer_type}[/red]")
+        console.print(str(f"[red]Invalid layer type: {layer_type}[/red]"))
         console.print(f"Valid types: {', '.join([t.value for t in LayerType])}")
         sys.exit(2)
 
     # Confirm creation
     if not yes:
-        console.print(f"Creating new layer: [cyan]{layer_id}[/cyan]")
-        console.print(f"  Name:   {name}")
-        console.print(f"  Type:   {layer_type}")
+        console.print(str(f"Creating new layer: [cyan]{layer_id}[/cyan]"))
+        console.print(str(f"  Name:   {name}"))
+        console.print(str(f"  Type:   {layer_type}"))
         if parent_layer:
-            console.print(f"  Parent: {parent_layer}")
+            console.print(str(f"  Parent: {parent_layer}"))
         console.print()
 
         if not click.confirm("Confirm creation?", default=True):
@@ -522,25 +522,25 @@ async def layer_create_command_handler(
 
         console.print("[green]✓[/green] Layer created successfully")
         console.print()
-        console.print(f"[bold]Layer ID:[/bold] {layer.layer_id}")
+        console.print(str(f"[bold]Layer ID:[/bold] {layer.layer_id}"))
         console.print("[bold]Node count:[/bold] 0 (empty layer)")
         console.print()
         console.print(
             "Use 'atg layer copy' to populate this layer, or run scale operations"
         )
-        console.print(f"with --target-layer {layer_id} to write directly to it.")
+        console.print(str(f"with --target-layer {layer_id} to write directly to it."))
 
     except LayerAlreadyExistsError:
-        console.print(f"[red]Layer already exists: {layer_id}[/red]")
+        console.print(str(f"[red]Layer already exists: {layer_id}[/red]"))
         console.print("\nUse a different layer ID or delete the existing layer first.")
         sys.exit(1)
 
     except ValueError as e:
-        console.print(f"[red]Validation error: {e}[/red]")
+        console.print(str(f"[red]Validation error: {e}[/red]"))
         sys.exit(2)
 
     except Exception as e:
-        console.print(f"[red]Error creating layer: {e}[/red]")
+        console.print(str(f"[red]Error creating layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -574,12 +574,12 @@ async def layer_copy_command_handler(
         # Validate source exists
         source_layer = await service.get_layer(source)
         if not source_layer:
-            console.print(f"[red]Source layer not found: {source}[/red]")
+            console.print(str(f"[red]Source layer not found: {source}[/red]"))
             sys.exit(1)
 
         # Check target doesn't exist
         if await service.get_layer(target):
-            console.print(f"[red]Target layer already exists: {target}[/red]")
+            console.print(str(f"[red]Target layer already exists: {target}[/red]"))
             sys.exit(2)
 
         # Set defaults
@@ -597,7 +597,7 @@ async def layer_copy_command_handler(
             console.print(
                 f"  Source:  {source} ({format_number(source_layer.node_count)} nodes)"
             )
-            console.print(f"  Target:  {target}")
+            console.print(str(f"  Target:  {target}"))
             console.print()
 
             if not click.confirm("Confirm copy operation?", default=True):
@@ -635,15 +635,15 @@ async def layer_copy_command_handler(
         console.print()
         console.print("[green]✓[/green] Layer copied successfully")
         console.print()
-        console.print(f"[bold]Layer:[/bold] {target}")
-        console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
+        console.print(str(f"[bold]Layer:[/bold] {target}"))
+        console.print(str(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}"))
         console.print(
             f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
         )
-        console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
+        console.print(str(f"[bold]Time:[/bold] {duration:.1f} seconds"))
 
     except Exception as e:
-        console.print(f"[red]Error copying layer: {e}[/red]")
+        console.print(str(f"[red]Error copying layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(4)
@@ -674,12 +674,12 @@ async def layer_delete_command_handler(
         # Check layer exists
         layer = await service.get_layer(layer_id)
         if not layer:
-            console.print(f"[red]Layer not found: {layer_id}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
             sys.exit(1)
 
         # Check protections
         if (layer.is_active or layer.is_baseline) and not force:
-            console.print(f"[red]Cannot delete layer: {layer_id}[/red]")
+            console.print(str(f"[red]Cannot delete layer: {layer_id}[/red]"))
             console.print()
 
             if layer.is_active:
@@ -698,7 +698,7 @@ async def layer_delete_command_handler(
                 console.print()
 
             console.print("  2. Delete with --force flag:")
-            console.print(f"     atg layer delete {layer_id} --force")
+            console.print(str(f"     atg layer delete {layer_id} --force"))
             console.print()
             console.print(
                 "[yellow]⚠️  Force deletion of baseline layer is not recommended.[/yellow]"
@@ -707,18 +707,20 @@ async def layer_delete_command_handler(
 
         # Archive before deletion if requested
         if archive:
-            console.print(f"Archiving layer to: {archive}")
+            console.print(str(f"Archiving layer to: {archive}"))
             await service.archive_layer(layer_id, archive)
             console.print("[green]✓[/green] Layer archived")
             console.print()
 
         # Confirm deletion
         if not yes:
-            console.print(f"Deleting layer: [red]{layer_id}[/red]")
+            console.print(str(f"Deleting layer: [red]{layer_id}[/red]"))
             console.print()
-            console.print(f"  Name:         {layer.name}")
-            console.print(f"  Nodes:        {format_number(layer.node_count)}")
-            console.print(f"  Relationships: {format_number(layer.relationship_count)}")
+            console.print(str(f"  Name:         {layer.name}"))
+            console.print(str(f"  Nodes:        {format_number(layer.node_count)}"))
+            console.print(
+                str(f"  Relationships: {format_number(layer.relationship_count)}")
+            )
             console.print(
                 f"  Status:       {'Active' if layer.is_active else 'Inactive'}"
             )
@@ -751,15 +753,15 @@ async def layer_delete_command_handler(
         console.print()
         console.print("[green]✓[/green] Layer deleted successfully")
         console.print()
-        console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
+        console.print(str(f"[bold]Time:[/bold] {duration:.1f} seconds"))
 
     except LayerLockedError:
-        console.print(f"[red]Layer is locked: {layer_id}[/red]")
+        console.print(str(f"[red]Layer is locked: {layer_id}[/red]"))
         console.print("\nUnlock the layer before deletion.")
         sys.exit(2)
 
     except Exception as e:
-        console.print(f"[red]Error deleting layer: {e}[/red]")
+        console.print(str(f"[red]Error deleting layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(4)
@@ -794,10 +796,10 @@ async def layer_diff_command_handler(
         layer_b_meta = await service.get_layer(layer_b)
 
         if not layer_a_meta:
-            console.print(f"[red]Layer not found: {layer_a}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_a}[/red]"))
             sys.exit(1)
         if not layer_b_meta:
-            console.print(f"[red]Layer not found: {layer_b}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_b}[/red]"))
             sys.exit(1)
 
         # Perform comparison
@@ -850,7 +852,7 @@ async def layer_diff_command_handler(
             if output:
                 with open(output, "w") as f:
                     json.dump(output_data, f, indent=2)
-                console.print(f"[green]✓[/green] Comparison saved to: {output}")
+                console.print(str(f"[green]✓[/green] Comparison saved to: {output}"))
             else:
                 print_json(output_data)
 
@@ -858,13 +860,17 @@ async def layer_diff_command_handler(
             console.print("[bold]Layer Comparison[/bold]")
             console.print("=" * 60)
             console.print()
-            console.print(f"[bold]Baseline:[/bold]    {layer_a} ({layer_a_meta.name})")
-            console.print(f"[bold]Comparison:[/bold]  {layer_b} ({layer_b_meta.name})")
+            console.print(
+                str(f"[bold]Baseline:[/bold]    {layer_a} ({layer_a_meta.name})")
+            )
+            console.print(
+                str(f"[bold]Comparison:[/bold]  {layer_b} ({layer_b_meta.name})")
+            )
             console.print()
 
             console.print("[bold]Node Differences[/bold]")
             console.print("─" * 60)
-            console.print(f"  Added:      {format_number(diff.nodes_added)} nodes")
+            console.print(str(f"  Added:      {format_number(diff.nodes_added)} nodes"))
 
             if diff.nodes_removed > 0:
                 reduction_pct = (
@@ -878,8 +884,12 @@ async def layer_diff_command_handler(
                     f"  Removed:    {format_number(diff.nodes_removed)} nodes"
                 )
 
-            console.print(f"  Modified:   {format_number(diff.nodes_modified)} nodes")
-            console.print(f"  Unchanged:  {format_number(diff.nodes_unchanged)} nodes")
+            console.print(
+                str(f"  Modified:   {format_number(diff.nodes_modified)} nodes")
+            )
+            console.print(
+                str(f"  Unchanged:  {format_number(diff.nodes_unchanged)} nodes")
+            )
             console.print()
 
             console.print("[bold]Relationship Differences[/bold]")
@@ -900,8 +910,10 @@ async def layer_diff_command_handler(
 
             console.print("[bold]Summary[/bold]")
             console.print("─" * 60)
-            console.print(f"  Total changes:     {format_number(diff.total_changes)}")
-            console.print(f"  Change percentage: {diff.change_percentage:.1f}%")
+            console.print(
+                str(f"  Total changes:     {format_number(diff.total_changes)}")
+            )
+            console.print(str(f"  Change percentage: {diff.change_percentage:.1f}%"))
 
             if diff.change_percentage > 50:
                 impact = "Major topology change"
@@ -913,7 +925,7 @@ async def layer_diff_command_handler(
                 impact = "Minor changes"
                 color = "green"
 
-            console.print(f"  Impact:            [{color}]{impact}[/{color}]")
+            console.print(str(f"  Impact:            [{color}]{impact}[/{color}]"))
             console.print()
 
             if diff.change_percentage > 50:
@@ -932,18 +944,22 @@ async def layer_diff_command_handler(
                         f"\n[bold]Removed Nodes ({len(diff.removed_node_ids)}):[/bold]"
                     )
                     for node_id in diff.removed_node_ids[:10]:  # Show first 10
-                        console.print(f"  - {node_id}")
+                        console.print(str(f"  - {node_id}"))
                     if len(diff.removed_node_ids) > 10:
-                        console.print(f"  ... ({len(diff.removed_node_ids) - 10} more)")
+                        console.print(
+                            str(f"  ... ({len(diff.removed_node_ids) - 10} more)")
+                        )
 
                 if diff.added_node_ids:
                     console.print(
                         f"\n[bold]Added Nodes ({len(diff.added_node_ids)}):[/bold]"
                     )
                     for node_id in diff.added_node_ids[:10]:  # Show first 10
-                        console.print(f"  + {node_id}")
+                        console.print(str(f"  + {node_id}"))
                     if len(diff.added_node_ids) > 10:
-                        console.print(f"  ... ({len(diff.added_node_ids) - 10} more)")
+                        console.print(
+                            str(f"  ... ({len(diff.added_node_ids) - 10} more)")
+                        )
 
             if output:
                 # Save text output to file
@@ -960,10 +976,10 @@ async def layer_diff_command_handler(
                     f.write(f"Total changes: {diff.total_changes}\n")
                     f.write(f"Change percentage: {diff.change_percentage:.1f}%\n")
 
-                console.print(f"\n[green]✓[/green] Comparison saved to: {output}")
+                console.print(str(f"\n[green]✓[/green] Comparison saved to: {output}"))
 
     except Exception as e:
-        console.print(f"[red]Error comparing layers: {e}[/red]")
+        console.print(str(f"[red]Error comparing layers: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -1027,12 +1043,14 @@ async def layer_validate_command_handler(
             if output:
                 with open(output, "w") as f:
                     json.dump(output_data, f, indent=2)
-                console.print(f"[green]✓[/green] Validation report saved to: {output}")
+                console.print(
+                    str(f"[green]✓[/green] Validation report saved to: {output}")
+                )
             else:
                 print_json(output_data)
 
         else:  # text format
-            console.print(f"[bold]Validating layer: {layer_id}[/bold]")
+            console.print(str(f"[bold]Validating layer: {layer_id}[/bold]"))
             console.print("=" * 60)
             console.print()
             console.print("Running integrity checks...")
@@ -1056,9 +1074,11 @@ async def layer_validate_command_handler(
             console.print(
                 f"Status:        {'[green]✓ Valid[/green]' if report.is_valid else '[red]✗ Invalid[/red]'}"
             )
-            console.print(f"Checks passed: {report.checks_passed} / {total_checks}")
-            console.print(f"Checks failed: {report.checks_failed}")
-            console.print(f"Warnings:      {report.checks_warned}")
+            console.print(
+                str(f"Checks passed: {report.checks_passed} / {total_checks}")
+            )
+            console.print(str(f"Checks failed: {report.checks_failed}"))
+            console.print(str(f"Warnings:      {report.checks_warned}"))
 
             # Show issues
             if report.issues:
@@ -1069,7 +1089,7 @@ async def layer_validate_command_handler(
                     console.print(f"[red]ERROR:[/red] {issue['message']}")
                     if issue.get("details"):
                         for key, value in issue["details"].items():
-                            console.print(f"  {key}: {value}")
+                            console.print(str(f"  {key}: {value}"))
 
             # Show warnings
             if report.warnings:
@@ -1086,7 +1106,7 @@ async def layer_validate_command_handler(
                 console.print("  1. Run with --fix to auto-fix fixable issues")
                 console.print("  2. Manually review and correct remaining issues")
                 console.print()
-                console.print(f"Use: atg layer validate {layer_id} --fix")
+                console.print(str(f"Use: atg layer validate {layer_id} --fix"))
             else:
                 console.print()
                 console.print("This layer is healthy and ready for use.")
@@ -1115,11 +1135,11 @@ async def layer_validate_command_handler(
         sys.exit(0 if report.is_valid else 2)
 
     except LayerNotFoundError:
-        console.print(f"[red]Layer not found: {layer_id}[/red]")
+        console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
         sys.exit(1)
 
     except Exception as e:
-        console.print(f"[red]Error validating layer: {e}[/red]")
+        console.print(str(f"[red]Error validating layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(3)
@@ -1148,7 +1168,7 @@ async def layer_refresh_stats_command_handler(
         # Get current stats
         old_layer = await service.get_layer(layer_id)
         if not old_layer:
-            console.print(f"[red]Layer not found: {layer_id}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
             sys.exit(1)
 
         old_node_count = old_layer.node_count
@@ -1224,7 +1244,7 @@ async def layer_refresh_stats_command_handler(
             )
 
     except Exception as e:
-        console.print(f"[red]Error refreshing stats: {e}[/red]")
+        console.print(str(f"[red]Error refreshing stats: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -1256,18 +1276,18 @@ async def layer_archive_command_handler(
         # Validate layer exists
         layer = await service.get_layer(layer_id)
         if not layer:
-            console.print(f"[red]Layer not found: {layer_id}[/red]")
+            console.print(str(f"[red]Layer not found: {layer_id}[/red]"))
             sys.exit(1)
 
         # Confirm archiving
         if not yes:
-            console.print(f"[bold]Archiving layer: {layer_id}[/bold]")
+            console.print(str(f"[bold]Archiving layer: {layer_id}[/bold]"))
             console.print("=" * 60)
             console.print()
-            console.print(f"[bold]Output:[/bold] {output_path}")
+            console.print(str(f"[bold]Output:[/bold] {output_path}"))
             console.print()
-            console.print(f"[bold]Layer:[/bold] {layer_id} ({layer.name})")
-            console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
+            console.print(str(f"[bold]Layer:[/bold] {layer_id} ({layer.name})"))
+            console.print(str(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}"))
             console.print(
                 f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
             )
@@ -1308,15 +1328,15 @@ async def layer_archive_command_handler(
         console.print()
         console.print("[green]✓[/green] Layer archived successfully")
         console.print()
-        console.print(f"[bold]Archive:[/bold] {archive_path}")
-        console.print(f"[bold]Size:[/bold] {size_mb:.1f} MB")
-        console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
+        console.print(str(f"[bold]Archive:[/bold] {archive_path}"))
+        console.print(str(f"[bold]Size:[/bold] {size_mb:.1f} MB"))
+        console.print(str(f"[bold]Time:[/bold] {duration:.1f} seconds"))
         console.print()
         console.print("You can now safely delete this layer if needed:")
-        console.print(f"  atg layer delete {layer_id}")
+        console.print(str(f"  atg layer delete {layer_id}"))
 
     except Exception as e:
-        console.print(f"[red]Error archiving layer: {e}[/red]")
+        console.print(str(f"[red]Error archiving layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(2)
@@ -1346,7 +1366,7 @@ async def layer_restore_command_handler(
     try:
         # Verify archive exists
         if not Path(archive_path).exists():
-            console.print(f"[red]Archive not found: {archive_path}[/red]")
+            console.print(str(f"[red]Archive not found: {archive_path}[/red]"))
             sys.exit(1)
 
         # Load archive to preview
@@ -1359,7 +1379,7 @@ async def layer_restore_command_handler(
 
         # Check if target layer already exists
         if await service.get_layer(target_layer_id):
-            console.print(f"[red]Layer already exists: {target_layer_id}[/red]")
+            console.print(str(f"[red]Layer already exists: {target_layer_id}[/red]"))
             console.print(
                 "\nUse --layer-id to specify a different ID, or delete the existing layer first."
             )
@@ -1370,7 +1390,7 @@ async def layer_restore_command_handler(
             console.print("[bold]Restoring layer from archive[/bold]")
             console.print("=" * 60)
             console.print()
-            console.print(f"[bold]Archive:[/bold] {archive_path}")
+            console.print(str(f"[bold]Archive:[/bold] {archive_path}"))
             console.print(f"[bold]Layer:[/bold] {target_layer_id} ({metadata['name']})")
             console.print(
                 f"[bold]Nodes:[/bold] {format_number(metadata['node_count'])}"
@@ -1416,12 +1436,12 @@ async def layer_restore_command_handler(
         console.print()
         console.print("[green]✓[/green] Layer restored successfully")
         console.print()
-        console.print(f"[bold]Layer:[/bold] {layer.layer_id}")
-        console.print(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}")
+        console.print(str(f"[bold]Layer:[/bold] {layer.layer_id}"))
+        console.print(str(f"[bold]Nodes:[/bold] {format_number(layer.node_count)}"))
         console.print(
             f"[bold]Relationships:[/bold] {format_number(layer.relationship_count)}"
         )
-        console.print(f"[bold]Time:[/bold] {duration:.1f} seconds")
+        console.print(str(f"[bold]Time:[/bold] {duration:.1f} seconds"))
         console.print()
 
         if make_active:
@@ -1429,10 +1449,10 @@ async def layer_restore_command_handler(
                 f"Layer is now active. Use: atg generate-iac --layer {layer.layer_id}"
             )
         else:
-            console.print(f"To activate: atg layer active {layer.layer_id}")
+            console.print(str(f"To activate: atg layer active {layer.layer_id}"))
 
     except Exception as e:
-        console.print(f"[red]Error restoring layer: {e}[/red]")
+        console.print(str(f"[red]Error restoring layer: {e}[/red]"))
         if debug:
             console.print_exception()
         sys.exit(5)

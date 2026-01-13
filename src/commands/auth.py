@@ -38,7 +38,7 @@ def validate_app_name(name: str) -> str:
         raise ValueError("App name cannot be empty")
 
     # Allow alphanumeric, spaces, hyphens, underscores
-    if not re.match(r'^[a-zA-Z0-9\s\-_]+$', name):
+    if not re.match(r"^[a-zA-Z0-9\s\-_]+$", name):
         raise ValueError(
             f"Invalid app name format: {name}. "
             "Use only letters, numbers, spaces, hyphens, underscores."
@@ -69,7 +69,7 @@ def validate_redirect_uri(uri: str) -> str:
     uri_stripped = uri.strip()
 
     # Basic URI validation (http/https)
-    if not re.match(r'^https?://', uri_stripped):
+    if not re.match(r"^https?://", uri_stripped):
         raise ValueError(
             f"Invalid redirect URI format: {uri_stripped}. "
             "Must start with http:// or https://"
@@ -97,7 +97,9 @@ def validate_tenant_id(tenant_id: str) -> str:
         raise ValueError("Tenant ID cannot be empty")
 
     # Tenant ID should be a valid GUID
-    guid_pattern = r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    guid_pattern = (
+        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    )
     if not re.match(guid_pattern, tenant_id.strip()):
         raise ValueError(
             f"Invalid tenant ID format: {tenant_id}. "
@@ -126,7 +128,9 @@ def validate_app_id(app_id: str) -> str:
         raise ValueError("Application ID cannot be empty")
 
     # App ID should be a valid GUID
-    guid_pattern = r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    guid_pattern = (
+        r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    )
     if not re.match(guid_pattern, app_id.strip()):
         raise ValueError(
             f"Invalid application ID format: {app_id}. "
@@ -244,7 +248,9 @@ def app_registration(
     )
 
 
-def _show_manual_instructions(name: str, redirect_uri: str, create_secret: bool) -> None:
+def _show_manual_instructions(
+    name: str, redirect_uri: str, create_secret: bool
+) -> None:
     """Show manual app registration instructions."""
     click.echo("Azure CLI not detected. Showing manual instructions...")
     click.echo("\nManual App Registration Steps:")
@@ -354,9 +360,7 @@ def _check_user_permissions() -> None:
                         "   You can create apps but may need a Global Admin to grant consent"
                     )
             else:
-                click.echo(
-                    "   Limited permissions detected - some operations may fail"
-                )
+                click.echo("   Limited permissions detected - some operations may fail")
 
         # Check if user can create applications
         can_create_apps = subprocess.run(
@@ -461,9 +465,7 @@ def _create_app_registration(
         )
 
         if result.returncode != 0:
-            click.echo(
-                f"Failed to create app registration: {result.stderr}", err=True
-            )
+            click.echo(f"Failed to create app registration: {result.stderr}", err=True)
             return
 
         app_info = json.loads(result.stdout)
@@ -490,9 +492,7 @@ def _create_app_registration(
         )
 
         if result.returncode != 0:
-            click.echo(
-                f"Failed to create service principal: {result.stderr}", err=True
-            )
+            click.echo(f"Failed to create service principal: {result.stderr}", err=True)
         else:
             click.echo("Service principal created")
 
@@ -523,9 +523,7 @@ def _create_app_registration(
             )
 
             if result.returncode != 0:
-                click.echo(
-                    f"Failed to create client secret: {result.stderr}", err=True
-                )
+                click.echo(f"Failed to create client secret: {result.stderr}", err=True)
             else:
                 client_secret = result.stdout.strip()
                 click.echo("Client secret created successfully!")
@@ -533,7 +531,15 @@ def _create_app_registration(
         # Try to grant admin consent automatically
         click.echo("\nAttempting to grant admin consent...")
         consent_result = subprocess.run(
-            ["az", "ad", "app", "permission", "admin-consent", "--id", validated_app_id],
+            [
+                "az",
+                "ad",
+                "app",
+                "permission",
+                "admin-consent",
+                "--id",
+                validated_app_id,
+            ],
             capture_output=True,
             text=True,
         )
@@ -559,7 +565,12 @@ def _create_app_registration(
 
         # Display configuration
         _display_configuration(
-            tenant_id, validated_app_id, client_secret, consent_granted, name, save_to_env
+            tenant_id,
+            validated_app_id,
+            client_secret,
+            consent_granted,
+            name,
+            save_to_env,
         )
 
     finally:
@@ -568,7 +579,9 @@ def _create_app_registration(
             os.remove(manifest_path)
 
 
-def _save_to_env_file(tenant_id: str, app_id: str, client_secret: Optional[str]) -> None:
+def _save_to_env_file(
+    tenant_id: str, app_id: str, client_secret: Optional[str]
+) -> None:
     """Save configuration to .env file."""
     env_file_path = os.path.join(os.getcwd(), ".env")
     click.echo(f"\nSaving configuration to {env_file_path}...")

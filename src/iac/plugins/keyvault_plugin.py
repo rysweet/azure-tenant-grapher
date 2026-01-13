@@ -78,7 +78,9 @@ class KeyVaultPlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for KeyVaultPlugin: {resource}")
 
         vault_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for Key Vault: {vault_name}")
+        self.logger.info(
+            str(f"Discovering data plane items for Key Vault: {vault_name}")
+        )
 
         items: List[DataPlaneItem] = []
 
@@ -148,7 +150,9 @@ class KeyVaultPlugin(DataPlanePlugin):
                         )
                     )
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover secrets in {vault_name}: {e}")
+                self.logger.warning(
+                    str(f"Failed to discover secrets in {vault_name}: {e}")
+                )
 
             # Discover keys
             try:
@@ -157,7 +161,9 @@ class KeyVaultPlugin(DataPlanePlugin):
 
                 for key_props in keys:
                     if not key_props.enabled:
-                        self.logger.debug(f"Skipping disabled key: {key_props.name}")
+                        self.logger.debug(
+                            str(f"Skipping disabled key: {key_props.name}")
+                        )
                         continue
 
                     items.append(
@@ -186,7 +192,9 @@ class KeyVaultPlugin(DataPlanePlugin):
                         )
                     )
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover keys in {vault_name}: {e}")
+                self.logger.warning(
+                    str(f"Failed to discover keys in {vault_name}: {e}")
+                )
 
             # Discover certificates
             try:
@@ -240,7 +248,7 @@ class KeyVaultPlugin(DataPlanePlugin):
                 f"Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering Key Vault items: {e}")
+            self.logger.error(str(f"Unexpected error discovering Key Vault items: {e}"))
 
         self.logger.info(
             f"Discovered {len(items)} data plane items in Key Vault '{vault_name}'"
@@ -629,7 +637,7 @@ class KeyVaultPlugin(DataPlanePlugin):
             # Discover items from source
             items = self.discover(source_resource)
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_discovery(
                     source_resource["id"], len(items)
                 )
@@ -648,7 +656,7 @@ class KeyVaultPlugin(DataPlanePlugin):
             # Add timing information
             result.duration_seconds = time.time() - start_time
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_completion(result)
 
             return result

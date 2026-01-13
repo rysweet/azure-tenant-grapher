@@ -1,0 +1,430 @@
+# ATG CLIENT-SERVER ARCHITECTURE DIAGRAM
+# Version 1.0 | 2025-12-09
+
+================================================================================
+                          AZURE TENANT GRAPHER
+                      CLIENT-SERVER ARCHITECTURE
+================================================================================
+
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│                         USER ENVIRONMENT                                 │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────┐    │
+│  │                                                                 │    │
+│  │                    ATG CLI (Client)                            │    │
+│  │                                                                 │    │
+│  │  Commands: scan, generate-iac, create-tenant                  │    │
+│  │                                                                 │    │
+│  │  ┌─────────────────────────────────────────────────────────┐  │    │
+│  │  │                                                          │  │    │
+│  │  │         Execution Mode Dispatcher                       │  │    │
+│  │  │                                                          │  │    │
+│  │  │  ┌──────────────┐           ┌──────────────┐           │  │    │
+│  │  │  │  Local Mode  │           │ Remote Mode  │           │  │    │
+│  │  │  │  (default)   │           │  (opt-in)    │           │  │    │
+│  │  │  └──────┬───────┘           └──────┬───────┘           │  │    │
+│  │  │         │                           │                    │  │    │
+│  │  └─────────┼───────────────────────────┼────────────────────┘  │    │
+│  │            │                           │                        │    │
+│  └────────────┼───────────────────────────┼────────────────────────┘    │
+│               │                           │                             │
+│               │ Direct execution          │ REST API (HTTPS)            │
+│               │ (backward compat)         │ + API Key Auth              │
+│               │                           │                             │
+└───────────────┼───────────────────────────┼─────────────────────────────┘
+                │                           │
+                │                           │
+                ▼                           ▼
+┌───────────────┴───────────────────────────┴─────────────────────────────┐
+│                                                                          │
+│                    AZURE CONTAINER ENVIRONMENT                           │
+│              (DefenderATEVET17 Tenant - Infrastructure)                 │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────┐    │
+│  │                                                                 │    │
+│  │              Container Group (ACI)                             │    │
+│  │                                                                 │    │
+│  │  ┌──────────────────────────────────────────────────────────┐ │    │
+│  │  │                                                           │ │    │
+│  │  │          ATG Service (FastAPI)                           │ │    │
+│  │  │          • 4 CPU, 64GB RAM                               │ │    │
+│  │  │          • Port 8000 (HTTPS)                             │ │    │
+│  │  │                                                           │ │    │
+│  │  │  ┌────────────────────────────────────────────────────┐ │ │    │
+│  │  │  │                                                     │ │ │    │
+│  │  │  │           REST API Endpoints                       │ │ │    │
+│  │  │  │                                                     │ │ │    │
+│  │  │  │  POST /api/v1/scan                                │ │ │    │
+│  │  │  │  GET  /api/v1/jobs/{id}                           │ │ │    │
+│  │  │  │  GET  /api/v1/jobs/{id}/result                    │ │ │    │
+│  │  │  │  GET  /api/v1/jobs/{id}/artifacts                 │ │ │    │
+│  │  │  │  POST /api/v1/generate-iac                        │ │ │    │
+│  │  │  │  POST /api/v1/create-tenant                       │ │ │    │
+│  │  │  │                                                     │ │ │    │
+│  │  │  └──────────────────┬──────────────────────────────────┘ │ │    │
+│  │  │                     │                                    │ │    │
+│  │  └─────────────────────┼────────────────────────────────────┘ │    │
+│  │                        │                                      │    │
+│  │                        ▼                                      │    │
+│  │  ┌──────────────────────────────────────────────────────────┐ │    │
+│  │  │                                                           │ │    │
+│  │  │          Job Queue (Redis)                               │ │    │
+│  │  │          • 1 CPU, 4GB RAM                                │ │    │
+│  │  │          • Port 6379                                     │ │    │
+│  │  │                                                           │ │    │
+│  │  │  Queue: [job1, job2, job3, ...]                         │ │    │
+│  │  │  Status: {job_id: status, progress, error, ...}         │ │    │
+│  │  │                                                           │ │    │
+│  │  └──────────────────┬────────────────────────────────────────┘ │    │
+│  │                     │                                         │    │
+│  │                     ▼                                         │    │
+│  │  ┌──────────────────────────────────────────────────────────┐ │    │
+│  │  │                                                           │ │    │
+│  │  │          Background Workers (3-5 concurrent)             │ │    │
+│  │  │                                                           │ │    │
+│  │  │  Worker 1: [RUNNING] job_abc123                         │ │    │
+│  │  │  Worker 2: [RUNNING] job_def456                         │ │    │
+│  │  │  Worker 3: [IDLE]                                       │ │    │
+│  │  │                                                           │ │    │
+│  │  └──────────────────┬────────────────────────────────────────┘ │    │
+│  │                     │                                         │    │
+│  │                     ▼                                         │    │
+│  │  ┌──────────────────────────────────────────────────────────┐ │    │
+│  │  │                                                           │ │    │
+│  │  │          Job Executor                                    │ │    │
+│  │  │                                                           │ │    │
+│  │  │  Wraps existing ATG services (unchanged):                │ │    │
+│  │  │  • AzureTenantGrapher                                    │ │    │
+│  │  │  • AzureDiscoveryService                                 │ │    │
+│  │  │  • ResourceProcessingService                             │ │    │
+│  │  │  • TenantSpecificationService                            │ │    │
+│  │  │  • IaC Emitters (Terraform/Bicep/ARM)                   │ │    │
+│  │  │  • Tenant Creator                                        │ │    │
+│  │  │                                                           │ │    │
+│  │  └──────────────────┬────────────────────────────────────────┘ │    │
+│  │                     │                                         │    │
+│  └─────────────────────┼─────────────────────────────────────────┘    │
+│                        │                                              │
+│         ┌──────────────┴────────────────┐                            │
+│         │                                │                            │
+│         ▼                                ▼                            │
+│  ┌──────────────────┐          ┌────────────────────────┐            │
+│  │                  │          │                        │            │
+│  │  Neo4j Database  │          │   Azure SDK            │            │
+│  │  • 2 CPU, 32GB   │          │   • Discovery API      │            │
+│  │  • Port 7687     │          │   • Resource Manager   │            │
+│  │                  │          │   • Graph API          │            │
+│  │  Graph Store:    │          │                        │            │
+│  │  • Resources     │          │  Managed Identity:     │            │
+│  │  • Relationships │          │  • Reader on target    │            │
+│  │  • Metadata      │          │                        │            │
+│  │                  │          └────────────────────────┘            │
+│  └──────────────────┘                     │                          │
+│         │                                 │                          │
+│         │                                 ▼                          │
+│         │                    ┌────────────────────────┐              │
+│         │                    │                        │              │
+│         │                    │   Target Tenant        │              │
+│         │                    │   • DefenderATEVET17   │              │
+│         │                    │     (dev)              │              │
+│         │                    │   • Target Tenant A    │              │
+│         │                    │     (integration)      │              │
+│         │                    │   • Target Tenant B    │              │
+│         │                    │     (production)       │              │
+│         │                    │                        │              │
+│         │                    └────────────────────────┘              │
+│         │                                                            │
+│         ▼                                                            │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                                                               │  │
+│  │          Supporting Infrastructure                           │  │
+│  │                                                               │  │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │  │
+│  │  │                 │  │                 │  │              │ │  │
+│  │  │  Storage Acct   │  │   Key Vault     │  │  Monitoring  │ │  │
+│  │  │                 │  │                 │  │              │ │  │
+│  │  │  • Neo4j data   │  │  • API keys     │  │  • Metrics   │ │  │
+│  │  │  • Artifacts    │  │  • Neo4j pwd    │  │  • Logs      │ │  │
+│  │  │  • Backups      │  │  • SP secrets   │  │  • Alerts    │ │  │
+│  │  │                 │  │                 │  │              │ │  │
+│  │  └─────────────────┘  └─────────────────┘  └──────────────┘ │  │
+│  │                                                               │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                        DATA FLOW: REMOTE SCAN OPERATION
+================================================================================
+
+ User                CLI               Service         Queue           Worker
+  │                  │                   │               │               │
+  │  1. atg scan    │                   │               │               │
+  │  --remote        │                   │               │               │
+  ├─────────────────►│                   │               │               │
+  │                  │                   │               │               │
+  │                  │  2. POST /scan    │               │               │
+  │                  ├──────────────────►│               │               │
+  │                  │                   │               │               │
+  │                  │                   │  3. Enqueue   │               │
+  │                  │                   ├──────────────►│               │
+  │                  │                   │               │               │
+  │                  │  4. job_id        │               │               │
+  │                  │◄──────────────────┤               │               │
+  │                  │                   │               │               │
+  │  5. Polling...   │                   │               │               │
+  │                  │                   │               │  6. Dequeue   │
+  │                  │                   │               ├──────────────►│
+  │                  │                   │               │               │
+  │                  │  7. GET /jobs/id  │               │               │
+  │                  ├──────────────────►│               │  8. Execute   │
+  │                  │                   │               │  (ATG Core)   │
+  │                  │  8. status:       │               │     │         │
+  │                  │  "running" 45%    │               │     │ Azure   │
+  │                  │◄──────────────────┤               │     │ APIs    │
+  │                  │                   │               │     │         │
+  │  9. Progress...  │                   │               │     │ Neo4j   │
+  │◄─────────────────┤                   │               │     │ Write   │
+  │                  │                   │               │     │         │
+  │                  │  10. GET /jobs/id │               │     ▼         │
+  │                  ├──────────────────►│               │               │
+  │                  │                   │               │  11. Complete │
+  │                  │  11. status:      │◄──────────────┼───────────────┤
+  │                  │  "completed"      │               │               │
+  │                  │◄──────────────────┤               │               │
+  │                  │                   │               │               │
+  │                  │  12. GET /result  │               │               │
+  │                  ├──────────────────►│               │               │
+  │                  │                   │               │               │
+  │                  │  13. {resources:  │               │               │
+  │                  │  902, success: T} │               │               │
+  │                  │◄──────────────────┤               │               │
+  │                  │                   │               │               │
+  │  14. ✅ Success  │                   │               │               │
+  │◄─────────────────┤                   │               │               │
+  │                  │                   │               │               │
+
+
+================================================================================
+                         THREE-ENVIRONMENT ARCHITECTURE
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         GITHUB REPOSITORY                                │
+│                                                                          │
+│  main branch ───────► Dev Environment ───────► DefenderATEVET17         │
+│                       • Auto-deploy on push                             │
+│                       • Container: atg-service-dev                      │
+│                       • Neo4j DB: atg-dev-db                            │
+│                                                                          │
+│  integration branch ─► Integration Env ──────► Target Tenant A          │
+│                       • Auto-deploy on push                             │
+│                       • Container: atg-service-int                      │
+│                       • Neo4j DB: atg-int-db                            │
+│                                                                          │
+│  prod branch ────────► Production Env ───────► Target Tenant B          │
+│                       • Auto-deploy on push                             │
+│                       • Container: atg-service-prod                     │
+│                       • Neo4j DB: atg-prod-db                           │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                           MODULE BOUNDARIES (BRICKS)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  src/client/ (CLIENT MODULE - NEW)                                │
+│  ─────────────────────────────────────                             │
+│  Responsibility: CLI communication with remote service              │
+│  Public API:                                                        │
+│    • RemoteClient(service_url, api_key)                           │
+│    • ExecutionDispatcher(config)                                   │
+│  Dependencies: httpx, typer, existing CLI                          │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  src/server/ (SERVER MODULE - NEW)                                │
+│  ─────────────────────────────────────                             │
+│  Responsibility: REST API for ATG operations                        │
+│  Public API:                                                        │
+│    • FastAPI app with endpoints                                    │
+│    • /api/v1/scan, /jobs/{id}, /artifacts                         │
+│  Dependencies: fastapi, redis, existing ATG services               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  src/server/jobs/ (JOB QUEUE MODULE - NEW)                        │
+│  ──────────────────────────────────────────                        │
+│  Responsibility: Async job processing                              │
+│  Public API:                                                        │
+│    • JobQueue(redis_url)                                          │
+│    • JobExecutor(queue, atg_config)                               │
+│    • BackgroundWorker(queue, executor)                            │
+│  Dependencies: redis, asyncio                                      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  src/ (EXISTING ATG CORE - UNCHANGED)                             │
+│  ────────────────────────────────────────                          │
+│  Modules used by job executor:                                     │
+│    • AzureTenantGrapher                                           │
+│    • AzureDiscoveryService                                        │
+│    • ResourceProcessingService                                     │
+│    • IaC emitters (Terraform/Bicep/ARM)                          │
+│    • TenantCreator                                                │
+│  ⚠️  ZERO CHANGES to these services                                │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                    IMPLEMENTATION PHASES & TIMELINE
+================================================================================
+
+Week 1-2: PHASE 1 - FOUNDATION
+┌────────────────────────────────────────────────────────────┐
+│ • Create src/client/ module                                │
+│ • Create src/server/ module skeleton                       │
+│ • Implement API authentication                             │
+│ • Add remote mode config                                   │
+│ • Write unit tests                                         │
+│                                                            │
+│ ✅ Success: Client connects to server with auth           │
+└────────────────────────────────────────────────────────────┘
+
+Week 2-3: PHASE 2 - JOB QUEUE
+┌────────────────────────────────────────────────────────────┐
+│ • Set up Redis container                                   │
+│ • Implement JobQueue class                                 │
+│ • Create JobExecutor wrapping ATG services                 │
+│ • Implement job status polling                             │
+│ • Add integration tests                                    │
+│                                                            │
+│ ✅ Success: Jobs execute async with status tracking       │
+└────────────────────────────────────────────────────────────┘
+
+Week 3-4: PHASE 3 - CLI INTEGRATION
+┌────────────────────────────────────────────────────────────┐
+│ • Add --remote flag to CLI commands                        │
+│ • Implement ExecutionDispatcher routing                    │
+│ • Add progress display for remote jobs                     │
+│ • Test all CLI commands in remote mode                     │
+│ • Update documentation                                     │
+│                                                            │
+│ ✅ Success: End-to-end scan via remote service            │
+└────────────────────────────────────────────────────────────┘
+
+Week 4-5: PHASE 4 - DEPLOYMENT
+┌────────────────────────────────────────────────────────────┐
+│ • Create Dockerfile                                         │
+│ • Write Bicep templates                                    │
+│ • Set up GitHub Actions workflows                          │
+│ • Configure 3 environments (dev/int/prod)                  │
+│ • Test deployment                                          │
+│                                                            │
+│ ✅ Success: Service deployed to all environments          │
+└────────────────────────────────────────────────────────────┘
+
+Week 5-6: PHASE 5 - ROLLOUT
+┌────────────────────────────────────────────────────────────┐
+│ • Write user documentation                                  │
+│ • Create operational runbook                               │
+│ • Train team on remote mode                                │
+│ • Gradual rollout (10% → 50% → 100%)                      │
+│ • Monitor and optimize                                     │
+│                                                            │
+│ ✅ Success: 50%+ users on remote mode, <5% error rate    │
+└────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                            KEY DESIGN BENEFITS
+================================================================================
+
+✅ BACKWARD COMPATIBLE
+   • Local mode unchanged (default behavior)
+   • Remote mode opt-in via --remote flag
+   • Zero breaking changes to existing CLI
+
+✅ MODULAR ARCHITECTURE (Brick Philosophy)
+   • Client, server, queue are independent modules
+   • Clear public APIs ("studs")
+   • Each module can be rebuilt independently
+
+✅ ZERO CHANGES TO ATG CORE
+   • Existing services used as-is
+   • Job executor wraps services without modification
+   • IaC emitters, tenant creator unchanged
+
+✅ ASYNC JOB PROCESSING
+   • Long-running scans don't block HTTP requests
+   • Status polling with progress updates
+   • Multiple concurrent jobs supported
+
+✅ MULTI-ENVIRONMENT DEPLOYMENT
+   • Separate dev/integration/production
+   • Each targets different Azure tenant
+   • Isolated databases and configurations
+
+✅ COMPREHENSIVE SECURITY
+   • API key authentication
+   • Azure Managed Identity for resource access
+   • Secrets in Key Vault
+   • Audit logging
+
+✅ OPERATIONAL EXCELLENCE
+   • Auto-deploy via GitHub Actions
+   • Health checks and auto-restart
+   • Daily backups and disaster recovery
+   • Monitoring and alerting
+
+✅ REGENERATABLE
+   • Complete IaC (Bicep templates)
+   • Documented APIs and contracts
+   • Each module specification is complete
+
+
+================================================================================
+                          NEXT STEPS: BEGIN PHASE 1
+================================================================================
+
+1. Create module directory structure:
+   └─ src/
+      ├─ client/
+      │  ├─ __init__.py
+      │  ├─ remote_client.py
+      │  ├─ execution_dispatcher.py
+      │  ├─ config.py
+      │  └─ tests/
+      └─ server/
+         ├─ __init__.py
+         ├─ main.py
+         ├─ api/
+         │  ├─ routes.py
+         │  ├─ models.py
+         │  └─ auth.py
+         └─ tests/
+
+2. Implement RemoteClient with authentication
+
+3. Create FastAPI app skeleton
+
+4. Add configuration management
+
+5. Write unit tests
+
+Target completion: Week 2
+
+================================================================================

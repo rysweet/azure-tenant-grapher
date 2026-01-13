@@ -198,7 +198,9 @@ class TestDependencyValidatorIntegration:
                     emitter.emit(graph, out_dir)
 
                     # Verify success message was logged
-                    info_calls = [call for call in mock_logger.info.call_args_list if call]
+                    info_calls = [
+                        call for call in mock_logger.info.call_args_list if call
+                    ]
                     info_messages = [str(call[0][0]) for call in info_calls]
 
                     # Check for validation success message

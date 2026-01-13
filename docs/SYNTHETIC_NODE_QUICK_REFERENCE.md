@@ -208,7 +208,7 @@ atg generate-iac          # Infrastructure as Code
 
 - [Full Documentation](SYNTHETIC_NODE_VISUALIZATION.md)
 - [Scale Operations Guide](SCALE_CONFIG_REFERENCE.md)
-- [API Documentation](../spa/backend/README.md)
+- API Documentation (see ../spa/backend/src/ for backend source code)
 
 ---
 

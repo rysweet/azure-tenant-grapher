@@ -82,9 +82,9 @@ class ConfigManager:
             raise ConfigurationError(
                 f"Invalid YAML in configuration file: {e}\n"
                 f"Please check the syntax of {config_path}"
-            )
+            ) from e
         except Exception as e:
-            raise ConfigurationError(f"Failed to load configuration: {e}")
+            raise ConfigurationError(f"Failed to load configuration: {e}") from e
 
     def get(self, key: str, default: Any = None) -> Any:
         """

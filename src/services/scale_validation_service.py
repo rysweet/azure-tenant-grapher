@@ -395,7 +395,7 @@ class ScaleValidationService(BaseScaleService):
                             "message": f"Fix failed: {fix_error!s}",
                         }
                     )
-                    self.logger.error(f"Failed to fix issue {issue}: {fix_error}")
+                    self.logger.error(str(f"Failed to fix issue {issue}: {fix_error}"))
                 except Exception as unexpected_error:
                     fixes_failed += 1
                     fix_details.append(
@@ -405,7 +405,9 @@ class ScaleValidationService(BaseScaleService):
                             "message": f"Unexpected error during fix: {unexpected_error!s}",
                         }
                     )
-                    self.logger.exception(f"Unexpected error fixing issue {issue}: {unexpected_error}")
+                    self.logger.exception(
+                        f"Unexpected error fixing issue {issue}: {unexpected_error}"
+                    )
 
             duration = (datetime.now() - start_time).total_seconds()
 
@@ -509,7 +511,9 @@ class ScaleValidationService(BaseScaleService):
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check Original contamination: {e}")
         except Exception as e:
-            self.logger.exception(f"Unexpected error checking Original contamination: {e}")
+            self.logger.exception(
+                f"Unexpected error checking Original contamination: {e}"
+            )
             raise
 
         return issues
@@ -558,7 +562,9 @@ class ScaleValidationService(BaseScaleService):
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check SCAN_SOURCE_NODE links: {e}")
         except Exception as e:
-            self.logger.exception(f"Unexpected error checking SCAN_SOURCE_NODE links: {e}")
+            self.logger.exception(
+                f"Unexpected error checking SCAN_SOURCE_NODE links: {e}"
+            )
             raise
 
         return issues
@@ -614,7 +620,7 @@ class ScaleValidationService(BaseScaleService):
                     )
 
             if issues:
-                self.logger.warning(f"Found {len(issues)} marker issues")
+                self.logger.warning(str(f"Found {len(issues)} marker issues"))
 
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check synthetic markers: {e}")
@@ -661,7 +667,9 @@ class ScaleValidationService(BaseScaleService):
                     )
 
             if issues:
-                self.logger.info(f"Found {len(issues)} orphaned nodes (low severity)")
+                self.logger.info(
+                    str(f"Found {len(issues)} orphaned nodes (low severity)")
+                )
 
         except (Neo4jError, ValueError) as e:
             self.logger.exception(f"Failed to check graph structure: {e}")
@@ -695,9 +703,11 @@ class ScaleValidationService(BaseScaleService):
                         f"Original contamination detected but not auto-fixed: {issue}"
                     )
             except (Neo4jError, ValueError, RuntimeError) as e:
-                self.logger.error(f"Auto-fix failed for issue {issue}: {e}")
+                self.logger.error(str(f"Auto-fix failed for issue {issue}: {e}"))
             except Exception as e:
-                self.logger.exception(f"Unexpected error during auto-fix for issue {issue}: {e}")
+                self.logger.exception(
+                    f"Unexpected error during auto-fix for issue {issue}: {e}"
+                )
                 # Don't raise here - continue with other fixes
 
         return fixes_applied
@@ -735,7 +745,7 @@ class ScaleValidationService(BaseScaleService):
         with self.session_manager.session() as session:
             session.run(query, params)
 
-        self.logger.info(f"Fixed missing markers for resource {resource_id}")
+        self.logger.info(str(f"Fixed missing markers for resource {resource_id}"))
 
     async def _fix_invalid_scan_link(self, issue: Dict[str, Any]) -> None:
         """Fix invalid SCAN_SOURCE_NODE relationship by removing it."""
@@ -750,7 +760,9 @@ class ScaleValidationService(BaseScaleService):
         with self.session_manager.session() as session:
             session.run(query, {"resource_id": resource_id})
 
-        self.logger.info(f"Removed invalid SCAN_SOURCE_NODE link from {resource_id}")
+        self.logger.info(
+            str(f"Removed invalid SCAN_SOURCE_NODE link from {resource_id}")
+        )
 
     async def _fix_original_contamination(self, issue: Dict[str, Any]) -> None:
         """Fix Original contamination by removing synthetic resource from Original layer."""

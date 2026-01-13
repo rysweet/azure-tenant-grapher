@@ -7,8 +7,6 @@ and the FidelityCalculator class.
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from src.fidelity_calculator import FidelityCalculator
 from src.utils.secure_credentials import Neo4jCredentials, get_neo4j_credentials
 
@@ -19,11 +17,13 @@ class TestFidelityCalculatorIntegration:
     def test_fidelity_calculator_with_credentials_object(self):
         """FidelityCalculator should accept Neo4jCredentials object."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="testpass"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="testpass",  # pragma: allowlist secret
         )
 
         with patch("src.fidelity_calculator.GraphDatabase.driver") as mock_driver:
-            calculator = FidelityCalculator(credentials=creds)
+            FidelityCalculator(credentials=creds)
             mock_driver.assert_called_once_with(
                 "bolt://localhost:7687", auth=("neo4j", "testpass")
             )
@@ -35,12 +35,12 @@ class TestFidelityCalculatorIntegration:
             {
                 "NEO4J_URI": "bolt://localhost:7687",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },
             clear=True,
         ):
             with patch("src.fidelity_calculator.GraphDatabase.driver") as mock_driver:
-                calculator = FidelityCalculator()
+                FidelityCalculator()
                 mock_driver.assert_called_once_with(
                     "bolt://localhost:7687", auth=("neo4j", "testpass")
                 )
@@ -49,10 +49,10 @@ class TestFidelityCalculatorIntegration:
         """FidelityCalculator should warn when using legacy parameters."""
         with patch("src.fidelity_calculator.GraphDatabase.driver"):
             with patch("src.fidelity_calculator.logger.warning") as mock_warning:
-                calculator = FidelityCalculator(
+                FidelityCalculator(
                     neo4j_uri="bolt://localhost:7687",
                     neo4j_user="neo4j",
-                    neo4j_password="testpass",
+                    neo4j_password="testpass",  # pragma: allowlist secret
                 )
                 # Should log deprecation warning
                 mock_warning.assert_called()
@@ -64,7 +64,9 @@ class TestFidelityCalculatorIntegration:
     def test_fidelity_calculator_repr_no_credential_exposure(self):
         """FidelityCalculator __repr__ should not expose credentials."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="supersecret123",  # pragma: allowlist secret
         )
 
         with patch("src.fidelity_calculator.GraphDatabase.driver"):
@@ -77,12 +79,12 @@ class TestFidelityCalculatorIntegration:
             assert "bolt://localhost:7687" in repr_str
 
     @patch("src.fidelity_calculator.GraphDatabase.driver")
-    def test_fidelity_calculator_credentials_not_stored_as_plaintext(
-        self, mock_driver
-    ):
+    def test_fidelity_calculator_credentials_not_stored_as_plaintext(self, mock_driver):
         """FidelityCalculator should not store credentials as plain attributes."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="supersecret123",  # pragma: allowlist secret
         )
 
         calculator = FidelityCalculator(credentials=creds)
@@ -112,7 +114,9 @@ class TestMCPServerIntegration:
 
         # Mock credentials
         mock_creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="testpass"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="testpass",  # pragma: allowlist secret
         )
         mock_get_creds.return_value = mock_creds
 
@@ -139,7 +143,9 @@ class TestCLICommandsIntegration:
         # This test verifies the integration point exists
         # We mock the credentials retrieval
         mock_creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="testpass"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="testpass",  # pragma: allowlist secret
         )
         mock_get_creds.return_value = mock_creds
 
@@ -148,7 +154,7 @@ class TestCLICommandsIntegration:
         creds = mock_get_creds()
         assert creds.uri == "bolt://localhost:7687"
         assert creds.username == "neo4j"
-        assert creds.password == "testpass"
+        assert creds.password == "testpass"  # pragma: allowlist secret
 
 
 class TestEndToEndCredentialFlow:
@@ -180,13 +186,15 @@ class TestEndToEndCredentialFlow:
 
         # Set Key Vault URL
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"},
+            clear=True,
         ):
             # Get credentials
             creds = get_neo4j_credentials()
 
             # Create FidelityCalculator with those credentials
-            calculator = FidelityCalculator(credentials=creds)
+            FidelityCalculator(credentials=creds)
 
             # Verify driver was called with Key Vault credentials
             mock_driver.assert_called_once_with(
@@ -200,7 +208,7 @@ class TestEndToEndCredentialFlow:
             {
                 "NEO4J_URI": "bolt://localhost:7687",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },
             clear=True,
         ):
@@ -209,7 +217,7 @@ class TestEndToEndCredentialFlow:
                 creds = get_neo4j_credentials(warn_on_env_fallback=False)
 
                 # Create FidelityCalculator
-                calculator = FidelityCalculator(credentials=creds)
+                FidelityCalculator(credentials=creds)
 
                 # Verify driver was called with env credentials
                 mock_driver.assert_called_once_with(
@@ -230,13 +238,17 @@ class TestCredentialSecurityProperties:
                 # Error message should not contain any actual passwords
                 # (This is a negative test - we can't test what ISN'T there easily,
                 # but we verify the error message is about missing credentials)
-                assert "not found" in error_msg.lower() or "required" in error_msg.lower()
+                assert (
+                    "not found" in error_msg.lower() or "required" in error_msg.lower()
+                )
 
     @patch("src.fidelity_calculator.GraphDatabase.driver")
     def test_credentials_not_in_object_dict(self, mock_driver):
         """Credentials should not be in __dict__ as plain strings."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="supersecret123",  # pragma: allowlist secret
         )
 
         calculator = FidelityCalculator(credentials=creds)

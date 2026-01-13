@@ -23,7 +23,6 @@ from src.services.security_preserving_sampler import (
     SecurityPreservingSampler,
 )
 
-
 # ==============================================================================
 # Unit Tests - SecurityPatternRegistry
 # ==============================================================================
@@ -74,7 +73,9 @@ class TestSecurityPatternRegistry:
 
         high_patterns = registry.filter_by_criticality("HIGH")
 
-        assert len(high_patterns) == 3  # public_to_sensitive, privilege_escalation, missing_controls
+        assert (
+            len(high_patterns) == 3
+        )  # public_to_sensitive, privilege_escalation, missing_controls
         assert all(p.criticality == "HIGH" for p in high_patterns)
 
     def test_filter_by_criticality_medium(self):
@@ -165,7 +166,16 @@ class TestSecurityPreservingSampler:
             ["node4", "node5", "node6"],  # Missing node5
             ["node7", "node8", "node9"],  # Complete
         ]
-        sample_ids = {"node1", "node2", "node3", "node4", "node6", "node7", "node8", "node9"}
+        sample_ids = {
+            "node1",
+            "node2",
+            "node3",
+            "node4",
+            "node6",
+            "node7",
+            "node8",
+            "node9",
+        }
 
         preserved, coverage = sampler._calculate_coverage(pattern_instances, sample_ids)
 
@@ -434,7 +444,9 @@ class TestSecuritySamplerErrorHandling:
         base_sample = {"node1", "node2"}
 
         result = sampler.augment_sample(
-            tenant_id="test-tenant", base_sample_ids=base_sample, patterns_to_preserve=[]
+            tenant_id="test-tenant",
+            base_sample_ids=base_sample,
+            patterns_to_preserve=[],
         )
 
         # Should return base sample unchanged

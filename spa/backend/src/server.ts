@@ -62,10 +62,11 @@ const io = new SocketIOServer(httpServer, {
 });
 
 // Initialize WebSocket server for logger
-const wss = new WebSocketServer({ server: httpServer, path: '/logs' });
+//const wss = new WebSocketServer({ server: httpServer, path: '/logs' });
 
 // Initialize the logger with WebSocket transport
-initializeLogger(wss);
+//initializeLogger(wss);
+initializeLogger(null as any);
 
 // Create component logger
 const logger = createLogger('server');
@@ -241,7 +242,7 @@ app.post('/api/execute', (req, res) => {
   const uvPath = process.env.UV_PATH || 'uv';
   const projectRoot = path.resolve(__dirname, '../../..');
 
-  const fullArgs = ['run', 'atg', command, ...args];
+const fullArgs = ['run', 'atg', command, ...args];
 
   // Check for filter arguments for better logging
   const hasSubscriptionFilter = args.some((arg: string) => arg.startsWith('--filter-by-subscriptions'));
@@ -276,6 +277,8 @@ app.post('/api/execute', (req, res) => {
       ...process.env,
       // Ensure the project root is in PYTHONPATH for proper module resolution
       PYTHONPATH: projectRoot,
+      // Disable Python output buffering for real-time streaming
+      PYTHONUNBUFFERED: '1',
     },
   });
 
@@ -609,14 +612,31 @@ app.get('/api/mcp/status', async (req, res) => {
       try {
         process.kill(pid, 0); // Signal 0 checks if process exists
         res.json({ running: true, pid });
+        return;
       } catch {
         // Process not running, clean up pidfile
         fs.unlinkSync(mcpPidfile);
-        res.json({ running: false });
       }
-    } else {
-      res.json({ running: false });
     }
+
+    // Final fallback: Check for STDIO mode MCP server process
+    try {
+      const { exec } = require('child_process');
+      const util = require('util');
+      const execPromise = util.promisify(exec);
+
+      const { stdout } = await execPromise('ps aux | grep -E "mcp-neo4j-cypher|uvx.*mcp" | grep -v grep');
+      if (stdout && stdout.trim().length > 0) {
+        logger.debug('Found MCP server running in STDIO mode');
+        res.json({ running: true, status: 'stdio', mode: 'stdio' });
+        return;
+      }
+    } catch (e) {
+      // No process found
+      logger.debug('No MCP process found');
+    }
+
+    res.json({ running: false });
   } catch (error) {
     logger.error('Failed to check MCP status', { error });
     res.json({ running: false, error: error instanceof Error ? error.message : 'Unknown error' });

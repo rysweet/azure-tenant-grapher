@@ -98,7 +98,7 @@ class VirtualNetworkHandler(ResourceHandler):
 
         if vnet_id and safe_name:
             context.vnet_id_to_terraform_name[vnet_id] = safe_name
-            logger.debug(f"Bug #31: Mapped VNet ID {vnet_id} -> {safe_name}")
+            logger.debug(str(f"Bug #31: Mapped VNet ID {vnet_id} -> {safe_name}"))
 
         if vnet_original_id and vnet_original_id != vnet_id and safe_name:
             context.vnet_id_to_terraform_name[vnet_original_id] = safe_name

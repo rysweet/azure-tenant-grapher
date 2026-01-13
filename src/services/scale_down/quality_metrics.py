@@ -57,7 +57,7 @@ class QualityMetrics:
         ...     connected_components_original=1,
         ...     connected_components_sampled=1
         ... )
-        >>> print(f"Sampling quality: {metrics.sampling_ratio:.1%}")
+        >>> print(str(f"Sampling quality: {metrics.sampling_ratio:.1%}"))
         Sampling quality: 10.0%
     """
 
@@ -162,7 +162,7 @@ class QualityMetricsCalculator:
             >>> dist1 = {0: 10, 1: 20, 2: 30}
             >>> dist2 = {0: 12, 1: 18, 2: 30}
             >>> kl_div = calculator._calculate_kl_divergence(dist1, dist2)
-            >>> print(f"KL divergence: {kl_div:.4f}")
+            >>> print(str(f"KL divergence: {kl_div:.4f}"))
         """
         # Convert counts to probabilities
         total1 = sum(dist1.values())
@@ -259,10 +259,12 @@ class QualityMetricsCalculator:
             clustering_sampled = nx.average_clustering(sampled_undirected)
             clustering_diff = abs(clustering_original - clustering_sampled)
         except (ValueError, ZeroDivisionError, nx.NetworkXError) as e:
-            self.logger.warning(f"Failed to calculate clustering coefficient: {e}")
+            self.logger.warning(str(f"Failed to calculate clustering coefficient: {e}"))
             clustering_diff = 0.0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating clustering coefficient: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating clustering coefficient: {e}"
+            )
             raise
 
         # Connected components
@@ -271,11 +273,13 @@ class QualityMetricsCalculator:
             components_original = nx.number_weakly_connected_components(original_graph)
             components_sampled = nx.number_weakly_connected_components(sampled_graph)
         except (ValueError, nx.NetworkXError) as e:
-            self.logger.warning(f"Failed to calculate connected components: {e}")
+            self.logger.warning(str(f"Failed to calculate connected components: {e}"))
             components_original = 0
             components_sampled = 0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating connected components: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating connected components: {e}"
+            )
             raise
 
         # Resource type preservation
@@ -297,10 +301,12 @@ class QualityMetricsCalculator:
                 len(sampled_types) / len(original_types) if original_types else 0.0
             )
         except (ValueError, KeyError, TypeError) as e:
-            self.logger.warning(f"Failed to calculate type preservation: {e}")
+            self.logger.warning(str(f"Failed to calculate type preservation: {e}"))
             type_preservation = 0.0
         except Exception as e:
-            self.logger.exception(f"Unexpected error calculating type preservation: {e}")
+            self.logger.exception(
+                f"Unexpected error calculating type preservation: {e}"
+            )
             raise
 
         metrics = QualityMetrics(
@@ -319,6 +325,6 @@ class QualityMetricsCalculator:
             computation_time_seconds=computation_time,
         )
 
-        self.logger.info(f"Quality metrics calculated:\n{metrics}")
+        self.logger.info(str(f"Quality metrics calculated:\n{metrics}"))
 
         return metrics

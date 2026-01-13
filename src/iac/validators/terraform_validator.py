@@ -101,7 +101,7 @@ class TerraformValidator:
             )
 
         # Run terraform init
-        logger.info(f"Running terraform init in {iac_output_path}...")
+        logger.info(str(f"Running terraform init in {iac_output_path}..."))
         init_result = self._run_terraform_init(iac_output_path)
 
         if not init_result["success"]:
@@ -244,10 +244,10 @@ class TerraformValidator:
 
         # Show error details
         if result.error_message:
-            logger.error(f"Error: {result.error_message}")
+            logger.error(str(f"Error: {result.error_message}"))
 
         if result.validate_output:
-            logger.error(f"Validation output:\n{result.validate_output}")
+            logger.error(str(f"Validation output:\n{result.validate_output}"))
 
         # Interactive prompt
         try:

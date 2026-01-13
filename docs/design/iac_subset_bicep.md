@@ -12,10 +12,10 @@ Provide the capability to generate **Bicep** IaC for an **arbitrary subset** of 
 
 | Area | Key Types / Functions | Observations |
 |------|-----------------------|--------------|
-| Traverser | [`src/iac/traverser.py:GraphTraverser`](relative/src/iac/traverser.py:24) – `traverse(filter_cypher=None)` | Accepts one Cypher `WHERE` clause. Returns a `TenantGraph`. No native subset support beyond Cypher. |
-| Engine | [`src/iac/engine.py:TransformationEngine`](relative/src/iac/engine.py:26) – `apply(resource_dict)` | Performs graph-to-IaC transformations; unaware of selection logic. |
-| Bicep Emitter | [`src/iac/emitters/bicep_emitter.py:BicepEmitter.emit`](relative/src/iac/emitters/bicep_emitter.py:23) | Emits a flat `main.bicep`. No resource-group wrapping or custom scopes. |
-| CLI | [`src/iac/cli_handler.py:generate_iac_command_handler`](relative/src/iac/cli_handler.py:39) | Flags: `--format-type`, `--resource-filters`. No subset selection or destination RG arguments. |
+| Traverser | [`src/iac/traverser.py:GraphTraverser`](../../src/iac/traverser.py) – `traverse(filter_cypher=None)` | Accepts one Cypher `WHERE` clause. Returns a `TenantGraph`. No native subset support beyond Cypher. |
+| Engine | [`src/iac/engine.py:TransformationEngine`](../../src/iac/engine.py) – `apply(resource_dict)` | Performs graph-to-IaC transformations; unaware of selection logic. |
+| Bicep Emitter | [`src/iac/emitters/bicep_emitter.py:BicepEmitter.emit`](../../src/iac/emitters/bicep_emitter.py) | Emits a flat `main.bicep`. No resource-group wrapping or custom scopes. |
+| CLI | [`src/iac/cli_handler.py:generate_iac_command_handler`](../../src/iac/cli_handler.py) | Flags: `--format-type`, `--resource-filters`. No subset selection or destination RG arguments. |
 
 ---
 
@@ -115,7 +115,7 @@ modules/rg.bicep            (targetScope = 'resourceGroup')
 
 ### 5.1 Rules-File Integration
 
-The existing [`--rules-file`](../../src/iac/engine.py:29) capability can be combined with subset-Bicep generation to provide advanced resource transformation and naming strategies.
+The existing [`--rules-file`](../../src/iac/engine.py) capability can be combined with subset-Bicep generation to provide advanced resource transformation and naming strategies.
 
 #### 5.1.1 Enhanced CLI Usage
 
@@ -156,7 +156,7 @@ rules:
 
 #### 5.1.3 Name-Prefix Transformations
 
-Rules files can define name-prefix rewrites using the [`rename.pattern`](../../src/iac/engine.py:139) action:
+Rules files can define name-prefix rewrites using the [`rename.pattern`](../../src/iac/engine.py) action:
 - `{orig}` - Original resource name
 - `{index}` - Incremental counter (for disambiguation)
 - Custom prefixes like `repl-`, `test-`, `dev-` can be applied consistently

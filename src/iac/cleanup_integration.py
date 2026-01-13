@@ -41,7 +41,7 @@ def validate_subscription_id(subscription_id: str) -> str:
         ValueError: Invalid Azure subscription ID format...
     """
     # Azure subscription IDs are UUIDs (36 characters with hyphens)
-    uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    uuid_pattern = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
     if not subscription_id:
         raise ValueError("Subscription ID cannot be empty")
@@ -113,19 +113,19 @@ def invoke_cleanup_script(
 
         # Log output
         if result.stdout:
-            logger.debug(f"Cleanup stdout: {result.stdout}")
+            logger.debug(str(f"Cleanup stdout: {result.stdout}"))
         if result.stderr:
-            logger.warning(f"Cleanup stderr: {result.stderr}")
+            logger.warning(str(f"Cleanup stderr: {result.stderr}"))
 
         return result
 
     except subprocess.TimeoutExpired as e:
-        logger.error(f"Cleanup script timed out after {timeout} seconds")
+        logger.error(str(f"Cleanup script timed out after {timeout} seconds"))
         raise CleanupScriptError(
             f"Cleanup script timed out after {timeout} seconds"
         ) from e
     except Exception as e:
-        logger.error(f"Cleanup script execution failed: {e}")
+        logger.error(str(f"Cleanup script execution failed: {e}"))
         raise CleanupScriptError(f"Cleanup script execution failed: {e}") from e
 
 

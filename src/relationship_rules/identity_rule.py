@@ -49,6 +49,10 @@ class IdentityRule(RelationshipRule):
         rtype = resource.get("type", "")
         props = resource.get("properties", resource)
 
+        # Ensure props is a dictionary
+        if not isinstance(props, dict):
+            props = {}
+
         # RBAC: RoleAssignment node/edges
         if rtype.endswith("roleAssignments"):
             # Upsert RoleAssignment node with all relevant metadata
@@ -132,7 +136,9 @@ class IdentityRule(RelationshipRule):
                 )
                 # ASSIGNED_TO: RoleAssignment → Identity
                 # Note: RoleAssignment is not a Resource, so we use db_ops directly
-                db_ops.create_generic_rel(rid, ASSIGNED_TO, principal_id, f"{label}:Resource", "id")
+                db_ops.create_generic_rel(
+                    rid, ASSIGNED_TO, principal_id, f"{label}:Resource", "id"
+                )
                 # HAS_ROLE: Identity → RoleDefinition
                 if role_def_id:
                     db_ops.upsert_generic(
@@ -200,6 +206,10 @@ class IdentityRule(RelationshipRule):
                 and "userAssignedIdentities" in identity
             ):
                 user_identities = identity.get("userAssignedIdentities", {})
+                # Handle case where userAssignedIdentities might be a string or None
+                if not isinstance(user_identities, dict):
+                    user_identities = {}
+
                 for uai_id in user_identities:
                     # Upsert ManagedIdentity node (user-assigned) with IaC-standard properties
                     db_ops.upsert_generic(

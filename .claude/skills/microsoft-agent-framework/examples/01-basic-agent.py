@@ -50,7 +50,9 @@ async def multi_turn_example():
     thread = Thread()
 
     # Turn 1
-    response1 = await agent.run(thread=thread, message="My name is Alice and I'm learning Python.")
+    response1 = await agent.run(
+        thread=thread, message="My name is Alice and I'm learning Python."
+    )
     print("User: My name is Alice and I'm learning Python.")
     print(f"Agent: {response1.content}")
     print()

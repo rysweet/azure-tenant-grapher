@@ -162,7 +162,7 @@ class PluginRegistry:
             cls.register_plugin(KeyVaultPlugin())
             logger.debug("Registered KeyVaultPlugin")
         except ImportError as e:
-            logger.warning(f"Could not import KeyVaultPlugin: {e}")
+            logger.warning(str(f"Could not import KeyVaultPlugin: {e}"))
 
         try:
             from .storage_plugin import StoragePlugin
@@ -170,7 +170,7 @@ class PluginRegistry:
             cls.register_plugin(StoragePlugin())
             logger.debug("Registered StoragePlugin")
         except ImportError as e:
-            logger.warning(f"Could not import StoragePlugin: {e}")
+            logger.warning(str(f"Could not import StoragePlugin: {e}"))
 
         try:
             from .sql_plugin import SQLDatabasePlugin
@@ -178,7 +178,7 @@ class PluginRegistry:
             cls.register_plugin(SQLDatabasePlugin())
             logger.debug("Registered SQLDatabasePlugin")
         except ImportError as e:
-            logger.warning(f"Could not import SQLDatabasePlugin: {e}")
+            logger.warning(str(f"Could not import SQLDatabasePlugin: {e}"))
 
         try:
             from .apim_plugin import APIMPlugin
@@ -186,7 +186,7 @@ class PluginRegistry:
             cls.register_plugin(APIMPlugin())
             logger.debug("Registered APIMPlugin")
         except ImportError as e:
-            logger.warning(f"Could not import APIMPlugin: {e}")
+            logger.warning(str(f"Could not import APIMPlugin: {e}"))
 
         cls._initialized = True
         logger.info(

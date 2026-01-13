@@ -6,7 +6,7 @@ version = "0.1.0"
 description = "A Python application that exhaustively walks Azure tenant resources and builds a Neo4j graph database representation of those resources and their relationships."
 authors = [{name = "Azure Tenant Grapher Team"}]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     # Azure SDK dependencies
     "azure-identity>=1.15.0",
@@ -24,8 +24,6 @@ dependencies = [
     "azure-mgmt-authorization>=4.0.0",
     "azure-mgmt-costmanagement>=4.0.0",
     "azure-cosmos>=4.5.0",
-    "azure-mgmt-resourcegraph>=8.0.0",
-    "azure-mgmt-subscription>=3.1.1",
     "azure-mgmt-resourcegraph>=8.0.0",
     # Microsoft Graph SDK for AAD operations
     "msgraph-sdk>=1.0.0",
@@ -46,7 +44,6 @@ dependencies = [
     "readchar>=4.0.0",
     # Logging and configuration
     "pyyaml>=6.0",
-    "pydantic>=2.0",
     "colorlog>=6.8.0",
     "autogen-ext[mcp]>=0.6.1",
     "autogen_agentchat",
@@ -54,9 +51,9 @@ dependencies = [
     "ruamel.yaml",
     # Logging dependencies
     "structlog>=24.1.0",
-    # Graph sampling dependencies (Issue #427)
-    "littleballoffur>=2.3.1",
+    # Graph sampling dependencies (Issue #427, #611)
     "networkx>=3.0",
+    "pandas>=2.3.3",
     "numpy>=1.24.0,<2.0.0", # littleballoffur requires pandas<2.0 which needs numpy<2.0
     "psutil>=5.9.0",  # Performance monitoring for scale operations
     # Graph embeddings dependencies (Issue #509)
@@ -68,6 +65,14 @@ dependencies = [
     "python-pptx>=1.0.2",
     # Graph visualization export (Issue #508)
     "pydot>=3.0.0",
+    # Remote server dependencies (Phase 2 - Issue #577)
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=14.0",
+    "python-multipart>=0.0.12",
+    # Visualization dependencies (optional, for analyze-patterns command)
+    "matplotlib>=3.7.0",
+    "scipy>=1.10.0",
 ]
 
 
@@ -120,6 +125,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
     "azure: marks tests that require Azure credentials",
     "timeout(n): set a timeout for a test",
     "dual_graph: marks tests as part of dual graph architecture feature (Issue #420)",
@@ -198,7 +204,7 @@ skips = ["B101", "B102", "B105", "B108", "B608"]  # Skip common test-related fal
 skips = ["*_test.py", "test_*.py"]
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportMissingImports = false
 reportMissingTypeStubs = false
@@ -211,4 +217,18 @@ reportGeneralTypeIssues = false
 reportOptionalMemberAccess = "warning"
 reportUnusedImport = "error"
 reportUnusedClass = "error"
-exclude = ["dotnet", ".venv", "htmlcov", "tests/**/*", "scripts/**/*"]
+exclude = [
+    "dotnet",
+    ".venv",
+    "htmlcov",
+    "tests/**/*",
+    "scripts/**/*",
+    ".claude/**/*",
+    "demos/**/*",
+    "examples/**/*",
+    "migrations/**/*",
+    "spa/**/*",
+    "docs/**/*",
+    "notebooks/**/*",
+    "agentic_testing/**/*"
+]

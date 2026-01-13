@@ -140,7 +140,7 @@ class TestAppServiceDiscovery:
         mock_settings_response.properties = {
             "DB_HOST": "localhost",
             "DB_PORT": "5432",
-            "API_KEY": "secret123",
+            "API_KEY": "secret123",  # pragma: allowlist secret
         }
         mock_web_client.web_apps.list_application_settings.return_value = (
             mock_settings_response

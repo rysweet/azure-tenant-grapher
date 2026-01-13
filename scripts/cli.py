@@ -21,30 +21,46 @@ from rich.style import Style
 from src.cli_dashboard_manager import DashboardExitException
 from src.commands.abstract_graph import abstract_graph
 from src.commands.auth import app_registration as app_registration_cmd
-from src.commands.database import (
-    backup as backup_cmd,
-    backup_db as backup_db_cmd,
-    container as container_cmd,
-    restore as restore_cmd,
-    wipe as wipe_cmd,
-)
-from src.commands.scaling import (
-    scale_clean as scale_clean_cmd,
-    scale_down as scale_down_cmd,
-    scale_stats as scale_stats_cmd,
-    scale_up as scale_up_cmd,
-    scale_validate as scale_validate_cmd,
-)
 
 # Import modular commands for CLI registration (Issue #482)
 from src.commands.config import config as config_cmd
-from src.commands.database import container as container_cmd
+from src.commands.database import (
+    backup as backup_cmd,
+)
+from src.commands.database import (
+    backup_db as backup_db_cmd,
+)
+from src.commands.database import (
+    container as container_cmd,
+)
+from src.commands.database import (
+    restore as restore_cmd,
+)
+from src.commands.database import (
+    wipe as wipe_cmd,
+)
 from src.commands.deploy import deploy_command
 from src.commands.doctor import check_permissions as check_permissions_cmd
 from src.commands.doctor import doctor as doctor_cmd
 from src.commands.export_abstraction import export_abstraction_command
 from src.commands.layer_cmd import layer as layer_group
 from src.commands.list_deployments import list_deployments
+from src.commands.report import report as report_cmd
+from src.commands.scaling import (
+    scale_clean as scale_clean_cmd,
+)
+from src.commands.scaling import (
+    scale_down as scale_down_cmd,
+)
+from src.commands.scaling import (
+    scale_stats as scale_stats_cmd,
+)
+from src.commands.scaling import (
+    scale_up as scale_up_cmd,
+)
+from src.commands.scaling import (
+    scale_validate as scale_validate_cmd,
+)
 from src.commands.spa import spa_start as spa_start_command
 from src.commands.spa import spa_stop as spa_stop_command
 from src.commands.spec import generate_spec_command_handler, spec_command_handler
@@ -52,7 +68,6 @@ from src.commands.tenant import create_tenant as create_tenant_cmd
 from src.commands.undeploy import undeploy
 from src.commands.validate_deployment import validate_deployment_command
 from src.commands.visualize import visualize_command_handler
-from src.utils.neo4j_startup import ensure_neo4j_running
 
 # Initialize console for rich output
 console = Console()
@@ -80,7 +95,7 @@ def print_cli_env_block(context: str = "", debug: bool = False):
             value = os.environ.get(k)
             if _should_redact_env_var(k) and value:
                 value = "***REDACTED***"
-            print(f"[CLI ENV] {k}={value}")
+            print(str(f"[CLI ENV] {k}={value}"))
 
 
 # We'll call this later after parsing debug flag
@@ -137,10 +152,9 @@ try:
 
     # Keep handler imports for backward compatibility (deprecated, use modular commands)
     from src.cli_commands import build_command_handler
-    from src.config_manager import create_config_from_env
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
-    print(f"Import error: {e}")
+    print(str(f"Import error: {e}"))
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
@@ -154,7 +168,7 @@ except ImportError:
         return False
 
     def install_tool(tool: str) -> bool:
-        print(f"Install helper unavailable. Please install {tool} manually.")
+        print(str(f"Install helper unavailable. Please install {tool} manually."))
         return False
 
 
@@ -634,6 +648,145 @@ async def visualize(
     await visualize_command_handler(ctx, link_hierarchy, no_container)
 
 
+@cli.command(name="analyze-patterns")
+@click.option(
+    "--output-dir",
+    "-o",
+    help="Output directory for analysis results (default: outputs/pattern_analysis_<timestamp>)",
+)
+@click.option(
+    "--no-visualizations",
+    is_flag=True,
+    help="Skip generating matplotlib visualizations (only export JSON data)",
+)
+@click.option(
+    "--top-n-nodes",
+    type=int,
+    default=30,
+    help="Number of top nodes to include in visualizations (default: 30)",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def analyze_patterns(
+    ctx: click.Context,
+    output_dir: Optional[str],
+    no_visualizations: bool,
+    top_n_nodes: int,
+    no_container: bool,
+) -> None:
+    """Analyze Azure resource graph to identify architectural patterns.
+
+    This command analyzes the relationships between Azure resources in your Neo4j
+    graph database to identify common architectural patterns such as:
+
+    - Web Applications (App Service + Storage + Monitoring)
+    - Virtual Machine Workloads (VMs + Networking + Storage)
+    - Container Platforms (AKS + Container Registry)
+    - Data Platforms (Databases + Private Endpoints)
+    - Serverless Applications (Functions + Storage + Key Vault)
+    - And more...
+
+    The analysis generates:
+    - JSON export of aggregated resource relationships
+    - Summary report with pattern detection results
+    - Visualizations showing resource connections and patterns (requires matplotlib/scipy)
+
+    Examples:
+
+        # Analyze patterns with visualizations
+        atg analyze-patterns
+
+        # Analyze without visualizations (faster, no matplotlib required)
+        atg analyze-patterns --no-visualizations
+
+        # Analyze with custom output directory
+        atg analyze-patterns -o my_analysis
+
+        # Show more nodes in visualization
+        atg analyze-patterns --top-n-nodes 50
+    """
+    from src.cli_commands import analyze_patterns_command_handler
+
+    await analyze_patterns_command_handler(
+        ctx, output_dir, no_visualizations, top_n_nodes, no_container
+    )
+
+
+@cli.group(name="report")
+def report():
+    """Generate various reports from Azure tenant data."""
+    pass
+
+
+@report.command(name="well-architected")
+@click.option(
+    "--output-dir",
+    "-o",
+    help="Output directory for report (default: outputs/well_architected_report_<timestamp>)",
+)
+@click.option(
+    "--no-visualizations",
+    is_flag=True,
+    help="Skip generating matplotlib visualizations",
+)
+@click.option(
+    "--skip-description-updates",
+    is_flag=True,
+    help="Skip updating resource descriptions in Neo4j with WAF insights",
+)
+@click.option(
+    "--no-container",
+    is_flag=True,
+    help="Do not auto-start Neo4j container",
+)
+@click.pass_context
+@async_command
+async def well_architected(
+    ctx: click.Context,
+    output_dir: Optional[str],
+    no_visualizations: bool,
+    skip_description_updates: bool,
+    no_container: bool,
+) -> None:
+    """Generate Well-Architected Framework analysis report.
+
+    This command analyzes your Azure environment against the Well-Architected
+    Framework, identifying architectural patterns and providing actionable
+    recommendations.
+
+    The report includes:
+    - Pattern analysis with WAF pillar mappings
+    - Markdown report with recommendations
+    - Interactive Jupyter notebook for exploration
+    - Resource description updates with WAF links (optional)
+    - Visualizations showing pattern relationships (optional)
+
+    Examples:
+
+        # Generate full report with all features
+        atg report well-architected
+
+        # Generate report without updating resource descriptions
+        atg report well-architected --skip-description-updates
+
+        # Generate report without visualizations (faster)
+        atg report well-architected --no-visualizations
+
+        # Custom output directory
+        atg report well-architected -o my_waf_report
+    """
+    from src.cli_commands import well_architected_report_command_handler
+
+    await well_architected_report_command_handler(
+        ctx, output_dir, no_visualizations, skip_description_updates, no_container
+    )
+
+
 @cli.command()
 @click.option(
     "--tenant-id",
@@ -1089,6 +1242,9 @@ cli.add_command(check_permissions_cmd, "check-permissions")
 # Register infrastructure commands (Phase 4)
 cli.add_command(config_cmd, "config")
 cli.add_command(container_cmd, "container")
+
+# Register reporting commands (Issue #569)
+cli.add_command(report_cmd, "report")
 
 # Register layer command group (Issue #482: CLI Modularization - Phase 3)
 cli.add_command(layer_group)
@@ -1574,9 +1730,6 @@ async def cost_report(
         include_anomalies=include_anomalies,
         output=output,
     )
-
-
-
 
 
 # ============================================================================

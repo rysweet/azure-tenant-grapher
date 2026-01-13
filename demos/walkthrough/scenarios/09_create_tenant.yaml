@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture create tenant interface"
     action: "screenshot"
-    description: "Tenant creation interface"
+    screenshot_description: "Tenant creation interface"
 
   - description: "Enter tenant name"
     action: "fill"
@@ -51,7 +51,7 @@ steps:
 
   - description: "Capture tenant configuration"
     action: "screenshot"
-    description: "Tenant configuration complete"
+    screenshot_description: "Tenant configuration complete"
 
   - description: "Validate configuration"
     action: "click"
@@ -67,7 +67,7 @@ steps:
 
   - description: "Capture tenant preview"
     action: "screenshot"
-    description: "Tenant creation preview"
+    screenshot_description: "Tenant creation preview"
 
   - description: "Scroll to create button"
     action: "scroll"
@@ -87,7 +87,7 @@ steps:
 
   - description: "Capture creation progress"
     action: "screenshot"
-    description: "Tenant creation in progress"
+    screenshot_description: "Tenant creation in progress"
 
   - description: "Check creation result"
     action: "wait"

@@ -51,7 +51,7 @@ class CLIDashboardManager:
                                 return
                     await asyncio.sleep(0.1)
                 except Exception as e:
-                    self.logger.debug(f"Error checking exit file: {e}")
+                    self.logger.debug(str(f"Error checking exit file: {e}"))
                     await asyncio.sleep(0.1)
 
         # Start the exit checker as a background task

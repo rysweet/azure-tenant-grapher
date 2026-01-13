@@ -76,9 +76,9 @@ class PatternSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph,
+        graph: nx.DiGraph[str],
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using pattern matching.
@@ -141,7 +141,7 @@ class PatternSampler(BaseSampler):
             ...     "00000000-0000-0000-0000-000000000000",
             ...     criteria
             ... )
-            >>> print(f"Found {len(node_ids)} matching nodes")
+            >>> print(str(f"Found {len(node_ids)} matching nodes"))
         """
         self.logger.info(
             f"Sampling by pattern for tenant {tenant_id[:8]}... "
@@ -190,9 +190,11 @@ class PatternSampler(BaseSampler):
         RETURN r.id as id
         """
 
-        self.logger.debug(f"Pattern matching with {len(criteria)} validated criteria")
-        self.logger.debug(f"Cypher query: {query}")
-        self.logger.debug(f"Query parameters: {params}")
+        self.logger.debug(
+            str(f"Pattern matching with {len(criteria)} validated criteria")
+        )
+        self.logger.debug(str(f"Cypher query: {query}"))
+        self.logger.debug(str(f"Query parameters: {params}"))
 
         matching_ids: Set[str] = set()
 

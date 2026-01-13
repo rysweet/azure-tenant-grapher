@@ -77,7 +77,9 @@ class PerformanceMetrics:
         if self.end_time:
             self.duration_seconds = (self.end_time - self.start_time).total_seconds()
             if self.duration_seconds > 0:
-                self.throughput_per_second = self.items_processed / self.duration_seconds
+                self.throughput_per_second = (
+                    self.items_processed / self.duration_seconds
+                )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert metrics to dictionary format."""
@@ -277,7 +279,7 @@ class AdaptiveBatchSizer:
 
         Example:
             >>> size = AdaptiveBatchSizer.calculate_batch_size(50000, "write")
-            >>> print(f"Batch size for 50k items: {size}")
+            >>> print(str(f"Batch size for 50k items: {size}"))
             Batch size for 50k items: 2000
         """
         # Find appropriate tier
@@ -336,7 +338,7 @@ class AdaptiveBatchSizer:
 
         Example:
             >>> batch_size, num_batches = AdaptiveBatchSizer.calculate_optimal_batching(40000)
-            >>> print(f"Process {num_batches} batches of {batch_size} items")
+            >>> print(str(f"Process {num_batches} batches of {batch_size} items"))
         """
         batch_size = cls.calculate_batch_size(total_items, operation_type)
         num_batches = (total_items + batch_size - 1) // batch_size
@@ -352,7 +354,9 @@ class QueryOptimizer:
     """
 
     @staticmethod
-    def ensure_indexes(session, logger_instance: Optional[logging.Logger] = None) -> List[str]:
+    def ensure_indexes(
+        session, logger_instance: Optional[logging.Logger] = None
+    ) -> List[str]:
         """
         Ensure critical indexes exist for scale operations.
 
@@ -372,7 +376,7 @@ class QueryOptimizer:
         Example:
             >>> with session_manager.session() as session:
             ...     indexes = QueryOptimizer.ensure_indexes(session)
-            ...     print(f"Created {len(indexes)} indexes")
+            ...     print(str(f"Created {len(indexes)} indexes"))
         """
         log = logger_instance or logger
         indexes_created = []
@@ -380,10 +384,7 @@ class QueryOptimizer:
         # Index definitions with proper IF NOT EXISTS syntax
         index_definitions = [
             # Resource ID index (most critical)
-            (
-                "CREATE INDEX resource_id_idx IF NOT EXISTS "
-                "FOR (r:Resource) ON (r.id)"
-            ),
+            ("CREATE INDEX resource_id_idx IF NOT EXISTS FOR (r:Resource) ON (r.id)"),
             # Synthetic flag index (for filtering synthetic resources)
             (
                 "CREATE INDEX resource_synthetic_idx IF NOT EXISTS "

@@ -101,7 +101,7 @@ class TerraformEmitter:
         Returns:
             Complete Terraform configuration dict
         """
-        logger.info(f"Starting Terraform emission for {len(resources)} resources")
+        logger.info(str(f"Starting Terraform emission for {len(resources)} resources"))
         self.stats["total_resources"] = len(resources)
 
         # Initialize terraform config structure
@@ -165,7 +165,7 @@ class TerraformEmitter:
             if handler is None:
                 self.stats["unsupported_types"].add(azure_type)
                 self.stats["skipped_resources"] += 1
-                logger.debug(f"No handler for type: {azure_type}")
+                logger.debug(str(f"No handler for type: {azure_type}"))
                 continue
 
             try:
@@ -254,7 +254,7 @@ class TerraformEmitter:
                     ),
                 },
             )
-            logger.debug(f"Emitted NSG association: {subnet_name} -> {nsg_name}")
+            logger.debug(str(f"Emitted NSG association: {subnet_name} -> {nsg_name}"))
 
         # Emit NIC-NSG associations (Bug #57)
         for nic_tf, nsg_tf, nic_name, nsg_name in self.context.nic_nsg_associations:
@@ -283,7 +283,7 @@ class TerraformEmitter:
                     ),
                 },
             )
-            logger.debug(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}")
+            logger.debug(str(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}"))
 
     def _post_emit_handlers(self) -> None:
         """Call post_emit on all handlers.
@@ -296,7 +296,9 @@ class TerraformEmitter:
                 handler = handler_class()
                 handler.post_emit(self.context)
             except Exception as e:
-                logger.warning(f"Error in post_emit for {handler_class.__name__}: {e}")
+                logger.warning(
+                    str(f"Error in post_emit for {handler_class.__name__}: {e}")
+                )
                 if self.context.strict_mode:
                     raise
 
@@ -316,7 +318,7 @@ class TerraformEmitter:
 
         if self.stats["unsupported_types"]:
             sorted_types = sorted(self.stats["unsupported_types"])
-            logger.debug(f"Unsupported types: {sorted_types[:10]}...")
+            logger.debug(str(f"Unsupported types: {sorted_types[:10]}..."))
 
         if self.stats["handler_errors"]:
             logger.warning(
@@ -356,7 +358,7 @@ class TerraformEmitter:
         with open(output_file, "w") as f:
             json.dump(config, f, indent=2, sort_keys=False)
 
-        logger.info(f"Terraform configuration written to {output_file}")
+        logger.info(str(f"Terraform configuration written to {output_file}"))
         return output_file
 
     def get_supported_types(self) -> List[str]:

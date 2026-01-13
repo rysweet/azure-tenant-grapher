@@ -50,11 +50,16 @@ class RedisCacheHandler(ResourceHandler):
             sku.get("name", "Standard") if isinstance(sku, dict) else "Standard"
         )
 
-        # Redis version
-        config["redis_version"] = properties.get("redisVersion", "6")
+        # Redis version - must be "4" or "6" (string without decimal)
+        redis_version = str(properties.get("redisVersion", "6"))
+        # Strip decimal if present (e.g., "6.0" -> "6")
+        if "." in redis_version:
+            redis_version = redis_version.split(".")[0]
+        config["redis_version"] = redis_version
 
-        # Non-SSL port
-        config["enable_non_ssl_port"] = properties.get("enableNonSslPort", False)
+        # Non-SSL port - REMOVED: enable_non_ssl_port is deprecated in azurerm provider
+        # The field has been removed from the provider and causes validation errors
+        # Azure Redis Cache now only supports SSL connections
 
         # Minimum TLS version
         config["minimum_tls_version"] = properties.get("minimumTlsVersion", "1.2")

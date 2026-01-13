@@ -23,7 +23,7 @@ def send_imessage(message: str):
     try:
         subprocess.run([str(IMESS_TOOL), message], check=False, timeout=10)
     except Exception as e:
-        print(f"Failed to send iMessage: {e}")
+        print(str(f"Failed to send iMessage: {e}"))
 
 
 def run_cypher_query(query: str) -> dict:
@@ -77,7 +77,7 @@ def get_resource_counts() -> dict:
             if match:
                 target_count = int(match.group(1))
     except Exception as e:
-        print(f"Error parsing Neo4j results: {e}")
+        print(str(f"Error parsing Neo4j results: {e}"))
 
     return {
         "source": source_count,
@@ -260,7 +260,7 @@ def main():
         timestamp = datetime.now().isoformat()
 
         print(f"\n{'=' * 80}")
-        print(f"Iteration {iteration_count} at {timestamp}")
+        print(str(f"Iteration {iteration_count} at {timestamp}"))
         print(f"{'=' * 80}")
 
         # 1. Evaluate objective
@@ -287,7 +287,7 @@ def main():
             poll = fixer.poll()
             if poll is not None:
                 completed_fixers.append(i)
-                print(f"✅ Gap fixer completed: {gap_type}")
+                print(str(f"✅ Gap fixer completed: {gap_type}"))
                 send_imessage(f"✅ Gap fixer completed: {gap_type}")
 
         # Remove completed fixers
@@ -302,7 +302,7 @@ def main():
 
             # If iteration is complete, generate next one
             if iter_status.get("status") == "applied":
-                print(f"Generating iteration {latest_iter + 1}...")
+                print(str(f"Generating iteration {latest_iter + 1}..."))
 
                 # Generate next iteration
                 cmd = [
@@ -328,10 +328,10 @@ def main():
                         timeout=300,
                         cwd=PROJECT_ROOT,
                     )
-                    print(f"✅ Generated iteration {latest_iter + 1}")
+                    print(str(f"✅ Generated iteration {latest_iter + 1}"))
                     send_imessage(f"✅ Generated iteration {latest_iter + 1}")
                 except subprocess.CalledProcessError as e:
-                    print(f"❌ Failed to generate iteration: {e}")
+                    print(str(f"❌ Failed to generate iteration: {e}"))
                     send_imessage(f"❌ Failed to generate iteration {latest_iter + 1}")
 
         # 4. Send periodic status update
@@ -355,5 +355,5 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         send_imessage(f"❌ Autonomous executor error: {e}")
-        print(f"Error: {e}")
+        print(str(f"Error: {e}"))
         sys.exit(1)

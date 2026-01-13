@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import sys
 from typing import List, Optional
 
@@ -26,7 +25,7 @@ def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -
         driver.close()
         return True
     except Exception as e:
-        logger.warning(f"Neo4j connection check failed: {e}")
+        logger.warning(str(f"Neo4j connection check failed: {e}"))
         return False
 
 
@@ -36,13 +35,13 @@ async def verify_neo4j_connection(max_attempts: int = 5, delay: float = 2.0) -> 
     try:
         credentials = get_neo4j_credentials()
     except RuntimeError as e:
-        raise RuntimeError(
-            f"Failed to retrieve Neo4j credentials: {e}"
-        )
+        raise RuntimeError(f"Failed to retrieve Neo4j credentials: {e}") from e
 
     # Try to connect up to max_attempts times
     for attempt in range(max_attempts):
-        if can_connect_to_neo4j(credentials.uri, credentials.username, credentials.password):
+        if can_connect_to_neo4j(
+            credentials.uri, credentials.username, credentials.password
+        ):
             logger.info(
                 f"Neo4j database is available and accepting connections at {credentials.uri}."
             )
@@ -115,7 +114,7 @@ async def start_healthcheck_server(port: int = 8080):
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logger.info(f"Healthcheck server running on port {port}")
+    logger.info(str(f"Healthcheck server running on port {port}"))
     # Keep running forever
     while True:
         await asyncio.sleep(3600)
@@ -142,5 +141,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as e:
-        logger.error(f"Failed to start MCP server: {e}")
+        logger.error(str(f"Failed to start MCP server: {e}"))
         sys.exit(1)

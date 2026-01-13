@@ -51,7 +51,8 @@ import {
 } from '@mui/icons-material';
 import { Terminal } from 'xterm';
 import axios from 'axios';
-import { useWebSocket } from '../../hooks/useWebSocket';
+//import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocketContext } from '../../context/WebSocketContext';
 import { io, Socket } from 'socket.io-client';
 import { useSearchParams } from 'react-router-dom';
 
@@ -322,7 +323,8 @@ interface CommandHistoryItem {
 
 const CLITab: React.FC = () => {
   // const { state } = useApp();
-  const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
+  //const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocket();
+  const { isConnected, subscribeToProcess, unsubscribeFromProcess, getProcessOutput } = useWebSocketContext();
   const [searchParams] = useSearchParams();
 
   // Terminal state

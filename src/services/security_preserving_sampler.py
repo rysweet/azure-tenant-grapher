@@ -227,7 +227,9 @@ class SecurityPreservingSampler:
         if patterns_to_preserve is None:
             patterns = self.registry.filter_by_criticality("HIGH")
         else:
-            patterns = [self.registry.get_pattern(name) for name in patterns_to_preserve]
+            patterns = [
+                self.registry.get_pattern(name) for name in patterns_to_preserve
+            ]
 
         # Default max additions: 50% of base sample
         if max_additional_nodes is None:
@@ -259,7 +261,9 @@ class SecurityPreservingSampler:
                 continue
 
             # Calculate current coverage
-            preserved_before, _ = self._calculate_coverage(pattern_instances, augmented_ids)
+            preserved_before, _ = self._calculate_coverage(
+                pattern_instances, augmented_ids
+            )
 
             # Augment sample to preserve more instances
             if additions_remaining > 0:

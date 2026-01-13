@@ -223,7 +223,7 @@ class SmartImportGenerator:
             else:
                 duplicates_removed += 1
                 logger.debug(
-                    f"Removed duplicate import block for {import_block.to}"
+                    str(f"Removed duplicate import block for {import_block.to}")
                 )
 
         if duplicates_removed > 0:
@@ -494,12 +494,34 @@ class SmartImportGenerator:
         """
         # Common provider casing fixes
         normalized = resource_id
-        normalized = re.sub(r'/microsoft\.insights/', '/Microsoft.Insights/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.alertsmanagement/', '/Microsoft.AlertsManagement/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.network/dnszones/', '/Microsoft.Network/dnsZones/', normalized, flags=re.IGNORECASE)
-        normalized = re.sub(r'/microsoft\.operationalinsights/', '/Microsoft.OperationalInsights/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/microsoft\.insights/",
+            "/Microsoft.Insights/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.alertsmanagement/",
+            "/Microsoft.AlertsManagement/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.network/dnszones/",
+            "/Microsoft.Network/dnsZones/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"/microsoft\.operationalinsights/",
+            "/Microsoft.OperationalInsights/",
+            normalized,
+            flags=re.IGNORECASE,
+        )
         # Fix querypacks casing (Bug #110: Terraform expects queryPacks not querypacks)
-        normalized = re.sub(r'/querypacks/', '/queryPacks/', normalized, flags=re.IGNORECASE)
+        normalized = re.sub(
+            r"/querypacks/", "/queryPacks/", normalized, flags=re.IGNORECASE
+        )
 
         return normalized
 
@@ -519,7 +541,10 @@ class SmartImportGenerator:
         # Bug #113 fix: If no exact match, try case-insensitive lookup
         # Azure returns both Microsoft.Insights and microsoft.insights
         if not terraform_type:
-            for mapped_azure_type, mapped_terraform_type in AZURE_TO_TERRAFORM_TYPE.items():
+            for (
+                mapped_azure_type,
+                mapped_terraform_type,
+            ) in AZURE_TO_TERRAFORM_TYPE.items():
                 if mapped_azure_type.lower() == azure_type.lower():
                     terraform_type = mapped_terraform_type
                     logger.debug(

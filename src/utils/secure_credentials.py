@@ -110,13 +110,15 @@ def _get_credentials_from_keyvault(
 
         # Create and validate credentials
         return Neo4jCredentials(
-            uri=uri_secret.value, username=username_secret.value, password=password_secret.value
+            uri=uri_secret.value,
+            username=username_secret.value,
+            password=password_secret.value,
         )
 
-    except ResourceNotFoundError as e:
+    except ResourceNotFoundError:
         # Secret not found - return None to allow fallback
         return None
-    except Exception as e:
+    except Exception:
         # Other errors (auth, network, etc.) - return None to allow fallback
         return None
 
@@ -219,7 +221,7 @@ def get_neo4j_credentials(
 
 
 __all__ = [
+    "CredentialValidationError",
     "Neo4jCredentials",
     "get_neo4j_credentials",
-    "CredentialValidationError",
 ]

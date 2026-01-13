@@ -227,7 +227,10 @@ class ScaleCleanupService(BaseScaleService):
             raise
 
     def _validate_cleanup_params(
-        self, clean_all: bool, session_id: Optional[str], before_date: Optional[datetime]
+        self,
+        clean_all: bool,
+        session_id: Optional[str],
+        before_date: Optional[datetime],
     ) -> None:
         """
         Validate cleanup operation parameters.
@@ -483,7 +486,7 @@ class ScaleCleanupService(BaseScaleService):
             ...     print(f"Session {session['session_id']}: "
             ...           f"{session['resource_count']} resources")
         """
-        self.logger.info(f"Getting cleanable sessions for tenant {tenant_id}")
+        self.logger.info(str(f"Getting cleanable sessions for tenant {tenant_id}"))
 
         # Validate tenant exists
         if not await self.validate_tenant_exists(tenant_id):
@@ -522,7 +525,7 @@ class ScaleCleanupService(BaseScaleService):
                         }
                     )
 
-            self.logger.info(f"Found {len(sessions)} cleanable sessions")
+            self.logger.info(str(f"Found {len(sessions)} cleanable sessions"))
 
             return sessions
 

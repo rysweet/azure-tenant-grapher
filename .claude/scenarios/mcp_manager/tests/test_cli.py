@@ -283,6 +283,7 @@ def test_main_invalid_command(capsys):
 
 # Tests for new commands (add, remove, show, export, import)
 
+
 def test_cmd_add(mock_config_path, capsys):
     """Test add command."""
     args = Mock()
@@ -746,4 +747,3 @@ def test_main_import(capsys):
 
         assert result == 0
         mock_import.assert_called_once()
-

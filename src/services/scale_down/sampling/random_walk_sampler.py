@@ -37,9 +37,9 @@ class RandomWalkSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph,
+        graph: nx.DiGraph[str],
         target_count: int,
-        progress_callback: Optional[Callable[[str, int, int], None]] = None
+        progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
         """
         Sample graph using simple Random Walk.
@@ -59,9 +59,9 @@ class RandomWalkSampler(BaseSampler):
         Example:
             >>> sampler = RandomWalkSampler()
             >>> sampled_ids = await sampler.sample(G, 1000)
-            >>> print(f"Sampled {len(sampled_ids)} nodes")
+            >>> print(str(f"Sampled {len(sampled_ids)} nodes"))
         """
-        self.logger.info(f"Applying Random Walk sampling (target={target_count})")
+        self.logger.info(str(f"Applying Random Walk sampling (target={target_count})"))
 
         if not graph.nodes():
             raise ValueError("Graph has no nodes")
@@ -101,7 +101,9 @@ class RandomWalkSampler(BaseSampler):
                     sampled_nodes.add(current)
 
                 if progress_callback and len(sampled_nodes) % 100 == 0:
-                    progress_callback("Random Walk sampling", len(sampled_nodes), target_count)
+                    progress_callback(
+                        "Random Walk sampling", len(sampled_nodes), target_count
+                    )
 
             self.logger.info(
                 f"Random Walk sampling completed: {len(sampled_nodes)} nodes"

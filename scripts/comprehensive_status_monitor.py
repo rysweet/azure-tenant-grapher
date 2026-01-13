@@ -25,7 +25,7 @@ def send_update(msg):
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
             print(f"[{datetime.now().strftime('%H:%M:%S')}] Sent: {msg[:80]}...")
     except Exception as e:
-        print(f"Failed to send update: {e}")
+        print(str(f"Failed to send update: {e}"))
 
 
 def get_process_count(pattern):
@@ -59,7 +59,7 @@ def get_neo4j_counts():
 
         return source_count, target_count
     except Exception as e:
-        print(f"Neo4j query failed: {e}")
+        print(str(f"Neo4j query failed: {e}"))
         return 0, 0
 
 
@@ -106,7 +106,7 @@ def main():
         print(
             f"\n[{datetime.now().strftime('%H:%M:%S')}] Status Update (Runtime: {runtime_mins}m)"
         )
-        print(f"  Iteration: {iteration_count}")
+        print(str(f"  Iteration: {iteration_count}"))
         print(
             f"  Processes: Loop={loop_procs}, Terraform={terraform_procs}, Scan={scan_procs}"
         )

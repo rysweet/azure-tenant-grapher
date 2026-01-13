@@ -164,7 +164,9 @@ class GraphAbstractionService:
 
         # Calculate statistics
         actual_size = len(final_sample_ids)
-        type_distribution = self._get_sample_type_distribution(tenant_id, final_sample_ids)
+        type_distribution = self._get_sample_type_distribution(
+            tenant_id, final_sample_ids
+        )
 
         logger.info(
             f"Abstraction complete: {actual_size} nodes "
@@ -216,7 +218,7 @@ class GraphAbstractionService:
             result = session.run(query, tenant_id=tenant_id)
             deleted = result.consume().counters.relationships_deleted
             if deleted > 0:
-                logger.info(f"Cleared {deleted} existing :SAMPLE_OF relationships")
+                logger.info(str(f"Cleared {deleted} existing :SAMPLE_OF relationships"))
 
     def _create_sample_relationships(
         self, tenant_id: str, sampled_ids: Dict[str, list[str]]
@@ -245,7 +247,7 @@ class GraphAbstractionService:
         with self.driver.session() as session:
             result = session.run(query, node_ids=all_sampled_ids, tenant_id=tenant_id)
             created = result.consume().counters.relationships_created
-            logger.info(f"Created {created} :SAMPLE_OF relationships")
+            logger.info(str(f"Created {created} :SAMPLE_OF relationships"))
 
     def _create_sample_relationships_from_set(
         self, tenant_id: str, sample_ids: set[str]
@@ -264,11 +266,9 @@ class GraphAbstractionService:
         """
 
         with self.driver.session() as session:
-            result = session.run(
-                query, node_ids=list(sample_ids), tenant_id=tenant_id
-            )
+            result = session.run(query, node_ids=list(sample_ids), tenant_id=tenant_id)
             created = result.consume().counters.relationships_created
-            logger.info(f"Created {created} :SAMPLE_OF relationships")
+            logger.info(str(f"Created {created} :SAMPLE_OF relationships"))
 
     def _get_sample_type_distribution(
         self, tenant_id: str, sample_ids: set[str]
@@ -289,7 +289,5 @@ class GraphAbstractionService:
         """
 
         with self.driver.session() as session:
-            result = session.run(
-                query, node_ids=list(sample_ids), tenant_id=tenant_id
-            )
+            result = session.run(query, node_ids=list(sample_ids), tenant_id=tenant_id)
             return {record["resource_type"]: record["count"] for record in result}

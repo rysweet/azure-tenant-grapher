@@ -51,7 +51,10 @@ class StorageAccountHandler(ResourceHandler):
         resource_id = resource.get("id", "")
         resource_group_name = resource.get("resource_group_name", "")
         # Check both ID and resource_group_name field
-        if "databricks-rg" in resource_id.lower() or "databricks-rg" in resource_group_name.lower():
+        if (
+            "databricks-rg" in resource_id.lower()
+            or "databricks-rg" in resource_group_name.lower()
+        ):
             logger.info(
                 f"Skipping Databricks-managed storage account '{resource_name}' in RG '{resource_group_name}' "
                 "(has Azure deny assignments)"
@@ -67,6 +70,28 @@ class StorageAccountHandler(ResourceHandler):
 
         # Build base configuration
         config = self.build_base_config(resource)
+
+        # Storage account names must be globally unique (*.core.windows.net)
+        # Add tenant-specific suffix for cross-tenant deployments
+        # Constraints: lowercase alphanumeric only, max 24 chars
+        original_name = config["name"]
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
+            # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
+            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+            # Remove hyphens and convert to lowercase for storage account name
+            original_name = original_name.replace("-", "").lower()
+
+            # Truncate to fit (24 - 6 = 18 chars for original)
+            if len(original_name) > 18:
+                original_name = original_name[:18]
+
+            config["name"] = f"{original_name}{tenant_suffix}"
+            logger.info(
+                f"Storage account name made globally unique: {resource_name} → {config['name']}"
+            )
 
         # Storage account specific properties
         properties = self.parse_properties(resource)
@@ -106,10 +131,10 @@ class StorageAccountHandler(ResourceHandler):
         if access_tier:
             config["access_tier"] = access_tier
 
-        # Optional: enable_https_traffic_only
+        # Optional: HTTPS traffic only - Fix #596: Property renamed in provider v4+
         https_only = properties.get("supportsHttpsTrafficOnly")
         if https_only is not None:
-            config["enable_https_traffic_only"] = https_only
+            config["https_traffic_only_enabled"] = https_only
 
         # Optional: min_tls_version
         tls_version = properties.get("minimumTlsVersion")

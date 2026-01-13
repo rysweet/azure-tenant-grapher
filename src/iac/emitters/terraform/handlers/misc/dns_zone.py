@@ -39,7 +39,8 @@ class DNSZoneHandler(ResourceHandler):
         resource_name = resource.get("name", "unknown")
         safe_name = self.sanitize_name(resource_name)
 
-        config = self.build_base_config(resource)
+        # DNS zones are global resources - no location field
+        config = self.build_base_config(resource, include_location=False)
 
         logger.debug(f"DNS Zone '{resource_name}' emitted")
 
@@ -71,7 +72,8 @@ class PrivateDNSZoneHandler(ResourceHandler):
         resource_name = resource.get("name", "unknown")
         safe_name = self.sanitize_name(resource_name)
 
-        config = self.build_base_config(resource)
+        # Private DNS zones are global resources - no location field
+        config = self.build_base_config(resource, include_location=False)
 
         logger.debug(f"Private DNS Zone '{resource_name}' emitted")
 

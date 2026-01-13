@@ -12,7 +12,6 @@ Usage:
 import re
 import sys
 from pathlib import Path
-from typing import Optional, Tuple
 
 try:
     import requests
@@ -30,13 +29,15 @@ GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 SKILL_FILE = Path(__file__).parent.parent / "SKILL.md"
 
 
-def extract_embedded_version(skill_file: Path) -> Optional[str]:
+def extract_embedded_version(skill_file: Path) -> str | None:
     """Extract the embedded framework version from SKILL.md frontmatter."""
     try:
         content = skill_file.read_text()
 
         # Look for embedded_framework_version in YAML frontmatter
-        match = re.search(r"^embedded_framework_version:\s*(.+)$", content, re.MULTILINE)
+        match = re.search(
+            r"^embedded_framework_version:\s*(.+)$", content, re.MULTILINE
+        )
         if match:
             return match.group(1).strip()
 
@@ -46,7 +47,7 @@ def extract_embedded_version(skill_file: Path) -> Optional[str]:
         return None
 
 
-def get_latest_github_version() -> Optional[Tuple[str, str, str]]:
+def get_latest_github_version() -> tuple[str, str, str] | None:
     """
     Fetch the latest release version from GitHub.
 
@@ -79,7 +80,7 @@ def get_latest_github_version() -> Optional[Tuple[str, str, str]]:
         return None
 
 
-def parse_version(version_str: str) -> Tuple[int, int, int]:
+def parse_version(version_str: str) -> tuple[int, int, int]:
     """Parse semantic version string into tuple of integers."""
     try:
         parts = version_str.split(".")
@@ -159,7 +160,9 @@ def main():
     if comparison == 0:
         print("✓ You are using the latest version!")
         print()
-        print("The skill documentation is up-to-date with the latest framework release.")
+        print(
+            "The skill documentation is up-to-date with the latest framework release."
+        )
         sys.exit(0)
 
     elif comparison == 1:
@@ -186,7 +189,9 @@ def main():
             print()
 
         print("To update:")
-        print("  1. Install latest framework: pip install --upgrade gadugi-agentic-test")
+        print(
+            "  1. Install latest framework: pip install --upgrade gadugi-agentic-test"
+        )
         print(f"  2. Review release notes: {release_url}")
         print("  3. Update SKILL.md with new version and features")
         print("  4. Update examples if API changed")

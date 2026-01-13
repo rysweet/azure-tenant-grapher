@@ -108,7 +108,11 @@ class AzureResourceIdBuilder:
 
         # Strategy dispatch table: Pattern -> builder method
         self._builders: Dict[
-            AzureResourceIdPattern, Callable[[str, Dict[str, Any], str], Optional[str]]
+            AzureResourceIdPattern,
+            Callable[
+                [str, Dict[str, Any], str, Optional[Dict[str, str]], Optional[str]],
+                Optional[str],
+            ],
         ] = {
             AzureResourceIdPattern.RESOURCE_GROUP_LEVEL: self._build_resource_group_level_id,
             AzureResourceIdPattern.CHILD_RESOURCE: self._build_child_resource_id,
@@ -121,16 +125,23 @@ class AzureResourceIdBuilder:
         tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
         """Build Azure resource ID from Terraform resource config.
 
         Main entry point for ID construction. Detects pattern and dispatches to
         appropriate builder method.
 
+        Bug #10 Fix: Accepts optional original_id_map to use real Azure IDs from Neo4j
+        instead of constructing from config (which may contain Terraform variables).
+
         Args:
             tf_resource_type: Terraform resource type (e.g., "azurerm_storage_account")
             resource_config: Terraform resource configuration dict
-            subscription_id: Azure subscription ID
+            subscription_id: Azure subscription ID (target subscription for cross-tenant)
+            original_id_map: Optional map of {terraform_resource_name: original_azure_id}
+            source_subscription_id: Optional source subscription ID for cross-tenant translation
 
         Returns:
             Azure resource ID string or None if cannot be constructed
@@ -152,7 +163,13 @@ class AzureResourceIdBuilder:
 
         # Build the ID
         try:
-            return builder_method(tf_resource_type, resource_config, subscription_id)
+            return builder_method(
+                tf_resource_type,
+                resource_config,
+                subscription_id,
+                original_id_map,
+                source_subscription_id,
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to build resource ID for {tf_resource_type}: {e}",
@@ -160,11 +177,60 @@ class AzureResourceIdBuilder:
             )
             return None
 
+    def _is_terraform_variable(self, value: str) -> bool:
+        """Check if a string contains Terraform variable interpolation syntax.
+
+        Detects patterns like:
+        - ${azurerm_virtual_network.vnet.name}
+        - ${var.vnet_name}
+        - ${module.network.vnet_name}
+
+        Args:
+            value: String to check
+
+        Returns:
+            True if value contains Terraform variable syntax, False otherwise
+        """
+        import re
+
+        return bool(re.search(r"\$\{.*?\}", value))
+
+    def _translate_subscription_in_id(
+        self,
+        azure_resource_id: str,
+        source_subscription_id: str,
+        target_subscription_id: str,
+    ) -> str:
+        """Replace source subscription ID with target subscription ID in an Azure resource ID.
+
+        Used for cross-tenant deployment where original_id from source tenant needs
+        to be translated to target tenant's subscription.
+
+        Args:
+            azure_resource_id: Full Azure resource ID from source tenant
+            source_subscription_id: Source subscription ID to replace
+            target_subscription_id: Target subscription ID to use
+
+        Returns:
+            Azure resource ID with subscription translated to target
+
+        Example:
+            Input:  /subscriptions/source-123/resourceGroups/rg/...
+            Output: /subscriptions/target-456/resourceGroups/rg/...
+        """
+        return azure_resource_id.replace(
+            f"/subscriptions/{source_subscription_id}",
+            f"/subscriptions/{target_subscription_id}",
+            1,  # Only replace first occurrence
+        )
+
     def _build_resource_group_level_id(
         self,
         tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
         """Build resource ID for standard resource group-level resources.
 
@@ -222,33 +288,56 @@ class AzureResourceIdBuilder:
         tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
         """Build resource ID for child resources nested under parents.
 
         Child resources are nested under parent resources in Azure's hierarchy.
         Phase 1 implementation focuses on subnets only.
 
+        Bug #10: Passes original_id_map to child builders for proper handling.
+
         Args:
             tf_resource_type: Terraform resource type
             resource_config: Resource configuration dict
             subscription_id: Azure subscription ID
+            original_id_map: Optional map of original Azure IDs
+            source_subscription_id: Optional source subscription for cross-tenant
 
         Returns:
             Azure resource ID or None if cannot be constructed
         """
         # Dispatch to specific child resource builders
         if tf_resource_type == "azurerm_subnet":
-            return self._build_subnet_id(resource_config, subscription_id)
+            return self._build_subnet_id(
+                tf_resource_type,
+                resource_config,
+                subscription_id,
+                original_id_map,
+                source_subscription_id,
+            )
 
-        logger.warning(f"Child resource type not yet implemented: {tf_resource_type}")
+        logger.warning(
+            str(f"Child resource type not yet implemented: {tf_resource_type}")
+        )
         return None
 
     def _build_subnet_id(
         self,
+        tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
-        """Build subnet ID.
+        """Build subnet ID with Bug #10 fix.
+
+        Bug #10 Fix: Tries to use original_id from Neo4j first (if available in original_id_map).
+        Falls back to config-based construction only if:
+        1. No original_id_map provided, OR
+        2. Resource not found in map, AND
+        3. Config values are valid (not Terraform variables)
 
         Subnets are child resources of Virtual Networks with this structure:
         /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Network/virtualNetworks/{vnet}/subnets/{subnet}
@@ -256,8 +345,11 @@ class AzureResourceIdBuilder:
         Impact: 266 resources
 
         Args:
+            tf_resource_type: Terraform resource type ("azurerm_subnet")
             resource_config: Subnet configuration dict
-            subscription_id: Azure subscription ID
+            subscription_id: Azure subscription ID (target subscription for cross-tenant)
+            original_id_map: Optional map of original Azure IDs
+            source_subscription_id: Optional source subscription for cross-tenant
 
         Returns:
             Azure subnet resource ID or None if cannot be constructed
@@ -266,6 +358,47 @@ class AzureResourceIdBuilder:
         vnet_name = resource_config.get("virtual_network_name")
         resource_group = resource_config.get("resource_group_name")
 
+        # Bug #10 Fix: Try original_id first (from Neo4j)
+        if original_id_map and resource_name:
+            # DEBUG: Log what we're working with
+            logger.info(f"🔍 DEBUG _build_subnet_id for '{resource_name}':")
+            logger.info(str(f"  subscription_id (target): {subscription_id}"))
+            logger.info(str(f"  source_subscription_id: {source_subscription_id}"))
+            logger.info(str(f"  original_id_map size: {len(original_id_map)}"))
+
+            # Search for this subnet in the original_id_map by matching subnet name in Azure ID
+            for tf_name, original_id in original_id_map.items():
+                if (
+                    tf_name.startswith(f"{tf_resource_type}.")
+                    and "/subnets/" in original_id
+                ):
+                    # Extract subnet name from Azure ID: .../subnets/{subnet_name}
+                    id_subnet_name = original_id.split("/subnets/")[-1]
+                    if id_subnet_name == resource_name:
+                        logger.info(
+                            f"  ✓ Found original_id for subnet '{resource_name}': {original_id}"
+                        )
+
+                        # Cross-tenant translation if needed
+                        if (
+                            source_subscription_id
+                            and source_subscription_id != subscription_id
+                        ):
+                            logger.info(
+                                f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}..."
+                            )
+                            original_id = self._translate_subscription_in_id(
+                                original_id, source_subscription_id, subscription_id
+                            )
+                            logger.info(str(f"  ✅ Translated ID: {original_id}"))
+                        else:
+                            logger.info(
+                                f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}"
+                            )
+
+                        return original_id
+
+        # Fallback: Build from config (if config is valid)
         if not all([resource_name, vnet_name, resource_group]):
             logger.warning(
                 f"Subnet missing required fields: "
@@ -273,6 +406,14 @@ class AzureResourceIdBuilder:
             )
             return None
 
+        # Check if vnet_name contains Terraform variable
+        if self._is_terraform_variable(vnet_name):
+            logger.debug(
+                f"Cannot build subnet ID: vnet_name contains Terraform variable: {vnet_name}"
+            )
+            return None
+
+        # Config is valid - build ID
         return (
             f"/subscriptions/{subscription_id}/"
             f"resourceGroups/{resource_group}/"
@@ -285,6 +426,8 @@ class AzureResourceIdBuilder:
         tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
         """Build resource ID for subscription-level resources.
 
@@ -346,7 +489,9 @@ class AzureResourceIdBuilder:
                 return None
 
             # Scope is valid - use it
-            role_assignment_id = f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+            role_assignment_id = (
+                f"{scope}/providers/Microsoft.Authorization/roleAssignments/{name}"
+            )
             logger.debug(
                 f"Role assignment scope source: explicit scope "
                 f"(scope={scope[:50]}...)"  # Log first 50 chars to avoid huge logs
@@ -383,6 +528,8 @@ class AzureResourceIdBuilder:
         tf_resource_type: str,
         resource_config: Dict[str, Any],
         subscription_id: str,
+        original_id_map: Optional[Dict[str, str]] = None,
+        source_subscription_id: Optional[str] = None,
     ) -> Optional[str]:
         """Build resource ID for association resources.
 
@@ -419,7 +566,5 @@ class AzureResourceIdBuilder:
             )
             return None
 
-        logger.warning(
-            f"Unknown association resource type: {tf_resource_type}"
-        )
+        logger.warning(str(f"Unknown association resource type: {tf_resource_type}"))
         return None

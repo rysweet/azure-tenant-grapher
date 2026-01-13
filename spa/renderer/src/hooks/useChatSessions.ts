@@ -63,8 +63,13 @@ export function useChatSessions() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        const deserialized = parsed.map(deserializeSession);
-        setSessions(deserialized);
+        if (Array.isArray(parsed)) {
+          const deserialized = parsed.map(deserializeSession);
+          setSessions(deserialized);
+        } else {
+          // Invalid data format, clear it
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
 
       const activeId = localStorage.getItem(ACTIVE_SESSION_KEY);
@@ -72,7 +77,11 @@ export function useChatSessions() {
         setActiveSessionId(activeId);
       }
     } catch (e) {
-      // Console error removed
+      // Corrupted data, clear it
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+      setSessions([]);
+      setActiveSessionId(null);
     }
   }, []);
 

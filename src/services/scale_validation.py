@@ -87,9 +87,7 @@ class ScaleValidation:
             logger.exception(message)
             return False, message
         except Exception as e:
-            message = (
-                f"Unexpected error checking Original layer contamination: {e}"
-            )
+            message = f"Unexpected error checking Original layer contamination: {e}"
             logger.exception(message)
             return False, f"Validation error: {e}"
 
@@ -284,9 +282,9 @@ class ScaleValidation:
             >>> if is_valid:
             ...     print("All validations passed!")
             ... else:
-            ...     print(f"Validation failures: {msg}")
+            ...     print(str(f"Validation failures: {msg}"))
         """
-        logger.info(f"Running all validations for operation {operation_id}")
+        logger.info(str(f"Running all validations for operation {operation_id}"))
 
         results = []
 

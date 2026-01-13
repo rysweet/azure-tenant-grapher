@@ -289,7 +289,7 @@ The MVP abstraction does **not guarantee** preservation of:
 
 - [Neo4j Schema Reference](../NEO4J_SCHEMA_REFERENCE.md) - Understand node labels and relationships
 - [Cross-Tenant Features](../cross-tenant/FEATURES.md) - Cross-tenant deployment capabilities
-- [Dual-Graph Architecture](../DUAL_GRAPH_ARCHITECTURE.md) - How abstracted vs original nodes work
+- [Dual-Graph Architecture](../DUAL_GRAPH_INDEX.md) - How abstracted vs original nodes work
 
 ## Technical Details
 

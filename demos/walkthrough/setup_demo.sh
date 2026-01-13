@@ -97,7 +97,7 @@ else
     echo -e "${YELLOW}⚠ Neo4j is not running${NC}"
     echo "  Starting Neo4j..."
     cd "$PROJECT_ROOT"
-    docker-compose up -d neo4j
+    docker-compose -f docker/docker-compose.yml up -d neo4j
     echo "  Waiting for Neo4j to be ready..."
     sleep 10
 fi

@@ -321,7 +321,7 @@ class HierarchicalSpecGenerator(TenantSpecificationGenerator):
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(markdown)
 
-        logger.info(f"Hierarchical specification written to {output_path}")
+        logger.info(str(f"Hierarchical specification written to {output_path}"))
         return output_path
 
     def _anonymize_hierarchy(

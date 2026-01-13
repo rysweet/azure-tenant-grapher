@@ -80,14 +80,19 @@ class RoleAssignmentHandler(ResourceHandler):
         # Bug #NEW: For same-tenant deployment, use original principal ID (not abstracted)
         if is_same_tenant and resource.get("original_properties"):
             import json
+
             try:
                 original_props = json.loads(resource.get("original_properties", "{}"))
                 original_principal_id = original_props.get("principalId")
-                if original_principal_id and not original_principal_id.startswith("principal-"):
-                    logger.info(f"Using original principal ID for same-tenant: {original_principal_id[:8]}...")
+                if original_principal_id and not original_principal_id.startswith(
+                    "principal-"
+                ):
+                    logger.info(
+                        f"Using original principal ID for same-tenant: {original_principal_id[:8]}..."
+                    )
                     principal_id = original_principal_id
             except Exception as e:
-                logger.warning(f"Could not parse original_properties: {e}")
+                logger.warning(str(f"Could not parse original_properties: {e}"))
 
         if (
             context.target_tenant_id

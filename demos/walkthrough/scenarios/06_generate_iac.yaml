@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture IaC generator interface"
     action: "screenshot"
-    description: "IaC generator ready"
+    screenshot_description: "IaC generator ready"
 
   - description: "Select IaC provider"
     action: "select"
@@ -46,7 +46,7 @@ steps:
 
   - description: "Capture IaC configuration"
     action: "screenshot"
-    description: "IaC generation configured"
+    screenshot_description: "IaC generation configured"
 
   - description: "Generate IaC code"
     action: "click"
@@ -60,7 +60,7 @@ steps:
 
   - description: "Capture generated IaC"
     action: "screenshot"
-    description: "Generated Infrastructure as Code"
+    screenshot_description: "Generated Infrastructure as Code"
 
   - description: "Switch to file view"
     action: "click"
@@ -76,7 +76,7 @@ steps:
 
   - description: "Capture main configuration"
     action: "screenshot"
-    description: "Main Terraform configuration"
+    screenshot_description: "Main Terraform configuration"
 
   - description: "View variables file"
     action: "click"

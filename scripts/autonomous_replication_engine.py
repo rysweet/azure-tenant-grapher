@@ -52,11 +52,11 @@ class StatusReporter:
         try:
             if IMESSAGE_TOOL.exists():
                 subprocess.run([str(IMESSAGE_TOOL), message], timeout=10)
-                print(f"📱 Sent: {message}")
+                print(str(f"📱 Sent: {message}"))
             else:
-                print(f"📱 (no imessR): {message}")
+                print(str(f"📱 (no imessR): {message}"))
         except Exception as e:
-            print(f"⚠️ Failed to send message: {e}")
+            print(str(f"⚠️ Failed to send message: {e}"))
 
 
 class StateAssessor:
@@ -78,7 +78,7 @@ class StateAssessor:
             driver.close()
             return True
         except Exception as e:
-            print(f"❌ Neo4j not available: {e}")
+            print(str(f"❌ Neo4j not available: {e}"))
             return False
 
     def get_neo4j_state(self) -> Dict[str, Any]:

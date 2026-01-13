@@ -79,7 +79,9 @@ class AppServicePlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for AppServicePlugin: {resource}")
 
         app_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for App Service: {app_name}")
+        self.logger.info(
+            str(f"Discovering data plane items for App Service: {app_name}")
+        )
 
         items: List[DataPlaneItem] = []
 
@@ -122,7 +124,7 @@ class AppServicePlugin(DataPlanePlugin):
                     for key, value in app_settings.properties.items():
                         # Skip system-managed settings
                         if self._is_system_setting(key):
-                            self.logger.debug(f"Skipping system setting: {key}")
+                            self.logger.debug(str(f"Skipping system setting: {key}"))
                             continue
 
                         items.append(
@@ -330,7 +332,7 @@ class AppServicePlugin(DataPlanePlugin):
                         )
 
                 if slot_count > 0:
-                    self.logger.info(f"Discovered {slot_count} deployment slots")
+                    self.logger.info(str(f"Discovered {slot_count} deployment slots"))
 
             except (AzureError, HttpResponseError) as e:
                 self.logger.warning(
@@ -344,7 +346,9 @@ class AppServicePlugin(DataPlanePlugin):
                 f"Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering App Service items: {e}")
+            self.logger.error(
+                str(f"Unexpected error discovering App Service items: {e}")
+            )
 
         self.logger.info(
             f"Discovered {len(items)} total data plane items in App Service '{app_name}'"
@@ -906,7 +910,7 @@ class AppServicePlugin(DataPlanePlugin):
             # Discover items from source
             items = self.discover_with_mode(source_resource, mode)
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_discovery(
                     source_resource["id"], len(items)
                 )
@@ -925,7 +929,7 @@ class AppServicePlugin(DataPlanePlugin):
             # Add timing information
             result.duration_seconds = time.time() - start_time
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_completion(result)
 
             return result

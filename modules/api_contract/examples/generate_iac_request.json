@@ -1,0 +1,11 @@
+{
+  "tenant_id": "12345678-1234-1234-1234-123456789abc",
+  "target_tenant_id": "87654321-4321-4321-4321-cba987654321",
+  "target_subscription": "sub-target-eastus",
+  "format": "terraform",
+  "auto_import_existing": true,
+  "import_strategy": "resource_groups",
+  "auto_register_providers": true,
+  "auto_fix_subnets": false,
+  "skip_subnet_validation": false
+}

@@ -1315,7 +1315,7 @@ def doctor_command(tenant_id):
     if check_neo4j_connection():
         click.echo("   ✅ Neo4j accessible and healthy")
     else:
-        click.echo("   ❌ Neo4j not accessible. Run: docker-compose up -d")
+        click.echo("   ❌ Neo4j not accessible. Run: docker-compose -f docker/docker-compose.yml up -d neo4j")
 
     # Check 3: Credentials
     click.echo("\n3. Azure Credentials")

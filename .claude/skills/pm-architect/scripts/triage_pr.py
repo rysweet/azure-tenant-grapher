@@ -10,7 +10,6 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Optional
 
 # Try to import Claude SDK
 try:
@@ -21,7 +20,7 @@ except ImportError:
     CLAUDE_SDK_AVAILABLE = False
 
 
-def get_pr_details(project_root: Path, pr_number: int) -> Optional[Dict]:
+def get_pr_details(project_root: Path, pr_number: int) -> dict | None:
     """Get PR details using gh CLI.
 
     Args:
@@ -130,7 +129,14 @@ def get_related_issues(project_root: Path, pr_body: str) -> str:
     for issue_num in list(issue_numbers)[:5]:  # Limit to 5 issues
         try:
             result = subprocess.run(
-                ["gh", "issue", "view", issue_num, "--json", "number,title,state,labels"],
+                [
+                    "gh",
+                    "issue",
+                    "view",
+                    issue_num,
+                    "--json",
+                    "number,title,state,labels",
+                ],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
@@ -156,7 +162,7 @@ def get_related_issues(project_root: Path, pr_body: str) -> str:
     return "\n## Related Issues\n\nUnable to retrieve issue details.\n"
 
 
-async def triage_pr(project_root: Path, pr_number: int) -> Optional[str]:
+async def triage_pr(project_root: Path, pr_number: int) -> str | None:
     """Triage PR using Claude Agent SDK.
 
     Args:

@@ -88,8 +88,8 @@ class Neo4jExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph,
-        output_path: str
+        sampled_graph: nx.DiGraph[str],
+        output_path: str,
     ) -> None:
         """
         Export sample to Neo4j Cypher statements.
@@ -115,7 +115,7 @@ class Neo4jExporter(BaseExporter):
             ...     "/tmp/sample.cypher"
             ... )
         """
-        self.logger.info(f"Exporting sample to Neo4j Cypher at {output_path}")
+        self.logger.info(str(f"Exporting sample to Neo4j Cypher at {output_path}"))
 
         cypher_statements = []
 
@@ -141,7 +141,9 @@ class Neo4jExporter(BaseExporter):
             for key, value in props.items():
                 # Validate and escape property name
                 if not _is_safe_cypher_identifier(key):
-                    self.logger.warning(f"Skipping property with unsafe name: {key}")
+                    self.logger.warning(
+                        str(f"Skipping property with unsafe name: {key}")
+                    )
                     continue
 
                 safe_key = _escape_cypher_identifier(key)
@@ -188,7 +190,9 @@ class Neo4jExporter(BaseExporter):
             safe_label = _escape_cypher_identifier(label_name)
 
             # Generate CREATE statement
-            cypher_statements.append(f"CREATE (:{safe_label}:Resource {{{props_str}}});")
+            cypher_statements.append(
+                f"CREATE (:{safe_label}:Resource {{{props_str}}});"
+            )
 
         cypher_statements.append("")
 
@@ -203,7 +207,9 @@ class Neo4jExporter(BaseExporter):
             # Get and validate relationship type
             rel_type = data.get("relationship_type", "RELATED_TO")
             if not _is_safe_cypher_identifier(rel_type):
-                self.logger.warning(f"Skipping relationship with unsafe type: {rel_type}")
+                self.logger.warning(
+                    f"Skipping relationship with unsafe type: {rel_type}"
+                )
                 continue
 
             safe_rel_type = _escape_cypher_identifier(rel_type)
@@ -219,4 +225,4 @@ class Neo4jExporter(BaseExporter):
         with open(output_path, "w") as f:
             f.write("\n".join(cypher_statements))
 
-        self.logger.info(f"Neo4j Cypher export completed: {output_path}")
+        self.logger.info(str(f"Neo4j Cypher export completed: {output_path}"))

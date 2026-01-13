@@ -45,7 +45,9 @@ class NodeManager:
         try:
             self._initialize_dual_graph_services()
         except Exception as e:
-            logger.warning(f"Dual-graph services not initialized (expected in tests): {e}")
+            logger.warning(
+                f"Dual-graph services not initialized (expected in tests): {e}"
+            )
             # Set up fallback abstraction for tests
             self._setup_fallback_abstraction()
 
@@ -67,7 +69,9 @@ class NodeManager:
             )
 
             self._dual_graph_initialized = True
-            logger.info(f"Initialized dual-graph services for tenant {self.tenant_id}")
+            logger.info(
+                str(f"Initialized dual-graph services for tenant {self.tenant_id}")
+            )
 
         except Exception as e:
             logger.exception(f"Failed to initialize dual-graph services: {e}")
@@ -208,8 +212,9 @@ class NodeManager:
             try:
                 validate_resource_data(resource)
             except ResourceDataValidationError as e:
+                missing_fields = e.context.get("missing_fields", [])
                 logger.exception(
-                    f"Resource data missing/null for required fields: {e.missing_fields} (resource: {resource})"
+                    f"Resource data missing/null for required fields: {missing_fields} (resource: {resource})"
                 )
                 return False
 
@@ -571,9 +576,7 @@ class NodeManager:
             """
 
             with self.session_manager.session() as session:
-                session.run(
-                    query, src_id=src_id, tgt_key_value=tgt_key_value
-                )
+                session.run(query, src_id=src_id, tgt_key_value=tgt_key_value)
             return True
 
         except Exception:

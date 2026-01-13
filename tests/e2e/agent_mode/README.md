@@ -68,7 +68,7 @@ pip install -r requirements-dev.txt
 2. Start required services:
 ```bash
 # Start Neo4j
-docker-compose up -d neo4j
+docker-compose -f docker/docker-compose.yml up -d neo4j
 
 # Start MCP server (in separate terminal)
 python -m src.mcp_server

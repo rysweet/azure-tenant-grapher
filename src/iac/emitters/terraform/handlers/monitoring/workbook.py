@@ -48,6 +48,12 @@ class WorkbooksHandler(ResourceHandler):
         display_name = properties.get("displayName") or resource_name
         config["display_name"] = display_name
 
+        # Remove hidden-title tag if present (deprecated in favor of display_name)
+        if "tags" in config and isinstance(config["tags"], dict):
+            config["tags"] = {
+                k: v for k, v in config["tags"].items() if k != "hidden-title"
+            }
+
         # data_json is required (workbook definition)
         # The serializedData property contains the workbook JSON
         workbook_data = (

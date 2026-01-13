@@ -77,7 +77,7 @@ class CredentialProvider:
     Example:
         >>> config = CredentialConfig(
         ...     client_id="xxx",
-        ...     client_secret="yyy",
+        ...     client_secret="yyy",  # pragma: allowlist secret  # pragma: allowlist secret
         ...     tenant_id="zzz"
         ... )
         >>> provider = CredentialProvider(config)
@@ -158,7 +158,7 @@ class CredentialProvider:
                     else:
                         self.logger.warning("DefaultAzureCredential failed validation")
                 except Exception as e:
-                    self.logger.warning(f"DefaultAzureCredential failed: {e}")
+                    self.logger.warning(str(f"DefaultAzureCredential failed: {e}"))
 
             # Priority 4: Interactive (if allowed)
             if self.config.allow_interactive:
@@ -324,10 +324,12 @@ class CredentialProvider:
             return True
 
         except ClientAuthenticationError as e:
-            self.logger.error(f"Credential validation failed: {e}")
+            self.logger.error(str(f"Credential validation failed: {e}"))
             return False
         except Exception as e:
-            self.logger.error(f"Unexpected error during credential validation: {e}")
+            self.logger.error(
+                str(f"Unexpected error during credential validation: {e}")
+            )
             return False
 
 

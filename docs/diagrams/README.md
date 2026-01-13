@@ -140,7 +140,7 @@ mmdc -i diagram.mmd -o diagram.svg -w 1920 -H 1080
 ### Markdown Insertion
 
 ```markdown
-![Dual-Graph Architecture](docs/diagrams/dual-graph-architecture.png)
+![Dual-Graph Architecture]
 ```
 
 ### PowerPoint Insertion
@@ -193,8 +193,8 @@ Place PNG files in `docs/` directory and reference in markdown:
 
 ## Related Documentation
 
-- [Scale Operations Specification](../SCALE_OPERATIONS_SPECIFICATION.md)
-- [Scale Operations Examples](../SCALE_OPERATIONS_EXAMPLES.md)
+- [Scale Operations Specification](../SCALE_OPERATIONS.md)
+- [Scale Operations Examples](../SCALE_OPERATIONS_E2E_DEMONSTRATION.md)
 - [Neo4j Schema Reference](../NEO4J_SCHEMA_REFERENCE.md)
 - [CLAUDE.md](../../CLAUDE.md) - Project overview
 

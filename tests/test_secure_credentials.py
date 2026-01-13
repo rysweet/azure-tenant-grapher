@@ -21,23 +21,29 @@ class TestNeo4jCredentials:
     def test_valid_credentials_bolt(self):
         """Valid bolt:// URI should pass validation."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="test123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://localhost:7687"
         assert creds.username == "neo4j"
-        assert creds.password == "test123"
+        assert creds.password == "test123"  # pragma: allowlist secret
 
     def test_valid_credentials_neo4j(self):
         """Valid neo4j:// URI should pass validation."""
         creds = Neo4jCredentials(
-            uri="neo4j://localhost:7687", username="neo4j", password="test123"
+            uri="neo4j://localhost:7687",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "neo4j://localhost:7687"
 
     def test_valid_credentials_with_ssl(self):
         """Valid bolt+s:// URI should pass validation."""
         creds = Neo4jCredentials(
-            uri="bolt+s://secure.neo4j.io:7687", username="neo4j", password="test123"
+            uri="bolt+s://secure.neo4j.io:7687",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt+s://secure.neo4j.io:7687"
 
@@ -45,20 +51,26 @@ class TestNeo4jCredentials:
         """Invalid URI format should raise validation error."""
         with pytest.raises(CredentialValidationError) as exc_info:
             Neo4jCredentials(
-                uri="http://localhost:7687", username="neo4j", password="test123"
+                uri="http://localhost:7687",
+                username="neo4j",
+                password="test123",  # pragma: allowlist secret
             )
         assert "Invalid Neo4j URI format" in str(exc_info.value)
 
     def test_invalid_uri_missing_hostname(self):
         """URI without hostname should raise validation error."""
         with pytest.raises(CredentialValidationError):
-            Neo4jCredentials(uri="bolt://", username="neo4j", password="test123")
+            Neo4jCredentials(
+                uri="bolt://", username="neo4j", password="test123"
+            )  # pragma: allowlist secret
 
     def test_empty_username(self):
         """Empty username should raise validation error."""
         with pytest.raises(CredentialValidationError) as exc_info:
             Neo4jCredentials(
-                uri="bolt://localhost:7687", username="", password="test123"
+                uri="bolt://localhost:7687",
+                username="",
+                password="test123",  # pragma: allowlist secret
             )
         assert "Username cannot be empty" in str(exc_info.value)
 
@@ -66,31 +78,35 @@ class TestNeo4jCredentials:
         """Whitespace-only username should raise validation error."""
         with pytest.raises(CredentialValidationError):
             Neo4jCredentials(
-                uri="bolt://localhost:7687", username="   ", password="test123"
+                uri="bolt://localhost:7687",
+                username="   ",
+                password="test123",  # pragma: allowlist secret
             )
 
     def test_empty_password(self):
         """Empty password should raise validation error."""
         with pytest.raises(CredentialValidationError) as exc_info:
-            Neo4jCredentials(
-                uri="bolt://localhost:7687", username="neo4j", password=""
-            )
+            Neo4jCredentials(uri="bolt://localhost:7687", username="neo4j", password="")
         assert "Password cannot be empty" in str(exc_info.value)
 
     def test_whitespace_password(self):
         """Whitespace-only password should raise validation error."""
         with pytest.raises(CredentialValidationError):
             Neo4jCredentials(
-                uri="bolt://localhost:7687", username="neo4j", password="   "
+                uri="bolt://localhost:7687",
+                username="neo4j",
+                password="   ",  # pragma: allowlist secret
             )
 
     def test_repr_redacts_password(self):
         """__repr__ should redact password."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="supersecret123",  # pragma: allowlist secret
         )
         repr_str = repr(creds)
-        assert "supersecret123" not in repr_str
+        assert "supersecret123" not in repr_str  # pragma: allowlist secret
         assert "***REDACTED***" in repr_str
         assert "neo4j" in repr_str
         assert "bolt://localhost:7687" in repr_str
@@ -98,10 +114,12 @@ class TestNeo4jCredentials:
     def test_str_redacts_password(self):
         """__str__ should redact password."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost:7687", username="neo4j", password="supersecret123"
+            uri="bolt://localhost:7687",
+            username="neo4j",
+            password="supersecret123",  # pragma: allowlist secret
         )
         str_str = str(creds)
-        assert "supersecret123" not in str_str
+        assert "supersecret123" not in str_str  # pragma: allowlist secret
         assert "***REDACTED***" in str_str
 
 
@@ -115,32 +133,39 @@ class TestGetNeo4jCredentials:
             {
                 "NEO4J_URI": "bolt://localhost:7687",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },
             clear=True,
         ):
             creds = get_neo4j_credentials()
             assert creds.uri == "bolt://localhost:7687"
             assert creds.username == "neo4j"
-            assert creds.password == "testpass"
+            assert creds.password == "testpass"  # pragma: allowlist secret
 
     def test_environment_variables_port_only(self):
         """Should construct URI from NEO4J_PORT."""
         with patch.dict(
             os.environ,
-            {"NEO4J_PORT": "7688", "NEO4J_USER": "neo4j", "NEO4J_PASSWORD": "testpass"},
+            {
+                "NEO4J_PORT": "7688",
+                "NEO4J_USER": "neo4j",
+                "NEO4J_PASSWORD": "testpass",
+            },  # pragma: allowlist secret
             clear=True,
         ):
             creds = get_neo4j_credentials()
             assert creds.uri == "bolt://localhost:7688"
             assert creds.username == "neo4j"
-            assert creds.password == "testpass"
+            assert creds.password == "testpass"  # pragma: allowlist secret
 
     def test_environment_variables_default_username(self):
         """Should use default username if NEO4J_USER not set."""
         with patch.dict(
             os.environ,
-            {"NEO4J_URI": "bolt://localhost:7687", "NEO4J_PASSWORD": "testpass"},
+            {
+                "NEO4J_URI": "bolt://localhost:7687",
+                "NEO4J_PASSWORD": "testpass",
+            },  # pragma: allowlist secret
             clear=True,
         ):
             creds = get_neo4j_credentials()
@@ -148,9 +173,7 @@ class TestGetNeo4jCredentials:
 
     def test_environment_variables_missing_password(self):
         """Should raise error if NEO4J_PASSWORD not set."""
-        with patch.dict(
-            os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True
-        ):
+        with patch.dict(os.environ, {"NEO4J_URI": "bolt://localhost:7687"}, clear=True):
             with pytest.raises(RuntimeError) as exc_info:
                 get_neo4j_credentials()
             assert "not found" in str(exc_info.value).lower()
@@ -159,7 +182,7 @@ class TestGetNeo4jCredentials:
         """Should raise error if neither URI nor PORT set."""
         with patch.dict(
             os.environ, {"NEO4J_PASSWORD": "testpass"}, clear=True
-        ):
+        ):  # pragma: allowlist secret
             with pytest.raises(RuntimeError):
                 get_neo4j_credentials()
 
@@ -187,12 +210,14 @@ class TestGetNeo4jCredentials:
 
         # Clear environment except Key Vault URL
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/"},
+            clear=True,
         ):
             creds = get_neo4j_credentials()
             assert creds.uri == "bolt://keyvault.example.com:7687"
             assert creds.username == "kv_user"
-            assert creds.password == "kv_pass"
+            assert creds.password == "kv_pass"  # pragma: allowlist secret
 
     @patch("src.utils.secure_credentials.SecretClient")
     @patch("src.utils.secure_credentials.DefaultAzureCredential")
@@ -212,7 +237,7 @@ class TestGetNeo4jCredentials:
                 "AZURE_KEYVAULT_URL": "https://myvault.vault.azure.net/",
                 "NEO4J_URI": "bolt://localhost:7687",
                 "NEO4J_USER": "neo4j",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },
             clear=True,
         ):
@@ -224,7 +249,7 @@ class TestGetNeo4jCredentials:
 
             assert creds.uri == "bolt://localhost:7687"
             assert creds.username == "neo4j"
-            assert creds.password == "testpass"
+            assert creds.password == "testpass"  # pragma: allowlist secret
 
     def test_no_credentials_anywhere(self):
         """Should raise clear error if no credentials found."""
@@ -257,11 +282,11 @@ class TestGetNeo4jCredentials:
         ]
 
         with patch.dict(
-            os.environ, {"AZURE_KEYVAULT_URL": "https://env.vault.azure.net/"}, clear=True
+            os.environ,
+            {"AZURE_KEYVAULT_URL": "https://env.vault.azure.net/"},
+            clear=True,
         ):
-            creds = get_neo4j_credentials(
-                keyvault_url="https://param.vault.azure.net/"
-            )
+            get_neo4j_credentials(keyvault_url="https://param.vault.azure.net/")
             # Verify parameter URL was used
             mock_secret_client.assert_called_with(
                 vault_url="https://param.vault.azure.net/", credential=mock_credential()
@@ -273,7 +298,7 @@ class TestGetNeo4jCredentials:
             os.environ,
             {
                 "NEO4J_URI": "bolt://localhost:7687",
-                "NEO4J_PASSWORD": "testpass",
+                "NEO4J_PASSWORD": "testpass",  # pragma: allowlist secret
             },
             clear=True,
         ):
@@ -292,27 +317,33 @@ class TestCredentialValidation:
         creds = Neo4jCredentials(
             uri="bolt://localhost:7687",
             username="neo4j",
-            password="p@ssw0rd!#$%^&*()",
+            password="p@ssw0rd!#$%^&*()",  # pragma: allowlist secret
         )
-        assert creds.password == "p@ssw0rd!#$%^&*()"
+        assert creds.password == "p@ssw0rd!#$%^&*()"  # pragma: allowlist secret
 
     def test_credentials_with_ipv4_uri(self):
         """IPv4 address in URI should be accepted."""
         creds = Neo4jCredentials(
-            uri="bolt://192.168.1.100:7687", username="neo4j", password="test123"
+            uri="bolt://192.168.1.100:7687",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://192.168.1.100:7687"
 
     def test_credentials_with_domain_uri(self):
         """Domain name in URI should be accepted."""
         creds = Neo4jCredentials(
-            uri="bolt://neo4j.example.com:7687", username="neo4j", password="test123"
+            uri="bolt://neo4j.example.com:7687",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://neo4j.example.com:7687"
 
     def test_credentials_without_port(self):
         """URI without port should be accepted (will use default)."""
         creds = Neo4jCredentials(
-            uri="bolt://localhost", username="neo4j", password="test123"
+            uri="bolt://localhost",
+            username="neo4j",
+            password="test123",  # pragma: allowlist secret
         )
         assert creds.uri == "bolt://localhost"

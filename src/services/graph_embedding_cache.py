@@ -56,7 +56,7 @@ class GraphEmbeddingCache:
         cache_file = self.cache_dir / f"{cache_key}.npz"
 
         if not cache_file.exists():
-            logger.debug(f"Cache miss for tenant {tenant_id}")
+            logger.debug(str(f"Cache miss for tenant {tenant_id}"))
             return None
 
         try:
@@ -68,7 +68,9 @@ class GraphEmbeddingCache:
             if not self._validate_metadata(
                 metadata, tenant_id, dimensions, walk_length, num_walks
             ):
-                logger.warning(f"Cache metadata mismatch for {tenant_id}, ignoring")
+                logger.warning(
+                    str(f"Cache metadata mismatch for {tenant_id}, ignoring")
+                )
                 return None
 
             # Extract embeddings
@@ -85,7 +87,7 @@ class GraphEmbeddingCache:
             return embeddings
 
         except Exception as e:
-            logger.warning(f"Failed to load cache for {tenant_id}: {e}")
+            logger.warning(str(f"Failed to load cache for {tenant_id}: {e}"))
             return None
 
     def put(
@@ -106,7 +108,9 @@ class GraphEmbeddingCache:
             num_walks: Number of walks parameter
         """
         if not embeddings:
-            logger.warning(f"Skipping cache storage for {tenant_id}: empty embeddings")
+            logger.warning(
+                str(f"Skipping cache storage for {tenant_id}: empty embeddings")
+            )
             return
 
         cache_key = self._compute_cache_key(
@@ -136,11 +140,11 @@ class GraphEmbeddingCache:
             )
 
             logger.info(
-                f"Cached {len(embeddings)} embeddings for tenant {tenant_id}"
+                str(f"Cached {len(embeddings)} embeddings for tenant {tenant_id}")
             )
 
         except Exception as e:
-            logger.error(f"Failed to cache embeddings for {tenant_id}: {e}")
+            logger.error(str(f"Failed to cache embeddings for {tenant_id}: {e}"))
 
     def clear(self, tenant_id: Optional[str] = None) -> int:
         """Clear cached embeddings.
@@ -160,13 +164,13 @@ class GraphEmbeddingCache:
             for cache_file in self.cache_dir.glob(pattern):
                 cache_file.unlink()
                 deleted += 1
-            logger.info(f"Cleared {deleted} cache file(s) for tenant {tenant_id}")
+            logger.info(str(f"Cleared {deleted} cache file(s) for tenant {tenant_id}"))
         else:
             # Clear all caches
             for cache_file in self.cache_dir.glob("*.npz"):
                 cache_file.unlink()
                 deleted += 1
-            logger.info(f"Cleared all {deleted} cache file(s)")
+            logger.info(str(f"Cleared all {deleted} cache file(s)"))
 
         return deleted
 

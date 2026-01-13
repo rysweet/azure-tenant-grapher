@@ -135,7 +135,7 @@ class FidelityCalculator:
 
     def close(self) -> None:
         """Close Neo4j driver connection."""
-        if self.driver:
+        if self.driver is not None:
             self.driver.close()
 
     def calculate_fidelity(
@@ -359,9 +359,9 @@ class FidelityCalculator:
         try:
             with open(output_path, "w") as f:
                 json.dump(metrics.to_dict(), f, indent=2)
-            logger.info(f"Fidelity metrics exported to {output_path}")
+            logger.info(str(f"Fidelity metrics exported to {output_path}"))
         except OSError as e:
-            logger.error(f"Failed to export metrics to {output_path}: {e}")
+            logger.error(str(f"Failed to export metrics to {output_path}: {e}"))
             raise
 
     def track_fidelity(
@@ -386,9 +386,9 @@ class FidelityCalculator:
             # Append to JSONL file
             with open(tracking_file, "a") as f:
                 f.write(json.dumps(metrics.to_dict()) + "\n")
-            logger.info(f"Fidelity metrics tracked to {tracking_file}")
+            logger.info(str(f"Fidelity metrics tracked to {tracking_file}"))
         except OSError as e:
-            logger.error(f"Failed to track metrics to {tracking_file}: {e}")
+            logger.error(str(f"Failed to track metrics to {tracking_file}: {e}"))
             raise
 
     def check_objective(
@@ -437,5 +437,5 @@ class FidelityCalculator:
             return objective_met, target_fidelity
 
         except OSError as e:
-            logger.error(f"Failed to read objective file {objective_file}: {e}")
+            logger.error(str(f"Failed to read objective file {objective_file}: {e}"))
             raise

@@ -47,7 +47,7 @@ def query_resources(
 
         result = session.run(query, tid=tenant_id)
         resources = [dict(record["r"]) for record in result]
-        logger.info(f"Retrieved {len(resources)} resources for tenant {tenant_id}")
+        logger.info(str(f"Retrieved {len(resources)} resources for tenant {tenant_id}"))
         return resources
 
 
@@ -196,13 +196,13 @@ def validate_deployment_command(
         if output:
             output_path = Path(output)
             output_path.write_text(report_text)
-            console.print(f"[green]✅ Report saved to {output}[/green]")
+            console.print(str(f"[green]✅ Report saved to {output}[/green]"))
 
             # Show summary in console
             console.print("\n[bold]Validation Summary[/bold]")
-            console.print(f"Similarity Score: {result.similarity_score:.1f}%")
-            console.print(f"Source Resources: {result.source_resource_count}")
-            console.print(f"Target Resources: {result.target_resource_count}")
+            console.print(str(f"Similarity Score: {result.similarity_score:.1f}%"))
+            console.print(str(f"Source Resources: {result.source_resource_count}"))
+            console.print(str(f"Target Resources: {result.target_resource_count}"))
 
             if result.similarity_score >= 95:
                 console.print("[green]Status: COMPLETE ✅[/green]")
@@ -215,7 +215,7 @@ def validate_deployment_command(
             click.echo(report_text)
 
     except Exception as e:
-        console.print(f"[red]❌ Validation failed: {e}[/red]")
+        console.print(str(f"[red]❌ Validation failed: {e}[/red]"))
         if verbose:
             logger.exception("Validation error details:")
         raise SystemExit(1) from e

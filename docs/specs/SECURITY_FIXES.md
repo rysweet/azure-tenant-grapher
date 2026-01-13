@@ -244,7 +244,7 @@ curl -X POST http://localhost:3001/api/execute \
 # Login to get token
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "your-password"}'
+  -d '{"username": "admin", "password": "your-password"}'  # pragma: allowlist secret
 
 # Use token for authenticated requests
 curl http://localhost:3001/api/graph \

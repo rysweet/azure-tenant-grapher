@@ -153,7 +153,7 @@ def abstract_graph(
             )
         )
     except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
+        console.print(str(f"[red]Error:[/red] {e}"))
         raise click.Abort() from e
 
 
@@ -176,9 +176,9 @@ async def _abstract_graph_async(
     container_manager = Neo4jContainerManager()
     await container_manager.ensure_neo4j_running()
 
-    console.print(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}")
-    console.print(f"[bold]Target sample size:[/bold] {sample_size}")
-    console.print(f"[bold]Sampling method:[/bold] {method}")
+    console.print(str(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}"))
+    console.print(str(f"[bold]Target sample size:[/bold] {sample_size}"))
+    console.print(str(f"[bold]Sampling method:[/bold] {method}"))
 
     if preserve_security_patterns:
         console.print(
@@ -202,7 +202,9 @@ async def _abstract_graph_async(
         patterns_list = None
         if security_patterns:
             patterns_list = [p.strip() for p in security_patterns.split(",")]
-            console.print(f"[bold]Patterns to preserve:[/bold] {', '.join(patterns_list)}")
+            console.print(
+                f"[bold]Patterns to preserve:[/bold] {', '.join(patterns_list)}"
+            )
 
         # Create service and perform abstraction
         service = GraphAbstractionService(
@@ -228,7 +230,7 @@ async def _abstract_graph_async(
         _display_results(result)
 
     finally:
-        if driver:
+        if driver is not None:
             driver.close()
 
 
@@ -250,8 +252,14 @@ def _display_results(result: Dict[str, Any]) -> None:
         console.print(f"  Base Sample: {result['base_sample_size']}")
         console.print(f"  Final Size: [bold]{result['actual_size']}[/bold]")
         overhead = result["actual_size"] - result["base_sample_size"]
-        overhead_pct = (overhead / result["base_sample_size"] * 100) if result["base_sample_size"] > 0 else 0
-        console.print(f"  Security Overhead: [cyan]+{overhead} nodes ({overhead_pct:.1f}%)[/cyan]")
+        overhead_pct = (
+            (overhead / result["base_sample_size"] * 100)
+            if result["base_sample_size"] > 0
+            else 0
+        )
+        console.print(
+            f"  Security Overhead: [cyan]+{overhead} nodes ({overhead_pct:.1f}%)[/cyan]"
+        )
     else:
         console.print(f"  Actual Size: [bold]{result['actual_size']}[/bold]")
 
@@ -272,11 +280,15 @@ def _display_results(result: Dict[str, Any]) -> None:
 
         for pattern_name, count in security_metrics["patterns_preserved"].items():
             coverage = security_metrics["coverage_percentages"][pattern_name]
-            color = "green" if coverage >= 90.0 else "yellow" if coverage >= 70.0 else "red"
-            console.print(f"  {pattern_name}: {count} instances ([{color}]{coverage:.1f}% coverage[/{color}])")
+            color = (
+                "green" if coverage >= 90.0 else "yellow" if coverage >= 70.0 else "red"
+            )
+            console.print(
+                f"  {pattern_name}: {count} instances ([{color}]{coverage:.1f}% coverage[/{color}])"
+            )
 
         added = security_metrics["nodes_added_for_security"]
-        console.print(f"\n  [bold]Nodes added for security:[/bold] {added}")
+        console.print(str(f"\n  [bold]Nodes added for security:[/bold] {added}"))
 
     # Type distribution table
     console.print("\n[bold]Resource Type Distribution:[/bold]")

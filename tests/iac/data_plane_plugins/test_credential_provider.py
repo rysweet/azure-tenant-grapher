@@ -85,7 +85,7 @@ def test_credential_config_with_values():
     """Test CredentialConfig with explicit values."""
     config = CredentialConfig(
         client_id="test-client-id",
-        client_secret="test-client-secret",
+        client_secret="test-client-secret",  # pragma: allowlist secret
         tenant_id="test-tenant-id",
         allow_interactive=True,
         use_environment=False,
@@ -93,7 +93,7 @@ def test_credential_config_with_values():
     )
 
     assert config.client_id == "test-client-id"
-    assert config.client_secret == "test-client-secret"
+    assert config.client_secret == "test-client-secret"  # pragma: allowlist secret
     assert config.tenant_id == "test-tenant-id"
     assert config.allow_interactive is True
     assert config.use_environment is False
@@ -112,7 +112,7 @@ def test_priority_level_1_explicit_credentials(
 
     config = CredentialConfig(
         client_id="explicit-client-id",
-        client_secret="explicit-client-secret",
+        client_secret="explicit-client-secret",  # pragma: allowlist secret
         tenant_id="explicit-tenant-id",
     )
 
@@ -123,7 +123,7 @@ def test_priority_level_1_explicit_credentials(
     mock_client_secret_cred.assert_called_once_with(
         tenant_id="explicit-tenant-id",
         client_id="explicit-client-id",
-        client_secret="explicit-client-secret",
+        client_secret="explicit-client-secret",  # pragma: allowlist secret
     )
 
     # Verify correct credential returned
@@ -140,14 +140,14 @@ def test_explicit_credentials_override_env(
     """Test explicit credentials take priority over environment variables."""
     # Set environment variables
     os.environ["AZURE_CLIENT_ID"] = "env-client-id"
-    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"  # pragma: allowlist secret
     os.environ["AZURE_TENANT_ID"] = "env-tenant-id"
 
     mock_client_secret_cred.return_value = mock_credential
 
     config = CredentialConfig(
         client_id="explicit-client-id",
-        client_secret="explicit-client-secret",
+        client_secret="explicit-client-secret",  # pragma: allowlist secret
         tenant_id="explicit-tenant-id",
     )
 
@@ -158,7 +158,7 @@ def test_explicit_credentials_override_env(
     mock_client_secret_cred.assert_called_once_with(
         tenant_id="explicit-tenant-id",
         client_id="explicit-client-id",
-        client_secret="explicit-client-secret",
+        client_secret="explicit-client-secret",  # pragma: allowlist secret
     )
     assert provider.get_credential_source() == "explicit"
 
@@ -173,7 +173,7 @@ def test_priority_level_2_environment_variables(
     """Test priority level 2: environment variables."""
     # Set environment variables
     os.environ["AZURE_CLIENT_ID"] = "env-client-id"
-    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"  # pragma: allowlist secret
     os.environ["AZURE_TENANT_ID"] = "env-tenant-id"
 
     mock_client_secret_cred.return_value = mock_credential
@@ -186,7 +186,7 @@ def test_priority_level_2_environment_variables(
     mock_client_secret_cred.assert_called_once_with(
         tenant_id="env-tenant-id",
         client_id="env-client-id",
-        client_secret="env-client-secret",
+        client_secret="env-client-secret",  # pragma: allowlist secret
     )
 
     assert credential == mock_credential
@@ -200,7 +200,7 @@ def test_environment_disabled_skips_to_default(
     """Test that disabling environment skips to DefaultAzureCredential."""
     # Set environment variables (should be ignored)
     os.environ["AZURE_CLIENT_ID"] = "env-client-id"
-    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"
+    os.environ["AZURE_CLIENT_SECRET"] = "env-client-secret"  # pragma: allowlist secret
     os.environ["AZURE_TENANT_ID"] = "env-tenant-id"
 
     mock_default_cred.return_value = mock_credential
@@ -412,7 +412,7 @@ def test_validation_failure(mock_client_secret_cred, mock_default_cred, clean_en
 
     config = CredentialConfig(
         client_id="bad-id",
-        client_secret="bad-secret",
+        client_secret="bad-secret",  # pragma: allowlist secret
         tenant_id="bad-tenant",
         allow_interactive=False,  # Don't allow interactive to test failure
     )
@@ -437,7 +437,7 @@ def test_validation_empty_token(mock_client_secret_cred, mock_default_cred, clea
 
     config = CredentialConfig(
         client_id="test-id",
-        client_secret="test-secret",
+        client_secret="test-secret",  # pragma: allowlist secret
         tenant_id="test-tenant",
         allow_interactive=False,  # Don't allow interactive to test failure
     )
