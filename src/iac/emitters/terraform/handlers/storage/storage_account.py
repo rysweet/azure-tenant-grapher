@@ -7,6 +7,7 @@ Emits: azurerm_storage_account
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -29,6 +30,11 @@ class StorageAccountHandler(ResourceHandler):
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_storage_account",
     }
+
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -72,26 +78,30 @@ class StorageAccountHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Storage account names must be globally unique (*.core.windows.net)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.Storage/storageAccounts"
+        )
+
         # Add tenant-specific suffix for cross-tenant deployments
-        # Constraints: lowercase alphanumeric only, max 24 chars
-        original_name = config["name"]
         if (
             context.target_tenant_id
             and context.source_tenant_id != context.target_tenant_id
         ):
             # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
             tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
-            # Remove hyphens and convert to lowercase for storage account name
-            original_name = original_name.replace("-", "").lower()
 
-            # Truncate to fit (24 - 6 = 18 chars for original)
-            if len(original_name) > 18:
-                original_name = original_name[:18]
+            # Truncate to fit (24 - 6 = 18 chars for sanitized name)
+            if len(sanitized_name) > 18:
+                sanitized_name = sanitized_name[:18]
 
-            config["name"] = f"{original_name}{tenant_suffix}"
+            config["name"] = f"{sanitized_name}{tenant_suffix}"
             logger.info(
                 f"Storage account name made globally unique: {resource_name} → {config['name']}"
             )
+        else:
+            config["name"] = sanitized_name
 
         # Storage account specific properties
         properties = self.parse_properties(resource)

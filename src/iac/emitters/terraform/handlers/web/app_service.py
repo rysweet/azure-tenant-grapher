@@ -32,6 +32,11 @@ class AppServiceHandler(ResourceHandler):
         "azurerm_windows_web_app",
     }
 
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
+
     def emit(
         self,
         resource: Dict[str, Any],
@@ -49,22 +54,29 @@ class AppServiceHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # App Service names must be globally unique (*.azurewebsites.net)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.Web/sites"
+        )
+
         # Add tenant suffix for cross-tenant deployments
         if (
             context.target_tenant_id
             and context.source_tenant_id != context.target_tenant_id
         ):
             tenant_suffix = context.target_tenant_id[-6:]
-            original_name = config["name"]
 
-            # Truncate to fit (60 - 7 = 53 chars for original + hyphen)
-            if len(original_name) > 53:
-                original_name = original_name[:53]
+            # Truncate to fit (60 - 7 = 53 chars for sanitized name + hyphen)
+            if len(sanitized_name) > 53:
+                sanitized_name = sanitized_name[:53]
 
-            config["name"] = f"{original_name}-{tenant_suffix}"
+            config["name"] = f"{sanitized_name}-{tenant_suffix}"
             logger.info(
                 f"App Service name made globally unique: {resource_name} → {config['name']}"
             )
+        else:
+            config["name"] = sanitized_name
 
         # Build site_config block
         site_config = {}
