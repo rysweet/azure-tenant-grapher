@@ -257,10 +257,10 @@ class TestAssertions:
                 assert request is not None, (
                     f"No {method} request to {url_pattern} found"
                 )
-        except Exception:
+        except Exception as e:
             raise AssertionError(
                 f"No {method} request to {url_pattern} found within {timeout}ms"
-            )
+            ) from e
 
     async def _assert_console_message(self, page: Page, assertion: Dict[str, Any]):
         """Assert console message presence."""

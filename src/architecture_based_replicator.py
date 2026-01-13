@@ -253,7 +253,7 @@ class ArchitecturePatternReplicator:
         # Build instances by merging RG-based groups with direct connections
         instances = []
 
-        for rg_id, resources in rg_to_resources.items():
+        for _rg_id, resources in rg_to_resources.items():
             if len(resources) >= 2:
                 # This RG has multiple resources of pattern types
                 instance = list(resources)
@@ -375,7 +375,7 @@ class ArchitecturePatternReplicator:
             # Evaluate each remaining instance
             for idx, (pattern_name, instance) in enumerate(remaining_instances):
                 # Build hypothetical target graph with this instance added
-                hypothetical_selected = selected_instances + [(pattern_name, instance)]
+                hypothetical_selected = [*selected_instances, (pattern_name, instance)]
                 hypothetical_target = self._build_target_pattern_graph_from_instances(
                     hypothetical_selected
                 )
@@ -577,7 +577,7 @@ class ArchitecturePatternReplicator:
         """
         # Collect all resource IDs from selected instances
         all_resource_ids = []
-        for pattern_name, instance in selected_instances:
+        for _pattern_name, instance in selected_instances:
             all_resource_ids.extend([r["id"] for r in instance])
 
         # Build pattern graph
@@ -624,7 +624,7 @@ class ArchitecturePatternReplicator:
                 # First, add ALL resource types from selected instances as nodes
                 # This ensures orphaned types without relationships still appear in the graph
                 resource_type_counts = {}
-                for pattern_name, instance in selected_instances:
+                for _pattern_name, instance in selected_instances:
                     for resource in instance:
                         rtype = resource["type"]
                         resource_type_counts[rtype] = (

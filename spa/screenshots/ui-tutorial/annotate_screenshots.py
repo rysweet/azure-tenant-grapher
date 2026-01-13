@@ -180,7 +180,7 @@ class ScreenshotAnnotator:
         current_line = []
 
         for word in words:
-            test_line = " ".join(current_line + [word])
+            test_line = " ".join([*current_line, word])
             bbox = draw.textbbox((0, 0), test_line, font=self.callout_font)
             if bbox[2] - bbox[0] <= max_width - 2 * AnnotationStyle.TEXT_PADDING:
                 current_line.append(word)

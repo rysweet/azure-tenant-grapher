@@ -299,7 +299,7 @@ def _run_git_command(
     Returns:
         CompletedProcess result
     """
-    cmd = ["git"] + args
+    cmd = ["git", *args]
 
     result = subprocess.run(
         cmd,

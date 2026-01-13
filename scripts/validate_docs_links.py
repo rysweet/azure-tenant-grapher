@@ -133,7 +133,7 @@ class LinkValidator:
             return
 
         files_to_fix = defaultdict(list)
-        for file_path, link, content in self.broken_links:
+        for file_path, link, _content in self.broken_links:
             if link in self.fixed_links:
                 files_to_fix[file_path].append((link, self.fixed_links[link]))
 

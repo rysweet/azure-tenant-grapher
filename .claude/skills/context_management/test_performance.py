@@ -67,7 +67,7 @@ def test_performance():
         skips = 0
         start_time = time.time()
 
-        for i in range(num_tools):
+        for _i in range(num_tools):
             result = automation.process_post_tool_use(token_count, sample_conversation)
 
             if result.get("skipped"):

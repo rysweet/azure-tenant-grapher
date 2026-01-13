@@ -118,7 +118,7 @@ def duplicate_slide(pres, index):
                 )
 
     # Copy any additional image/media relationships that might be referenced elsewhere
-    for rel_id, rel in image_rels.items():
+    for _rel_id, rel in image_rels.items():
         try:
             new_slide.part.rels.get_or_add(rel.reltype, rel._target)
         except Exception:

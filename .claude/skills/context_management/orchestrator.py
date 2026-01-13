@@ -5,7 +5,7 @@ context rehydrator components to handle skill actions.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from .context_extractor import ContextExtractor
 from .context_rehydrator import ContextRehydrator
@@ -132,7 +132,7 @@ class ContextManagementOrchestrator:
         }
 
     def _handle_rehydrate(
-        self, snapshot_id: str = None, level: str = "standard", **kwargs
+        self, snapshot_id: Optional[str] = None, level: str = "standard", **kwargs
     ) -> dict[str, Any]:
         """Handle 'rehydrate' action - restore context from snapshot.
 

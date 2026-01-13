@@ -28,7 +28,7 @@ import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -97,7 +97,7 @@ class BatchProcessor:
             f["id"] for f in self.state["failed"]
         ]
 
-    def mark_processed(self, item_id: str, result: dict = None):
+    def mark_processed(self, item_id: str, result: Optional[dict] = None):
         """Mark item as successfully processed."""
         if item_id not in self.state["processed"]:
             self.state["processed"].append(item_id)
