@@ -624,7 +624,7 @@ app.get('/api/mcp/status', async (req, res) => {
       const { exec } = require('child_process');
       const util = require('util');
       const execPromise = util.promisify(exec);
-      
+
       const { stdout } = await execPromise('ps aux | grep -E "mcp-neo4j-cypher|uvx.*mcp" | grep -v grep');
       if (stdout && stdout.trim().length > 0) {
         logger.debug('Found MCP server running in STDIO mode');

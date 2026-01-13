@@ -393,7 +393,7 @@ const ScanTab: React.FC = () => {
   const handleStart = async () => {
     try {
       console.log('handleStart called');
-      
+
       if (!tenantId) {
         setError('Tenant ID is required');
         return;
@@ -416,7 +416,7 @@ const ScanTab: React.FC = () => {
       }
 
       console.log('Checking connection status:', isConnected);
-      
+
       if (!isConnected) {
         setError('Not connected to backend server. Please check if the backend is running.');
         return;

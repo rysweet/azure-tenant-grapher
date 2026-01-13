@@ -730,7 +730,9 @@ async def generate_iac_command_handler(
         # Bug #11 FIX: Extract source subscription from Neo4j original_id FIRST (before Azure CLI)
         # This is critical for cross-tenant where Azure CLI might be logged into target tenant
         if not source_subscription_id and graph.resources:
-            logger.info(f"🔍 Extracting source subscription from {len(graph.resources)} resources...")
+            logger.info(
+                f"🔍 Extracting source subscription from {len(graph.resources)} resources..."
+            )
             for resource in graph.resources:
                 # Try original_id first (has real Azure subscription), fallback to id
                 original_id = resource.get("original_id")
@@ -747,7 +749,9 @@ async def generate_iac_command_handler(
                     break
 
             if not source_subscription_id:
-                logger.warning("  ⚠️ Could not extract source subscription from any resource")
+                logger.warning(
+                    "  ⚠️ Could not extract source subscription from any resource"
+                )
 
         # Try to get defaults from Azure CLI if not explicitly provided
         if not resolved_source_tenant_id or not source_subscription_id:

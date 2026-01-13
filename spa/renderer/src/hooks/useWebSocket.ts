@@ -132,7 +132,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
         if (callbacks) {
           callbacks.forEach(callback => callback(event));
         }
-        
+
         // Clean up
         subscribedProcesses.current.delete(event.processId);
         processExitCallbacks.current.delete(event.processId);
@@ -201,7 +201,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       processExitCallbacks.current.set(processId, new Set());
     }
     processExitCallbacks.current.get(processId)!.add(callback);
-    
+
     // Return cleanup function
     return () => {
       const callbacks = processExitCallbacks.current.get(processId);

@@ -329,7 +329,9 @@ def cmd_list_workstreams(args) -> int:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Manage PM state files")
-    parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="Project root")
+    parser.add_argument(
+        "--project-root", type=Path, default=Path.cwd(), help="Project root"
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -345,7 +347,9 @@ def main():
     # Add item command
     add_parser = subparsers.add_parser("add-item", help="Add backlog item")
     add_parser.add_argument("--title", required=True)
-    add_parser.add_argument("--priority", default="MEDIUM", choices=["HIGH", "MEDIUM", "LOW"])
+    add_parser.add_argument(
+        "--priority", default="MEDIUM", choices=["HIGH", "MEDIUM", "LOW"]
+    )
     add_parser.add_argument("--description", default="")
     add_parser.add_argument("--estimated-hours", type=int, default=4)
     add_parser.add_argument("--tags", default="")
@@ -353,27 +357,39 @@ def main():
     # Update item command
     update_parser = subparsers.add_parser("update-item", help="Update backlog item")
     update_parser.add_argument("item_id")
-    update_parser.add_argument("--status", choices=["READY", "IN_PROGRESS", "DONE", "BLOCKED"])
+    update_parser.add_argument(
+        "--status", choices=["READY", "IN_PROGRESS", "DONE", "BLOCKED"]
+    )
     update_parser.add_argument("--priority", choices=["HIGH", "MEDIUM", "LOW"])
     update_parser.add_argument("--description")
 
     # Create workstream command
-    create_ws_parser = subparsers.add_parser("create-workstream", help="Create workstream")
+    create_ws_parser = subparsers.add_parser(
+        "create-workstream", help="Create workstream"
+    )
     create_ws_parser.add_argument("item_id")
     create_ws_parser.add_argument("--agent", default="builder")
 
     # Update workstream command
-    update_ws_parser = subparsers.add_parser("update-workstream", help="Update workstream")
+    update_ws_parser = subparsers.add_parser(
+        "update-workstream", help="Update workstream"
+    )
     update_ws_parser.add_argument("ws_id")
-    update_ws_parser.add_argument("--status", choices=["RUNNING", "PAUSED", "COMPLETED", "FAILED"])
+    update_ws_parser.add_argument(
+        "--status", choices=["RUNNING", "PAUSED", "COMPLETED", "FAILED"]
+    )
     update_ws_parser.add_argument("--note")
 
     # List commands
     list_bl_parser = subparsers.add_parser("list-backlog", help="List backlog items")
-    list_bl_parser.add_argument("--status", choices=["READY", "IN_PROGRESS", "DONE", "BLOCKED"])
+    list_bl_parser.add_argument(
+        "--status", choices=["READY", "IN_PROGRESS", "DONE", "BLOCKED"]
+    )
 
     list_ws_parser = subparsers.add_parser("list-workstreams", help="List workstreams")
-    list_ws_parser.add_argument("--status", choices=["RUNNING", "PAUSED", "COMPLETED", "FAILED"])
+    list_ws_parser.add_argument(
+        "--status", choices=["RUNNING", "PAUSED", "COMPLETED", "FAILED"]
+    )
 
     args = parser.parse_args()
 

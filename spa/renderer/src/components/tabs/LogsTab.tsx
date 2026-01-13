@@ -390,7 +390,7 @@ const LogsTab: React.FC = () => {
     });
 
     logger.info(`Added test logs for demonstration`);
-    
+
     // Manually refresh system logs after adding test logs
     setTimeout(() => {
       const logs = getLogs();

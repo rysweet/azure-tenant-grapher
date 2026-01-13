@@ -12,17 +12,16 @@ Tests include:
 import re
 import sys
 from pathlib import Path
-from typing import List, Set
+from typing import List
 
 import pytest
 
 # Add scripts directory to path for imports
-scripts_dir = Path(__file__).parent.parent / 'scripts'
+scripts_dir = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(scripts_dir))
 
+from find_orphaned_docs import OrphanDetector
 from validate_docs_links import LinkValidator
-from find_orphaned_docs import OrphanDetector, OrphanReport
-
 
 # ============================================================================
 # Test Fixtures
@@ -33,19 +32,19 @@ from find_orphaned_docs import OrphanDetector, OrphanReport
 def docs_dir(request) -> Path:
     """Return path to documentation directory."""
     # Allow override via pytest marker
-    marker = request.node.get_closest_marker('docs_dir')
+    marker = request.node.get_closest_marker("docs_dir")
     if marker:
         return Path(marker.args[0])
 
     # Default to docs directory
     repo_root = Path(__file__).parent.parent
-    return repo_root / 'docs'
+    return repo_root / "docs"
 
 
 @pytest.fixture
 def index_file() -> str:
     """Return name of index file."""
-    return 'INDEX.md'
+    return "INDEX.md"
 
 
 @pytest.fixture
@@ -63,7 +62,7 @@ def orphan_detector(docs_dir, index_file) -> OrphanDetector:
 @pytest.fixture
 def all_markdown_files(docs_dir) -> List[Path]:
     """Return all markdown files in documentation."""
-    return sorted(docs_dir.rglob('*.md'))
+    return sorted(docs_dir.rglob("*.md"))
 
 
 @pytest.fixture
@@ -72,7 +71,7 @@ def markdown_content(all_markdown_files) -> dict:
     content = {}
     for file_path in all_markdown_files:
         try:
-            content[file_path] = file_path.read_text(encoding='utf-8')
+            content[file_path] = file_path.read_text(encoding="utf-8")
         except Exception as e:
             pytest.fail(f"Could not read {file_path}: {e}")
     return content
@@ -96,12 +95,10 @@ class TestLinkValidation:
             for md_file, link, _ in link_validator.broken_links:
                 rel_source = md_file.relative_to(link_validator.docs_dir)
                 error_msg.append(
-                    f"\n  {rel_source}"
-                    f"\n    Link: {link}"
-                    f"\n    Status: FILE NOT FOUND"
+                    f"\n  {rel_source}\n    Link: {link}\n    Status: FILE NOT FOUND"
                 )
 
-            pytest.fail('\n'.join(error_msg))
+            pytest.fail("\n".join(error_msg))
 
     def test_link_extraction(self, link_validator):
         """Test that link extraction works correctly."""
@@ -118,10 +115,10 @@ class TestLinkValidation:
 
         # Should extract 4 links
         assert len(links) == 4
-        assert './other.md' in links
-        assert '../parent/file.md' in links
-        assert 'https://example.com' in links
-        assert '#section' in links
+        assert "./other.md" in links
+        assert "../parent/file.md" in links
+        assert "https://example.com" in links
+        assert "#section" in links
 
 
 # ============================================================================
@@ -146,42 +143,41 @@ class TestOrphanDetection:
                 rel_path = orphan.relative_to(orphan_detector.docs_dir)
                 error_msg.append(f"  - {rel_path}")
 
-            error_msg.append(
-                "\nAll documentation should be discoverable from INDEX.md"
-            )
+            error_msg.append("\nAll documentation should be discoverable from INDEX.md")
 
-            pytest.fail('\n'.join(error_msg))
+            pytest.fail("\n".join(error_msg))
 
     def test_index_file_exists(self, orphan_detector):
         """Test that INDEX.md exists."""
-        assert orphan_detector.index_path.exists(), \
+        assert orphan_detector.index_path.exists(), (
             f"Index file not found: {orphan_detector.index_path}"
+        )
 
     def test_link_traversal(self, orphan_detector, docs_dir):
         """Test that link traversal finds connected files."""
         # Create test file structure
-        test_dir = docs_dir / 'test_traversal'
+        test_dir = docs_dir / "test_traversal"
         test_dir.mkdir(exist_ok=True)
 
         try:
             # Create index with link
-            index = test_dir / 'INDEX.md'
-            index.write_text('[Link to A](a.md)\n')
+            index = test_dir / "INDEX.md"
+            index.write_text("[Link to A](a.md)\n")
 
             # Create linked file
-            file_a = test_dir / 'a.md'
-            file_a.write_text('[Link to B](b.md)\n')
+            file_a = test_dir / "a.md"
+            file_a.write_text("[Link to B](b.md)\n")
 
             # Create second level file
-            file_b = test_dir / 'b.md'
-            file_b.write_text('# Document B\n')
+            file_b = test_dir / "b.md"
+            file_b.write_text("# Document B\n")
 
             # Create orphan
-            orphan = test_dir / 'orphan.md'
-            orphan.write_text('# Orphan\n')
+            orphan = test_dir / "orphan.md"
+            orphan.write_text("# Orphan\n")
 
             # Traverse from index
-            detector = OrphanDetector(test_dir, index_file='INDEX.md')
+            detector = OrphanDetector(test_dir, index_file="INDEX.md")
             detector.traverse_links(index)
 
             # Check reachable files
@@ -207,7 +203,7 @@ class TestOrphanDetection:
         """
 
         # Write test file
-        test_file = orphan_detector.docs_dir / 'test_links.md'
+        test_file = orphan_detector.docs_dir / "test_links.md"
         try:
             test_file.write_text(content)
 
@@ -215,10 +211,10 @@ class TestOrphanDetection:
 
             # Should only extract internal links
             assert len(links) == 2
-            assert './doc.md' in links
-            assert '../parent.md' in links
-            assert 'https://example.com' not in links
-            assert 'mailto:test@example.com' not in links
+            assert "./doc.md" in links
+            assert "../parent.md" in links
+            assert "https://example.com" not in links
+            assert "mailto:test@example.com" not in links
 
         finally:
             if test_file.exists():
@@ -233,7 +229,7 @@ class TestOrphanDetection:
 class TestImageReferences:
     """Tests for image and diagram references."""
 
-    IMAGE_PATTERN = re.compile(r'!\[([^\]]*)\]\(([^\)]+)\)')
+    IMAGE_PATTERN = re.compile(r"!\[([^\]]*)\]\(([^\)]+)\)")
 
     def test_all_images_exist(self, markdown_content, docs_dir):
         """Test that all referenced images exist."""
@@ -245,22 +241,20 @@ class TestImageReferences:
                 image_path = match.group(2)
 
                 # Skip external URLs
-                if image_path.startswith(('http://', 'https://')):
+                if image_path.startswith(("http://", "https://")):
                     continue
 
                 # Resolve relative path
-                if image_path.startswith('/'):
-                    resolved = docs_dir / image_path.lstrip('/')
+                if image_path.startswith("/"):
+                    resolved = docs_dir / image_path.lstrip("/")
                 else:
                     resolved = file_path.parent / image_path
 
                 if not resolved.exists():
                     rel_file = file_path.relative_to(docs_dir)
-                    missing_images.append({
-                        'file': rel_file,
-                        'image': image_path,
-                        'resolved': resolved
-                    })
+                    missing_images.append(
+                        {"file": rel_file, "image": image_path, "resolved": resolved}
+                    )
 
         if missing_images:
             error_msg = ["\nMissing image files:"]
@@ -271,7 +265,7 @@ class TestImageReferences:
                     f"\n    Resolved to: {img['resolved']}"
                     f"\n    Status: FILE NOT FOUND"
                 )
-            pytest.fail('\n'.join(error_msg))
+            pytest.fail("\n".join(error_msg))
 
     def test_image_alt_text_present(self, markdown_content, docs_dir):
         """Test that all images have alt text (accessibility)."""
@@ -284,19 +278,14 @@ class TestImageReferences:
                 if not alt_text:
                     rel_file = file_path.relative_to(docs_dir)
                     image_path = match.group(2)
-                    missing_alt_text.append({
-                        'file': rel_file,
-                        'image': image_path
-                    })
+                    missing_alt_text.append({"file": rel_file, "image": image_path})
 
         if missing_alt_text:
             error_msg = ["\nImages missing alt text:"]
             for img in missing_alt_text:
-                error_msg.append(
-                    f"\n  In {img['file']}: {img['image']}"
-                )
+                error_msg.append(f"\n  In {img['file']}: {img['image']}")
             error_msg.append("\nAdd descriptive alt text for accessibility.")
-            pytest.fail('\n'.join(error_msg))
+            pytest.fail("\n".join(error_msg))
 
 
 # ============================================================================
@@ -311,9 +300,9 @@ class TestMarkdownSyntax:
         """Test that there are no malformed markdown links."""
         # Pattern for common link errors
         patterns = {
-            'missing_closing_bracket': re.compile(r'\[([^\]]+)\([^\)]+\)'),
-            'missing_opening_paren': re.compile(r'\[([^\]]+)\][^\(]'),
-            'unmatched_brackets': re.compile(r'(?<!\[)\[([^\]]*)\](?!\()'),
+            "missing_closing_bracket": re.compile(r"\[([^\]]+)\([^\)]+\)"),
+            "missing_opening_paren": re.compile(r"\[([^\]]+)\][^\(]"),
+            "unmatched_brackets": re.compile(r"(?<!\[)\[([^\]]*)\](?!\()"),
         }
 
         issues = []
@@ -324,7 +313,7 @@ class TestMarkdownSyntax:
             in_code_block = False
 
             for line_num, line in enumerate(lines, start=1):
-                if line.strip().startswith('```'):
+                if line.strip().startswith("```"):
                     in_code_block = not in_code_block
                     continue
 
@@ -335,12 +324,14 @@ class TestMarkdownSyntax:
                 for pattern_name, pattern in patterns.items():
                     if pattern.search(line):
                         rel_file = file_path.relative_to(docs_dir)
-                        issues.append({
-                            'file': rel_file,
-                            'line': line_num,
-                            'issue': pattern_name,
-                            'content': line.strip()
-                        })
+                        issues.append(
+                            {
+                                "file": rel_file,
+                                "line": line_num,
+                                "issue": pattern_name,
+                                "content": line.strip(),
+                            }
+                        )
 
         # Note: This test may have false positives, so we just warn
         if issues:
@@ -352,11 +343,11 @@ class TestMarkdownSyntax:
                     f"\n    Line: {issue['content'][:80]}"
                 )
             # Use pytest.skip for warnings
-            pytest.skip('\n'.join(warning_msg))
+            pytest.skip("\n".join(warning_msg))
 
     def test_heading_hierarchy(self, markdown_content, docs_dir):
         """Test that heading levels don't skip (e.g., H1 -> H3)."""
-        HEADING_PATTERN = re.compile(r'^(#{1,6})\s+(.+)$')
+        HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$")
 
         issues = []
 
@@ -372,13 +363,15 @@ class TestMarkdownSyntax:
                     # Check if we skipped levels
                     if prev_level > 0 and current_level > prev_level + 1:
                         rel_file = file_path.relative_to(docs_dir)
-                        issues.append({
-                            'file': rel_file,
-                            'line': line_num,
-                            'prev_level': prev_level,
-                            'current_level': current_level,
-                            'heading': match.group(2)
-                        })
+                        issues.append(
+                            {
+                                "file": rel_file,
+                                "line": line_num,
+                                "prev_level": prev_level,
+                                "current_level": current_level,
+                                "heading": match.group(2),
+                            }
+                        )
 
                     prev_level = current_level
 
@@ -390,7 +383,7 @@ class TestMarkdownSyntax:
                     f"\n    Jumped from H{issue['prev_level']} to H{issue['current_level']}"
                     f"\n    Heading: {issue['heading']}"
                 )
-            pytest.skip('\n'.join(warning_msg))
+            pytest.skip("\n".join(warning_msg))
 
 
 # ============================================================================
@@ -408,25 +401,27 @@ class TestDocumentationStructure:
         if not index_path.exists():
             pytest.skip(f"Index file not found: {index_file}")
 
-        content = index_path.read_text(encoding='utf-8')
+        content = index_path.read_text(encoding="utf-8")
 
         # Should have H1 heading
-        assert re.search(r'^# .+', content, re.MULTILINE), \
+        assert re.search(r"^# .+", content, re.MULTILINE), (
             "INDEX.md should have a main H1 heading"
+        )
 
         # Should have links
-        assert re.search(r'\[.+\]\(.+\)', content), \
+        assert re.search(r"\[.+\]\(.+\)", content), (
             "INDEX.md should contain links to other documentation"
+        )
 
     def test_all_docs_have_titles(self, all_markdown_files, docs_dir):
         """Test that all markdown files have H1 titles."""
         missing_titles = []
 
         for file_path in all_markdown_files:
-            content = file_path.read_text(encoding='utf-8')
+            content = file_path.read_text(encoding="utf-8")
 
             # Check for H1 heading
-            if not re.search(r'^# .+', content, re.MULTILINE):
+            if not re.search(r"^# .+", content, re.MULTILINE):
                 rel_path = file_path.relative_to(docs_dir)
                 missing_titles.append(rel_path)
 
@@ -434,25 +429,25 @@ class TestDocumentationStructure:
             error_msg = ["\nFiles missing H1 titles:"]
             for path in missing_titles:
                 error_msg.append(f"  - {path}")
-            pytest.fail('\n'.join(error_msg))
+            pytest.fail("\n".join(error_msg))
 
     def test_readme_files_in_subdirectories(self, docs_dir):
         """Test that subdirectories have README.md or INDEX.md files."""
-        subdirs = [d for d in docs_dir.rglob('*') if d.is_dir()]
+        subdirs = [d for d in docs_dir.rglob("*") if d.is_dir()]
 
         missing_readme = []
 
         for subdir in subdirs:
             # Skip hidden directories and special directories
-            if any(part.startswith('.') for part in subdir.parts):
+            if any(part.startswith(".") for part in subdir.parts):
                 continue
 
             # Check for README.md or INDEX.md
-            has_readme = (subdir / 'README.md').exists()
-            has_index = (subdir / 'INDEX.md').exists()
+            has_readme = (subdir / "README.md").exists()
+            has_index = (subdir / "INDEX.md").exists()
 
             # Check if directory has markdown files
-            has_md_files = any(subdir.glob('*.md'))
+            has_md_files = any(subdir.glob("*.md"))
 
             if has_md_files and not (has_readme or has_index):
                 rel_path = subdir.relative_to(docs_dir)
@@ -462,10 +457,8 @@ class TestDocumentationStructure:
             warning_msg = ["\nSubdirectories without README.md or INDEX.md:"]
             for path in missing_readme:
                 warning_msg.append(f"  - {path}")
-            warning_msg.append(
-                "\nConsider adding navigation files to subdirectories."
-            )
-            pytest.skip('\n'.join(warning_msg))
+            warning_msg.append("\nConsider adding navigation files to subdirectories.")
+            pytest.skip("\n".join(warning_msg))
 
 
 # ============================================================================
@@ -481,25 +474,23 @@ class TestDocumentationIntegration:
         broken_count = link_validator.validate_all()
 
         # Print summary
-        print(f"\nLink Validation Summary:")
+        print("\nLink Validation Summary:")
         print(f"  Broken links: {broken_count}")
 
-        assert broken_count == 0, \
-            f"Found {broken_count} broken links"
+        assert broken_count == 0, f"Found {broken_count} broken links"
 
     def test_full_orphan_detection(self, orphan_detector):
         """Run complete orphan detection."""
         report = orphan_detector.detect_orphans()
 
         # Print summary
-        print(f"\nOrphan Detection Summary:")
+        print("\nOrphan Detection Summary:")
         print(f"  Total files: {report.total_files}")
         print(f"  Reachable: {report.reachable_files}")
         print(f"  Orphans: {report.orphan_count}")
         print(f"  Coverage: {report.coverage_percent:.1f}%")
 
-        assert report.orphan_count == 0, \
-            f"Found {report.orphan_count} orphaned files"
+        assert report.orphan_count == 0, f"Found {report.orphan_count} orphaned files"
 
     def test_documentation_health_score(self, link_validator, orphan_detector):
         """Calculate overall documentation health score."""
@@ -519,5 +510,6 @@ class TestDocumentationIntegration:
         print(f"  Coverage: {coverage:.1f}%")
 
         # Require at least 95% health
-        assert health_score >= 95.0, \
+        assert health_score >= 95.0, (
             f"Documentation health score below threshold: {health_score:.1f}% < 95%"
+        )

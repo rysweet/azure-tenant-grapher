@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Fix final broken links - third pass. These are all valid files that just need proper markdown syntax."""
 
-import re
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -33,50 +32,68 @@ def main():
         (
             BASE_DIR / "docs/architecture/scan-source-node-relationships.md",
             [
-                ("../../src/iac/ (IaC generation source)", "../../src/iac/README.md (IaC generation source)"),
-            ]
+                (
+                    "../../src/iac/ (IaC generation source)",
+                    "../../src/iac/README.md (IaC generation source)",
+                ),
+            ],
         ),
         # demo/commands/build.md
         (
             BASE_DIR / "docs/demo/commands/build.md",
             [
-                ("[Commands Index](see `atg build --help`)", "Commands Index (see `atg build --help`)"),
-            ]
+                (
+                    "[Commands Index](see `atg build --help`)",
+                    "Commands Index (see `atg build --help`)",
+                ),
+            ],
         ),
         # demo/overview.md
         (
             BASE_DIR / "docs/demo/overview.md",
             [
-                ("- [](commands/ (see individual command files))", "- Commands (see individual command files in commands/ directory)"),
-            ]
+                (
+                    "- [](commands/ (see individual command files))",
+                    "- Commands (see individual command files in commands/ directory)",
+                ),
+            ],
         ),
         # design/DESIGN_VNET_OVERLAP_DETECTION.md
         (
             BASE_DIR / "docs/design/DESIGN_VNET_OVERLAP_DETECTION.md",
             [
-                ("[](VNET overlap detection (see design documentation))", "VNET overlap detection (see design documentation)"),
-            ]
+                (
+                    "[](VNET overlap detection (see design documentation))",
+                    "VNET overlap detection (see design documentation)",
+                ),
+            ],
         ),
         # diagrams/DIAGRAM_MANIFEST.md - remove references to non-existent PNG
         (
             BASE_DIR / "docs/diagrams/DIAGRAM_MANIFEST.md",
             [
-                ("(dual-graph-architecture.png)", "(see ../DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt for ASCII diagram)"),
-            ]
+                (
+                    "(dual-graph-architecture.png)",
+                    "(see ../DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt for ASCII diagram)",
+                ),
+            ],
         ),
         # diagrams/README.md
         (
             BASE_DIR / "docs/diagrams/README.md",
             [
-                ("(dual-graph-architecture.png)", "(see ../DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt for ASCII diagram)"),
-            ]
+                (
+                    "(dual-graph-architecture.png)",
+                    "(see ../DUAL_GRAPH_ARCHITECTURE_DIAGRAM.txt for ASCII diagram)",
+                ),
+            ],
         ),
         # guides/AUTONOMOUS_DEPLOYMENT_FAQ.md
         (
             BASE_DIR / "docs/guides/AUTONOMOUS_DEPLOYMENT_FAQ.md",
             [
                 ("(this document)", "(#troubleshooting)"),
-            ]
+            ],
         ),
     ]
 

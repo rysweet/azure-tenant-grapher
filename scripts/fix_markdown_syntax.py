@@ -19,16 +19,28 @@ def fix_broken_syntax():
             (r"\(see `atg build --help`\)", "")  # Remove - not a link
         ],
         "docs/demo/overview.md": [
-            (r"- \[\]\(commands/ \(see individual command files\)\)", "- See individual command files in commands/ directory")
+            (
+                r"- \[\]\(commands/ \(see individual command files\)\)",
+                "- See individual command files in commands/ directory",
+            )
         ],
         "docs/design/DESIGN_VNET_OVERLAP_DETECTION.md": [
-            (r"\[\]\(VNET overlap detection \(see design documentation\)\)", "VNET overlap detection (see design documentation)")
+            (
+                r"\[\]\(VNET overlap detection \(see design documentation\)\)",
+                "VNET overlap detection (see design documentation)",
+            )
         ],
         "docs/diagrams/DIAGRAM_MANIFEST.md": [
-            (r"\(see \.\./DUAL_GRAPH_ARCHITECTURE_DIAGRAM\.txt for ASCII diagram\)", "")  # Already referenced in text
+            (
+                r"\(see \.\./DUAL_GRAPH_ARCHITECTURE_DIAGRAM\.txt for ASCII diagram\)",
+                "",
+            )  # Already referenced in text
         ],
         "docs/diagrams/README.md": [
-            (r"\(see \.\./DUAL_GRAPH_ARCHITECTURE_DIAGRAM\.txt for ASCII diagram\)", "")  # Already referenced in text
+            (
+                r"\(see \.\./DUAL_GRAPH_ARCHITECTURE_DIAGRAM\.txt for ASCII diagram\)",
+                "",
+            )  # Already referenced in text
         ],
     }
 
