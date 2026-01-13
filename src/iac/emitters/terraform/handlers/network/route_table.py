@@ -42,10 +42,12 @@ class RouteTableHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
-        # Disable BGP route propagation
+        # BGP route propagation (Bug #567: use new property name with inverted logic)
         disable_bgp = properties.get("disableBgpRoutePropagation")
         if disable_bgp is not None:
-            config["disable_bgp_route_propagation"] = disable_bgp
+            # Note: disable_bgp_route_propagation is deprecated
+            # Use bgp_route_propagation_enabled with inverted logic
+            config["bgp_route_propagation_enabled"] = not disable_bgp
 
         logger.debug(f"Route Table '{resource_name}' emitted")
 

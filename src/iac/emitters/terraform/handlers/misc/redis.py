@@ -53,8 +53,9 @@ class RedisCacheHandler(ResourceHandler):
         # Redis version
         config["redis_version"] = properties.get("redisVersion", "6")
 
-        # Non-SSL port
-        config["enable_non_ssl_port"] = properties.get("enableNonSslPort", False)
+        # Non-SSL port (Bug #567: correct property name)
+        # Note: Azure uses enableNonSslPort, Terraform uses non_ssl_port_enabled
+        config["non_ssl_port_enabled"] = properties.get("enableNonSslPort", False)
 
         # Minimum TLS version
         config["minimum_tls_version"] = properties.get("minimumTlsVersion", "1.2")

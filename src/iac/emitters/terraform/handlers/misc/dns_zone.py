@@ -41,6 +41,10 @@ class DNSZoneHandler(ResourceHandler):
 
         config = self.build_base_config(resource)
 
+        # Bug #567: DNS Zones are global resources, don't include location
+        if "location" in config:
+            del config["location"]
+
         logger.debug(f"DNS Zone '{resource_name}' emitted")
 
         return "azurerm_dns_zone", safe_name, config
