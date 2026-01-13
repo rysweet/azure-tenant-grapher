@@ -335,7 +335,7 @@ class ArchitecturalPatternAnalyzer:
                         if source != target and graph.has_edge(source, target):
                             edges = graph.get_edge_data(source, target)
                             if edges:
-                                for key, data in edges.items():
+                                for _key, data in edges.items():
                                     connection_count += data.get("frequency", 1)
                                     pattern_edges.append(
                                         (source, data["relationship"], target)
@@ -489,7 +489,7 @@ class ArchitecturalPatternAnalyzer:
         cross_pattern_edge_widths = []
         pattern_edge_colors = []
 
-        for u, v, data in G_filtered.edges(data=True):
+        for u, v, _data in G_filtered.edges(data=True):
             freq = edge_counts.get((u, v), 0)
             edge_width = max(1, freq / 50)
 
@@ -654,7 +654,7 @@ class ArchitecturalPatternAnalyzer:
         """
         # Collect all nodes that are matched by at least one pattern
         matched_nodes = set()
-        for pattern_name, match in pattern_matches.items():
+        for _pattern_name, match in pattern_matches.items():
             matched_nodes.update(match["matched_resources"])
 
         # Find orphaned nodes (not in any pattern)
@@ -673,7 +673,7 @@ class ArchitecturalPatternAnalyzer:
             for target in out_neighbors:
                 edges = graph.get_edge_data(node, target)
                 if edges:
-                    for key, data in edges.items():
+                    for _key, data in edges.items():
                         outgoing_edges.append(
                             {
                                 "target": target,
@@ -686,7 +686,7 @@ class ArchitecturalPatternAnalyzer:
             for source in in_neighbors:
                 edges = graph.get_edge_data(source, node)
                 if edges:
-                    for key, data in edges.items():
+                    for _key, data in edges.items():
                         incoming_edges.append(
                             {
                                 "source": source,
@@ -896,7 +896,7 @@ class ArchitecturalPatternAnalyzer:
         # Find connected components (clusters) in the orphaned subgraph
         weakly_connected = list(nx.weakly_connected_components(orphaned_subgraph))
 
-        for idx, component in enumerate(weakly_connected):
+        for _idx, component in enumerate(weakly_connected):
             if len(component) >= min_cluster_size:
                 component_list = list(component)
 
@@ -907,7 +907,7 @@ class ArchitecturalPatternAnalyzer:
                         if u != v and graph.has_edge(u, v):
                             edges = graph.get_edge_data(u, v)
                             if edges:
-                                for key, data in edges.items():
+                                for _key, data in edges.items():
                                     internal_edges.append(
                                         {
                                             "source": u,

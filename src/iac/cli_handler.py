@@ -58,12 +58,12 @@ def validate_output_path(user_path: str, base_dir: Path = Path("outputs")) -> Pa
     try:
         # relative_to() will raise ValueError if not a subpath
         requested_path.relative_to(base_path)
-    except ValueError:
+    except ValueError as e:
         raise ValueError(
             f"Output path must be within {base_dir}. "
             f"Requested path '{user_path}' resolves to '{requested_path}' "
             f"which is outside allowed base directory '{base_path}'"
-        )
+        ) from e
 
     return requested_path
 

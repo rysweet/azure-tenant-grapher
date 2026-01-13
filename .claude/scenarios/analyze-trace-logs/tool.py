@@ -12,7 +12,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class TraceLogAnalyzer:
@@ -307,7 +307,7 @@ class TraceLogAnalyzer:
         return patterns
 
     def analyze(
-        self, log_dir: Path, sample_size: int = 15, options: dict = None
+        self, log_dir: Path, sample_size: int = 15, options: Optional[dict] = None
     ) -> dict[str, Any]:
         """
         Analyze a sample of log files and extract patterns.
