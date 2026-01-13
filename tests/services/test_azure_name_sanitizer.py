@@ -774,3 +774,712 @@ class TestEndToEnd:
         assert result[0].isalpha()  # Must start with letter
         assert not result.endswith("-")
         assert result.lower() == result  # Lowercase
+
+
+# =============================================================================
+# PHASE 2 TESTS: NEW RESOURCE TYPES (24 types)
+# =============================================================================
+
+
+# =========================================
+# Integration/Messaging (4 types)
+# =========================================
+
+
+class TestServiceBusSanitization:
+    """Test Service Bus Namespace naming rules.
+
+    Rules:
+    - Max length: 50 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.servicebus.windows.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("sb-prod-east", "Microsoft.ServiceBus/namespaces")
+        assert result == "sb-prod-east"
+        assert "-" in result
+
+    def test_max_length_50(self):
+        """Test max length of 50 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "sb-" + "a" * 60
+        result = sanitizer.sanitize(long_name, "Microsoft.ServiceBus/namespaces")
+        assert len(result) <= 50
+
+    def test_alphanumeric_hyphen_allowed(self):
+        """Test that alphanumeric and hyphens are allowed"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("sb-123-test", "Microsoft.ServiceBus/namespaces")
+        assert result == "sb-123-test"
+
+
+class TestEventHubSanitization:
+    """Test Event Hub Namespace naming rules.
+
+    Rules:
+    - Max length: 50 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.servicebus.windows.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("eh-prod-east", "Microsoft.EventHub/namespaces")
+        assert result == "eh-prod-east"
+        assert "-" in result
+
+    def test_max_length_50(self):
+        """Test max length of 50 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "eh-" + "a" * 60
+        result = sanitizer.sanitize(long_name, "Microsoft.EventHub/namespaces")
+        assert len(result) <= 50
+
+    def test_uppercase_conversion(self):
+        """Test uppercase conversion"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("EH-Prod-123", "Microsoft.EventHub/namespaces")
+        # alphanum_hyphen allows uppercase, but sanitizer should handle consistently
+        assert result.replace("-", "").replace("123", "").replace("prod", "").replace("eh", "") == ""
+
+
+class TestEventGridSanitization:
+    """Test Event Grid Domain naming rules.
+
+    Rules:
+    - Max length: 50 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.eventgrid.azure.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("eg-domain-prod", "Microsoft.EventGrid/domains")
+        assert result == "eg-domain-prod"
+        assert "-" in result
+
+    def test_max_length_50(self):
+        """Test max length of 50 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "eg-" + "a" * 60
+        result = sanitizer.sanitize(long_name, "Microsoft.EventGrid/domains")
+        assert len(result) <= 50
+
+
+class TestSignalRSanitization:
+    """Test SignalR Service naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.service.signalr.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("signalr-prod-east", "Microsoft.SignalRService/signalR")
+        assert result == "signalr-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "signalr-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.SignalRService/signalR")
+        assert len(result) <= 63
+
+
+# =========================================
+# API/Networking (2 types)
+# =========================================
+
+
+class TestFrontDoorSanitization:
+    """Test Azure Front Door naming rules.
+
+    Rules:
+    - Max length: 64 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azurefd.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("frontdoor-prod", "Microsoft.Network/frontDoors")
+        assert result == "frontdoor-prod"
+        assert "-" in result
+
+    def test_max_length_64(self):
+        """Test max length of 64 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "fd-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Network/frontDoors")
+        assert len(result) <= 64
+
+
+class TestTrafficManagerSanitization:
+    """Test Traffic Manager Profile naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.trafficmanager.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("tm-prod-east", "Microsoft.Network/trafficManagerProfiles")
+        assert result == "tm-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "tm-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Network/trafficManagerProfiles")
+        assert len(result) <= 63
+
+
+# =========================================
+# Data/Analytics (10 types)
+# =========================================
+
+
+class TestMariaDBServerSanitization:
+    """Test MariaDB Server naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Lowercase alphanumeric + hyphens
+    - DNS pattern: *.mariadb.database.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("mariadb-a1b2c3d4", "Microsoft.DBforMariaDB/servers")
+        assert result == "mariadb-a1b2c3d4"
+        assert "-" in result
+
+    def test_lowercase_enforced(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("MariaDB-A1B2C3D4", "Microsoft.DBforMariaDB/servers")
+        assert result == "mariadb-a1b2c3d4"
+        assert result.replace("-", "").islower()
+
+    def test_max_length_63(self):
+        """Test max length"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "mariadb-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.DBforMariaDB/servers")
+        assert len(result) <= 63
+
+
+class TestCosmosDBSanitization:
+    """Test Cosmos DB Account naming rules.
+
+    Rules:
+    - Max length: 44 chars
+    - Lowercase alphanumeric + hyphens
+    - DNS pattern: *.documents.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("cosmos-prod", "Microsoft.DocumentDB/databaseAccounts")
+        assert result == "cosmos-prod"
+        assert "-" in result
+
+    def test_lowercase_enforced(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("Cosmos-PROD-123", "Microsoft.DocumentDB/databaseAccounts")
+        assert result == "cosmos-prod-123"
+        assert result.replace("-", "").islower()
+
+    def test_max_length_44(self):
+        """Test max length of 44 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "cosmos-" + "a" * 50
+        result = sanitizer.sanitize(long_name, "Microsoft.DocumentDB/databaseAccounts")
+        assert len(result) <= 44
+
+
+class TestRedisCacheSanitization:
+    """Test Redis Cache naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.redis.cache.windows.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("redis-prod-east", "Microsoft.Cache/redis")
+        assert result == "redis-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "redis-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Cache/redis")
+        assert len(result) <= 63
+
+
+class TestSearchServiceSanitization:
+    """Test Azure Search Service naming rules.
+
+    Rules:
+    - Max length: 60 chars
+    - Lowercase alphanumeric + hyphens
+    - DNS pattern: *.search.windows.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("search-prod", "Microsoft.Search/searchServices")
+        assert result == "search-prod"
+        assert "-" in result
+
+    def test_lowercase_enforced(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("Search-PROD-123", "Microsoft.Search/searchServices")
+        assert result == "search-prod-123"
+        assert result.replace("-", "").islower()
+
+    def test_max_length_60(self):
+        """Test max length of 60 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "search-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Search/searchServices")
+        assert len(result) <= 60
+
+
+class TestDataFactorySanitization:
+    """Test Data Factory naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.datafactory.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("adf-prod-east", "Microsoft.DataFactory/factories")
+        assert result == "adf-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "adf-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.DataFactory/factories")
+        assert len(result) <= 63
+
+
+class TestSynapseWorkspaceSanitization:
+    """Test Synapse Workspace naming rules.
+
+    Rules:
+    - Max length: 50 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.sql.azuresynapse.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("synapse-prod", "Microsoft.Synapse/workspaces")
+        assert result == "synapse-prod"
+        assert "-" in result
+
+    def test_max_length_50(self):
+        """Test max length of 50 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "synapse-" + "a" * 60
+        result = sanitizer.sanitize(long_name, "Microsoft.Synapse/workspaces")
+        assert len(result) <= 50
+
+
+class TestDatabricksWorkspaceSanitization:
+    """Test Databricks Workspace naming rules.
+
+    Rules:
+    - Max length: 64 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azuredatabricks.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("databricks-prod", "Microsoft.Databricks/workspaces")
+        assert result == "databricks-prod"
+        assert "-" in result
+
+    def test_max_length_64(self):
+        """Test max length of 64 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "databricks-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Databricks/workspaces")
+        assert len(result) <= 64
+
+
+class TestHDInsightClusterSanitization:
+    """Test HDInsight Cluster naming rules.
+
+    Rules:
+    - Max length: 59 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azurehdinsight.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("hdinsight-prod", "Microsoft.HDInsight/clusters")
+        assert result == "hdinsight-prod"
+        assert "-" in result
+
+    def test_max_length_59(self):
+        """Test max length of 59 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "hdinsight-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.HDInsight/clusters")
+        assert len(result) <= 59
+
+
+class TestDataLakeStoreSanitization:
+    """Test Data Lake Store naming rules.
+
+    Rules:
+    - Max length: 24 chars
+    - Lowercase alphanumeric ONLY (no hyphens)
+    - DNS pattern: *.azuredatalakestore.net
+    """
+
+    def test_hyphen_removal(self):
+        """Test that hyphens are removed"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("dls-a1b2c3", "Microsoft.DataLakeStore/accounts")
+        assert result == "dlsa1b2c3"
+        assert "-" not in result
+
+    def test_lowercase_conversion(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("DLS-A1B2C3", "Microsoft.DataLakeStore/accounts")
+        assert result == "dlsa1b2c3"
+        assert result.islower()
+
+    def test_max_length_24(self):
+        """Test max length of 24 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "datalake-" + "a" * 30
+        result = sanitizer.sanitize(long_name, "Microsoft.DataLakeStore/accounts")
+        assert len(result) <= 24
+
+
+class TestDataLakeAnalyticsSanitization:
+    """Test Data Lake Analytics naming rules.
+
+    Rules:
+    - Max length: 24 chars
+    - Lowercase alphanumeric ONLY (no hyphens)
+    - DNS pattern: *.azuredatalakeanalytics.net
+    """
+
+    def test_hyphen_removal(self):
+        """Test that hyphens are removed"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("dla-a1b2c3", "Microsoft.DataLakeAnalytics/accounts")
+        assert result == "dlaa1b2c3"
+        assert "-" not in result
+
+    def test_lowercase_conversion(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("DLA-A1B2C3", "Microsoft.DataLakeAnalytics/accounts")
+        assert result == "dlaa1b2c3"
+        assert result.islower()
+
+    def test_max_length_24(self):
+        """Test max length of 24 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "analytics-" + "a" * 30
+        result = sanitizer.sanitize(long_name, "Microsoft.DataLakeAnalytics/accounts")
+        assert len(result) <= 24
+
+
+# =========================================
+# AI/ML/IoT (4 types)
+# =========================================
+
+
+class TestCognitiveServicesSanitization:
+    """Test Cognitive Services naming rules.
+
+    Rules:
+    - Max length: 64 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.cognitiveservices.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("cog-prod-east", "Microsoft.CognitiveServices/accounts")
+        assert result == "cog-prod-east"
+        assert "-" in result
+
+    def test_max_length_64(self):
+        """Test max length of 64 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "cognitive-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.CognitiveServices/accounts")
+        assert len(result) <= 64
+
+
+class TestMLWorkspaceSanitization:
+    """Test ML Workspace naming rules.
+
+    Rules:
+    - Max length: 33 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.api.azureml.ms
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("ml-prod-east", "Microsoft.MachineLearningServices/workspaces")
+        assert result == "ml-prod-east"
+        assert "-" in result
+
+    def test_max_length_33(self):
+        """Test max length of 33 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "ml-workspace-" + "a" * 40
+        result = sanitizer.sanitize(long_name, "Microsoft.MachineLearningServices/workspaces")
+        assert len(result) <= 33
+
+
+class TestIoTHubSanitization:
+    """Test IoT Hub naming rules.
+
+    Rules:
+    - Max length: 50 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azure-devices.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("iot-prod-east", "Microsoft.Devices/IotHubs")
+        assert result == "iot-prod-east"
+        assert "-" in result
+
+    def test_max_length_50(self):
+        """Test max length of 50 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "iot-" + "a" * 60
+        result = sanitizer.sanitize(long_name, "Microsoft.Devices/IotHubs")
+        assert len(result) <= 50
+
+
+class TestIoTCentralSanitization:
+    """Test IoT Central naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azureiotcentral.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("iotc-prod-east", "Microsoft.IoTCentral/IoTApps")
+        assert result == "iotc-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "iotc-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.IoTCentral/IoTApps")
+        assert len(result) <= 63
+
+
+# =========================================
+# Specialized (6 types)
+# =========================================
+
+
+class TestBotServiceSanitization:
+    """Test Bot Service naming rules.
+
+    Rules:
+    - Max length: 64 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.botframework.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("bot-prod-east", "Microsoft.BotService/botServices")
+        assert result == "bot-prod-east"
+        assert "-" in result
+
+    def test_max_length_64(self):
+        """Test max length of 64 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "bot-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.BotService/botServices")
+        assert len(result) <= 64
+
+
+class TestCommunicationServiceSanitization:
+    """Test Communication Service naming rules.
+
+    Rules:
+    - Max length: 63 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.communication.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("comm-prod-east", "Microsoft.Communication/communicationServices")
+        assert result == "comm-prod-east"
+        assert "-" in result
+
+    def test_max_length_63(self):
+        """Test max length of 63 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "comm-" + "a" * 70
+        result = sanitizer.sanitize(long_name, "Microsoft.Communication/communicationServices")
+        assert len(result) <= 63
+
+
+class TestSpringCloudSanitization:
+    """Test Spring Cloud naming rules.
+
+    Rules:
+    - Max length: 32 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azuremicroservices.io
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("spring-prod", "Microsoft.AppPlatform/Spring")
+        assert result == "spring-prod"
+        assert "-" in result
+
+    def test_max_length_32(self):
+        """Test max length of 32 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "spring-" + "a" * 40
+        result = sanitizer.sanitize(long_name, "Microsoft.AppPlatform/Spring")
+        assert len(result) <= 32
+
+
+class TestStaticWebAppSanitization:
+    """Test Static Web App naming rules.
+
+    Rules:
+    - Max length: 40 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.azurestaticapps.net
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("static-prod", "Microsoft.Web/staticSites")
+        assert result == "static-prod"
+        assert "-" in result
+
+    def test_max_length_40(self):
+        """Test max length of 40 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "static-" + "a" * 50
+        result = sanitizer.sanitize(long_name, "Microsoft.Web/staticSites")
+        assert len(result) <= 40
+
+
+class TestKustoClusterSanitization:
+    """Test Kusto Cluster naming rules.
+
+    Rules:
+    - Max length: 22 chars
+    - Lowercase alphanumeric ONLY (no hyphens)
+    - DNS pattern: *.kusto.windows.net
+    """
+
+    def test_hyphen_removal(self):
+        """Test that hyphens are removed"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("kusto-a1b2", "Microsoft.Kusto/clusters")
+        assert result == "kustoa1b2"
+        assert "-" not in result
+
+    def test_lowercase_conversion(self):
+        """Test lowercase enforcement"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("KUSTO-A1B2", "Microsoft.Kusto/clusters")
+        assert result == "kustoa1b2"
+        assert result.islower()
+
+    def test_max_length_22(self):
+        """Test max length of 22 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "kusto-" + "a" * 30
+        result = sanitizer.sanitize(long_name, "Microsoft.Kusto/clusters")
+        assert len(result) <= 22
+
+
+class TestGrafanaSanitization:
+    """Test Grafana naming rules.
+
+    Rules:
+    - Max length: 23 chars
+    - Alphanumeric + hyphens
+    - DNS pattern: *.grafana.azure.com
+    """
+
+    def test_hyphens_preserved(self):
+        """Test that hyphens are preserved"""
+        sanitizer = AzureNameSanitizer()
+        result = sanitizer.sanitize("grafana-prod", "Microsoft.Dashboard/grafana")
+        assert result == "grafana-prod"
+        assert "-" in result
+
+    def test_max_length_23(self):
+        """Test max length of 23 characters"""
+        sanitizer = AzureNameSanitizer()
+        long_name = "grafana-" + "a" * 30
+        result = sanitizer.sanitize(long_name, "Microsoft.Dashboard/grafana")
+        assert len(result) <= 23

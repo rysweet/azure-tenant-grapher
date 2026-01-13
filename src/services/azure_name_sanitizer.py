@@ -216,8 +216,141 @@ class AzureNameSanitizer:
             allowed_chars="alphanum_hyphen",
             dns_pattern="*.azconfig.io",
         ),
-        # Additional resource types would follow...
-        # (Integration/Messaging, API/Networking, Data/Analytics, AI/ML/IoT, Specialized)
+        # Integration/Messaging (4 types)
+        "Microsoft.ServiceBus/namespaces": NamingConstraints(
+            max_length=50,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.servicebus.windows.net",
+        ),
+        "Microsoft.EventHub/namespaces": NamingConstraints(
+            max_length=50,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.servicebus.windows.net",
+        ),
+        "Microsoft.EventGrid/domains": NamingConstraints(
+            max_length=50,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.eventgrid.azure.net",
+        ),
+        "Microsoft.SignalRService/signalR": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.service.signalr.net",
+        ),
+        # API/Networking (4 types)
+        "Microsoft.Network/frontDoors": NamingConstraints(
+            max_length=64,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azurefd.net",
+        ),
+        "Microsoft.Network/trafficManagerProfiles": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.trafficmanager.net",
+        ),
+        # Data/Analytics (10 types)
+        "Microsoft.DBforMariaDB/servers": NamingConstraints(
+            max_length=63,
+            allowed_chars="lowercase_alphanum_hyphen",
+            dns_pattern="*.mariadb.database.azure.com",
+        ),
+        "Microsoft.DocumentDB/databaseAccounts": NamingConstraints(
+            max_length=44,
+            allowed_chars="lowercase_alphanum_hyphen",
+            dns_pattern="*.documents.azure.com",
+        ),
+        "Microsoft.Cache/redis": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.redis.cache.windows.net",
+        ),
+        "Microsoft.Search/searchServices": NamingConstraints(
+            max_length=60,
+            allowed_chars="lowercase_alphanum_hyphen",
+            dns_pattern="*.search.windows.net",
+        ),
+        "Microsoft.DataFactory/factories": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.datafactory.azure.com",
+        ),
+        "Microsoft.Synapse/workspaces": NamingConstraints(
+            max_length=50,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.sql.azuresynapse.net",
+        ),
+        "Microsoft.Databricks/workspaces": NamingConstraints(
+            max_length=64,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azuredatabricks.net",
+        ),
+        "Microsoft.HDInsight/clusters": NamingConstraints(
+            max_length=59,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azurehdinsight.net",
+        ),
+        "Microsoft.DataLakeStore/accounts": NamingConstraints(
+            max_length=24,
+            allowed_chars="lowercase_alphanum",
+            dns_pattern="*.azuredatalakestore.net",
+        ),
+        "Microsoft.DataLakeAnalytics/accounts": NamingConstraints(
+            max_length=24,
+            allowed_chars="lowercase_alphanum",
+            dns_pattern="*.azuredatalakeanalytics.net",
+        ),
+        # AI/ML/IoT (4 types)
+        "Microsoft.CognitiveServices/accounts": NamingConstraints(
+            max_length=64,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.cognitiveservices.azure.com",
+        ),
+        "Microsoft.MachineLearningServices/workspaces": NamingConstraints(
+            max_length=33,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.api.azureml.ms",
+        ),
+        "Microsoft.Devices/IotHubs": NamingConstraints(
+            max_length=50,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azure-devices.net",
+        ),
+        "Microsoft.IoTCentral/IoTApps": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azureiotcentral.com",
+        ),
+        # Specialized (6 types)
+        "Microsoft.BotService/botServices": NamingConstraints(
+            max_length=64,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.botframework.com",
+        ),
+        "Microsoft.Communication/communicationServices": NamingConstraints(
+            max_length=63,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.communication.azure.com",
+        ),
+        "Microsoft.AppPlatform/Spring": NamingConstraints(
+            max_length=32,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azuremicroservices.io",
+        ),
+        "Microsoft.Web/staticSites": NamingConstraints(
+            max_length=40,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.azurestaticapps.net",
+        ),
+        "Microsoft.Kusto/clusters": NamingConstraints(
+            max_length=22,
+            allowed_chars="lowercase_alphanum",
+            dns_pattern="*.kusto.windows.net",
+        ),
+        "Microsoft.Dashboard/grafana": NamingConstraints(
+            max_length=23,
+            allowed_chars="alphanum_hyphen",
+            dns_pattern="*.grafana.azure.com",
+        ),
     }
 
     def sanitize(self, abstracted_name: str, resource_type: str) -> str:
