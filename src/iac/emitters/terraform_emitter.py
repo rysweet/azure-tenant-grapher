@@ -796,13 +796,32 @@ class TerraformEmitter(IaCEmitter):
                     )
                     continue
 
-                # Add depends_on if resource has dependencies
+                # Add depends_on if resource has dependencies (Bug #566: validate first)
                 if resource_dep.depends_on:
-                    resource_config["depends_on"] = sorted(resource_dep.depends_on)
-                    logger.debug(
-                        f"Added dependencies for {resource_type}.{resource_name}: "
-                        f"{resource_dep.depends_on}"
-                    )
+                    # Filter out dependencies to resources that aren't being emitted
+                    valid_dependencies = set()
+                    for dep_ref in resource_dep.depends_on:
+                        # Parse dependency reference: "azurerm_resource_group.my_rg"
+                        if "." in dep_ref:
+                            dep_type, dep_name = dep_ref.split(".", 1)
+                            # Check if this resource is in our terraform config
+                            if dep_type in context.terraform_config.get("resource", {}) and \
+                               dep_name in context.terraform_config["resource"][dep_type]:
+                                valid_dependencies.add(dep_ref)
+                            else:
+                                logger.debug(
+                                    f"Skipping invalid dependency {dep_ref} for {resource_name} "
+                                    f"(referenced resource not being emitted)"
+                                )
+                        else:
+                            # Keep malformed refs as-is (shouldn't happen)
+                            valid_dependencies.add(dep_ref)
+
+                    if valid_dependencies:
+                        resource_config["depends_on"] = sorted(valid_dependencies)
+                        logger.debug(
+                            f"Added {len(valid_dependencies)} valid dependencies for {resource_type}.{resource_name}"
+                        )
 
                 if resource_type not in terraform_config["resource"]:
                     terraform_config["resource"][resource_type] = {}
