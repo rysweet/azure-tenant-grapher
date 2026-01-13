@@ -101,9 +101,9 @@ def main():
     for file_path, replacements in fixes:
         if fix_file(file_path, replacements):
             fixed_count += 1
-            print(f"✓ Fixed {file_path.name}")
+            print(str(f"✓ Fixed {file_path.name}"))
 
-    print(f"\n✅ Fixed {fixed_count} files")
+    print(str(f"\n✅ Fixed {fixed_count} files"))
 
 
 if __name__ == "__main__":

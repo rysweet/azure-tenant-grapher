@@ -110,8 +110,8 @@ def analyze_deployment():
                 rtype = res.get("type", "unknown")
                 type_counts[rtype] = type_counts.get(rtype, 0) + 1
 
-            print(f"Deployed {resource_count} resources")
-            print(f"Resource types: {len(type_counts)}")
+            print(str(f"Deployed {resource_count} resources"))
+            print(str(f"Resource types: {len(type_counts)}"))
 
             return resource_count, type_counts
         except (FileNotFoundError, json.JSONDecodeError):

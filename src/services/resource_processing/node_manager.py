@@ -69,7 +69,9 @@ class NodeManager:
             )
 
             self._dual_graph_initialized = True
-            logger.info(f"Initialized dual-graph services for tenant {self.tenant_id}")
+            logger.info(
+                str(f"Initialized dual-graph services for tenant {self.tenant_id}")
+            )
 
         except Exception as e:
             logger.exception(f"Failed to initialize dual-graph services: {e}")

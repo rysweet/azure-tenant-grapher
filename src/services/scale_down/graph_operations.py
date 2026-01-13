@@ -70,7 +70,7 @@ class GraphOperations(BaseScaleService):
             >>> deleted = await ops.delete_non_sampled_nodes(
             ...     {"node1", "node2", "node3"}
             ... )
-            >>> print(f"Deleted {deleted} nodes")
+            >>> print(str(f"Deleted {deleted} nodes"))
         """
         self.logger.info(
             f"Deleting non-sampled nodes (keeping {len(sampled_node_ids)} nodes)"
@@ -103,7 +103,9 @@ class GraphOperations(BaseScaleService):
                 if record:
                     nodes_deleted = record["deleted_count"]
 
-            self.logger.info(f"Successfully deleted {nodes_deleted} non-sampled nodes")
+            self.logger.info(
+                str(f"Successfully deleted {nodes_deleted} non-sampled nodes")
+            )
 
             if progress_callback:
                 progress_callback("Deletion complete", nodes_deleted, nodes_deleted)
@@ -119,7 +121,7 @@ class GraphOperations(BaseScaleService):
 
     async def discover_motifs(
         self,
-        graph: nx.DiGraph,
+        graph: nx.DiGraph[str],
         motif_size: int = 3,
         max_motifs: int = 100,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
@@ -160,9 +162,11 @@ class GraphOperations(BaseScaleService):
             ...     motif_size=3,
             ...     max_motifs=10
             ... )
-            >>> print(f"Found {len(motifs)} motifs")
+            >>> print(str(f"Found {len(motifs)} motifs"))
         """
-        self.logger.info(f"Discovering motifs (size={motif_size}, max={max_motifs})")
+        self.logger.info(
+            str(f"Discovering motifs (size={motif_size}, max={max_motifs})")
+        )
 
         if motif_size < 2 or motif_size > 10:
             raise ValueError(f"Motif size must be 2-10, got {motif_size}")
@@ -213,6 +217,8 @@ class GraphOperations(BaseScaleService):
             if progress_callback and len(motifs) % 10 == 0:
                 progress_callback("Discovering motifs", len(motifs), max_motifs)
 
-        self.logger.info(f"Discovered {len(motifs)} unique motifs of size {motif_size}")
+        self.logger.info(
+            str(f"Discovered {len(motifs)} unique motifs of size {motif_size}")
+        )
 
         return motifs

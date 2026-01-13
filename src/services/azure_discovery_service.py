@@ -105,7 +105,9 @@ class AzureDiscoveryService:
             AzureDiscoveryError: If subscription discovery fails
             AzureAuthenticationError: If authentication fails
         """
-        logger.info(f"🔍 Discovering subscriptions in tenant {self.config.tenant_id}")
+        logger.info(
+            str(f"🔍 Discovering subscriptions in tenant {self.config.tenant_id}")
+        )
 
         async def _attempt_discovery() -> List[Dict[str, Any]]:
             try:
@@ -137,7 +139,9 @@ class AzureDiscoveryService:
                     )
 
                 self._subscriptions = subscriptions
-                logger.info(f"✅ Discovered {len(subscriptions)} subscriptions total")
+                logger.info(
+                    str(f"✅ Discovered {len(subscriptions)} subscriptions total")
+                )
 
                 # If we get 0 subscriptions but no error, it might be a permissions issue
                 # Try Azure CLI credential as a fallback (only if not already in fallback mode)
@@ -154,7 +158,9 @@ class AzureDiscoveryService:
                             self._subscriptions = fallback_subs
                             return fallback_subs
                     except Exception as fallback_exc:
-                        logger.warning(f"Azure CLI fallback failed: {fallback_exc}")
+                        logger.warning(
+                            str(f"Azure CLI fallback failed: {fallback_exc}")
+                        )
                         # Continue with original empty result
 
                 return subscriptions
@@ -178,7 +184,7 @@ class AzureDiscoveryService:
             try:
                 return await _attempt_discovery()
             except AzureError as exc:
-                logger.warning(f"Attempt {attempt} failed: {exc}")
+                logger.warning(str(f"Attempt {attempt} failed: {exc}"))
                 # If authentication/credential error, attempt fallback immediately
                 if (
                     isinstance(
@@ -229,7 +235,7 @@ class AzureDiscoveryService:
         Raises:
             AzureDiscoveryError: If resource discovery fails
         """
-        logger.info(f"🔍 Discovering resources in subscription {subscription_id}")
+        logger.info(str(f"🔍 Discovering resources in subscription {subscription_id}"))
 
         async def _attempt_discovery() -> List[Dict[str, Any]]:
             try:
@@ -408,7 +414,7 @@ class AzureDiscoveryService:
             try:
                 return await _attempt_discovery()
             except AzureError as exc:
-                logger.warning(f"Attempt {attempt} failed: {exc}")
+                logger.warning(str(f"Attempt {attempt} failed: {exc}"))
                 # If authentication/credential error, attempt fallback immediately
                 if (
                     isinstance(
@@ -669,7 +675,7 @@ class AzureDiscoveryService:
 
         # Discover subnets
         if vnets:
-            logger.info(f"🔍 Discovering subnets for {len(vnets)} VNets...")
+            logger.info(str(f"🔍 Discovering subnets for {len(vnets)} VNets..."))
             try:
                 network_client = NetworkManagementClient(
                     self.credential, subscription_id
@@ -699,7 +705,9 @@ class AzureDiscoveryService:
                             child_resources.append(subnet_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch subnets for {vnet_name}: {e}")
+                        logger.debug(
+                            str(f"Failed to fetch subnets for {vnet_name}: {e}")
+                        )
 
                 subnet_count = len(
                     [
@@ -708,10 +716,10 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Network/subnets"
                     ]
                 )
-                logger.info(f"✅ Found {subnet_count} subnets")
+                logger.info(str(f"✅ Found {subnet_count} subnets"))
 
             except Exception as e:
-                logger.warning(f"Failed to create network client: {e}")
+                logger.warning(str(f"Failed to create network client: {e}"))
 
         # Discover automation runbooks
         if automation_accounts:
@@ -756,10 +764,10 @@ class AzureDiscoveryService:
                 runbook_count = len(
                     [r for r in child_resources if "runbooks" in r["type"]]
                 )
-                logger.info(f"✅ Found {runbook_count} runbooks")
+                logger.info(str(f"✅ Found {runbook_count} runbooks"))
 
             except Exception as e:
-                logger.warning(f"Failed to create automation client: {e}")
+                logger.warning(str(f"Failed to create automation client: {e}"))
 
         # Discover DNS zone virtual network links (21 errors)
         dns_zones = [
@@ -802,15 +810,17 @@ class AzureDiscoveryService:
                             child_resources.append(link_dict)
 
                     except Exception as e:
-                        logger.debug(f"Failed to fetch DNS links for {zone_name}: {e}")
+                        logger.debug(
+                            str(f"Failed to fetch DNS links for {zone_name}: {e}")
+                        )
 
                 link_count = len(
                     [r for r in child_resources if "virtualNetworkLinks" in r["type"]]
                 )
-                logger.info(f"✅ Found {link_count} DNS zone links")
+                logger.info(str(f"✅ Found {link_count} DNS zone links"))
 
             except Exception as e:
-                logger.warning(f"Failed to discover DNS zone links: {e}")
+                logger.warning(str(f"Failed to discover DNS zone links: {e}"))
 
         # Discover VM extensions (123 resources in source)
         vms = [
@@ -819,7 +829,7 @@ class AzureDiscoveryService:
             if r.get("type") == "Microsoft.Compute/virtualMachines"
         ]
         if vms:
-            logger.info(f"🔍 Discovering VM extensions for {len(vms)} VMs...")
+            logger.info(str(f"🔍 Discovering VM extensions for {len(vms)} VMs..."))
             try:
                 from azure.mgmt.compute import ComputeManagementClient
 
@@ -864,10 +874,10 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Compute/virtualMachines/extensions"
                     ]
                 )
-                logger.info(f"✅ Found {ext_count} VM extensions")
+                logger.info(str(f"✅ Found {ext_count} VM extensions"))
 
             except Exception as e:
-                logger.warning(f"Failed to discover VM extensions: {e}")
+                logger.warning(str(f"Failed to discover VM extensions: {e}"))
 
         # Discover SQL databases (child of SQL servers)
         sql_servers = [
@@ -919,10 +929,10 @@ class AzureDiscoveryService:
                         if r["type"] == "Microsoft.Sql/servers/databases"
                     ]
                 )
-                logger.info(f"✅ Found {db_count} SQL databases")
+                logger.info(str(f"✅ Found {db_count} SQL databases"))
 
             except Exception as e:
-                logger.warning(f"Failed to discover SQL databases: {e}")
+                logger.warning(str(f"Failed to discover SQL databases: {e}"))
 
         # Discover PostgreSQL configurations
         pg_servers = [
@@ -984,10 +994,12 @@ class AzureDiscoveryService:
                         if "configurations" in r.get("type", "")
                     ]
                 )
-                logger.info(f"✅ Found {config_count} PostgreSQL configurations")
+                logger.info(str(f"✅ Found {config_count} PostgreSQL configurations"))
 
             except Exception as e:
-                logger.warning(f"Failed to discover PostgreSQL configurations: {e}")
+                logger.warning(
+                    str(f"Failed to discover PostgreSQL configurations: {e}")
+                )
 
         # Discover Container Registry webhooks
         registries = [
@@ -1038,10 +1050,14 @@ class AzureDiscoveryService:
                 webhook_count = len(
                     [r for r in child_resources if "webhooks" in r.get("type", "")]
                 )
-                logger.info(f"✅ Found {webhook_count} container registry webhooks")
+                logger.info(
+                    str(f"✅ Found {webhook_count} container registry webhooks")
+                )
 
             except Exception as e:
-                logger.warning(f"Failed to discover container registry webhooks: {e}")
+                logger.warning(
+                    str(f"Failed to discover container registry webhooks: {e}")
+                )
 
         # Log final Phase 1.6 summary
         child_type_counts = {}
@@ -1052,7 +1068,7 @@ class AzureDiscoveryService:
         logger.info(
             f"✅ Phase 1.6 complete: {len(child_resources)} child resources discovered across {len(child_type_counts)} types"
         )
-        logger.debug(f"Child resource breakdown: {child_type_counts}")
+        logger.debug(str(f"Child resource breakdown: {child_type_counts}"))
 
         return child_resources
 
@@ -1080,7 +1096,7 @@ class AzureDiscoveryService:
                 # No resourceGroups in scope (subscription or management group level)
                 return None
         except Exception:
-            logger.debug(f"Could not extract resource group from scope: {scope}")
+            logger.debug(str(f"Could not extract resource group from scope: {scope}"))
             return None
 
     async def _handle_auth_fallback(
@@ -1171,10 +1187,10 @@ class AzureDiscoveryService:
                         # Use the latest stable version (first in list)
                         api_version = rt.api_versions[0]
                         self._api_version_cache[cache_key] = api_version
-                        logger.debug(f"API version for {cache_key}: {api_version}")
+                        logger.debug(str(f"API version for {cache_key}: {api_version}"))
                         return api_version
         except Exception as e:
-            logger.warning(f"Failed to get API version for {cache_key}: {e}")
+            logger.warning(str(f"Failed to get API version for {cache_key}: {e}"))
 
         # Default fallback
         default_version = "2021-04-01"
@@ -1258,9 +1274,13 @@ class AzureDiscoveryService:
                         f"Authentication failed for {resource_id}: {error_msg[:200]}"
                     )
                 elif "TooManyRequests" in error_msg:
-                    logger.warning(f"Rate limited for {resource_id}, SDK will retry")
+                    logger.warning(
+                        str(f"Rate limited for {resource_id}, SDK will retry")
+                    )
                 else:
-                    logger.error(f"Failed to fetch {resource_id}: {error_msg[:200]}")
+                    logger.error(
+                        str(f"Failed to fetch {resource_id}: {error_msg[:200]}")
+                    )
 
                 # Return resource with empty properties on failure
                 return resource
@@ -1302,7 +1322,7 @@ class AzureDiscoveryService:
             batch_num = i // batch_size + 1
             total_batches = (len(tasks) + batch_size - 1) // batch_size
 
-            logger.info(f"Processing batch {batch_num}/{total_batches}")
+            logger.info(str(f"Processing batch {batch_num}/{total_batches}"))
 
             try:
                 # Execute batch with timeout
@@ -1314,14 +1334,14 @@ class AzureDiscoveryService:
                 # Process results
                 for result in results:
                     if isinstance(result, Exception):
-                        logger.warning(f"Task failed with exception: {result}")
+                        logger.warning(str(f"Task failed with exception: {result}"))
                         # Still include the resource with empty properties
                         all_resources.append({"properties": {}})
                     elif result:
                         all_resources.append(result)
 
             except asyncio.TimeoutError:
-                logger.error(f"Batch {batch_num} timed out after 5 minutes")
+                logger.error(str(f"Batch {batch_num} timed out after 5 minutes"))
                 # Add resources from timed-out batch with empty properties
                 for _ in batch:
                     all_resources.append({"properties": {}})

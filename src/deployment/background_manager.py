@@ -581,7 +581,7 @@ class BackgroundDeploymentManager:
 
         Example:
             >>> count = manager.cleanup_old_jobs(days=7)
-            >>> print(f"Cleaned up {count} old jobs")
+            >>> print(str(f"Cleaned up {count} old jobs"))
             Cleaned up 3 old jobs
         """
         if not self.jobs_dir.exists():

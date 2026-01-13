@@ -106,14 +106,14 @@ def install_tool(tool: str, non_interactive: bool = False) -> bool:
         print(f"Tool '{tool}' does not support installer '{installer}'.")
         return False
     cmd = tool_obj.installers[installer]
-    print(f"Installing {tool} using {installer}: {cmd}")
+    print(str(f"Installing {tool} using {installer}: {cmd}"))
 
     # Check if running in non-interactive mode
     is_non_interactive = non_interactive or not _is_interactive_mode()
 
     if is_non_interactive:
         print("Non-interactive mode detected. Skipping installation prompt.")
-        print(f"Please install {tool} manually using: {cmd}")
+        print(str(f"Please install {tool} manually using: {cmd}"))
         return False
 
     proceed = input("Proceed? [y/N] ").strip().lower()
@@ -122,9 +122,9 @@ def install_tool(tool: str, non_interactive: bool = False) -> bool:
         try:
             # Use _run_command_safely to avoid shell=True (Issue #477)
             _run_command_safely(cmd)
-            print(f"Successfully installed {tool}.")
+            print(str(f"Successfully installed {tool}."))
         except subprocess.CalledProcessError:
-            print(f"Failed to install {tool}.")
+            print(str(f"Failed to install {tool}."))
         return True
     else:
         print("Installation cancelled.")

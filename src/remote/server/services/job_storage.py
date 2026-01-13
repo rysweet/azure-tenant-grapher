@@ -93,7 +93,7 @@ class JobStorage:
                 raise RuntimeError(f"Failed to create job {job_id}")
 
             job = dict(record["j"])
-            logger.info(f"Created job {job_id} of type {operation_type}")
+            logger.info(str(f"Created job {job_id} of type {operation_type}"))
             return self._format_job(job)
 
     async def update_status(
@@ -144,7 +144,7 @@ class JobStorage:
                 raise ValueError(f"Job {job_id} not found")
 
             job = dict(record["j"])
-            logger.info(f"Updated job {job_id} status to {status}")
+            logger.info(str(f"Updated job {job_id} status to {status}"))
             return self._format_job(job)
 
     async def get_job(self, job_id: str) -> Optional[Dict]:
@@ -253,7 +253,7 @@ class JobStorage:
 
             deleted = record["deleted"]
             if deleted > 0:
-                logger.info(f"Deleted job {job_id}")
+                logger.info(str(f"Deleted job {job_id}"))
                 return True
             return False
 

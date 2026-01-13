@@ -61,7 +61,7 @@ class ArchitecturePatternReplicator:
         )
 
         # Graphs
-        self.source_pattern_graph: Optional[nx.MultiDiGraph] = None
+        self.source_pattern_graph: Optional[nx.MultiDiGraph[str]] = None
         self.source_resource_type_counts: Optional[Dict[str, int]] = None
 
         # Detected architectural patterns from source tenant
@@ -476,7 +476,9 @@ class ArchitecturePatternReplicator:
             return []
 
         orphaned_types = {node["resource_type"] for node in source_orphaned}
-        logger.info(f"Found {len(orphaned_types)} orphaned resource types in source")
+        logger.info(
+            str(f"Found {len(orphaned_types)} orphaned resource types in source")
+        )
 
         # Query Neo4j to find instances containing these orphaned types
         driver = GraphDatabase.driver(
@@ -561,7 +563,7 @@ class ArchitecturePatternReplicator:
 
     def _build_target_pattern_graph_from_instances(
         self, selected_instances: List[Tuple[str, List[Dict[str, Any]]]]
-    ) -> nx.MultiDiGraph:
+    ) -> nx.MultiDiGraph[str]:
         """
         Build pattern graph from selected architectural instances.
 
@@ -581,7 +583,7 @@ class ArchitecturePatternReplicator:
             all_resource_ids.extend([r["id"] for r in instance])
 
         # Build pattern graph
-        target_graph = nx.MultiDiGraph()
+        target_graph = nx.MultiDiGraph[str]()
 
         # Count resource types
         driver = GraphDatabase.driver(
@@ -666,7 +668,7 @@ class ArchitecturePatternReplicator:
         return target_graph
 
     def analyze_orphaned_nodes(
-        self, target_pattern_graph: nx.MultiDiGraph
+        self, target_pattern_graph: nx.MultiDiGraph[str]
     ) -> Dict[str, Any]:
         """
         Analyze orphaned nodes in source and target graphs.
@@ -784,13 +786,13 @@ class ArchitecturePatternReplicator:
                     }
                 )
 
-        logger.info(f"Generated {len(suggestions)} improvement recommendations")
+        logger.info(str(f"Generated {len(suggestions)} improvement recommendations"))
         return suggestions
 
     def _compute_weighted_score(
         self,
-        source_graph: nx.DiGraph,
-        target_graph: nx.DiGraph,
+        source_graph: nx.DiGraph[str],
+        target_graph: nx.DiGraph[str],
         source_node_types: Set[str],
         node_coverage_weight: float,
     ) -> float:
@@ -834,7 +836,7 @@ class ArchitecturePatternReplicator:
         return score
 
     def _compute_spectral_distance(
-        self, graph1: nx.DiGraph, graph2: nx.DiGraph
+        self, graph1: nx.DiGraph[str], graph2: nx.DiGraph[str]
     ) -> float:
         """
         Compute normalized spectral distance using Laplacian eigenvalues.
@@ -877,5 +879,5 @@ class ArchitecturePatternReplicator:
             return distance
 
         except Exception as e:
-            logger.warning(f"Failed to compute spectral distance: {e}")
+            logger.warning(str(f"Failed to compute spectral distance: {e}"))
             return 1.0

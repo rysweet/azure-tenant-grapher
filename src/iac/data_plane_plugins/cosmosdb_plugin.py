@@ -108,7 +108,9 @@ class CosmosDBPlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for CosmosDBPlugin: {resource}")
 
         account_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering data plane items for Cosmos DB: {account_name}")
+        self.logger.info(
+            str(f"Discovering data plane items for Cosmos DB: {account_name}")
+        )
 
         items: List[DataPlaneItem] = []
 
@@ -144,7 +146,7 @@ class CosmosDBPlugin(DataPlanePlugin):
 
                 for db in databases:
                     db_id = db.get("id", "unknown")
-                    self.logger.debug(f"Discovered database: {db_id}")
+                    self.logger.debug(str(f"Discovered database: {db_id}"))
 
                     # Add database item
                     items.append(
@@ -246,7 +248,7 @@ class CosmosDBPlugin(DataPlanePlugin):
                 )
 
             # Report discovery progress
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_discovery(resource["id"], len(items))
 
         except ImportError as e:
@@ -546,11 +548,13 @@ class CosmosDBPlugin(DataPlanePlugin):
 
                     if mode == ReplicationMode.TEMPLATE:
                         # Template mode: Just log
-                        self.logger.info(f"[TEMPLATE] Would create database: {db_id}")
+                        self.logger.info(
+                            str(f"[TEMPLATE] Would create database: {db_id}")
+                        )
                         items_replicated += 1
                     else:
                         # Replication mode: Create database
-                        self.logger.info(f"Creating database: {db_id}")
+                        self.logger.info(str(f"Creating database: {db_id}"))
                         target_client.create_database_if_not_exists(id=db_id)
                         items_replicated += 1
 
@@ -576,7 +580,9 @@ class CosmosDBPlugin(DataPlanePlugin):
                         items_replicated += 1
                     else:
                         # Replication mode: Create container
-                        self.logger.info(f"Creating container: {db_id}/{container_id}")
+                        self.logger.info(
+                            str(f"Creating container: {db_id}/{container_id}")
+                        )
 
                         target_database = target_client.get_database_client(db_id)
 
@@ -601,7 +607,9 @@ class CosmosDBPlugin(DataPlanePlugin):
                             )
 
                             items_replicated += replicated_docs
-                            self.logger.info(f"Replicated {replicated_docs} documents")
+                            self.logger.info(
+                                str(f"Replicated {replicated_docs} documents")
+                            )
 
                 except (AzureError, HttpResponseError) as e:
                     error_msg = (
@@ -644,7 +652,7 @@ class CosmosDBPlugin(DataPlanePlugin):
         )
 
         # Report completion
-        if self.progress_reporter:
+        if self.progress_reporter is not None:
             self.progress_reporter.report_completion(result)
 
         return result
@@ -818,7 +826,9 @@ class CosmosDBPlugin(DataPlanePlugin):
                         last_throttle_check = time.time()
 
                 except Exception as e:
-                    self.logger.warning(f"Failed to replicate document (skipping): {e}")
+                    self.logger.warning(
+                        str(f"Failed to replicate document (skipping): {e}")
+                    )
 
         except Exception as e:
             self.logger.error(f"Error replicating documents: {e}", exc_info=True)

@@ -16,23 +16,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.mgmt.resource import ResourceManagementClient, SubscriptionClient
+from dotenv import load_dotenv
+
+# Use existing project services
+from src.services.aad_graph_service import AADGraphService
+
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Load environment variables from .env file
-from dotenv import load_dotenv
-
 env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
-    print(f"📄 Loaded environment from {env_path}")
-
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.authorization import AuthorizationManagementClient
-from azure.mgmt.resource import ResourceManagementClient, SubscriptionClient
-
-# Use existing project services
-from src.services.aad_graph_service import AADGraphService
+    print(str(f"📄 Loaded environment from {env_path}"))
 
 
 @dataclass
@@ -99,13 +98,15 @@ class ParallelTenantReporter:
 
     async def collect_all_data(self) -> TenantInventory:
         """Orchestrate parallel data collection across 20+ threads"""
-        print(f"🏴‍☠️ Starting parallel data collection for tenant: {self.tenant_id}")
+        print(
+            str(f"🏴‍☠️ Starting parallel data collection for tenant: {self.tenant_id}")
+        )
         print("⚓ Deploying at least 20 parallel threads...\n")
 
         # Phase 1: Discover subscriptions first (needed for other operations)
         print("📋 Phase 1: Discovering subscriptions...")
         await self.discover_subscriptions()
-        print(f"   ✓ Found {self.inventory.subscription_count} subscriptions\n")
+        print(str(f"   ✓ Found {self.inventory.subscription_count} subscriptions\n"))
 
         # Phase 2: Launch 20+ parallel collection tasks
         print("🚀 Phase 2: Launching parallel data collection (20+ threads)...")
@@ -134,13 +135,13 @@ class ParallelTenantReporter:
             # Cost Data (optional)
             tasks.append(self.collect_cost_data_for_subscription(sub_id, sub_name))
 
-        print(f"   Launched {len(tasks)} parallel tasks")
+        print(str(f"   Launched {len(tasks)} parallel tasks"))
         print("   Breakdown:")
         print("     - Entra ID: 4 tasks")
         print(
-            f"     - Per-subscription: {len(self.inventory.subscriptions)} subs × 3 = {len(self.inventory.subscriptions) * 3} tasks"
+            f"     - Per-subscription: {len(self.inventory.subscriptions)} subs x 3 = {len(self.inventory.subscriptions) * 3} tasks"
         )
-        print(f"   Total: {len(tasks)} concurrent threads\n")
+        print(str(f"   Total: {len(tasks)} concurrent threads\n"))
 
         # Execute all tasks in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -190,11 +191,11 @@ class ParallelTenantReporter:
             print("   [Thread 1] Collecting users...")
             users = await self.aad_service.get_users()
             self.inventory.users_count = len(users)
-            print(f"   [Thread 1] ✓ Users: {len(users)}")
+            print(str(f"   [Thread 1] ✓ Users: {len(users)}"))
         except Exception as e:
             error_msg = f"Failed to collect users: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread 1] ⚠️  {error_msg}")
+            print(str(f"   [Thread 1] ⚠️  {error_msg}"))
 
     async def collect_groups(self):
         """Collect Entra ID groups using AADGraphService"""
@@ -202,11 +203,11 @@ class ParallelTenantReporter:
             print("   [Thread 2] Collecting groups...")
             groups = await self.aad_service.get_groups()
             self.inventory.groups_count = len(groups)
-            print(f"   [Thread 2] ✓ Groups: {len(groups)}")
+            print(str(f"   [Thread 2] ✓ Groups: {len(groups)}"))
         except Exception as e:
             error_msg = f"Failed to collect groups: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread 2] ⚠️  {error_msg}")
+            print(str(f"   [Thread 2] ⚠️  {error_msg}"))
 
     async def collect_service_principals(self):
         """Collect service principals using AADGraphService"""
@@ -214,11 +215,11 @@ class ParallelTenantReporter:
             print("   [Thread 3] Collecting service principals...")
             sps = await self.aad_service.get_service_principals()
             self.inventory.service_principals_count = len(sps)
-            print(f"   [Thread 3] ✓ Service Principals: {len(sps)}")
+            print(str(f"   [Thread 3] ✓ Service Principals: {len(sps)}"))
         except Exception as e:
             error_msg = f"Failed to collect service principals: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread 3] ⚠️  {error_msg}")
+            print(str(f"   [Thread 3] ⚠️  {error_msg}"))
 
     async def collect_managed_identities(self):
         """Collect managed identities (user-assigned MIs from Azure resources)"""
@@ -232,7 +233,7 @@ class ParallelTenantReporter:
         except Exception as e:
             error_msg = f"Failed to collect managed identities: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread 4] ⚠️  {error_msg}")
+            print(str(f"   [Thread 4] ⚠️  {error_msg}"))
 
     # ========== Per-Subscription Collection (3 threads per sub) ==========
 
@@ -260,7 +261,9 @@ class ParallelTenantReporter:
             return results
 
         try:
-            print(f"   [Thread] Collecting resources in subscription: {sub_name}...")
+            print(
+                str(f"   [Thread] Collecting resources in subscription: {sub_name}...")
+            )
             results = await asyncio.to_thread(_sync_collect)
 
             self.inventory.total_resources += results["total"]
@@ -274,7 +277,7 @@ class ParallelTenantReporter:
         except Exception as e:
             error_msg = f"Failed to collect resources in {sub_name}: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread] ⚠️  {error_msg}")
+            print(str(f"   [Thread] ⚠️  {error_msg}"))
 
     async def collect_role_assignments_in_subscription(
         self, subscription_id: str, sub_name: str
@@ -295,18 +298,18 @@ class ParallelTenantReporter:
             return len(assignments), by_scope
 
         try:
-            print(f"   [Thread] Collecting role assignments in: {sub_name}...")
+            print(str(f"   [Thread] Collecting role assignments in: {sub_name}..."))
             count, by_scope = await asyncio.to_thread(_sync_collect)
 
             self.inventory.total_role_assignments += count
             for scope_type, scope_count in by_scope.items():
                 self.inventory.role_assignments_by_scope[scope_type] += scope_count
 
-            print(f"   [Thread] ✓ {sub_name}: {count} role assignments")
+            print(str(f"   [Thread] ✓ {sub_name}: {count} role assignments"))
         except Exception as e:
             error_msg = f"Failed to collect role assignments in {sub_name}: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread] ⚠️  {error_msg}")
+            print(str(f"   [Thread] ⚠️  {error_msg}"))
 
     async def collect_cost_data_for_subscription(
         self, subscription_id: str, sub_name: str
@@ -320,19 +323,19 @@ class ParallelTenantReporter:
             return None
 
         try:
-            print(f"   [Thread] Collecting cost data for: {sub_name}...")
+            print(str(f"   [Thread] Collecting cost data for: {sub_name}..."))
             await asyncio.to_thread(_sync_collect)
 
             # Mark as unavailable for now
             if not self.inventory.cost_available:
                 self.inventory.cost_error = "Cost Management API not implemented in MVP"
 
-            print(f"   [Thread] ⚠️  Cost API not implemented yet for {sub_name}")
+            print(str(f"   [Thread] ⚠️  Cost API not implemented yet for {sub_name}"))
 
         except Exception as e:
             error_msg = f"Failed to collect cost data in {sub_name}: {e}"
             self.inventory.errors.append(error_msg)
-            print(f"   [Thread] ⚠️  {error_msg}")
+            print(str(f"   [Thread] ⚠️  {error_msg}"))
 
     # ========== Helper Methods ==========
 
@@ -483,7 +486,7 @@ async def main():
             f.write(markdown_report)
 
         print("\n" + "=" * 80)
-        print(f"✅ Report saved to: {report_filename}")
+        print(str(f"✅ Report saved to: {report_filename}"))
         print("=" * 80)
 
         # Also save JSON
@@ -515,7 +518,7 @@ async def main():
                 f,
                 indent=2,
             )
-        print(f"📊 JSON data saved to: {json_filename}\n")
+        print(str(f"📊 JSON data saved to: {json_filename}\n"))
 
 
 if __name__ == "__main__":

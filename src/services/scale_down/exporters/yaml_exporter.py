@@ -35,7 +35,7 @@ class YamlExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph,
+        sampled_graph: nx.DiGraph[str],
         output_path: str,
     ) -> None:
         """
@@ -60,7 +60,7 @@ class YamlExporter(BaseExporter):
             ...     "/tmp/sample.yaml"
             ... )
         """
-        self.logger.info(f"Exporting sample to YAML at {output_path}")
+        self.logger.info(str(f"Exporting sample to YAML at {output_path}"))
 
         nodes = []
         for node_id in node_ids:
@@ -94,4 +94,4 @@ class YamlExporter(BaseExporter):
         with open(output_path, "w") as f:
             yaml.dump(output_data, f, default_flow_style=False, sort_keys=False)
 
-        self.logger.info(f"YAML export completed: {output_path}")
+        self.logger.info(str(f"YAML export completed: {output_path}"))

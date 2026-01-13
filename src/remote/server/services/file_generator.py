@@ -190,13 +190,13 @@ class FileGenerator:
 
         # Remove entire job directory
         shutil.rmtree(job_dir)
-        logger.info(f"Deleted output files for job {job_id}")
+        logger.info(str(f"Deleted output files for job {job_id}"))
 
         # Also remove ZIP if exists
         zip_path = self.output_dir / f"{job_id}.zip"
         if zip_path.exists():
             zip_path.unlink()
-            logger.info(f"Deleted ZIP archive for job {job_id}")
+            logger.info(str(f"Deleted ZIP archive for job {job_id}"))
 
         return True
 
@@ -229,7 +229,7 @@ class FileGenerator:
                     cleanup_count += 1
 
         if cleanup_count > 0:
-            logger.info(f"Cleaned up {cleanup_count} old job outputs")
+            logger.info(str(f"Cleaned up {cleanup_count} old job outputs"))
 
         return cleanup_count
 

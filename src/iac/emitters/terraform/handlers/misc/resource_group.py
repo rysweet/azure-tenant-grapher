@@ -41,7 +41,7 @@ class ResourceGroupHandler(ResourceHandler):
         # Skip Azure-managed resource groups (cannot be created via Terraform)
         # These are automatically created by Azure services (AKS, App Insights, etc.)
         if "_managed" in resource_name or resource_name.startswith("NetworkWatcherRG"):
-            logger.debug(f"Skipping Azure-managed resource group: {resource_name}")
+            logger.debug(str(f"Skipping Azure-managed resource group: {resource_name}"))
             return None
 
         safe_name = self.sanitize_name(resource_name)

@@ -78,7 +78,9 @@ class ResourceExistenceValidator:
         # For cross-tenant, we MUST use ClientSecretCredential with explicit SP
         if credential:
             self.credential = credential
-            logger.info(f"   Using provided credential: {type(credential).__name__}")
+            logger.info(
+                str(f"   Using provided credential: {type(credential).__name__}")
+            )
         elif tenant_id:
             # Use explicit SP from environment (same as deployment uses)
             import os
@@ -91,7 +93,7 @@ class ResourceExistenceValidator:
             client_secret = os.getenv("AZURE_TENANT_2_CLIENT_SECRET") or os.getenv(
                 "AZURE_CLIENT_SECRET"
             )
-            logger.info(f"   Tenant ID provided: {tenant_id}")
+            logger.info(str(f"   Tenant ID provided: {tenant_id}"))
             logger.info(
                 f"   Client ID from env: {client_id[:20]}..."
                 if client_id
@@ -146,7 +148,7 @@ class ResourceExistenceValidator:
         # Check cache first
         cached_result = self._check_cache(resource_id)
         if cached_result is not None:
-            logger.debug(f"Cache hit for resource: {resource_id}")
+            logger.debug(str(f"Cache hit for resource: {resource_id}"))
             return ResourceExistenceResult(
                 resource_id=resource_id, exists=cached_result, cached=True
             )
@@ -188,7 +190,9 @@ class ResourceExistenceValidator:
 
             except Exception as e:
                 # Unexpected errors
-                logger.error(f"Unexpected error checking resource {resource_id}: {e}")
+                logger.error(
+                    str(f"Unexpected error checking resource {resource_id}: {e}")
+                )
                 return ResourceExistenceResult(
                     resource_id=resource_id, exists=False, error=str(e)
                 )

@@ -81,7 +81,7 @@ class DependencyAnalyzer:
         Returns:
             List of ResourceDependency objects sorted by tier
         """
-        logger.info(f"Analyzing dependencies for {len(resources)} resources")
+        logger.info(str(f"Analyzing dependencies for {len(resources)} resources"))
 
         # Build resource dependencies
         dependencies = []
@@ -104,7 +104,7 @@ class DependencyAnalyzer:
 
         logger.info("Resource tier distribution:")
         for tier in sorted(tier_counts.keys()):
-            logger.info(f"  Tier {tier}: {tier_counts[tier]} resources")
+            logger.info(str(f"  Tier {tier}: {tier_counts[tier]} resources"))
 
         return dependencies
 
@@ -226,6 +226,6 @@ class DependencyAnalyzer:
         if len(sanitized) > 80:
             name_hash = hashlib.md5(sanitized.encode()).hexdigest()[:5]
             sanitized = sanitized[:74] + "_" + name_hash
-            logger.debug(f"Truncated long name to 80 chars: ...{sanitized[-20:]}")
+            logger.debug(str(f"Truncated long name to 80 chars: ...{sanitized[-20:]}"))
 
         return sanitized or "unnamed_resource"

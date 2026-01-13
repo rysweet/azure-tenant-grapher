@@ -56,7 +56,7 @@ def ensure_indexes(session_manager: Neo4jSessionManager) -> None:
         with session_manager.session() as session:
             QueryOptimizer.ensure_indexes(session, logger)
     except Exception as e:
-        logger.warning(f"Failed to ensure indexes: {e}")
+        logger.warning(str(f"Failed to ensure indexes: {e}"))
 
 
 def get_adaptive_batch_size(
@@ -206,7 +206,7 @@ async def insert_batches_parallel(
             created_count += count
             completed_batches += 1
 
-            if monitor:
+            if monitor is not None:
                 monitor.record_items(count)
                 monitor.record_batch(count)
 
@@ -279,7 +279,7 @@ async def insert_relationship_batches_parallel(
             created_count += count
             completed_batches += 1
 
-            if monitor:
+            if monitor is not None:
                 monitor.record_items(count)
                 monitor.record_batch(count)
 

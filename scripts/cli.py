@@ -95,7 +95,7 @@ def print_cli_env_block(context: str = "", debug: bool = False):
             value = os.environ.get(k)
             if _should_redact_env_var(k) and value:
                 value = "***REDACTED***"
-            print(f"[CLI ENV] {k}={value}")
+            print(str(f"[CLI ENV] {k}={value}"))
 
 
 # We'll call this later after parsing debug flag
@@ -154,7 +154,7 @@ try:
     from src.cli_commands import build_command_handler
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
-    print(f"Import error: {e}")
+    print(str(f"Import error: {e}"))
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
@@ -168,7 +168,7 @@ except ImportError:
         return False
 
     def install_tool(tool: str) -> bool:
-        print(f"Install helper unavailable. Please install {tool} manually.")
+        print(str(f"Install helper unavailable. Please install {tool} manually."))
         return False
 
 

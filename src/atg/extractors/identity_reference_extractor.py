@@ -34,7 +34,9 @@ class IdentityReferenceExtractor:
         for resource in resources:
             self._extract_from_resource(resource)
 
-        logger.info(f"Extracted {len(self.identity_references)} identity object IDs")
+        logger.info(
+            str(f"Extracted {len(self.identity_references)} identity object IDs")
+        )
         logger.info(
             f"Found {len(self.user_assigned_identity_resource_ids)} user-assigned identity resource IDs"
         )
@@ -84,7 +86,7 @@ class IdentityReferenceExtractor:
         principal_id = identity.get("principalId")
         if principal_id and principal_id != "00000000-0000-0000-0000-000000000000":
             self.identity_references.add(principal_id)
-            logger.debug(f"Found system-assigned identity: {principal_id}")
+            logger.debug(str(f"Found system-assigned identity: {principal_id}"))
 
         # User-assigned identities
         user_assigned_identities = identity.get("userAssignedIdentities")
@@ -125,7 +127,9 @@ class IdentityReferenceExtractor:
             value = properties.get(prop)
             if value and isinstance(value, str) and self._is_valid_guid(value):
                 self.identity_references.add(value)
-                logger.debug(f"Found service principal reference in {prop}: {value}")
+                logger.debug(
+                    str(f"Found service principal reference in {prop}: {value}")
+                )
 
         # Check nested properties for Key Vault access policies
         access_policies = properties.get("accessPolicies", [])
@@ -135,7 +139,9 @@ class IdentityReferenceExtractor:
                     object_id = policy.get("objectId")
                     if object_id and self._is_valid_guid(object_id):
                         self.identity_references.add(object_id)
-                        logger.debug(f"Found identity in access policy: {object_id}")
+                        logger.debug(
+                            str(f"Found identity in access policy: {object_id}")
+                        )
 
     def _extract_by_resource_type(
         self, resource: Dict[str, Any], resource_type: str

@@ -129,7 +129,7 @@ RETURN count(r) as count
 ''').evaluate()
 
 fidelity = (target / source * 100) if source > 0 else 0
-print(f"{{source}},{{target}},{{fidelity:.2f}}")
+print(str(f"{{source}},{{target}},{{fidelity:.2f}}"))
 """
 
             result = subprocess.run(

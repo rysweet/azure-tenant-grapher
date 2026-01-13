@@ -106,10 +106,10 @@ class RemoteProgressDisplay:
         if not self.show_progress:
             return
 
-        if self._progress:
+        if self._progress is not None:
             self._progress.stop()
 
-        self.console.print(f"[red]✗ Error: {message}")
+        self.console.print(str(f"[red]✗ Error: {message}"))
 
     def info(self, message: str) -> None:
         """
@@ -121,7 +121,7 @@ class RemoteProgressDisplay:
         if not self.show_progress:
             return
 
-        self.console.print(f"[cyan]i {message}")
+        self.console.print(str(f"[cyan]i {message}"))
 
     def __enter__(self):
         """Context manager entry."""
@@ -134,7 +134,7 @@ class RemoteProgressDisplay:
         exc_tb: Optional[TracebackType],
     ) -> None:
         """Context manager exit - cleanup progress display."""
-        if self._progress:
+        if self._progress is not None:
             self._progress.stop()
 
 

@@ -86,11 +86,13 @@ class AADGraphService:
                     continue
                 else:
                     # Other error - don't retry
-                    logger.error(f"Non-retryable error: {e}")
+                    logger.error(str(f"Non-retryable error: {e}"))
                     raise
             except Exception as e:
                 if attempt == max_retries - 1:
-                    logger.error(f"Operation failed after {max_retries} attempts: {e}")
+                    logger.error(
+                        str(f"Operation failed after {max_retries} attempts: {e}")
+                    )
                     raise
                 sleep_time = 2**attempt
                 logger.warning(
@@ -161,7 +163,7 @@ class AADGraphService:
                             }
                         )
 
-            logger.info(f"Fetched {len(users)} users from Microsoft Graph")
+            logger.info(str(f"Fetched {len(users)} users from Microsoft Graph"))
             return users
 
         result = await self._retry_with_backoff(fetch_users)
@@ -215,10 +217,10 @@ class AADGraphService:
                     users.append(user_data)
             except ODataError as e:
                 # User not found or no permissions - log and continue
-                logger.warning(f"Could not fetch user {user_id}: {e}")
+                logger.warning(str(f"Could not fetch user {user_id}: {e}"))
                 continue
 
-        logger.info(f"Fetched {len(users)} users out of {len(user_ids)} requested")
+        logger.info(str(f"Fetched {len(users)} users out of {len(user_ids)} requested"))
         return users
 
     async def get_groups(self) -> List[Dict[str, Any]]:
@@ -284,7 +286,7 @@ class AADGraphService:
                             }
                         )
 
-            logger.info(f"Fetched {len(groups)} groups from Microsoft Graph")
+            logger.info(str(f"Fetched {len(groups)} groups from Microsoft Graph"))
             return groups
 
         result = await self._retry_with_backoff(fetch_groups)
@@ -338,10 +340,12 @@ class AADGraphService:
                     groups.append(group_data)
             except ODataError as e:
                 # Group not found or no permissions - log and continue
-                logger.warning(f"Could not fetch group {group_id}: {e}")
+                logger.warning(str(f"Could not fetch group {group_id}: {e}"))
                 continue
 
-        logger.info(f"Fetched {len(groups)} groups out of {len(group_ids)} requested")
+        logger.info(
+            str(f"Fetched {len(groups)} groups out of {len(group_ids)} requested")
+        )
         return groups
 
     async def get_service_principals(self) -> List[Dict[str, Any]]:
@@ -467,7 +471,7 @@ class AADGraphService:
                     service_principals.append(sp_data)
             except ODataError as e:
                 # Service principal not found or no permissions - log and continue
-                logger.warning(f"Could not fetch service principal {sp_id}: {e}")
+                logger.warning(str(f"Could not fetch service principal {sp_id}: {e}"))
                 continue
 
         logger.info(
@@ -530,7 +534,7 @@ class AADGraphService:
                         }
                         members.append(member_dict)
 
-            logger.info(f"Fetched {len(members)} members for group {group_id}")
+            logger.info(str(f"Fetched {len(members)} members for group {group_id}"))
             return members
 
         result = await self._retry_with_backoff(fetch_group_members)

@@ -193,8 +193,8 @@ class ResourceCoverageAnalyzer:
                 if record["resource_type"]
             }
 
-        logger.info(f"Found {len(resource_counts)} unique resource types")
-        logger.info(f"Total resources: {sum(resource_counts.values())}")
+        logger.info(str(f"Found {len(resource_counts)} unique resource types"))
+        logger.info(str(f"Total resources: {sum(resource_counts.values())}"))
 
         return resource_counts
 
@@ -218,10 +218,10 @@ class ResourceCoverageAnalyzer:
             else:
                 self.missing_emitters.add(resource_type)
 
-        logger.info(f"Supported types: {len(self.supported_types)}")
-        logger.info(f"Non-deployable types: {len(self.non_deployable_types)}")
-        logger.info(f"Unsupported types: {len(self.unsupported_types)}")
-        logger.info(f"Missing emitters: {len(self.missing_emitters)}")
+        logger.info(str(f"Supported types: {len(self.supported_types)}"))
+        logger.info(str(f"Non-deployable types: {len(self.non_deployable_types)}"))
+        logger.info(str(f"Unsupported types: {len(self.unsupported_types)}"))
+        logger.info(str(f"Missing emitters: {len(self.missing_emitters)}"))
 
     def _is_non_deployable(self, resource_type: str) -> bool:
         """Check if a resource type is non-deployable (Graph API)."""
@@ -641,13 +641,13 @@ def main() -> int:
             markdown_report = analyzer.generate_markdown_report()
             output_file = args.output_dir / "resource_coverage_analysis.md"
             output_file.write_text(markdown_report)
-            logger.info(f"Markdown report saved to: {output_file}")
+            logger.info(str(f"Markdown report saved to: {output_file}"))
 
         if args.format in ["json", "both"]:
             json_report = analyzer.generate_json_report()
             output_file = args.output_dir / "resource_coverage_analysis.json"
             output_file.write_text(json_report)
-            logger.info(f"JSON report saved to: {output_file}")
+            logger.info(str(f"JSON report saved to: {output_file}"))
 
         logger.info("Analysis complete!")
         return 0

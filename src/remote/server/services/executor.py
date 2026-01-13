@@ -111,7 +111,7 @@ class BackgroundExecutor:
             resource_limit,
         )
 
-        logger.info(f"Submitted scan job {job_id} for tenant {tenant_id}")
+        logger.info(str(f"Submitted scan job {job_id} for tenant {tenant_id}"))
 
         return {
             "job_id": job_id,
@@ -170,7 +170,7 @@ class BackgroundExecutor:
             auto_import,
         )
 
-        logger.info(f"Submitted generate-iac job {job_id} for tenant {tenant_id}")
+        logger.info(str(f"Submitted generate-iac job {job_id} for tenant {tenant_id}"))
 
         return {
             "job_id": job_id,
@@ -217,7 +217,7 @@ class BackgroundExecutor:
             output_path,
         )
 
-        logger.info(f"Submitted generate-spec job {job_id} for tenant {tenant_id}")
+        logger.info(str(f"Submitted generate-spec job {job_id} for tenant {tenant_id}"))
 
         return {
             "job_id": job_id,
@@ -259,7 +259,7 @@ class BackgroundExecutor:
                 result=result,
             )
 
-            logger.info(f"Scan job {job_id} completed successfully")
+            logger.info(str(f"Scan job {job_id} completed successfully"))
 
         except Exception as e:
             logger.exception(f"Scan job {job_id} failed: {e}")
@@ -329,7 +329,7 @@ class BackgroundExecutor:
                     result["zip_path"] = str(zip_path)
 
                 except Exception as e:
-                    logger.warning(f"Failed to create ZIP for job {job_id}: {e}")
+                    logger.warning(str(f"Failed to create ZIP for job {job_id}: {e}"))
 
             # Update to completed
             await self.job_storage.update_status(
@@ -338,7 +338,7 @@ class BackgroundExecutor:
                 result=result,
             )
 
-            logger.info(f"Generate-iac job {job_id} completed successfully")
+            logger.info(str(f"Generate-iac job {job_id} completed successfully"))
 
         except Exception as e:
             logger.exception(f"Generate-iac job {job_id} failed: {e}")
@@ -394,7 +394,7 @@ class BackgroundExecutor:
                     result["zip_path"] = str(zip_path)
 
                 except Exception as e:
-                    logger.warning(f"Failed to create ZIP for job {job_id}: {e}")
+                    logger.warning(str(f"Failed to create ZIP for job {job_id}: {e}"))
 
             # Update to completed
             await self.job_storage.update_status(
@@ -403,7 +403,7 @@ class BackgroundExecutor:
                 result=result,
             )
 
-            logger.info(f"Generate-spec job {job_id} completed successfully")
+            logger.info(str(f"Generate-spec job {job_id} completed successfully"))
 
         except Exception as e:
             logger.exception(f"Generate-spec job {job_id} failed: {e}")

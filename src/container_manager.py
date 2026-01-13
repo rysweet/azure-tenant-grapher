@@ -91,7 +91,7 @@ class Neo4jContainerManager:
                 k: "***REDACTED***" if should_redact(k) else v
                 for k, v in os.environ.items()
             }
-            print(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}")
+            print(str(f"[DEBUG][Neo4jEnv] os.environ at init: {safe_env}"))
             print(
                 f"[DEBUG][Neo4jEnv] NEO4J_PORT={os.environ.get('NEO4J_PORT')}, NEO4J_URI={os.environ.get('NEO4J_URI')}"
             )
@@ -183,7 +183,7 @@ class Neo4jContainerManager:
     def is_docker_available(self) -> bool:
         """Check if Docker is available and running."""
         try:
-            if self.docker_client:
+            if self.docker_client is not None:
                 self.docker_client.ping()  # type: ignore[misc]
                 return True
         except Exception as e:
@@ -818,7 +818,11 @@ class Neo4jContainerManager:
             for v in volumes:
                 try:
                     if self.debug:
-                        print(f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}")
+                        print(
+                            str(
+                                f"[CONTAINER MANAGER CLEANUP] Removing volume: {v.name}"
+                            )
+                        )
                     v.remove(force=True)
                     logger.info(event=f"Removed volume {v.name}")
                 except Exception as e:

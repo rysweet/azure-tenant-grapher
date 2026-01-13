@@ -116,7 +116,7 @@ class APIMPlugin(DataPlanePlugin):
                 for api in apis:
                     # Skip if the API is a system API or not enabled
                     if api.is_current is False:
-                        self.logger.debug(f"Skipping non-current API: {api.name}")
+                        self.logger.debug(str(f"Skipping non-current API: {api.name}"))
                         continue
 
                     items.append(
@@ -162,10 +162,14 @@ class APIMPlugin(DataPlanePlugin):
                         )
                     except (AzureError, HttpResponseError) as e:
                         # Policy might not exist for all APIs
-                        self.logger.debug(f"No policy found for API {api.name}: {e}")
+                        self.logger.debug(
+                            str(f"No policy found for API {api.name}: {e}")
+                        )
 
             except (AzureError, HttpResponseError) as e:
-                self.logger.warning(f"Failed to discover APIs in {service_name}: {e}")
+                self.logger.warning(
+                    str(f"Failed to discover APIs in {service_name}: {e}")
+                )
 
             # Discover Products
             try:
@@ -256,7 +260,7 @@ class APIMPlugin(DataPlanePlugin):
                 f"Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering APIM items: {e}")
+            self.logger.error(str(f"Unexpected error discovering APIM items: {e}"))
 
         self.logger.info(
             f"Discovered {len(items)} data plane items in APIM service '{service_name}'"
@@ -300,7 +304,9 @@ class APIMPlugin(DataPlanePlugin):
         if output_format.lower() != "terraform":
             raise ValueError("Only Terraform format is currently supported")
 
-        self.logger.info(f"Generating {output_format} code for {len(items)} APIM items")
+        self.logger.info(
+            str(f"Generating {output_format} code for {len(items)} APIM items")
+        )
 
         if not items:
             return "# No API Management data plane items to replicate\n"
@@ -689,7 +695,7 @@ class APIMPlugin(DataPlanePlugin):
             # Discover items from source
             items = self.discover(source_resource)
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_discovery(
                     source_resource["id"], len(items)
                 )
@@ -708,7 +714,7 @@ class APIMPlugin(DataPlanePlugin):
             # Add timing information
             result.duration_seconds = time.time() - start_time
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_completion(result)
 
             return result

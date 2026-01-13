@@ -71,16 +71,16 @@ class AzureThreatAnalysisRunner:
                     }
                     resources.append(resource)
 
-            logger.info(f"Retrieved {len(resources)} resources from Neo4j graph")
+            logger.info(str(f"Retrieved {len(resources)} resources from Neo4j graph"))
 
             # Enumerate threats for the retrieved resources
             threats = enumerate_threats(resources, logger)
-            logger.info(f"Generated {len(threats)} threats from graph analysis")
+            logger.info(str(f"Generated {len(threats)} threats from graph analysis"))
 
             return threats
 
         except Exception as e:
-            logger.error(f"Failed to analyze threats from graph: {e}")
+            logger.error(str(f"Failed to analyze threats from graph: {e}"))
             return []
 
     def analyze_from_resources(
@@ -100,13 +100,15 @@ class AzureThreatAnalysisRunner:
             logger = self.logger
 
         try:
-            logger.info(f"Analyzing threats for {len(resources)} provided resources")
+            logger.info(
+                str(f"Analyzing threats for {len(resources)} provided resources")
+            )
             threats = enumerate_threats(resources, logger)
-            logger.info(f"Generated {len(threats)} threats from resource analysis")
+            logger.info(str(f"Generated {len(threats)} threats from resource analysis"))
             return threats
 
         except Exception as e:
-            logger.error(f"Failed to analyze threats from resources: {e}")
+            logger.error(str(f"Failed to analyze threats from resources: {e}"))
             return []
 
     def analyze_from_dfd_specification(
@@ -137,16 +139,18 @@ class AzureThreatAnalysisRunner:
                 if resource:
                     resources.append(resource)
 
-            logger.info(f"Extracted {len(resources)} components from DFD specification")
+            logger.info(
+                str(f"Extracted {len(resources)} components from DFD specification")
+            )
 
             # Enumerate threats for the components
             threats = enumerate_threats(resources, logger)
-            logger.info(f"Generated {len(threats)} threats from DFD analysis")
+            logger.info(str(f"Generated {len(threats)} threats from DFD analysis"))
 
             return threats
 
         except Exception as e:
-            logger.error(f"Failed to analyze threats from DFD specification: {e}")
+            logger.error(str(f"Failed to analyze threats from DFD specification: {e}"))
             return []
 
     def _parse_dfd_components(
@@ -215,7 +219,7 @@ class AzureThreatAnalysisRunner:
                     )
 
         except Exception as e:
-            logger.warning(f"Failed to parse DFD components: {e}")
+            logger.warning(str(f"Failed to parse DFD components: {e}"))
 
         return components
 
@@ -310,5 +314,5 @@ def run_tmt(
             return runner.analyze_from_dfd_specification(dfd_artifact, logger)
 
     except Exception as e:
-        logger.error(f"Custom threat analysis failed: {e}")
+        logger.error(str(f"Custom threat analysis failed: {e}"))
         return []

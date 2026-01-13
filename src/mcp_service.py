@@ -33,7 +33,7 @@ def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -
         driver.close()
         return True
     except Exception as e:
-        logger.warning(f"Neo4j connection check failed: {e}")
+        logger.warning(str(f"Neo4j connection check failed: {e}"))
         return False
 
 
@@ -72,7 +72,7 @@ async def start_healthcheck_server(port: int = 8080):
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logger.info(f"MCP healthcheck server running on port {port}")
+    logger.info(str(f"MCP healthcheck server running on port {port}"))
 
     return runner
 
@@ -115,7 +115,7 @@ async def run_mcp_service():
         await healthcheck_runner.cleanup()
 
     except Exception as e:
-        logger.error(f"MCP service error: {e}")
+        logger.error(str(f"MCP service error: {e}"))
         await healthcheck_runner.cleanup()
         raise
 
@@ -127,5 +127,5 @@ if __name__ == "__main__":
         logger.info("MCP service stopped")
         sys.exit(0)
     except Exception as e:
-        logger.error(f"Failed to run MCP service: {e}")
+        logger.error(str(f"Failed to run MCP service: {e}"))
         sys.exit(1)

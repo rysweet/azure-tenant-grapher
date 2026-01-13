@@ -114,7 +114,9 @@ class NSGAssociationHandler(ResourceHandler):
                 config,
             )
 
-            logger.debug(f"Emitted subnet-NSG association: {subnet_name} -> {nsg_name}")
+            logger.debug(
+                str(f"Emitted subnet-NSG association: {subnet_name} -> {nsg_name}")
+            )
 
         # Emit NIC-NSG associations
         for (
@@ -165,7 +167,7 @@ class NSGAssociationHandler(ResourceHandler):
                 config,
             )
 
-            logger.debug(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}")
+            logger.debug(str(f"Emitted NIC-NSG association: {nic_name} -> {nsg_name}"))
 
         logger.info(
             f"Emitted {len(context.nsg_associations)} subnet-NSG associations and "

@@ -171,7 +171,7 @@ class StorageAccountTranslator(BaseTranslator):
         translated = resource.copy()
         resource_name = resource.get("name", "unknown")
 
-        logger.info(f"Translating storage account: {resource_name}")
+        logger.info(str(f"Translating storage account: {resource_name}"))
 
         # Translate resource ID
         if "id" in translated:
@@ -230,7 +230,7 @@ class StorageAccountTranslator(BaseTranslator):
                     resource_name=resource_name,
                 )
 
-        logger.info(f"Completed translation for storage account: {resource_name}")
+        logger.info(str(f"Completed translation for storage account: {resource_name}"))
         return translated
 
     def _translate_connection_string(

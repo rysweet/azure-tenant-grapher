@@ -216,4 +216,18 @@ reportGeneralTypeIssues = false
 reportOptionalMemberAccess = "warning"
 reportUnusedImport = "error"
 reportUnusedClass = "error"
-exclude = ["dotnet", ".venv", "htmlcov", "tests/**/*", "scripts/**/*"]
+exclude = [
+    "dotnet",
+    ".venv",
+    "htmlcov",
+    "tests/**/*",
+    "scripts/**/*",
+    ".claude/**/*",
+    "demos/**/*",
+    "examples/**/*",
+    "migrations/**/*",
+    "spa/**/*",
+    "docs/**/*",
+    "notebooks/**/*",
+    "agentic_testing/**/*"
+]

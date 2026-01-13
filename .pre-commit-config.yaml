@@ -26,7 +26,7 @@ repos:
       - id: pyright
         name: pyright
         language: python
-        additional_dependencies: [pyright==1.1.350]
+        additional_dependencies: [pyright==1.1.407]
         entry: pyright
         pass_filenames: false
       - id: spa-test

@@ -92,7 +92,7 @@ class RoleAssignmentHandler(ResourceHandler):
                     )
                     principal_id = original_principal_id
             except Exception as e:
-                logger.warning(f"Could not parse original_properties: {e}")
+                logger.warning(str(f"Could not parse original_properties: {e}"))
 
         if (
             context.target_tenant_id

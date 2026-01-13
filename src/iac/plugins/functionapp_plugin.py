@@ -227,7 +227,7 @@ class FunctionAppPlugin(DataPlanePlugin):
                         )
                     )
 
-                self.logger.debug(f"Discovered {len(list(functions))} functions")
+                self.logger.debug(str(f"Discovered {len(list(functions))} functions"))
 
             except (AzureError, HttpResponseError) as e:
                 self.logger.warning(
@@ -303,7 +303,9 @@ class FunctionAppPlugin(DataPlanePlugin):
                 f"pip install azure-mgmt-web. Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering Function App items: {e}")
+            self.logger.error(
+                str(f"Unexpected error discovering Function App items: {e}")
+            )
 
         self.logger.info(
             f"Discovered {len(items)} data plane items in Function App '{function_app_name}'"
@@ -632,7 +634,7 @@ class FunctionAppPlugin(DataPlanePlugin):
         Example:
             >>> result = plugin.replicate(source_func, target_func)
             >>> if result.success:
-            ...     print(f"Replicated {result.items_replicated} items")
+            ...     print(str(f"Replicated {result.items_replicated} items"))
         """
         if not self.validate_resource(source_resource):
             raise ValueError(f"Invalid source resource: {source_resource}")
@@ -651,7 +653,7 @@ class FunctionAppPlugin(DataPlanePlugin):
         try:
             source_items = self.discover(source_resource)
         except Exception as e:
-            self.logger.error(f"Failed to discover items from source: {e}")
+            self.logger.error(str(f"Failed to discover items from source: {e}"))
             return ReplicationResult(
                 success=False,
                 items_discovered=0,
@@ -670,7 +672,7 @@ class FunctionAppPlugin(DataPlanePlugin):
                 warnings=["No items found in source Function App"],
             )
 
-        self.logger.info(f"Discovered {len(source_items)} items from source")
+        self.logger.info(str(f"Discovered {len(source_items)} items from source"))
 
         # 2. Connect to target Function App
         try:
@@ -679,7 +681,7 @@ class FunctionAppPlugin(DataPlanePlugin):
             from azure.mgmt.web import WebSiteManagementClient
             from azure.mgmt.web.models import StringDictionary
         except ImportError as e:
-            self.logger.error(f"Azure SDK not installed: {e}")
+            self.logger.error(str(f"Azure SDK not installed: {e}"))
             return ReplicationResult(
                 success=False,
                 items_discovered=len(source_items),
@@ -720,7 +722,7 @@ class FunctionAppPlugin(DataPlanePlugin):
                 credential, target_subscription_id
             )
         except Exception as e:
-            self.logger.error(f"Failed to authenticate: {e}")
+            self.logger.error(str(f"Failed to authenticate: {e}"))
             return ReplicationResult(
                 success=False,
                 items_discovered=len(source_items),
@@ -801,9 +803,13 @@ class FunctionAppPlugin(DataPlanePlugin):
         )
 
         if errors:
-            self.logger.warning(f"Encountered {len(errors)} errors during replication")
+            self.logger.warning(
+                str(f"Encountered {len(errors)} errors during replication")
+            )
         if warnings:
-            self.logger.debug(f"Generated {len(warnings)} warnings during replication")
+            self.logger.debug(
+                str(f"Generated {len(warnings)} warnings during replication")
+            )
 
         return ReplicationResult(
             success=success,

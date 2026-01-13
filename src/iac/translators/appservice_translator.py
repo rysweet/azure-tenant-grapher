@@ -168,7 +168,7 @@ class AppServiceTranslator(BaseTranslator):
         resource_type = resource.get("type", "")
         resource_name = resource.get("name", "unknown")
 
-        logger.info(f"Translating app service/function app: {resource_name}")
+        logger.info(str(f"Translating app service/function app: {resource_name}"))
 
         # Translate App Service Plan resource itself
         if resource_type in ["azurerm_app_service_plan", "azurerm_service_plan"]:
@@ -240,7 +240,7 @@ class AppServiceTranslator(BaseTranslator):
                 resource_name=resource_name,
             )
 
-        logger.info(f"Completed translation for {resource_type}: {resource_name}")
+        logger.info(str(f"Completed translation for {resource_type}: {resource_name}"))
 
         return translated
 

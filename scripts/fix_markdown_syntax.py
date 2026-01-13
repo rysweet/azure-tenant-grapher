@@ -59,7 +59,7 @@ def fix_broken_syntax():
 
         if modified:
             full_path.write_text(content)
-            print(f"✓ Fixed {file_path}")
+            print(str(f"✓ Fixed {file_path}"))
 
 
 def main():

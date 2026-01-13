@@ -295,7 +295,7 @@ class LayerDiff:
         ... )
         >>> print(diff.total_changes)
         115
-        >>> print(f"{diff.change_percentage:.1f}%")
+        >>> print(str(f"{diff.change_percentage:.1f}%"))
         2.1%
     """
 

@@ -376,7 +376,7 @@ Instructions:
         # (no longer need asyncio)
 
         tenant = spec.tenant
-        print(f"DEBUG: spec.tenant has these attributes: {dir(tenant)}")
+        print(str(f"DEBUG: spec.tenant has these attributes: {dir(tenant)}"))
         print(f"DEBUG: tenant.users exists: {hasattr(tenant, 'users')}")
         print(f"DEBUG: tenant.groups exists: {hasattr(tenant, 'groups')}")
         print(
@@ -439,13 +439,13 @@ Instructions:
         print("DEBUG: Starting resource group and resource processing...")
         if tenant.subscriptions:
             for sub in tenant.subscriptions:
-                print(f"DEBUG: Processing subscription {sub.id}")
+                print(str(f"DEBUG: Processing subscription {sub.id}"))
                 if sub.resource_groups:
                     print(
                         f"DEBUG: Found {len(sub.resource_groups)} resource groups in subscription {sub.id}"
                     )
                     for rg in sub.resource_groups:
-                        print(f"DEBUG: Creating ResourceGroup node: {rg.name}")
+                        print(str(f"DEBUG: Creating ResourceGroup node: {rg.name}"))
                         # Create ResourceGroup node
                         with session_manager.session() as session:
                             session.run(
@@ -486,9 +486,11 @@ Instructions:
                                 f"DEBUG: No resources found in resource group {rg.name}"
                             )
                 else:
-                    print(f"DEBUG: No resource groups found in subscription {sub.id}")
+                    print(
+                        str(f"DEBUG: No resource groups found in subscription {sub.id}")
+                    )
 
-        print(f"DEBUG: Total resources to process: {len(resources)}")
+        print(str(f"DEBUG: Total resources to process: {len(resources)}"))
         stats["resources"] = len(resources)
 
         # 4. Process resources using ResourceProcessingService
@@ -504,7 +506,7 @@ Instructions:
             )
             print("DEBUG: Resource processing completed successfully")
         except Exception as e:
-            print(f"DEBUG: Error during resource processing: {e}")
+            print(str(f"DEBUG: Error during resource processing: {e}"))
             import traceback
 
             traceback.print_exc()
@@ -528,9 +530,9 @@ Instructions:
             try:
                 # Users
                 if hasattr(tenant, "users") and tenant.users:
-                    print(f"DEBUG: Found {len(tenant.users)} users to process")
+                    print(str(f"DEBUG: Found {len(tenant.users)} users to process"))
                     for user in tenant.users:
-                        print(f"DEBUG: Creating user: {user.display_name}")
+                        print(str(f"DEBUG: Creating user: {user.display_name}"))
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -562,9 +564,9 @@ Instructions:
 
                 # Groups
                 if hasattr(tenant, "groups") and tenant.groups:
-                    print(f"DEBUG: Found {len(tenant.groups)} groups to process")
+                    print(str(f"DEBUG: Found {len(tenant.groups)} groups to process"))
                     for group in tenant.groups:
-                        print(f"DEBUG: Creating group: {group.display_name}")
+                        print(str(f"DEBUG: Creating group: {group.display_name}"))
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -590,7 +592,9 @@ Instructions:
                         f"DEBUG: Found {len(tenant.service_principals)} service principals to process"
                     )
                     for sp in tenant.service_principals:
-                        print(f"DEBUG: Creating service principal: {sp.display_name}")
+                        print(
+                            str(f"DEBUG: Creating service principal: {sp.display_name}")
+                        )
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -616,7 +620,9 @@ Instructions:
                         f"DEBUG: Found {len(tenant.managed_identities)} managed identities to process"
                     )
                     for mi in tenant.managed_identities:
-                        print(f"DEBUG: Creating managed identity: {mi.display_name}")
+                        print(
+                            str(f"DEBUG: Creating managed identity: {mi.display_name}")
+                        )
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -642,7 +648,7 @@ Instructions:
                         f"DEBUG: Found {len(tenant.admin_units)} admin units to process"
                     )
                     for au in tenant.admin_units:
-                        print(f"DEBUG: Creating admin unit: {au.display_name}")
+                        print(str(f"DEBUG: Creating admin unit: {au.display_name}"))
                         with session_manager.session() as session:
                             session.run(
                                 """
@@ -660,7 +666,7 @@ Instructions:
                     print("DEBUG: No admin units found in tenant spec")
 
             except Exception as e:
-                print(f"DEBUG: Error during identity processing: {e}")
+                print(str(f"DEBUG: Error during identity processing: {e}"))
                 import traceback
 
                 traceback.print_exc()
@@ -702,7 +708,7 @@ Instructions:
                         )
                     stats["rbac_assignments"] += 1
         except Exception as e:
-            print(f"DEBUG: Error during RBAC assignment processing: {e}")
+            print(str(f"DEBUG: Error during RBAC assignment processing: {e}"))
             import traceback
 
             traceback.print_exc()
@@ -714,7 +720,9 @@ Instructions:
             # Look for relationships directly under tenant
             if hasattr(tenant, "relationships") and tenant.relationships:
                 relationships = tenant.relationships
-                print(f"DEBUG: Found {len(relationships)} relationships to process")
+                print(
+                    str(f"DEBUG: Found {len(relationships)} relationships to process")
+                )
             else:
                 print("DEBUG: No relationships found in tenant spec")
 
@@ -877,7 +885,7 @@ Instructions:
                         session.run(cypher, params)  # type: ignore
                         stats["relationships"] += 1
         except Exception as e:
-            print(f"DEBUG: Error during relationships processing: {e}")
+            print(str(f"DEBUG: Error during relationships processing: {e}"))
             import traceback
 
             traceback.print_exc()

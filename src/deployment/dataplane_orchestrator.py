@@ -60,9 +60,9 @@ def orchestrate_dataplane_replication(
             "warnings": ["Data plane replication skipped (mode=none)"],
         }
 
-    logger.info(f"Starting data plane replication in {mode.value} mode")
-    logger.info(f"Source: {source_tenant_id}/{source_subscription_id}")
-    logger.info(f"Target: {target_tenant_id}/{target_subscription_id}")
+    logger.info(str(f"Starting data plane replication in {mode.value} mode"))
+    logger.info(str(f"Source: {source_tenant_id}/{source_subscription_id}"))
+    logger.info(str(f"Target: {target_tenant_id}/{target_subscription_id}"))
 
     # Get credential
     if sp_client_id and sp_client_secret:
@@ -87,7 +87,7 @@ def orchestrate_dataplane_replication(
         from src.iac.plugins.sql_plugin import SQLDatabasePlugin
         from src.iac.plugins.storage_plugin import StorageAccountPlugin
     except ImportError as e:
-        logger.error(f"Failed to import data plane plugins: {e}")
+        logger.error(str(f"Failed to import data plane plugins: {e}"))
         return {
             "status": "failed",
             "resources_processed": 0,
@@ -141,12 +141,12 @@ def orchestrate_dataplane_replication(
                 break
 
         if not matching_plugin:
-            logger.warning(f"No plugin found for {resource_type}: {resource_id}")
+            logger.warning(str(f"No plugin found for {resource_type}: {resource_id}"))
             results["warnings"].append(f"No plugin for {resource_type}")
             continue
 
         plugin_name, plugin = matching_plugin
-        logger.info(f"Replicating {resource_type} with {plugin_name} plugin...")
+        logger.info(str(f"Replicating {resource_type} with {plugin_name} plugin..."))
 
         try:
             # Map source resource to target resource
@@ -170,7 +170,7 @@ def orchestrate_dataplane_replication(
                 results["errors"].append(f"Failed to replicate {resource_id}")
 
         except Exception as e:
-            logger.error(f"Error replicating {resource_id}: {e}")
+            logger.error(str(f"Error replicating {resource_id}: {e}"))
             results["errors"].append(f"{resource_id}: {e!s}")
 
     # Determine overall status

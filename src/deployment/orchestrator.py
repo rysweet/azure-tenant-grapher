@@ -101,7 +101,7 @@ def deploy_iac(
     )
 
     if current_tenant == target_tenant_id:
-        logger.info(f"Already authenticated to target tenant {target_tenant_id}")
+        logger.info(str(f"Already authenticated to target tenant {target_tenant_id}"))
     elif subscription_id:
         # Try switching subscription (works for multi-tenant users)
         logger.info(
@@ -124,7 +124,7 @@ def deploy_iac(
             ) from e
 
         if switch_result.returncode != 0:
-            logger.warning(f"Subscription switch failed: {switch_result.stderr}")
+            logger.warning(str(f"Subscription switch failed: {switch_result.stderr}"))
             logger.info("Attempting interactive login...")
             try:
                 auth_result = subprocess.run(
@@ -143,7 +143,7 @@ def deploy_iac(
                 raise RuntimeError(f"Azure login failed: {auth_result.stderr}")
     else:
         # No subscription ID provided, attempt login
-        logger.info(f"Authenticating to tenant {target_tenant_id}...")
+        logger.info(str(f"Authenticating to tenant {target_tenant_id}..."))
         try:
             auth_result = subprocess.run(
                 ["az", "login", "--tenant", target_tenant_id, "--output", "none"],
@@ -158,7 +158,7 @@ def deploy_iac(
                 f"Azure login timed out after {Timeouts.STANDARD} seconds"
             ) from e
         if auth_result.returncode != 0:
-            logger.warning(f"Azure login may have failed: {auth_result.stderr}")
+            logger.warning(str(f"Azure login may have failed: {auth_result.stderr}"))
             # Don't raise - may already be authenticated
 
     # Deploy based on format

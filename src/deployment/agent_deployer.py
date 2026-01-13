@@ -65,7 +65,7 @@ class AgentDeployer:
         )
         result = await deployer.deploy_with_agent()
         if result.success:
-            print(f"Deployed in {result.iteration_count} iterations")
+            print(str(f"Deployed in {result.iteration_count} iterations"))
     """
 
     def __init__(
@@ -127,7 +127,9 @@ class AgentDeployer:
     def _increment_iteration(self) -> None:
         """Increment iteration counter."""
         self.iteration_count += 1
-        logger.debug(f"Iteration count: {self.iteration_count}/{self.max_iterations}")
+        logger.debug(
+            str(f"Iteration count: {self.iteration_count}/{self.max_iterations}")
+        )
 
     def _log_error(self, context: str, error: Exception) -> None:
         """Log error with context and iteration info.
@@ -193,7 +195,7 @@ class AgentDeployer:
             return
 
         provider = provider_match.group(0)
-        logger.info(f"Attempting to register provider: {provider}")
+        logger.info(str(f"Attempting to register provider: {provider}"))
 
         try:
             result = subprocess.run(
@@ -207,10 +209,10 @@ class AgentDeployer:
                 raise RuntimeError(f"Provider registration failed: {result.stderr}")
 
             # Wait for registration (can take a few seconds)
-            logger.info(f"Waiting for provider {provider} to register...")
+            logger.info(str(f"Waiting for provider {provider} to register..."))
             await asyncio.sleep(5)
 
-            logger.info(f"Provider {provider} registered successfully")
+            logger.info(str(f"Provider {provider} registered successfully"))
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"Provider registration timed out for {provider}") from e
 
@@ -317,7 +319,7 @@ class AgentDeployer:
         except asyncio.TimeoutError:
             # Timeout reached
             elapsed = asyncio.get_event_loop().time() - start_time
-            logger.error(f"Deployment timed out after {elapsed:.1f} seconds")
+            logger.error(str(f"Deployment timed out after {elapsed:.1f} seconds"))
             self._log_error(
                 "Timeout",
                 TimeoutError(

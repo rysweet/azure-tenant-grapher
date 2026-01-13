@@ -416,7 +416,7 @@ def fix_links():
         full_path = base_dir / file_path
 
         if not full_path.exists():
-            print(f"⚠️  File not found: {file_path}")
+            print(str(f"⚠️  File not found: {file_path}"))
             continue
 
         content = full_path.read_text()
@@ -426,9 +426,9 @@ def fix_links():
             full_path.write_text(new_content)
             fixes = len(re.findall(old_pattern, content))
             fixed_count += fixes
-            print(f"✓ Fixed {fixes} link(s) in {file_path}")
+            print(str(f"✓ Fixed {fixes} link(s) in {file_path}"))
 
-    print(f"\n✅ Fixed {fixed_count} total links")
+    print(str(f"\n✅ Fixed {fixed_count} total links"))
     return fixed_count
 
 

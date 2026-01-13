@@ -362,7 +362,7 @@ class STRIDEThreatEnumerator:
                         )
 
         except Exception as e:
-            logger.warning(f"Failed to enhance threat with config: {e}")
+            logger.warning(str(f"Failed to enhance threat with config: {e}"))
 
         return threat
 
@@ -522,5 +522,5 @@ def enumerate_threats(
         return unique_threats
 
     except Exception as e:
-        logger.error(f"Threat enumeration failed: {e}")
+        logger.error(str(f"Threat enumeration failed: {e}"))
         return []
