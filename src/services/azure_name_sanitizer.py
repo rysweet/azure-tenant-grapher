@@ -125,6 +125,8 @@ Design Details:
     - Comprehensive testing strategy
 """
 
+import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Dict
 
@@ -251,6 +253,8 @@ class AzureNameSanitizer:
         # Start with trimmed name
         name = abstracted_name.strip()
 
+        # Normalize Unicode characters before converting to ASCII (security: prevents homograph attacks)
+        name = unicodedata.normalize('NFKD', name)
         # Convert unicode characters to ASCII (remove non-ASCII)
         name = name.encode("ascii", "ignore").decode("ascii")
 
@@ -264,17 +268,15 @@ class AzureNameSanitizer:
         elif constraints.allowed_chars == "alphanum_hyphen":
             # Keep alphanumeric and hyphens, convert to lowercase
             name = "".join(c for c in name if c.isalnum() or c == "-").lower()
-            # Remove consecutive hyphens
-            while "--" in name:
-                name = name.replace("--", "-")
+            # Remove consecutive hyphens (security: use regex to prevent ReDoS)
+            name = re.sub(r'-+', '-', name)
             # Remove leading/trailing hyphens
             name = name.strip("-")
         elif constraints.allowed_chars == "lowercase_alphanum_hyphen":
             # Keep alphanumeric and hyphens, enforce lowercase
             name = "".join(c for c in name if c.isalnum() or c == "-").lower()
-            # Remove consecutive hyphens
-            while "--" in name:
-                name = name.replace("--", "-")
+            # Remove consecutive hyphens (security: use regex to prevent ReDoS)
+            name = re.sub(r'-+', '-', name)
             # Remove leading/trailing hyphens
             name = name.strip("-")
 
