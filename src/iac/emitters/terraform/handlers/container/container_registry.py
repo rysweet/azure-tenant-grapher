@@ -8,6 +8,7 @@ import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
 from src.services.azure_name_sanitizer import AzureNameSanitizer
+
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -55,21 +56,18 @@ class ContainerRegistryHandler(ResourceHandler):
             abstracted_name, "Microsoft.ContainerRegistry/registries"
         )
 
-        # Add tenant suffix for cross-tenant deployments
-        if (
-            context.target_tenant_id
-            and context.source_tenant_id != context.target_tenant_id
-        ):
-            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
+        # Add hash-based suffix for global uniqueness (works in all deployment modes)
+        resource_id = resource.get("id", "")
+        if resource_id:
+            import hashlib
 
-            # Truncate to fit (50 - 6 = 44 chars for sanitized name)
-            if len(sanitized_name) > 44:
-                sanitized_name = sanitized_name[:44]
-
-            config["name"] = f"{sanitized_name}{tenant_suffix}"
+            hash_val = hashlib.md5(resource_id.encode()).hexdigest()[:6]
+            base_name = sanitized_name.replace("-", "").lower()
+            if len(base_name) > 44:  # 50 char limit - 6 char hash
+                base_name = base_name[:44]
+            config["name"] = f"{base_name}{hash_val}"
             logger.info(
-                f"Container Registry name updated for cross-tenant deployment: "
-                f"{resource_name} -> {config['name']}"
+                f"Container Registry name made globally unique: {resource_name} → {config['name']}"
             )
         else:
             config["name"] = sanitized_name
