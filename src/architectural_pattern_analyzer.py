@@ -1170,3 +1170,731 @@ class ArchitecturalPatternAnalyzer:
 
         finally:
             self.close()
+
+    def extract_sku_from_properties(
+        self, properties: Optional[Dict[str, Any]], resource_type: str
+    ) -> str:
+        """
+        Extract SKU/size information from resource properties.
+
+        Different resource types store SKU information in different ways.
+        This method handles the most common patterns.
+
+        Args:
+            properties: Resource properties dictionary
+            resource_type: Azure resource type (e.g., "Microsoft.Compute/virtualMachines")
+
+        Returns:
+            SKU string (e.g., "Standard_D2s_v3", "Standard_LRS")
+        """
+        if not properties:
+            return "UnknownSKU"
+
+        # Virtual Machines: hardwareProfile.vmSize
+        if resource_type == "Microsoft.Compute/virtualMachines":
+            if "hardwareProfile" in properties and isinstance(
+                properties["hardwareProfile"], dict
+            ):
+                return properties["hardwareProfile"].get("vmSize", "UnknownSKU")
+
+        # Storage Accounts: sku.name or infer from properties
+        elif resource_type == "Microsoft.Storage/storageAccounts":
+            if "sku" in properties and isinstance(properties["sku"], dict):
+                return properties["sku"].get("name", "UnknownSKU")
+            # Fallback: infer from replication type
+            replication = properties.get("accountType") or properties.get(
+                "skuName", "UnknownSKU"
+            )
+            return replication
+
+        # Disks: sku.name
+        elif resource_type == "Microsoft.Compute/disks":
+            if "sku" in properties and isinstance(properties["sku"], dict):
+                return properties["sku"].get("name", "UnknownSKU")
+
+        # App Service Plans: sku.name or sku.tier
+        elif resource_type == "Microsoft.Web/serverFarms":
+            if "sku" in properties and isinstance(properties["sku"], dict):
+                sku = properties["sku"]
+                return sku.get("name") or sku.get("tier", "UnknownSKU")
+
+        # SQL Databases: sku.name
+        elif resource_type == "Microsoft.Sql/servers/databases":
+            if "sku" in properties and isinstance(properties["sku"], dict):
+                return properties["sku"].get("name", "UnknownSKU")
+
+        # Generic: look for 'sku' key
+        if "sku" in properties:
+            sku = properties["sku"]
+            if isinstance(sku, dict):
+                return sku.get("name") or sku.get("tier", "UnknownSKU")
+            return str(sku)
+
+        return "UnknownSKU"
+
+    def create_configuration_fingerprint(
+        self,
+        resource_id: str,
+        resource_type: str,
+        location: Optional[str],
+        tags: Optional[Dict[str, str]],
+        properties: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Create a configuration fingerprint for a resource.
+
+        A configuration fingerprint consists of:
+        - SKU/size (from properties)
+        - Location (Azure region)
+        - Tags (key-value pairs)
+        - Key properties (extracted from properties JSON)
+
+        Args:
+            resource_id: Azure resource ID
+            resource_type: Azure resource type
+            location: Azure region
+            tags: Resource tags
+            properties: Resource properties dictionary
+
+        Returns:
+            Configuration fingerprint dictionary
+        """
+        # Extract SKU
+        sku = self.extract_sku_from_properties(properties, resource_type)
+
+        # Extract key properties based on resource type
+        key_properties = {}
+        if properties:
+            if resource_type == "Microsoft.Compute/virtualMachines":
+                if "storageProfile" in properties:
+                    storage = properties["storageProfile"]
+                    if isinstance(storage, dict):
+                        if "osDisk" in storage:
+                            os_disk = storage["osDisk"]
+                            if isinstance(os_disk, dict):
+                                key_properties["osType"] = os_disk.get("osType")
+                                key_properties["diskCaching"] = os_disk.get("caching")
+
+            elif resource_type == "Microsoft.Network/virtualNetworks":
+                if "addressSpace" in properties:
+                    addr_space = properties["addressSpace"]
+                    if isinstance(addr_space, dict):
+                        key_properties["addressPrefixes"] = addr_space.get(
+                            "addressPrefixes", []
+                        )
+
+        return {
+            "sku": sku,
+            "location": location or "NoLocation",
+            "tags": tags or {},
+            "key_properties": key_properties,
+        }
+
+    def analyze_configuration_distributions(
+        self, resource_types: Optional[List[str]] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Analyze configuration distributions across all resource types.
+
+        For each resource type, compute:
+        - Configuration fingerprints
+        - Distribution of configurations
+        - Sample resources for each configuration
+
+        Args:
+            resource_types: Optional list of specific resource types to analyze.
+                          If None, analyzes all resource types.
+
+        Returns:
+            Dictionary mapping resource type to configuration analysis:
+            {
+                "Microsoft.Compute/virtualMachines": {
+                    "total_count": 114,
+                    "configurations": [
+                        {
+                            "fingerprint": {...},
+                            "count": 68,
+                            "percentage": 59.6,
+                            "sample_resources": ["/subscriptions/.../vm-1", ...]
+                        }
+                    ]
+                }
+            }
+        """
+        if not self.driver:
+            raise RuntimeError("Not connected to Neo4j. Call connect() first.")
+
+        # Get resource types to analyze
+        if not resource_types:
+            # Get all resource types
+            with self.driver.session() as session:
+                result = session.run(
+                    """
+                    MATCH (r:Resource:Original)
+                    WITH r.type as type, count(*) as count
+                    WHERE type IS NOT NULL
+                    RETURN type, count
+                    ORDER BY count DESC
+                """
+                )
+                resource_types = [rec["type"] for rec in result]
+
+        configuration_analysis = {}
+
+        for resource_type in resource_types:
+            logger.info(f"Analyzing configurations for {resource_type}...")
+
+            with self.driver.session() as session:
+                # Fetch all resources of this type
+                result = session.run(
+                    """
+                    MATCH (r:Resource:Original)
+                    WHERE r.type = $type
+                    RETURN r.id as id,
+                           r.location as location,
+                           r.tags as tags,
+                           r.properties as properties
+                """,
+                    type=resource_type,
+                )
+
+                # Group by configuration fingerprint
+                config_to_resources: Dict[str, List[str]] = defaultdict(list)
+
+                for record in result:
+                    resource_id = record["id"]
+                    location = record["location"]
+                    tags = record["tags"]
+                    properties = record["properties"]
+
+                    # Parse properties if it's a JSON string
+                    if isinstance(properties, str):
+                        try:
+                            properties = json.loads(properties)
+                        except json.JSONDecodeError:
+                            properties = None
+
+                    # Create fingerprint
+                    fingerprint = self.create_configuration_fingerprint(
+                        resource_id, resource_type, location, tags, properties
+                    )
+
+                    # Convert to hashable key (JSON string of sorted dict)
+                    fingerprint_key = json.dumps(fingerprint, sort_keys=True)
+                    config_to_resources[fingerprint_key].append(resource_id)
+
+                # Build configuration analysis
+                total_count = sum(len(resources) for resources in config_to_resources.values())
+                configurations = []
+
+                for fingerprint_key, resource_ids in config_to_resources.items():
+                    fingerprint = json.loads(fingerprint_key)
+                    count = len(resource_ids)
+                    percentage = (count / total_count * 100) if total_count > 0 else 0
+
+                    configurations.append(
+                        {
+                            "fingerprint": fingerprint,
+                            "count": count,
+                            "percentage": percentage,
+                            "sample_resources": resource_ids[:5],  # Sample up to 5
+                        }
+                    )
+
+                # Sort by count (most common first)
+                configurations.sort(key=lambda x: x["count"], reverse=True)
+
+                configuration_analysis[resource_type] = {
+                    "total_count": total_count,
+                    "configurations": configurations,
+                }
+
+        return configuration_analysis
+
+    def build_configuration_bags(
+        self, configuration_analysis: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Build bag-of-words vectors for proportional sampling.
+
+        For each resource type, creates a list where each configuration
+        appears proportionally to its frequency in the source tenant.
+
+        This enables random sampling that naturally preserves the
+        source distribution (bag-of-words model).
+
+        Args:
+            configuration_analysis: Output from analyze_configuration_distributions()
+
+        Returns:
+            Dictionary mapping resource type to configuration bag (weighted vector):
+            {
+                "Microsoft.Compute/virtualMachines": [
+                    {"fingerprint": {...}, "sample_resources": [...]},  # Appears 68 times
+                    {"fingerprint": {...}, "sample_resources": [...]},  # Appears 68 times
+                    ...  # Total 114 entries
+                ]
+            }
+        """
+        configuration_bags = {}
+
+        for resource_type, analysis in configuration_analysis.items():
+            bag = []
+
+            for config in analysis["configurations"]:
+                # Add this configuration to the bag 'count' times
+                for _ in range(config["count"]):
+                    bag.append(
+                        {
+                            "fingerprint": config["fingerprint"],
+                            "sample_resources": config["sample_resources"],
+                        }
+                    )
+
+            configuration_bags[resource_type] = bag
+            logger.info(
+                f"Built configuration bag for {resource_type}: {len(bag)} entries"
+            )
+
+        return configuration_bags
+
+    def compute_architecture_distribution(
+        self,
+        pattern_resources: Dict[str, List[List[str]]],
+        graph: nx.MultiDiGraph,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Compute distribution scores for each architectural pattern.
+
+        Uses the weighted pattern graph to quantify pattern prevalence through
+        a composite score combining four metrics:
+        - Instance count (30%): How many times the pattern appears
+        - Resource count (25%): How many resources are involved
+        - Connection strength (25%): Sum of edge weights within the pattern
+        - Centrality (20%): Betweenness centrality of pattern nodes
+
+        Args:
+            pattern_resources: Dict mapping pattern_name to list of instances,
+                             where each instance is a list of resource IDs
+            graph: NetworkX graph of resource type relationships
+
+        Returns:
+            Dictionary mapping pattern_name to distribution analysis:
+            {
+                "VM Workload": {
+                    "distribution_score": 37.8,
+                    "rank": 1,
+                    "source_instances": 45,
+                    "breakdown": {
+                        "instance_count_pct": 39.5,
+                        "resource_count_pct": 42.3,
+                        "connection_strength_pct": 45.2,
+                        "centrality_pct": 24.9
+                    }
+                }
+            }
+        """
+        if not pattern_resources:
+            logger.warning("No pattern resources provided for distribution analysis")
+            return {}
+
+        # Compute totals for normalization
+        total_instances = sum(len(instances) for instances in pattern_resources.values())
+        total_resources = sum(
+            sum(len(inst) for inst in instances)
+            for instances in pattern_resources.values()
+        )
+
+        if total_instances == 0 or total_resources == 0:
+            logger.warning("No instances or resources found for distribution analysis")
+            return {}
+
+        # Compute total connection strength and centrality
+        total_strength = self._compute_total_connection_strength(graph)
+        total_centrality = self._compute_total_centrality(graph)
+
+        distribution = {}
+
+        for pattern_name, instances in pattern_resources.items():
+            # Metric 1: Instance count percentage
+            instance_count = len(instances)
+            instance_pct = (instance_count / total_instances) * 100
+
+            # Metric 2: Resource count percentage
+            resource_count = sum(len(inst) for inst in instances)
+            resource_pct = (resource_count / total_resources) * 100
+
+            # Metric 3: Connection strength percentage
+            pattern_def = self.ARCHITECTURAL_PATTERNS.get(pattern_name, {})
+            pattern_resource_types = set(pattern_def.get("resources", []))
+            strength = self._compute_pattern_connection_strength(
+                pattern_resource_types, graph
+            )
+            strength_pct = (
+                (strength / total_strength) * 100 if total_strength > 0 else 0.0
+            )
+
+            # Metric 4: Centrality percentage
+            centrality = self._compute_pattern_centrality(pattern_resource_types, graph)
+            centrality_pct = (
+                (centrality / total_centrality) * 100 if total_centrality > 0 else 0.0
+            )
+
+            # Composite score with configurable weights
+            distribution_score = (
+                0.30 * instance_pct
+                + 0.25 * resource_pct
+                + 0.25 * strength_pct
+                + 0.20 * centrality_pct
+            )
+
+            distribution[pattern_name] = {
+                "distribution_score": round(distribution_score, 1),
+                "source_instances": instance_count,
+                "source_resources": resource_count,
+                "breakdown": {
+                    "instance_count_pct": round(instance_pct, 1),
+                    "resource_count_pct": round(resource_pct, 1),
+                    "connection_strength_pct": round(strength_pct, 1),
+                    "centrality_pct": round(centrality_pct, 1),
+                },
+            }
+
+        # Rank patterns by distribution score
+        sorted_patterns = sorted(
+            distribution.items(), key=lambda x: x[1]["distribution_score"], reverse=True
+        )
+        for rank, (pattern_name, pattern_data) in enumerate(sorted_patterns, start=1):
+            pattern_data["rank"] = rank
+
+        logger.info(
+            f"Computed architecture distribution for {len(distribution)} patterns"
+        )
+        return distribution
+
+    def _compute_total_connection_strength(self, graph: nx.MultiDiGraph) -> float:
+        """
+        Compute total connection strength across the entire graph.
+
+        Connection strength is the sum of all edge frequencies.
+
+        Args:
+            graph: NetworkX graph with edge frequency attributes
+
+        Returns:
+            Total connection strength
+        """
+        total_strength = 0.0
+        for u, v, data in graph.edges(data=True):
+            total_strength += data.get("frequency", 1)
+        return total_strength
+
+    def _compute_pattern_connection_strength(
+        self, pattern_resource_types: set, graph: nx.MultiDiGraph
+    ) -> float:
+        """
+        Compute connection strength within a pattern.
+
+        Sums the frequency of all edges between resources in the pattern.
+
+        Args:
+            pattern_resource_types: Set of resource types in the pattern
+            graph: NetworkX graph with edge frequency attributes
+
+        Returns:
+            Pattern connection strength
+        """
+        strength = 0.0
+
+        # Find all edges between pattern resource types
+        for source in pattern_resource_types:
+            if source not in graph:
+                continue
+            for target in pattern_resource_types:
+                if target not in graph or source == target:
+                    continue
+
+                if graph.has_edge(source, target):
+                    edges = graph.get_edge_data(source, target)
+                    if edges:
+                        for key, data in edges.items():
+                            strength += data.get("frequency", 1)
+
+        return strength
+
+    def _compute_total_centrality(self, graph: nx.MultiDiGraph) -> float:
+        """
+        Compute total betweenness centrality across the entire graph.
+
+        Args:
+            graph: NetworkX graph
+
+        Returns:
+            Sum of all betweenness centrality scores
+        """
+        try:
+            # Convert to undirected for centrality calculation
+            G_undirected = graph.to_undirected()
+
+            # Compute betweenness centrality
+            centrality = nx.betweenness_centrality(G_undirected, normalized=True)
+
+            return sum(centrality.values())
+        except Exception as e:
+            logger.warning(f"Failed to compute centrality: {e}")
+            return 0.0
+
+    def _compute_pattern_centrality(
+        self, pattern_resource_types: set, graph: nx.MultiDiGraph
+    ) -> float:
+        """
+        Compute sum of betweenness centrality for pattern nodes.
+
+        Args:
+            pattern_resource_types: Set of resource types in the pattern
+            graph: NetworkX graph
+
+        Returns:
+            Sum of centrality scores for pattern nodes
+        """
+        try:
+            # Convert to undirected for centrality calculation
+            G_undirected = graph.to_undirected()
+
+            # Compute betweenness centrality
+            centrality = nx.betweenness_centrality(G_undirected, normalized=True)
+
+            # Sum centrality for pattern nodes
+            pattern_centrality = 0.0
+            for resource_type in pattern_resource_types:
+                if resource_type in centrality:
+                    pattern_centrality += centrality[resource_type]
+
+            return pattern_centrality
+        except Exception as e:
+            logger.warning(f"Failed to compute pattern centrality: {e}")
+            return 0.0
+
+    def compute_pattern_targets(
+        self,
+        distribution_scores: Dict[str, Dict[str, Any]],
+        target_count: int,
+    ) -> Dict[str, int]:
+        """
+        Calculate how many instances to select from each pattern.
+
+        Uses distribution scores to maintain proportional representation.
+
+        Args:
+            distribution_scores: Output from compute_architecture_distribution()
+            target_count: Total number of instances to select
+
+        Returns:
+            Dict mapping pattern_name to number of instances to select:
+            {
+                "VM Workload": 8,
+                "Web Application": 5,
+                "Container Platform": 3
+            }
+        """
+        if not distribution_scores or target_count <= 0:
+            return {}
+
+        # Extract distribution scores
+        scores = {
+            name: data["distribution_score"]
+            for name, data in distribution_scores.items()
+        }
+
+        total_score = sum(scores.values())
+        if total_score == 0:
+            logger.warning("Total distribution score is 0, using uniform distribution")
+            # Fallback to uniform distribution
+            patterns = list(scores.keys())
+            per_pattern = target_count // len(patterns)
+            return {name: per_pattern for name in patterns}
+
+        # Calculate target instance count per pattern
+        pattern_targets = {}
+        for pattern_name, score in scores.items():
+            proportion = score / total_score
+            pattern_targets[pattern_name] = int(target_count * proportion)
+
+        # Adjust for rounding to ensure we hit target_count exactly
+        total_selected = sum(pattern_targets.values())
+
+        if total_selected < target_count:
+            # Give extra instances to highest-scoring patterns
+            sorted_patterns = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+            for pattern_name, _ in sorted_patterns:
+                if total_selected >= target_count:
+                    break
+                pattern_targets[pattern_name] += 1
+                total_selected += 1
+
+        elif total_selected > target_count:
+            # Remove instances from lowest-scoring patterns
+            sorted_patterns = sorted(scores.items(), key=lambda x: x[1])
+
+            for pattern_name, _ in sorted_patterns:
+                if total_selected <= target_count:
+                    break
+                if pattern_targets[pattern_name] > 0:
+                    pattern_targets[pattern_name] -= 1
+                    total_selected -= 1
+
+        logger.info(
+            f"Computed pattern targets for {target_count} instances: {pattern_targets}"
+        )
+        return pattern_targets
+
+    def validate_proportional_sampling(
+        self,
+        source_distribution: Dict[str, Dict[str, Any]],
+        target_distribution: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Validate that target distribution matches source distribution.
+
+        Uses statistical tests to verify proportional sampling worked correctly.
+
+        Args:
+            source_distribution: Distribution from source tenant
+            target_distribution: Distribution from target tenant
+
+        Returns:
+            Validation results with statistical measures:
+            {
+                "target_distribution_match": 0.987,  # Cosine similarity
+                "chi_squared_statistic": 0.023,
+                "p_value": 0.998,
+                "interpretation": "Target distribution is statistically indistinguishable from source"
+            }
+        """
+        try:
+            import numpy as np
+            from scipy.stats import chisquare
+        except ImportError:
+            logger.warning("scipy not available, skipping statistical validation")
+            return {
+                "error": "scipy not installed",
+                "interpretation": "Install scipy for statistical validation",
+            }
+
+        # Extract distribution scores for comparison
+        source_scores = np.array(
+            [data["distribution_score"] for data in source_distribution.values()]
+        )
+        target_scores = np.array(
+            [
+                target_distribution.get(name, {}).get("distribution_score", 0.0)
+                for name in source_distribution.keys()
+            ]
+        )
+
+        # Normalize to get probability distributions
+        source_probs = source_scores / source_scores.sum()
+        target_probs = target_scores / target_scores.sum() if target_scores.sum() > 0 else target_scores
+
+        # Cosine similarity
+        dot_product = np.dot(source_probs, target_probs)
+        norm_product = np.linalg.norm(source_probs) * np.linalg.norm(target_probs)
+        cosine_sim = dot_product / norm_product if norm_product > 0 else 0.0
+
+        # Chi-squared test
+        # Scale target to match source total for chi-squared test
+        source_counts = np.array(
+            [data["source_instances"] for data in source_distribution.values()]
+        )
+        target_counts = np.array(
+            [
+                target_distribution.get(name, {}).get("source_instances", 0)
+                for name in source_distribution.keys()
+            ]
+        )
+
+        if target_counts.sum() > 0:
+            expected_counts = source_probs * target_counts.sum()
+            chi2_stat, p_value = chisquare(target_counts, expected_counts)
+        else:
+            chi2_stat, p_value = 0.0, 1.0
+
+        # Interpretation
+        if p_value > 0.95 and cosine_sim > 0.95:
+            interpretation = (
+                "Target distribution is statistically indistinguishable from source"
+            )
+        elif p_value > 0.90 and cosine_sim > 0.90:
+            interpretation = "Target distribution closely matches source"
+        elif p_value > 0.80 and cosine_sim > 0.80:
+            interpretation = "Target distribution reasonably matches source"
+        else:
+            interpretation = (
+                "Target distribution differs significantly from source"
+            )
+
+        validation = {
+            "target_distribution_match": round(cosine_sim, 3),
+            "chi_squared_statistic": round(chi2_stat, 3),
+            "p_value": round(p_value, 3),
+            "interpretation": interpretation,
+        }
+
+        logger.info(f"Validation: {interpretation} (similarity: {cosine_sim:.3f})")
+        return validation
+
+    def export_architecture_distribution(
+        self,
+        distribution: Dict[str, Dict[str, Any]],
+        output_path: Path,
+    ) -> None:
+        """
+        Export architecture distribution analysis to JSON.
+
+        Args:
+            distribution: Output from compute_architecture_distribution()
+            output_path: Path to output JSON file
+        """
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        export_data = {
+            "metadata": {
+                "generation_timestamp": self._get_timestamp(),
+                "total_patterns": len(distribution),
+            },
+            "pattern_distribution_scores": distribution,
+        }
+
+        with open(output_path, "w") as f:
+            json.dump(export_data, f, indent=2)
+
+        logger.info(f"Exported architecture distribution to {output_path}")
+
+    def _get_timestamp(self) -> str:
+        """Get ISO 8601 timestamp."""
+        from datetime import datetime
+
+        return datetime.utcnow().isoformat() + "Z"
+
+    def get_pattern_graph(self) -> nx.MultiDiGraph:
+        """
+        Get the weighted pattern graph (type-level aggregation).
+
+        This method builds and returns the pattern graph that can be used
+        for architecture distribution analysis.
+
+        Returns:
+            NetworkX MultiDiGraph with resource types as nodes and
+            relationship frequencies as edge weights
+        """
+        # Fetch and aggregate relationships
+        all_relationships = self.fetch_all_relationships()
+        aggregated_relationships = self.aggregate_relationships(all_relationships)
+
+        # Build NetworkX graph
+        graph, resource_type_counts, edge_counts = self.build_networkx_graph(
+            aggregated_relationships
+        )
+
+        return graph

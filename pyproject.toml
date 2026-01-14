@@ -72,6 +72,7 @@ dependencies = [
     # Visualization dependencies (optional, for analyze-patterns command)
     "matplotlib>=3.7.0",
     "scipy>=1.10.0",
+    "seaborn>=0.13.2",
 ]
 
 
