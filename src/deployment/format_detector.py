@@ -40,17 +40,17 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
         'terraform'
     """
     if not iac_dir.exists() or not iac_dir.is_dir():
-        logger.debug(f"Path does not exist or is not a directory: {iac_dir}")
+        logger.debug(str(f"Path does not exist or is not a directory: {iac_dir}"))
         return None
 
     # Check for Terraform files (both .tf and .tf.json)
     if list(iac_dir.glob("*.tf")) or list(iac_dir.glob("*.tf.json")):
-        logger.info(f"Detected Terraform format in {iac_dir}")
+        logger.info(str(f"Detected Terraform format in {iac_dir}"))
         return "terraform"
 
     # Check for Bicep files
     if list(iac_dir.glob("*.bicep")):
-        logger.info(f"Detected Bicep format in {iac_dir}")
+        logger.info(str(f"Detected Bicep format in {iac_dir}"))
         return "bicep"
 
     # Check for ARM templates (JSON with deployment schema)
@@ -61,13 +61,13 @@ def detect_iac_format(iac_dir: Path) -> Optional[IaCFormat]:
                 if "$schema" in data and "deploymentTemplate" in data.get(
                     "$schema", ""
                 ):
-                    logger.info(f"Detected ARM template format in {iac_dir}")
+                    logger.info(str(f"Detected ARM template format in {iac_dir}"))
                     return "arm"
         except Exception as e:
-            logger.debug(f"Failed to parse {json_file}: {e}")
+            logger.debug(str(f"Failed to parse {json_file}: {e}"))
             continue
 
-    logger.warning(f"Could not detect IaC format in {iac_dir}")
+    logger.warning(str(f"Could not detect IaC format in {iac_dir}"))
     return None
 
 

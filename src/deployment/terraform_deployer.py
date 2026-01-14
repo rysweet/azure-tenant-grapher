@@ -61,11 +61,11 @@ def deploy_terraform(
         >>> result['status']
         'planned'
     """
-    logger.info(f"Deploying Terraform from {iac_dir}")
+    logger.info(str(f"Deploying Terraform from {iac_dir}"))
 
     # Initialize Terraform
     logger.debug("Running terraform init...")
-    if dashboard:
+    if dashboard is not None:
         dashboard.update_phase("init")
         dashboard.log_info("Initializing Terraform...")
 
@@ -82,7 +82,7 @@ def deploy_terraform(
         log_timeout_event(
             "terraform_init", Timeouts.TERRAFORM_INIT, ["terraform", "init"]
         )
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(
                 f"Terraform init timed out after {Timeouts.TERRAFORM_INIT}s"
@@ -99,7 +99,7 @@ def deploy_terraform(
                 dashboard.stream_terraform_output(line, level="warning")
 
     if result.returncode != 0:
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(f"Terraform init failed: {result.stderr}")
         raise RuntimeError(f"Terraform init failed: {result.stderr}")
@@ -107,7 +107,7 @@ def deploy_terraform(
     if dry_run:
         # Plan only
         logger.info("Running terraform plan (dry-run mode)...")
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("plan")
             dashboard.log_info("Running terraform plan (dry-run)...")
 
@@ -124,7 +124,7 @@ def deploy_terraform(
             log_timeout_event(
                 "terraform_plan", Timeouts.TERRAFORM_PLAN, ["terraform", "plan"]
             )
-            if dashboard:
+            if dashboard is not None:
                 dashboard.update_phase("failed")
                 dashboard.add_error(
                     f"Terraform plan timed out after {Timeouts.TERRAFORM_PLAN}s"
@@ -147,12 +147,12 @@ def deploy_terraform(
                         pass
 
         if result.returncode != 0:
-            if dashboard:
+            if dashboard is not None:
                 dashboard.update_phase("failed")
                 dashboard.add_error(f"Terraform plan failed: {result.stderr}")
             raise RuntimeError(f"Terraform plan failed: {result.stderr}")
 
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("complete")
             dashboard.log_info("Terraform plan completed successfully")
 
@@ -164,7 +164,7 @@ def deploy_terraform(
 
     # Apply changes
     logger.info("Running terraform apply...")
-    if dashboard:
+    if dashboard is not None:
         dashboard.update_phase("apply")
         dashboard.log_info("Applying Terraform changes...")
 
@@ -181,7 +181,7 @@ def deploy_terraform(
         log_timeout_event(
             "terraform_apply", Timeouts.TERRAFORM_APPLY, ["terraform", "apply"]
         )
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(
                 f"Terraform apply timed out after {Timeouts.TERRAFORM_APPLY}s"
@@ -212,12 +212,12 @@ def deploy_terraform(
                 dashboard.stream_terraform_output(line, level="warning")
 
     if result.returncode != 0:
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(f"Terraform apply failed: {result.stderr}")
         raise RuntimeError(f"Terraform apply failed: {result.stderr}")
 
-    if dashboard:
+    if dashboard is not None:
         dashboard.update_phase("complete")
         dashboard.log_info("Terraform apply completed successfully")
         dashboard.set_processing(False)

@@ -58,12 +58,12 @@ def validate_output_path(user_path: str, base_dir: Path = Path("outputs")) -> Pa
     try:
         # relative_to() will raise ValueError if not a subpath
         requested_path.relative_to(base_path)
-    except ValueError:
+    except ValueError as e:
         raise ValueError(
             f"Output path must be within {base_dir}. "
             f"Requested path '{user_path}' resolves to '{requested_path}' "
             f"which is outside allowed base directory '{base_path}'"
-        )
+        ) from e
 
     return requested_path
 
@@ -118,7 +118,7 @@ def _get_default_subscription_from_azure_cli() -> Optional[tuple[str, str]]:
                 )
                 return (subscription_id, tenant_id)
     except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError) as e:
-        logger.debug(f"Could not retrieve subscription/tenant from Azure CLI: {e}")
+        logger.debug(str(f"Could not retrieve subscription/tenant from Azure CLI: {e}"))
     return None
 
 
@@ -304,7 +304,7 @@ async def generate_iac_command_handler(
         metrics = GenerationMetrics()
 
         logger.info("🏗️ Starting IaC generation")
-        logger.info(f"Format: {format_type}")
+        logger.info(str(f"Format: {format_type}"))
 
         # Get Neo4j driver
         driver = get_neo4j_driver_from_config()
@@ -479,12 +479,12 @@ async def generate_iac_command_handler(
             """
 
             logger.info(f"Applying resource filters: {', '.join(filters)}")
-            logger.debug(f"Generated filter Cypher: {filter_cypher}")
-            logger.debug(f"Filter parameters: {filter_params}")
+            logger.debug(str(f"Generated filter Cypher: {filter_cypher}"))
+            logger.debug(str(f"Filter parameters: {filter_params}"))
 
         # Traverse graph (Issue #524: Pass parameters for parameterized queries)
         graph = await traverser.traverse(filter_cypher, parameters=filter_params)
-        logger.info(f"Extracted {len(graph.resources)} resources")
+        logger.info(str(f"Extracted {len(graph.resources)} resources"))
 
         # Collect source analysis metrics (Issue #413)
         metrics.source_resources_scanned = len(graph.resources)
@@ -588,7 +588,7 @@ async def generate_iac_command_handler(
                 from .resource_comparator import ResourceComparator
                 from .target_scanner import TargetScannerService
 
-                logger.info(f"Scanning target tenant: {scan_target_tenant_id}")
+                logger.info(str(f"Scanning target tenant: {scan_target_tenant_id}"))
                 click.echo(
                     f"Scanning target tenant for existing resources: {scan_target_tenant_id}"
                 )
@@ -633,7 +633,7 @@ async def generate_iac_command_handler(
                 )
 
                 if target_scan.error:
-                    logger.warning(f"Target scan had errors: {target_scan.error}")
+                    logger.warning(str(f"Target scan had errors: {target_scan.error}"))
                     logger.warning("Falling back to standard IaC generation")
                     click.echo(
                         f"Warning: Target scan encountered errors: {target_scan.error}",
@@ -711,7 +711,7 @@ async def generate_iac_command_handler(
                     break
 
         if subscription_id:
-            logger.info(f"Using target subscription: {subscription_id}")
+            logger.info(str(f"Using target subscription: {subscription_id}"))
         else:
             logger.warning(
                 "No subscription ID available. Key Vault tenant_id will use placeholder. "
@@ -730,7 +730,9 @@ async def generate_iac_command_handler(
         # Bug #11 FIX: Extract source subscription from Neo4j original_id FIRST (before Azure CLI)
         # This is critical for cross-tenant where Azure CLI might be logged into target tenant
         if not source_subscription_id and graph.resources:
-            logger.info(f"🔍 Extracting source subscription from {len(graph.resources)} resources...")
+            logger.info(
+                f"🔍 Extracting source subscription from {len(graph.resources)} resources..."
+            )
             for resource in graph.resources:
                 # Try original_id first (has real Azure subscription), fallback to id
                 original_id = resource.get("original_id")
@@ -747,7 +749,9 @@ async def generate_iac_command_handler(
                     break
 
             if not source_subscription_id:
-                logger.warning("  ⚠️ Could not extract source subscription from any resource")
+                logger.warning(
+                    "  ⚠️ Could not extract source subscription from any resource"
+                )
 
         # Try to get defaults from Azure CLI if not explicitly provided
         if not resolved_source_tenant_id or not source_subscription_id:
@@ -869,7 +873,7 @@ async def generate_iac_command_handler(
                     )
 
                 except Exception as e:
-                    logger.error(f"Identity mapping failed: {e}")
+                    logger.error(str(f"Identity mapping failed: {e}"))
                     click.echo(
                         f"Warning: Automatic identity mapping failed: {e}",
                         err=True,
@@ -956,7 +960,7 @@ async def generate_iac_command_handler(
                                         click.echo(f"  • {error}")
 
                         except Exception as e:
-                            logger.error(f"Auto-cleanup failed: {e}")
+                            logger.error(str(f"Auto-cleanup failed: {e}"))
                             click.echo(f"Auto-cleanup failed: {e}")
 
                     if conflict_report.has_conflicts and fail_on_conflicts:
@@ -983,7 +987,7 @@ async def generate_iac_command_handler(
                     )
 
             except Exception as e:
-                logger.warning(f"Conflict detection failed: {e}")
+                logger.warning(str(f"Conflict detection failed: {e}"))
                 click.echo(
                     f"Warning: Conflict detection failed: {e}. Proceeding anyway..."
                 )
@@ -1001,7 +1005,7 @@ async def generate_iac_command_handler(
         ]
 
         if vault_resources:
-            logger.info(f"Found {len(vault_resources)} Key Vault resources")
+            logger.info(str(f"Found {len(vault_resources)} Key Vault resources"))
             vault_names = [r.get("name") for r in vault_resources if r.get("name")]
 
             if vault_names and subscription_id:
@@ -1043,7 +1047,7 @@ async def generate_iac_command_handler(
         subset_filter_obj = None
         if subset_filter:
             subset_filter_obj = SubsetFilter.parse(subset_filter)
-            logger.info(f"Using subset filter: {subset_filter_obj}")
+            logger.info(str(f"Using subset filter: {subset_filter_obj}"))
 
         # Generate templates using new engine method if subset or RG is specified
         if subset_filter_obj or dest_rg or location or preserve_rg_structure:
@@ -1155,9 +1159,9 @@ async def generate_iac_command_handler(
                     )
                     click.echo(report.format_report())
                     report_path = report.save_to_file()
-                    logger.info(f"Generation report saved to: {report_path}")
+                    logger.info(str(f"Generation report saved to: {report_path}"))
                 except Exception as e:
-                    logger.warning(f"Failed to generate report: {e}")
+                    logger.warning(str(f"Failed to generate report: {e}"))
 
             return 0
 
@@ -1433,7 +1437,7 @@ async def generate_iac_command_handler(
                     )
 
             except Exception as e:
-                logger.warning(f"Provider check failed: {e}")
+                logger.warning(str(f"Provider check failed: {e}"))
                 click.echo(
                     f"⚠️  Warning: Provider check failed: {e}. Proceeding anyway...",
                     err=True,
@@ -1509,10 +1513,10 @@ async def generate_iac_command_handler(
 
             # Save report to file
             report_path = report.save_to_file()
-            logger.info(f"Generation report saved to: {report_path}")
+            logger.info(str(f"Generation report saved to: {report_path}"))
 
         except Exception as e:
-            logger.warning(f"Failed to generate report: {e}")
+            logger.warning(str(f"Failed to generate report: {e}"))
             # Non-blocking - don't fail generation if reporting fails
 
         return 0

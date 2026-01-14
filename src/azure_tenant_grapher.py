@@ -66,7 +66,7 @@ class AzureTenantGrapher:
                 self.aad_graph_service = AADGraphService()
                 logger.info("AAD Graph Service initialized for identity import")
             except Exception as e:
-                logger.warning(f"Failed to initialize AAD Graph Service: {e}")
+                logger.warning(str(f"Failed to initialize AAD Graph Service: {e}"))
 
         self.processing_service = ResourceProcessingService(
             self.session_manager,
@@ -149,7 +149,7 @@ class AzureTenantGrapher:
             await self.specification_service.generate_specification(
                 spec_path, domain_name=domain_name
             )
-            logger.info(f"✅ Tenant specification generated: {spec_path}")
+            logger.info(str(f"✅ Tenant specification generated: {spec_path}"))
         except Exception:
             logger.exception("Error generating tenant specification")
 
@@ -205,7 +205,7 @@ class AzureTenantGrapher:
                     continue
 
             # 2.1. Pre-run in-memory de-duplication (Phase 1 efficiency improvement)
-            logger.info(f"🗂️  Processing {len(all_resources)} discovered resources")
+            logger.info(str(f"🗂️  Processing {len(all_resources)} discovered resources"))
             id_map: Dict[str, Dict[str, Any]] = {}
             for r in all_resources:
                 rid = r.get("id")
@@ -220,7 +220,9 @@ class AzureTenantGrapher:
                     f"🗂️  De-duplicated list → {len(all_resources)} unique IDs (removed {dedupe_count} duplicates)"
                 )
             else:
-                logger.info(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+                logger.info(
+                    str(f"🗂️  De-duplicated list → {len(all_resources)} unique IDs")
+                )
 
             # Apply global resource_limit as defensive check (primary limiting happens per-subscription)
             if resource_limit and len(all_resources) > resource_limit:
@@ -404,7 +406,7 @@ class AzureTenantGrapher:
             result = stats.to_dict()
             result["subscriptions"] = len(subscriptions)
             result["success"] = True
-            logger.info(f"[DEBUG][BUILD_GRAPH] Returning build result: {result}")
+            logger.info(str(f"[DEBUG][BUILD_GRAPH] Returning build result: {result}"))
             return result
 
         except Exception as e:

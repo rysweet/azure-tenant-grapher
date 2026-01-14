@@ -107,7 +107,9 @@ def validate_link_compatibility(child_type: str, parent_type: str) -> bool:
 
     # Check if relationship is valid
     valid_parents = valid_relationships.get(child_type, [])
-    return parent_type in valid_parents or parent_type == "Epic"  # Epic can be parent to anything
+    return (
+        parent_type in valid_parents or parent_type == "Epic"
+    )  # Epic can be parent to anything
 
 
 def link_parent(
@@ -285,4 +287,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["link_parent", "validate_link_compatibility", "work_item_exists", "main"]
+__all__ = ["link_parent", "main", "validate_link_compatibility", "work_item_exists"]

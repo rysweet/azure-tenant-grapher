@@ -520,8 +520,8 @@ class LayerAwareQueryService:
 
         Example:
             components = await service.get_connected_components()
-            print(f"Found {len(components)} connected components")
-            print(f"Largest component has {len(components[0])} resources")
+            print(str(f"Found {len(components)} connected components"))
+            print(str(f"Largest component has {len(components[0])} resources"))
         """
         effective_layer_id = await self._get_effective_layer_id(layer_id)
 
@@ -551,7 +551,7 @@ class LayerAwareQueryService:
                     components.append(record["resources"])
         except Neo4jError as e:
             # GDS not available, use simple traversal
-            self.logger.warning(f"GDS not available, using simple traversal: {e}")
+            self.logger.warning(str(f"GDS not available, using simple traversal: {e}"))
 
             # Fallback: simple connected components via traversal
             with self.session_manager.session() as session:

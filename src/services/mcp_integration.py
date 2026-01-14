@@ -80,7 +80,9 @@ class MCPIntegrationService:
                 # Test connection
                 await self._test_connection()
                 self._is_connected = True
-                logger.info(f"✅ MCP connection established to {self.config.endpoint}")
+                logger.info(
+                    str(f"✅ MCP connection established to {self.config.endpoint}")
+                )
                 return True
 
             except ImportError:
@@ -88,7 +90,7 @@ class MCPIntegrationService:
                 return False
 
         except Exception as e:
-            logger.warning(f"Failed to initialize MCP connection: {e}")
+            logger.warning(str(f"Failed to initialize MCP connection: {e}"))
             return False
 
     async def _test_connection(self) -> None:
@@ -123,7 +125,7 @@ class MCPIntegrationService:
             return False, []
 
         try:
-            logger.info(f"Executing MCP query: {natural_language_query}")
+            logger.info(str(f"Executing MCP query: {natural_language_query}"))
 
             # Send natural language query to MCP
             if not self._mcp_client:
@@ -145,14 +147,16 @@ class MCPIntegrationService:
             else:
                 resources = [response] if response else []
 
-            logger.info(f"MCP query returned {len(resources)} resources")
+            logger.info(str(f"MCP query returned {len(resources)} resources"))
             return True, resources
 
         except asyncio.TimeoutError:
-            logger.warning(f"MCP query timed out after {self.config.timeout} seconds")
+            logger.warning(
+                str(f"MCP query timed out after {self.config.timeout} seconds")
+            )
             return False, []
         except Exception as e:
-            logger.error(f"MCP query failed: {e}")
+            logger.error(str(f"MCP query failed: {e}"))
             return False, []
 
     async def discover_resources(
@@ -248,7 +252,7 @@ class MCPIntegrationService:
             return analysis
 
         except Exception as e:
-            logger.error(f"MCP relationship analysis failed: {e}")
+            logger.error(str(f"MCP relationship analysis failed: {e}"))
             return {
                 "resource_id": resource_id,
                 "relationships": [],
@@ -302,7 +306,7 @@ class MCPIntegrationService:
             return insights
 
         except Exception as e:
-            logger.error(f"MCP insights generation failed: {e}")
+            logger.error(str(f"MCP insights generation failed: {e}"))
             return {
                 "insights": [],
                 "recommendations": [],
@@ -329,7 +333,7 @@ class MCPIntegrationService:
             }
 
         try:
-            logger.info(f"Executing natural language command: {command}")
+            logger.info(str(f"Executing natural language command: {command}"))
 
             # Send command to MCP
             if not self._mcp_client:
@@ -364,7 +368,7 @@ class MCPIntegrationService:
             try:
                 await self._mcp_client.close()
             except Exception as e:
-                logger.warning(f"Error closing MCP connection: {e}")
+                logger.warning(str(f"Error closing MCP connection: {e}"))
             finally:
                 self._mcp_client = None
                 self._is_connected = False

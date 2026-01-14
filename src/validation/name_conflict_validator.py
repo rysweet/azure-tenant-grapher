@@ -237,7 +237,7 @@ class NameConflictValidator:
             conflicts = asyncio.run(self._detect_conflicts(resources))
             result.conflicts = conflicts
         except Exception as e:
-            logger.error(f"Error during conflict detection: {e}")
+            logger.error(str(f"Error during conflict detection: {e}"))
             result.warnings.append(f"Conflict detection failed: {e!s}")
             return terraform_config, result
 
@@ -356,7 +356,7 @@ class NameConflictValidator:
                 f"existing resources"
             )
         except Exception as e:
-            logger.error(f"Error building resource index: {e}")
+            logger.error(str(f"Error building resource index: {e}"))
             self._existing_resources = {}
 
     def _check_naming_rules(self, name: str, resource_type: str) -> Optional[str]:
@@ -432,7 +432,7 @@ class NameConflictValidator:
             return True
 
         except Exception as e:
-            logger.warning(f"Could not check global uniqueness for {name}: {e}")
+            logger.warning(str(f"Could not check global uniqueness for {name}: {e}"))
             return True  # Assume available on error
 
     async def _check_soft_deleted_key_vaults(
@@ -460,7 +460,9 @@ class NameConflictValidator:
             return conflicts
 
         try:
-            logger.info(f"Checking for soft-deleted Key Vaults ({len(vault_names)})...")
+            logger.info(
+                str(f"Checking for soft-deleted Key Vaults ({len(vault_names)})...")
+            )
 
             # List all soft-deleted vaults
             deleted_vaults = {}
@@ -501,10 +503,12 @@ class NameConflictValidator:
                                 location=vault_info.properties.location,
                             )
                         except Exception as e:
-                            logger.error(f"Failed to purge vault {vault_name}: {e}")
+                            logger.error(
+                                str(f"Failed to purge vault {vault_name}: {e}")
+                            )
 
         except Exception as e:
-            logger.error(f"Error checking soft-deleted vaults: {e}")
+            logger.error(str(f"Error checking soft-deleted vaults: {e}"))
 
         return conflicts
 
@@ -745,4 +749,4 @@ class NameConflictValidator:
         with open(mappings_file, "w") as f:
             json.dump(output, f, indent=2)
 
-        logger.info(f"Saved name mappings to {mappings_file}")
+        logger.info(str(f"Saved name mappings to {mappings_file}"))

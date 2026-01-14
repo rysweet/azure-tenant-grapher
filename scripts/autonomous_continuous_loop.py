@@ -69,7 +69,7 @@ class AutonomousLoop:
         try:
             subprocess.run([str(IMESS_R), message], check=False, timeout=10)
         except Exception as e:
-            print(f"Failed to send iMessage: {e}")
+            print(str(f"Failed to send iMessage: {e}"))
 
     def evaluate_objective(self) -> Tuple[bool, Dict]:
         """Evaluate if objective is achieved using Neo4j and validation"""
@@ -106,7 +106,7 @@ with driver.session() as session:
         sub='c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
     ).single()['count']
 
-    print(f"{source},{target}")
+    print(str(f"{source},{target}"))
 driver.close()
                 """,
                 ],
@@ -156,7 +156,7 @@ driver.close()
             }
 
         except Exception as e:
-            print(f"Error evaluating objective: {e}")
+            print(str(f"Error evaluating objective: {e}"))
             traceback.print_exc()
             return False, {"error": str(e)}
 
@@ -190,15 +190,15 @@ driver.close()
             success = result.returncode == 0 and output_dir.exists()
 
             if success:
-                print(f"✓ Generated iteration {iteration_num}")
+                print(str(f"✓ Generated iteration {iteration_num}"))
             else:
-                print(f"✗ Failed to generate iteration {iteration_num}")
+                print(str(f"✗ Failed to generate iteration {iteration_num}"))
                 print(result.stderr)
 
             return success
 
         except Exception as e:
-            print(f"Error generating iteration: {e}")
+            print(str(f"Error generating iteration: {e}"))
             traceback.print_exc()
             return False
 
@@ -241,7 +241,7 @@ driver.close()
             return len(errors) == 0, errors
 
         except Exception as e:
-            print(f"Error validating iteration: {e}")
+            print(str(f"Error validating iteration: {e}"))
             return False, [str(e)]
 
     def analyze_errors(self, errors: List[str]) -> Dict[str, List[str]]:
@@ -296,11 +296,11 @@ Do NOT run iterations - just fix the code and validate with tests.
                 f.write(prompt)
 
             # Spawn subagent (this is simplified - actual implementation would use copilot)
-            print(f"  → Would spawn workstream for: {error_category}")
-            print(f"     Prompt saved to: {prompt_file}")
+            print(str(f"  → Would spawn workstream for: {error_category}"))
+            print(str(f"     Prompt saved to: {prompt_file}"))
 
         except Exception as e:
-            print(f"Error spawning fix workstream: {e}")
+            print(str(f"Error spawning fix workstream: {e}"))
 
     def deploy_iteration(self, iteration_num: int) -> bool:
         """Deploy iteration to target tenant"""
@@ -320,7 +320,7 @@ Do NOT run iterations - just fix the code and validate with tests.
             )
 
             if plan_result.returncode != 0:
-                print(f"✗ Terraform plan failed for iteration {iteration_num}")
+                print(str(f"✗ Terraform plan failed for iteration {iteration_num}"))
                 return False
 
             # terraform apply (this will take a long time)
@@ -335,19 +335,19 @@ Do NOT run iterations - just fix the code and validate with tests.
             success = apply_result.returncode == 0
 
             if success:
-                print(f"✓ Successfully deployed iteration {iteration_num}")
+                print(str(f"✓ Successfully deployed iteration {iteration_num}"))
                 self.send_imessage(
                     f"✓ Iteration {iteration_num} deployed successfully!"
                 )
             else:
-                print(f"✗ Deployment failed for iteration {iteration_num}")
+                print(str(f"✗ Deployment failed for iteration {iteration_num}"))
                 print(apply_result.stderr[-1000:])  # Last 1000 chars
                 self.send_imessage(f"✗ Iteration {iteration_num} deployment failed")
 
             return success
 
         except Exception as e:
-            print(f"Error deploying iteration: {e}")
+            print(str(f"Error deploying iteration: {e}"))
             traceback.print_exc()
             return False
 
@@ -384,7 +384,7 @@ Do NOT run iterations - just fix the code and validate with tests.
             return success
 
         except Exception as e:
-            print(f"Error rescanning target: {e}")
+            print(str(f"Error rescanning target: {e}"))
             return False
 
     def run_continuous_loop(self):
@@ -393,9 +393,9 @@ Do NOT run iterations - just fix the code and validate with tests.
         print("=" * 80)
         print("AUTONOMOUS CONTINUOUS LOOP STARTED")
         print("=" * 80)
-        print(f"Source: {SOURCE_TENANT} ({SOURCE_SUB})")
-        print(f"Target: {TARGET_TENANT} ({TARGET_SUB})")
-        print(f"Starting iteration: {self.iteration_number}")
+        print(str(f"Source: {SOURCE_TENANT} ({SOURCE_SUB})"))
+        print(str(f"Target: {TARGET_TENANT} ({TARGET_SUB})"))
+        print(str(f"Starting iteration: {self.iteration_number}"))
         print("=" * 80)
 
         self.send_imessage(
@@ -438,14 +438,14 @@ Do NOT run iterations - just fix the code and validate with tests.
                     break
 
                 # Step 2: Generate iteration
-                print(f"\n→ Generating iteration {self.iteration_number}...")
+                print(str(f"\n→ Generating iteration {self.iteration_number}..."))
                 if not self.generate_iteration(self.iteration_number):
                     print("✗ Generation failed, retrying in 60s...")
                     time.sleep(60)
                     continue
 
                 # Step 3: Validate iteration
-                print(f"\n→ Validating iteration {self.iteration_number}...")
+                print(str(f"\n→ Validating iteration {self.iteration_number}..."))
                 validation_passed, errors = self.validate_iteration(
                     self.iteration_number
                 )
@@ -458,7 +458,9 @@ Do NOT run iterations - just fix the code and validate with tests.
 
                     # Deploy after 3 consecutive passes
                     if consecutive_validations >= 3:
-                        print(f"\n→ Deploying iteration {self.iteration_number}...")
+                        print(
+                            str(f"\n→ Deploying iteration {self.iteration_number}...")
+                        )
                         if self.deploy_iteration(self.iteration_number):
                             # Rescan target
                             self.rescan_target_tenant()
@@ -469,14 +471,14 @@ Do NOT run iterations - just fix the code and validate with tests.
 
                 else:
                     consecutive_validations = 0
-                    print(f"✗ Validation FAILED with {len(errors)} errors")
+                    print(str(f"✗ Validation FAILED with {len(errors)} errors"))
 
                     # Analyze and spawn fix workstreams
                     categorized = self.analyze_errors(errors)
                     print("\nError breakdown:")
                     for category, cat_errors in categorized.items():
                         if cat_errors:
-                            print(f"  {category}: {len(cat_errors)} errors")
+                            print(str(f"  {category}: {len(cat_errors)} errors"))
                             # Spawn fix workstream
                             self.spawn_fix_workstream(category, cat_errors)
 
@@ -513,7 +515,7 @@ Do NOT run iterations - just fix the code and validate with tests.
                 break
 
             except Exception as e:
-                print(f"\n✗ Error in loop: {e}")
+                print(str(f"\n✗ Error in loop: {e}"))
                 traceback.print_exc()
                 self.send_imessage(
                     f"⚠️ Error in iteration {self.iteration_number}: {str(e)[:100]}"

@@ -122,7 +122,10 @@ def update_work_item(
                 details=result.stderr
                 + "\n\nUse list_types.py to see valid states for this work item type",
             )
-        elif "field" in result.stderr.lower() and "does not exist" in result.stderr.lower():
+        elif (
+            "field" in result.stderr.lower()
+            and "does not exist" in result.stderr.lower()
+        ):
             handle_error(
                 "Invalid field name",
                 exit_code=ExitCode.VALIDATION_ERROR,
@@ -244,7 +247,9 @@ Examples:
         print(
             f"Assigned To: {fields.get('System.AssignedTo', {}).get('displayName', 'Unassigned')}"
         )
-        print(f"\nView at: {updated_item.get('_links', {}).get('html', {}).get('href', 'N/A')}")
+        print(
+            f"\nView at: {updated_item.get('_links', {}).get('html', {}).get('href', 'N/A')}"
+        )
 
     except Exception as e:
         handle_error(

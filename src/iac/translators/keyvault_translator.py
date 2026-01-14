@@ -238,7 +238,9 @@ class KeyVaultTranslator(BaseTranslator):
                 resource_name=resource_name,
             )
 
-        logger.info(f"Completed translation for Key Vault resource: {resource_name}")
+        logger.info(
+            str(f"Completed translation for Key Vault resource: {resource_name}")
+        )
         return translated
 
     def _translate_access_policies(
@@ -493,7 +495,9 @@ class KeyVaultTranslator(BaseTranslator):
         """
         # Phase 2: No mapping available
         # Phase 3: Will query identity mapping
-        logger.debug(f"Identity mapping lookup not yet implemented for: {object_id}")
+        logger.debug(
+            str(f"Identity mapping lookup not yet implemented for: {object_id}")
+        )
         return None
 
     def _lookup_application_mapping(self, app_id: str) -> Optional[str]:
@@ -510,5 +514,7 @@ class KeyVaultTranslator(BaseTranslator):
         """
         # Phase 2: No mapping available
         # Phase 3: Will query identity mapping
-        logger.debug(f"Application mapping lookup not yet implemented for: {app_id}")
+        logger.debug(
+            str(f"Application mapping lookup not yet implemented for: {app_id}")
+        )
         return None

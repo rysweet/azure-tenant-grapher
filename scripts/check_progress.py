@@ -38,19 +38,19 @@ def check_database_progress() -> None:
             result = session.run("MATCH (s:Subscription) RETURN count(s) as count")
             sub_record = result.single()
             subscription_count = sub_record["count"] if sub_record else 0
-            print(f"📊 Subscriptions: {subscription_count}")
+            print(str(f"📊 Subscriptions: {subscription_count}"))
 
             # Check resource nodes
             result = session.run("MATCH (r:Resource) RETURN count(r) as count")
             res_record = result.single()
             resource_count = res_record["count"] if res_record else 0
-            print(f"📦 Resources: {resource_count}")
+            print(str(f"📦 Resources: {resource_count}"))
 
             # Check resource groups
             result = session.run("MATCH (rg:ResourceGroup) RETURN count(rg) as count")
             rg_record = result.single()
             rg_count = rg_record["count"] if rg_record else 0
-            print(f"📁 Resource Groups: {rg_count}")
+            print(str(f"📁 Resource Groups: {rg_count}"))
 
             # Check resources with LLM descriptions
             result = session.run(
@@ -62,13 +62,13 @@ def check_database_progress() -> None:
             )
             llm_record = result.single()
             llm_count = llm_record["count"] if llm_record else 0
-            print(f"🤖 Resources with LLM descriptions: {llm_count}")
+            print(str(f"🤖 Resources with LLM descriptions: {llm_count}"))
 
             # Check relationships
             result = session.run("MATCH ()-[rel]->() RETURN count(rel) as count")
             rel_record = result.single()
             rel_count = rel_record["count"] if rel_record else 0
-            print(f"🔗 Relationships: {rel_count}")
+            print(str(f"🔗 Relationships: {rel_count}"))
 
             print("=" * 50)
 
@@ -137,7 +137,7 @@ def check_database_progress() -> None:
                             if len(record["r.llm_description"]) > 100
                             else record["r.llm_description"]
                         )
-                        print(f"   • {name} ({resource_type})")
+                        print(str(f"   • {name} ({resource_type})"))
                         print(f'     └─ "{desc_preview}"')
 
             print("\n✅ Database query completed successfully!")
@@ -145,8 +145,8 @@ def check_database_progress() -> None:
         driver.close()
 
     except Exception as e:
-        print(f"❌ Error connecting to Neo4j: {e}")
-        print(f"💡 Make sure Neo4j is running on {neo4j_uri}")
+        print(str(f"❌ Error connecting to Neo4j: {e}"))
+        print(str(f"💡 Make sure Neo4j is running on {neo4j_uri}"))
 
 
 def main() -> None:

@@ -55,7 +55,7 @@ with driver.session() as session:
         sub='c190c55a-9ab2-4b1e-92c4-cc8b1a032285'
     ).single()['count']
 
-    print(f"{source},{target}")
+    print(str(f"{source},{target}"))
 driver.close()
 """
 

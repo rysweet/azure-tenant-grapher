@@ -13,9 +13,21 @@ All existing imports will continue to work via the alias below.
 """
 
 from src.services.scale_down import ScaleDownOrchestrator
+from src.services.scale_down.exporters.neo4j_exporter import (
+    _escape_cypher_identifier,
+    _escape_cypher_string,
+    _is_safe_cypher_identifier,
+)
 from src.services.scale_down.quality_metrics import QualityMetrics
 
 # Backward compatibility alias
 ScaleDownService = ScaleDownOrchestrator
 
-__all__ = ["QualityMetrics", "ScaleDownOrchestrator", "ScaleDownService"]
+__all__ = [
+    "QualityMetrics",
+    "ScaleDownOrchestrator",
+    "ScaleDownService",
+    "_escape_cypher_identifier",
+    "_escape_cypher_string",
+    "_is_safe_cypher_identifier",
+]

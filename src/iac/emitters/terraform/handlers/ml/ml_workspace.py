@@ -73,8 +73,12 @@ class MLWorkspaceHandler(ResourceHandler):
 
         # Fix casing: Azure might return "Microsoft.Keyvault" but Terraform expects "Microsoft.KeyVault"
         if key_vault_id:
-            key_vault_id = key_vault_id.replace("/Microsoft.Keyvault/", "/Microsoft.KeyVault/")
-            key_vault_id = key_vault_id.replace("/microsoft.keyvault/", "/Microsoft.KeyVault/")
+            key_vault_id = key_vault_id.replace(
+                "/Microsoft.Keyvault/", "/Microsoft.KeyVault/"
+            )
+            key_vault_id = key_vault_id.replace(
+                "/microsoft.keyvault/", "/Microsoft.KeyVault/"
+            )
 
         config["key_vault_id"] = key_vault_id
 
@@ -88,8 +92,12 @@ class MLWorkspaceHandler(ResourceHandler):
 
         # Fix casing: Azure returns "Microsoft.insights" but Terraform expects "Microsoft.Insights"
         if app_insights_id:
-            app_insights_id = app_insights_id.replace("/Microsoft.insights/", "/Microsoft.Insights/")
-            app_insights_id = app_insights_id.replace("/microsoft.insights/", "/Microsoft.Insights/")
+            app_insights_id = app_insights_id.replace(
+                "/Microsoft.insights/", "/Microsoft.Insights/"
+            )
+            app_insights_id = app_insights_id.replace(
+                "/microsoft.insights/", "/Microsoft.Insights/"
+            )
 
         config["application_insights_id"] = app_insights_id
 

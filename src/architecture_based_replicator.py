@@ -63,7 +63,7 @@ class ArchitecturePatternReplicator:
         )
 
         # Graphs
-        self.source_pattern_graph: Optional[nx.MultiDiGraph] = None
+        self.source_pattern_graph: Optional[nx.MultiDiGraph[str]] = None
         self.source_resource_type_counts: Optional[Dict[str, int]] = None
 
         # Detected architectural patterns from source tenant

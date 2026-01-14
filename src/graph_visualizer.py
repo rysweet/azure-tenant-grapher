@@ -64,14 +64,14 @@ class GraphVisualizer:
             with self.driver.session() as session:
                 session.run("RETURN 1")
 
-            logger.info(f"Connected to Neo4j at {self.neo4j_uri}")
+            logger.info(str(f"Connected to Neo4j at {self.neo4j_uri}"))
         except Exception as e:
             logger.exception(f"Failed to connect to Neo4j: {e}")
             raise
 
     def close(self) -> None:
         """Close Neo4j database connection."""
-        if self.driver:
+        if self.driver is not None:
             self.driver.close()
             logger.info("Neo4j connection closed")
 
@@ -110,7 +110,7 @@ class GraphVisualizer:
         logger.info(
             f"DEBUG: subscription_id_map keys: {list(subscription_id_map.keys())}"
         )
-        logger.info(f"DEBUG: tenant_id_map keys: {list(tenant_id_map.keys())}")
+        logger.info(str(f"DEBUG: tenant_id_map keys: {list(tenant_id_map.keys())}"))
 
         # Build a set of (source, target, type) for existing links to avoid duplicates
         existing_edges = {
@@ -191,9 +191,9 @@ class GraphVisualizer:
             Dictionary containing nodes and links for the 3D graph
         """
         logger.info("Extracting graph data from Neo4j...")
-        logger.info(f"Neo4j URI: {self.neo4j_uri}")
-        logger.info(f"Neo4j User: {self.neo4j_user}")
-        logger.info(f"Neo4j Driver: {self.driver}")
+        logger.info(str(f"Neo4j URI: {self.neo4j_uri}"))
+        logger.info(str(f"Neo4j User: {self.neo4j_user}"))
+        logger.info(str(f"Neo4j Driver: {self.driver}"))
         logger.info("Connecting to database: neo4j")
 
         if not self.driver:
@@ -286,7 +286,7 @@ class GraphVisualizer:
                 node_map[node_id] = node_data
                 node_count += 1
 
-            logger.info(f"Extracted {node_count} nodes (raw count)")
+            logger.info(str(f"Extracted {node_count} nodes (raw count)"))
 
             # Extract all relationships
             relationship_query = """
@@ -338,7 +338,7 @@ class GraphVisualizer:
                 links.append(link_data)
                 rel_count += 1
 
-            logger.info(f"Extracted {rel_count} relationships (raw count)")
+            logger.info(str(f"Extracted {rel_count} relationships (raw count)"))
 
         # Add hierarchical edges if requested
         if link_to_hierarchy:
@@ -659,7 +659,7 @@ class GraphVisualizer:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
 
-        logger.info(f"3D visualization saved to: {output_path}")
+        logger.info(str(f"3D visualization saved to: {output_path}"))
         return output_path
 
     def _generate_specification_link(self, specification_path: Optional[str]) -> str:
@@ -724,6 +724,6 @@ class GraphVisualizer:
         """Open the visualization in the default web browser."""
         try:
             webbrowser.open(f"file://{os.path.abspath(html_path)}")
-            logger.info(f"Opened visualization in browser: {html_path}")
+            logger.info(str(f"Opened visualization in browser: {html_path}"))
         except Exception as e:
             logger.exception(f"Failed to open visualization in browser: {e}")

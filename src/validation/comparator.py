@@ -106,7 +106,7 @@ def compare_graphs(
             min(source_count, target_count) / max(source_count, target_count)
         ) * 100
 
-    logger.info(f"Comparison complete: {similarity:.1f}% similarity")
+    logger.info(str(f"Comparison complete: {similarity:.1f}% similarity"))
 
     return ComparisonResult(
         source_resource_count=source_count,
@@ -159,7 +159,9 @@ def compare_filtered_graphs(
             )
             return filtered
         except ValueError:
-            logger.warning(f"Invalid filter format: {filter_str}. Expected key=value")
+            logger.warning(
+                str(f"Invalid filter format: {filter_str}. Expected key=value")
+            )
             return resources
 
     # Apply filters

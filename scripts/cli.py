@@ -95,7 +95,7 @@ def print_cli_env_block(context: str = "", debug: bool = False):
             value = os.environ.get(k)
             if _should_redact_env_var(k) and value:
                 value = "***REDACTED***"
-            print(f"[CLI ENV] {k}={value}")
+            print(str(f"[CLI ENV] {k}={value}"))
 
 
 # We'll call this later after parsing debug flag
@@ -154,7 +154,7 @@ try:
     from src.cli_commands import build_command_handler
     from src.iac.cli_handler import generate_iac_command_handler
 except ImportError as e:
-    print(f"Import error: {e}")
+    print(str(f"Import error: {e}"))
     print("Please ensure all required packages are installed:")
     print("pip install -r requirements.txt")
     sys.exit(1)
@@ -168,7 +168,7 @@ except ImportError:
         return False
 
     def install_tool(tool: str) -> bool:
-        print(f"Install helper unavailable. Please install {tool} manually.")
+        print(str(f"Install helper unavailable. Please install {tool} manually."))
         return False
 
 
@@ -549,15 +549,15 @@ async def scan(
     filter_by_rgs: Optional[str] = None,
 ) -> str | None:
     """
-    Scan the complete Azure tenant graph with enhanced processing.
+    Build the complete Azure tenant graph with enhanced processing.
 
-    This command discovers all resources in your Azure tenant and builds a comprehensive
-    Neo4j graph database. By default, shows a live Rich dashboard with progress, logs,
-    and interactive controls:
+    By default, shows a live Rich dashboard with progress, logs, and interactive controls:
       - Press 'x' to exit the dashboard at any time.
       - Press 'i', 'd', or 'w' to set log level to INFO, DEBUG, or WARNING.
 
     Use --no-dashboard to disable the dashboard and emit logs line by line to the terminal.
+
+    Note: 'scan' is an alias for 'build' - both commands are identical.
     """
     debug = ctx.obj.get("debug", False)
     if debug:

@@ -59,7 +59,7 @@ def main():
     print("Loading source types from registry...")
     source_types = load_source_types(registry_path)
 
-    print(f"Loading current mappings from {generator_path}...")
+    print(str(f"Loading current mappings from {generator_path}..."))
     current_mappings = load_current_mappings(generator_path)
 
     # Find missing types (case-insensitive comparison)
@@ -75,9 +75,9 @@ def main():
     print("\n" + "=" * 70)
     print("MISSING TYPE MAPPING REPORT")
     print("=" * 70)
-    print(f"\nSource types: {len(source_types)}")
-    print(f"Current mappings: {len(current_mappings)}")
-    print(f"Missing mappings: {len(missing)}")
+    print(str(f"\nSource types: {len(source_types)}"))
+    print(str(f"Current mappings: {len(current_mappings)}"))
+    print(str(f"Missing mappings: {len(missing)}"))
     print(
         f"\nCoverage: {len(current_mappings)}/{len(source_types)} = {len(current_mappings) / max(1, len(source_types)) * 100:.1f}%"
     )
@@ -89,10 +89,10 @@ def main():
 
         total_missing_resources = 0
         for azure_type, count in missing:
-            print(f"  {azure_type}: {count} resources")
+            print(str(f"  {azure_type}: {count} resources"))
             total_missing_resources += count
 
-        print(f"\nTotal resources in missing types: {total_missing_resources}")
+        print(str(f"\nTotal resources in missing types: {total_missing_resources}"))
 
         # High-priority recommendations
         high_priority = [(t, c) for t, c in missing if c >= 10]
@@ -101,7 +101,7 @@ def main():
             print("HIGH PRIORITY (>=10 resources):")
             print("-" * 70)
             for azure_type, count in high_priority:
-                print(f"  {azure_type}: {count}")
+                print(str(f"  {azure_type}: {count}"))
     else:
         print("\n✅ All source types are mapped!")
 

@@ -176,16 +176,16 @@ from src.services.id_abstraction import IDAbstractionService
 def test_generate_abstracted_id():
     """Test ID abstraction generates deterministic IDs"""
     service = IDAbstractionService(tenant_seed="test-seed")
-    
+
     resource = {
         "id": "/subscriptions/.../virtualMachines/vm-test",
         "type": "Microsoft.Compute/virtualMachines"
     }
-    
+
     # Generate ID twice - should be identical
     id1 = service.generate_id(resource)
     id2 = service.generate_id(resource)
-    
+
     assert id1 == id2
     assert id1.startswith("vm-")
     assert len(id1) == 11  # vm-XXXXXXXX

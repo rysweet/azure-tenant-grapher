@@ -71,7 +71,7 @@ async def stream_job_progress(
             )
             return
     except Exception as e:
-        logger.error(f"API key validation failed: {e}")
+        logger.error(str(f"API key validation failed: {e}"))
         await websocket.close(
             code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed"
         )
@@ -79,7 +79,7 @@ async def stream_job_progress(
 
     # Accept WebSocket connection
     await websocket.accept()
-    logger.info(f"WebSocket connected for job {job_id}")
+    logger.info(str(f"WebSocket connected for job {job_id}"))
 
     # Get WebSocket manager
     manager = get_ws_manager()
@@ -97,12 +97,12 @@ async def stream_job_progress(
                         f"Received unexpected message from client for job {job_id}: {data}"
                     )
                 except WebSocketDisconnect:
-                    logger.info(f"WebSocket disconnected for job {job_id}")
+                    logger.info(str(f"WebSocket disconnected for job {job_id}"))
                     break
     except Exception as e:
         logger.exception(f"Error in WebSocket connection for job {job_id}: {e}")
     finally:
-        logger.info(f"WebSocket cleanup complete for job {job_id}")
+        logger.info(str(f"WebSocket cleanup complete for job {job_id}"))
 
 
 __all__ = ["get_ws_manager", "router"]

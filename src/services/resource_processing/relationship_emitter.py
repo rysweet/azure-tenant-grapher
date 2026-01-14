@@ -50,7 +50,7 @@ class RelationshipEmitter:
         """
         try:
             # Ensure Subscription node exists
-            if self._node_manager:
+            if self._node_manager is not None:
                 self._node_manager.upsert_subscription(subscription_id)
 
             query = """
@@ -97,7 +97,7 @@ class RelationshipEmitter:
             )
 
             # Upsert Subscription and ResourceGroup nodes if node_manager available
-            if self._node_manager:
+            if self._node_manager is not None:
                 self._node_manager.upsert_subscription(subscription_id)
                 self._node_manager.upsert_resource_group(
                     rg_id, rg_name, subscription_id

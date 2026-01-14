@@ -241,7 +241,7 @@ class TranslationCoordinator:
         for i, resource in enumerate(resources):
             # Log progress for large resource sets
             if i > 0 and i % 100 == 0:
-                logger.info(f"Translated {i}/{len(resources)} resources...")
+                logger.info(str(f"Translated {i}/{len(resources)} resources..."))
 
             translated_resource = self.translate_resource(resource)
             translated.append(translated_resource)
@@ -504,7 +504,7 @@ class TranslationCoordinator:
                 content = json.dumps(report, indent=2)
                 output_file.write_text(content)
 
-            logger.info(f"Translation report saved to: {output_path}")
+            logger.info(str(f"Translation report saved to: {output_path}"))
 
         except Exception as e:
             logger.error(f"Failed to save translation report: {e}", exc_info=True)

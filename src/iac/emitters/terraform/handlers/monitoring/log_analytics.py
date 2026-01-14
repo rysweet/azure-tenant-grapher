@@ -40,8 +40,12 @@ class LogAnalyticsWorkspaceHandler(ResourceHandler):
 
         # Skip Azure-managed workspaces (auto-created by App Insights, AKS, etc.)
         # These have names starting with "managed-" or "DefaultWorkspace-" or containing system GUIDs
-        if resource_name.startswith("managed-") or resource_name.startswith("DefaultWorkspace-"):
-            logger.debug(f"Skipping Azure-managed Log Analytics Workspace: {resource_name}")
+        if resource_name.startswith("managed-") or resource_name.startswith(
+            "DefaultWorkspace-"
+        ):
+            logger.debug(
+                f"Skipping Azure-managed Log Analytics Workspace: {resource_name}"
+            )
             return None
 
         safe_name = self.sanitize_name(resource_name)
@@ -125,7 +129,9 @@ class LogAnalyticsSolutionHandler(ResourceHandler):
                 workspace_name = workspace_id.split("/workspaces/")[-1]
                 config["workspace_name"] = workspace_name
             else:
-                logger.warning(f"Cannot determine workspace_name for solution '{resource_name}', skipping")
+                logger.warning(
+                    f"Cannot determine workspace_name for solution '{resource_name}', skipping"
+                )
                 return None
 
         # Workspace resource ID

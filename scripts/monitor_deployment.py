@@ -19,7 +19,7 @@ def send_message(msg: str):
     try:
         if IMESSAGE_TOOL.exists():
             subprocess.run([str(IMESSAGE_TOOL), msg], timeout=10, capture_output=True)
-            print(f"📱 {msg}")
+            print(str(f"📱 {msg}"))
     except Exception:
         pass
 

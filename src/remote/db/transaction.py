@@ -128,9 +128,11 @@ async def with_retry(
             if attempt < max_retries - 1:
                 delay = retry_delay * (2**attempt)  # Exponential backoff
                 await asyncio.sleep(delay)
-                logger.warning(f"Retry {attempt + 1}/{max_retries} after error: {e}")
+                logger.warning(
+                    str(f"Retry {attempt + 1}/{max_retries} after error: {e}")
+                )
             else:
-                logger.error(f"Operation failed after {max_retries} attempts")
+                logger.error(str(f"Operation failed after {max_retries} attempts"))
 
     # Re-raise last error if all retries failed
     raise last_error

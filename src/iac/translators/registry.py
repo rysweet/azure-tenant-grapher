@@ -84,7 +84,7 @@ class TranslatorRegistry:
                 return
 
             cls._translators.append(translator_class)
-            logger.info(f"Registered translator: {translator_class.__name__}")
+            logger.info(str(f"Registered translator: {translator_class.__name__}"))
 
     @classmethod
     def get_translator(cls, resource_type: str) -> Optional[Type["BaseTranslator"]]:

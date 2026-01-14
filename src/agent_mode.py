@@ -71,7 +71,7 @@ async def run_agent_mode(question: str | None = None):
     try:
         ensure_neo4j_running()
     except Exception as e:
-        logger.error(f"Failed to start Neo4j: {e}")
+        logger.error(str(f"Failed to start Neo4j: {e}"))
         print(f"❌ Failed to start Neo4j: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -104,9 +104,9 @@ async def run_agent_mode(question: str | None = None):
                 env=os.environ.copy(),
             )
         )
-        print(f"✅ MCP workbench set up successfully. MCP server logs: {log_file}")
+        print(str(f"✅ MCP workbench set up successfully. MCP server logs: {log_file}"))
     except Exception as e:
-        print(f"❌ Failed to set up MCP workbench: {e}")
+        print(str(f"❌ Failed to set up MCP workbench: {e}"))
         sys.exit(1)
 
     # Use the same Azure OpenAI config and model client as the rest of the project
@@ -249,7 +249,7 @@ async def _interactive_chat_loop(assistant: any):
                                         and content.endswith("]")
                                     )
                                 ):
-                                    print(f"\nAssistant: {content}")
+                                    print(str(f"\nAssistant: {content}"))
                                     break
 
                         # If the agent outputs tool output, re-prompt with the tool output as context
@@ -295,10 +295,10 @@ async def _interactive_chat_loop(assistant: any):
                     await spinner_task
                 except asyncio.CancelledError:
                     pass
-                print(f"\n❌ Error processing request: {e}")
+                print(str(f"\n❌ Error processing request: {e}"))
 
     except Exception as e:
-        print(f"Chat loop error: {e}")
+        print(str(f"Chat loop error: {e}"))
     finally:
         pass  # Cleanup is handled in run_agent_mode
 
@@ -469,7 +469,7 @@ Answer:"""
     except Exception as e:
         import traceback
 
-        print(f"\n❌ Error in manual processing: {e}")
+        print(str(f"\n❌ Error in manual processing: {e}"))
         traceback.print_exc()
 
     # (No extra debug output)

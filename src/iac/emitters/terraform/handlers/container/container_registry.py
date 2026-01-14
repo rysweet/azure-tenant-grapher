@@ -7,6 +7,7 @@ Emits: azurerm_container_registry
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -30,6 +31,11 @@ class ContainerRegistryHandler(ResourceHandler):
         "azurerm_container_registry",
     }
 
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
+
     def emit(
         self,
         resource: Dict[str, Any],
@@ -43,20 +49,30 @@ class ContainerRegistryHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Container Registry names must be globally unique (*.azurecr.io)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.ContainerRegistry/registries"
+        )
+
         # Add tenant suffix for cross-tenant deployments
-        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
             tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
-            original_name = config["name"].replace("-", "").lower()
 
-            # Truncate to fit (50 - 6 = 44 chars for original)
-            if len(original_name) > 44:
-                original_name = original_name[:44]
+            # Truncate to fit (50 - 6 = 44 chars for sanitized name)
+            if len(sanitized_name) > 44:
+                sanitized_name = sanitized_name[:44]
 
-            config["name"] = f"{original_name}{tenant_suffix}"
+            config["name"] = f"{sanitized_name}{tenant_suffix}"
             logger.info(
                 f"Container Registry name updated for cross-tenant deployment: "
                 f"{resource_name} -> {config['name']}"
             )
+        else:
+            config["name"] = sanitized_name
 
         # SKU (required)
         sku = properties.get("sku", {})

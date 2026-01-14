@@ -279,7 +279,7 @@ class AdaptiveBatchSizer:
 
         Example:
             >>> size = AdaptiveBatchSizer.calculate_batch_size(50000, "write")
-            >>> print(f"Batch size for 50k items: {size}")
+            >>> print(str(f"Batch size for 50k items: {size}"))
             Batch size for 50k items: 2000
         """
         # Find appropriate tier
@@ -338,7 +338,7 @@ class AdaptiveBatchSizer:
 
         Example:
             >>> batch_size, num_batches = AdaptiveBatchSizer.calculate_optimal_batching(40000)
-            >>> print(f"Process {num_batches} batches of {batch_size} items")
+            >>> print(str(f"Process {num_batches} batches of {batch_size} items"))
         """
         batch_size = cls.calculate_batch_size(total_items, operation_type)
         num_batches = (total_items + batch_size - 1) // batch_size
@@ -376,7 +376,7 @@ class QueryOptimizer:
         Example:
             >>> with session_manager.session() as session:
             ...     indexes = QueryOptimizer.ensure_indexes(session)
-            ...     print(f"Created {len(indexes)} indexes")
+            ...     print(str(f"Created {len(indexes)} indexes"))
         """
         log = logger_instance or logger
         indexes_created = []

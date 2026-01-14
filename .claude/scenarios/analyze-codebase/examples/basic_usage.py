@@ -86,7 +86,9 @@ def example_custom_configuration():
     try:
         result = analyzer.analyze(target_path, {"verbose": True})
         print(result)
-        print(f"\nUsed custom config with max file size: {custom_config['max_file_size']} bytes")
+        print(
+            f"\nUsed custom config with max file size: {custom_config['max_file_size']} bytes"
+        )
     except Exception as e:
         print(f"Error: {e}")
 
@@ -113,7 +115,8 @@ class DataProcessor:
         self.data = []
 
     def add_data(self, item):
-        # TODO: Add validation
+        if not isinstance(item, (int, float, str, list, dict)):
+            raise TypeError(f"Item must be int, float, str, list, or dict, got {type(item).__name__}")
         self.data.append(item)
 
     def process_all(self):

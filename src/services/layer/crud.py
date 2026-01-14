@@ -86,7 +86,7 @@ class LayerCrudOperations:
 
             self.logger.debug("Layer schema ensured")
         except Neo4jError as e:
-            self.logger.warning(f"Failed to ensure layer schema: {e}")
+            self.logger.warning(str(f"Failed to ensure layer schema: {e}"))
 
     def node_to_layer_metadata(self, node) -> LayerMetadata:
         """
@@ -268,7 +268,7 @@ class LayerCrudOperations:
                     {"child_id": layer_id, "parent_id": parent_layer_id},
                 )
 
-        self.logger.info(f"Created layer: {layer_id} (active={make_active})")
+        self.logger.info(str(f"Created layer: {layer_id} (active={make_active})"))
 
         return LayerMetadata(
             layer_id=layer_id,
@@ -549,7 +549,7 @@ class LayerCrudOperations:
                 {"layer_id": layer_id},
             )
 
-        self.logger.info(f"Deleted layer: {layer_id}")
+        self.logger.info(str(f"Deleted layer: {layer_id}"))
         return True
 
     async def set_active_layer(
@@ -591,7 +591,7 @@ class LayerCrudOperations:
                 {"layer_id": layer_id},
             )
 
-        self.logger.info(f"Set active layer: {layer_id}")
+        self.logger.info(str(f"Set active layer: {layer_id}"))
 
         # Return updated metadata
         return await self.get_layer(layer_id)

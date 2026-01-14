@@ -75,7 +75,7 @@ class AutonomousReplicationLoop:
                     [str(IMESSAGE_TOOL), message], capture_output=True, timeout=10
                 )
         except Exception as e:
-            print(f"Failed to send iMessage: {e}")
+            print(str(f"Failed to send iMessage: {e}"))
 
     def evaluate_objective(self) -> Tuple[bool, Dict]:
         """Evaluate if objective is achieved using multiple methods"""
@@ -160,7 +160,7 @@ class AutonomousReplicationLoop:
                 "note": "Target should have >= source due to multiple iterations",
             }
         except Exception as e:
-            print(f"Graph fidelity check failed: {e}")
+            print(str(f"Graph fidelity check failed: {e}"))
             import traceback
 
             traceback.print_exc()
@@ -263,7 +263,7 @@ class AutonomousReplicationLoop:
                     }
                 )
         except Exception as e:
-            print(f"Gap identification failed: {e}")
+            print(str(f"Gap identification failed: {e}"))
             import traceback
 
             traceback.print_exc()
@@ -274,7 +274,7 @@ class AutonomousReplicationLoop:
         """Spawn a parallel workstream to fix a gap"""
         workstream_id = f"ws_{gap['type']}_{int(time.time())}"
 
-        print(f"\n=== SPAWNING WORKSTREAM: {workstream_id} ===")
+        print(str(f"\n=== SPAWNING WORKSTREAM: {workstream_id} ==="))
 
         # Create workstream directory
         ws_dir = PROJECT_ROOT / ".claude" / "runtime" / workstream_id
@@ -340,7 +340,7 @@ Do not stop until the gap is fixed.
 
     def generate_iteration(self, iteration_num: int) -> bool:
         """Generate a new IaC iteration"""
-        print(f"\n=== GENERATING ITERATION {iteration_num} ===")
+        print(str(f"\n=== GENERATING ITERATION {iteration_num} ==="))
 
         output_dir = ITERATION_DIR / f"iteration{iteration_num}"
 
@@ -367,19 +367,19 @@ Do not stop until the gap is fixed.
 
             success = result.returncode == 0
             if success:
-                print(f"✓ Generated iteration {iteration_num}")
+                print(str(f"✓ Generated iteration {iteration_num}"))
             else:
-                print(f"✗ Failed to generate iteration {iteration_num}")
+                print(str(f"✗ Failed to generate iteration {iteration_num}"))
                 print(result.stderr[-500:])
 
             return success
         except Exception as e:
-            print(f"Generation failed: {e}")
+            print(str(f"Generation failed: {e}"))
             return False
 
     def validate_iteration(self, iteration_num: int) -> Tuple[bool, List[str]]:
         """Validate an iteration"""
-        print(f"\n=== VALIDATING ITERATION {iteration_num} ===")
+        print(str(f"\n=== VALIDATING ITERATION {iteration_num} ==="))
 
         iter_dir = ITERATION_DIR / f"iteration{iteration_num}"
 
@@ -408,20 +408,20 @@ Do not stop until the gap is fixed.
                         errors.append(line)
 
             if valid:
-                print(f"✓ Iteration {iteration_num} is VALID")
+                print(str(f"✓ Iteration {iteration_num} is VALID"))
             else:
-                print(f"✗ Iteration {iteration_num} has {len(errors)} errors")
+                print(str(f"✗ Iteration {iteration_num} has {len(errors)} errors"))
                 for err in errors[:5]:
-                    print(f"  - {err}")
+                    print(str(f"  - {err}"))
 
             return valid, errors
         except Exception as e:
-            print(f"Validation failed: {e}")
+            print(str(f"Validation failed: {e}"))
             return False, [str(e)]
 
     def deploy_iteration(self, iteration_num: int) -> bool:
         """Deploy an iteration to target tenant"""
-        print(f"\n=== DEPLOYING ITERATION {iteration_num} ===")
+        print(str(f"\n=== DEPLOYING ITERATION {iteration_num} ==="))
 
         iter_dir = ITERATION_DIR / f"iteration{iteration_num}"
 
@@ -431,7 +431,7 @@ Do not stop until the gap is fixed.
         # Switch to TARGET tenant subscription (DefenderATEVET12)
         TARGET_SUBSCRIPTION = "c190c55a-9ab2-4b1e-92c4-cc8b1a032285"
 
-        print(f"Switching to target subscription: {TARGET_SUBSCRIPTION}")
+        print(str(f"Switching to target subscription: {TARGET_SUBSCRIPTION}"))
         try:
             subprocess.run(
                 ["az", "account", "set", "--subscription", TARGET_SUBSCRIPTION],
@@ -440,7 +440,7 @@ Do not stop until the gap is fixed.
                 check=True,
             )
         except Exception as e:
-            print(f"Failed to switch subscription: {e}")
+            print(str(f"Failed to switch subscription: {e}"))
             self.send_imessage("❌ Failed to switch to target subscription")
             return False
 
@@ -453,7 +453,7 @@ Do not stop until the gap is fixed.
                 timeout=30,
             )
             subscription_id = sub_result.stdout.strip()
-            print(f"Confirmed subscription: {subscription_id}")
+            print(str(f"Confirmed subscription: {subscription_id}"))
 
             if subscription_id != TARGET_SUBSCRIPTION:
                 print(
@@ -461,13 +461,13 @@ Do not stop until the gap is fixed.
                 )
                 self.send_imessage("⚠️ Subscription mismatch in deployment")
         except Exception as e:
-            print(f"Failed to get subscription ID: {e}")
+            print(str(f"Failed to get subscription ID: {e}"))
             subscription_id = TARGET_SUBSCRIPTION
 
         # Set up environment variables for Terraform
         env = os.environ.copy()
         env["TF_VAR_subscription_id"] = subscription_id
-        print(f"Using subscription: {subscription_id}")
+        print(str(f"Using subscription: {subscription_id}"))
 
         try:
             # Terraform plan
@@ -501,19 +501,19 @@ Do not stop until the gap is fixed.
             success = apply_result.returncode == 0
 
             if success:
-                print(f"✓ Iteration {iteration_num} deployed successfully")
+                print(str(f"✓ Iteration {iteration_num} deployed successfully"))
                 self.send_imessage(
                     f"✅ Iteration {iteration_num} deployed successfully!"
                 )
                 self.deployment_iteration = iteration_num
             else:
-                print(f"✗ Iteration {iteration_num} deployment failed")
+                print(str(f"✗ Iteration {iteration_num} deployment failed"))
                 print(apply_result.stderr[-500:])
                 self.send_imessage(f"❌ Iteration {iteration_num} deployment failed")
 
             return success
         except Exception as e:
-            print(f"Deployment failed: {e}")
+            print(str(f"Deployment failed: {e}"))
             self.send_imessage(
                 f"❌ Iteration {iteration_num} deployment exception: {e}"
             )
@@ -541,7 +541,7 @@ Do not stop until the gap is fixed.
 
             return success
         except Exception as e:
-            print(f"Scan failed: {e}")
+            print(str(f"Scan failed: {e}"))
             return False
 
     def run_continuous_loop(self):
@@ -549,7 +549,7 @@ Do not stop until the gap is fixed.
         print("\n" + "=" * 80)
         print("AUTONOMOUS TENANT REPLICATION LOOP")
         print("=" * 80)
-        print(f"Starting at iteration {self.iteration_count}")
+        print(str(f"Starting at iteration {self.iteration_count}"))
         print("This loop will NOT STOP until 100% objective achievement")
         print("=" * 80 + "\n")
 
@@ -560,7 +560,7 @@ Do not stop until the gap is fixed.
         while not self.objective_achieved:
             loop_count += 1
             print(f"\n{'=' * 80}")
-            print(f"LOOP ITERATION {loop_count} - {datetime.utcnow().isoformat()}")
+            print(str(f"LOOP ITERATION {loop_count} - {datetime.utcnow().isoformat()}"))
             print(f"{'=' * 80}\n")
 
             # 1. Evaluate objective
@@ -628,9 +628,9 @@ Do not stop until the gap is fixed.
             else:
                 self.status["consecutive_valid_iterations"] = 0
                 # Log errors for analysis
-                print(f"Errors in iteration {self.iteration_count}:")
+                print(str(f"Errors in iteration {self.iteration_count}:"))
                 for err in errors[:10]:
-                    print(f"  {err}")
+                    print(str(f"  {err}"))
 
             # 7. Deploy if we have 3 consecutive valid iterations and haven't deployed yet
             if (
@@ -658,9 +658,9 @@ Do not stop until the gap is fixed.
         print("\n" + "=" * 80)
         print("OBJECTIVE ACHIEVED - LOOP COMPLETE")
         print("=" * 80)
-        print(f"Total loop iterations: {loop_count}")
-        print(f"Final IaC iteration: {self.iteration_count}")
-        print(f"Deployed iteration: {self.deployment_iteration}")
+        print(str(f"Total loop iterations: {loop_count}"))
+        print(str(f"Final IaC iteration: {self.iteration_count}"))
+        print(str(f"Deployed iteration: {self.deployment_iteration}"))
         print(
             f"Workstreams completed: {len([ws for ws in self.workstreams if ws['status'] == 'completed'])}"
         )
@@ -678,7 +678,7 @@ def main():
         loop.save_status()
         sys.exit(1)
     except Exception as e:
-        print(f"\n\nLoop failed with exception: {e}")
+        print(str(f"\n\nLoop failed with exception: {e}"))
         import traceback
 
         traceback.print_exc()

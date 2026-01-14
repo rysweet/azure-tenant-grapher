@@ -98,7 +98,7 @@ class DeploymentRegistry:
         self.registry["deployments"].append(deployment)
         self._save_registry()
 
-        logger.info(f"Registered deployment {deployment_id} for tenant {tenant}")
+        logger.info(str(f"Registered deployment {deployment_id} for tenant {tenant}"))
         return deployment_id
 
     def get_deployment(self, deployment_id: str) -> Optional[Dict[str, Any]]:
@@ -171,7 +171,7 @@ class DeploymentRegistry:
         """
         deployment = self.get_deployment(deployment_id)
         if not deployment:
-            logger.error(f"Deployment {deployment_id} not found")
+            logger.error(str(f"Deployment {deployment_id} not found"))
             return False
 
         deployment["status"] = DeploymentStatus.DESTROYED.value
@@ -180,7 +180,7 @@ class DeploymentRegistry:
             deployment["state_backup"] = backup_path
 
         self._save_registry()
-        logger.info(f"Marked deployment {deployment_id} as destroyed")
+        logger.info(str(f"Marked deployment {deployment_id} as destroyed"))
         return True
 
     def mark_failed(
@@ -201,7 +201,7 @@ class DeploymentRegistry:
         """
         deployment = self.get_deployment(deployment_id)
         if not deployment:
-            logger.error(f"Deployment {deployment_id} not found")
+            logger.error(str(f"Deployment {deployment_id} not found"))
             return False
 
         deployment["status"] = DeploymentStatus.FAILED.value
@@ -211,7 +211,7 @@ class DeploymentRegistry:
             deployment["remaining_resources"] = remaining_resources
 
         self._save_registry()
-        logger.error(f"Marked deployment {deployment_id} as failed: {error}")
+        logger.error(str(f"Marked deployment {deployment_id} as failed: {error}"))
         return True
 
     def backup_state(self, deployment_id: str, state_file: Path) -> Optional[Path]:
@@ -225,7 +225,7 @@ class DeploymentRegistry:
             Path to backup or None if failed
         """
         if not state_file.exists():
-            logger.error(f"State file {state_file} does not exist")
+            logger.error(str(f"State file {state_file} does not exist"))
             return None
 
         backup_dir = self.backups_dir / deployment_id
@@ -253,11 +253,11 @@ class DeploymentRegistry:
                         indent=2,
                     )
 
-            logger.info(f"Backed up state for {deployment_id} to {backup_dir}")
+            logger.info(str(f"Backed up state for {deployment_id} to {backup_dir}"))
             return backup_dir
 
         except Exception as e:
-            logger.error(f"Failed to backup state: {e}")
+            logger.error(str(f"Failed to backup state: {e}"))
             return None
 
     def get_active_deployments(

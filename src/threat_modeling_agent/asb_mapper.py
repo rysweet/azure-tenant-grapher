@@ -435,7 +435,9 @@ class AzureSecurityBenchmarkMapper:
                 # Add threat without controls rather than failing completely
                 enriched.append(dict(threat))
 
-        logger.info(f"Successfully mapped ASB controls for {len(enriched)} threats")
+        logger.info(
+            str(f"Successfully mapped ASB controls for {len(enriched)} threats")
+        )
         return enriched
 
     def _enhance_controls_for_threat(

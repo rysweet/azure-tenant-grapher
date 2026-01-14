@@ -42,7 +42,7 @@ class WebSocketManager:
             websocket: WebSocket connection
         """
         self._connections[job_id] = websocket
-        logger.info(f"Registered WebSocket connection for job {job_id}")
+        logger.info(str(f"Registered WebSocket connection for job {job_id}"))
 
     async def unregister(self, job_id: str) -> None:
         """
@@ -53,7 +53,7 @@ class WebSocketManager:
         """
         if job_id in self._connections:
             del self._connections[job_id]
-            logger.info(f"Unregistered WebSocket connection for job {job_id}")
+            logger.info(str(f"Unregistered WebSocket connection for job {job_id}"))
 
     async def send_message(self, job_id: str, message: Message) -> None:
         """
@@ -67,7 +67,7 @@ class WebSocketManager:
         """
         websocket = self._connections.get(job_id)
         if websocket is None:
-            logger.debug(f"No WebSocket connection for job {job_id}")
+            logger.debug(str(f"No WebSocket connection for job {job_id}"))
             return
 
         try:

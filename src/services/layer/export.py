@@ -301,7 +301,7 @@ class LayerExportOperations:
         with open(output_path, "w") as f:
             json.dump(archive_data, f, indent=2, default=str)
 
-        self.logger.info(f"Archived layer {layer_id} to {output_path}")
+        self.logger.info(str(f"Archived layer {layer_id} to {output_path}"))
 
         return output_path
 
