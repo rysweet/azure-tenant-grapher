@@ -64,9 +64,9 @@ def deploy_arm(
         >>> result['status']
         'validated'
     """
-    logger.info(f"Deploying ARM template from {iac_dir}")
+    logger.info(str(f"Deploying ARM template from {iac_dir}"))
 
-    if dashboard:
+    if dashboard is not None:
         dashboard.update_phase("init")
         dashboard.log_info("Finding ARM template...")
 
@@ -84,7 +84,7 @@ def deploy_arm(
             continue
 
     if not arm_files:
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(f"No ARM template files found in {iac_dir}")
         raise RuntimeError(f"No ARM template files found in {iac_dir}")
@@ -93,8 +93,8 @@ def deploy_arm(
 
     if dry_run:
         # Validate only
-        logger.info(f"Validating ARM template {template_file.name}...")
-        if dashboard:
+        logger.info(str(f"Validating ARM template {template_file.name}..."))
+        if dashboard is not None:
             dashboard.update_phase("plan")
             dashboard.log_info(f"Validating ARM template {template_file.name}...")
 
@@ -121,7 +121,7 @@ def deploy_arm(
             )
         except subprocess.TimeoutExpired as e:
             log_timeout_event("arm_validate", Timeouts.ARM_VALIDATE, cmd)
-            if dashboard:
+            if dashboard is not None:
                 dashboard.update_phase("failed")
                 dashboard.add_error(
                     f"ARM validation timed out after {Timeouts.ARM_VALIDATE}s"
@@ -138,12 +138,12 @@ def deploy_arm(
                     dashboard.stream_terraform_output(line, level="warning")
 
         if result.returncode != 0:
-            if dashboard:
+            if dashboard is not None:
                 dashboard.update_phase("failed")
                 dashboard.add_error(f"ARM validation failed: {result.stderr}")
             raise RuntimeError(f"ARM validation failed: {result.stderr}")
 
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("complete")
             dashboard.log_info("ARM validation completed successfully")
 
@@ -154,8 +154,8 @@ def deploy_arm(
         }
 
     # Deploy
-    logger.info(f"Deploying ARM template {template_file.name}...")
-    if dashboard:
+    logger.info(str(f"Deploying ARM template {template_file.name}..."))
+    if dashboard is not None:
         dashboard.update_phase("apply")
         dashboard.log_info(f"Deploying ARM template {template_file.name}...")
 
@@ -182,7 +182,7 @@ def deploy_arm(
         )
     except subprocess.TimeoutExpired as e:
         log_timeout_event("arm_deploy", Timeouts.ARM_DEPLOY, cmd)
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(
                 f"ARM deployment timed out after {Timeouts.ARM_DEPLOY}s"
@@ -199,12 +199,12 @@ def deploy_arm(
                 dashboard.stream_terraform_output(line, level="warning")
 
     if result.returncode != 0:
-        if dashboard:
+        if dashboard is not None:
             dashboard.update_phase("failed")
             dashboard.add_error(f"ARM deployment failed: {result.stderr}")
         raise RuntimeError(f"ARM deployment failed: {result.stderr}")
 
-    if dashboard:
+    if dashboard is not None:
         dashboard.update_phase("complete")
         dashboard.log_info("ARM deployment completed successfully")
         dashboard.set_processing(False)

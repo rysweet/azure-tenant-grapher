@@ -110,7 +110,7 @@ class DependencyValidator:
 
         # Ensure path exists
         if not iac_output_path.exists():
-            logger.error(f"Output path does not exist: {iac_output_path}")
+            logger.error(str(f"Output path does not exist: {iac_output_path}"))
             return DependencyValidationResult(
                 valid=False,
                 terraform_available=True,
@@ -119,7 +119,7 @@ class DependencyValidator:
 
         # Run terraform init if needed
         if not skip_init:
-            logger.info(f"Running terraform init in {iac_output_path}...")
+            logger.info(str(f"Running terraform init in {iac_output_path}..."))
             init_success = self._run_terraform_init(iac_output_path)
             if not init_success:
                 logger.error("❌ terraform init failed - cannot validate dependencies")
@@ -191,7 +191,7 @@ class DependencyValidator:
             return result.returncode == 0
 
         except (subprocess.TimeoutExpired, Exception) as e:
-            logger.error(f"terraform init failed: {e}")
+            logger.error(str(f"terraform init failed: {e}"))
             return False
 
     def _run_terraform_validate_json(self, working_dir: Path) -> Dict[str, Any]:
@@ -223,7 +223,7 @@ class DependencyValidator:
             logger.error("terraform validate timed out after 30 seconds")
             return {"success": False, "output": None}
         except Exception as e:
-            logger.error(f"terraform validate failed: {e}")
+            logger.error(str(f"terraform validate failed: {e}"))
             return {"success": False, "output": None}
 
     def _parse_dependency_errors(

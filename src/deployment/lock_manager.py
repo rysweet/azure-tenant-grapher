@@ -386,7 +386,7 @@ class DeploymentLockManager:
         Example:
             >>> lock_mgr = DeploymentLockManager(Path("./iac"), "job-123")
             >>> removed = lock_mgr.clean_stale_locks()
-            >>> print(f"Removed {removed} stale locks")
+            >>> print(str(f"Removed {removed} stale locks"))
         """
         if not self.LOCK_DIR.exists():
             return 0

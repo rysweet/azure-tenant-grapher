@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture logs interface"
     action: "screenshot"
-    description: "Logs viewer interface"
+    screenshot_description: "Logs viewer interface"
 
   - description: "Select log level filter"
     action: "select"
@@ -49,7 +49,7 @@ steps:
 
   - description: "Capture filtered logs"
     action: "screenshot"
-    description: "Filtered log entries"
+    screenshot_description: "Filtered log entries"
 
   - description: "Expand log entry"
     action: "click"
@@ -59,7 +59,7 @@ steps:
 
   - description: "View log details"
     action: "screenshot"
-    description: "Detailed log information"
+    screenshot_description: "Detailed log information"
 
   - description: "Toggle error logs"
     action: "click"
@@ -98,7 +98,7 @@ steps:
 
   - description: "Capture system metrics"
     action: "screenshot"
-    description: "System performance metrics"
+    screenshot_description: "System performance metrics"
 
 assertions:
   - type: "element_visible"

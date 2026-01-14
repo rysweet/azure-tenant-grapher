@@ -309,9 +309,9 @@ def main():
     content = generate_complete_index()
 
     index_path.write_text(content)
-    print(f"✅ Generated complete INDEX.md with all sections")
-    print(f"📄 File: {index_path}")
-    print(f"📊 Lines: {len(content.splitlines())}")
+    print("✅ Generated complete INDEX.md with all sections")
+    print(str(f"📄 File: {index_path}"))
+    print(str(f"📊 Lines: {len(content.splitlines())}"))
 
 
 if __name__ == "__main__":

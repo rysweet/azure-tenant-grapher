@@ -57,7 +57,7 @@ class AutonmousReplicationOrchestrator:
                     [str(self.imessage_tool), message], timeout=10, check=False
                 )
         except Exception as e:
-            logger.warning(f"Failed to send iMessage: {e}")
+            logger.warning(str(f"Failed to send iMessage: {e}"))
 
     def _load_status(self) -> Dict:
         """Load orchestrator status from file."""
@@ -108,7 +108,7 @@ class AutonmousReplicationOrchestrator:
             logger.error(f"Command timed out after {timeout}s: {' '.join(cmd)}")
             return False, "", "Timeout"
         except Exception as e:
-            logger.error(f"Command failed: {e}")
+            logger.error(str(f"Command failed: {e}"))
             return False, "", str(e)
 
     def phase1_scan_source_tenant(self) -> bool:
@@ -139,14 +139,14 @@ graph = Graph(os.getenv('NEO4J_URI', 'bolt://localhost:7688'),
 count = graph.run(
     "MATCH (r:Resource) WHERE r.tenantId CONTAINS '{self.source_tenant}' RETURN count(r) as count"
 ).data()[0]['count']
-print(f"SOURCE_RESOURCES={{count}}")
+print(str(f"SOURCE_RESOURCES={{count}}"))
 """,
             ]
         )
 
         if success and "SOURCE_RESOURCES=" in stdout:
             source_count = int(stdout.split("SOURCE_RESOURCES=")[1].strip())
-            logger.info(f"Source tenant has {source_count} resources in Neo4j")
+            logger.info(str(f"Source tenant has {source_count} resources in Neo4j"))
 
             if source_count == 0:
                 # Need to scan source tenant
@@ -168,7 +168,9 @@ print(f"SOURCE_RESOURCES={{count}}")
         iteration_dir = self.demos_dir / f"iteration{self.current_iteration}"
 
         logger.info("=" * 80)
-        logger.info(f"PHASE 2: Generating IaC for Iteration {self.current_iteration}")
+        logger.info(
+            str(f"PHASE 2: Generating IaC for Iteration {self.current_iteration}")
+        )
         logger.info("=" * 80)
 
         self._send_imessage(f"🏗️ Phase 2: Generating iteration {self.current_iteration}")
@@ -191,7 +193,7 @@ print(f"SOURCE_RESOURCES={{count}}")
         success, stdout, stderr = self._run_command(cmd, timeout=600)
 
         if success:
-            logger.info(f"IaC generated successfully in {iteration_dir}")
+            logger.info(str(f"IaC generated successfully in {iteration_dir}"))
             self.status["current_iteration"] = self.current_iteration
             self.status["phases_completed"].append(
                 f"generate_iac_{self.current_iteration}"
@@ -199,7 +201,7 @@ print(f"SOURCE_RESOURCES={{count}}")
             self._save_status()
             return True
         else:
-            logger.error(f"IaC generation failed: {stderr}")
+            logger.error(str(f"IaC generation failed: {stderr}"))
             self.status["errors"].append(
                 {
                     "phase": "generate_iac",
@@ -230,7 +232,7 @@ print(f"SOURCE_RESOURCES={{count}}")
         )
 
         if not success:
-            logger.error(f"Terraform init failed: {stderr}")
+            logger.error(str(f"Terraform init failed: {stderr}"))
             return False, []
 
         # Validate terraform
@@ -253,7 +255,7 @@ print(f"SOURCE_RESOURCES={{count}}")
             except json.JSONDecodeError:
                 errors = [{"detail": stderr}]
 
-            logger.warning(f"Terraform validation found {len(errors)} errors")
+            logger.warning(str(f"Terraform validation found {len(errors)} errors"))
             for err in errors[:5]:  # Log first 5 errors
                 logger.warning(f"  - {err.get('detail', err)}")
 
@@ -291,7 +293,7 @@ print(f"SOURCE_RESOURCES={{count}}")
         )
 
         if not success:
-            logger.error(f"Terraform plan failed: {stderr}")
+            logger.error(str(f"Terraform plan failed: {stderr}"))
             self.status["errors"].append(
                 {"phase": "plan", "iteration": self.current_iteration, "error": stderr}
             )
@@ -317,7 +319,7 @@ print(f"SOURCE_RESOURCES={{count}}")
             )
             return True
         else:
-            logger.error(f"Terraform apply failed: {stderr}")
+            logger.error(str(f"Terraform apply failed: {stderr}"))
             self.status["errors"].append(
                 {"phase": "apply", "iteration": self.current_iteration, "error": stderr}
             )
@@ -358,14 +360,14 @@ graph = Graph(os.getenv('NEO4J_URI', 'bolt://localhost:7688'),
 count = graph.run(
     "MATCH (r:Resource) WHERE r.tenantId CONTAINS '{self.target_tenant}' RETURN count(r) as count"
 ).data()[0]['count']
-print(f"TARGET_RESOURCES={{count}}")
+print(str(f"TARGET_RESOURCES={{count}}"))
 """,
             ]
         )
 
         if success and "TARGET_RESOURCES=" in stdout:
             target_count = int(stdout.split("TARGET_RESOURCES=")[1].strip())
-            logger.info(f"Target tenant has {target_count} resources in Neo4j")
+            logger.info(str(f"Target tenant has {target_count} resources in Neo4j"))
 
             self.status["metrics"]["target_resources"] = target_count
             self.status["phases_completed"].append("scan_target")
@@ -388,9 +390,9 @@ print(f"TARGET_RESOURCES={{count}}")
         # Each iteration creates a copy of resources, so we expect target > source
         coverage = (target_count / source_count * 100) if source_count > 0 else 0
 
-        logger.info(f"Source resources: {source_count}")
-        logger.info(f"Target resources: {target_count}")
-        logger.info(f"Coverage: {coverage:.1f}%")
+        logger.info(str(f"Source resources: {source_count}"))
+        logger.info(str(f"Target resources: {target_count}"))
+        logger.info(str(f"Coverage: {coverage:.1f}%"))
 
         # Check success criteria
         criteria = {
@@ -419,9 +421,9 @@ print(f"TARGET_RESOURCES={{count}}")
         logger.info("=" * 80)
         logger.info("AUTONOMOUS REPLICATION ORCHESTRATOR STARTED")
         logger.info("=" * 80)
-        logger.info(f"Source Tenant: {self.source_tenant}")
-        logger.info(f"Target Tenant: {self.target_tenant}")
-        logger.info(f"Starting from Iteration: {self.current_iteration + 1}")
+        logger.info(str(f"Source Tenant: {self.source_tenant}"))
+        logger.info(str(f"Target Tenant: {self.target_tenant}"))
+        logger.info(str(f"Starting from Iteration: {self.current_iteration + 1}"))
         logger.info("=" * 80)
 
         self._send_imessage(
@@ -436,7 +438,7 @@ print(f"TARGET_RESOURCES={{count}}")
 
             try:
                 logger.info(f"\n{'=' * 80}")
-                logger.info(f"BEGINNING ITERATION CYCLE {iteration_count}")
+                logger.info(str(f"BEGINNING ITERATION CYCLE {iteration_count}"))
                 logger.info(f"{'=' * 80}\n")
 
                 # Phase 1: Ensure source tenant is scanned
@@ -456,7 +458,7 @@ print(f"TARGET_RESOURCES={{count}}")
                 validated, errors = self.phase3_validate_terraform()
 
                 if not validated:
-                    logger.warning(f"Validation failed with {len(errors)} errors")
+                    logger.warning(str(f"Validation failed with {len(errors)} errors"))
                     self._send_imessage(
                         f"⚠️ Iteration {self.current_iteration} validation failed: {len(errors)} errors"
                     )

@@ -296,7 +296,7 @@ class EntraIdTranslator(BaseTranslator):
                 return True
         except (TypeError, ValueError) as e:
             # If serialization fails, fall back to string search in resource dict
-            logger.debug(f"Failed to serialize resource for tenant_id check: {e}")
+            logger.debug(str(f"Failed to serialize resource for tenant_id check: {e}"))
             resource_str = str(resource)
             if (
                 self.context.source_tenant_id

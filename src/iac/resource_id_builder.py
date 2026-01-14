@@ -318,7 +318,9 @@ class AzureResourceIdBuilder:
                 source_subscription_id,
             )
 
-        logger.warning(f"Child resource type not yet implemented: {tf_resource_type}")
+        logger.warning(
+            str(f"Child resource type not yet implemented: {tf_resource_type}")
+        )
         return None
 
     def _build_subnet_id(
@@ -360,9 +362,9 @@ class AzureResourceIdBuilder:
         if original_id_map and resource_name:
             # DEBUG: Log what we're working with
             logger.info(f"🔍 DEBUG _build_subnet_id for '{resource_name}':")
-            logger.info(f"  subscription_id (target): {subscription_id}")
-            logger.info(f"  source_subscription_id: {source_subscription_id}")
-            logger.info(f"  original_id_map size: {len(original_id_map)}")
+            logger.info(str(f"  subscription_id (target): {subscription_id}"))
+            logger.info(str(f"  source_subscription_id: {source_subscription_id}"))
+            logger.info(str(f"  original_id_map size: {len(original_id_map)}"))
 
             # Search for this subnet in the original_id_map by matching subnet name in Azure ID
             for tf_name, original_id in original_id_map.items():
@@ -382,13 +384,17 @@ class AzureResourceIdBuilder:
                             source_subscription_id
                             and source_subscription_id != subscription_id
                         ):
-                            logger.info(f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}...")
+                            logger.info(
+                                f"  🔄 TRANSLATING: {source_subscription_id[:8]}... -> {subscription_id[:8]}..."
+                            )
                             original_id = self._translate_subscription_in_id(
                                 original_id, source_subscription_id, subscription_id
                             )
-                            logger.info(f"  ✅ Translated ID: {original_id}")
+                            logger.info(str(f"  ✅ Translated ID: {original_id}"))
                         else:
-                            logger.info(f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}")
+                            logger.info(
+                                f"  ⚠️ NO TRANSLATION: source={source_subscription_id}, target={subscription_id}"
+                            )
 
                         return original_id
 
@@ -560,5 +566,5 @@ class AzureResourceIdBuilder:
             )
             return None
 
-        logger.warning(f"Unknown association resource type: {tf_resource_type}")
+        logger.warning(str(f"Unknown association resource type: {tf_resource_type}"))
         return None

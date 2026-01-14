@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture CLI interface"
     action: "screenshot"
-    description: "CLI terminal interface"
+    screenshot_description: "CLI terminal interface"
 
   - description: "Type help command"
     action: "fill"
@@ -34,7 +34,7 @@ steps:
 
   - description: "Capture help output"
     action: "screenshot"
-    description: "CLI help documentation"
+    screenshot_description: "CLI help documentation"
 
   - description: "List resources command"
     action: "fill"
@@ -50,7 +50,7 @@ steps:
 
   - description: "Capture resource list"
     action: "screenshot"
-    description: "Resource listing output"
+    screenshot_description: "Resource listing output"
 
   - description: "Scan command"
     action: "fill"
@@ -66,7 +66,7 @@ steps:
 
   - description: "Capture scan output"
     action: "screenshot"
-    description: "CLI scan execution"
+    screenshot_description: "CLI scan execution"
 
   - description: "Clear terminal"
     action: "click"
@@ -95,7 +95,7 @@ steps:
 
   - description: "Capture export result"
     action: "screenshot"
-    description: "Export command result"
+    screenshot_description: "Export command result"
 
   - description: "Toggle terminal theme"
     action: "click"

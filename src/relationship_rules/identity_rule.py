@@ -48,7 +48,7 @@ class IdentityRule(RelationshipRule):
         rid = resource.get("id")
         rtype = resource.get("type", "")
         props = resource.get("properties", resource)
-        
+
         # Ensure props is a dictionary
         if not isinstance(props, dict):
             props = {}
@@ -209,7 +209,7 @@ class IdentityRule(RelationshipRule):
                 # Handle case where userAssignedIdentities might be a string or None
                 if not isinstance(user_identities, dict):
                     user_identities = {}
-                    
+
                 for uai_id in user_identities:
                     # Upsert ManagedIdentity node (user-assigned) with IaC-standard properties
                     db_ops.upsert_generic(

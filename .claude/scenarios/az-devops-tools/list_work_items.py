@@ -208,9 +208,13 @@ Examples:
     # Simple filters
     parser.add_argument("--state", help="Filter by state (e.g., Active, Closed)")
     parser.add_argument(
-        "--type", dest="work_item_type", help="Filter by work item type (e.g., Bug, Task)"
+        "--type",
+        dest="work_item_type",
+        help="Filter by work item type (e.g., Bug, Task)",
     )
-    parser.add_argument("--assigned-to", help="Filter by assignee (use @me for current user)")
+    parser.add_argument(
+        "--assigned-to", help="Filter by assignee (use @me for current user)"
+    )
 
     # Output options
     parser.add_argument(

@@ -102,7 +102,7 @@ class TargetScannerService:
                     subscriptions = [
                         {"id": subscription_id, "display_name": subscription_id}
                     ]
-                    logger.info(f"Scanning single subscription: {subscription_id}")
+                    logger.info(str(f"Scanning single subscription: {subscription_id}"))
                 else:
                     # Discover all subscriptions in target tenant
                     subscriptions = (
@@ -130,11 +130,11 @@ class TargetScannerService:
                 sub_name = sub.get("display_name", sub_id)
 
                 if not sub_id:
-                    logger.warning(f"Skipping subscription without ID: {sub}")
+                    logger.warning(str(f"Skipping subscription without ID: {sub}"))
                     continue
 
                 try:
-                    logger.info(f"🔍 Scanning subscription: {sub_name} ({sub_id})")
+                    logger.info(str(f"🔍 Scanning subscription: {sub_name} ({sub_id})"))
                     resources = (
                         await self.discovery_service.discover_resources_in_subscription(
                             sub_id

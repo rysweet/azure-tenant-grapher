@@ -392,43 +392,49 @@ class AzureTenantGrapherConfig:
         logger.info("=" * 60)
         logger.info("🔧 AZURE TENANT GRAPHER CONFIGURATION")
         logger.info("=" * 60)
-        logger.info(f"📋 Tenant ID: {self.tenant_id}")
+        logger.info(str(f"📋 Tenant ID: {self.tenant_id}"))
         if self.tenant:
-            logger.info(f"   Display Name: {self.tenant.display_name}")
+            logger.info(str(f"   Display Name: {self.tenant.display_name}"))
             if self.tenant.subscription_ids:
                 logger.info(
                     f"   Subscriptions: {len(self.tenant.subscription_ids)} configured"
                 )
-        logger.info(f"🗄️  Neo4j: {self.neo4j.get_connection_string()}")
-        logger.info(f"🤖 Azure OpenAI: {self.azure_openai.get_safe_endpoint()}")
+        logger.info(str(f"🗄️  Neo4j: {self.neo4j.get_connection_string()}"))
+        logger.info(str(f"🤖 Azure OpenAI: {self.azure_openai.get_safe_endpoint()}"))
         logger.info("⚙️  Processing:")
         logger.info(
             f"   - Resource Limit: {self.processing.resource_limit or 'Unlimited'}"
         )
-        logger.info(f"   - Max Concurrency: {self.processing.max_concurrency}")
-        logger.info(f"   - Max Retries: {self.processing.max_retries}")
-        logger.info(f"   - Parallel Processing: {self.processing.parallel_processing}")
+        logger.info(str(f"   - Max Concurrency: {self.processing.max_concurrency}"))
+        logger.info(str(f"   - Max Retries: {self.processing.max_retries}"))
+        logger.info(
+            str(f"   - Parallel Processing: {self.processing.parallel_processing}")
+        )
         logger.info(
             f"   - Auto Start Container: {self.processing.auto_start_container}"
         )
         logger.info("📄 Specification:")
-        logger.info(f"   - Spec Resource Limit: {self.specification.resource_limit}")
-        logger.info(f"   - Output Directory: {self.specification.output_directory}")
+        logger.info(
+            str(f"   - Spec Resource Limit: {self.specification.resource_limit}")
+        )
+        logger.info(
+            str(f"   - Output Directory: {self.specification.output_directory}")
+        )
         logger.info(
             f"   - Include AI Summaries: {self.specification.include_ai_summaries}"
         )
         logger.info(
             f"   - Include Config Details: {self.specification.include_configuration_details}"
         )
-        logger.info(f"   - Template Style: {self.specification.template_style}")
+        logger.info(str(f"   - Template Style: {self.specification.template_style}"))
         logger.info("🔌 MCP Integration:")
-        logger.info(f"   - Enabled: {self.mcp.enabled}")
+        logger.info(str(f"   - Enabled: {self.mcp.enabled}"))
         if self.mcp.enabled:
-            logger.info(f"   - Endpoint: {self.mcp.endpoint}")
-            logger.info(f"   - Timeout: {self.mcp.timeout}s")
-        logger.info(f"📝 Logging Level: {self.logging.level}")
+            logger.info(str(f"   - Endpoint: {self.mcp.endpoint}"))
+            logger.info(str(f"   - Timeout: {self.mcp.timeout}s"))
+        logger.info(str(f"📝 Logging Level: {self.logging.level}"))
         if self.logging.file_output:
-            logger.info(f"📄 Log File: {self.logging.file_output}")
+            logger.info(str(f"📄 Log File: {self.logging.file_output}"))
         logger.info("=" * 60)
 
     def to_dict(self) -> Dict[str, Any]:

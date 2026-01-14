@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
         config = ATGServerConfig.from_env()
         neo4j_config = Neo4jConfig.from_env(config.environment)
 
-        logger.info(f"Configuration: {config}")
+        logger.info(str(f"Configuration: {config}"))
 
         # Initialize Neo4j connection manager
         connection_manager = ConnectionManager(
@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
         # Initialize API key store
         api_key_store = APIKeyStore.from_key_list(config.api_keys, config.environment)
         set_api_key_store(api_key_store)
-        logger.info(f"API key store initialized with {len(config.api_keys)} keys")
+        logger.info(str(f"API key store initialized with {len(config.api_keys)} keys"))
 
         logger.info("Service startup complete")
 

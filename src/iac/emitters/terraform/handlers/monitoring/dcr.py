@@ -139,7 +139,7 @@ class DataCollectionRuleHandler(ResourceHandler):
 
         # Fix resource type casing issues (Azure returns "Workspaces", Terraform expects "workspaces")
         # Example: /providers/Microsoft.OperationalInsights/Workspaces/name -> workspaces
-        resource_id = re.sub(r'/Workspaces/', '/workspaces/', resource_id)
+        resource_id = re.sub(r"/Workspaces/", "/workspaces/", resource_id)
 
         return resource_id
 

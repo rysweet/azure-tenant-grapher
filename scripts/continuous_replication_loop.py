@@ -41,7 +41,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 def log(msg: str):
     """Log message with timestamp"""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    print(f"[{timestamp}] {msg}")
+    print(str(f"[{timestamp}] {msg}"))
     sys.stdout.flush()
 
 

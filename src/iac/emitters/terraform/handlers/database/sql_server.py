@@ -7,6 +7,7 @@ Emits: azurerm_mssql_server, random_password
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -31,6 +32,11 @@ class SQLServerHandler(ResourceHandler):
         "azurerm_mssql_server",
         "random_password",
     }
+
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -62,16 +68,30 @@ class SQLServerHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # SQL Server names must be globally unique (servername.database.windows.net)
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.Sql/servers"
+        )
+
         # Add tenant-specific suffix for cross-tenant deployments
-        original_name = config["name"]
-        if context.target_tenant_id and context.source_tenant_id != context.target_tenant_id:
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
             # Add target tenant suffix (last 6 chars of tenant ID)
-            tenant_suffix = context.target_tenant_id[-6:] if context.target_tenant_id else "000000"
+            tenant_suffix = (
+                context.target_tenant_id[-6:] if context.target_tenant_id else "000000"
+            )
             # Truncate name if needed (max 63 chars, minus 7 for suffix = 56)
-            if len(original_name) > 56:
-                original_name = original_name[:56]
-            config["name"] = f"{original_name}-{tenant_suffix}"
-            logger.info(f"SQL Server name made globally unique: {resource_name} → {config['name']}")
+            if len(sanitized_name) > 56:
+                sanitized_name = sanitized_name[:56]
+            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            logger.info(
+                f"SQL Server name made globally unique: {resource_name} → {config['name']}"
+            )
+        else:
+            config["name"] = sanitized_name
 
         config.update(
             {

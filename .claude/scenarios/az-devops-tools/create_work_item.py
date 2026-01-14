@@ -140,7 +140,7 @@ def create_work_item(
 
     # Execute creation
     result = wrapper.devops_command(
-        ["work-item", "create"] + command_args,
+        ["work-item", "create", *command_args],
         timeout=30,
     )
 
@@ -357,4 +357,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["create_work_item", "validate_work_item_type", "main"]
+__all__ = ["create_work_item", "main", "validate_work_item_type"]

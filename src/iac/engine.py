@@ -62,7 +62,7 @@ class TransformationEngine:
             rules_path = Path(rules_file)
 
             if not rules_path.exists():
-                logger.warning(f"Rules file not found: {rules_file}")
+                logger.warning(str(f"Rules file not found: {rules_file}"))
                 return rules
 
             with open(rules_path) as f:
@@ -72,7 +72,7 @@ class TransformationEngine:
                 rules_data = yaml_loader.load(f)
 
             if not rules_data or "rules" not in rules_data:
-                logger.warning(f"No rules found in file: {rules_file}")
+                logger.warning(str(f"No rules found in file: {rules_file}"))
                 return rules
 
             for rule_data in rules_data["rules"]:
@@ -83,10 +83,12 @@ class TransformationEngine:
                     )
                     rules.append(rule)
 
-            logger.info(f"Loaded {len(rules)} transformation rules from {rules_file}")
+            logger.info(
+                str(f"Loaded {len(rules)} transformation rules from {rules_file}")
+            )
 
         except Exception as e:
-            logger.error(f"Error parsing rules file {rules_file}: {e}")
+            logger.error(str(f"Error parsing rules file {rules_file}: {e}"))
 
         return rules
 
@@ -146,7 +148,9 @@ class TransformationEngine:
         if subset_filter is not None and SubsetSelector().has_filters(subset_filter):
             selector = SubsetSelector()
             filtered_graph = selector.apply(graph, subset_filter)
-            logger.info(f"Filtered graph: {len(filtered_graph.resources)} resources")
+            logger.info(
+                str(f"Filtered graph: {len(filtered_graph.resources)} resources")
+            )
 
         # Apply transformation rules to each resource
         transformed_resources = []
@@ -176,9 +180,13 @@ class TransformationEngine:
                             "overlap",
                             "invalid_prefix",
                         ):
-                            logger.error(f"  ❌ {issue.subnet_name}: {issue.message}")
+                            logger.error(
+                                str(f"  ❌ {issue.subnet_name}: {issue.message}")
+                            )
                         else:
-                            logger.warning(f"  ⚠️  {issue.subnet_name}: {issue.message}")
+                            logger.warning(
+                                str(f"  ⚠️  {issue.subnet_name}: {issue.message}")
+                            )
 
             # Check for critical failures
             critical_issues = [
@@ -199,7 +207,7 @@ class TransformationEngine:
             # Log auto-fix success
             auto_fixed = [r for r in validation_results if r.auto_fixed]
             if auto_fixed:
-                logger.info(f"✅ Auto-fixed subnets in {len(auto_fixed)} VNets")
+                logger.info(str(f"✅ Auto-fixed subnets in {len(auto_fixed)} VNets"))
 
         # Validate VNet address spaces before generation (GAP-012, Issue #334)
         if validate_address_spaces:
@@ -225,7 +233,7 @@ class TransformationEngine:
 
             # Log warnings
             for warning in validation_result.warnings:
-                logger.warning(f"  - {warning}")
+                logger.warning(str(f"  - {warning}"))
 
             # Log auto-renumbering results
             if validation_result.auto_renumbered:

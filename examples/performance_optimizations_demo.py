@@ -62,7 +62,7 @@ def demo_performance_monitoring():
         print("\nSimulating work...")
 
         # Simulate processing items in batches
-        for i in range(5):
+        for _i in range(5):
             import time
 
             time.sleep(0.1)

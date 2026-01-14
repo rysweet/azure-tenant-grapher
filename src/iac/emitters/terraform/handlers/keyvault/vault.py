@@ -7,6 +7,7 @@ Emits: azurerm_key_vault
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -30,6 +31,11 @@ class KeyVaultHandler(ResourceHandler):
         "azurerm_key_vault",
     }
 
+    def __init__(self):
+        """Initialize handler with Azure name sanitizer."""
+        super().__init__()
+        self.sanitizer = AzureNameSanitizer()
+
     def emit(
         self,
         resource: Dict[str, Any],
@@ -39,28 +45,36 @@ class KeyVaultHandler(ResourceHandler):
         resource_name = resource.get("name", "unknown")
         properties = self.parse_properties(resource)
 
-        # Key Vaults need globally unique names with a suffix
-        resource_id = resource.get("id", "")
+        config = self.build_base_config(resource)
 
-        # Key Vaults have a 24-character name limit
-        # Suffix is 7 characters ("-XXXXXX"), so max base name is 17 chars
-        if len(resource_name) > 17:
-            truncated_name = resource_name[:17]
-            resource_name_with_suffix = self._add_unique_suffix(
-                truncated_name, resource_id
-            )
-            logger.warning(
-                f"Truncated Key Vault name '{resource_name}' to '{truncated_name}' "
-                f"for suffix, resulting in '{resource_name_with_suffix}'"
+        # Key Vaults need globally unique names
+        # Sanitize using centralized Azure naming rules
+        abstracted_name = config["name"]
+        sanitized_name = self.sanitizer.sanitize(
+            abstracted_name, "Microsoft.KeyVault/vaults"
+        )
+
+        # Add tenant suffix for cross-tenant deployments (using resource ID hash for determinism)
+        if (
+            context.target_tenant_id
+            and context.source_tenant_id != context.target_tenant_id
+        ):
+            import hashlib
+            resource_id = resource.get("id", "")
+            tenant_suffix = hashlib.md5(resource_id.encode()).hexdigest()[:6] if resource_id else "000000"
+
+            # Truncate to fit (24 - 7 = 17 chars for sanitized name + hyphen)
+            if len(sanitized_name) > 17:
+                sanitized_name = sanitized_name[:17]
+
+            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            logger.info(
+                f"Key Vault name made globally unique: {resource_name} → {config['name']}"
             )
         else:
-            resource_name_with_suffix = self._add_unique_suffix(
-                resource_name, resource_id
-            )
+            config["name"] = sanitized_name
 
-        safe_name = self.sanitize_name(resource_name_with_suffix)
-
-        config = self.build_base_config(resource, resource_name_with_suffix)
+        safe_name = self.sanitize_name(config["name"])
 
         # SKU (required)
         sku = properties.get("sku", {})

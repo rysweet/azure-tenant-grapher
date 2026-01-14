@@ -292,7 +292,7 @@ const AgentModeTab: React.FC = () => {
       setIsProcessing(false);
 
       const errorDetails = err.response?.data?.error || err.message;
-      
+
       const errorMessage: Message = {
         role: 'system',
         content: `Error: ${errorDetails}`,

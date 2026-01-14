@@ -89,7 +89,7 @@ def register_command(name: str, command: Callable) -> None:
         command: Click command function
     """
     _COMMAND_REGISTRY[name] = command
-    logger.debug(f"Registered command: {name}")
+    logger.debug(str(f"Registered command: {name}"))
 
 
 def get_command(name: str) -> Optional[Callable]:
@@ -120,7 +120,7 @@ def get_command(name: str) -> Optional[Callable]:
                 register_command(name, command)
                 return command
         except ImportError as e:
-            logger.warning(f"Failed to import command module {module_path}: {e}")
+            logger.warning(str(f"Failed to import command module {module_path}: {e}"))
 
     return None
 
@@ -143,9 +143,9 @@ def register_all_commands(cli_group: click.Group) -> None:
                 command = getattr(module, cmd_func_name)
                 if isinstance(command, click.Command):
                     cli_group.add_command(command, name)
-                    logger.debug(f"Added command {name} to CLI")
+                    logger.debug(str(f"Added command {name} to CLI"))
         except ImportError as e:
-            logger.warning(f"Failed to import command {name}: {e}")
+            logger.warning(str(f"Failed to import command {name}: {e}"))
 
 
 # Export public API

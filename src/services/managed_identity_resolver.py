@@ -53,7 +53,7 @@ class ManagedIdentityResolver:
                         "clientId": resource.get("properties", {}).get("clientId"),
                         "tenantId": resource.get("properties", {}).get("tenantId"),
                     }
-                    logger.debug(f"Resolved user-assigned identity: {resource_id}")
+                    logger.debug(str(f"Resolved user-assigned identity: {resource_id}"))
 
                 # Also check if the principal ID is in our refs
                 principal_id = resource.get("properties", {}).get("principalId")

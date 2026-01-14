@@ -134,7 +134,7 @@ class ScenarioRunner:
             return scenario
 
         except yaml.YAMLError as e:
-            raise ValueError(f"Invalid scenario YAML: {e}")
+            raise ValueError(f"Invalid scenario YAML: {e}") from e
 
     def validate_scenario(self, scenario: Dict[str, Any]) -> None:
         """

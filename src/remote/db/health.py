@@ -58,7 +58,7 @@ class HealthChecker:
         # Check specific environment
         status = await checker.check_environment("dev")
         if status.healthy:
-            print(f"Healthy! Latency: {status.latency_ms}ms")
+            print(str(f"Healthy! Latency: {status.latency_ms}ms"))
 
         # Wait for environment to be ready
         ready = await checker.wait_for_ready("dev", timeout=30.0)
@@ -113,7 +113,7 @@ class HealthChecker:
                 )
 
         except Exception as e:
-            logger.error(f"Health check error for {environment}: {e}")
+            logger.error(str(f"Health check error for {environment}: {e}"))
             return HealthStatus(
                 healthy=False,
                 message=f"Health check failed for {environment}",
@@ -159,13 +159,13 @@ class HealthChecker:
         while (time.time() - start) < timeout:
             status = await self.check_environment(environment)
             if status.healthy:
-                logger.info(f"Environment {environment} is ready")
+                logger.info(str(f"Environment {environment} is ready"))
                 return True
 
-            logger.debug(f"Waiting for {environment} to be ready...")
+            logger.debug(str(f"Waiting for {environment} to be ready..."))
             await asyncio.sleep(check_interval)
 
-        logger.error(f"Timeout waiting for {environment} to be ready")
+        logger.error(str(f"Timeout waiting for {environment} to be ready"))
         return False
 
 

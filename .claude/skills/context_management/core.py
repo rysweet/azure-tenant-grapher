@@ -5,12 +5,12 @@ when the context-management skill is activated.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .orchestrator import ContextManagementOrchestrator
 
 
-def context_management_skill(action: str, **kwargs) -> Dict[str, Any]:
+def context_management_skill(action: str, **kwargs) -> dict[str, Any]:
     """Main entry point for the context-management skill.
 
     This function coordinates token monitoring, context extraction, and
@@ -67,14 +67,16 @@ def context_management_skill(action: str, **kwargs) -> Dict[str, Any]:
         snapshot_dir = Path(snapshot_dir)
 
     # Create orchestrator
-    orchestrator = ContextManagementOrchestrator(snapshot_dir=snapshot_dir, max_tokens=max_tokens)
+    orchestrator = ContextManagementOrchestrator(
+        snapshot_dir=snapshot_dir, max_tokens=max_tokens
+    )
 
     # Delegate to orchestrator
     return orchestrator.handle_action(action, **kwargs)
 
 
 # Convenience functions for direct access
-def check_status(current_tokens: int, **kwargs) -> Dict[str, Any]:
+def check_status(current_tokens: int, **kwargs) -> dict[str, Any]:
     """Check current token usage status.
 
     Args:
@@ -86,7 +88,9 @@ def check_status(current_tokens: int, **kwargs) -> Dict[str, Any]:
     return context_management_skill("status", current_tokens=current_tokens, **kwargs)
 
 
-def create_snapshot(conversation_data: Any, name: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+def create_snapshot(
+    conversation_data: Any, name: str | None = None, **kwargs
+) -> dict[str, Any]:
     """Create a context snapshot.
 
     Args:
@@ -101,7 +105,9 @@ def create_snapshot(conversation_data: Any, name: Optional[str] = None, **kwargs
     )
 
 
-def rehydrate_context(snapshot_id: str, level: str = "standard", **kwargs) -> Dict[str, Any]:
+def rehydrate_context(
+    snapshot_id: str, level: str = "standard", **kwargs
+) -> dict[str, Any]:
     """Rehydrate context from a snapshot.
 
     Args:
@@ -111,10 +117,12 @@ def rehydrate_context(snapshot_id: str, level: str = "standard", **kwargs) -> Di
     Returns:
         Dict with rehydrated context text
     """
-    return context_management_skill("rehydrate", snapshot_id=snapshot_id, level=level, **kwargs)
+    return context_management_skill(
+        "rehydrate", snapshot_id=snapshot_id, level=level, **kwargs
+    )
 
 
-def list_snapshots(**kwargs) -> Dict[str, Any]:
+def list_snapshots(**kwargs) -> dict[str, Any]:
     """List all available context snapshots.
 
     Returns:

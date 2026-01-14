@@ -18,7 +18,7 @@ steps:
 
   - description: "Capture documentation interface"
     action: "screenshot"
-    description: "Documentation main page"
+    screenshot_description: "Documentation main page"
 
   - description: "Open getting started"
     action: "click"
@@ -28,7 +28,7 @@ steps:
 
   - description: "Capture getting started"
     action: "screenshot"
-    description: "Getting started guide"
+    screenshot_description: "Getting started guide"
 
   - description: "Navigate to API docs"
     action: "click"
@@ -38,7 +38,7 @@ steps:
 
   - description: "Capture API documentation"
     action: "screenshot"
-    description: "API reference documentation"
+    screenshot_description: "API reference documentation"
 
   - description: "Search documentation"
     action: "fill"
@@ -56,7 +56,7 @@ steps:
 
   - description: "Capture search results"
     action: "screenshot"
-    description: "Documentation search results"
+    screenshot_description: "Documentation search results"
 
   - description: "View troubleshooting"
     action: "click"
@@ -77,7 +77,7 @@ steps:
 
   - description: "Capture FAQ section"
     action: "screenshot"
-    description: "Frequently asked questions"
+    screenshot_description: "Frequently asked questions"
 
   - description: "Toggle dark mode docs"
     action: "click"

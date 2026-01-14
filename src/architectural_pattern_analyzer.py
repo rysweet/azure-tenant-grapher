@@ -123,14 +123,14 @@ class ArchitecturalPatternAnalyzer:
             # Test the connection
             with self.driver.session() as session:
                 session.run("RETURN 1")
-            logger.info(f"Connected to Neo4j at {self.neo4j_uri}")
+            logger.info(str(f"Connected to Neo4j at {self.neo4j_uri}"))
         except Exception as e:
             logger.exception(f"Failed to connect to Neo4j: {e}")
             raise
 
     def close(self) -> None:
         """Close Neo4j database connection."""
-        if self.driver:
+        if self.driver is not None:
             self.driver.close()
             logger.info("Neo4j connection closed")
 
@@ -206,7 +206,7 @@ class ArchitecturalPatternAnalyzer:
                     }
                 )
 
-        logger.info(f"Loaded {len(all_relationships)} relationships from graph")
+        logger.info(str(f"Loaded {len(all_relationships)} relationships from graph"))
         return all_relationships
 
     def aggregate_relationships(
@@ -261,7 +261,7 @@ class ArchitecturalPatternAnalyzer:
 
     def build_networkx_graph(
         self, aggregated_relationships: List[Dict[str, Any]]
-    ) -> Tuple[nx.MultiDiGraph, Dict[str, int], Dict[Tuple[str, str], int]]:
+    ) -> Tuple[nx.MultiDiGraph[str], Dict[str, int], Dict[Tuple[str, str], int]]:
         """
         Build NetworkX graph from aggregated relationships.
 
@@ -271,7 +271,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             Tuple of (graph, resource_type_counts, edge_counts)
         """
-        G = nx.MultiDiGraph()
+        G = nx.MultiDiGraph[str]()
 
         # Collect all unique resource types and their frequencies
         resource_type_counts: Dict[str, int] = defaultdict(int)
@@ -307,7 +307,7 @@ class ArchitecturalPatternAnalyzer:
         return G, dict(resource_type_counts), dict(edge_counts)
 
     def detect_patterns(
-        self, graph: nx.MultiDiGraph, resource_type_counts: Dict[str, int]
+        self, graph: nx.MultiDiGraph[str], resource_type_counts: Dict[str, int]
     ) -> Dict[str, Dict[str, Any]]:
         """
         Detect architectural patterns in the graph.
@@ -335,7 +335,7 @@ class ArchitecturalPatternAnalyzer:
                         if source != target and graph.has_edge(source, target):
                             edges = graph.get_edge_data(source, target)
                             if edges:
-                                for key, data in edges.items():
+                                for _key, data in edges.items():
                                     connection_count += data.get("frequency", 1)
                                     pattern_edges.append(
                                         (source, data["relationship"], target)
@@ -351,12 +351,12 @@ class ArchitecturalPatternAnalyzer:
                     * 100,
                 }
 
-        logger.info(f"Detected {len(pattern_matches)} architectural patterns")
+        logger.info(str(f"Detected {len(pattern_matches)} architectural patterns"))
         return pattern_matches
 
     def export_graph_data(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         resource_type_counts: Dict[str, int],
         output_path: Path,
         all_relationships_count: int,
@@ -404,11 +404,11 @@ class ArchitecturalPatternAnalyzer:
         with open(output_path, "w") as f:
             json.dump(graph_export, f, indent=2)
 
-        logger.info(f"Exported graph data to {output_path}")
+        logger.info(str(f"Exported graph data to {output_path}"))
 
     def generate_visualizations(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         resource_type_counts: Dict[str, int],
         edge_counts: Dict[Tuple[str, str], int],
         pattern_matches: Dict[str, Dict[str, Any]],
@@ -489,7 +489,7 @@ class ArchitecturalPatternAnalyzer:
         cross_pattern_edge_widths = []
         pattern_edge_colors = []
 
-        for u, v, data in G_filtered.edges(data=True):
+        for u, v, _data in G_filtered.edges(data=True):
             freq = edge_counts.get((u, v), 0)
             edge_width = max(1, freq / 50)
 
@@ -500,7 +500,7 @@ class ArchitecturalPatternAnalyzer:
             if shared_patterns:
                 pattern_edges.append((u, v))
                 pattern_edge_widths.append(edge_width * 2.5)
-                shared_pattern = list(shared_patterns)[0]
+                shared_pattern = next(iter(shared_patterns))
                 pattern_index = list(pattern_matches.keys()).index(shared_pattern)
                 pattern_edge_colors.append(pattern_index)
             else:
@@ -550,7 +550,9 @@ class ArchitecturalPatternAnalyzer:
                         )
                     )
                 except Exception as e:
-                    logger.debug(f"Could not draw boundary for {pattern_name}: {e}")
+                    logger.debug(
+                        str(f"Could not draw boundary for {pattern_name}: {e}")
+                    )
 
         # Draw cross-pattern edges first (gray background)
         if cross_pattern_edges:
@@ -633,13 +635,13 @@ class ArchitecturalPatternAnalyzer:
         plt.savefig(main_viz_path, dpi=150, bbox_inches="tight")
         plt.close()
         generated_files.append(main_viz_path)
-        logger.info(f"Generated main visualization: {main_viz_path}")
+        logger.info(str(f"Generated main visualization: {main_viz_path}"))
 
         return generated_files
 
     def identify_orphaned_nodes(
         self,
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         pattern_matches: Dict[str, Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
@@ -654,7 +656,7 @@ class ArchitecturalPatternAnalyzer:
         """
         # Collect all nodes that are matched by at least one pattern
         matched_nodes = set()
-        for pattern_name, match in pattern_matches.items():
+        for _pattern_name, match in pattern_matches.items():
             matched_nodes.update(match["matched_resources"])
 
         # Find orphaned nodes (not in any pattern)
@@ -673,34 +675,40 @@ class ArchitecturalPatternAnalyzer:
             for target in out_neighbors:
                 edges = graph.get_edge_data(node, target)
                 if edges:
-                    for key, data in edges.items():
-                        outgoing_edges.append({
-                            "target": target,
-                            "relationship": data.get("relationship", "UNKNOWN"),
-                            "frequency": data.get("frequency", 0),
-                        })
+                    for _key, data in edges.items():
+                        outgoing_edges.append(
+                            {
+                                "target": target,
+                                "relationship": data.get("relationship", "UNKNOWN"),
+                                "frequency": data.get("frequency", 0),
+                            }
+                        )
 
             incoming_edges = []
             for source in in_neighbors:
                 edges = graph.get_edge_data(source, node)
                 if edges:
-                    for key, data in edges.items():
-                        incoming_edges.append({
-                            "source": source,
-                            "relationship": data.get("relationship", "UNKNOWN"),
-                            "frequency": data.get("frequency", 0),
-                        })
+                    for _key, data in edges.items():
+                        incoming_edges.append(
+                            {
+                                "source": source,
+                                "relationship": data.get("relationship", "UNKNOWN"),
+                                "frequency": data.get("frequency", 0),
+                            }
+                        )
 
-            orphaned_info.append({
-                "resource_type": node,
-                "connection_count": graph.nodes[node].get("count", 0),
-                "in_degree": graph.in_degree(node),
-                "out_degree": graph.out_degree(node),
-                "total_degree": graph.degree(node),
-                "outgoing_edges": outgoing_edges,
-                "incoming_edges": incoming_edges,
-                "connected_to": list(set(out_neighbors + in_neighbors)),
-            })
+            orphaned_info.append(
+                {
+                    "resource_type": node,
+                    "connection_count": graph.nodes[node].get("count", 0),
+                    "in_degree": graph.in_degree(node),
+                    "out_degree": graph.out_degree(node),
+                    "total_degree": graph.degree(node),
+                    "outgoing_edges": outgoing_edges,
+                    "incoming_edges": incoming_edges,
+                    "connected_to": list(set(out_neighbors + in_neighbors)),
+                }
+            )
 
         # Sort by connection count (most connected first)
         orphaned_info.sort(key=lambda x: x["connection_count"], reverse=True)
@@ -759,7 +767,7 @@ class ArchitecturalPatternAnalyzer:
             # 1. Microsoft Graph API for better search
             # 2. Bing Search API
             # 3. Custom web scraping with BeautifulSoup
-            logger.info(f"Searching Microsoft Learn for: {search_term}")
+            logger.info(str(f"Searching Microsoft Learn for: {search_term}"))
 
             # For now, we'll provide common patterns based on resource type name
             # In a real implementation, you would use WebFetch or similar tools
@@ -768,10 +776,12 @@ class ArchitecturalPatternAnalyzer:
             doc_info["related_resources"] = self._get_related_resources(resource_type)
             doc_info["documentation_found"] = True
 
-            logger.info(f"Generated documentation summary for {resource_type}")
+            logger.info(str(f"Generated documentation summary for {resource_type}"))
 
         except Exception as e:
-            logger.warning(f"Failed to fetch documentation for {resource_type}: {e}")
+            logger.warning(
+                str(f"Failed to fetch documentation for {resource_type}: {e}")
+            )
             doc_info["error"] = str(e)
 
         return doc_info
@@ -791,7 +801,7 @@ class ArchitecturalPatternAnalyzer:
 
         return common_descriptions.get(
             resource_type,
-            f"Azure {resource_type} resource - see Microsoft Learn for details"
+            f"Azure {resource_type} resource - see Microsoft Learn for details",
         )
 
     def _get_typical_uses(self, resource_type: str) -> List[str]:
@@ -821,10 +831,13 @@ class ArchitecturalPatternAnalyzer:
             ],
         }
 
-        return use_cases.get(resource_type, [
-            "See Microsoft Learn documentation",
-            f"Common in Azure {resource_type} deployments",
-        ])
+        return use_cases.get(
+            resource_type,
+            [
+                "See Microsoft Learn documentation",
+                f"Common in Azure {resource_type} deployments",
+            ],
+        )
 
     def _get_related_resources(self, resource_type: str) -> List[str]:
         """Get commonly related resource types."""
@@ -859,7 +872,7 @@ class ArchitecturalPatternAnalyzer:
     def suggest_new_patterns(
         self,
         orphaned_nodes: List[Dict[str, Any]],
-        graph: nx.MultiDiGraph,
+        graph: nx.MultiDiGraph[str],
         min_connections: int = 2,
         min_cluster_size: int = 2,
     ) -> List[Dict[str, Any]]:
@@ -887,7 +900,7 @@ class ArchitecturalPatternAnalyzer:
         # Find connected components (clusters) in the orphaned subgraph
         weakly_connected = list(nx.weakly_connected_components(orphaned_subgraph))
 
-        for idx, component in enumerate(weakly_connected):
+        for _idx, component in enumerate(weakly_connected):
             if len(component) >= min_cluster_size:
                 component_list = list(component)
 
@@ -898,13 +911,17 @@ class ArchitecturalPatternAnalyzer:
                         if u != v and graph.has_edge(u, v):
                             edges = graph.get_edge_data(u, v)
                             if edges:
-                                for key, data in edges.items():
-                                    internal_edges.append({
-                                        "source": u,
-                                        "target": v,
-                                        "relationship": data.get("relationship", "UNKNOWN"),
-                                        "frequency": data.get("frequency", 0),
-                                    })
+                                for _key, data in edges.items():
+                                    internal_edges.append(
+                                        {
+                                            "source": u,
+                                            "target": v,
+                                            "relationship": data.get(
+                                                "relationship", "UNKNOWN"
+                                            ),
+                                            "frequency": data.get("frequency", 0),
+                                        }
+                                    )
 
                 # Get connections to non-orphaned nodes (context)
                 external_connections = {}
@@ -915,7 +932,9 @@ class ArchitecturalPatternAnalyzer:
                     if node_info:
                         for conn in node_info["connected_to"]:
                             if conn not in component_list:
-                                external_connections[conn] = external_connections.get(conn, 0) + 1
+                                external_connections[conn] = (
+                                    external_connections.get(conn, 0) + 1
+                                )
 
                 # Fetch documentation for cluster members
                 documented_resources = []
@@ -924,28 +943,40 @@ class ArchitecturalPatternAnalyzer:
                     documented_resources.append(doc)
 
                 # Generate pattern suggestion
-                pattern_name = self._generate_pattern_name(component_list, documented_resources)
+                pattern_name = self._generate_pattern_name(
+                    component_list, documented_resources
+                )
                 pattern_description = self._generate_pattern_description(
                     component_list, documented_resources, external_connections
                 )
 
-                suggested_patterns.append({
-                    "suggested_name": pattern_name,
-                    "description": pattern_description,
-                    "required_resources": component_list[:2] if len(component_list) >= 2 else component_list,
-                    "optional_resources": component_list[2:] if len(component_list) > 2 else [],
-                    "internal_connections": len(internal_edges),
-                    "internal_edges": internal_edges[:5],  # Top 5 for brevity
-                    "external_connections": dict(sorted(
-                        external_connections.items(),
-                        key=lambda x: x[1],
-                        reverse=True
-                    )[:5]),
-                    "documented_resources": documented_resources,
-                    "confidence": self._calculate_pattern_confidence(
-                        len(component_list), len(internal_edges), external_connections
-                    ),
-                })
+                suggested_patterns.append(
+                    {
+                        "suggested_name": pattern_name,
+                        "description": pattern_description,
+                        "required_resources": component_list[:2]
+                        if len(component_list) >= 2
+                        else component_list,
+                        "optional_resources": component_list[2:]
+                        if len(component_list) > 2
+                        else [],
+                        "internal_connections": len(internal_edges),
+                        "internal_edges": internal_edges[:5],  # Top 5 for brevity
+                        "external_connections": dict(
+                            sorted(
+                                external_connections.items(),
+                                key=lambda x: x[1],
+                                reverse=True,
+                            )[:5]
+                        ),
+                        "documented_resources": documented_resources,
+                        "confidence": self._calculate_pattern_confidence(
+                            len(component_list),
+                            len(internal_edges),
+                            external_connections,
+                        ),
+                    }
+                )
 
         # Strategy 2: Find orphaned nodes that frequently co-occur with specific matched patterns
         for node_info in orphaned_nodes[:10]:  # Top 10 most connected orphaned nodes
@@ -956,28 +987,34 @@ class ArchitecturalPatternAnalyzer:
             for conn in node_info["connected_to"]:
                 for pattern_name, match in self.ARCHITECTURAL_PATTERNS.items():
                     if conn in match.get("resources", []):
-                        pattern_connections[pattern_name] = pattern_connections.get(pattern_name, 0) + 1
+                        pattern_connections[pattern_name] = (
+                            pattern_connections.get(pattern_name, 0) + 1
+                        )
 
             if pattern_connections:
                 # Suggest adding this resource to the most connected pattern
                 best_pattern = max(pattern_connections.items(), key=lambda x: x[1])
                 doc = self.fetch_microsoft_learn_documentation(resource_type)
 
-                suggested_patterns.append({
-                    "suggested_name": f"{best_pattern[0]} (Enhanced)",
-                    "description": f"Add {resource_type} to existing {best_pattern[0]} pattern",
-                    "action": "UPDATE_EXISTING",
-                    "target_pattern": best_pattern[0],
-                    "resource_to_add": resource_type,
-                    "connection_count": best_pattern[1],
-                    "documentation": doc,
-                    "confidence": min(best_pattern[1] / 5.0, 1.0),  # Normalize confidence
-                })
+                suggested_patterns.append(
+                    {
+                        "suggested_name": f"{best_pattern[0]} (Enhanced)",
+                        "description": f"Add {resource_type} to existing {best_pattern[0]} pattern",
+                        "action": "UPDATE_EXISTING",
+                        "target_pattern": best_pattern[0],
+                        "resource_to_add": resource_type,
+                        "connection_count": best_pattern[1],
+                        "documentation": doc,
+                        "confidence": min(
+                            best_pattern[1] / 5.0, 1.0
+                        ),  # Normalize confidence
+                    }
+                )
 
         # Sort by confidence
         suggested_patterns.sort(key=lambda x: x.get("confidence", 0), reverse=True)
 
-        logger.info(f"Generated {len(suggested_patterns)} pattern suggestions")
+        logger.info(str(f"Generated {len(suggested_patterns)} pattern suggestions"))
         return suggested_patterns
 
     def _generate_pattern_name(
@@ -1052,9 +1089,7 @@ class ArchitecturalPatternAnalyzer:
 
         # Weighted average
         confidence = (
-            0.4 * resource_score +
-            0.4 * connectivity_score +
-            0.2 * external_score
+            0.4 * resource_score + 0.4 * connectivity_score + 0.2 * external_score
         )
 
         return round(confidence, 2)
@@ -1104,12 +1139,16 @@ class ArchitecturalPatternAnalyzer:
             # Export orphaned nodes analysis
             orphaned_output = output_dir / "orphaned_nodes_analysis.json"
             with open(orphaned_output, "w") as f:
-                json.dump({
-                    "orphaned_count": len(orphaned_nodes),
-                    "orphaned_nodes": orphaned_nodes,
-                    "suggested_patterns": suggested_patterns,
-                }, f, indent=2)
-            logger.info(f"Exported orphaned nodes analysis to {orphaned_output}")
+                json.dump(
+                    {
+                        "orphaned_count": len(orphaned_nodes),
+                        "orphaned_nodes": orphaned_nodes,
+                        "suggested_patterns": suggested_patterns,
+                    },
+                    f,
+                    indent=2,
+                )
+            logger.info(str(f"Exported orphaned nodes analysis to {orphaned_output}"))
 
             # Generate visualizations if requested
             visualization_files = []
@@ -1165,7 +1204,7 @@ class ArchitecturalPatternAnalyzer:
             with open(summary_output, "w") as f:
                 json.dump(summary, f, indent=2)
 
-            logger.info(f"Analysis complete. Summary saved to {summary_output}")
+            logger.info(str(f"Analysis complete. Summary saved to {summary_output}"))
             return summary
 
         finally:

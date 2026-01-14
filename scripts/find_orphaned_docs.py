@@ -11,9 +11,9 @@ Supports --fix mode to suggest additions to INDEX.md.
 import argparse
 import re
 import sys
-from pathlib import Path
-from typing import Set, List, Dict
 from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Set
 
 
 @dataclass
@@ -42,13 +42,13 @@ class OrphanDetector:
     """Detects orphaned documentation files."""
 
     # Markdown link patterns
-    MARKDOWN_LINK_PATTERN = re.compile(r'\[([^\]]+)\]\(([^\)]+)\)')
-    ANCHOR_PATTERN = re.compile(r'#.*$')
+    MARKDOWN_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^\)]+)\)")
+    ANCHOR_PATTERN = re.compile(r"#.*$")
 
     # External link patterns
-    EXTERNAL_PROTOCOLS = ('http://', 'https://', 'mailto:', 'ftp://')
+    EXTERNAL_PROTOCOLS = ("http://", "https://", "mailto:", "ftp://")
 
-    def __init__(self, docs_dir: Path, index_file: str = 'INDEX.md'):
+    def __init__(self, docs_dir: Path, index_file: str = "INDEX.md"):
         """
         Initialize orphan detector.
 
@@ -74,7 +74,7 @@ class OrphanDetector:
         links = []
 
         try:
-            content = file_path.read_text(encoding='utf-8')
+            content = file_path.read_text(encoding="utf-8")
         except Exception as e:
             print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
             return links
@@ -87,7 +87,7 @@ class OrphanDetector:
                 continue
 
             # Remove anchor
-            target_without_anchor = self.ANCHOR_PATTERN.sub('', target)
+            target_without_anchor = self.ANCHOR_PATTERN.sub("", target)
 
             if target_without_anchor:  # Skip empty links (anchor-only)
                 links.append(target_without_anchor)
@@ -105,9 +105,9 @@ class OrphanDetector:
         Returns:
             Resolved absolute path
         """
-        if target.startswith('/'):
+        if target.startswith("/"):
             # Absolute from docs root
-            return self.docs_dir / target.lstrip('/')
+            return self.docs_dir / target.lstrip("/")
         else:
             # Relative from source directory
             source_dir = source_file.parent
@@ -143,8 +143,7 @@ class OrphanDetector:
             resolved = self.resolve_link(start_file, link)
 
             # Only traverse markdown files within docs dir
-            if (resolved.suffix == '.md' and
-                resolved.is_relative_to(self.docs_dir)):
+            if resolved.suffix == ".md" and resolved.is_relative_to(self.docs_dir):
                 self.traverse_links(resolved)
 
     def find_all_markdown_files(self) -> Set[Path]:
@@ -154,7 +153,7 @@ class OrphanDetector:
         Returns:
             Set of all markdown file paths
         """
-        return set(self.docs_dir.rglob('*.md'))
+        return set(self.docs_dir.rglob("*.md"))
 
     def detect_orphans(self) -> OrphanReport:
         """
@@ -181,7 +180,7 @@ class OrphanDetector:
             total_files=len(all_files),
             reachable_files=len(self.reachable_files),
             orphaned_files=orphaned,
-            index_file=self.index_path
+            index_file=self.index_path,
         )
 
     def format_report(self, report: OrphanReport, suggest_fix: bool = False) -> str:
@@ -200,7 +199,9 @@ class OrphanDetector:
         lines.append("Orphaned Documentation Detection Report")
         lines.append("=" * 70)
         lines.append("")
-        lines.append(f"Index file:        {report.index_file.relative_to(self.docs_dir)}")
+        lines.append(
+            f"Index file:        {report.index_file.relative_to(self.docs_dir)}"
+        )
         lines.append(f"Total MD files:    {report.total_files}")
         lines.append(f"Reachable files:   {report.reachable_files}")
         lines.append(f"Orphaned files:    {report.orphan_count}")
@@ -225,7 +226,10 @@ class OrphanDetector:
                 for orphan in report.orphaned_files:
                     rel_path = orphan.relative_to(self.docs_dir)
                     # Try to extract title from file
-                    title = self._extract_title(orphan) or rel_path.stem.replace('_', ' ').title()
+                    title = (
+                        self._extract_title(orphan)
+                        or rel_path.stem.replace("_", " ").title()
+                    )
                     lines.append(f"- [{title}]({rel_path})")
         else:
             lines.append("✓ All documentation files are reachable from INDEX.md!")
@@ -246,10 +250,10 @@ class OrphanDetector:
             Title or empty string if not found
         """
         try:
-            content = file_path.read_text(encoding='utf-8')
+            content = file_path.read_text(encoding="utf-8")
             for line in content.splitlines():
                 line = line.strip()
-                if line.startswith('# '):
+                if line.startswith("# "):
                     return line[2:].strip()
         except Exception:
             pass
@@ -259,7 +263,7 @@ class OrphanDetector:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Find orphaned documentation files',
+        description="Find orphaned documentation files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -274,39 +278,33 @@ Examples:
 
   # Exit with error if orphans found
   %(prog)s --strict
-        """
+        """,
     )
 
     parser.add_argument(
-        '--docs-dir',
+        "--docs-dir",
         type=Path,
-        default=Path('docs'),
-        help='Documentation directory (default: docs)'
+        default=Path("docs"),
+        help="Documentation directory (default: docs)",
     )
 
     parser.add_argument(
-        '--index',
+        "--index",
         type=str,
-        default='INDEX.md',
-        help='Index file name (default: INDEX.md)'
+        default="INDEX.md",
+        help="Index file name (default: INDEX.md)",
     )
 
     parser.add_argument(
-        '--suggest-fix',
-        action='store_true',
-        help='Suggest additions to INDEX.md'
+        "--suggest-fix", action="store_true", help="Suggest additions to INDEX.md"
     )
 
     parser.add_argument(
-        '--strict',
-        action='store_true',
-        help='Exit with error code if orphans found'
+        "--strict", action="store_true", help="Exit with error code if orphans found"
     )
 
     parser.add_argument(
-        '--quiet',
-        action='store_true',
-        help='Only show summary and orphans'
+        "--quiet", action="store_true", help="Only show summary and orphans"
     )
 
     args = parser.parse_args()
@@ -324,7 +322,7 @@ Examples:
 
     # Run detection
     if not args.quiet:
-        print(f"Analyzing documentation in: {docs_dir}")
+        print(str(f"Analyzing documentation in: {docs_dir}"))
         print()
 
     detector = OrphanDetector(docs_dir, index_file=args.index)
@@ -340,5 +338,5 @@ Examples:
         return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

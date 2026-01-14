@@ -105,7 +105,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             raise ValueError(f"Invalid resource for SQLDatabasePlugin: {resource}")
 
         database_name = resource.get("name", "unknown")
-        self.logger.info(f"Discovering schema for SQL Database: {database_name}")
+        self.logger.info(str(f"Discovering schema for SQL Database: {database_name}"))
 
         items: List[DataPlaneItem] = []
 
@@ -251,7 +251,9 @@ class SQLDatabasePlugin(DataPlanePlugin):
                 f"pyodbc not installed. Install with: pip install pyodbc. Error: {e}"
             )
         except Exception as e:
-            self.logger.error(f"Unexpected error discovering SQL Database schema: {e}")
+            self.logger.error(
+                str(f"Unexpected error discovering SQL Database schema: {e}")
+            )
 
         self.logger.info(
             f"Discovered {len(items)} schema elements in database '{database_name}' "
@@ -519,7 +521,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Discover schema from source
             items = self.discover(source_resource)
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_discovery(
                     source_resource["id"], len(items)
                 )
@@ -538,7 +540,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Add timing information
             result.duration_seconds = time.time() - start_time
 
-            if self.progress_reporter:
+            if self.progress_reporter is not None:
                 self.progress_reporter.report_completion(result)
 
             return result

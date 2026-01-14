@@ -92,7 +92,7 @@ class ProgressTracker:
                         f"Timeout publishing to subscriber queue for {job_id}"
                     )
                 except Exception as e:
-                    logger.error(f"Error publishing to subscriber: {e}")
+                    logger.error(str(f"Error publishing to subscriber: {e}"))
 
     async def subscribe(self, job_id: str) -> asyncio.Queue:
         """
@@ -124,7 +124,7 @@ class ProgressTracker:
             for event in self._history[job_id]:
                 await queue.put(event)
 
-        logger.info(f"New subscriber for job {job_id}")
+        logger.info(str(f"New subscriber for job {job_id}"))
         return queue
 
     async def unsubscribe(self, job_id: str, queue: asyncio.Queue) -> None:
@@ -138,7 +138,7 @@ class ProgressTracker:
         async with self._lock:
             if queue in self._subscribers[job_id]:
                 self._subscribers[job_id].remove(queue)
-                logger.info(f"Subscriber removed for job {job_id}")
+                logger.info(str(f"Subscriber removed for job {job_id}"))
 
     def get_history(self, job_id: str) -> List[Dict]:
         """
@@ -170,7 +170,7 @@ class ProgressTracker:
                     # Signal end of stream
                     await queue.put(None)
                 del self._subscribers[job_id]
-        logger.info(f"Cleared progress data for job {job_id}")
+        logger.info(str(f"Cleared progress data for job {job_id}"))
 
 
 __all__ = ["ProgressTracker"]

@@ -76,9 +76,13 @@ class ContainerAppHandler(ResourceHandler):
         config = self.build_base_config(resource, include_location=False)
 
         # Container app environment ID - REQUIRED
-        env_id = properties.get("managedEnvironmentId") or properties.get("environmentId")
+        env_id = properties.get("managedEnvironmentId") or properties.get(
+            "environmentId"
+        )
         if not env_id:
-            logger.warning(f"Container App '{resource_name}' missing required managedEnvironmentId, skipping")
+            logger.warning(
+                f"Container App '{resource_name}' missing required managedEnvironmentId, skipping"
+            )
             return None
         config["container_app_environment_id"] = env_id
 

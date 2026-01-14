@@ -217,7 +217,7 @@ class TenantSpecificationGenerator:
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(markdown)
-        logger.info(f"Specification written to {output_path}")
+        logger.info(str(f"Specification written to {output_path}"))
         return output_path
 
     def _query_resources_with_limit(self) -> List[Dict[str, Any]]:

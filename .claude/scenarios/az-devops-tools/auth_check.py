@@ -296,7 +296,11 @@ def auto_fix(status: AuthStatus) -> AuthStatus:
     print("Attempting to auto-fix authentication issues...")
 
     # Fix: Install DevOps extension
-    if status.az_cli_installed and status.logged_in and not status.devops_extension_installed:
+    if (
+        status.az_cli_installed
+        and status.logged_in
+        and not status.devops_extension_installed
+    ):
         print("\n[1/3] Installing Azure DevOps extension...")
         try:
             result = subprocess.run(
@@ -309,7 +313,9 @@ def auto_fix(status: AuthStatus) -> AuthStatus:
                 print("✓ Azure DevOps extension installed successfully")
                 status.devops_extension_installed = True
                 # Remove error from list
-                status.errors = [e for e in status.errors if "extension" not in e.lower()]
+                status.errors = [
+                    e for e in status.errors if "extension" not in e.lower()
+                ]
             else:
                 print(f"✗ Failed to install extension: {result.stderr}")
         except Exception as e:
@@ -325,7 +331,9 @@ def auto_fix(status: AuthStatus) -> AuthStatus:
     if not status.org_configured or not status.project_configured:
         print("\n[3/3] Configuration required - please set manually:")
         if not status.org_configured:
-            print("    az devops configure --defaults organization=https://dev.azure.com/YOUR_ORG")
+            print(
+                "    az devops configure --defaults organization=https://dev.azure.com/YOUR_ORG"
+            )
         if not status.project_configured:
             print("    az devops configure --defaults project=YOUR_PROJECT")
         status.warnings.append("Manual action required: Configure org/project")
@@ -375,7 +383,11 @@ Exit codes:
 
     # Print status
     print("Status:")
-    print("  ✓ Azure CLI installed" if status.az_cli_installed else "  ✗ Azure CLI NOT installed")
+    print(
+        "  ✓ Azure CLI installed"
+        if status.az_cli_installed
+        else "  ✗ Azure CLI NOT installed"
+    )
     print("  ✓ Logged in" if status.logged_in else "  ✗ NOT logged in")
     print(
         "  ✓ DevOps extension installed"
@@ -387,13 +399,21 @@ Exit codes:
         if status.org_configured
         else "  ✗ Organization NOT configured"
     )
-    print("  ✓ Project configured" if status.project_configured else "  ✗ Project NOT configured")
+    print(
+        "  ✓ Project configured"
+        if status.project_configured
+        else "  ✗ Project NOT configured"
+    )
     print(
         "  ✓ Organization accessible"
         if status.org_accessible
         else "  ✗ Organization NOT accessible"
     )
-    print("  ✓ Project accessible" if status.project_accessible else "  ✗ Project NOT accessible")
+    print(
+        "  ✓ Project accessible"
+        if status.project_accessible
+        else "  ✗ Project NOT accessible"
+    )
 
     # Print errors
     if status.errors:
@@ -413,7 +433,9 @@ Exit codes:
 
         print("Updated Status:")
         print(
-            "  ✓ Azure CLI installed" if status.az_cli_installed else "  ✗ Azure CLI NOT installed"
+            "  ✓ Azure CLI installed"
+            if status.az_cli_installed
+            else "  ✗ Azure CLI NOT installed"
         )
         print("  ✓ Logged in" if status.logged_in else "  ✗ NOT logged in")
         print(
@@ -427,7 +449,9 @@ Exit codes:
             else "  ✗ Organization NOT configured"
         )
         print(
-            "  ✓ Project configured" if status.project_configured else "  ✗ Project NOT configured"
+            "  ✓ Project configured"
+            if status.project_configured
+            else "  ✗ Project NOT configured"
         )
         print(
             "  ✓ Organization accessible"
@@ -435,7 +459,9 @@ Exit codes:
             else "  ✗ Organization NOT accessible"
         )
         print(
-            "  ✓ Project accessible" if status.project_accessible else "  ✗ Project NOT accessible"
+            "  ✓ Project accessible"
+            if status.project_accessible
+            else "  ✗ Project NOT accessible"
         )
 
     # Print warnings
@@ -459,4 +485,4 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["check_auth", "auto_fix", "AuthStatus", "main"]
+__all__ = ["AuthStatus", "auto_fix", "check_auth", "main"]

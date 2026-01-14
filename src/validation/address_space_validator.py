@@ -117,11 +117,11 @@ class AddressSpaceValidator:
             >>> assert not result.is_valid
             >>> assert len(result.conflicts) == 1
         """
-        logger.info(f"Validating address spaces across {len(resources)} resources")
+        logger.info(str(f"Validating address spaces across {len(resources)} resources"))
 
         # Extract VNet resources
         vnets = self._extract_vnets(resources)
-        logger.info(f"Found {len(vnets)} VNet resources to validate")
+        logger.info(str(f"Found {len(vnets)} VNet resources to validate"))
 
         if not vnets:
             return ValidationResult(
@@ -171,7 +171,7 @@ class AddressSpaceValidator:
         auto_renumbered: List[str] = []
         if self.auto_renumber and conflicts and modify_in_place:
             auto_renumbered = self._auto_renumber_conflicts(resources, conflicts)
-            logger.info(f"Auto-renumbered {len(auto_renumbered)} VNets")
+            logger.info(str(f"Auto-renumbered {len(auto_renumbered)} VNets"))
 
         is_valid = len(conflicts) == 0
 
@@ -559,9 +559,9 @@ class AddressSpaceValidator:
         report_text = "\n".join(lines)
 
         # Write to file if path provided
-        if output_path:
+        if output_path is not None:
             output_path.write_text(report_text)
-            logger.info(f"Conflict report written to: {output_path}")
+            logger.info(str(f"Conflict report written to: {output_path}"))
 
         return report_text
 
@@ -592,7 +592,7 @@ def validate_address_spaces(
         >>> from validation.address_space_validator import validate_address_spaces
         >>> result = validate_address_spaces(resources, auto_renumber=True)
         >>> if not result.is_valid:
-        ...     print(f"Found {len(result.conflicts)} conflicts")
+        ...     print(str(f"Found {len(result.conflicts)} conflicts"))
     """
     validator = AddressSpaceValidator(auto_renumber=auto_renumber)
     return validator.validate_resources(resources, modify_in_place=auto_renumber)

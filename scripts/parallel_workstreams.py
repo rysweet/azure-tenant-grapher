@@ -63,7 +63,7 @@ class WorkstreamOrchestrator:
                 timeout=10,
             )
         except Exception as e:
-            logger.warning(f"Failed to send iMessage: {e}")
+            logger.warning(str(f"Failed to send iMessage: {e}"))
 
     def _run_command(
         self, cmd: List[str], workstream: str, timeout: int = 600
@@ -92,7 +92,7 @@ class WorkstreamOrchestrator:
     def workstream_full_scan(self):
         """Workstream 1: Full tenant scan (ARM + Entra ID)."""
         workstream_name = "full_scan"
-        logger.info(f"[{workstream_name}] Starting full tenant scan...")
+        logger.info(str(f"[{workstream_name}] Starting full tenant scan..."))
 
         self.status["workstreams"][workstream_name] = {
             "status": "running",
@@ -102,7 +102,7 @@ class WorkstreamOrchestrator:
         self._save_status()
 
         # Step 1: Scan ARM resources
-        logger.info(f"[{workstream_name}] Scanning ARM resources...")
+        logger.info(str(f"[{workstream_name}] Scanning ARM resources..."))
         success, output = self._run_command(
             ["uv", "run", "atg", "scan", "--include-entra-id"],
             workstream_name,
@@ -134,12 +134,12 @@ class WorkstreamOrchestrator:
         )
         self._save_status()
 
-        logger.info(f"[{workstream_name}] ✅ Full scan completed")
+        logger.info(str(f"[{workstream_name}] ✅ Full scan completed"))
 
     def workstream_entra_id_mapping(self):
         """Workstream 2: Entra ID resource mapping."""
         workstream_name = "entra_id_mapping"
-        logger.info(f"[{workstream_name}] Starting Entra ID mapping...")
+        logger.info(str(f"[{workstream_name}] Starting Entra ID mapping..."))
 
         self.status["workstreams"][workstream_name] = {
             "status": "running",
@@ -154,7 +154,9 @@ class WorkstreamOrchestrator:
         # 2. Generate azuread_* Terraform resources
         # 3. Handle group memberships and role assignments
 
-        logger.info(f"[{workstream_name}] Querying Entra ID resources from Neo4j...")
+        logger.info(
+            str(f"[{workstream_name}] Querying Entra ID resources from Neo4j...")
+        )
         time.sleep(5)  # Placeholder
 
         self.status["workstreams"][workstream_name]["status"] = "pending_implementation"
@@ -163,12 +165,14 @@ class WorkstreamOrchestrator:
         )
         self._save_status()
 
-        logger.info(f"[{workstream_name}] ⏳ Pending implementation")
+        logger.info(str(f"[{workstream_name}] ⏳ Pending implementation"))
 
     def workstream_data_plane_plugins(self):
         """Workstream 3: Data plane plugin development."""
         workstream_name = "data_plane_plugins"
-        logger.info(f"[{workstream_name}] Starting data plane plugin development...")
+        logger.info(
+            str(f"[{workstream_name}] Starting data plane plugin development...")
+        )
 
         self.status["workstreams"][workstream_name] = {
             "status": "running",
@@ -181,7 +185,9 @@ class WorkstreamOrchestrator:
         plugin_dir = PROJECT_ROOT / "src" / "iac" / "data_plane_plugins"
 
         if plugin_dir.exists():
-            logger.info(f"[{workstream_name}] Data plane plugin infrastructure found")
+            logger.info(
+                str(f"[{workstream_name}] Data plane plugin infrastructure found")
+            )
             self.status["workstreams"][workstream_name]["status"] = (
                 "infrastructure_ready"
             )
@@ -226,12 +232,12 @@ class DataPlanePlugin(ABC):
         )
         self._save_status()
 
-        logger.info(f"[{workstream_name}] ✅ Infrastructure ready")
+        logger.info(str(f"[{workstream_name}] ✅ Infrastructure ready"))
 
     def workstream_deploy_iteration(self):
         """Workstream 4: Deploy validated iteration."""
         workstream_name = "deploy_iteration"
-        logger.info(f"[{workstream_name}] Starting deployment preparation...")
+        logger.info(str(f"[{workstream_name}] Starting deployment preparation..."))
 
         self.status["workstreams"][workstream_name] = {
             "status": "running",
@@ -243,7 +249,7 @@ class DataPlanePlugin(ABC):
         # Find latest iteration
         iterations = sorted(PROJECT_ROOT.glob("demos/iteration*"))
         if not iterations:
-            logger.error(f"[{workstream_name}] No iterations found")
+            logger.error(str(f"[{workstream_name}] No iterations found"))
             self.status["workstreams"][workstream_name]["status"] = "failed"
             self.status["workstreams"][workstream_name]["error"] = "No iterations found"
             self._save_status()
@@ -252,7 +258,7 @@ class DataPlanePlugin(ABC):
         latest = iterations[-1]
         iteration_num = latest.name.replace("iteration", "")
 
-        logger.info(f"[{workstream_name}] Latest iteration: {iteration_num}")
+        logger.info(str(f"[{workstream_name}] Latest iteration: {iteration_num}"))
 
         # Check if we have target tenant credentials
         if not os.getenv("ARM_CLIENT_ID"):
@@ -269,13 +275,15 @@ class DataPlanePlugin(ABC):
             return
 
         # Run terraform plan
-        logger.info(f"[{workstream_name}] Running terraform plan...")
+        logger.info(str(f"[{workstream_name}] Running terraform plan..."))
         success, output = self._run_command(
             ["terraform", "plan", "-out=tfplan"], workstream_name, timeout=600
         )
 
         if not success:
-            logger.error(f"[{workstream_name}] terraform plan failed: {output[-200:]}")
+            logger.error(
+                str(f"[{workstream_name}] terraform plan failed: {output[-200:]}")
+            )
             self.status["workstreams"][workstream_name]["status"] = "plan_failed"
             self.status["workstreams"][workstream_name]["error"] = output[-200:]
             self._send_imessage(f"❌ [{workstream_name}] terraform plan failed")

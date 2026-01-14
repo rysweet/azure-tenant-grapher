@@ -25,7 +25,7 @@ class BaseExporter(ABC):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph,
+        sampled_graph: nx.DiGraph[str],
         output_path: str,
     ) -> None:
         """

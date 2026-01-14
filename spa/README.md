@@ -161,6 +161,70 @@ npm run lint           # Run ESLint
 npm run format         # Format with Prettier
 ```
 
+### Testing Infrastructure
+
+The SPA uses Jest as its testing framework with comprehensive test coverage across unit, integration, and end-to-end tests.
+
+**Test Framework Setup:**
+- **Jest 29.7.0** - Core testing framework with jsdom environment
+- **ts-jest** - TypeScript support for Jest
+- **@testing-library/react** - React component testing utilities
+- **@testing-library/jest-dom** - Custom Jest matchers for DOM
+- **Playwright** - End-to-end browser testing
+
+**Running Tests:**
+
+```bash
+# Run all tests (no coverage, no watch mode)
+npm test
+
+# Run tests in watch mode during development
+npm test -- --watch
+
+# Run tests with coverage report
+npm test -- --coverage
+
+# Run end-to-end tests
+npm run test:e2e
+```
+
+**Pre-commit Testing:**
+
+The SPA includes a pre-commit hook that automatically runs tests when SPA files are modified. This hook:
+- Only runs when `.ts`, `.tsx`, `.js`, `.jsx`, or `.css` files in the `spa/` directory are changed
+- Executes `npm test -- --no-coverage --watchAll=false` for fast validation
+- Prevents commits if tests fail, ensuring code quality
+
+**Test Configuration:**
+
+Jest is configured in `jest.config.js` with:
+- TypeScript support via ts-jest preset
+- jsdom test environment for React components
+- Path aliases for cleaner imports (`@/` maps to `renderer/src/`)
+- CSS module mocking with identity-obj-proxy
+- Test setup in `tests/setupTests.ts`
+
+**Test Structure:**
+
+```
+tests/
+├── components/          # Component unit tests
+├── integration/         # Integration tests
+├── e2e/                # End-to-end tests with Playwright
+├── setup.ts            # Test environment setup
+└── setupTests.ts       # Jest global setup
+```
+
+**Prerequisites:**
+
+Before running tests, ensure dependencies are installed:
+```bash
+cd spa
+npm install
+```
+
+This installs Jest and all testing dependencies defined in `package.json`.
+
 ### Development Workflow
 
 1. **Start development environment:**

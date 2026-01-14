@@ -129,7 +129,7 @@ class GraphExportService:
 
     def _build_networkx_graph(
         self, tenant_id: str, include_relationships: bool
-    ) -> nx.DiGraph:
+    ) -> nx.DiGraph[str]:
         """Build NetworkX graph from Neo4j abstraction.
 
         Args:
@@ -139,7 +139,7 @@ class GraphExportService:
         Returns:
             NetworkX directed graph
         """
-        graph = nx.DiGraph()
+        graph = nx.DiGraph[str]()
 
         with self.session_manager.session() as session:
             # Add nodes (sampled resources)
@@ -192,7 +192,7 @@ class GraphExportService:
 
         return graph
 
-    def _export_to_json(self, graph: nx.DiGraph, output_path: Path) -> None:
+    def _export_to_json(self, graph: nx.DiGraph[str], output_path: Path) -> None:
         """Export graph to D3.js-compatible JSON format.
 
         Format:

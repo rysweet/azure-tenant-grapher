@@ -133,9 +133,13 @@ def handler(cls: Type[ResourceHandler]) -> Type[ResourceHandler]:
 # This must be at the bottom after the registry is defined
 def _register_all_handlers() -> None:
     """Import all handler modules to trigger registration."""
-    # Storage handlers
+    # Imports are used for side effects (handler registration via decorators)
+    # Mark as used to satisfy pyright
+
     # Automation handlers
     from .automation import automation_account, runbook
+
+    _ = (automation_account, runbook)
 
     # Compute handlers
     from .compute import (
@@ -145,6 +149,8 @@ def _register_all_handlers() -> None:
         vm_extensions,
     )
 
+    _ = (disks, ssh_public_key, virtual_machine, vm_extensions)
+
     # Container handlers
     from .container import (
         aks,
@@ -153,11 +159,17 @@ def _register_all_handlers() -> None:
         container_registry,
     )
 
+    _ = (aks, container_app, container_group, container_registry)
+
     # Database handlers
     from .database import cosmosdb, postgresql, sql_database, sql_server
 
+    _ = (cosmosdb, postgresql, sql_database, sql_server)
+
     # DevTest handlers
     from .devtest import devtest_lab, devtest_schedule, devtest_vm
+
+    _ = (devtest_lab, devtest_schedule, devtest_vm)
 
     # Identity handlers
     from .identity import (
@@ -168,8 +180,12 @@ def _register_all_handlers() -> None:
         service_principal,
     )
 
+    _ = (entra_group, entra_user, managed_identity, role_assignment, service_principal)
+
     # KeyVault handlers
     from .keyvault import vault
+
+    _ = vault
 
     # Misc handlers
     from .misc import (
@@ -186,8 +202,24 @@ def _register_all_handlers() -> None:
         waf_policy,
     )
 
+    _ = (
+        app_config,
+        data_factory,
+        databricks,
+        dns_zone,
+        eventhub,
+        recovery_vault,
+        redis,
+        resource_group,
+        search_service,
+        servicebus,
+        waf_policy,
+    )
+
     # ML handlers
     from .ml import cognitive_services, ml_workspace
+
+    _ = (cognitive_services, ml_workspace)
 
     # Monitoring handlers
     from .monitoring import (
@@ -197,6 +229,8 @@ def _register_all_handlers() -> None:
         log_analytics,
         metric_alert,
     )
+
+    _ = (action_group, app_insights, dcr, log_analytics, metric_alert)
 
     # Network handlers
     from .network import (
@@ -212,13 +246,32 @@ def _register_all_handlers() -> None:
         subnet,
         vnet,
     )
+
+    _ = (
+        application_gateway,
+        bastion,
+        load_balancer,
+        nat_gateway,
+        nic,
+        nsg,
+        nsg_associations,
+        public_ip,
+        route_table,
+        subnet,
+        vnet,
+    )
+
     from .storage import storage_account
+
+    _ = storage_account
 
     # Web handlers
     from .web import app_service, service_plan, static_web_app
 
+    _ = (app_service, service_plan, static_web_app)
+
     logger.info(
-        f"Registered {len(HandlerRegistry._handlers)} handlers "
+        f"Registered {len(HandlerRegistry.get_all_handlers())} handlers "
         f"covering {len(HandlerRegistry.get_all_supported_types())} Azure types"
     )
 
@@ -238,5 +291,5 @@ def ensure_handlers_registered() -> None:
             _register_all_handlers()
         except ImportError as e:
             # During development, some handlers may not exist yet
-            logger.warning(f"Some handlers not available: {e}")
+            logger.warning(str(f"Some handlers not available: {e}"))
         _handlers_registered = True

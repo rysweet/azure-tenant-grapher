@@ -89,7 +89,9 @@ class MetricAlertHandler(ResourceHandler):
                     config["criteria"] = criteria_config
                 else:
                     # No valid criteria - cannot create metric alert without criteria
-                    logger.warning(f"Metric alert '{resource_name}' has no valid criteria, skipping")
+                    logger.warning(
+                        f"Metric alert '{resource_name}' has no valid criteria, skipping"
+                    )
                     return None
 
         logger.debug(f"Metric Alert '{resource_name}' emitted")

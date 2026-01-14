@@ -123,10 +123,10 @@ def create_pull_request(
         cmd.extend(["--description", description])
 
     if reviewers:
-        cmd.extend(["--reviewers"] + reviewers)
+        cmd.extend(["--reviewers", *reviewers])
 
     if work_items:
-        cmd.extend(["--work-items"] + work_items)
+        cmd.extend(["--work-items", *work_items])
 
     if draft:
         cmd.append("--draft")
@@ -214,7 +214,9 @@ Note:
         help="Repository name (defaults to project's default repo if not specified)",
     )
     parser.add_argument("--source", required=True, help="Source branch name")
-    parser.add_argument("--target", default="main", help="Target branch name (default: main)")
+    parser.add_argument(
+        "--target", default="main", help="Target branch name (default: main)"
+    )
     parser.add_argument("--title", required=True, help="Pull request title")
     parser.add_argument(
         "--description",
@@ -228,7 +230,9 @@ Note:
         "--work-items",
         help="Comma-separated list of work item IDs to link",
     )
-    parser.add_argument("--draft", action="store_true", help="Create as draft pull request")
+    parser.add_argument(
+        "--draft", action="store_true", help="Create as draft pull request"
+    )
     parser.add_argument(
         "--auto-complete",
         action="store_true",

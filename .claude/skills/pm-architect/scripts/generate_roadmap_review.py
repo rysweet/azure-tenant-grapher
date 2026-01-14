@@ -94,7 +94,9 @@ def get_git_velocity_metrics(project_root: Path) -> str:
 
         commit_count = 0
         if result.returncode == 0:
-            commit_count = len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
+            commit_count = (
+                len(result.stdout.strip().split("\n")) if result.stdout.strip() else 0
+            )
 
         # Get merged PRs in last 7 days using gh CLI
         pr_count = 0
@@ -125,7 +127,8 @@ def get_git_velocity_metrics(project_root: Path) -> str:
                     1
                     for pr in prs
                     if pr.get("mergedAt")
-                    and datetime.fromisoformat(pr["mergedAt"].replace("Z", "+00:00")) > week_ago_dt
+                    and datetime.fromisoformat(pr["mergedAt"].replace("Z", "+00:00"))
+                    > week_ago_dt
                 )
         except Exception:
             pass
@@ -189,7 +192,9 @@ def get_milestone_progress(project_root: Path) -> str:
         return "\n## Milestone Progress\n\nUnable to retrieve (gh CLI not available)\n"
 
 
-async def generate_roadmap_review(project_root: Path, state: dict | None = None) -> str | None:
+async def generate_roadmap_review(
+    project_root: Path, state: dict | None = None
+) -> str | None:
     """Generate weekly roadmap review using Claude Agent SDK.
 
     Args:

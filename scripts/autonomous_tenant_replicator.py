@@ -114,7 +114,7 @@ class AutonomousTenantReplicator:
                 timeout=5,
             )
         except Exception as e:
-            print(f"Failed to send iMessage: {e}")
+            print(str(f"Failed to send iMessage: {e}"))
 
     def get_neo4j_metrics(self) -> Tuple[int, int]:
         """Get resource counts from Neo4j for source and target tenants"""
@@ -186,7 +186,7 @@ class AutonomousTenantReplicator:
 
                 return source_count, target_count
         except Exception as e:
-            print(f"Error querying Neo4j: {e}")
+            print(str(f"Error querying Neo4j: {e}"))
             return 410, 158  # Use baseline values from OBJECTIVE.md
 
     def evaluate_objective(self) -> ObjectiveMetrics:
@@ -225,7 +225,7 @@ class AutonomousTenantReplicator:
         iteration_path = self.demos_dir / f"{self.iteration_prefix}{iteration_num}"
 
         print(f"\n{'=' * 80}")
-        print(f"GENERATING ITERATION {iteration_num}")
+        print(str(f"GENERATING ITERATION {iteration_num}"))
         print(f"{'=' * 80}")
 
         # Generate IaC
@@ -255,15 +255,15 @@ class AutonomousTenantReplicator:
 
         if result.returncode != 0:
             status.errors.append(f"Generation failed: {result.stderr}")
-            print(f"❌ Generation failed: {result.stderr}")
+            print(str(f"❌ Generation failed: {result.stderr}"))
         else:
-            print(f"✅ Generated to {iteration_path}")
+            print(str(f"✅ Generated to {iteration_path}"))
 
         return status
 
     def validate_iteration(self, status: IterationStatus) -> IterationStatus:
         """Validate iteration with terraform"""
-        print(f"\nValidating iteration {status.iteration_num}...")
+        print(str(f"\nValidating iteration {status.iteration_num}..."))
 
         # Init terraform
         init_result = subprocess.run(
@@ -294,7 +294,7 @@ class AutonomousTenantReplicator:
                     status.errors.append(
                         f"{diag.get('severity', 'error')}: {diag.get('summary', '')}"
                     )
-                print(f"❌ Validation failed: {len(status.errors)} errors")
+                print(str(f"❌ Validation failed: {len(status.errors)} errors"))
             else:
                 print("✅ Validation passed")
                 self.consecutive_validation_passes += 1
@@ -307,7 +307,7 @@ class AutonomousTenantReplicator:
 
     def deploy_iteration(self, status: IterationStatus) -> IterationStatus:
         """Deploy iteration with terraform apply"""
-        print(f"\nDeploying iteration {status.iteration_num}...")
+        print(str(f"\nDeploying iteration {status.iteration_num}..."))
 
         # Plan
         plan_result = subprocess.run(
@@ -411,16 +411,16 @@ Do not stop until the fix is complete and tested.
             f.write(f"Error: {error_category['error']}\n")
             f.write(f"Prompt:\n{prompt}\n")
 
-        print(f"📝 Fix agent logged: logs/fix_agent_{agent_id}.txt")
+        print(str(f"📝 Fix agent logged: logs/fix_agent_{agent_id}.txt"))
 
     def run_continuous_loop(self):
         """Main continuous loop - runs until objective achieved"""
         print("=" * 80)
         print("AUTONOMOUS TENANT REPLICATOR - STARTING")
         print("=" * 80)
-        print(f"Source: DefenderATEVET17 ({self.source_subscription})")
-        print(f"Target: DefenderATEVET12 ({self.target_subscription})")
-        print(f"Starting from iteration: {self.current_iteration}")
+        print(str(f"Source: DefenderATEVET17 ({self.source_subscription})"))
+        print(str(f"Target: DefenderATEVET12 ({self.target_subscription})"))
+        print(str(f"Starting from iteration: {self.current_iteration}"))
         print("=" * 80)
 
         self.send_imessage(
@@ -436,13 +436,13 @@ Do not stop until the fix is complete and tested.
             metrics = self.evaluate_objective()
 
             print(f"\n{'=' * 80}")
-            print(f"LOOP {loop_count} - OBJECTIVE EVALUATION")
+            print(str(f"LOOP {loop_count} - OBJECTIVE EVALUATION"))
             print(f"{'=' * 80}")
-            print(f"Source Resources: {metrics.source_resources}")
-            print(f"Target Resources: {metrics.target_resources}")
-            print(f"Fidelity: {metrics.fidelity_percent:.1f}%")
-            print(f"Consecutive Passes: {metrics.consecutive_passes}")
-            print(f"Objective Achieved: {metrics.objective_achieved}")
+            print(str(f"Source Resources: {metrics.source_resources}"))
+            print(str(f"Target Resources: {metrics.target_resources}"))
+            print(str(f"Fidelity: {metrics.fidelity_percent:.1f}%"))
+            print(str(f"Consecutive Passes: {metrics.consecutive_passes}"))
+            print(str(f"Objective Achieved: {metrics.objective_achieved}"))
             print(f"{'=' * 80}")
 
             if metrics.objective_achieved:
@@ -475,7 +475,7 @@ Do not stop until the fix is complete and tested.
                 # Analyze errors and spawn fix agents
                 error_categories = self.analyze_iteration_errors(status)
 
-                print(f"\n🔍 Found {len(error_categories)} error categories")
+                print(str(f"\n🔍 Found {len(error_categories)} error categories"))
                 self.send_imessage(
                     f"⚠️ Iteration {self.current_iteration} validation failed: "
                     f"{len(error_categories)} error categories"
@@ -496,13 +496,15 @@ Do not stop until the fix is complete and tested.
             self.iteration_history[-1] = status
 
             if status.apply_success:
-                print(f"✅ Iteration {self.current_iteration} deployed successfully")
+                print(
+                    str(f"✅ Iteration {self.current_iteration} deployed successfully")
+                )
                 self.send_imessage(
                     f"✅ Iteration {self.current_iteration} deployed! "
                     f"Fidelity: {metrics.fidelity_percent:.1f}%"
                 )
             else:
-                print(f"❌ Iteration {self.current_iteration} deployment failed")
+                print(str(f"❌ Iteration {self.current_iteration} deployment failed"))
                 self.send_imessage(
                     f"❌ Iteration {self.current_iteration} deployment failed"
                 )
@@ -528,7 +530,7 @@ def main():
         print("\n\n⏹️  Interrupted by user")
         replicator.send_imessage("⏹️ Autonomous replicator stopped by user")
     except Exception as e:
-        print(f"\n\n❌ Fatal error: {e}")
+        print(str(f"\n\n❌ Fatal error: {e}"))
         replicator.send_imessage(f"❌ Fatal error: {e}")
         raise
 

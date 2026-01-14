@@ -54,7 +54,8 @@ dependencies = [
     # Graph sampling dependencies (Issue #427, #611)
     "networkx>=3.0",
     "pandas>=2.3.3",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0", # littleballoffur requires pandas<2.0 which needs numpy<2.0
+    "psutil>=5.9.0",  # Performance monitoring for scale operations
     # Graph embeddings dependencies (Issue #509)
     "node2vec>=0.4.6",
     "scikit-learn>=1.3.0",
@@ -216,4 +217,18 @@ reportGeneralTypeIssues = false
 reportOptionalMemberAccess = "warning"
 reportUnusedImport = "error"
 reportUnusedClass = "error"
-exclude = ["dotnet", ".venv", "htmlcov", "tests/**/*", "scripts/**/*"]
+exclude = [
+    "dotnet",
+    ".venv",
+    "htmlcov",
+    "tests/**/*",
+    "scripts/**/*",
+    ".claude/**/*",
+    "demos/**/*",
+    "examples/**/*",
+    "migrations/**/*",
+    "spa/**/*",
+    "docs/**/*",
+    "notebooks/**/*",
+    "agentic_testing/**/*"
+]

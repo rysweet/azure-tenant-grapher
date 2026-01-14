@@ -561,7 +561,7 @@ class ResourceComparator:
                     )
                 )
 
-        logger.info(f"Detected {len(orphaned_classifications)} orphaned resources")
+        logger.info(str(f"Detected {len(orphaned_classifications)} orphaned resources"))
         return orphaned_classifications
 
     def _generate_summary(
