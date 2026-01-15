@@ -727,13 +727,28 @@ const CLITab: React.FC = () => {
   const stopCommand = async () => {
     if (currentProcessId) {
       try {
-        await axios.post(`http://localhost:3001/api/cancel/${currentProcessId}`);
-        writeToTerminal('Process cancelled by user', '33'); // Yellow color
+        const response = await axios.post(`http://localhost:3001/api/cancel/${currentProcessId}`);
+        
+        if (response.data.status === 'not_running') {
+          writeToTerminal('Process already completed', '33'); // Yellow color
+        } else if (response.data.status === 'cancelled') {
+          writeToTerminal('Process cancelled by user', '33'); // Yellow color
+        }
+        
         setIsRunning(false);
         setCurrentProcessId(null);
         unsubscribeFromProcess(currentProcessId);
       } catch (err: any) {
-        setError(`Failed to stop process: ${err.message}`);
+        // Only show error if it's a real error, not just "process not found"
+        if (err.response?.status !== 404) {
+          setError(`Failed to stop process: ${err.message}`);
+        } else {
+          // Process already finished - this is fine
+          writeToTerminal('Process already completed', '33');
+          setIsRunning(false);
+          setCurrentProcessId(null);
+          unsubscribeFromProcess(currentProcessId);
+        }
       }
     }
   };
