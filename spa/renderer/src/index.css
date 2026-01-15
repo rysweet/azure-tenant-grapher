@@ -328,7 +328,6 @@ body {
 /* Vis-network tooltip styles */
 .vis-tooltip {
   position: absolute;
-  visibility: hidden;
   padding: 8px;
   white-space: normal;
   font-family: 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
@@ -341,6 +340,7 @@ body {
   pointer-events: none;
   z-index: 10000;
   max-width: 300px;
+  opacity: 1;
 }
 
 /* Tooltip content styles */
