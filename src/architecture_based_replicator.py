@@ -791,8 +791,8 @@ class ArchitecturePatternReplicator:
 
     def _compute_weighted_score(
         self,
-        source_graph: nx.DiGraph[str],
-        target_graph: nx.DiGraph[str],
+        source_graph: nx.DiGraph,
+        target_graph: nx.DiGraph,
         source_node_types: Set[str],
         node_coverage_weight: float,
     ) -> float:
@@ -836,7 +836,7 @@ class ArchitecturePatternReplicator:
         return score
 
     def _compute_spectral_distance(
-        self, graph1: nx.DiGraph[str], graph2: nx.DiGraph[str]
+        self, graph1: nx.DiGraph, graph2: nx.DiGraph
     ) -> float:
         """
         Compute normalized spectral distance using Laplacian eigenvalues.

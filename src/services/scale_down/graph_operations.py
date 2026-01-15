@@ -121,7 +121,7 @@ class GraphOperations(BaseScaleService):
 
     async def discover_motifs(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         motif_size: int = 3,
         max_motifs: int = 100,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,

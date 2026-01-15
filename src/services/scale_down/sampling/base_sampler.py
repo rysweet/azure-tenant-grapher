@@ -23,7 +23,7 @@ class BaseSampler(ABC):
     @abstractmethod
     async def sample(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:

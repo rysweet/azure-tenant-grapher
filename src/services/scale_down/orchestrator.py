@@ -103,7 +103,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         tenant_id: str,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
-    ) -> Tuple[nx.DiGraph[str], Dict[str, Dict[str, Any]]]:
+    ) -> Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
         """
         Convert Neo4j graph to NetworkX directed graph.
 
@@ -114,7 +114,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             progress_callback: Optional callback(phase, current, total)
 
         Returns:
-            Tuple[nx.DiGraph[str], Dict[str, Dict[str, Any]]]:
+            Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
                 - NetworkX directed graph with node IDs
                 - Dictionary mapping node IDs to full properties
 
@@ -310,7 +310,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph[str],
+        sampled_graph: nx.DiGraph,
         format: str,
         output_path: str,
     ) -> None:
@@ -454,7 +454,7 @@ class ScaleDownOrchestrator(BaseScaleService):
     # ========================================================================
 
     async def _sample_mhrw(
-        self, graph: nx.Graph[str], target_count: int, progress_callback=None
+        self, graph: nx.Graph, target_count: int, progress_callback=None
     ) -> List[str]:
         """Backward compatibility wrapper for MHRW sampling."""
         return await self.samplers["mhrw"].sample(
@@ -462,7 +462,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         )
 
     async def _sample_random_walk(
-        self, graph: nx.Graph[str], target_count: int, progress_callback=None
+        self, graph: nx.Graph, target_count: int, progress_callback=None
     ) -> List[str]:
         """Backward compatibility wrapper for Random Walk sampling."""
         return await self.samplers["random_walk"].sample(
@@ -471,8 +471,8 @@ class ScaleDownOrchestrator(BaseScaleService):
 
     def _calculate_quality_metrics(
         self,
-        original_graph: nx.Graph[str],
-        sampled_graph: nx.Graph[str],
+        original_graph: nx.Graph,
+        sampled_graph: nx.Graph,
         node_properties: Optional[Dict] = None,
         sampled_ids: Optional[Set[str]] = None,
         computation_time: Optional[float] = None,
@@ -504,7 +504,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         sampled_ids: List[str],
         node_properties: Dict,
-        graph: nx.Graph[str],
+        graph: nx.Graph,
         output_file: str,
     ):
         """Backward compatibility wrapper for YAML export (old signature)."""
@@ -519,7 +519,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         sampled_ids: List[str],
         node_properties: Dict,
-        graph: nx.Graph[str],
+        graph: nx.Graph,
         output_file: str,
     ):
         """Backward compatibility wrapper for JSON export (old signature)."""
@@ -532,7 +532,7 @@ class ScaleDownOrchestrator(BaseScaleService):
         self,
         sampled_ids: List[str],
         node_properties: Dict,
-        graph: nx.Graph[str],
+        graph: nx.Graph,
         output_file: str,
     ):
         """Backward compatibility wrapper for Neo4j export (old signature)."""

@@ -90,7 +90,7 @@ class GraphEmbeddingGenerator:
 
         return embeddings
 
-    def _build_networkx_graph(self, tenant_id: str) -> nx.Graph[str]:
+    def _build_networkx_graph(self, tenant_id: str) -> nx.Graph:
         """Build NetworkX graph from Neo4j relationships.
 
         Extracts all Resource nodes and their relationships for the specified
@@ -112,7 +112,7 @@ class GraphEmbeddingGenerator:
         RETURN source.id AS source_id, target.id AS target_id
         """
 
-        graph = nx.Graph[str]()
+        graph = nx.Graph()
 
         with self.driver.session() as session:
             result = session.run(query, tenant_id=tenant_id)
@@ -131,7 +131,7 @@ class GraphEmbeddingGenerator:
 
         return graph
 
-    def _train_node2vec(self, graph: nx.Graph[str]) -> Dict[str, np.ndarray]:
+    def _train_node2vec(self, graph: nx.Graph) -> Dict[str, np.ndarray]:
         """Train node2vec model and return embeddings.
 
         Args:
@@ -168,7 +168,7 @@ class GraphEmbeddingGenerator:
         return embeddings
 
     def get_node_importance_scores(
-        self, embeddings: Dict[str, np.ndarray], graph: Optional[nx.Graph[str]] = None
+        self, embeddings: Dict[str, np.ndarray], graph: Optional[nx.Graph] = None
     ) -> Dict[str, float]:
         """Calculate importance scores for nodes based on embeddings.
 
