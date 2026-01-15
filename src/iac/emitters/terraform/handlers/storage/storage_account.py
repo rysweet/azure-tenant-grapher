@@ -90,7 +90,9 @@ class StorageAccountHandler(ResourceHandler):
         if resource_id:
             import hashlib
 
-            hash_val = hashlib.md5(resource_id.encode()).hexdigest()[:6]
+            hash_val = hashlib.md5(
+                resource_id.encode(), usedforsecurity=False
+            ).hexdigest()[:6]
             base_name = sanitized_name.replace("-", "").lower()
             if len(base_name) > 18:
                 base_name = base_name[:18]
