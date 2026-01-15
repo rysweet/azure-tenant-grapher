@@ -4,6 +4,7 @@ Handles: Microsoft.Web/sites
 Emits: azurerm_linux_web_app, azurerm_windows_web_app
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
@@ -63,8 +64,6 @@ class AppServiceHandler(ResourceHandler):
         # Add hash-based suffix for global uniqueness (works in all deployment modes)
         resource_id = resource.get("id", "")
         if resource_id:
-            import hashlib
-
             hash_val = hashlib.md5(
                 resource_id.encode(), usedforsecurity=False
             ).hexdigest()[:6]

@@ -4,6 +4,7 @@ Handles: Microsoft.ContainerRegistry/registries
 Emits: azurerm_container_registry
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
@@ -59,8 +60,6 @@ class ContainerRegistryHandler(ResourceHandler):
         # Add hash-based suffix for global uniqueness (works in all deployment modes)
         resource_id = resource.get("id", "")
         if resource_id:
-            import hashlib
-
             hash_val = hashlib.md5(
                 resource_id.encode(), usedforsecurity=False
             ).hexdigest()[:6]
