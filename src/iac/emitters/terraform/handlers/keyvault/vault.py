@@ -7,7 +7,6 @@ Emits: azurerm_key_vault
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -21,6 +20,9 @@ class KeyVaultHandler(ResourceHandler):
 
     Emits:
         - azurerm_key_vault
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -30,11 +32,6 @@ class KeyVaultHandler(ResourceHandler):
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_key_vault",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -48,11 +45,8 @@ class KeyVaultHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Key Vaults need globally unique names
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.KeyVault/vaults"
-        )
 
         # Add tenant suffix for cross-tenant deployments (using resource ID hash for determinism)
         if (
@@ -63,16 +57,17 @@ class KeyVaultHandler(ResourceHandler):
             resource_id = resource.get("id", "")
             tenant_suffix = hashlib.md5(resource_id.encode()).hexdigest()[:6] if resource_id else "000000"
 
-            # Truncate to fit (24 - 7 = 17 chars for sanitized name + hyphen)
-            if len(sanitized_name) > 17:
-                sanitized_name = sanitized_name[:17]
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            # Truncate to fit (24 - 7 = 17 chars for abstracted name + hyphen)
+            if len(abstracted_name) > 17:
+                abstracted_name = abstracted_name[:17]
 
-            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            config["name"] = f"{abstracted_name}-{tenant_suffix}"
             logger.info(
                 f"Key Vault name made globally unique: {resource_name} → {config['name']}"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         safe_name = self.sanitize_name(config["name"])
 

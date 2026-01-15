@@ -8,8 +8,6 @@ import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
-
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -23,6 +21,9 @@ class StorageAccountHandler(ResourceHandler):
 
     Emits:
         - azurerm_storage_account
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -32,11 +33,6 @@ class StorageAccountHandler(ResourceHandler):
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_storage_account",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -80,26 +76,23 @@ class StorageAccountHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Storage account names must be globally unique (*.core.windows.net)
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service (no hyphens, lowercase)
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.Storage/storageAccounts"
-        )
 
         # Add hash-based suffix for global uniqueness (works in all deployment modes)
         if resource_id:
             hash_val = hashlib.md5(
                 resource_id.encode(), usedforsecurity=False
             ).hexdigest()[:6]
-            base_name = sanitized_name.replace("-", "").lower()
-            if len(base_name) > 18:
-                base_name = base_name[:18]
-            config["name"] = f"{base_name}{hash_val}"
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            if len(abstracted_name) > 18:
+                abstracted_name = abstracted_name[:18]
+            config["name"] = f"{abstracted_name}{hash_val}"
             logger.info(
                 f"Storage account name made globally unique: {resource_name} → {config['name']}"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         # Storage account specific properties
         properties = self.parse_properties(resource)

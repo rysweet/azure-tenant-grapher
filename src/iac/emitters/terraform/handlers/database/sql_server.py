@@ -8,8 +8,6 @@ import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
-
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -24,6 +22,9 @@ class SQLServerHandler(ResourceHandler):
     Emits:
         - azurerm_mssql_server
         - random_password (helper resource)
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -34,11 +35,6 @@ class SQLServerHandler(ResourceHandler):
         "azurerm_mssql_server",
         "random_password",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -70,11 +66,8 @@ class SQLServerHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # SQL Server names must be globally unique (servername.database.windows.net)
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.Sql/servers"
-        )
 
         # Add hash-based suffix for global uniqueness (works in all deployment modes)
         resource_id = resource.get("id", "")
@@ -82,15 +75,15 @@ class SQLServerHandler(ResourceHandler):
             hash_val = hashlib.md5(
                 resource_id.encode(), usedforsecurity=False
             ).hexdigest()[:6]
-            base_name = sanitized_name.replace("-", "").lower()
-            if len(base_name) > 57:  # 63 char limit - 6 char hash
-                base_name = base_name[:57]
-            config["name"] = f"{base_name}{hash_val}"
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            if len(abstracted_name) > 57:  # 63 char limit - 6 char hash
+                abstracted_name = abstracted_name[:57]
+            config["name"] = f"{abstracted_name}{hash_val}"
             logger.info(
                 f"SQL Server name made globally unique: {resource_name} → {config['name']}"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         config.update(
             {
