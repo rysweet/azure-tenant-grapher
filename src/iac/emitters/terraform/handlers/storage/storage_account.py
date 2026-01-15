@@ -4,10 +4,12 @@ Handles: Microsoft.Storage/storageAccounts
 Emits: azurerm_storage_account
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
 from src.services.azure_name_sanitizer import AzureNameSanitizer
+
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -84,19 +86,15 @@ class StorageAccountHandler(ResourceHandler):
             abstracted_name, "Microsoft.Storage/storageAccounts"
         )
 
-        # Add tenant-specific suffix for cross-tenant deployments
-        if (
-            context.target_tenant_id
-            and context.source_tenant_id != context.target_tenant_id
-        ):
-            # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
-            tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
-
-            # Truncate to fit (24 - 6 = 18 chars for sanitized name)
-            if len(sanitized_name) > 18:
-                sanitized_name = sanitized_name[:18]
-
-            config["name"] = f"{sanitized_name}{tenant_suffix}"
+        # Add hash-based suffix for global uniqueness (works in all deployment modes)
+        if resource_id:
+            hash_val = hashlib.md5(
+                resource_id.encode(), usedforsecurity=False
+            ).hexdigest()[:6]
+            base_name = sanitized_name.replace("-", "").lower()
+            if len(base_name) > 18:
+                base_name = base_name[:18]
+            config["name"] = f"{base_name}{hash_val}"
             logger.info(
                 f"Storage account name made globally unique: {resource_name} → {config['name']}"
             )

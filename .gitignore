@@ -284,3 +284,8 @@ worktrees/
 **/*.tfplan
 demos/simuland_iteration3/demos/
 .claude.backup.*/
+
+# Documentation files (generated/temporary)
+NEO4J_BACKUP_GUIDE.md
+WSL_PATH_ANALYSIS.md
+WSL_LINUX_PATH_FIX_COMPLETE.md
