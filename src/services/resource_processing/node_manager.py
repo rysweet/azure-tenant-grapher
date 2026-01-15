@@ -357,6 +357,14 @@ class NodeManager:
         """Create the Abstracted node with hash IDs."""
         # Create a copy of properties with abstracted ID
         abstracted_props = properties.copy()
+
+        # CRITICAL FIX (#678): Store original name and use abstracted ID as name
+        # This ensures globally unique resource names for cross-tenant deployment
+        # Original name like "prod-storage-001" would collide globally
+        # Abstracted name like "storagea1b2c3d4" is globally unique
+        if "name" in abstracted_props:
+            abstracted_props["original_name"] = abstracted_props["name"]
+        abstracted_props["name"] = abstracted_id  # Use abstracted ID as the deployable name
         abstracted_props["id"] = abstracted_id
 
         # Store reference to original ID
