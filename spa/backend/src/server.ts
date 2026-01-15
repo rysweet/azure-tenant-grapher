@@ -51,7 +51,16 @@ const io = new SocketIOServer(httpServer, {
           socketCorsOrigins.includes('*') ||
           origin.match(/^http:\/\/(localhost|127\.0\.0\.1):\d+$/)) {
         callback(null, true);
-      } else {
+      }
+      // Allow file:// protocol for Electron desktop app
+      // SECURITY NOTE: This permits file:// origins which are used by Electron.
+      // Authentication middleware still enforces token-based auth for all connections.
+      // In production on shared systems, ensure auth tokens are properly secured.
+      else if (origin.startsWith('file://')) {
+        logger.info(`Allowing file:// origin for Electron app: ${origin}`);
+        callback(null, true);
+      }
+      else {
         logger.warn(`Socket.IO CORS: Blocked connection from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }

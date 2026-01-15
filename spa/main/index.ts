@@ -51,7 +51,7 @@ async function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../../renderer/index.html'));
   }
 
   mainWindow.on('closed', () => {
@@ -72,11 +72,24 @@ async function createWindow() {
 
 // Start the MCP server
 async function startMcpServer() {
-  const projectRoot = path.join(__dirname, '../../..');
-  const pythonPath = path.join(projectRoot, '.venv', 'bin', 'python');
+  const projectRoot = path.join(__dirname, '../../../..');
+
+  // Platform-specific Python path (Windows vs Unix)
+  const pythonPath = process.platform === 'win32'
+    ? path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+    : path.join(projectRoot, '.venv', 'bin', 'python');
+
   const scriptPath = path.join(projectRoot, 'scripts', 'cli.py');
 
   console.log('Starting MCP server from:', projectRoot);
+
+  // Verify Python exists before attempting to start MCP server
+  if (!fs.existsSync(pythonPath)) {
+    console.error(`Python not found at: ${pythonPath}`);
+    console.error('Please create a virtual environment: python -m venv .venv');
+    console.error('Then install dependencies: .venv/bin/pip install -e .');
+    return;
+  }
 
   // Ensure outputs directory exists
   const pidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
@@ -208,11 +221,11 @@ function startBackendServer() {
 
   // Always use tsx to run TypeScript directly
   // The compiled backend has issues with shared module path resolution
-  // Since __dirname in compiled code is dist/main, go up to spa and then to backend
-  const backendTsPath = path.join(__dirname, '../../backend/src/server.ts');
+  // Since __dirname in compiled code is dist/main/main, go up to spa and then to backend
+  const backendTsPath = path.join(__dirname, '../../../backend/src/server.ts');
 
   backendProcess = spawn('npx', ['tsx', backendTsPath], {
-    cwd: path.join(__dirname, '..'),
+    cwd: path.join(__dirname, '../../..'),
     env: {
       ...process.env,
       BACKEND_PORT: '3001',
@@ -250,7 +263,7 @@ function startBackendServer() {
 
 // Shared function for cleaning up PID files
 function cleanupPidFiles() {
-  const projectRoot = path.join(__dirname, '../../..');
+  const projectRoot = path.join(__dirname, '../../../..');
   const mcpPidFile = path.join(projectRoot, 'outputs', 'mcp_server.pid');
   const spaPidFile = path.join(projectRoot, 'outputs', 'spa_server.pid');
 
@@ -298,7 +311,7 @@ app.whenReady().then(async () => {
   await startMcpServer();
 
   // Wait for MCP server to be ready by checking status file
-  const projectRoot = path.join(__dirname, '../../..');
+  const projectRoot = path.join(__dirname, '../../../..');
   const statusFile = path.join(projectRoot, 'outputs', 'mcp_server.status');
   let mcpAttempts = 0;
 
