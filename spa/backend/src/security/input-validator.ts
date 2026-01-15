@@ -16,7 +16,18 @@ const ALLOWED_COMMANDS = new Set([
   'threat-model',
   'config',
   'cli',
-  'agent-mode'
+  'agent-mode',
+  'visualize',
+  'mcp-server',
+  'backup',
+  'doctor',
+  'restore',
+  'test',
+  'wipe',
+  'build',
+  'start',
+  'stop',
+  'app-registration'
 ]);
 
 // Whitelist of allowed CLI arguments
