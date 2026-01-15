@@ -102,6 +102,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   off: (channel: string, callback: (...args: any[]) => void) => {
     ipcRenderer.removeListener(channel, callback);
   },
+
+  removeAllListeners: (channel: string) => {
+    const validChannels = [
+      'menu:new-build',
+      'menu:open-spec',
+      'menu:export-results',
+      'menu:navigate',
+      'menu:view-logs',
+      'menu:run-diagnostics',
+      'process:output',
+      'process:exit',
+      'process:error',
+    ];
+
+    if (validChannels.includes(channel)) {
+      ipcRenderer.removeAllListeners(channel);
+    }
+  },
 });
 
 // Type definitions for TypeScript
@@ -148,6 +166,7 @@ export interface ElectronAPI {
   };
   on: (channel: string, callback: (...args: any[]) => void) => void;
   off: (channel: string, callback: (...args: any[]) => void) => void;
+  removeAllListeners: (channel: string) => void;
 }
 
 declare global {

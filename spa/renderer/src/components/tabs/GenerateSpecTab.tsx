@@ -30,6 +30,32 @@ const GenerateSpecTab: React.FC = () => {
   const [outputFormat, setOutputFormat] = useState('markdown');
   const [generatedSpec, setGeneratedSpec] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isElectronReady, setIsElectronReady] = useState(false);
+
+  // Check if Electron API is available
+  useEffect(() => {
+    const checkElectronAPI = () => {
+      if (window.electronAPI?.cli?.execute) {
+        setIsElectronReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (checkElectronAPI()) {
+      return;
+    }
+
+    // If not ready, retry with timeout
+    const timeout = setTimeout(() => {
+      if (!checkElectronAPI()) {
+        setError('Electron API not available. Please restart the application.');
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   // Use the process execution hook
   const { execute, isRunning, output, exitCode } = useProcessExecution({
@@ -57,6 +83,12 @@ const GenerateSpecTab: React.FC = () => {
   }, [state.config?.tenantId]);
 
   const handleGenerate = async () => {
+    // Validate Electron API availability
+    if (!window.electronAPI?.cli?.execute) {
+      setError('Electron API not available. Please restart the application.');
+      return;
+    }
+
     setError(null);
     setGeneratedSpec(''); // Clear previous spec
 
@@ -69,12 +101,21 @@ const GenerateSpecTab: React.FC = () => {
     // Note: --format option removed as generate-spec CLI command doesn't support it
     // The outputFormat state is still used for the editor language and save file extension
 
+    // Set a timeout for the generation process (5 minutes)
+    const timeoutId = setTimeout(() => {
+      setError('Generation timed out after 5 minutes. Please try with a smaller limit.');
+    }, 300000); // 5 minutes
+
     try {
       await execute('generate-spec', args);
       dispatch({ type: 'SET_CONFIG', payload: { tenantId } });
     } catch (err: any) {
-      // Error is already handled by the hook
-      // Console error removed
+      // Error is already handled by the hook, but ensure loading state is cleared
+      if (err.message) {
+        setError(err.message);
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
@@ -155,9 +196,9 @@ const GenerateSpecTab: React.FC = () => {
             variant="contained"
             startIcon={<RunIcon />}
             onClick={handleGenerate}
-            disabled={isRunning}
+            disabled={isRunning || !isElectronReady}
           >
-            {isRunning ? 'Generating...' : 'Generate Spec'}
+            {!isElectronReady ? 'Loading...' : isRunning ? 'Generating...' : 'Generate Spec'}
           </Button>
 
           {generatedSpec && (
