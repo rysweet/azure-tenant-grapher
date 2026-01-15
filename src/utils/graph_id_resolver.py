@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from neo4j import AsyncDriver
 
@@ -70,7 +70,7 @@ async def resolve_graph_ids_to_names(
             try:
                 async with driver.session() as session:
                     # Try different query approaches based on ID format
-                    queries = []
+                    queries: List[Tuple[str, Dict[str, Any]]] = []
 
                     # For Neo4j internal IDs
                     if ":" in value:
@@ -79,27 +79,33 @@ async def resolve_graph_ids_to_names(
                         if len(parts) >= 2:
                             uuid_part = parts[1]
                             queries.append(
-                                f"MATCH (n:{node_type}) WHERE n.id CONTAINS $id_part RETURN n.name AS name",
-                                {"id_part": uuid_part},
+                                (
+                                    f"MATCH (n:{node_type}) WHERE n.id CONTAINS $id_part RETURN n.name AS name",
+                                    {"id_part": uuid_part},
+                                )
                             )
 
                     # For numeric IDs
                     if value.isdigit():
                         queries.append(
-                            f"MATCH (n:{node_type}) WHERE ID(n) = $id RETURN n.name AS name",
-                            {"id": int(value)},
+                            (
+                                f"MATCH (n:{node_type}) WHERE ID(n) = $id RETURN n.name AS name",
+                                {"id": int(value)},
+                            )
                         )
 
                     # Try to match by the full ID string
                     queries.append(
-                        f"MATCH (n:{node_type}) WHERE n.id = $id OR n.graph_id = $id RETURN n.name AS name",
-                        {"id": value},
+                        (
+                            f"MATCH (n:{node_type}) WHERE n.id = $id OR n.graph_id = $id RETURN n.name AS name",
+                            {"id": value},
+                        )
                     )
 
                     # Try each query until we find a match
                     name_found = None
                     for query, params in queries:
-                        result = await session.run(query, params)
+                        result = await session.run(query, params)  # type: ignore[arg-type]
                         record = await result.single()
                         if record and record.get("name"):
                             name_found = record["name"]

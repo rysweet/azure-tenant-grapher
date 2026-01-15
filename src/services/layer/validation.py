@@ -15,7 +15,7 @@ Public API (the "studs"):
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from src.services.layer.models import (
@@ -157,7 +157,7 @@ class LayerValidationOperations:
         return LayerDiff(
             layer_a_id=layer_a_id,
             layer_b_id=layer_b_id,
-            compared_at=datetime.utcnow(),
+            compared_at=datetime.now(timezone.utc),
             nodes_added=len(added_ids),
             nodes_removed=len(removed_ids),
             nodes_modified=0,  # Would need property comparison
@@ -197,7 +197,7 @@ class LayerValidationOperations:
 
         report = LayerValidationReport(
             layer_id=layer_id,
-            validated_at=datetime.utcnow(),
+            validated_at=datetime.now(timezone.utc),
             is_valid=True,
         )
 

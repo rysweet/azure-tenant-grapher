@@ -16,7 +16,7 @@ Public API (the "studs"):
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from neo4j.exceptions import Neo4jError
@@ -102,13 +102,13 @@ class LayerCrudOperations:
         if isinstance(created_at, str):
             created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
         elif not isinstance(created_at, datetime):
-            created_at = datetime.utcnow()
+            created_at = datetime.now(timezone.utc)
 
         updated_at = node.get("updated_at")
         if isinstance(updated_at, str):
             updated_at = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
         elif updated_at and not isinstance(updated_at, datetime):
-            updated_at = datetime.utcnow()
+            updated_at = datetime.now(timezone.utc)
 
         # Parse metadata JSON string
         metadata_str = node.get("metadata", "{}")
@@ -197,7 +197,7 @@ class LayerCrudOperations:
                 raise ValueError(f"Parent layer not found: {parent_layer_id}")
 
         # Create layer metadata
-        created_at = datetime.utcnow()
+        created_at = datetime.now(timezone.utc)
 
         with self.session_manager.session() as session:
             # Deactivate current active layer if make_active=True

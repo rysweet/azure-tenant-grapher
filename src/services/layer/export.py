@@ -202,13 +202,13 @@ class LayerExportOperations:
             return await self.crud_operations.get_layer(target_layer_id)
 
         # If no crud_operations, return minimal metadata
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         return LayerMetadata(
             layer_id=target_layer_id,
             name=name,
             description=description,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
     async def archive_layer(

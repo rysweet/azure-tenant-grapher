@@ -118,13 +118,13 @@ class LayerStatsOperations:
             return await self.crud_operations.get_layer(layer_id)
 
         # Otherwise create a minimal LayerMetadata with just the stats
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         return LayerMetadata(
             layer_id=layer_id,
             name="",
             description="",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             node_count=node_count,
             relationship_count=rel_count,
         )

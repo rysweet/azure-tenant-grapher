@@ -22,7 +22,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -476,9 +476,7 @@ async def layer_create_command_handler(
     if not name:
         name = layer_id
     if not description:
-        description = (
-            f"Layer created at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
+        description = f"Layer created at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}"
     if not tenant_id:
         tenant_id = os.environ.get("AZURE_TENANT_ID", "unknown")
 
@@ -586,7 +584,7 @@ async def layer_copy_command_handler(
         if not name:
             name = f"Copy of {source_layer.name}"
         if not description:
-            description = f"Copied from {source} at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+            description = f"Copied from {source} at {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}"
 
         # Confirm copy
         if not yes:
@@ -612,7 +610,7 @@ async def layer_copy_command_handler(
         ) as progress:
             task = progress.add_task("Copying layer...", total=None)
 
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             layer = await service.copy_layer(
                 source_layer_id=source,
@@ -623,7 +621,7 @@ async def layer_copy_command_handler(
                 batch_size=1000,
             )
 
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
 
             progress.update(task, completed=True)
@@ -743,9 +741,9 @@ async def layer_delete_command_handler(
         ) as progress:
             task = progress.add_task("Deleting layer...", total=None)
 
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
             await service.delete_layer(layer_id, force=force)
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
 
             progress.update(task, completed=True)
@@ -1308,7 +1306,7 @@ async def layer_archive_command_handler(
         ) as progress:
             task = progress.add_task("Archiving layer...", total=None)
 
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             archive_path = await service.archive_layer(
                 layer_id=layer_id,
@@ -1316,7 +1314,7 @@ async def layer_archive_command_handler(
                 include_original=include_original,
             )
 
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
 
             progress.update(task, completed=True)
@@ -1417,14 +1415,14 @@ async def layer_restore_command_handler(
         ) as progress:
             task = progress.add_task("Restoring layer...", total=None)
 
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
 
             layer = await service.restore_layer(
                 archive_path=archive_path,
                 target_layer_id=layer_id,
             )
 
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration = (end_time - start_time).total_seconds()
 
             progress.update(task, completed=True)
