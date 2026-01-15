@@ -90,9 +90,10 @@ const ScanTab: React.FC = () => {
       const stats = response.data;
       setDbStats(stats);
       setDbPopulated(!stats.isEmpty);
+      logger.info('Database stats loaded successfully', { nodeCount: stats.nodeCount, edgeCount: stats.edgeCount });
     } catch (err) {
-      // Handle database stats loading error silently
-      // Set empty stats when database is empty or error occurs
+      // Log the error and set empty stats, but re-throw for the caller to handle
+      logger.error('Failed to load database stats', { error: err });
       setDbStats({
         nodeCount: 0,
         edgeCount: 0,
@@ -102,10 +103,12 @@ const ScanTab: React.FC = () => {
         isEmpty: true
       });
       setDbPopulated(false);
+      // Re-throw the error so the caller can display it to the user
+      throw err;
     } finally {
       setLoadingStats(false);
     }
-  }, []);
+  }, [logger]);
 
   const checkNeo4jStatus = useCallback(async () => {
     try {
@@ -116,7 +119,12 @@ const ScanTab: React.FC = () => {
 
       // If Neo4j is running, load database stats
       if (response.data.running) {
-        await loadDatabaseStats();
+        try {
+          await loadDatabaseStats();
+        } catch (statsErr) {
+          // Log but don't fail Neo4j status check if stats loading fails
+          logger.warn('Failed to load database stats during Neo4j status check', { error: statsErr });
+        }
       }
     } catch (err: any) {
       // Handle Neo4j status check error
@@ -256,8 +264,18 @@ const ScanTab: React.FC = () => {
         setLogs((prev) => [...prev, '✅ Scan completed successfully!']);
         updateBackgroundOperation(event.processId, { status: 'completed' });
         dispatch({ type: 'ADD_LOG', payload: 'Scan completed successfully' });
-        // Reload stats after successful build
-        loadDatabaseStats();
+        // Reload stats after successful build - wrapped in async IIFE to handle promises
+        (async () => {
+          try {
+            setLogs((prev) => [...prev, '🔄 Refreshing database statistics...']);
+            await loadDatabaseStats();
+            setLogs((prev) => [...prev, '✅ Database statistics updated!']);
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            setError(`Failed to refresh database stats: ${errorMsg}`);
+            setLogs((prev) => [...prev, `❌ Failed to refresh database stats: ${errorMsg}`]);
+          }
+        })();
       } else {
         setError(`Scan failed with exit code ${event.code}`);
         setLogs((prev) => [...prev, `❌ Scan failed with exit code ${event.code}`]);
