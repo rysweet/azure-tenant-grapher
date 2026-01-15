@@ -17,6 +17,8 @@ import logging
 from functools import lru_cache
 from typing import Dict, List
 
+from src.services.azure_name_sanitizer import AzureNameSanitizer
+
 logger = logging.getLogger(__name__)
 
 
@@ -121,6 +123,7 @@ class IDAbstractionService:
 
         self.tenant_seed = tenant_seed
         self.hash_length = hash_length
+        self.sanitizer = AzureNameSanitizer()
 
         logger.debug(
             f"Initialized IDAbstractionService with seed length {len(tenant_seed)}, "
@@ -246,7 +249,17 @@ class IDAbstractionService:
         # Hash the resource name
         hash_value = self._hash(resource_name)
 
-        return f"{prefix}-{hash_value}"
+        # Generate base abstracted name
+        abstracted_name = f"{prefix}-{hash_value}"
+
+        # Sanitize for globally unique Azure resources to ensure Azure-compliant names in graph
+        if self.sanitizer.is_globally_unique(resource_type):
+            abstracted_name = self.sanitizer.sanitize(abstracted_name, resource_type)
+            logger.debug(
+                f"Sanitized globally unique resource: {resource_type} -> {abstracted_name}"
+            )
+
+        return abstracted_name
 
     def abstract_resource_ids_bulk(self, resource_ids: List[str]) -> List[str]:
         """
