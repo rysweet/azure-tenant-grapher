@@ -354,6 +354,8 @@ const CLITab: React.FC = () => {
       } else {
         terminalInstance.current.write(`${text}\r\n`);
       }
+      // Auto-scroll to bottom to show latest output
+      terminalInstance.current.scrollToBottom();
     }
   }, []);
 
@@ -362,6 +364,7 @@ const CLITab: React.FC = () => {
     if (terminalInstance.current) {
       terminalInstance.current.clear();
       terminalInstance.current.write('Terminal cleared.\r\n');
+      terminalInstance.current.scrollToBottom();
     }
     setTerminalOutput([]);
   }, []);
@@ -419,6 +422,7 @@ const CLITab: React.FC = () => {
       term.writeln('Azure Tenant Grapher CLI Interface');
       term.writeln('Select a command and configure its parameters, then click Execute.');
       term.writeln('');
+      term.scrollToBottom();
 
       terminalInstance.current = term;
     }
@@ -451,6 +455,7 @@ const CLITab: React.FC = () => {
           const exitMessage = `Process exited with code ${event.code}`;
           const color = event.code === 0 ? '32' : '31'; // Green for success, red for error
           writeToTerminal(exitMessage, color);
+          writeToTerminal(''); // Add blank line for readability
 
           setIsRunning(false);
           setCurrentProcessId(null);
@@ -465,12 +470,18 @@ const CLITab: React.FC = () => {
           );
 
           unsubscribeFromProcess(event.processId);
+
+          // Ensure terminal is ready for next command
+          if (terminalInstance.current) {
+            terminalInstance.current.scrollToBottom();
+          }
         }
       });
 
       socket.on('process-error', (event: any) => {
         if (event.processId === currentProcessId) {
           writeToTerminal(`Process error: ${event.error}`, '31'); // Red color
+          writeToTerminal(''); // Add blank line for readability
           setIsRunning(false);
           setCurrentProcessId(null);
           setError(`Process error: ${event.error}`);
@@ -485,6 +496,11 @@ const CLITab: React.FC = () => {
           );
 
           unsubscribeFromProcess(event.processId);
+
+          // Ensure terminal is ready for next command
+          if (terminalInstance.current) {
+            terminalInstance.current.scrollToBottom();
+          }
         }
       });
 
@@ -729,9 +745,15 @@ const CLITab: React.FC = () => {
       try {
         await axios.post(`http://localhost:3001/api/cancel/${currentProcessId}`);
         writeToTerminal('Process cancelled by user', '33'); // Yellow color
+        writeToTerminal(''); // Add blank line for readability
         setIsRunning(false);
         setCurrentProcessId(null);
         unsubscribeFromProcess(currentProcessId);
+
+        // Ensure terminal is ready for next command
+        if (terminalInstance.current) {
+          terminalInstance.current.scrollToBottom();
+        }
       } catch (err: any) {
         setError(`Failed to stop process: ${err.message}`);
       }
