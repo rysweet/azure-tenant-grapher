@@ -8,8 +8,6 @@ import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
-
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -24,6 +22,9 @@ class AppServiceHandler(ResourceHandler):
     Emits:
         - azurerm_linux_web_app
         - azurerm_windows_web_app
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -34,11 +35,6 @@ class AppServiceHandler(ResourceHandler):
         "azurerm_linux_web_app",
         "azurerm_windows_web_app",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -57,9 +53,8 @@ class AppServiceHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # App Service names must be globally unique (*.azurewebsites.net)
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(abstracted_name, "Microsoft.Web/sites")
 
         # Add hash-based suffix for global uniqueness (works in all deployment modes)
         resource_id = resource.get("id", "")
@@ -67,15 +62,15 @@ class AppServiceHandler(ResourceHandler):
             hash_val = hashlib.md5(
                 resource_id.encode(), usedforsecurity=False
             ).hexdigest()[:6]
-            base_name = sanitized_name.replace("-", "").lower()
-            if len(base_name) > 54:  # 60 char limit - 6 char hash
-                base_name = base_name[:54]
-            config["name"] = f"{base_name}{hash_val}"
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            if len(abstracted_name) > 54:  # 60 char limit - 6 char hash
+                abstracted_name = abstracted_name[:54]
+            config["name"] = f"{abstracted_name}{hash_val}"
             logger.info(
                 f"App Service name made globally unique: {resource_name} → {config['name']}"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         # Build site_config block
         site_config = {}

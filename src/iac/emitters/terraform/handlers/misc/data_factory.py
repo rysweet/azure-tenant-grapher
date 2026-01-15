@@ -7,7 +7,6 @@ Emits: azurerm_data_factory
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -21,6 +20,9 @@ class DataFactoryHandler(ResourceHandler):
 
     Emits:
         - azurerm_data_factory
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -30,11 +32,6 @@ class DataFactoryHandler(ResourceHandler):
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_data_factory",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -49,11 +46,8 @@ class DataFactoryHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Data Factory names must be globally unique
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.DataFactory/factories"
-        )
 
         # Add tenant-specific suffix for cross-tenant deployments
         if (
@@ -63,16 +57,17 @@ class DataFactoryHandler(ResourceHandler):
             # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
             tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
 
-            # Truncate to fit (63 - 7 = 56 chars for sanitized name + dash)
-            if len(sanitized_name) > 56:
-                sanitized_name = sanitized_name[:56]
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            # Truncate to fit (63 - 7 = 56 chars for abstracted name + dash)
+            if len(abstracted_name) > 56:
+                abstracted_name = abstracted_name[:56]
 
-            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            config["name"] = f"{abstracted_name}-{tenant_suffix}"
             logger.info(
                 f"Cross-tenant deployment: Data Factory '{abstracted_name}' → '{config['name']}' (tenant suffix: {tenant_suffix})"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         # Public network access
         if properties.get("publicNetworkAccess"):

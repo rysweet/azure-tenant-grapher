@@ -7,7 +7,6 @@ Emits: azurerm_eventhub_namespace, azurerm_eventhub
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
 
-from src.services.azure_name_sanitizer import AzureNameSanitizer
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
 from .. import handler
@@ -21,6 +20,9 @@ class EventHubNamespaceHandler(ResourceHandler):
 
     Emits:
         - azurerm_eventhub_namespace
+
+    Note: Phase 5 fix - ID Abstraction Service now generates Azure-compliant names
+    in the graph, so no sanitization needed here.
     """
 
     HANDLED_TYPES: ClassVar[Set[str]] = {
@@ -30,11 +32,6 @@ class EventHubNamespaceHandler(ResourceHandler):
     TERRAFORM_TYPES: ClassVar[Set[str]] = {
         "azurerm_eventhub_namespace",
     }
-
-    def __init__(self):
-        """Initialize handler with Azure name sanitizer."""
-        super().__init__()
-        self.sanitizer = AzureNameSanitizer()
 
     def emit(
         self,
@@ -49,11 +46,8 @@ class EventHubNamespaceHandler(ResourceHandler):
         config = self.build_base_config(resource)
 
         # Event Hub Namespace names must be globally unique (*.servicebus.windows.net)
-        # Sanitize using centralized Azure naming rules
+        # Phase 5: Names already Azure-compliant from ID Abstraction Service
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.EventHub/namespaces"
-        )
 
         # Add tenant-specific suffix for cross-tenant deployments
         if (
@@ -63,16 +57,17 @@ class EventHubNamespaceHandler(ResourceHandler):
             # Add target tenant suffix (last 6 chars of tenant ID, alphanumeric only)
             tenant_suffix = context.target_tenant_id[-6:].replace("-", "").lower()
 
-            # Truncate to fit (50 - 7 = 43 chars for sanitized name + dash)
-            if len(sanitized_name) > 43:
-                sanitized_name = sanitized_name[:43]
+            # Name already sanitized by ID Abstraction Service - just truncate if needed
+            # Truncate to fit (50 - 7 = 43 chars for abstracted name + dash)
+            if len(abstracted_name) > 43:
+                abstracted_name = abstracted_name[:43]
 
-            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+            config["name"] = f"{abstracted_name}-{tenant_suffix}"
             logger.info(
                 f"Cross-tenant deployment: Event Hub Namespace '{abstracted_name}' → '{config['name']}' (tenant suffix: {tenant_suffix})"
             )
         else:
-            config["name"] = sanitized_name
+            config["name"] = abstracted_name
 
         # SKU
         sku = properties.get("sku", {})
