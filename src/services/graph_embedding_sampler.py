@@ -6,6 +6,8 @@ node2vec embeddings to identify structurally important nodes and biases
 sampling towards them while maintaining resource type distribution.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from typing import Dict, List

@@ -5,6 +5,8 @@ This module exports sampled graphs to machine-readable JSON format.
 Includes nodes, relationships, and metadata.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from datetime import UTC, datetime

@@ -5,6 +5,8 @@ This module exports sampled graphs to human-readable YAML format.
 Includes nodes, relationships, and metadata.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import UTC, datetime
 from typing import Any, Dict, Set

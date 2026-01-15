@@ -15,6 +15,8 @@ Key approach:
 - Goal: Build target pattern graph that MATCHES source pattern graph structure
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 

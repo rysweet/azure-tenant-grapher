@@ -10,6 +10,8 @@ Gjoka, M., Kurant, M., Butts, C. T., & Markopoulou, A. (2010).
 INFOCOM, 2010 Proceedings IEEE.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from typing import Callable, Optional, Set

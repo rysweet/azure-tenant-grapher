@@ -5,6 +5,8 @@ This module exports sampled graphs to Infrastructure-as-Code formats
 (Terraform, ARM, Bicep) using existing IaC emitters.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, Set
 

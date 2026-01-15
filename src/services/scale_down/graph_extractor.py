@@ -12,6 +12,8 @@ Key Features:
 - Excludes SCAN_SOURCE_NODE relationships
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
 

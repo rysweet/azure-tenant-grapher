@@ -8,6 +8,8 @@ Security Note:
 Uses property whitelist and parameterized queries to prevent Cypher injection.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Callable, Dict, Optional, Set
 

@@ -9,6 +9,8 @@ Reference:
 Leskovec, J., & Faloutsos, C. (2006). "Sampling from large graphs."
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from typing import Callable, Optional, Set

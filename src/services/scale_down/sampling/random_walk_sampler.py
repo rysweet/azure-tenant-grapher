@@ -5,6 +5,8 @@ This module implements the simple Random Walk sampling algorithm.
 Random walk explores the graph by taking random steps from each node.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from typing import Callable, Optional, Set

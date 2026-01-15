@@ -5,6 +5,8 @@ algorithm, which captures network topology and enables importance-based
 sampling that preserves hub and bridge nodes.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Dict, Optional
 

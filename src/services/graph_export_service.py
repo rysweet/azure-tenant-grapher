@@ -37,6 +37,8 @@ Usage:
 Issue #508: MCP Server and Visualization Export Integration
 """
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any, Dict
