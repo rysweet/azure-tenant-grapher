@@ -15,6 +15,8 @@ Key approach:
 - Goal: Build target pattern graph that MATCHES source pattern graph structure
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path

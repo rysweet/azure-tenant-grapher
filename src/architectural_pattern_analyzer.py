@@ -5,6 +5,8 @@ This module analyzes Azure resource graphs to identify common architectural patt
 and generate visualizations showing resource relationships and patterns.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from collections import defaultdict
@@ -271,7 +273,7 @@ class ArchitecturalPatternAnalyzer:
         Returns:
             Tuple of (graph, resource_type_counts, edge_counts)
         """
-        G = nx.MultiDiGraph[str]()
+        G: nx.MultiDiGraph[str] = nx.MultiDiGraph()
 
         # Collect all unique resource types and their frequencies
         resource_type_counts: Dict[str, int] = defaultdict(int)
