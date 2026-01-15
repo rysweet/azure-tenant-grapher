@@ -3,6 +3,7 @@
 from .action_group import ActionGroupHandler
 from .app_insights import ApplicationInsightsHandler
 from .dcr import DataCollectionRuleHandler
+from .diagnostic_settings import DiagnosticSettingHandler
 from .log_analytics import (
     LogAnalyticsQueryPackHandler,
     LogAnalyticsSolutionHandler,
@@ -15,6 +16,7 @@ __all__ = [
     "ActionGroupHandler",
     "ApplicationInsightsHandler",
     "DataCollectionRuleHandler",
+    "DiagnosticSettingHandler",
     "LogAnalyticsQueryPackHandler",
     "LogAnalyticsSolutionHandler",
     "LogAnalyticsWorkspaceHandler",
