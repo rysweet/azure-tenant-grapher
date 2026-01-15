@@ -4,8 +4,11 @@ Handles: Microsoft.Web/sites
 Emits: azurerm_linux_web_app, azurerm_windows_web_app
 """
 
+import hashlib
 import logging
 from typing import Any, ClassVar, Dict, Optional, Set, Tuple
+
+from src.services.azure_name_sanitizer import AzureNameSanitizer
 
 from ...base_handler import ResourceHandler
 from ...context import EmitterContext
@@ -56,22 +59,18 @@ class AppServiceHandler(ResourceHandler):
         # App Service names must be globally unique (*.azurewebsites.net)
         # Sanitize using centralized Azure naming rules
         abstracted_name = config["name"]
-        sanitized_name = self.sanitizer.sanitize(
-            abstracted_name, "Microsoft.Web/sites"
-        )
+        sanitized_name = self.sanitizer.sanitize(abstracted_name, "Microsoft.Web/sites")
 
-        # Add tenant suffix for cross-tenant deployments
-        if (
-            context.target_tenant_id
-            and context.source_tenant_id != context.target_tenant_id
-        ):
-            tenant_suffix = context.target_tenant_id[-6:]
-
-            # Truncate to fit (60 - 7 = 53 chars for sanitized name + hyphen)
-            if len(sanitized_name) > 53:
-                sanitized_name = sanitized_name[:53]
-
-            config["name"] = f"{sanitized_name}-{tenant_suffix}"
+        # Add hash-based suffix for global uniqueness (works in all deployment modes)
+        resource_id = resource.get("id", "")
+        if resource_id:
+            hash_val = hashlib.md5(
+                resource_id.encode(), usedforsecurity=False
+            ).hexdigest()[:6]
+            base_name = sanitized_name.replace("-", "").lower()
+            if len(base_name) > 54:  # 60 char limit - 6 char hash
+                base_name = base_name[:54]
+            config["name"] = f"{base_name}{hash_val}"
             logger.info(
                 f"App Service name made globally unique: {resource_name} → {config['name']}"
             )
