@@ -54,8 +54,13 @@ class KeyVaultHandler(ResourceHandler):
             and context.source_tenant_id != context.target_tenant_id
         ):
             import hashlib
+
             resource_id = resource.get("id", "")
-            tenant_suffix = hashlib.md5(resource_id.encode()).hexdigest()[:6] if resource_id else "000000"
+            tenant_suffix = (
+                hashlib.md5(resource_id.encode()).hexdigest()[:6]
+                if resource_id
+                else "000000"
+            )
 
             # Name already sanitized by ID Abstraction Service - just truncate if needed
             # Truncate to fit (24 - 7 = 17 chars for abstracted name + hyphen)
@@ -97,9 +102,7 @@ class KeyVaultHandler(ResourceHandler):
         if purge_protection:
             config["purge_protection_enabled"] = True
 
-        logger.debug(
-            f"Key Vault '{resource_name}' -> '{resource_name_with_suffix}' emitted"
-        )
+        logger.debug(f"Key Vault '{resource_name}' -> '{config['name']}' emitted")
 
         return "azurerm_key_vault", safe_name, config
 
