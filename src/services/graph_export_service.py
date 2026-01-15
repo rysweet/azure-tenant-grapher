@@ -37,8 +37,6 @@ Usage:
 Issue #508: MCP Server and Visualization Export Integration
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, Dict
@@ -131,7 +129,7 @@ class GraphExportService:
 
     def _build_networkx_graph(
         self, tenant_id: str, include_relationships: bool
-    ) -> nx.DiGraph[str]:
+    ) -> nx.DiGraph:
         """Build NetworkX graph from Neo4j abstraction.
 
         Args:
@@ -141,7 +139,7 @@ class GraphExportService:
         Returns:
             NetworkX directed graph
         """
-        graph = nx.DiGraph[str]()
+        graph = nx.DiGraph()
 
         with self.session_manager.session() as session:
             # Add nodes (sampled resources)
@@ -194,7 +192,7 @@ class GraphExportService:
 
         return graph
 
-    def _export_to_json(self, graph: nx.DiGraph[str], output_path: Path) -> None:
+    def _export_to_json(self, graph: nx.DiGraph, output_path: Path) -> None:
         """Export graph to D3.js-compatible JSON format.
 
         Format:

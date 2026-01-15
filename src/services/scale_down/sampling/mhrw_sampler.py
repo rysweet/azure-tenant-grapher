@@ -10,8 +10,6 @@ Gjoka, M., Kurant, M., Butts, C. T., & Markopoulou, A. (2010).
 INFOCOM, 2010 Proceedings IEEE.
 """
 
-from __future__ import annotations
-
 import logging
 import random
 from typing import Callable, Optional, Set
@@ -45,7 +43,7 @@ class MHRWSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
@@ -105,7 +103,7 @@ class MHRWSampler(BaseSampler):
 
     def _mhrw_sample(
         self,
-        graph: nx.Graph[str],
+        graph: nx.Graph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:

@@ -11,8 +11,6 @@ Security Features:
 - Safe handling of complex types (lists, dicts)
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import re
@@ -90,7 +88,7 @@ class Neo4jExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph[str],
+        sampled_graph: nx.DiGraph,
         output_path: str,
     ) -> None:
         """

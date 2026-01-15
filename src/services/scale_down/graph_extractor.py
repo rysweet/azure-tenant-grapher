@@ -12,8 +12,6 @@ Key Features:
 - Excludes SCAN_SOURCE_NODE relationships
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any, Callable, Dict, Optional, Tuple
 
@@ -49,7 +47,7 @@ class GraphExtractor(BaseScaleService):
         tenant_id: str,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
         batch_size: int = 5000,
-    ) -> Tuple[nx.DiGraph[str], Dict[str, Dict[str, Any]]]:
+    ) -> Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
         """
         Convert Neo4j graph to NetworkX directed graph.
 
@@ -63,7 +61,7 @@ class GraphExtractor(BaseScaleService):
             batch_size: Number of records per batch (default: 5000)
 
         Returns:
-            Tuple[nx.DiGraph[str], Dict[str, Dict[str, Any]]]:
+            Tuple[nx.DiGraph, Dict[str, Dict[str, Any]]]:
                 - NetworkX directed graph with node IDs
                 - Dictionary mapping node IDs to full properties
 
@@ -86,7 +84,7 @@ class GraphExtractor(BaseScaleService):
         if not await self.validate_tenant_exists(tenant_id):
             raise ValueError(f"Tenant {tenant_id} not found in database")
 
-        G = nx.DiGraph[str]()
+        G = nx.DiGraph()
         node_properties: Dict[str, Dict[str, Any]] = {}
 
         # Step 1: Load nodes from abstracted layer

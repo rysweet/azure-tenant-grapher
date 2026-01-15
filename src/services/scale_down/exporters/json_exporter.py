@@ -5,8 +5,6 @@ This module exports sampled graphs to machine-readable JSON format.
 Includes nodes, relationships, and metadata.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 from datetime import UTC, datetime
@@ -37,7 +35,7 @@ class JsonExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph[str],
+        sampled_graph: nx.DiGraph,
         output_path: str,
     ) -> None:
         """

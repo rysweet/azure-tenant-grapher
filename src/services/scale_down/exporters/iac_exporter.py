@@ -5,8 +5,6 @@ This module exports sampled graphs to Infrastructure-as-Code formats
 (Terraform, ARM, Bicep) using existing IaC emitters.
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any, Dict, Set
 
@@ -61,7 +59,7 @@ class IaCExporter(BaseExporter):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph[str],
+        sampled_graph: nx.DiGraph,
         output_path: str,
     ) -> None:
         """

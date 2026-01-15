@@ -5,8 +5,6 @@ This module provides the abstract base class for all export formats.
 All exporters inherit from BaseExporter and implement the export() method.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Set
 
@@ -27,7 +25,7 @@ class BaseExporter(ABC):
         self,
         node_ids: Set[str],
         node_properties: Dict[str, Dict[str, Any]],
-        sampled_graph: nx.DiGraph[str],
+        sampled_graph: nx.DiGraph,
         output_path: str,
     ) -> None:
         """

@@ -5,8 +5,6 @@ This module provides the abstract base class for all sampling algorithms.
 All samplers inherit from BaseSampler and implement the sample() method.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, Set
 
@@ -25,7 +23,7 @@ class BaseSampler(ABC):
     @abstractmethod
     async def sample(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:

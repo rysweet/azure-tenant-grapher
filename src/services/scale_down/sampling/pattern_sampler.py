@@ -8,8 +8,6 @@ Security Note:
 Uses property whitelist and parameterized queries to prevent Cypher injection.
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Any, Callable, Dict, Optional, Set
 
@@ -78,7 +76,7 @@ class PatternSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:

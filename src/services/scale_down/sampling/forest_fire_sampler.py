@@ -9,8 +9,6 @@ Reference:
 Leskovec, J., & Faloutsos, C. (2006). "Sampling from large graphs."
 """
 
-from __future__ import annotations
-
 import logging
 import random
 from typing import Callable, Optional, Set
@@ -43,7 +41,7 @@ class ForestFireSampler(BaseSampler):
 
     async def sample(
         self,
-        graph: nx.DiGraph[str],
+        graph: nx.DiGraph,
         target_count: int,
         progress_callback: Optional[Callable[[str, int, int], None]] = None,
     ) -> Set[str]:
