@@ -234,17 +234,17 @@ export class Neo4jContainer {
 
     try {
       const { stdout } = await execAsync(
-        `docker inspect ${this.containerName} --format='{{json .State}}'`
+        `docker inspect ${this.containerName}`
       );
-      const state = JSON.parse(stdout);
+      const inspectResult = JSON.parse(stdout);
+      const state = inspectResult[0].State;
 
       // First check Docker's built-in health status
       let dockerHealth = 'unknown';
       try {
-        const { stdout: healthOut } = await execAsync(
-          `docker inspect ${this.containerName} --format='{{.State.Health.Status}}'`
-        );
-        dockerHealth = healthOut.trim();
+        if (state.Health && state.Health.Status) {
+          dockerHealth = state.Health.Status;
+        }
       } catch {
         // Container might not have health check configured
       }
