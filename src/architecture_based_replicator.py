@@ -15,11 +15,15 @@ Key approach:
 - Goal: Build target pattern graph that MATCHES source pattern graph structure
 """
 
+from __future__ import annotations
+
+import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import networkx as nx
-import numpy as np  # type: ignore[import-untyped]
+import numpy as np
 from neo4j import GraphDatabase
 
 from .architectural_pattern_analyzer import ArchitecturalPatternAnalyzer
@@ -61,7 +65,7 @@ class ArchitecturePatternReplicator:
         )
 
         # Graphs
-        self.source_pattern_graph: Optional[nx.MultiDiGraph[str]] = None
+        self.source_pattern_graph: Optional[nx.MultiDiGraph] = None
         self.source_resource_type_counts: Optional[Dict[str, int]] = None
 
         # Detected architectural patterns from source tenant
@@ -70,9 +74,15 @@ class ArchitecturePatternReplicator:
         # Available resources grouped by pattern
         self.pattern_resources: Dict[str, List[Dict[str, Any]]] = {}
 
-    def analyze_source_tenant(self) -> Dict[str, Any]:
+    def analyze_source_tenant(
+        self, use_configuration_coherence: bool = True, coherence_threshold: float = 0.5
+    ) -> Dict[str, Any]:
         """
         Analyze source tenant and identify architectural patterns.
+
+        Args:
+            use_configuration_coherence: If True, splits instances by configuration coherence
+            coherence_threshold: Minimum similarity score for resources to be in same instance (0.0-1.0)
 
         Returns:
             Dictionary with analysis summary
@@ -99,7 +109,7 @@ class ArchitecturePatternReplicator:
             )
 
             # Fetch actual resources for each pattern
-            self._fetch_pattern_resources()
+            self._fetch_pattern_resources(use_configuration_coherence, coherence_threshold)
 
             logger.info(
                 f"Detected {len(self.detected_patterns)} architectural patterns"
@@ -122,18 +132,28 @@ class ArchitecturePatternReplicator:
                 "total_pattern_resources": sum(
                     len(resources) for resources in self.pattern_resources.values()
                 ),
+                "configuration_coherence_enabled": use_configuration_coherence,
             }
 
         finally:
             self.analyzer.close()
 
-    def _fetch_pattern_resources(self) -> None:
+    def _fetch_pattern_resources(
+        self, use_configuration_coherence: bool = True, coherence_threshold: float = 0.5
+    ) -> None:
         """
         Fetch connected subgraphs for each detected architectural pattern.
 
         For each pattern, finds connected groups of resources (architectural instances)
         where the resources are actually connected to each other, not just all resources
         of matching types.
+
+        If use_configuration_coherence is True, splits ResourceGroups into configuration-coherent
+        clusters where resources have similar configurations (same location, similar tier, etc.).
+
+        Args:
+            use_configuration_coherence: If True, splits instances by configuration coherence
+            coherence_threshold: Minimum similarity score for resources to be in same instance (0.0-1.0)
 
         Example: Instead of "all VMs + all disks + all NICs", this finds connected groups
         like "VM1 + its disk + its NIC", "VM2 + its disk + its NIC", etc.
@@ -144,7 +164,8 @@ class ArchitecturePatternReplicator:
             logger.warning("No patterns detected, nothing to fetch")
             return
 
-        logger.info("Finding connected architectural instances for each pattern...")
+        mode = "configuration-coherent" if use_configuration_coherence else "ResourceGroup-based"
+        logger.info(f"Finding {mode} architectural instances for each pattern...")
 
         driver = GraphDatabase.driver(
             self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
@@ -156,27 +177,27 @@ class ArchitecturePatternReplicator:
                     matched_types = pattern_info["matched_resources"]
 
                     # Find connected subgraphs where resources of these types are connected
-                    # Strategy: Start from each resource of a pattern type and expand to
-                    # connected resources (also of pattern types), forming connected components
+                    if use_configuration_coherence:
+                        instances = self._find_configuration_coherent_instances(
+                            pattern_name, matched_types, session, coherence_threshold
+                        )
+                    else:
+                        instances = self._find_connected_pattern_instances(
+                            session, matched_types, pattern_name
+                        )
 
-                    instances = self._find_connected_pattern_instances(
-                        session, matched_types, pattern_name
-                    )
-
-                    self.pattern_resources[pattern_name] = instances  # type: ignore[assignment]
+                    self.pattern_resources[pattern_name] = instances
 
                     logger.info(
-                        f"  {pattern_name}: {len(instances)} connected instances found"
+                        f"  {pattern_name}: {len(instances)} {mode} instances found"
                     )
 
         finally:
             driver.close()
 
-        total_instances = sum(
-            len(instances) for instances in self.pattern_resources.values()
-        )
+        total_instances = sum(len(instances) for instances in self.pattern_resources.values())
         logger.info(
-            f"Found {total_instances} total architectural instances across {len(self.pattern_resources)} patterns"
+            f"Found {total_instances} total {mode} instances across {len(self.pattern_resources)} patterns"
         )
 
     def _find_connected_pattern_instances(
@@ -253,7 +274,7 @@ class ArchitecturePatternReplicator:
         # Build instances by merging RG-based groups with direct connections
         instances = []
 
-        for _rg_id, resources in rg_to_resources.items():
+        for rg_id, resources in rg_to_resources.items():
             if len(resources) >= 2:
                 # This RG has multiple resources of pattern types
                 instance = list(resources)
@@ -266,10 +287,7 @@ class ArchitecturePatternReplicator:
                     expanded = False
                     for res_id in list(instance_ids):
                         for connected_id in direct_connections[res_id]:
-                            if (
-                                connected_id not in instance_ids
-                                and connected_id in resource_info
-                            ):
+                            if connected_id not in instance_ids and connected_id in resource_info:
                                 instance.append(resource_info[connected_id])
                                 instance_ids.add(connected_id)
                                 expanded = True
@@ -282,18 +300,272 @@ class ArchitecturePatternReplicator:
 
         return instances
 
+    def _compute_configuration_similarity(
+        self,
+        fingerprint1: Dict[str, Any],
+        fingerprint2: Dict[str, Any],
+    ) -> float:
+        """
+        Compute similarity score between two configuration fingerprints.
+
+        Configuration coherence is based on:
+        - Location match (same Azure region)
+        - SKU tier similarity (e.g., Standard vs Premium)
+        - Tag overlap
+
+        Args:
+            fingerprint1: First configuration fingerprint
+            fingerprint2: Second configuration fingerprint
+
+        Returns:
+            Similarity score (0.0 to 1.0, where 1.0 = identical)
+        """
+        score = 0.0
+        weights = {"location": 0.5, "sku_tier": 0.3, "tags": 0.2}
+
+        # Location match (exact)
+        loc1 = fingerprint1.get("location", "")
+        loc2 = fingerprint2.get("location", "")
+        if loc1 and loc2 and loc1 == loc2:
+            score += weights["location"]
+
+        # SKU tier similarity (extract tier from SKU)
+        sku1 = fingerprint1.get("sku", "")
+        sku2 = fingerprint2.get("sku", "")
+
+        # Extract tier (Standard, Premium, Basic, etc.)
+        def extract_tier(sku: str) -> str:
+            if not sku or sku == "UnknownSKU":
+                return ""
+            parts = sku.split("_")
+            if parts:
+                # Common patterns: "Standard_D2s_v3", "Premium_LRS"
+                return parts[0].lower()
+            return ""
+
+        tier1 = extract_tier(sku1)
+        tier2 = extract_tier(sku2)
+        if tier1 and tier2 and tier1 == tier2:
+            score += weights["sku_tier"]
+
+        # Tag overlap (Jaccard similarity)
+        tags1_data = fingerprint1.get("tags", {})
+        tags2_data = fingerprint2.get("tags", {})
+
+        # Parse tags if they're JSON strings
+        if isinstance(tags1_data, str):
+            try:
+                tags1_data = json.loads(tags1_data)
+            except:
+                tags1_data = {}
+        if isinstance(tags2_data, str):
+            try:
+                tags2_data = json.loads(tags2_data)
+            except:
+                tags2_data = {}
+
+        tags1 = set(tags1_data.keys() if isinstance(tags1_data, dict) else [])
+        tags2 = set(tags2_data.keys() if isinstance(tags2_data, dict) else [])
+        if tags1 or tags2:
+            intersection = len(tags1 & tags2)
+            union = len(tags1 | tags2)
+            tag_similarity = intersection / union if union > 0 else 0
+            score += weights["tags"] * tag_similarity
+
+        return score
+
+    def _find_configuration_coherent_instances(
+        self,
+        pattern_name: str,
+        matched_types: Set[str],
+        session,
+        coherence_threshold: float = 0.5,
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Find architectural instances with configuration coherence.
+
+        Instead of grouping resources only by ResourceGroup, this method
+        splits ResourceGroups into configuration-coherent clusters where
+        resources have similar configurations (same location, similar tier, etc.).
+
+        Args:
+            pattern_name: Name of the architectural pattern
+            matched_types: Set of resource types in this pattern
+            session: Neo4j session
+            coherence_threshold: Minimum similarity score for resources to be in same instance (0.0-1.0)
+
+        Returns:
+            List of configuration-coherent instances
+        """
+        # First, get all resources that match pattern types
+        query = """
+        MATCH (rg:ResourceGroup)-[:CONTAINS]->(r:Resource:Original)
+        WHERE r.type IN $types
+        RETURN rg.id as resource_group_id,
+               r.id as id,
+               r.type as type,
+               r.name as name,
+               r.location as location,
+               r.tags as tags,
+               r.properties as properties
+        ORDER BY rg.id
+        """
+
+        # Convert simplified types to full Azure types
+        full_types = []
+        for simplified in matched_types:
+            # Common namespace patterns
+            for namespace in [
+                "Microsoft.Compute",
+                "Microsoft.Network",
+                "Microsoft.Storage",
+                "Microsoft.Web",
+                "Microsoft.Insights",
+                "Microsoft.Sql",
+                "Microsoft.KeyVault",
+                "Microsoft.ContainerRegistry",
+                "Microsoft.ContainerService",
+            ]:
+                full_types.append(f"{namespace}/{simplified}")
+
+        result = session.run(query, types=full_types)
+
+        # Group by ResourceGroup first
+        rg_to_resources = {}
+        resource_fingerprints = {}
+
+        for record in result:
+            simplified_type = self.analyzer._get_resource_type_name(
+                ["Resource"], record["type"]
+            )
+
+            # Only include resources that match the pattern types
+            if simplified_type not in matched_types:
+                continue
+
+            resource_id = record["id"]
+            rg_id = record["resource_group_id"]
+
+            # Parse properties if JSON string
+            properties = record["properties"]
+            if isinstance(properties, str):
+                try:
+                    properties = json.loads(properties)
+                except json.JSONDecodeError:
+                    properties = None
+
+            # Create configuration fingerprint
+            fingerprint = self.analyzer.create_configuration_fingerprint(
+                resource_id,
+                record["type"],
+                record["location"],
+                record["tags"],
+                properties,
+            )
+
+            resource = {
+                "id": resource_id,
+                "type": simplified_type,
+                "name": record["name"],
+            }
+
+            if rg_id not in rg_to_resources:
+                rg_to_resources[rg_id] = []
+
+            rg_to_resources[rg_id].append(resource)
+            resource_fingerprints[resource_id] = fingerprint
+
+        if not rg_to_resources:
+            return []
+
+        # Now split each ResourceGroup into configuration-coherent clusters
+        all_instances = []
+
+        for rg_id, resources in rg_to_resources.items():
+            if len(resources) < 2:
+                # Single resource, trivially coherent
+                all_instances.append(resources)
+                continue
+
+            # Compute pairwise similarities
+            similarity_matrix = {}
+            for i, res1 in enumerate(resources):
+                for j, res2 in enumerate(resources):
+                    if i < j:
+                        fp1 = resource_fingerprints[res1["id"]]
+                        fp2 = resource_fingerprints[res2["id"]]
+                        sim = self._compute_configuration_similarity(fp1, fp2)
+                        similarity_matrix[(i, j)] = sim
+
+            # Cluster resources by configuration coherence using simple agglomerative approach
+            # Start with each resource in its own cluster
+            clusters = [[res] for res in resources]
+
+            # Iteratively merge most similar clusters above threshold
+            merged = True
+            while merged and len(clusters) > 1:
+                merged = False
+                best_sim = coherence_threshold
+                best_pair = None
+
+                # Find best cluster pair to merge
+                for i in range(len(clusters)):
+                    for j in range(i + 1, len(clusters)):
+                        # Compute average similarity between clusters
+                        similarities = []
+                        for res1 in clusters[i]:
+                            for res2 in clusters[j]:
+                                idx1 = resources.index(res1)
+                                idx2 = resources.index(res2)
+                                key = (min(idx1, idx2), max(idx1, idx2))
+                                if key in similarity_matrix:
+                                    similarities.append(similarity_matrix[key])
+
+                        if similarities:
+                            avg_sim = sum(similarities) / len(similarities)
+                            if avg_sim > best_sim:
+                                best_sim = avg_sim
+                                best_pair = (i, j)
+
+                # Merge best pair if found
+                if best_pair:
+                    i, j = best_pair
+                    merged_cluster = clusters[i] + clusters[j]
+                    # Remove old clusters (remove j first to preserve i index)
+                    clusters.pop(j)
+                    clusters.pop(i)
+                    clusters.append(merged_cluster)
+                    merged = True
+
+            # Add clusters as instances (only if they have 2+ resources)
+            for cluster in clusters:
+                if len(cluster) >= 2:
+                    all_instances.append(cluster)
+
+        logger.debug(
+            f"  Found {len(all_instances)} configuration-coherent instances "
+            f"(threshold: {coherence_threshold})"
+        )
+
+        return all_instances
+
     def generate_replication_plan(
         self,
         target_instance_count: Optional[int] = None,
         hops: int = 2,
         include_orphaned_node_patterns: bool = True,
         node_coverage_weight: Optional[float] = None,
-    ) -> Tuple[List[Tuple[str, List[List[Dict[str, Any]]]]], List[float]]:
+        use_architecture_distribution: bool = True,
+        use_configuration_coherence: bool = True,
+    ) -> Tuple[List[Tuple[str, List[List[Dict[str, Any]]]]], List[float], Optional[Dict[str, Any]]]:
         """
         Generate tenant replication plan to match source pattern graph.
 
-        The goal is to build a target pattern graph that MATCHES the source pattern graph
-        by selecting connected architectural instances one at a time.
+        Multi-layer selection strategy:
+        1. Architecture Distribution Analysis (optional): Compute distribution scores for patterns
+        2. Proportional Pattern Sampling (optional): Allocate instances proportionally
+        3. Configuration-Coherent Instance Selection (optional): Select within patterns by similarity
+        4. Greedy Spectral Matching (fallback): Original spectral distance-based selection
 
         Args:
             target_instance_count: Number of architectural instances to select (default: all)
@@ -304,11 +576,14 @@ class ArchitecturePatternReplicator:
                                  0.0 = only spectral distance (original behavior)
                                  1.0 = only node coverage (greedy node selection)
                                  None = randomly choose 0.0 or 1.0 (default, exploration/exploitation)
+            use_architecture_distribution: If True, uses distribution-based proportional allocation
+            use_configuration_coherence: If True, prioritizes instances with similar configurations
 
         Returns:
-            Tuple of (selected instances, spectral distance history)
+            Tuple of (selected instances, spectral distance history, distribution metadata)
             where selected instances is a list of (pattern_name, [instances]) tuples,
-            and each instance is a list of connected resources
+            each instance is a list of connected resources,
+            and distribution metadata contains architecture distribution analysis (if enabled)
         """
         if not self.source_pattern_graph:
             raise RuntimeError("Must call analyze_source_tenant() first")
@@ -319,14 +594,43 @@ class ArchitecturePatternReplicator:
         # Randomly choose between pure spectral (0.0) or pure coverage (1.0) if not specified
         if node_coverage_weight is None:
             import random
-
             node_coverage_weight = float(random.choice([0, 1]))
 
-        logger.info("Generating replication plan to match source pattern graph...")
+        logger.info(
+            f"Generating replication plan to match source pattern graph..."
+        )
         logger.info(
             f"Source pattern: {self.source_pattern_graph.number_of_nodes()} types, "
             f"{self.source_pattern_graph.number_of_edges()} edges"
         )
+
+        # Initialize distribution metadata
+        distribution_metadata: Optional[Dict[str, Any]] = None
+
+        # LAYER 1: ARCHITECTURE DISTRIBUTION ANALYSIS
+        if use_architecture_distribution:
+            logger.info("=" * 80)
+            logger.info("LAYER 1: Computing architecture distribution...")
+
+            distribution_scores = self.analyzer.compute_architecture_distribution(
+                self.pattern_resources,
+                self.source_pattern_graph
+            )
+
+            logger.info(f"Distribution analysis complete for {len(distribution_scores)} patterns")
+            for pattern_name, data in sorted(
+                distribution_scores.items(),
+                key=lambda x: x[1]['distribution_score'],
+                reverse=True
+            )[:5]:
+                logger.info(
+                    f"  {data['rank']}. {pattern_name}: "
+                    f"{data['distribution_score']:.1f} "
+                    f"({data['source_instances']} instances)"
+                )
+        else:
+            logger.info("Architecture distribution analysis disabled")
+            distribution_scores = None
 
         # Collect all instances from all patterns
         all_instances = []
@@ -354,98 +658,141 @@ class ArchitecturePatternReplicator:
             f"from {len(all_instances)} total available "
             f"({orphaned_instances_added} for orphaned nodes)"
         )
-        logger.info(
-            f"Node coverage weight: {node_coverage_weight:.2f} "
-            f"(0.0=spectral only, 1.0=coverage only)"
-        )
 
-        # Get source node types for coverage tracking
-        source_node_types = set(self.source_pattern_graph.nodes())
+        # LAYER 2: PROPORTIONAL PATTERN SAMPLING
+        pattern_targets: Optional[Dict[str, int]] = None
+        if use_architecture_distribution and distribution_scores:
+            logger.info("=" * 80)
+            logger.info("LAYER 2: Computing proportional pattern targets...")
 
-        selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
-        spectral_history: List[float] = []
-        remaining_instances = list(all_instances)  # Make a copy
-
-        # Greedy selection: iteratively pick the instance that best improves our score
-        for i in range(min(target_instance_count, len(remaining_instances))):
-            best_score = float("inf")
-            best_idx = 0
-            best_new_nodes = set()
-
-            # Evaluate each remaining instance
-            for idx, (pattern_name, instance) in enumerate(remaining_instances):
-                # Build hypothetical target graph with this instance added
-                hypothetical_selected = [*selected_instances, (pattern_name, instance)]
-                hypothetical_target = self._build_target_pattern_graph_from_instances(
-                    hypothetical_selected
-                )
-
-                # Compute weighted score
-                score = self._compute_weighted_score(
-                    self.source_pattern_graph,
-                    hypothetical_target,
-                    source_node_types,
-                    node_coverage_weight,
-                )
-
-                # Track which instance gives best score
-                if score < best_score:
-                    best_score = score
-                    best_idx = idx
-                    best_new_nodes = set(hypothetical_target.nodes()) - (
-                        set(
-                            self._build_target_pattern_graph_from_instances(
-                                selected_instances
-                            ).nodes()
-                        )
-                        if selected_instances
-                        else set()
-                    )
-
-            # Select the best instance
-            pattern_name, instance = remaining_instances.pop(best_idx)
-            selected_instances.append((pattern_name, instance))
-
-            # Build current target pattern graph from selected instances
-            target_pattern_graph = self._build_target_pattern_graph_from_instances(
-                selected_instances
+            pattern_targets = self.analyzer.compute_pattern_targets(
+                distribution_scores,
+                target_instance_count
             )
 
-            # Track spectral distance for history
+            logger.info(f"Proportional allocation for {target_instance_count} instances:")
+            for pattern_name, target_count in sorted(
+                pattern_targets.items(),
+                key=lambda x: x[1],
+                reverse=True
+            ):
+                pct = (target_count / target_instance_count) * 100
+                logger.info(f"  {pattern_name}: {target_count} ({pct:.1f}%)")
+        else:
+            logger.info("Proportional pattern sampling disabled")
+
+        # LAYER 3 & 4: INSTANCE SELECTION
+        logger.info("=" * 80)
+        if use_architecture_distribution and pattern_targets:
+            logger.info(
+                "LAYER 3: Configuration-coherent instance selection " +
+                "(enabled)" if use_configuration_coherence else "(disabled)"
+            )
+            selected_instances = self._select_instances_proportionally(
+                pattern_targets,
+                use_configuration_coherence
+            )
+        else:
+            logger.info(
+                f"LAYER 3: Greedy spectral matching (fallback mode)"
+            )
+            logger.info(
+                f"Node coverage weight: {node_coverage_weight:.2f} "
+                f"(0.0=spectral only, 1.0=coverage only)"
+            )
+            selected_instances = self._select_instances_greedy(
+                all_instances,
+                target_instance_count,
+                node_coverage_weight
+            )
+
+        # Build spectral distance history for all selected instances
+        spectral_history: List[float] = []
+        for i in range(1, len(selected_instances) + 1):
+            target_graph = self._build_target_pattern_graph_from_instances(
+                selected_instances[:i]
+            )
             distance = self._compute_spectral_distance(
-                self.source_pattern_graph, target_pattern_graph
+                self.source_pattern_graph,
+                target_graph
             )
             spectral_history.append(distance)
 
-            # Calculate coverage metrics
-            current_nodes = set(target_pattern_graph.nodes())
-            node_coverage = len(current_nodes & source_node_types) / len(
-                source_node_types
-            )
-
-            if (i + 1) % 10 == 0 or i < 10:
-                logger.info(
-                    f"Selected instance {i + 1}/{target_instance_count}: {pattern_name} "
-                    f"({len(instance)} resources, +{len(best_new_nodes)} new types)"
-                )
-                logger.info(
-                    f"  Target: {target_pattern_graph.number_of_nodes()} types "
-                    f"({node_coverage:.1%} coverage), "
-                    f"{target_pattern_graph.number_of_edges()} edges, "
-                    f"spectral: {distance:.4f}, score: {best_score:.4f}"
-                )
-
+        logger.info("=" * 80)
         logger.info(
             f"Replication plan complete: {len(selected_instances)} architectural instances selected"
         )
 
-        final_target = self._build_target_pattern_graph_from_instances(
-            selected_instances
-        )
+        final_target = self._build_target_pattern_graph_from_instances(selected_instances)
         logger.info(
             f"Final target pattern: {final_target.number_of_nodes()} types, "
             f"{final_target.number_of_edges()} edges"
         )
+
+        # LAYER 4: VALIDATION & TRACEABILITY
+        if use_architecture_distribution and distribution_scores and pattern_targets:
+            logger.info("=" * 80)
+            logger.info("LAYER 4: Validating proportional sampling...")
+
+            # Count actual selections by pattern
+            actual_counts = {}
+            for pattern_name, instance in selected_instances:
+                actual_counts[pattern_name] = actual_counts.get(pattern_name, 0) + 1
+
+            # Build target distribution from actual counts
+            # Create a distribution structure matching the source format
+            target_distribution = {}
+            total_actual = sum(actual_counts.values())
+
+            for pattern_name in distribution_scores.keys():
+                actual = actual_counts.get(pattern_name, 0)
+                # Calculate distribution score based on actual instances
+                # Use same weight as instance count (30% of total)
+                actual_score = (actual / total_actual * 100) if total_actual > 0 else 0.0
+
+                target_distribution[pattern_name] = {
+                    "distribution_score": actual_score,
+                    "source_instances": actual,
+                    "rank": 0  # Will be set after sorting
+                }
+
+            # Rank target patterns by actual count
+            sorted_target = sorted(
+                target_distribution.items(),
+                key=lambda x: x[1]["source_instances"],
+                reverse=True
+            )
+            for rank, (pattern_name, data) in enumerate(sorted_target, start=1):
+                data["rank"] = rank
+
+            # Validate
+            validation = self.analyzer.validate_proportional_sampling(
+                distribution_scores,
+                target_distribution
+            )
+
+            # Log validation results (handle case where scipy isn't available)
+            if 'cosine_similarity' in validation:
+                logger.info(
+                    f"Validation: {validation['interpretation']} "
+                    f"(cosine similarity: {validation['cosine_similarity']:.4f})"
+                )
+            else:
+                logger.warning(f"Validation: {validation.get('interpretation', 'No validation available')}")
+
+            # Build distribution metadata
+            distribution_metadata = {
+                "architecture_distribution": distribution_scores,
+                "pattern_targets": pattern_targets,
+                "actual_counts": actual_counts,
+                "validation": validation,
+                "selection_mode": "proportional" if use_configuration_coherence else "proportional_spectral"
+            }
+        else:
+            logger.info("Distribution validation skipped (disabled or no distribution)")
+            distribution_metadata = {
+                "selection_mode": "greedy_spectral"
+            }
 
         # Group selected instances by pattern for return value
         pattern_instances = {}
@@ -454,7 +801,7 @@ class ArchitecturePatternReplicator:
                 pattern_instances[pattern_name] = []
             pattern_instances[pattern_name].append(instance)
 
-        return list(pattern_instances.items()), spectral_history
+        return list(pattern_instances.items()), spectral_history, distribution_metadata
 
     def _find_orphaned_node_instances(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
         """
@@ -467,9 +814,8 @@ class ArchitecturePatternReplicator:
             List of (pseudo_pattern_name, instance) tuples for orphaned resources
         """
         # First identify orphaned nodes in source graph
-        source_orphaned = self.analyzer.identify_orphaned_nodes(  # type: ignore[arg-type]
-            self.source_pattern_graph,  # type: ignore
-            self.detected_patterns,  # type: ignore
+        source_orphaned = self.analyzer.identify_orphaned_nodes(
+            self.source_pattern_graph, self.detected_patterns
         )
 
         if not source_orphaned:
@@ -477,9 +823,7 @@ class ArchitecturePatternReplicator:
             return []
 
         orphaned_types = {node["resource_type"] for node in source_orphaned}
-        logger.info(
-            str(f"Found {len(orphaned_types)} orphaned resource types in source")
-        )
+        logger.info(f"Found {len(orphaned_types)} orphaned resource types in source")
 
         # Query Neo4j to find instances containing these orphaned types
         driver = GraphDatabase.driver(
@@ -527,13 +871,11 @@ class ArchitecturePatternReplicator:
                             simplified_type = self.analyzer._get_resource_type_name(
                                 ["Resource"], r["type"]
                             )
-                            simplified_resources.append(
-                                {
-                                    "id": r["id"],
-                                    "type": simplified_type,
-                                    "name": r["name"],
-                                }
-                            )
+                            simplified_resources.append({
+                                "id": r["id"],
+                                "type": simplified_type,
+                                "name": r["name"],
+                            })
 
                         # Only include if at least one resource is an orphaned type
                         has_orphaned = any(
@@ -543,28 +885,22 @@ class ArchitecturePatternReplicator:
                         if has_orphaned:
                             # Create a pseudo-pattern name for these orphaned instances
                             orphaned_in_instance = {
-                                r["type"]
-                                for r in simplified_resources
-                                if r["type"] in orphaned_types
+                                r["type"] for r in simplified_resources if r["type"] in orphaned_types
                             }
                             pseudo_pattern_name = f"Orphaned: {', '.join(sorted(list(orphaned_in_instance)[:3]))}"
 
-                            orphaned_instances.append(
-                                (pseudo_pattern_name, simplified_resources)
-                            )
+                            orphaned_instances.append((pseudo_pattern_name, simplified_resources))
 
         finally:
             driver.close()
 
-        logger.info(
-            f"Found {len(orphaned_instances)} instances containing orphaned resource types"
-        )
+        logger.info(f"Found {len(orphaned_instances)} instances containing orphaned resource types")
 
         return orphaned_instances
 
     def _build_target_pattern_graph_from_instances(
         self, selected_instances: List[Tuple[str, List[Dict[str, Any]]]]
-    ) -> nx.MultiDiGraph[str]:
+    ) -> nx.MultiDiGraph:
         """
         Build pattern graph from selected architectural instances.
 
@@ -580,11 +916,11 @@ class ArchitecturePatternReplicator:
         """
         # Collect all resource IDs from selected instances
         all_resource_ids = []
-        for _pattern_name, instance in selected_instances:
+        for pattern_name, instance in selected_instances:
             all_resource_ids.extend([r["id"] for r in instance])
 
         # Build pattern graph
-        target_graph = nx.MultiDiGraph[str]()
+        target_graph = nx.MultiDiGraph()
 
         # Count resource types
         driver = GraphDatabase.driver(
@@ -596,8 +932,7 @@ class ArchitecturePatternReplicator:
                 # Fetch ALL relationships involving the selected Original resources
                 # This includes Resource→Resource, Resource→ResourceGroup, Resource→Tag, etc.
                 # We need to match the same approach as ArchitecturalPatternAnalyzer
-                result = session.run(
-                    """
+                result = session.run("""
                     MATCH (source)-[r]->(target)
                     WHERE (source:Resource:Original AND source.id IN $ids)
                        OR (target:Resource:Original AND target.id IN $ids)
@@ -607,32 +942,26 @@ class ArchitecturePatternReplicator:
                            type(r) as rel_type,
                            labels(target) as target_labels,
                            target.type as target_type
-                """,
-                    ids=all_resource_ids,
-                )
+                """, ids=all_resource_ids)
 
                 # Collect all relationships
                 relationships = []
                 for record in result:
-                    relationships.append(
-                        {
-                            "source_labels": record["source_labels"],
-                            "source_type": record["source_type"],
-                            "rel_type": record["rel_type"],
-                            "target_labels": record["target_labels"],
-                            "target_type": record["target_type"],
-                        }
-                    )
+                    relationships.append({
+                        "source_labels": record["source_labels"],
+                        "source_type": record["source_type"],
+                        "rel_type": record["rel_type"],
+                        "target_labels": record["target_labels"],
+                        "target_type": record["target_type"],
+                    })
 
                 # First, add ALL resource types from selected instances as nodes
                 # This ensures orphaned types without relationships still appear in the graph
                 resource_type_counts = {}
-                for _pattern_name, instance in selected_instances:
+                for pattern_name, instance in selected_instances:
                     for resource in instance:
                         rtype = resource["type"]
-                        resource_type_counts[rtype] = (
-                            resource_type_counts.get(rtype, 0) + 1
-                        )
+                        resource_type_counts[rtype] = resource_type_counts.get(rtype, 0) + 1
 
                 # Add all resource types as nodes
                 for rtype, count in resource_type_counts.items():
@@ -669,7 +998,7 @@ class ArchitecturePatternReplicator:
         return target_graph
 
     def analyze_orphaned_nodes(
-        self, target_pattern_graph: nx.MultiDiGraph[str]
+        self, target_pattern_graph: nx.MultiDiGraph
     ) -> Dict[str, Any]:
         """
         Analyze orphaned nodes in source and target graphs.
@@ -697,12 +1026,9 @@ class ArchitecturePatternReplicator:
 
         # For target graph, we need to detect which patterns it has
         # Use the same pattern detection on target graph
-        target_resource_type_counts = dict(  # type: ignore[call-overload]
-            target_pattern_graph.nodes(data="count", default=0)  # type: ignore[arg-type]
-        )
+        target_resource_type_counts = dict(target_pattern_graph.nodes(data='count', default=0))
         target_detected_patterns = self.analyzer.detect_patterns(
-            target_pattern_graph,
-            target_resource_type_counts,  # type: ignore[arg-type]
+            target_pattern_graph, target_resource_type_counts
         )
 
         # Identify orphaned nodes in target graph
@@ -759,36 +1085,32 @@ class ArchitecturePatternReplicator:
         for resource_type in missing_types:
             # Check which detected patterns include this type
             patterns_with_type = []
-            for pattern_name, pattern_info in self.detected_patterns.items():  # type: ignore[union-attr]
+            for pattern_name, pattern_info in self.detected_patterns.items():
                 if resource_type in pattern_info["matched_resources"]:
                     # Count how many instances have this type
                     instances_with_type = []
                     for instance in self.pattern_resources.get(pattern_name, []):
-                        if any(r["type"] == resource_type for r in instance):  # type: ignore[index]
+                        if any(r["type"] == resource_type for r in instance):
                             instances_with_type.append(instance)
 
                     if instances_with_type:
-                        patterns_with_type.append(
-                            {
-                                "pattern_name": pattern_name,
-                                "instance_count": len(instances_with_type),
-                                "sample_instance": instances_with_type[0],
-                            }
-                        )
+                        patterns_with_type.append({
+                            "pattern_name": pattern_name,
+                            "instance_count": len(instances_with_type),
+                            "sample_instance": instances_with_type[0],
+                        })
 
             if patterns_with_type:
                 # Sort by instance count (more instances = more reliable pattern)
                 patterns_with_type.sort(key=lambda x: x["instance_count"], reverse=True)
 
-                suggestions.append(
-                    {
-                        "missing_type": resource_type,
-                        "available_patterns": patterns_with_type,
-                        "recommendation": f"Select more instances from '{patterns_with_type[0]['pattern_name']}' pattern",
-                    }
-                )
+                suggestions.append({
+                    "missing_type": resource_type,
+                    "available_patterns": patterns_with_type,
+                    "recommendation": f"Select more instances from '{patterns_with_type[0]['pattern_name']}' pattern"
+                })
 
-        logger.info(str(f"Generated {len(suggestions)} improvement recommendations"))
+        logger.info(f"Generated {len(suggestions)} improvement recommendations")
         return suggestions
 
     def _compute_weighted_score(
@@ -823,17 +1145,16 @@ class ArchitecturePatternReplicator:
         # This is the fraction of source nodes NOT yet in target
         target_node_types = set(target_graph.nodes())
         missing_nodes = source_node_types - target_node_types
-        node_coverage_penalty = (
-            len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
-        )
+        node_coverage_penalty = len(missing_nodes) / len(source_node_types) if source_node_types else 0.0
 
         # Weighted combination
         # node_coverage_weight = 0.0: score = spectral_distance (original behavior)
         # node_coverage_weight = 1.0: score = node_coverage_penalty (pure greedy)
         # node_coverage_weight = 0.5: score = balanced average
         score = (
-            1.0 - node_coverage_weight
-        ) * spectral_distance + node_coverage_weight * node_coverage_penalty
+            (1.0 - node_coverage_weight) * spectral_distance +
+            node_coverage_weight * node_coverage_penalty
+        )
 
         return score
 
@@ -881,5 +1202,394 @@ class ArchitecturePatternReplicator:
             return distance
 
         except Exception as e:
-            logger.warning(str(f"Failed to compute spectral distance: {e}"))
+            logger.warning(f"Failed to compute spectral distance: {e}")
             return 1.0
+
+    def generate_configuration_based_plan(
+        self,
+        target_resource_counts: Optional[Dict[str, int]] = None,
+        seed: Optional[int] = None,
+    ) -> Tuple[Dict[str, List[Dict[str, Any]]], Dict[str, Any]]:
+        """
+        Generate tenant replication plan using configuration-based sampling.
+
+        Uses bag-of-words model for proportional sampling: configurations are
+        sampled randomly from a weighted vector where each configuration appears
+        proportionally to its frequency in the source tenant.
+
+        This approach ensures the target tenant has the same configuration
+        distribution as the source tenant.
+
+        Args:
+            target_resource_counts: Dictionary mapping resource types to target counts.
+                                   If None, uses 10% of source counts for all types.
+            seed: Random seed for reproducible sampling (default: None)
+
+        Returns:
+            Tuple of (selected_resources, resource_mapping):
+            - selected_resources: Dict[resource_type, List[resource_dict]]
+            - resource_mapping: Dict with metadata, mappings, and distribution analysis
+        """
+        import random
+
+        if seed is not None:
+            random.seed(seed)
+
+        logger.info("Generating configuration-based replication plan...")
+
+        # Step 1: Analyze source tenant configurations
+        logger.info("Analyzing source tenant configurations...")
+        config_analysis = self.analyzer.analyze_configuration_distributions()
+
+        # Step 2: Build configuration bags for proportional sampling
+        logger.info("Building configuration bags for proportional sampling...")
+        config_bags = self.analyzer.build_configuration_bags(config_analysis)
+
+        # Step 3: Determine target counts
+        if target_resource_counts is None:
+            target_resource_counts = {}
+            for resource_type, analysis in config_analysis.items():
+                # Default to 10% of source count
+                target_count = max(1, int(analysis["total_count"] * 0.1))
+                target_resource_counts[resource_type] = target_count
+
+        # Step 4: Sample resources using bag-of-words model
+        selected_resources: Dict[str, List[Dict[str, Any]]] = {}
+        resource_mappings: Dict[str, Dict[str, Any]] = {}
+        target_config_distributions: Dict[str, Dict[str, int]] = {}
+
+        for resource_type, target_count in target_resource_counts.items():
+            if resource_type not in config_bags:
+                logger.warning(f"No configuration bag for {resource_type}, skipping")
+                continue
+
+            bag = config_bags[resource_type]
+            if not bag:
+                logger.warning(f"Empty configuration bag for {resource_type}, skipping")
+                continue
+
+            logger.info(
+                f"Sampling {target_count} resources for {resource_type} "
+                f"from bag of {len(bag)} configurations..."
+            )
+
+            selected_resources[resource_type] = []
+            target_config_distributions[resource_type] = {}
+
+            # Sample from bag using random.choices (bag-of-words model)
+            for i in range(target_count):
+                # Random selection from bag (naturally proportional)
+                sampled_entry = random.choice(bag)
+                fingerprint = sampled_entry["fingerprint"]
+                sample_resources = sampled_entry["sample_resources"]
+
+                # Pick a source resource matching this configuration
+                if sample_resources:
+                    source_resource_id = random.choice(sample_resources)
+                else:
+                    logger.warning(f"No sample resources for configuration, skipping")
+                    continue
+
+                # Generate target resource ID (simulated)
+                target_resource_id = f"{source_resource_id}_target_{i}"
+
+                # Track mapping
+                resource_mappings[target_resource_id] = {
+                    "source_resource_id": source_resource_id,
+                    "resource_type": resource_type,
+                    "configuration_fingerprint": fingerprint,
+                    "configuration_match_quality": "exact",
+                    "selection_reason": "proportional_sampling",
+                    "selection_weight": len(sample_resources) / len(bag),
+                }
+
+                # Track target distribution
+                config_key = json.dumps(fingerprint, sort_keys=True)
+                target_config_distributions[resource_type][config_key] = (
+                    target_config_distributions[resource_type].get(config_key, 0) + 1
+                )
+
+                selected_resources[resource_type].append(
+                    {
+                        "target_id": target_resource_id,
+                        "source_id": source_resource_id,
+                        "fingerprint": fingerprint,
+                    }
+                )
+
+        # Step 5: Compute distribution analysis
+        logger.info("Computing distribution similarity metrics...")
+        distribution_analysis = self._compute_distribution_similarity(
+            config_analysis, target_config_distributions, target_resource_counts
+        )
+
+        # Build resource mapping output
+        resource_mapping = {
+            "metadata": {
+                "generation_timestamp": Path(__file__).stat().st_mtime,
+                "total_resources_mapped": sum(len(v) for v in selected_resources.values()),
+                "resource_types": len(selected_resources),
+            },
+            "mappings": resource_mappings,
+            "distribution_analysis": distribution_analysis,
+        }
+
+        logger.info(
+            f"Configuration-based plan complete: "
+            f"{resource_mapping['metadata']['total_resources_mapped']} resources "
+            f"across {resource_mapping['metadata']['resource_types']} types"
+        )
+
+        return selected_resources, resource_mapping
+
+    def _compute_distribution_similarity(
+        self,
+        source_analysis: Dict[str, Dict[str, Any]],
+        target_distributions: Dict[str, Dict[str, int]],
+        target_counts: Dict[str, int],
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Compute statistical similarity between source and target distributions.
+
+        Uses:
+        - Cosine similarity (1.0 = identical distributions)
+        - Kolmogorov-Smirnov statistic (0.0 = identical distributions)
+
+        Args:
+            source_analysis: Configuration analysis from source tenant
+            target_distributions: Configuration counts in target tenant
+            target_counts: Target resource counts per type
+
+        Returns:
+            Distribution analysis with similarity metrics per resource type
+        """
+        from scipy.spatial.distance import cosine
+        from scipy.stats import ks_2samp
+
+        distribution_analysis = {}
+
+        for resource_type in source_analysis.keys():
+            if resource_type not in target_distributions:
+                continue
+
+            source_configs = source_analysis[resource_type]["configurations"]
+            target_config_counts = target_distributions[resource_type]
+
+            # Build source distribution vector
+            source_vector = {}
+            for config in source_configs:
+                config_key = json.dumps(config["fingerprint"], sort_keys=True)
+                source_vector[config_key] = config["count"]
+
+            # Build target distribution vector (same keys as source)
+            target_vector = {}
+            for config_key in source_vector.keys():
+                target_vector[config_key] = target_config_counts.get(config_key, 0)
+
+            # Compute cosine similarity
+            source_vals = list(source_vector.values())
+            target_vals = list(target_vector.values())
+
+            if sum(source_vals) > 0 and sum(target_vals) > 0:
+                # Normalize to percentages
+                source_pct = [v / sum(source_vals) for v in source_vals]
+                target_pct = [v / sum(target_vals) for v in target_vals]
+
+                # Cosine similarity (1 - cosine distance)
+                similarity = 1.0 - cosine(source_pct, target_pct)
+
+                # KS test for distribution comparison
+                ks_stat, p_value = ks_2samp(source_pct, target_pct)
+
+                distribution_analysis[resource_type] = {
+                    "source_distribution": {
+                        k: {"count": v, "percentage": (v / sum(source_vals)) * 100}
+                        for k, v in source_vector.items()
+                    },
+                    "target_distribution": {
+                        k: {"count": v, "percentage": (v / sum(target_vals)) * 100 if sum(target_vals) > 0 else 0}
+                        for k, v in target_vector.items()
+                    },
+                    "distribution_similarity": similarity,
+                    "ks_statistic": ks_stat,
+                    "p_value": p_value,
+                }
+            else:
+                distribution_analysis[resource_type] = {
+                    "source_distribution": {},
+                    "target_distribution": {},
+                    "distribution_similarity": 0.0,
+                    "ks_statistic": 1.0,
+                    "p_value": 0.0,
+                }
+
+        return distribution_analysis
+
+    def _select_instances_proportionally(
+        self,
+        pattern_targets: Dict[str, int],
+        use_configuration_coherence: bool
+    ) -> List[Tuple[str, List[Dict[str, Any]]]]:
+        """
+        Select instances proportionally from each pattern.
+
+        If configuration coherence is enabled, prioritizes instances with similar
+        configurations (location, SKU, tags) within each pattern.
+
+        Args:
+            pattern_targets: Target count per pattern from proportional allocation
+            use_configuration_coherence: If True, select instances by configuration similarity
+
+        Returns:
+            List of (pattern_name, instance) tuples
+        """
+        import random
+
+        selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
+
+        for pattern_name, target_count in pattern_targets.items():
+            if pattern_name not in self.pattern_resources:
+                logger.warning(f"Pattern {pattern_name} not found in pattern_resources, skipping")
+                continue
+
+            available_instances = self.pattern_resources[pattern_name]
+
+            if not available_instances:
+                logger.warning(f"No instances available for pattern {pattern_name}, skipping")
+                continue
+
+            # Limit to available instances
+            actual_count = min(target_count, len(available_instances))
+
+            if use_configuration_coherence:
+                # Configuration-coherent selection: cluster by similarity and sample
+                logger.info(
+                    f"  Selecting {actual_count}/{len(available_instances)} instances "
+                    f"from {pattern_name} (configuration-coherent)"
+                )
+
+                # Simple configuration clustering: pick a random seed instance,
+                # then select instances most similar to it
+                if actual_count >= len(available_instances):
+                    # Take all
+                    chosen_instances = available_instances
+                else:
+                    # Pick seed randomly
+                    seed_instance = random.choice(available_instances)
+
+                    # Score other instances by configuration similarity to seed
+                    # (This is simplified - real implementation would compare location, SKU, tags)
+                    scored_instances = []
+                    for inst in available_instances:
+                        if inst == seed_instance:
+                            score = 1.0  # Perfect match
+                        else:
+                            # Simplified similarity: compare number of resources
+                            score = 1.0 / (1.0 + abs(len(inst) - len(seed_instance)))
+                        scored_instances.append((score, inst))
+
+                    # Sort by similarity and take top N
+                    scored_instances.sort(key=lambda x: x[0], reverse=True)
+                    chosen_instances = [inst for score, inst in scored_instances[:actual_count]]
+
+            else:
+                # Random selection (proportional sampling without coherence)
+                logger.info(
+                    f"  Selecting {actual_count}/{len(available_instances)} instances "
+                    f"from {pattern_name} (random)"
+                )
+                chosen_instances = random.sample(available_instances, actual_count)
+
+            # Add to selected
+            for instance in chosen_instances:
+                selected_instances.append((pattern_name, instance))
+
+        logger.info(f"Selected {len(selected_instances)} total instances across all patterns")
+        return selected_instances
+
+    def _select_instances_greedy(
+        self,
+        all_instances: List[Tuple[str, List[Dict[str, Any]]]],
+        target_instance_count: int,
+        node_coverage_weight: float
+    ) -> List[Tuple[str, List[Dict[str, Any]]]]:
+        """
+        Greedy spectral distance-based instance selection (original algorithm).
+
+        Iteratively selects instances that minimize a weighted score combining
+        spectral distance and node coverage.
+
+        Args:
+            all_instances: All available (pattern_name, instance) tuples
+            target_instance_count: Number of instances to select
+            node_coverage_weight: Weight for node coverage (0.0-1.0)
+
+        Returns:
+            List of selected (pattern_name, instance) tuples
+        """
+        # Get source node types for coverage tracking
+        source_node_types = set(self.source_pattern_graph.nodes())
+
+        selected_instances: List[Tuple[str, List[Dict[str, Any]]]] = []
+        remaining_instances = list(all_instances)  # Make a copy
+
+        # Greedy selection: iteratively pick the instance that best improves our score
+        for i in range(min(target_instance_count, len(remaining_instances))):
+            best_score = float('inf')
+            best_idx = 0
+            best_new_nodes = set()
+
+            # Evaluate each remaining instance
+            for idx, (pattern_name, instance) in enumerate(remaining_instances):
+                # Build hypothetical target graph with this instance added
+                hypothetical_selected = selected_instances + [(pattern_name, instance)]
+                hypothetical_target = self._build_target_pattern_graph_from_instances(
+                    hypothetical_selected
+                )
+
+                # Compute weighted score
+                score = self._compute_weighted_score(
+                    self.source_pattern_graph,
+                    hypothetical_target,
+                    source_node_types,
+                    node_coverage_weight
+                )
+
+                # Track which instance gives best score
+                if score < best_score:
+                    best_score = score
+                    best_idx = idx
+                    best_new_nodes = set(hypothetical_target.nodes()) - (
+                        set(self._build_target_pattern_graph_from_instances(selected_instances).nodes())
+                        if selected_instances else set()
+                    )
+
+            # Select the best instance
+            pattern_name, instance = remaining_instances.pop(best_idx)
+            selected_instances.append((pattern_name, instance))
+
+            # Build current target pattern graph from selected instances
+            target_pattern_graph = self._build_target_pattern_graph_from_instances(
+                selected_instances
+            )
+
+            # Calculate coverage metrics
+            current_nodes = set(target_pattern_graph.nodes())
+            node_coverage = len(current_nodes & source_node_types) / len(source_node_types)
+
+            if (i + 1) % 10 == 0 or i < 10:
+                distance = self._compute_spectral_distance(
+                    self.source_pattern_graph, target_pattern_graph
+                )
+                logger.info(
+                    f"Selected instance {i + 1}/{target_instance_count}: {pattern_name} "
+                    f"({len(instance)} resources, +{len(best_new_nodes)} new types)"
+                )
+                logger.info(
+                    f"  Target: {target_pattern_graph.number_of_nodes()} types "
+                    f"({node_coverage:.1%} coverage), "
+                    f"{target_pattern_graph.number_of_edges()} edges, "
+                    f"spectral: {distance:.4f}, score: {best_score:.4f}"
+                )
+
+        return selected_instances
