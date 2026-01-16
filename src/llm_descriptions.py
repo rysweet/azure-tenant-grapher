@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, TypeVar
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 

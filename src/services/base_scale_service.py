@@ -62,7 +62,7 @@ class BaseScaleService:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 record = result.single()
                 exists = record["exists"] if record else False
 
@@ -114,7 +114,7 @@ class BaseScaleService:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 record = result.single()
                 count = record["count"] if record else 0
 
@@ -174,7 +174,7 @@ class BaseScaleService:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 record = result.single()
 
                 if record:
@@ -228,7 +228,7 @@ class BaseScaleService:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 record = result.single()
                 count = record["count"] if record else 0
 

@@ -11,7 +11,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 

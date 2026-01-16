@@ -87,9 +87,16 @@ class APIMPlugin(DataPlanePlugin):
 
         try:
             # Import Azure SDK components
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
-            from azure.mgmt.apimanagement import ApiManagementClient
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
+            from azure.mgmt.apimanagement import (
+                ApiManagementClient,  # type: ignore[import-untyped]
+            )
 
             # Parse resource ID to get subscription and resource group
             resource_id = resource.get("id", "")
@@ -363,7 +370,7 @@ class APIMPlugin(DataPlanePlugin):
                 )
 
                 # Add service URL if available
-                service_url = item.metadata.get("service_url")
+                service_url = item.metadata.get("service_url")  # type: ignore[union-attr]
                 if service_url:
                     code_lines.append(f'  service_url = "{service_url}"')
 
@@ -751,10 +758,17 @@ class APIMPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.apimanagement import ApiManagementClient
-        from azure.mgmt.apimanagement.models import (
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.apimanagement import (
+            ApiManagementClient,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.apimanagement.models import (  # type: ignore[import-untyped]
             ApiCreateOrUpdateParameter,
         )
 
@@ -801,7 +815,7 @@ class APIMPlugin(DataPlanePlugin):
                         ),
                     )
 
-                    service_url = item.metadata.get("service_url")
+                    service_url = item.metadata.get("service_url")  # type: ignore[union-attr]
                     if service_url:
                         api_params.service_url = service_url
 
@@ -884,10 +898,17 @@ class APIMPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.apimanagement import ApiManagementClient
-        from azure.mgmt.apimanagement.models import (
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.apimanagement import (
+            ApiManagementClient,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.apimanagement.models import (  # type: ignore[import-untyped]
             ApiCreateOrUpdateParameter,
             PolicyContract,
         )

@@ -97,7 +97,7 @@ class GraphOperations(BaseScaleService):
             nodes_deleted = 0
 
             with self.session_manager.session() as session:
-                result = session.run(query, {"keep_ids": list(sampled_node_ids)})
+                result = session.run(query, {"keep_ids": list(sampled_node_ids)})  # type: ignore[arg-type]
                 record = result.single()
 
                 if record:

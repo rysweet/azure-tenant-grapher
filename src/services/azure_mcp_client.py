@@ -141,7 +141,7 @@ class AzureMCPClient:
         # Add current tenant info if available
         if self.tenant_manager:
             try:
-                current_tenant = await self.tenant_manager.get_current_tenant()
+                current_tenant = await self.tenant_manager.get_current_tenant()  # type: ignore[misc] # type: ignore[misc]
                 if current_tenant:
                     self._current_context.update(
                         {

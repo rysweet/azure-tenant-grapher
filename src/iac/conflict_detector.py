@@ -18,10 +18,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
-from azure.core.exceptions import AzureError, ResourceNotFoundError
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.keyvault import KeyVaultManagementClient
-from azure.mgmt.resource import ManagementLockClient, ResourceManagementClient
+from azure.core.exceptions import (  # type: ignore[import-untyped]
+    AzureError,
+    ResourceNotFoundError,
+)
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.mgmt.keyvault import KeyVaultManagementClient  # type: ignore[import-untyped]
+from azure.mgmt.resource import (  # type: ignore[import-untyped]
+    ManagementLockClient,
+    ResourceManagementClient,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ruamel.yaml import YAML
+from ruamel.yaml import YAML  # type: ignore[import-untyped]
 
 from ..validation.address_space_validator import (
     AddressSpaceValidator,

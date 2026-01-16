@@ -191,7 +191,7 @@ class ExecutionDispatcher:
 
         # Validate required parameters
         metadata = self.get_command_metadata(command)
-        required_params = metadata.get("required_params", [])
+        required_params = metadata.get("required_params", [])  # type: ignore[union-attr]
         for param in required_params:
             if param not in kwargs:
                 raise ParameterValidationError(
@@ -364,8 +364,8 @@ class ExecutionDispatcher:
             self.config = config
             if self.is_remote_mode():
                 self._remote_client = RemoteClient(
-                    base_url=self.config.service_url,
-                    api_key=self.config.api_key,
+                    base_url=self.config.service_url,  # type: ignore[arg-type]
+                    api_key=self.config.api_key,  # type: ignore[arg-type]
                     timeout=self.config.request_timeout,
                 )
 
@@ -381,7 +381,7 @@ class ExecutionDispatcher:
         # Calculate failure rate
         total = stats["total_executions"]
         failed = stats["failed_executions"]
-        stats["failure_rate"] = (failed / total) if total > 0 else 0.0
+        stats["failure_rate"] = (failed / total) if total > 0 else 0.0  # type: ignore[arg-type]
 
         return stats
 

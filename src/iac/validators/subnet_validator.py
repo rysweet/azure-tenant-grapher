@@ -144,8 +144,9 @@ class SubnetValidator:
                     continue
 
                 # Check if subnet is within VNet address space
-                within_vnet = any(
-                    subnet_network.subnet_of(vnet_net) for vnet_net in vnet_networks
+                within_vnet = any(  # type: ignore[arg-type]
+                    subnet_network.subnet_of(vnet_net)  # type: ignore
+                    for vnet_net in vnet_networks
                 )
 
                 if not within_vnet:

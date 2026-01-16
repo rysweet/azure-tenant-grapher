@@ -105,9 +105,16 @@ class FunctionAppPlugin(DataPlanePlugin):
 
         try:
             # Import Azure SDK components
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
-            from azure.mgmt.web import WebSiteManagementClient
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
+            from azure.mgmt.web import (
+                WebSiteManagementClient,  # type: ignore[import-untyped]
+            )
 
             # Parse resource ID to extract subscription and resource group
             resource_id = resource.get("id", "")
@@ -676,10 +683,19 @@ class FunctionAppPlugin(DataPlanePlugin):
 
         # 2. Connect to target Function App
         try:
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
-            from azure.mgmt.web import WebSiteManagementClient
-            from azure.mgmt.web.models import StringDictionary
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
+            from azure.mgmt.web import (
+                WebSiteManagementClient,  # type: ignore[import-untyped]
+            )
+            from azure.mgmt.web.models import (
+                StringDictionary,  # type: ignore[import-untyped]
+            )
         except ImportError as e:
             self.logger.error(str(f"Azure SDK not installed: {e}"))
             return ReplicationResult(

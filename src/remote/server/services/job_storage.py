@@ -66,7 +66,7 @@ class JobStorage:
             ...     {"tenant_id": "tenant-123"}
             ... )
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             query = """
             CREATE (j:Job {
                 id: $job_id,
@@ -118,7 +118,7 @@ class JobStorage:
         Raises:
             ValueError: If job not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             query = """
             MATCH (j:Job {id: $job_id})
             SET j.status = $status,
@@ -157,7 +157,7 @@ class JobStorage:
         Returns:
             Job record or None if not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(
                 """
                 MATCH (j:Job {id: $job_id})
@@ -220,7 +220,7 @@ class JobStorage:
         LIMIT $limit
         """
 
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(query, **params)
             records = await result.data()
 
@@ -237,7 +237,7 @@ class JobStorage:
         Returns:
             True if deleted, False if not found
         """
-        async with self.connection_manager.session() as session:
+        async with self.connection_manager.session() as session:  # type: ignore[attr-defined]
             result = await session.run(
                 """
                 MATCH (j:Job {id: $job_id})

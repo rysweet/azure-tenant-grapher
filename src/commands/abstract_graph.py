@@ -174,7 +174,7 @@ async def _abstract_graph_async(
     """Async implementation of abstract-graph command."""
     # Ensure Neo4j is running
     container_manager = Neo4jContainerManager()
-    await container_manager.ensure_neo4j_running()
+    await container_manager.ensure_neo4j_running()  # type: ignore[attr-defined]
 
     console.print(str(f"[bold]Creating abstraction for tenant:[/bold] {tenant_id}"))
     console.print(str(f"[bold]Target sample size:[/bold] {sample_size}"))

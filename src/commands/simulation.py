@@ -93,7 +93,7 @@ async def generate_sim_doc_command_handler(
             first_token = True
             tokens = []
             try:
-                async for token in llm.generate_description_streaming(prompt):
+                async for token in llm.generate_description_streaming(prompt):  # type: ignore[misc] # type: ignore[union-attr]
                     if first_token:
                         status.stop()
                         first_token = False
@@ -107,7 +107,7 @@ async def generate_sim_doc_command_handler(
                     f"\n[red]Streaming failed, falling back to non-streaming mode: {stream_exc}[/red]"
                 )
                 try:
-                    markdown = await llm.generate_sim_customer_profile(
+                    markdown = await llm.generate_sim_customer_profile(  # type: ignore[union-attr]
                         size=size, seed=seed_text
                     )
                     console.print(markdown)

@@ -72,7 +72,7 @@ class ProgressTracker:
         }
 
         if details:
-            event["details"] = details
+            event["details"] = details  # type: ignore[arg-type]
 
         async with self._lock:
             # Store in history

@@ -485,7 +485,7 @@ class ScaleValidationService(BaseScaleService):
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     issues.append(
@@ -535,7 +535,7 @@ class ScaleValidationService(BaseScaleService):
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     issues.append(
@@ -594,7 +594,7 @@ class ScaleValidationService(BaseScaleService):
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     missing_markers = []
@@ -649,7 +649,7 @@ class ScaleValidationService(BaseScaleService):
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(orphan_query, {"tenant_id": tenant_id})
+                result = session.run(orphan_query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     issues.append(
@@ -758,7 +758,7 @@ class ScaleValidationService(BaseScaleService):
         """
 
         with self.session_manager.session() as session:
-            session.run(query, {"resource_id": resource_id})
+            session.run(query, {"resource_id": resource_id})  # type: ignore[arg-type]
 
         self.logger.info(
             str(f"Removed invalid SCAN_SOURCE_NODE link from {resource_id}")
@@ -777,7 +777,7 @@ class ScaleValidationService(BaseScaleService):
         """
 
         with self.session_manager.session() as session:
-            session.run(query, {"resource_id": resource_id})
+            session.run(query, {"resource_id": resource_id})  # type: ignore[arg-type]
 
         self.logger.info(
             f"Removed Original label from synthetic resource {resource_id}"

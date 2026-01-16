@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 

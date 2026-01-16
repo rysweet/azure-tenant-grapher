@@ -16,7 +16,7 @@ Public API:
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from .job_spawner import JobSpawner
 from .job_tracker import JobTracker

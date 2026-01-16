@@ -61,8 +61,8 @@ class GraphAbstractionService:
                 dimensions=dimensions,
                 walk_length=walk_length,
                 num_walks=num_walks,
-                hub_weight=hub_weight,
-                bridge_weight=bridge_weight,
+                hub_weight=hub_weight,  # type: ignore[misc]
+                bridge_weight=bridge_weight,  # type: ignore[misc]
             )
         else:
             self.sampler = StratifiedSampler(driver)

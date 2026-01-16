@@ -106,7 +106,7 @@ class OperationsService:
 
             # Create ATG configuration from environment
             # This uses existing config management
-            config = create_config_from_env()
+            config = create_config_from_env()  # type: ignore[misc]
 
             # Override tenant ID
             config.azure_config.tenant_id = tenant_id
@@ -132,7 +132,7 @@ class OperationsService:
                 """Sync wrapper for ATG scan (which may be sync or async)."""
                 # The actual scan process
                 resources = asyncio.run(
-                    grapher.discovery_service.discover_all_resources()
+                    grapher.discovery_service.discover_all_resources()  # type: ignore[attr-defined]
                 )
                 return resources
 
@@ -243,7 +243,9 @@ class OperationsService:
                 """Sync wrapper for IaC generation."""
                 # Call the existing CLI handler
                 # (This wraps GraphTraverser, TransformationEngine, etc.)
-                from src.iac.cli_handler import generate_iac_command
+                from src.iac.cli_handler import (
+                    generate_iac_command,  # type: ignore[misc]
+                )
 
                 result = generate_iac_command(
                     tenant_id=tenant_id,
@@ -356,9 +358,9 @@ class OperationsService:
 
                 # Create generator (uses Neo4j URI from connection manager)
                 generator = TenantSpecificationGenerator(
-                    neo4j_uri=self.connection_manager.uri,
-                    neo4j_user=self.connection_manager.user,
-                    neo4j_password=self.connection_manager.password,
+                    neo4j_uri=self.connection_manager.uri,  # type: ignore[attr-defined]
+                    neo4j_user=self.connection_manager.user,  # type: ignore[attr-defined]
+                    neo4j_password=self.connection_manager.password,  # type: ignore[attr-defined]
                     anonymizer=anonymizer,
                     config=spec_config,
                 )

@@ -91,17 +91,17 @@ class LayerExportOperations:
         """
         # Validate source exists and target doesn't exist
         if self.crud_operations:
-            source_layer = await self.crud_operations.get_layer(source_layer_id)
+            source_layer = await self.crud_operations.get_layer(source_layer_id)  # type: ignore[attr-defined]
             if not source_layer:
                 raise LayerNotFoundError(source_layer_id)
 
-            if await self.crud_operations.get_layer(target_layer_id):
+            if await self.crud_operations.get_layer(target_layer_id):  # type: ignore[attr-defined]
                 raise LayerAlreadyExistsError(target_layer_id)
 
             # Create target layer metadata
             target_metadata = source_layer.metadata if copy_metadata else {}
 
-            await self.crud_operations.create_layer(
+            await self.crud_operations.create_layer(  # type: ignore[attr-defined]
                 layer_id=target_layer_id,
                 name=name,
                 description=description,
@@ -124,7 +124,7 @@ class LayerExportOperations:
                 """,
                 {"source_layer_id": source_layer_id},
             )
-            total_nodes = result.single()["total"]
+            total_nodes = result.single()["total"]  # type: ignore[misc]
 
             copied_nodes = 0
             skip = 0
@@ -191,7 +191,7 @@ class LayerExportOperations:
 
         # Refresh stats
         if self.stats_operations:
-            await self.stats_operations.refresh_layer_stats(target_layer_id)
+            await self.stats_operations.refresh_layer_stats(target_layer_id)  # type: ignore[attr-defined]
 
         self.logger.info(
             f"Copied layer {source_layer_id} to {target_layer_id} ({copied_nodes} nodes)"
@@ -199,7 +199,7 @@ class LayerExportOperations:
 
         # Return the target layer
         if self.crud_operations:
-            return await self.crud_operations.get_layer(target_layer_id)
+            return await self.crud_operations.get_layer(target_layer_id)  # type: ignore[attr-defined]
 
         # If no crud_operations, return minimal metadata
         from datetime import datetime
@@ -234,7 +234,7 @@ class LayerExportOperations:
         # Check if layer exists
         layer = None
         if self.crud_operations:
-            layer = await self.crud_operations.get_layer(layer_id)
+            layer = await self.crud_operations.get_layer(layer_id)  # type: ignore[attr-defined]
             if not layer:
                 raise LayerNotFoundError(layer_id)
 
@@ -347,7 +347,7 @@ class LayerExportOperations:
         layer_metadata = LayerMetadata.from_dict(metadata_dict)
 
         if self.crud_operations:
-            await self.crud_operations.create_layer(
+            await self.crud_operations.create_layer(  # type: ignore[attr-defined]
                 layer_id=layer_metadata.layer_id,
                 name=layer_metadata.name,
                 description=f"Restored from {archive_path}",
@@ -420,7 +420,7 @@ class LayerExportOperations:
 
         # Refresh stats
         if self.stats_operations:
-            await self.stats_operations.refresh_layer_stats(layer_metadata.layer_id)
+            await self.stats_operations.refresh_layer_stats(layer_metadata.layer_id)  # type: ignore[attr-defined]
 
         self.logger.info(
             f"Restored layer {layer_metadata.layer_id} from {archive_path}"
@@ -428,7 +428,7 @@ class LayerExportOperations:
 
         # Return restored layer
         if self.crud_operations:
-            return await self.crud_operations.get_layer(layer_metadata.layer_id)
+            return await self.crud_operations.get_layer(layer_metadata.layer_id)  # type: ignore[attr-defined]
 
         return layer_metadata
 

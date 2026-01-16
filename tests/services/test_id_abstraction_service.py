@@ -300,7 +300,10 @@ class TestIDAbstractionService:
 
             # Format: {type}-{hash} for most resources, {type}{hash} for globally unique (storage/ACR)
             # Globally unique resources have no hyphens (Azure naming requirements)
-            if "Storage/storageAccounts" in resource_id or "ContainerRegistry" in resource_id:
+            if (
+                "Storage/storageAccounts" in resource_id
+                or "ContainerRegistry" in resource_id
+            ):
                 # No hyphen for storage/ACR (lowercase alphanumeric only)
                 pattern = r"^[a-z0-9]{6,}$"
                 assert re.match(pattern, abstracted), f"Invalid format: {abstracted}"
@@ -319,7 +322,10 @@ class TestIDAbstractionService:
             abstracted = service.abstract_resource_id(resource_id)
 
             # Format varies based on whether resource is globally unique
-            if "Storage/storageAccounts" in resource_id or "ContainerRegistry" in resource_id:
+            if (
+                "Storage/storageAccounts" in resource_id
+                or "ContainerRegistry" in resource_id
+            ):
                 # No hyphen for storage/ACR (lowercase alphanumeric only)
                 pattern = r"^[a-z0-9]{6,}$"
                 assert re.match(pattern, abstracted), f"Invalid format: {abstracted}"

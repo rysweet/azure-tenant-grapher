@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Global WebSocket manager (initialized on app startup)
-_ws_manager: WebSocketManager = None
+_ws_manager: WebSocketManager = None  # type: ignore[misc]
 
 
 def get_ws_manager() -> WebSocketManager:

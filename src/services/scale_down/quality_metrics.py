@@ -225,8 +225,8 @@ class QualityMetricsCalculator:
         sampling_ratio = sampled_nodes / original_nodes if original_nodes > 0 else 0.0
 
         # Degree distributions
-        original_degrees = dict(original_graph.degree())
-        sampled_degrees = dict(sampled_graph.degree())
+        original_degrees = dict(original_graph.degree())  # type: ignore[misc]
+        sampled_degrees = dict(sampled_graph.degree())  # type: ignore[misc]
 
         # Convert to degree distribution histograms
         original_degree_dist = Counter(original_degrees.values())

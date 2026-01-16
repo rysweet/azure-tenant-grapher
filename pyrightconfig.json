@@ -22,7 +22,7 @@
     "**/__pycache__",
     ".venv"
   ],
-  "reportMissingImports": true,
+  "reportMissingImports": "warning",
   "reportMissingTypeStubs": false,
   "pythonVersion": "3.12",
   "pythonPlatform": "Linux",

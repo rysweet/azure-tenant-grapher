@@ -87,9 +87,16 @@ class AppServicePlugin(DataPlanePlugin):
 
         try:
             # Import Azure SDK components
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
-            from azure.mgmt.web import WebSiteManagementClient
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
+            from azure.mgmt.web import (
+                WebSiteManagementClient,  # type: ignore[import-untyped]
+            )
 
             # Parse resource ID to extract subscription and resource group
             resource_id = resource.get("id", "")
@@ -442,7 +449,7 @@ class AppServicePlugin(DataPlanePlugin):
                 # Check both properties and metadata for sensitive flag
                 is_sensitive = item.properties.get(
                     "is_sensitive", False
-                ) or item.metadata.get("sensitive", False)
+                ) or item.metadata.get("sensitive", False)  # type: ignore[union-attr]
                 if is_sensitive:
                     var_name = self._sanitize_name(item.name)
                     code_lines.append(f"#   {item.name} = var.app_setting_{var_name}")
@@ -537,7 +544,7 @@ class AppServicePlugin(DataPlanePlugin):
                         setting_name = setting.name.split("/")[-1]  # Remove slot prefix
                         is_sensitive = setting.properties.get(
                             "is_sensitive", False
-                        ) or setting.metadata.get("sensitive", False)
+                        ) or setting.metadata.get("sensitive", False)  # type: ignore[union-attr]
 
                         if is_sensitive:
                             var_name = self._sanitize_name(
@@ -615,7 +622,7 @@ class AppServicePlugin(DataPlanePlugin):
             # Check both properties and metadata for sensitive flag
             is_sensitive = item.properties.get(
                 "is_sensitive", False
-            ) or item.metadata.get("sensitive", False)
+            ) or item.metadata.get("sensitive", False)  # type: ignore[union-attr]
             if is_sensitive:
                 var_name = self._sanitize_name(item.name)
                 code_lines.extend(
@@ -647,7 +654,7 @@ class AppServicePlugin(DataPlanePlugin):
         for item in slot_app_settings:
             is_sensitive = item.properties.get(
                 "is_sensitive", False
-            ) or item.metadata.get("sensitive", False)
+            ) or item.metadata.get("sensitive", False)  # type: ignore[union-attr]
             if is_sensitive:
                 slot_name = item.properties.get("slot_name", "")
                 setting_name = item.name.split("/")[-1]
@@ -966,10 +973,20 @@ class AppServicePlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.web import WebSiteManagementClient
-        from azure.mgmt.web.models import ConnStringValueTypePair, StringDictionary
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.web import (
+            WebSiteManagementClient,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.web.models import (  # type: ignore[import-untyped]
+            ConnStringValueTypePair,
+            StringDictionary,
+        )
 
         # Get credentials
         if self.credential_provider:
@@ -1102,10 +1119,20 @@ class AppServicePlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.mgmt.web import WebSiteManagementClient
-        from azure.mgmt.web.models import ConnStringValueTypePair, StringDictionary
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.web import (
+            WebSiteManagementClient,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.web.models import (  # type: ignore[import-untyped]
+            ConnStringValueTypePair,
+            StringDictionary,
+        )
 
         # Get credentials
         if self.credential_provider:

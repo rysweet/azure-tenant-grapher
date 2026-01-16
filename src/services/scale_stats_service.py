@@ -165,7 +165,7 @@ class ScaleStatsService(BaseScaleService):
 
             with self.session_manager.session() as session:
                 # Execute query 1: Resource counts
-                result1 = session.run(resource_count_query, {"tenant_id": tenant_id})
+                result1 = session.run(resource_count_query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 for record in result1:
                     category = record["category"]
                     count = record["count"]
@@ -183,7 +183,7 @@ class ScaleStatsService(BaseScaleService):
                     ) * 100
 
                 # Execute query 2: Type breakdown
-                result2 = session.run(type_breakdown_query, {"tenant_id": tenant_id})
+                result2 = session.run(type_breakdown_query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 type_breakdown: Dict[str, Dict[str, int]] = defaultdict(
                     lambda: {"original": 0, "synthetic": 0, "total": 0}
                 )
@@ -199,7 +199,7 @@ class ScaleStatsService(BaseScaleService):
                 stats["resource_type_breakdown"] = dict(type_breakdown)
 
                 # Execute query 3: Session summary
-                result3 = session.run(session_summary_query, {"tenant_id": tenant_id})
+                result3 = session.run(session_summary_query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
                 sessions = []
                 for record in result3:
                     sessions.append(
@@ -430,7 +430,7 @@ class ScaleStatsService(BaseScaleService):
             history: List[Dict[str, Any]] = []
 
             with self.session_manager.session() as session:
-                result = session.run(query, {"tenant_id": tenant_id})
+                result = session.run(query, {"tenant_id": tenant_id})  # type: ignore[arg-type]
 
                 for record in result:
                     history.append(

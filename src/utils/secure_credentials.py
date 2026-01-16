@@ -18,9 +18,9 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from azure.core.exceptions import ResourceNotFoundError
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
+from azure.core.exceptions import ResourceNotFoundError  # type: ignore[import-untyped]
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.keyvault.secrets import SecretClient  # type: ignore[import-untyped]
 
 
 class CredentialValidationError(Exception):

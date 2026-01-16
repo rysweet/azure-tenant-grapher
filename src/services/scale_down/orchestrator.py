@@ -9,7 +9,7 @@ Main entry point for scale-down workflows.
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
 import networkx as nx
 
@@ -269,7 +269,11 @@ class ScaleDownOrchestrator(BaseScaleService):
             progress_callback("Calculating metrics", 0, 100)
 
         metrics = self.metrics_calculator.calculate_metrics(
-            G, sampled_graph, node_properties, sampled_node_ids, sampling_time
+            G,
+            cast(nx.DiGraph, sampled_graph),
+            node_properties,
+            sampled_node_ids,
+            sampling_time,
         )
 
         # Stage 4: Handle output mode
@@ -293,7 +297,7 @@ class ScaleDownOrchestrator(BaseScaleService):
             await self.export_sample(
                 sampled_node_ids,
                 node_properties,
-                sampled_graph,
+                cast(nx.DiGraph, sampled_graph),
                 output_mode,
                 output_path,
             )
@@ -487,8 +491,8 @@ class ScaleDownOrchestrator(BaseScaleService):
             computation_time = 0.0
 
         return self.metrics_calculator.calculate_metrics(
-            original_graph,
-            sampled_graph,
+            original_graph,  # type: ignore[arg-type]
+            sampled_graph,  # type: ignore[arg-type]
             node_properties,
             sampled_ids,
             computation_time,

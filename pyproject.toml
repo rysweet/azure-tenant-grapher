@@ -51,6 +51,8 @@ dependencies = [
     "ruamel.yaml",
     # Logging dependencies
     "structlog>=24.1.0",
+    # Asyncio utilities
+    "nest-asyncio>=1.5.0",
     # Graph sampling dependencies (Issue #427, #611)
     "networkx>=3.0",
     "pandas>=2.3.3",

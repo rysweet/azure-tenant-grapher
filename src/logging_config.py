@@ -1,7 +1,7 @@
 import logging
 import sys
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 
 def configure_logging():

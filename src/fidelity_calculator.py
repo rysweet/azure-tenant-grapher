@@ -236,7 +236,7 @@ class FidelityCalculator:
         WHERE r.subscription_id = $sub_id
         RETURN count(r) as count
         """
-        result = session.run(check_query, {"sub_id": subscription_id})
+        result = session.run(check_query, {"sub_id": subscription_id})  # type: ignore[arg-type]
         record = result.single()
         if not record or record["count"] == 0:
             return None
@@ -249,7 +249,7 @@ class FidelityCalculator:
         WHERE r.subscription_id = $sub_id
         RETURN count(r) as count
         """
-        result = session.run(resource_query, {"sub_id": subscription_id})
+        result = session.run(resource_query, {"sub_id": subscription_id})  # type: ignore[arg-type]
         metrics["resources"] = result.single()["count"]
 
         # Count relationships
@@ -258,7 +258,7 @@ class FidelityCalculator:
         WHERE r.subscription_id = $sub_id
         RETURN count(DISTINCT rel) as count
         """
-        result = session.run(relationship_query, {"sub_id": subscription_id})
+        result = session.run(relationship_query, {"sub_id": subscription_id})  # type: ignore[arg-type]
         metrics["relationships"] = result.single()["count"]
 
         # Count resource groups
@@ -268,7 +268,7 @@ class FidelityCalculator:
         AND r.resourceGroup IS NOT NULL
         RETURN count(DISTINCT r.resourceGroup) as count
         """
-        result = session.run(rg_query, {"sub_id": subscription_id})
+        result = session.run(rg_query, {"sub_id": subscription_id})  # type: ignore[arg-type]
         metrics["resource_groups"] = result.single()["count"]
 
         # Count resource types
@@ -277,7 +277,7 @@ class FidelityCalculator:
         WHERE r.subscription_id = $sub_id
         RETURN count(DISTINCT r.type) as count
         """
-        result = session.run(type_query, {"sub_id": subscription_id})
+        result = session.run(type_query, {"sub_id": subscription_id})  # type: ignore[arg-type]
         metrics["resource_types"] = result.single()["count"]
 
         return metrics

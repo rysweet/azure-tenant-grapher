@@ -109,7 +109,7 @@ async def insert_resource_batch(
     """
 
     with session_manager.session() as session:
-        session.run(query, {"resources": resources})
+        session.run(query, {"resources": resources})  # type: ignore[arg-type]
 
 
 async def insert_relationship_batch(
@@ -151,7 +151,7 @@ async def insert_relationship_batch(
             CREATE (source)-[r:{rel_type}]->(target)
             SET r = rel.rel_props
             """
-            session.run(query, {"rels": rels})
+            session.run(query, {"rels": rels})  # type: ignore[arg-type]
 
 
 async def insert_batches_parallel(

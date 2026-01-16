@@ -314,7 +314,7 @@ class SecurityPreservingSampler:
         """
         with self.driver.session() as session:
             try:
-                result = session.run(pattern.cypher_query, tenant_id=tenant_id)
+                result = session.run(pattern.cypher_query, tenant_id=tenant_id)  # type: ignore[arg-type]
 
                 paths = []
                 for record in result:

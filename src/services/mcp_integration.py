@@ -69,7 +69,7 @@ class MCPIntegrationService:
         try:
             # Try to import MCP client
             try:
-                from autogen_ext.mcp import MCPClient
+                from autogen_ext.mcp import MCPClient  # type: ignore[import-untyped]
 
                 self._mcp_client = MCPClient(
                     endpoint=self.config.endpoint,

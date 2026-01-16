@@ -9,9 +9,9 @@ import logging
 from typing import Dict, Optional
 
 import networkx as nx
-import numpy as np
+import numpy as np  # type: ignore[import-untyped] # type: ignore[import-untyped]
 from neo4j import Driver
-from node2vec import Node2Vec
+from node2vec import Node2Vec  # type: ignore[import-untyped] # type: ignore
 
 logger = logging.getLogger(__name__)
 

@@ -10,15 +10,17 @@ import asyncio
 import logging
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from azure.core.exceptions import AzureError
-from azure.identity import (
+from azure.core.exceptions import AzureError  # type: ignore[import-untyped]
+from azure.identity import (  # type: ignore[import-untyped]
     AzureCliCredential,
     CredentialUnavailableError,
     DefaultAzureCredential,
 )
-from azure.mgmt.authorization import AuthorizationManagementClient
-from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.subscription import SubscriptionClient
+from azure.mgmt.authorization import (
+    AuthorizationManagementClient,  # type: ignore[import-untyped]
+)
+from azure.mgmt.resource import ResourceManagementClient  # type: ignore[import-untyped]
+from azure.mgmt.subscription import SubscriptionClient  # type: ignore[import-untyped]
 
 from ..config_manager import AzureTenantGrapherConfig
 from ..exceptions import (
@@ -178,7 +180,9 @@ class AzureDiscoveryService:
         # Retry logic with exponential backoff for AzureError
         max_attempts = self._max_retries
         delay = 1
-        from azure.core.exceptions import ClientAuthenticationError
+        from azure.core.exceptions import (
+            ClientAuthenticationError,  # type: ignore[import-untyped]
+        )
 
         for attempt in range(1, max_attempts + 1):
             try:
@@ -408,7 +412,9 @@ class AzureDiscoveryService:
         # Retry logic with exponential backoff for AzureError
         max_attempts = self._max_retries
         delay = 1
-        from azure.core.exceptions import ClientAuthenticationError
+        from azure.core.exceptions import (
+            ClientAuthenticationError,  # type: ignore[import-untyped]
+        )
 
         for attempt in range(1, max_attempts + 1):
             try:
@@ -656,8 +662,12 @@ class AzureDiscoveryService:
 
         Bug #520 fix: Target scanner coverage gaps for child resources
         """
-        from azure.mgmt.automation import AutomationClient
-        from azure.mgmt.network import NetworkManagementClient
+        from azure.mgmt.automation import (
+            AutomationClient,  # type: ignore[import-untyped]
+        )
+        from azure.mgmt.network import (
+            NetworkManagementClient,  # type: ignore[import-untyped]
+        )
 
         child_resources = []
 
@@ -831,7 +841,9 @@ class AzureDiscoveryService:
         if vms:
             logger.info(str(f"🔍 Discovering VM extensions for {len(vms)} VMs..."))
             try:
-                from azure.mgmt.compute import ComputeManagementClient
+                from azure.mgmt.compute import (
+                    ComputeManagementClient,  # type: ignore[import-untyped]
+                )
 
                 compute_client = ComputeManagementClient(
                     self.credential, subscription_id
@@ -888,7 +900,9 @@ class AzureDiscoveryService:
                 f"🔍 Discovering databases for {len(sql_servers)} SQL servers..."
             )
             try:
-                from azure.mgmt.sql import SqlManagementClient
+                from azure.mgmt.sql import (
+                    SqlManagementClient,  # type: ignore[import-untyped]
+                )
 
                 sql_client = SqlManagementClient(self.credential, subscription_id)
 
@@ -949,7 +963,9 @@ class AzureDiscoveryService:
                 f"🔍 Discovering configurations for {len(pg_servers)} PostgreSQL servers..."
             )
             try:
-                from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
+                from azure.mgmt.rdbms.postgresql import (
+                    PostgreSQLManagementClient,  # type: ignore[import-untyped]
+                )
 
                 pg_client = PostgreSQLManagementClient(self.credential, subscription_id)
 
@@ -1012,7 +1028,7 @@ class AzureDiscoveryService:
                 f"🔍 Discovering webhooks for {len(registries)} container registries..."
             )
             try:
-                from azure.mgmt.containerregistry import (
+                from azure.mgmt.containerregistry import (  # type: ignore[import-untyped]
                     ContainerRegistryManagementClient,
                 )
 

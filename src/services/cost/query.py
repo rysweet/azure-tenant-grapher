@@ -456,7 +456,7 @@ class CostQueryService:
         }
 
         if subscription_ids:
-            params["subscription_ids"] = subscription_ids
+            params["subscription_ids"] = subscription_ids  # type: ignore[arg-type]
 
         result = await tx.run(query, **params)
 

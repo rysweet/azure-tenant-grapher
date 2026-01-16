@@ -179,7 +179,7 @@ def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., A
 
             if loop and loop.is_running():
                 # Already in an event loop (e.g., pytest-asyncio, Jupyter)
-                import nest_asyncio
+                import nest_asyncio  # type: ignore[import-untyped]
 
                 nest_asyncio.apply()
                 task = loop.create_task(f(*args, **kwargs))
