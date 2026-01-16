@@ -15,7 +15,7 @@ import logging
 import shutil
 import zipfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class FileGenerator:
         )
         return zip_path
 
-    def get_file_info(self, job_id: str) -> dict:
+    def get_file_info(self, job_id: str) -> Dict[str, Any]:
         """
         Get information about job output files.
 
