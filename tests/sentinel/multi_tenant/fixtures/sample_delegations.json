@@ -1,0 +1,49 @@
+{
+  "delegations": [
+    {
+      "customer_tenant_id": "11111111-1111-1111-1111-111111111111",
+      "customer_tenant_name": "Acme Corp",
+      "managing_tenant_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "subscription_id": "22222222-2222-2222-2222-222222222222",
+      "resource_group": null,
+      "registration_definition_id": "/subscriptions/22222222-2222-2222-2222-222222222222/providers/Microsoft.ManagedServices/registrationDefinitions/test-def-id",
+      "registration_assignment_id": "/subscriptions/22222222-2222-2222-2222-222222222222/providers/Microsoft.ManagedServices/registrationAssignments/test-assign-id",
+      "status": "active",
+      "bicep_template_path": "./bicep_output/lighthouse-delegation-acme-corp-20251209.bicep"
+    },
+    {
+      "customer_tenant_id": "33333333-3333-3333-3333-333333333333",
+      "customer_tenant_name": "Beta Inc",
+      "managing_tenant_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "subscription_id": "44444444-4444-4444-4444-444444444444",
+      "resource_group": "rg-sentinel-prod",
+      "registration_definition_id": null,
+      "registration_assignment_id": null,
+      "status": "pending",
+      "bicep_template_path": "./bicep_output/lighthouse-delegation-beta-inc-20251209.bicep"
+    },
+    {
+      "customer_tenant_id": "55555555-5555-5555-5555-555555555555",
+      "customer_tenant_name": "Gamma LLC",
+      "managing_tenant_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "subscription_id": "66666666-6666-6666-6666-666666666666",
+      "resource_group": null,
+      "registration_definition_id": "/subscriptions/66666666-6666-6666-6666-666666666666/providers/Microsoft.ManagedServices/registrationDefinitions/test-def-id-3",
+      "registration_assignment_id": "/subscriptions/66666666-6666-6666-6666-666666666666/providers/Microsoft.ManagedServices/registrationAssignments/test-assign-id-3",
+      "status": "revoked",
+      "bicep_template_path": "./bicep_output/lighthouse-delegation-gamma-llc-20251208.bicep"
+    },
+    {
+      "customer_tenant_id": "77777777-7777-7777-7777-777777777777",
+      "customer_tenant_name": "Delta Corp",
+      "managing_tenant_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "subscription_id": "88888888-8888-8888-8888-888888888888",
+      "resource_group": null,
+      "registration_definition_id": null,
+      "registration_assignment_id": null,
+      "status": "error",
+      "bicep_template_path": "./bicep_output/lighthouse-delegation-delta-corp-20251209.bicep",
+      "error_message": "Authentication failed: invalid credentials"
+    }
+  ]
+}
