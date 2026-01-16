@@ -13,7 +13,7 @@ Public API:
 
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ...db.connection_manager import ConnectionManager
 
@@ -43,9 +43,9 @@ class JobStorage:
         self,
         job_id: str,
         operation_type: str,
-        params: Dict,
+        params: Dict[str, Any],
         user_id: Optional[str] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """
         Create a new job record in Neo4j.
 
@@ -101,8 +101,8 @@ class JobStorage:
         job_id: str,
         status: str,
         error: Optional[str] = None,
-        result: Optional[Dict] = None,
-    ) -> Dict:
+        result: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Update job status.
 
@@ -257,7 +257,7 @@ class JobStorage:
                 return True
             return False
 
-    def _format_job(self, job: Dict) -> Dict:
+    def _format_job(self, job: Dict[str, Any]) -> Dict[str, Any]:
         """
         Format job record for API response.
 

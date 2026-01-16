@@ -12,7 +12,7 @@ Endpoints:
     GET /api/v1/operations/{job_id}/download - Download results
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse
@@ -87,7 +87,7 @@ async def cancel_operation(
     request: Request,
     job_id: str,
     job_storage: JobStorage = Depends(get_job_storage),
-) -> dict:
+) -> Dict[str, Any]:
     """
     Cancel a running operation.
 

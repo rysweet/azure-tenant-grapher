@@ -56,7 +56,7 @@ class RemoteProgressDisplay:
         if not self.show_progress:
             return
 
-        self._progress = Progress(
+        progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
@@ -64,8 +64,9 @@ class RemoteProgressDisplay:
             console=self.console,
         )
 
-        self._progress.start()
-        self._task_id = self._progress.add_task(description, total=100)
+        progress.start()
+        self._progress = progress
+        self._task_id = progress.add_task(description, total=100)
 
     def update(self, progress: float, message: str) -> None:
         """
