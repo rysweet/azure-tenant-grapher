@@ -12,9 +12,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from azure.identity import ClientSecretCredential  # type: ignore[import-untyped]
-from msgraph.graph_service_client import (
-    GraphServiceClient,  # type: ignore[import-untyped]
-)
+
+# Microsoft Graph is optional - only needed for cross-tenant identity mapping
+try:
+    from msgraph import GraphServiceClient  # type: ignore[import-untyped]
+    MSGRAPH_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    # msgraph-sdk may not be available or import path changed
+    # Cross-tenant identity mapping will be disabled
+    GraphServiceClient = None  # type: ignore[assignment,misc]
+    MSGRAPH_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +42,12 @@ class AADGraphService:
             client_id: Optional client ID (defaults to AZURE_CLIENT_ID env var)
             client_secret: Optional client secret (defaults to AZURE_CLIENT_SECRET env var)
         """
+        if not MSGRAPH_AVAILABLE:
+            raise ImportError(
+                "Microsoft Graph SDK not available. Cross-tenant identity mapping requires "
+                "msgraph-sdk package. Install with: pip install msgraph-sdk"
+            )
+
         self.tenant_id = tenant_id
 
         # Get credentials from parameters or environment
