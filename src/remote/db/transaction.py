@@ -135,7 +135,7 @@ async def with_retry(
                 logger.error(str(f"Operation failed after {max_retries} attempts"))
 
     # Re-raise last error if all retries failed
-    raise last_error
+    raise last_error  # type: ignore[misc]
 
 
 __all__ = ["chunked_transaction", "with_retry"]

@@ -217,7 +217,7 @@ class LayerAwareQueryService:
         resources = []
 
         with self.session_manager.session() as session:
-            result = session.run(query, params)
+            result = session.run(query, params)  # type: ignore[arg-type]
 
             for record in result:
                 resources.append(dict(record["props"]))
@@ -288,7 +288,7 @@ class LayerAwareQueryService:
 
         with self.session_manager.session() as session:
             result = session.run(
-                query,
+                query,  # type: ignore[arg-type]
                 {
                     "start_resource_id": start_resource_id,
                     "layer_id": effective_layer_id,
@@ -386,7 +386,7 @@ class LayerAwareQueryService:
         """
 
         with self.session_manager.session() as session:
-            result = session.run(query, params)
+            result = session.run(query, params)  # type: ignore[arg-type]
             record = result.single()
 
             return record["count"] if record else 0
@@ -427,7 +427,7 @@ class LayerAwareQueryService:
                 """,
                 {"layer_id": effective_layer_id},
             )
-            stats["total_nodes"] = result.single()["count"]
+            stats["total_nodes"] = result.single()["count"]  # type: ignore[misc]
 
             # Total relationships
             result = session.run(
@@ -441,7 +441,7 @@ class LayerAwareQueryService:
                 """,
                 {"layer_id": effective_layer_id},
             )
-            stats["total_relationships"] = result.single()["count"]
+            stats["total_relationships"] = result.single()["count"]  # type: ignore[misc]
 
             # Resource type distribution
             result = session.run(
@@ -545,7 +545,7 @@ class LayerAwareQueryService:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"layer_id": effective_layer_id})
+                result = session.run(query, {"layer_id": effective_layer_id})  # type: ignore[arg-type]
 
                 for record in result:
                     components.append(record["resources"])
@@ -564,7 +564,7 @@ class LayerAwareQueryService:
                     """,
                     {"layer_id": effective_layer_id},
                 )
-                all_ids = set(result.single()["ids"])
+                all_ids = set(result.single()["ids"])  # type: ignore[misc]
 
                 visited = set()
 
@@ -595,7 +595,7 @@ class LayerAwareQueryService:
                             },
                         )
 
-                        neighbor_ids = result.single()["neighbor_ids"]
+                        neighbor_ids = result.single()["neighbor_ids"]  # type: ignore[misc]
 
                         for neighbor_id in neighbor_ids:
                             if neighbor_id not in visited:
@@ -657,4 +657,4 @@ class LayerAwareQueryService:
                 result_map[rid] = dict(props) if props else None
 
             # Return in order
-            return [result_map.get(rid) for rid in resource_ids]
+            return [result_map.get(rid) for rid in resource_ids]  # type: ignore[misc]

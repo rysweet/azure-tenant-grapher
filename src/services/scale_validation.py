@@ -60,7 +60,7 @@ class ScaleValidation:
         """
 
         try:
-            result = session.run(query, {"operation_id": operation_id})
+            result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
             record = result.single()
             contaminated_count = record["contaminated_count"] if record else 0
 
@@ -125,7 +125,7 @@ class ScaleValidation:
         """
 
         try:
-            result = session.run(query, {"operation_id": operation_id})
+            result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
             record = result.single()
             invalid_links = record["invalid_links"] if record else 0
 
@@ -202,7 +202,7 @@ class ScaleValidation:
         """
 
         try:
-            result = session.run(query, {"operation_id": operation_id})
+            result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
             record = result.single()
 
             if not record:

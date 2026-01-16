@@ -21,9 +21,11 @@ import threading
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
-from azure.core.credentials import TokenCredential
-from azure.core.exceptions import ClientAuthenticationError
-from azure.identity import (
+from azure.core.credentials import TokenCredential  # type: ignore[import-untyped]
+from azure.core.exceptions import (
+    ClientAuthenticationError,  # type: ignore[import-untyped]
+)
+from azure.identity import (  # type: ignore[import-untyped]
     ClientSecretCredential,
     DefaultAzureCredential,
     InteractiveBrowserCredential,
@@ -229,9 +231,9 @@ class CredentialProvider:
         """
         self.logger.info("Using explicit service principal credentials")
         credential = ClientSecretCredential(
-            tenant_id=self.config.tenant_id,
-            client_id=self.config.client_id,
-            client_secret=self.config.client_secret,
+            tenant_id=self.config.tenant_id,  # type: ignore[arg-type]
+            client_id=self.config.client_id,  # type: ignore[arg-type]
+            client_secret=self.config.client_secret,  # type: ignore[arg-type]
         )
         return credential, "explicit"
 
@@ -253,9 +255,9 @@ class CredentialProvider:
         """
         self.logger.info("Using credentials from environment variables")
         credential = ClientSecretCredential(
-            tenant_id=os.getenv("AZURE_TENANT_ID"),
-            client_id=os.getenv("AZURE_CLIENT_ID"),
-            client_secret=os.getenv("AZURE_CLIENT_SECRET"),
+            tenant_id=os.getenv("AZURE_TENANT_ID"),  # type: ignore[arg-type]
+            client_id=os.getenv("AZURE_CLIENT_ID"),  # type: ignore[arg-type]
+            client_secret=os.getenv("AZURE_CLIENT_SECRET"),  # type: ignore[arg-type]
         )
         return credential, "environment"
 

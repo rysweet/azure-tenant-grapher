@@ -15,7 +15,7 @@ Public API:
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from .process_manager import ProcessManager
 from .state_manager import StateManager

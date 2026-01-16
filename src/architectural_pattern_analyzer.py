@@ -121,8 +121,8 @@ class ArchitecturalPatternAnalyzer:
                 self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
             )
             # Test the connection
-            with self.driver.session() as session:
-                session.run("RETURN 1")
+            with self.driver.session() as session:  # type: ignore[union-attr]
+                session.run("RETURN 1")  # type: ignore[arg-type]
             logger.info(str(f"Connected to Neo4j at {self.neo4j_uri}"))
         except Exception as e:
             logger.exception(f"Failed to connect to Neo4j: {e}")
@@ -430,10 +430,13 @@ class ArchitecturalPatternAnalyzer:
             List of paths to generated visualization files
         """
         try:
-            import matplotlib.pyplot as plt
-            import numpy as np
-            from matplotlib.patches import Patch, Polygon
-            from scipy.spatial import ConvexHull
+            import matplotlib.pyplot as plt  # type: ignore[import-untyped]
+            import numpy as np  # type: ignore[import-untyped]
+            from matplotlib.patches import (  # type: ignore[import-untyped]
+                Patch,
+                Polygon,
+            )
+            from scipy.spatial import ConvexHull  # type: ignore[import-untyped]
         except ImportError as e:
             logger.error(
                 f"Missing visualization dependencies: {e}. "
@@ -703,7 +706,7 @@ class ArchitecturalPatternAnalyzer:
                     "connection_count": graph.nodes[node].get("count", 0),
                     "in_degree": graph.in_degree(node),
                     "out_degree": graph.out_degree(node),
-                    "total_degree": graph.degree(node),
+                    "total_degree": graph.degree(node),  # type: ignore[misc]
                     "outgoing_edges": outgoing_edges,
                     "incoming_edges": incoming_edges,
                     "connected_to": list(set(out_neighbors + in_neighbors)),
@@ -898,7 +901,7 @@ class ArchitecturalPatternAnalyzer:
         orphaned_subgraph = graph.subgraph(orphaned_types).copy()
 
         # Find connected components (clusters) in the orphaned subgraph
-        weakly_connected = list(nx.weakly_connected_components(orphaned_subgraph))
+        weakly_connected = list(nx.weakly_connected_components(orphaned_subgraph))  # type: ignore[type-var]
 
         for _idx, component in enumerate(weakly_connected):
             if len(component) >= min_cluster_size:
@@ -908,8 +911,8 @@ class ArchitecturalPatternAnalyzer:
                 internal_edges = []
                 for u in component_list:
                     for v in component_list:
-                        if u != v and graph.has_edge(u, v):
-                            edges = graph.get_edge_data(u, v)
+                        if u != v and graph.has_edge(u, v):  # type: ignore[arg-type]
+                            edges = graph.get_edge_data(u, v)  # type: ignore[arg-type]
                             if edges:
                                 for _key, data in edges.items():
                                     internal_edges.append(
@@ -939,15 +942,18 @@ class ArchitecturalPatternAnalyzer:
                 # Fetch documentation for cluster members
                 documented_resources = []
                 for resource_type in component_list:
-                    doc = self.fetch_microsoft_learn_documentation(resource_type)
+                    doc = self.fetch_microsoft_learn_documentation(resource_type)  # type: ignore[arg-type]
                     documented_resources.append(doc)
 
                 # Generate pattern suggestion
-                pattern_name = self._generate_pattern_name(
-                    component_list, documented_resources
+                pattern_name = self._generate_pattern_name(  # type: ignore[arg-type]
+                    component_list,  # type: ignore
+                    documented_resources,
                 )
-                pattern_description = self._generate_pattern_description(
-                    component_list, documented_resources, external_connections
+                pattern_description = self._generate_pattern_description(  # type: ignore[arg-type]
+                    component_list,  # type: ignore
+                    documented_resources,
+                    external_connections,
                 )
 
                 suggested_patterns.append(

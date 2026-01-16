@@ -37,7 +37,7 @@ Issue #508: MCP Server and Visualization Export Integration
 import statistics
 from typing import Any, Dict, List
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 from mcp.server import Server
 from mcp.types import TextContent, Tool
 

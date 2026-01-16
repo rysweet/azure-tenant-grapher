@@ -125,10 +125,10 @@ def wipe(force: bool) -> None:
 
         with driver.session() as session:
             # Delete all nodes and relationships
-            session.run("MATCH (n) DETACH DELETE n")
+            session.run("MATCH (n) DETACH DELETE n")  # type: ignore[arg-type]
 
             # Verify the database is empty
-            result = session.run("MATCH (n) RETURN count(n) as count")
+            result = session.run("MATCH (n) RETURN count(n) as count")  # type: ignore[arg-type]
             record = result.single()
             count = record["count"] if record else 0
 

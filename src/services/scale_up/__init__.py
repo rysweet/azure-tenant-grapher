@@ -675,7 +675,7 @@ class ScaleUpService(BaseScaleService):
             """
 
             with self.session_manager.session() as session:
-                result = session.run(query, {"operation_id": operation_id})
+                result = session.run(query, {"operation_id": operation_id})  # type: ignore[arg-type]
                 record = result.single()
                 deleted_count = record["deleted_count"] if record else 0
 

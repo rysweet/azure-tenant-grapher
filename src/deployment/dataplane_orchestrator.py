@@ -5,7 +5,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.identity import (  # type: ignore[import-untyped]
+    ClientSecretCredential,
+    DefaultAzureCredential,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,14 +81,22 @@ def orchestrate_dataplane_replication(
 
     # Import plugins
     try:
-        from src.iac.data_plane_plugins.acr_plugin import ContainerRegistryPlugin
+        from src.iac.data_plane_plugins.acr_plugin import (
+            ContainerRegistryPlugin,  # type: ignore[import-untyped]
+        )
         from src.iac.data_plane_plugins.cosmosdb_plugin import CosmosDBPlugin
-        from src.iac.data_plane_plugins.vm_plugin import VMPlugin
-        from src.iac.plugins.apim_plugin import APIManagementPlugin
+        from src.iac.data_plane_plugins.vm_plugin import (
+            VMPlugin,  # type: ignore[import-untyped]
+        )
+        from src.iac.plugins.apim_plugin import (
+            APIManagementPlugin,  # type: ignore[misc]
+        )
         from src.iac.plugins.appservice_plugin import AppServicePlugin
         from src.iac.plugins.keyvault_plugin import KeyVaultPlugin
         from src.iac.plugins.sql_plugin import SQLDatabasePlugin
-        from src.iac.plugins.storage_plugin import StorageAccountPlugin
+        from src.iac.plugins.storage_plugin import (
+            StorageAccountPlugin,  # type: ignore[import-untyped]
+        )
     except ImportError as e:
         logger.error(str(f"Failed to import data plane plugins: {e}"))
         return {
@@ -100,11 +111,11 @@ def orchestrate_dataplane_replication(
     plugins = [
         ("VM", VMPlugin(credential)),
         ("ACR", ContainerRegistryPlugin(credential)),
-        ("CosmosDB", CosmosDBPlugin(credential)),
+        ("CosmosDB", CosmosDBPlugin(credential)),  # type: ignore[arg-type]
         ("Storage", StorageAccountPlugin(credential)),
-        ("KeyVault", KeyVaultPlugin(credential)),
-        ("SQL", SQLDatabasePlugin(credential)),
-        ("AppService", AppServicePlugin(credential)),
+        ("KeyVault", KeyVaultPlugin(credential)),  # type: ignore[arg-type]
+        ("SQL", SQLDatabasePlugin(credential)),  # type: ignore[arg-type]
+        ("AppService", AppServicePlugin(credential)),  # type: ignore[arg-type]
         ("APIManagement", APIManagementPlugin(credential)),
     ]
 

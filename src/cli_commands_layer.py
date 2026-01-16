@@ -150,7 +150,7 @@ async def layer_list_command_handler(
         layers = await service.list_layers(
             tenant_id=tenant_id,
             include_inactive=include_inactive,
-            layer_type=layer_type_enum,
+            layer_type=layer_type_enum,  # type: ignore[arg-type]
             sort_by=sort_by,
             ascending=ascending,
         )
@@ -510,7 +510,7 @@ async def layer_create_command_handler(
             description=description,
             created_by="cli",
             parent_layer_id=parent_layer,
-            layer_type=layer_type_enum,
+            layer_type=layer_type_enum,  # type: ignore[arg-type]
             tenant_id=tenant_id,
             metadata={},
             make_active=make_active,

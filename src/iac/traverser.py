@@ -153,7 +153,7 @@ class GraphTraverser:
         try:
             with self.driver.session() as session:
                 # Issue #524: Pass parameters to prevent Cypher injection
-                result = session.run(cast("LiteralString", query), parameters)
+                result = session.run(cast("LiteralString", query), parameters)  # type: ignore[arg-type]
                 # Check if result is empty (consume iterator)
                 result_list = list(result)
                 if not result_list and not filter_cypher:
@@ -191,7 +191,7 @@ class GraphTraverser:
                             "No abstracted :Resource nodes found, running fallback query for non-Original nodes with 'type' property"
                         )
                     # Fallback queries don't use parameters (no user input)
-                    result = session.run(cast("LiteralString", fallback_query))
+                    result = session.run(cast("LiteralString", fallback_query))  # type: ignore[arg-type]
                     result_list = list(result)
                 process_result(result_list, resources, relationships)
                 logger.info(

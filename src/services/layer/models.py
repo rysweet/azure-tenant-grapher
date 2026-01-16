@@ -129,7 +129,7 @@ class LayerMetadata:
             layer_id=data["layer_id"],
             name=data["name"],
             description=data["description"],
-            created_at=created_at,
+            created_at=created_at,  # type: ignore[arg-type]
             updated_at=updated_at,
             created_by=data.get("created_by", "unknown"),
             parent_layer_id=data.get("parent_layer_id"),

@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
 from neo4j import AsyncDriver, AsyncGraphDatabase
 
 from src.config_manager import AzureTenantGrapherConfig

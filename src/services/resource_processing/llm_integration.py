@@ -6,7 +6,7 @@ This module handles LLM description generation for resources and groups.
 
 from typing import Any, Dict, List, Optional, Tuple
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from src.llm_descriptions import (
     AzureLLMDescriptionGenerator,

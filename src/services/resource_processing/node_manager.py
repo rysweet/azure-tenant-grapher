@@ -10,7 +10,7 @@ import json
 import re
 from typing import Any, Dict, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from src.exceptions import ResourceDataValidationError, wrap_neo4j_exception
 
@@ -364,7 +364,9 @@ class NodeManager:
         # Abstracted name like "storagea1b2c3d4" is globally unique
         if "name" in abstracted_props:
             abstracted_props["original_name"] = abstracted_props["name"]
-        abstracted_props["name"] = abstracted_id  # Use abstracted ID as the deployable name
+        abstracted_props["name"] = (
+            abstracted_id  # Use abstracted ID as the deployable name
+        )
         abstracted_props["id"] = abstracted_id
 
         # Store reference to original ID

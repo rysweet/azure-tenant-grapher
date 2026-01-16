@@ -16,12 +16,17 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.resourcegraph import ResourceGraphClient
-from azure.mgmt.resourcegraph.models import QueryRequest, QueryRequestOptions
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.mgmt.resourcegraph import ResourceGraphClient  # type: ignore[import-untyped]
+from azure.mgmt.resourcegraph.models import (  # type: ignore[import-untyped]
+    QueryRequest,
+    QueryRequestOptions,
+)
 
 try:
-    from azure.mgmt.monitor import MonitorManagementClient
+    from azure.mgmt.monitor import (
+        MonitorManagementClient,  # type: ignore[import-untyped]
+    )
 
     MonitorClient = MonitorManagementClient  # type: ignore[misc]
 except ImportError:
@@ -218,7 +223,7 @@ class ChangeFeedIngestionService:
                 )
             except RuntimeError:
                 # Already in event loop (e.g., in test), use create_task
-                import nest_asyncio
+                import nest_asyncio  # type: ignore[import-untyped]
 
                 nest_asyncio.apply()
                 asyncio.get_event_loop().create_task(

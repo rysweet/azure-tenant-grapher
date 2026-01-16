@@ -177,8 +177,8 @@ class MHRWSampler(BaseSampler):
             candidate = random.choice(neighbors)
 
             # Metropolis-Hastings acceptance probability
-            current_degree = graph.degree(current)
-            candidate_degree = graph.degree(candidate)
+            current_degree = graph.degree(current)  # type: ignore[misc]
+            candidate_degree = graph.degree(candidate)  # type: ignore[misc]
 
             # Accept with probability min(1, degree(current) / degree(candidate))
             acceptance_prob = min(1.0, current_degree / candidate_degree)

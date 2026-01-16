@@ -9,7 +9,7 @@ Uses dual-graph architecture for all resources.
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 
 from src.llm_descriptions import AzureLLMDescriptionGenerator
 
@@ -380,7 +380,7 @@ class ResourceProcessor:
                 if result:
                     pass
                 else:
-                    attempt = resource_attempts.get(rid, 1)
+                    attempt = resource_attempts.get(rid, 1)  # type: ignore[misc] # type: ignore[arg-type]
                     # Re-obtain the resource object for retry or poison handling
                     resource = None
                     for queue in (main_queue, retry_queue):
@@ -401,7 +401,7 @@ class ResourceProcessor:
                             f"Retry in {delay}s (attempt {attempt + 1}/{self.max_retries})."
                         )
                         retry_queue.append((resource, attempt + 1, time.time() + delay))
-                        resource_attempts[rid] = attempt + 1
+                        resource_attempts[rid] = attempt + 1  # type: ignore[arg-type]
                     else:
                         poison_list.append(resource)
                         logger.error(str(f"Poisoned after {attempt} attempts: {rid}"))

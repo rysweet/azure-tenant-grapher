@@ -290,7 +290,7 @@ class DeploymentDashboard:
         """
         import sys
 
-        import readchar
+        import readchar  # type: ignore[import-untyped]
 
         stop_event = threading.Event()
         self._should_exit = False

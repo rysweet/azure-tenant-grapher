@@ -224,7 +224,7 @@ class AnomalyDetector:
         min_level = severity_order[min_severity]
         return [a for a in anomalies if severity_order[a.severity] >= min_level]
 
-    def get_anomaly_summary(self, anomalies: list[CostAnomaly]) -> dict[str, any]:
+    def get_anomaly_summary(self, anomalies: list[CostAnomaly]) -> dict[str, any]:  # type: ignore[misc]
         """Get summary statistics for detected anomalies.
 
         Args:

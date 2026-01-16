@@ -86,11 +86,20 @@ class KeyVaultPlugin(DataPlanePlugin):
 
         try:
             # Import Azure SDK components
-            from azure.core.exceptions import AzureError, HttpResponseError
-            from azure.identity import DefaultAzureCredential
-            from azure.keyvault.certificates import CertificateClient
-            from azure.keyvault.keys import KeyClient
-            from azure.keyvault.secrets import SecretClient
+            from azure.core.exceptions import (  # type: ignore[import-untyped]
+                AzureError,
+                HttpResponseError,
+            )
+            from azure.identity import (
+                DefaultAzureCredential,  # type: ignore[import-untyped]
+            )
+            from azure.keyvault.certificates import (
+                CertificateClient,  # type: ignore[import-untyped]
+            )
+            from azure.keyvault.keys import KeyClient  # type: ignore[import-untyped]
+            from azure.keyvault.secrets import (
+                SecretClient,  # type: ignore[import-untyped]
+            )
 
             # Parse vault URI from properties
             properties = resource.get("properties", {})
@@ -693,9 +702,14 @@ class KeyVaultPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.keyvault.secrets import SecretClient
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.keyvault.secrets import SecretClient  # type: ignore[import-untyped]
 
         # Get credentials
         if self.credential_provider:
@@ -798,9 +812,14 @@ class KeyVaultPlugin(DataPlanePlugin):
         Returns:
             ReplicationResult
         """
-        from azure.core.exceptions import AzureError, HttpResponseError
-        from azure.identity import DefaultAzureCredential
-        from azure.keyvault.secrets import SecretClient
+        from azure.core.exceptions import (  # type: ignore[import-untyped]
+            AzureError,
+            HttpResponseError,
+        )
+        from azure.identity import (
+            DefaultAzureCredential,  # type: ignore[import-untyped]
+        )
+        from azure.keyvault.secrets import SecretClient  # type: ignore[import-untyped]
 
         # Get credentials
         if self.credential_provider:

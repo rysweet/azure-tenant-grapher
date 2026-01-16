@@ -12,14 +12,14 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from azure.core.exceptions import (
+from azure.core.exceptions import (  # type: ignore[import-untyped]
     AzureError,
     HttpResponseError,
     ResourceNotFoundError,
     ServiceRequestError,
 )
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.resource import ResourceManagementClient
+from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
+from azure.mgmt.resource import ResourceManagementClient  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,9 @@ class ResourceExistenceValidator:
             # Use explicit SP from environment (same as deployment uses)
             import os
 
-            from azure.identity import ClientSecretCredential
+            from azure.identity import (
+                ClientSecretCredential,  # type: ignore[import-untyped]
+            )
 
             client_id = os.getenv("AZURE_TENANT_2_CLIENT_ID") or os.getenv(
                 "AZURE_CLIENT_ID"

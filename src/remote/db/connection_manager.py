@@ -84,7 +84,7 @@ class ConnectionManager:
         await manager.configure("dev", config)
 
         async with await manager.get_session("dev") as session:
-            result = await session.run("MATCH (n) RETURN count(n)")
+            result = await session.run("MATCH (n) RETURN count(n)")  # type: ignore[arg-type]
 
     Thread Safety:
         Uses asyncio.Lock for thread-safe singleton and driver management.
@@ -105,7 +105,7 @@ class ConnectionManager:
         if self._initialized:
             return
 
-        self._drivers: Dict[str, any] = {}
+        self._drivers: Dict[str, any] = {}  # type: ignore[misc]
         self._configs: Dict[str, Neo4jConnectionConfig] = {}
         self._initialized = True
         logger.info("ConnectionManager initialized")

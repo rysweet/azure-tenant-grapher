@@ -11,8 +11,10 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from azure.identity import ClientSecretCredential
-from msgraph.graph_service_client import GraphServiceClient
+from azure.identity import ClientSecretCredential  # type: ignore[import-untyped]
+from msgraph.graph_service_client import (
+    GraphServiceClient,  # type: ignore[import-untyped]
+)
 
 logger = logging.getLogger(__name__)
 

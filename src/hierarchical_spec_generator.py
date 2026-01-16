@@ -99,7 +99,7 @@ class HierarchicalSpecGenerator(TenantSpecificationGenerator):
         }
 
         with driver.session() as session:
-            for record in session.run(query):
+            for record in session.run(query):  # type: ignore[arg-type]
                 node = record["r"]
                 resource = dict(node)
 

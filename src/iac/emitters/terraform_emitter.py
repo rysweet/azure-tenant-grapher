@@ -1602,7 +1602,7 @@ class TerraformEmitter(IaCEmitter):
                     azure_id = self._resource_id_builder.build(
                         tf_resource_type,
                         resource_config,
-                        subscription_id,
+                        subscription_id,  # type: ignore[arg-type]
                         original_id_map=original_id_map,
                         source_subscription_id=self.source_subscription_id,
                     )
@@ -2243,7 +2243,7 @@ class TerraformEmitter(IaCEmitter):
             for vnet_cidr in vnet_cidrs:
                 try:
                     vnet_network = ipaddress.ip_network(vnet_cidr, strict=False)
-                    if subnet_network.subnet_of(vnet_network):
+                    if subnet_network.subnet_of(vnet_network):  # type: ignore[arg-type] # type: ignore[arg-type]
                         return True
                 except ValueError:
                     # Invalid VNet CIDR, skip it
@@ -2309,7 +2309,7 @@ class TerraformEmitter(IaCEmitter):
         ).lower()
 
         # Check if workspace exists in graph resources
-        for resource in self._graph.resources:
+        for resource in self._graph.resources:  # type: ignore[union-attr]
             resource_type = resource.get("type", "")
             # Check for Log Analytics workspace types
             if resource_type.lower() in [
@@ -2564,7 +2564,7 @@ class TerraformEmitter(IaCEmitter):
                 }
             )
             # Bug #29: Return None to signal parent resource should be skipped
-            return None
+            return None  # type: ignore[misc]
 
         logger.debug(
             f"Resolved subnet reference for '{resource_name}': "

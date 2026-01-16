@@ -14,7 +14,7 @@ Philosophy:
 from datetime import date, timedelta
 from typing import Optional
 
-from azure.core.credentials import TokenCredential
+from azure.core.credentials import TokenCredential  # type: ignore[import-untyped]
 from neo4j import AsyncDriver
 
 from ..models.cost_models import (

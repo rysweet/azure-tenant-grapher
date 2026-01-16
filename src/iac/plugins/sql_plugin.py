@@ -343,7 +343,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             if tables:
                 code_lines.append("    -- Tables")
                 for table in tables:
-                    create_stmt = table.metadata.get("create_statement", "")
+                    create_stmt = table.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         code_lines.append(f"    {create_stmt}")
                         code_lines.append("    GO")
@@ -353,7 +353,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             if indexes:
                 code_lines.append("    -- Indexes")
                 for index in indexes:
-                    create_stmt = index.metadata.get("create_statement", "")
+                    create_stmt = index.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         code_lines.append(f"    {create_stmt}")
                         code_lines.append("    GO")
@@ -363,7 +363,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             if foreign_keys:
                 code_lines.append("    -- Foreign Keys")
                 for fk in foreign_keys:
-                    create_stmt = fk.metadata.get("create_statement", "")
+                    create_stmt = fk.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         code_lines.append(f"    {create_stmt}")
                         code_lines.append("    GO")
@@ -373,7 +373,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             if views:
                 code_lines.append("    -- Views")
                 for view in views:
-                    definition = view.metadata.get("definition", "")
+                    definition = view.metadata.get("definition", "")  # type: ignore[union-attr]
                     if definition:
                         code_lines.append(f"    {definition}")
                         code_lines.append("    GO")
@@ -383,7 +383,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             if stored_procedures:
                 code_lines.append("    -- Stored Procedures")
                 for sp in stored_procedures:
-                    definition = sp.metadata.get("definition", "")
+                    definition = sp.metadata.get("definition", "")  # type: ignore[union-attr]
                     if definition:
                         code_lines.append(f"    {definition}")
                         code_lines.append("    GO")
@@ -578,7 +578,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             ReplicationResult
         """
         try:
-            import pyodbc  # noqa: F401
+            import pyodbc  # noqa: F401 # type: ignore[import-untyped]
         except ImportError:
             return ReplicationResult(
                 success=False,
@@ -638,7 +638,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Tables
             for item in tables:
                 try:
-                    create_stmt = item.metadata.get("create_statement", "")
+                    create_stmt = item.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         cursor.execute(create_stmt)
                         conn.commit()
@@ -659,7 +659,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Indexes
             for item in indexes:
                 try:
-                    create_stmt = item.metadata.get("create_statement", "")
+                    create_stmt = item.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         cursor.execute(create_stmt)
                         conn.commit()
@@ -680,7 +680,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Foreign keys
             for item in foreign_keys:
                 try:
-                    create_stmt = item.metadata.get("create_statement", "")
+                    create_stmt = item.metadata.get("create_statement", "")  # type: ignore[union-attr]
                     if create_stmt:
                         cursor.execute(create_stmt)
                         conn.commit()
@@ -700,7 +700,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Views
             for item in views:
                 try:
-                    definition = item.metadata.get("definition", "")
+                    definition = item.metadata.get("definition", "")  # type: ignore[union-attr]
                     if definition:
                         cursor.execute(definition)
                         conn.commit()
@@ -720,7 +720,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
             # Stored procedures
             for item in stored_procedures:
                 try:
-                    definition = item.metadata.get("definition", "")
+                    definition = item.metadata.get("definition", "")  # type: ignore[union-attr]
                     if definition:
                         cursor.execute(definition)
                         conn.commit()
@@ -902,7 +902,7 @@ class SQLDatabasePlugin(DataPlanePlugin):
         Raises:
             Exception: If connection fails
         """
-        import pyodbc
+        import pyodbc  # type: ignore[import-untyped]
 
         # Get credentials
         if self.credential_provider:

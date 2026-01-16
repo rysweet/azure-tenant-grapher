@@ -350,7 +350,7 @@ class ResourceComparator:
 
         try:
             with self.session_manager.session() as session:
-                result = session.run(query, {"abstracted_id": abstracted_id})
+                result = session.run(query, {"abstracted_id": abstracted_id})  # type: ignore[arg-type]
                 record = result.single()
 
                 if record and record.get("original_id"):

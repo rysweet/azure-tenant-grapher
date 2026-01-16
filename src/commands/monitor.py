@@ -166,7 +166,7 @@ async def monitor_command_handler(
             )
             params = {"sub_id": subscription_id} if subscription_id else {}
             result = session.run(query_resources, params)
-            metrics["resources"] = result.single()["count"]
+            metrics["resources"] = result.single()["count"]  # type: ignore[misc]
 
             # Count relationships
             query_relationships = (
@@ -174,7 +174,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT rel) as count"
             )
             result = session.run(query_relationships, params)
-            metrics["relationships"] = result.single()["count"]
+            metrics["relationships"] = result.single()["count"]  # type: ignore[misc]
 
             # Count resource groups
             query_rgs = (
@@ -183,7 +183,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT r.resourceGroup) as count"
             )
             result = session.run(query_rgs, params)
-            metrics["resource_groups"] = result.single()["count"]
+            metrics["resource_groups"] = result.single()["count"]  # type: ignore[misc]
 
             # Count resource types
             query_types = (
@@ -191,7 +191,7 @@ async def monitor_command_handler(
                 "RETURN count(DISTINCT r.type) as count"
             )
             result = session.run(query_types, params)
-            metrics["resource_types"] = result.single()["count"]
+            metrics["resource_types"] = result.single()["count"]  # type: ignore[misc]
 
             return metrics
 

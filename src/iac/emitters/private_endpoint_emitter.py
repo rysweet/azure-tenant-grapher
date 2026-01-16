@@ -77,8 +77,8 @@ def sanitize_terraform_name(name: str) -> str:
 
 def emit_private_endpoint(
     resource: Dict[str, Any],
-    sanitize_name_fn: Optional[callable] = None,
-    extract_name_fn: Optional[callable] = None,
+    sanitize_name_fn: Optional[callable] = None,  # type: ignore[misc]
+    extract_name_fn: Optional[callable] = None,  # type: ignore[misc]
     available_subnets: Optional[set] = None,
     missing_references: Optional[List[Dict[str, str]]] = None,
     translator: Optional["PrivateEndpointTranslator"] = None,
@@ -261,8 +261,8 @@ def emit_private_dns_zone(resource: Dict[str, Any]) -> Dict[str, Any]:
 
 def emit_private_dns_zone_vnet_link(
     resource: Dict[str, Any],
-    sanitize_name_fn: Optional[callable] = None,
-    extract_name_fn: Optional[callable] = None,
+    sanitize_name_fn: Optional[callable] = None,  # type: ignore[misc]
+    extract_name_fn: Optional[callable] = None,  # type: ignore[misc]
     available_vnets: Optional[set] = None,
     available_dns_zones: Optional[set] = None,
     missing_references: Optional[List[Dict[str, str]]] = None,

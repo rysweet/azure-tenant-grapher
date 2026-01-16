@@ -68,14 +68,14 @@ async def list_operations(
 
     # Map to response models
     return [
-        JobStatusResponse(
+        JobStatusResponse(  # type: ignore[misc]
             job_id=job["id"],
-            operation_type=job["operation_type"],
+            operation_type=job["operation_type"],  # type: ignore[misc]
             status=JobStatus(job["status"]),
             created_at=job["created_at"],
-            updated_at=job["updated_at"],
+            updated_at=job["updated_at"],  # type: ignore[misc]
             error=job.get("error"),
-            result=job.get("result"),
+            result=job.get("result"),  # type: ignore[misc]
         )
         for job in jobs
     ]

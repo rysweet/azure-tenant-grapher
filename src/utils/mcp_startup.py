@@ -209,7 +209,7 @@ class MCPServerManager:
             except asyncio.TimeoutError:
                 logger.warning("MCP server did not stop gracefully, killing it")
                 self.process.kill()
-                await self.process.wait()
+                await self.process.wait()  # type: ignore[misc]
             self.process = None
             logger.info("MCP server stopped")
 

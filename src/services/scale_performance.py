@@ -442,7 +442,7 @@ class QueryOptimizer:
 
         Example:
             >>> query = QueryOptimizer.get_unwind_batch_query()
-            >>> session.run(query, {"batch": resource_list})
+            >>> session.run(query, {"batch": resource_list})  # type: ignore[arg-type]
         """
         return f"""
         UNWIND ${batch_param} as item
@@ -469,7 +469,7 @@ class QueryOptimizer:
 
         Example:
             >>> query = QueryOptimizer.get_batch_match_query()
-            >>> result = session.run(query, {"ids": ["id1", "id2", "id3"]})
+            >>> result = session.run(query, {"ids": ["id1", "id2", "id3"]})  # type: ignore[arg-type]
         """
         return f"""
         MATCH (n:{node_label})

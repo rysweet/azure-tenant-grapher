@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
-import numpy as np
+import numpy as np  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

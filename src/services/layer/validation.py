@@ -83,8 +83,8 @@ class LayerValidationOperations:
         """
         # Validate both layers exist
         if self.crud_operations:
-            layer_a = await self.crud_operations.get_layer(layer_a_id)
-            layer_b = await self.crud_operations.get_layer(layer_b_id)
+            layer_a = await self.crud_operations.get_layer(layer_a_id)  # type: ignore[attr-defined]
+            layer_b = await self.crud_operations.get_layer(layer_b_id)  # type: ignore[attr-defined]
 
             if not layer_a:
                 raise LayerNotFoundError(layer_a_id)
@@ -102,8 +102,8 @@ class LayerValidationOperations:
                 {"layer_id": layer_a_id},
             )
             nodes_a_record = nodes_a_result.single()
-            nodes_a_ids = set(nodes_a_record["ids"])
-            nodes_a_count = nodes_a_record["count"]
+            nodes_a_ids = set(nodes_a_record["ids"])  # type: ignore[misc]
+            nodes_a_count = nodes_a_record["count"]  # type: ignore[misc]
 
             nodes_b_result = session.run(
                 """
@@ -114,8 +114,8 @@ class LayerValidationOperations:
                 {"layer_id": layer_b_id},
             )
             nodes_b_record = nodes_b_result.single()
-            nodes_b_ids = set(nodes_b_record["ids"])
-            nodes_b_count = nodes_b_record["count"]
+            nodes_b_ids = set(nodes_b_record["ids"])  # type: ignore[misc]
+            nodes_b_count = nodes_b_record["count"]  # type: ignore[misc]
 
             # Calculate differences
             added_ids = nodes_b_ids - nodes_a_ids
@@ -123,7 +123,7 @@ class LayerValidationOperations:
             common_ids = nodes_a_ids & nodes_b_ids
 
             # Count relationships
-            rels_a = session.run(
+            rels_a = session.run(  # type: ignore[misc]
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
                 WHERE NOT r1:Original AND NOT r2:Original
@@ -135,7 +135,7 @@ class LayerValidationOperations:
                 {"layer_id": layer_a_id},
             ).single()["count"]
 
-            rels_b = session.run(
+            rels_b = session.run(  # type: ignore[misc]
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
                 WHERE NOT r1:Original AND NOT r2:Original
@@ -191,7 +191,7 @@ class LayerValidationOperations:
         # Check if layer exists
         layer = None
         if self.crud_operations:
-            layer = await self.crud_operations.get_layer(layer_id)
+            layer = await self.crud_operations.get_layer(layer_id)  # type: ignore[attr-defined]
             if not layer:
                 raise LayerNotFoundError(layer_id)
 
@@ -203,7 +203,7 @@ class LayerValidationOperations:
 
         with self.session_manager.session() as session:
             # Check 1: All Resource nodes have SCAN_SOURCE_NODE links
-            missing_scan_source = session.run(
+            missing_scan_source = session.run(  # type: ignore[misc]
                 """
                 MATCH (r:Resource)
                 WHERE NOT r:Original AND r.layer_id = $layer_id
@@ -222,7 +222,7 @@ class LayerValidationOperations:
                 report.missing_scan_source_nodes = missing_scan_source
 
             # Check 2: No cross-layer relationships
-            cross_layer_rels = session.run(
+            cross_layer_rels = session.run(  # type: ignore[misc]
                 """
                 MATCH (r1:Resource)-[rel]->(r2:Resource)
                 WHERE NOT r1:Original AND NOT r2:Original
@@ -262,7 +262,7 @@ class LayerValidationOperations:
 
             # Check 3: Node count matches metadata (only if we have layer metadata)
             if layer:
-                actual_node_count = session.run(
+                actual_node_count = session.run(  # type: ignore[misc]
                     """
                     MATCH (r:Resource)
                     WHERE NOT r:Original AND r.layer_id = $layer_id
@@ -279,7 +279,7 @@ class LayerValidationOperations:
                     )
 
                     if fix_issues and self.stats_operations:
-                        await self.stats_operations.refresh_layer_stats(layer_id)
+                        await self.stats_operations.refresh_layer_stats(layer_id)  # type: ignore[attr-defined]
                         report.add_warning(
                             "NODE_COUNT_FIXED", "Updated metadata counts"
                         )

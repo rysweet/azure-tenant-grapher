@@ -99,7 +99,7 @@ def require_api_key(func: Callable[..., Any]) -> Callable[..., Any]:
                 raise AuthenticationError("Invalid API key")
 
         # Set auth context on request
-        request.auth_context = {
+        request.auth_context = {  # type: ignore[misc]
             "environment": validation["environment"],
             "client_id": validation["client_id"],
         }

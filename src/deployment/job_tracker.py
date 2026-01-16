@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-import structlog
+import structlog  # type: ignore[import-untyped]
 from neo4j.exceptions import Neo4jError
 
 from src.exceptions import Neo4jQueryError, wrap_neo4j_exception
@@ -264,7 +264,7 @@ class DeploymentJobTracker:
                 MATCH (job:DeploymentJob {job_id: $job_id})
                 RETURN job
                 """
-                result = session.run(query, parameters={"job_id": job_id})
+                result = session.run(query, parameters={"job_id": job_id})  # type: ignore[arg-type]
                 record = result.single()
 
                 if not record:

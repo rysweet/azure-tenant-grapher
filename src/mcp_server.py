@@ -21,7 +21,7 @@ def can_connect_to_neo4j(uri: str, user: str, password: str, timeout: int = 5) -
             uri, auth=basic_auth(user, password), connection_timeout=timeout
         )
         with driver.session() as session:
-            session.run("RETURN 1")
+            session.run("RETURN 1")  # type: ignore[arg-type]
         driver.close()
         return True
     except Exception as e:
