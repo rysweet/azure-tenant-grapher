@@ -289,3 +289,8 @@ demos/simuland_iteration3/demos/
 NEO4J_BACKUP_GUIDE.md
 WSL_PATH_ANALYSIS.md
 WSL_LINUX_PATH_FIX_COMPLETE.md
+
+# Sentinel output
+sentinel-output/
+bash-test-output/
+test_*.py
