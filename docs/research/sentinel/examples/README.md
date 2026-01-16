@@ -130,7 +130,7 @@ chmod +x deploy.sh
 1. **Set authentication environment variables:**
    ```bash
    export AZURE_CLIENT_ID="your-service-principal-client-id"
-   export AZURE_CLIENT_SECRET="your-service-principal-secret"
+   export AZURE_CLIENT_SECRET="your-service-principal-secret"  # pragma: allowlist secret
    export AZURE_TENANT_ID="your-managing-tenant-id"
    ```
 
