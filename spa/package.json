@@ -3,7 +3,7 @@
   "productName": "Azure Tenant Grapher",
   "version": "1.0.0",
   "description": "Graph visualization and management tool for Azure tenants",
-  "main": "dist/main/index.js",
+  "main": "dist/main/main/index.js",
   "scripts": {
     "dev": "concurrently -k \"npm run dev:main\" \"npm run dev:renderer\" \"npm run dev:backend\"",
     "dev:main": "tsc -w -p main/tsconfig.json",
